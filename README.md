@@ -1,0 +1,1 @@
+DeutschBridge is a full-stack language-learning platform designed to help learners improve their German skills through daily vocabulary, personalized learning plans, grammar lessons, and progress tracking. The app integrates AI-generated content, interactive exercises, and a clean user experience to make consistent German practice simple and effective.
