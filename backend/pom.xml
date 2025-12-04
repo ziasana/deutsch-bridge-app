@@ -28,7 +28,7 @@
     </scm>
     <properties>
         <java.version>21</java.version>
-        <sonar.organization>ziatest_deutsch-bridge-app</sonar.organization>
+        <sonar.organization>ziatest</sonar.organization>
     </properties>
     <dependencies>
         <dependency>
