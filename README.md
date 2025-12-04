@@ -16,8 +16,6 @@ experience to make consistent learning simple and effective.
     Nomen‑Verb‑Verbindungen
 -   User authentication and personalized progress tracking
 -   Clean and responsive UI
--   Admin & content management using Filament (Laravel) or custom
-    backend (Spring Boot variant)
 
 ## 🛠️ Technologies
 
