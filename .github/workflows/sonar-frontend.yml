@@ -1,4 +1,4 @@
-name: SonarQube CI
+name: SonarQube CI Frontend
 on:
   push:
     branches:
