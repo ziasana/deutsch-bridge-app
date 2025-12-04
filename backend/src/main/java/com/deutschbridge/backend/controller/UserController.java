@@ -1,4 +1,4 @@
-package controller;
+package com.deutschbridge.backend.controller;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

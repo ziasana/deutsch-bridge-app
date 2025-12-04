@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:tc:postgresql:15:///testdb
+    username: testuser
+    password: testpass
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+  testcontainers:
+    reuse:
+      enable: true
+
+
+  data:
+    mongodb:
+      uri:
+      database: test
+

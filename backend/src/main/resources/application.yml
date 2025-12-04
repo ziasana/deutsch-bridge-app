@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: deutschbridge-backend
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+    #Postgresql setting
+  datasource:
+    url: ${POSTGRES_URI}
+
+  ai:
+    ollama:
+      chat:
+        options:
+          model: gemma3:1b
+
+
+  #MongoDB settings
+  data:
+    mongodb:
+      uri: ${MONGODB_URI}
+
+
+  #JPA and Hibernate settings
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+ollama:
+  api:
+    key: ${OLLAMA_API_KEY}
+    url: ${OLLAMA_API_URI}
+
+logging:
+  level:
+    org:
+      springframework:
+        web:
+          client:
+            RestTemplate: DEBUG
+
+
+server:
+  shutdown: graceful
