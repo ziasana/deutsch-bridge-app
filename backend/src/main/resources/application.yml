@@ -7,10 +7,7 @@ spring:
     #Postgresql setting
   datasource:
     url: ${POSTGRES_URI}
-  security:
-    user:
-      name: admin
-      password: admin123
+
 
   ai:
     ollama:
