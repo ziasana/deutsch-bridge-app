@@ -16,6 +16,7 @@ spring:
 
   data:
     mongodb:
-      uri:
       database: test
+      connect-timeout: 30000 # 30 seconds
+      socket-timeout: 60000  # 60 seconds
 

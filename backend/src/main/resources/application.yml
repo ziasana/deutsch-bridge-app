@@ -8,6 +8,7 @@ spring:
   datasource:
     url: ${POSTGRES_URI}
 
+
   ai:
     ollama:
       chat:
