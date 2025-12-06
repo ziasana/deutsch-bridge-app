@@ -1,6 +1,7 @@
 package com.deutschbridge.backend.controller;
 
-import com.deutschbridge.backend.model.Dto.AuthRequest;
+import com.deutschbridge.backend.model.dto.AuthRequest;
+import com.deutschbridge.backend.util.JWTUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -17,13 +18,15 @@ public class AuthController {
     @Autowired
     AuthenticationManager authenticationManager;
 
+    @Autowired
+    JWTUtil jwtUtil;
     @PostMapping
     public String generateToken(@RequestBody AuthRequest authRequest) {
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword())
             );
-            return "Jwt";
+           return jwtUtil.generateToken(authRequest.getUsername());
         }catch (Exception e) {
             throw new UsernameNotFoundException(e.getMessage());
         }

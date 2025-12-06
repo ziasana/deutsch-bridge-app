@@ -1,4 +1,4 @@
-package com.deutschbridge.backend.model.Dto;
+package com.deutschbridge.backend.model.dto;
 
 import lombok.Data;
 
