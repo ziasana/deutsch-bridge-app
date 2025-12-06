@@ -1,10 +1,10 @@
 package com.deutschbridge.backend.util;
 
 import com.deutschbridge.backend.config.EnvConfig;
-import io.github.cdimascio.dotenv.Dotenv;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import java.util.Date;
 
@@ -27,4 +27,26 @@ public class JWTUtil {
                 .compact();
     }
 
+    public String extractUsername(String token) {
+       return extractClaims(token).getSubject();
+    }
+
+    private Claims extractClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(JWT_SECRET)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
+    public boolean validateToken(String username, UserDetails userDetails, String token) {
+        //check if username is same as username in userDetails
+        //check if token is not expired
+        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
+
+    }
+
+    private boolean isTokenExpired(String token) {
+        return extractClaims(token).getExpiration().before(new Date());
+    }
 }

@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -37,9 +38,11 @@ public class User implements UserDetails {
     private UserProfile profile;
 
     @OneToMany(mappedBy = "userId")
+    @ToString.Exclude
     private List<DailyPracticeLog> dailyPracticeLog;
 
     @OneToMany(mappedBy = "userId", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
     private List<Vocabulary> vocabulary;
 
     @PrePersist
