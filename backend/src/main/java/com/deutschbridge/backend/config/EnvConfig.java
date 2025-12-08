@@ -9,9 +9,10 @@ public class EnvConfig {
     private final Dotenv dotenv;
 
     public EnvConfig() {
-        this.dotenv = Dotenv.configure()
-                .directory("./backend")
-                .filename(".env")
+        this.dotenv = Dotenv
+                //.configure()
+               // .directory("./backend")
+              //  .filename(".env")
                 .load();
     }
     public String getJwtSecretKey() {
