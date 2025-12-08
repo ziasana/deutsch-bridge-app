@@ -1,11 +1,11 @@
 package com.deutschbridge.backend.util;
 
-import com.deutschbridge.backend.config.EnvConfig;
 import com.deutschbridge.backend.service.UserService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import java.util.Date;
@@ -16,12 +16,11 @@ public class JWTUtil {
     @Autowired
     UserService userService;
 
-    private final String JWT_SECRET;
-    final long EXPIRATION_TIME = 1000*60*60; //1 hour
 
-    public JWTUtil(EnvConfig envConfig) {
-        this.JWT_SECRET = envConfig.getJwtSecretKey();
-    }
+    @Value("${jwt.secret}")
+    private String JWT_SECRET;
+
+    final long EXPIRATION_TIME = 1000*60*60; //1 hour
 
     public String generateToken(String username) {
         int newTokenValue= getTokenValue(username) +1;

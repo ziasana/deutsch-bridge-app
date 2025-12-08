@@ -24,7 +24,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Set up JDK 
+    - name: Set up JDK
+      env:
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
       uses: actions/setup-java@v4
       with:
         java-version: '21'
