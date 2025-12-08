@@ -26,11 +26,11 @@ jobs:
     - uses: actions/checkout@v4
     - name: Set up JDK
       uses: actions/setup-java@v4
-      env:
-        JWT_SECRET: ${{ secrets.JWT_SECRET }}
       with:
         java-version: '21'
         distribution: 'temurin'
         cache: maven
     - name: Build with Maven
+      env:
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
       run: mvn -B package
