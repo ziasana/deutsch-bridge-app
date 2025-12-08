@@ -19,4 +19,17 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(()-> new UsernameNotFoundException("Username not found"));
     }
 
+    public int getTokenValue(String username) {
+        return userRepository.findByUsername(username).get().getTokenValue();
+    }
+
+    public void incrementTokenValue(String username) {
+        userRepository.findByUsername(username).ifPresent(user -> {
+            int newValue = user.getTokenValue() + 1;
+            user.setTokenValue(newValue);
+            userRepository.save(user);
+        });
+    }
+
+
 }

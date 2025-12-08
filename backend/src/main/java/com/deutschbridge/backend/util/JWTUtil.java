@@ -1,15 +1,20 @@
 package com.deutschbridge.backend.util;
 
 import com.deutschbridge.backend.config.EnvConfig;
+import com.deutschbridge.backend.service.UserService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import java.util.Date;
 
 @Component
 public class JWTUtil {
+
+    @Autowired
+    UserService userService;
 
     private final String JWT_SECRET;
     final long EXPIRATION_TIME = 1000*60*60; //1 hour
@@ -19,12 +24,24 @@ public class JWTUtil {
     }
 
     public String generateToken(String username) {
-      return  Jwts.builder()
+        int newTokenValue= getTokenValue(username) +1;
+        incrementTokenValueInDB(username);
+
+         return  Jwts.builder()
                 .setSubject(username)
+                .setAudience(String.valueOf((newTokenValue)))
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(SignatureAlgorithm.HS256, JWT_SECRET)
                 .compact();
+    }
+
+    public int getTokenValue(String username) {
+       return userService.getTokenValue(username);
+    }
+
+    public void incrementTokenValueInDB(String username) {
+        userService.incrementTokenValue(username);
     }
 
     public String extractUsername(String token) {
@@ -42,8 +59,15 @@ public class JWTUtil {
     public boolean validateToken(String username, UserDetails userDetails, String token) {
         //check if username is same as username in userDetails
         //check if token is not expired
-        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
+        return username.equals(userDetails.getUsername())
+                && isValidateTokenValue(username,token)
+                && !isTokenExpired(token);
+    }
 
+    public boolean isValidateTokenValue(String username, String token) {
+        return extractClaims(token)
+                .getAudience()
+                .equals(String.valueOf(getTokenValue(username)));
     }
 
     private boolean isTokenExpired(String token) {
