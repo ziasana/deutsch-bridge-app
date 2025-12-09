@@ -1,6 +1,5 @@
 package com.deutschbridge.backend.service;
 
-import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.exception.UserVerificationException;
 import com.deutschbridge.backend.model.dto.UserDto;
 import com.deutschbridge.backend.model.entity.User;

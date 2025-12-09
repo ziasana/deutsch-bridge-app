@@ -24,15 +24,6 @@ public class EmailService {
         this.mailSender = mailSender;
     }
 
-
-    public void sendWelcomeEmail(String to) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(to);
-        message.setSubject("Welcome!");
-        message.setText("Your account has been created successfully.");
-        mailSender.send(message);
-    }
-
     public void sendVerificationEmail(String email, String verificationToken) throws UserVerificationException {
         String subject = "Email Verification";
         String message = "Click the button below to verify your email address:";
@@ -57,16 +48,11 @@ public class EmailService {
                     .toUriString();
 
             String content = """
-                <div style="font-family: Arial, sans-serif; max-width: 600px; 
-                    margin: auto; padding: 20px; border-radius: 8px; 
-                    background-color: #f9f9f9; text-align: center;">
-            
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border-radius: 8px; background-color: #f9f9f9; text-align: center;">
                     <h2 style="color: #333;">%s</h2>
-            
                     <p style="font-size: 16px; color: #555; white-space: normal; overflow-wrap: break-word;">
                         %s
                     </p>
-            
                     <a href="%s" style="display: inline-block; margin: 20px 0; padding: 10px 20px;
                        font-size: 16px; color: #fff; background-color: #007bff;
                        text-decoration: none; border-radius: 5px;">

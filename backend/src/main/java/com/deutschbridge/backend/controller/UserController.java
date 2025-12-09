@@ -45,7 +45,6 @@ public class UserController {
 
     @PostMapping("/reset-password")
     public ResponseEntity <String> passwordReset(@RequestBody UserDto user) throws UserVerificationException {
-        userService.resetPassword(user.getEmail());
-        return ResponseEntity.ok().body("Password reset successfully");
+        return ResponseEntity.ok().body(userService.resetPassword(user.getEmail())?"Password reset successfully":"Password reset failed");
     }
 }
