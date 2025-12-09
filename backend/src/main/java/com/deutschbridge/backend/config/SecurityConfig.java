@@ -1,6 +1,7 @@
 package com.deutschbridge.backend.config;
 
 import com.deutschbridge.backend.filter.JWTAuthFilter;
+import com.deutschbridge.backend.repository.UserRepository;
 import com.deutschbridge.backend.service.CustomUserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,9 +21,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
 
-   private final  JWTAuthFilter jwtAuthFilter;
-    public SecurityConfig(JWTAuthFilter jwtAuthFilter) {
+    private final  JWTAuthFilter jwtAuthFilter;
+    private final UserRepository userRepository;
+    public SecurityConfig(JWTAuthFilter jwtAuthFilter, UserRepository userRepository) {
         this.jwtAuthFilter = jwtAuthFilter;
+        this.userRepository = userRepository;
     }
 
     @Bean
@@ -40,13 +43,12 @@ public class SecurityConfig {
                                // .requestMatchers("/api/test/authenticate").permitAll()
                         .anyRequest().authenticated());
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-                //.httpBasic(withDefaults());
         return http.build();
     }
 
     @Bean
     public UserDetailsService userDetailsService(){
-        return new CustomUserService();
+        return new CustomUserService(userRepository);
     }
 
     @Bean

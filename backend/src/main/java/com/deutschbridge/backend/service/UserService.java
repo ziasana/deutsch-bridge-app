@@ -1,5 +1,7 @@
 package com.deutschbridge.backend.service;
 
+import com.deutschbridge.backend.exception.DataNotFoundException;
+import com.deutschbridge.backend.exception.UserVerificationException;
 import com.deutschbridge.backend.model.dto.UserDto;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.enums.UserRole;
@@ -35,22 +37,21 @@ public class UserService {
         );
     }
 
-    public User registerUser(UserDto userDto)
-    {
+    public User registerUser(UserDto userDto) throws UserVerificationException {
         // check username uniqueness
         if (userRepository.findByUsername(userDto.getUsername()).isPresent()) {
-            throw new RuntimeException("Username already exists");
+            throw new UserVerificationException("Username already exists");
         }
         // check email uniqueness
         if (userRepository.existsByEmail(userDto.getEmail())) {
-            throw new RuntimeException("Email already registered");
+            throw new UserVerificationException("Email already registered");
         }
         Optional<User> existingUser= userRepository.findByEmail(userDto.getEmail());
         if(existingUser.isPresent())
         {
             if(existingUser.get().isVerified())
             {
-                throw new RuntimeException("User is already verified");
+                throw new UserVerificationException("User is already verified");
             }else{
                 String verificationToken = jwtUtil.generateToken(userDto.getEmail());
                 existingUser.get().setVerificationToken(verificationToken);
@@ -73,17 +74,17 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public boolean resetPassword(String email) {
+    public boolean resetPassword(String email) throws UserVerificationException {
         // check if user exist
         if (!userRepository.existsByEmail(email)) {
-            throw new RuntimeException("Email not registered");
+            throw new UserVerificationException("This user is not registered yet!");
         }
         Optional<User> existingUser= userRepository.findByEmail(email);
         if(existingUser.isPresent())
         {
             if(!existingUser.get().isVerified())
             {
-                throw new RuntimeException("User is not verified");
+                throw new UserVerificationException("User is not verified");
             }else{
                 String resetToken = jwtUtil.generateToken(email);
                 existingUser.get().setResetToken(resetToken);

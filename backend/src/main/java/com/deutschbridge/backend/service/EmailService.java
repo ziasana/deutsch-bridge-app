@@ -1,5 +1,6 @@
 package com.deutschbridge.backend.service;
 
+import com.deutschbridge.backend.exception.UserVerificationException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
@@ -7,6 +8,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
 
 @Service
 public class EmailService {
@@ -31,19 +33,19 @@ public class EmailService {
         mailSender.send(message);
     }
 
-    public void sendVerificationEmail(String email, String verificationToken) {
+    public void sendVerificationEmail(String email, String verificationToken) throws UserVerificationException {
         String subject = "Email Verification";
         String message = "Click the button below to verify your email address:";
         sendEmail(email, verificationToken, subject, VERIFICATION_ENDPOINT, message);
     }
 
-    public void sendForgotPasswordEmail(String email, String resetToken) {
+    public void sendForgotPasswordEmail(String email, String resetToken) throws UserVerificationException {
         String subject = "Password Reset Request";
         String message = "Click the button below to reset your password:";
         sendEmail(email, resetToken, subject, RESET_PASSWORD_ENDPOINT, message);
     }
 
-    private void sendEmail(String email, String token, String subject, String path, String message) {
+    private void sendEmail(String email, String token, String subject, String path, String message) throws UserVerificationException {
         try {
 
             if (email == null || !email.contains("@")) {
@@ -83,7 +85,6 @@ public class EmailService {
                 </div>
                 """.formatted(subject, message, actionUrl, actionUrl);
 
-
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true);
 
@@ -94,7 +95,7 @@ public class EmailService {
             mailSender.send(mimeMessage);
 
         } catch (Exception e) {
-            System.err.println("Failed to send email: " + e.getMessage());
+            throw new UserVerificationException("Failed to send email.");
         }
     }
 }
