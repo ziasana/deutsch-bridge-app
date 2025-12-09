@@ -26,7 +26,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain( @Autowired JWTAuthFilter jwtAuthFilter,
+                                            HttpSecurity http) throws Exception
+    {
         http
                 .csrf(AbstractHttpConfigurer::disable)  // IMPORTANT for POST/PUT/DELETE
                 .authorizeHttpRequests(auth ->

@@ -21,32 +21,19 @@ public class JWTUtil {
     private String JWT_SECRET;
 
     final long EXPIRATION_TIME = 1000*60*60; //1 hour
-
-    public String generateToken(String usernameOrEmail) {
-        int tokenValue=0;
-        if(getTokenValue(usernameOrEmail)!=-1) {
-             tokenValue = getTokenValue(usernameOrEmail) + 1;
-            incrementTokenValueInDB(usernameOrEmail);
-        }
-
+  
+    public String generateToken(String username) {
          return  Jwts.builder()
-                .setSubject(usernameOrEmail)
-                .setAudience(String.valueOf((tokenValue)))
+                .setSubject(username)
+                .setAudience(String.valueOf((userService.incrementAndGetTokenValue(username))))
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(SignatureAlgorithm.HS256, JWT_SECRET)
                 .compact();
     }
 
-    public int getTokenValue(String usernameOrEmail) {
-       return customUserService.getTokenValue(usernameOrEmail);
-    }
-
-    public void incrementTokenValueInDB(String usernameOrEmail) {
-        customUserService.incrementTokenValue(usernameOrEmail);
-    }
-
     public String extractUsernameOrEmail(String token) {
+
        return extractClaims(token).getSubject();
     }
 
@@ -73,7 +60,7 @@ public class JWTUtil {
     public boolean isValidateTokenValue(String username, String token) {
         return extractClaims(token)
                 .getAudience()
-                .equals(String.valueOf(getTokenValue(username)));
+                .equals(String.valueOf(userService.getTokenValue(username)));
     }
 
     private boolean isTokenExpired(String token) {

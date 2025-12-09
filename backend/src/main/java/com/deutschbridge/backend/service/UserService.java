@@ -4,7 +4,11 @@ import com.deutschbridge.backend.model.dto.UserDto;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.enums.UserRole;
 import com.deutschbridge.backend.repository.UserRepository;
-import com.deutschbridge.backend.util.JWTUtil;
+
+import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -33,6 +37,15 @@ public class UserService {
         return userRepository.findByEmail(email).orElseThrow(
                 () -> new UsernameNotFoundException("User not found with email: " + email)
         );
+      
+    public int getTokenValue(String username) {
+        return userRepository.getTokenValue(username);
+    }
+
+    @Transactional
+    public  int incrementAndGetTokenValue(String username) {
+        userRepository.incrementTokenValue(username);
+        return userRepository.getTokenValue(username);
     }
 
     public User registerUser(UserDto userDto)
