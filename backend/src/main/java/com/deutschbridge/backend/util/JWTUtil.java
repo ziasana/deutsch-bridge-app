@@ -23,24 +23,13 @@ public class JWTUtil {
     final long EXPIRATION_TIME = 1000*60*60; //1 hour
 
     public String generateToken(String username) {
-        int newTokenValue= getTokenValue(username) +1;
-        incrementTokenValueInDB(username);
-
          return  Jwts.builder()
                 .setSubject(username)
-                .setAudience(String.valueOf((newTokenValue)))
+                .setAudience(String.valueOf((userService.incrementAndGetTokenValue(username))))
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(SignatureAlgorithm.HS256, JWT_SECRET)
                 .compact();
-    }
-
-    public int getTokenValue(String username) {
-       return userService.getTokenValue(username);
-    }
-
-    public void incrementTokenValueInDB(String username) {
-        userService.incrementTokenValue(username);
     }
 
     public String extractUsername(String token) {
@@ -66,7 +55,7 @@ public class JWTUtil {
     public boolean isValidateTokenValue(String username, String token) {
         return extractClaims(token)
                 .getAudience()
-                .equals(String.valueOf(getTokenValue(username)));
+                .equals(String.valueOf(userService.getTokenValue(username)));
     }
 
     private boolean isTokenExpired(String token) {
