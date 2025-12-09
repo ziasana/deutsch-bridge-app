@@ -5,14 +5,11 @@ import com.deutschbridge.backend.model.dto.UserDto;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.enums.UserRole;
 import com.deutschbridge.backend.repository.UserRepository;
-
-import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import com.deutschbridge.backend.util.JWTUtil;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
 
 import java.util.Optional;
 
@@ -38,15 +35,6 @@ public class UserService {
         return userRepository.findByEmail(email).orElseThrow(
                 () -> new UsernameNotFoundException("User not found with email: " + email)
         );
-      
-    public int getTokenValue(String username) {
-        return userRepository.getTokenValue(username);
-    }
-
-    @Transactional
-    public  int incrementAndGetTokenValue(String username) {
-        userRepository.incrementTokenValue(username);
-        return userRepository.getTokenValue(username);
     }
 
     public User registerUser(UserDto userDto) throws UserVerificationException {
@@ -86,6 +74,7 @@ public class UserService {
         return userRepository.save(user);
     }
 
+
     public boolean resetPassword(String email) throws UserVerificationException {
         // check if user exist
         if (!userRepository.existsByEmail(email)) {
@@ -97,7 +86,8 @@ public class UserService {
             if(!existingUser.get().isVerified())
             {
                 throw new UserVerificationException("User is not verified");
-            }else{
+            }else
+            {
                 String resetToken = jwtUtil.generateToken(email);
                 existingUser.get().setResetToken(resetToken);
                 userRepository.save(existingUser.get());

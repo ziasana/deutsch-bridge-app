@@ -20,17 +20,16 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+    private  final UserRepository userRepository;
+    private final   JWTAuthFilter jwtAuthFilter;
 
-    private final  JWTAuthFilter jwtAuthFilter;
-    private final UserRepository userRepository;
-    public SecurityConfig(JWTAuthFilter jwtAuthFilter, UserRepository userRepository) {
-        this.jwtAuthFilter = jwtAuthFilter;
+    public SecurityConfig(UserRepository userRepository, JWTAuthFilter jwtAuthFilter) {
         this.userRepository = userRepository;
+        this.jwtAuthFilter = jwtAuthFilter;
     }
 
     @Bean
-    public SecurityFilterChain filterChain( @Autowired JWTAuthFilter jwtAuthFilter,
-                                            HttpSecurity http) throws Exception
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception
     {
         http
                 .csrf(AbstractHttpConfigurer::disable)  // IMPORTANT for POST/PUT/DELETE
