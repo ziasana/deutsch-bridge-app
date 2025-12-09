@@ -13,11 +13,14 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User,String> {
     Optional<User> findByUsername(String username);
 
+    Optional<User> findByEmail(String email);
+
+    boolean existsByEmail(String email);
+
     @Modifying
     @Query("UPDATE User u SET u.tokenValue = u.tokenValue + 1 WHERE u.username = :username")
     void incrementTokenValue(@Param("username") String username);
 
     @Query("SELECT u.tokenValue FROM User u WHERE u.username = :username")
     int getTokenValue(@Param("username") String username);
-
 }
