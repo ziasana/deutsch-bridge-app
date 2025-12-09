@@ -52,15 +52,15 @@ public class User implements UserDetails {
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "profile_id")
-    private UserProfile profile;
+    private static UserProfile profile;
 
     @OneToMany(mappedBy = "userId")
     @ToString.Exclude
-    private List<DailyPracticeLog> dailyPracticeLog;
+    private static List<DailyPracticeLog> dailyPracticeLog;
 
     @OneToMany(mappedBy = "userId", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
-    private List<Vocabulary> vocabulary;
+    private static List<Vocabulary> vocabulary;
 
     @PrePersist
     public void ensureId() {
