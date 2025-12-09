@@ -3,9 +3,7 @@ package com.deutschbridge.backend.model.entity;
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -29,6 +27,7 @@ public class User implements UserDetails {
     private String password;
     @Column(nullable = false, unique = true)
     private String username;
+    private int tokenValue =0;
     private String role;
     private LearningLevel learningLevel;
 
@@ -37,9 +36,11 @@ public class User implements UserDetails {
     private UserProfile profile;
 
     @OneToMany(mappedBy = "userId")
+    @ToString.Exclude
     private List<DailyPracticeLog> dailyPracticeLog;
 
     @OneToMany(mappedBy = "userId", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
     private List<Vocabulary> vocabulary;
 
     @PrePersist
@@ -56,6 +57,9 @@ public class User implements UserDetails {
         this.username = username;
         this.learningLevel = learningLevel;
 
+    }
+    public User(String username){
+        this.username = username;
     }
 
     @Override

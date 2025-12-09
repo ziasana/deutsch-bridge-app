@@ -1,6 +1,7 @@
 package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -15,10 +16,19 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        UserDetails user= userRepository.findByUsername(username)
+        return userRepository.findByUsername(username)
                 .orElseThrow(()-> new UsernameNotFoundException("Username not found"));
-        System.out.println("Loaded password: " + user.getPassword());
-        return user;
     }
+
+    public int getTokenValue(String username) {
+        return userRepository.getTokenValue(username);
+    }
+
+    @Transactional
+    public  int incrementAndGetTokenValue(String username) {
+        userRepository.incrementTokenValue(username);
+        return userRepository.getTokenValue(username);
+    }
+
 
 }
