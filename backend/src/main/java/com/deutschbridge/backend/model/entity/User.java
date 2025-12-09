@@ -16,7 +16,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @EnableJpaAuditing
-@Table(name = "users")
+@Table(name="users")
 public class User implements UserDetails {
     @Id
     private String id;
@@ -24,12 +24,12 @@ public class User implements UserDetails {
     @Getter
     @Column(unique = true, nullable = false)
     private String email;
+
     @Column(name = "password")
     @Setter
     private String password;
-    @Column(nullable = false, unique = true)
 
-    @Getter
+    @Column(nullable = false, unique = true)
     @Setter
     private String username;
     @Getter
