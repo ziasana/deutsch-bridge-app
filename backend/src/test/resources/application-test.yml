@@ -13,12 +13,23 @@ spring:
     reuse:
       enable: true
 
-
   data:
     mongodb:
-      database: test
-      connect-timeout: 30000 # 30 seconds
-      socket-timeout: 60000  # 60 seconds
+      port: 0
+
+  # data:
+ #   mongodb:
+ #     database: test
+ #     connect-timeout: 30000 # 30 seconds
+ #     socket-timeout: 60000  # 60 seconds
 
 jwt.secret: ${JWT_SECRET}
+
+de:
+  flapdoodle:
+    mongodb:
+      embedded:
+        version: 7.0.4
+        database-dir: ./embedded-mongo-data
+
 
