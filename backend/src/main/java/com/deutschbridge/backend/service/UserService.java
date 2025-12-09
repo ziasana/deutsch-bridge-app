@@ -72,4 +72,28 @@ public class UserService {
         emailService.sendVerificationEmail(userDto.getEmail(), user.getVerificationToken());
         return userRepository.save(user);
     }
+
+    public boolean resetPassword(String email) {
+        // check if user exist
+        if (!userRepository.existsByEmail(email)) {
+            throw new RuntimeException("Email not registered");
+        }
+        Optional<User> existingUser= userRepository.findByEmail(email);
+        if(existingUser.isPresent())
+        {
+            if(!existingUser.get().isVerified())
+            {
+                throw new RuntimeException("User is not verified");
+            }else{
+                String resetToken = jwtUtil.generateToken(email);
+                existingUser.get().setResetToken(resetToken);
+                userRepository.save(existingUser.get());
+                //send rest link email
+                emailService.sendForgotPasswordEmail(email, resetToken);
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

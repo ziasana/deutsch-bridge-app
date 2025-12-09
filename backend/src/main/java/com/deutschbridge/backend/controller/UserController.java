@@ -43,4 +43,10 @@ public class UserController {
                 );
         return ResponseEntity.ok().body("Email sent successfully");
     }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity <String> passwordReset(@RequestBody UserDto user) {
+        userService.resetPassword(user.getEmail());
+        return ResponseEntity.ok().body("Password reset successfully");
+    }
 }
