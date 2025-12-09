@@ -13,22 +13,41 @@ import java.util.Collection;
 import java.util.List;
 
 @Entity
-@Table(name = "users")
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @EnableJpaAuditing
+@Table(name = "users")
 public class User implements UserDetails {
     @Id
     private String id;
+    @Setter
+    @Getter
     @Column(unique = true, nullable = false)
     private String email;
     @Column(name = "password")
+    @Setter
     private String password;
     @Column(nullable = false, unique = true)
+
+    @Getter
+    @Setter
     private String username;
+    @Getter
+    @Setter
     private int tokenValue =0;
-    private String role;
+    @Getter
+    @Setter
+    private String role="USER";
+    @Setter
+    @Getter
+    private String verificationToken;
+    @Setter
+    @Getter
+    private boolean isVerified;
+    @Setter
+    @Getter
+    private String resetToken;
+
     private LearningLevel learningLevel;
 
     @OneToOne(cascade = CascadeType.ALL)
@@ -58,18 +77,28 @@ public class User implements UserDetails {
         this.learningLevel = learningLevel;
 
     }
-    public User(String username){
+
+    public User(String username, String email, String password, String role) {
         this.username = username;
+        this.email = email;
+        this.password = password;
+        this.role = role;
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role));
     }
+
 
     @Override
     public String getPassword() {
         return this.password;
+    }
+
+    @Override
+    public String getUsername() {
+        return this.username;
     }
 
     @Override
@@ -91,4 +120,5 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return UserDetails.super.isEnabled();
     }
+
 }

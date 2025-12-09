@@ -1,6 +1,6 @@
 package com.deutschbridge.backend.filter;
 
-import com.deutschbridge.backend.service.UserService;
+import com.deutschbridge.backend.service.CustomUserService;
 import com.deutschbridge.backend.util.JWTUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -23,7 +23,7 @@ public class JWTAuthFilter extends OncePerRequestFilter {
     JWTUtil jwtUtil;
 
     @Autowired
-    UserService userService;
+    CustomUserService customUserService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -34,12 +34,12 @@ public class JWTAuthFilter extends OncePerRequestFilter {
         //extract data from header and get username from token
         if(autHeader != null && autHeader.startsWith("Bearer ")) {
             token = autHeader.substring(7);
-            username= jwtUtil.extractUsername(token);
+            username= jwtUtil.extractUsernameOrEmail(token);
         }
 
         if(username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             //check if user exist in DB and not expired
-            UserDetails userDetails = userService.loadUserByUsername(username);
+            UserDetails userDetails = customUserService.loadUserByUsername(username);
            if( jwtUtil.validateToken(username, userDetails, token))
            {
                UsernamePasswordAuthenticationToken authToken= new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());

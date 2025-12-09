@@ -1,8 +1,23 @@
 spring:
   application:
     name: deutschbridge-backend
+
+  #Email configuration
+  mail:
+    host: localhost
+    port: 1025
+    username: aliemran2022@gmail.com
+    password:
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
   lifecycle:
     timeout-per-shutdown-phase: 20s
+
 
     #Postgresql setting
   datasource:

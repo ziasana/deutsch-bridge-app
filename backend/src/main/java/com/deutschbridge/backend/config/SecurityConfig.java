@@ -1,8 +1,7 @@
 package com.deutschbridge.backend.config;
 
 import com.deutschbridge.backend.filter.JWTAuthFilter;
-import com.deutschbridge.backend.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.deutschbridge.backend.service.CustomUserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -21,8 +20,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Autowired
-    JWTAuthFilter jwtAuthFilter;
+   private final  JWTAuthFilter jwtAuthFilter;
+    public SecurityConfig(JWTAuthFilter jwtAuthFilter) {
+        this.jwtAuthFilter = jwtAuthFilter;
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -32,7 +33,9 @@ public class SecurityConfig {
                         auth
                                 .requestMatchers(
                                         "/api/auth/**",
-                                        "/api/welcome"
+                                        "/api/welcome",
+                                        "/api/user/**",
+                                        "/req/**"
                                 ).permitAll()
                                // .requestMatchers("/api/test/authenticate").permitAll()
                         .anyRequest().authenticated());
@@ -43,7 +46,7 @@ public class SecurityConfig {
 
     @Bean
     public UserDetailsService userDetailsService(){
-        return new UserService();
+        return new CustomUserService();
     }
 
     @Bean
