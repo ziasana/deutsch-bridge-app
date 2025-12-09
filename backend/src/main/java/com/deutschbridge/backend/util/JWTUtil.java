@@ -4,7 +4,6 @@ import com.deutschbridge.backend.service.CustomUserService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -13,12 +12,14 @@ import java.util.Date;
 @Component
 public class JWTUtil {
 
-    @Autowired
-    CustomUserService customUserService;
+
+    private final CustomUserService customUserService;
 
 
     @Value("${jwt.secret}")
-    private String JWT_SECRET;
+    public final String jwtSecret= "";
+
+    private static final long EXPIRATION_TIME = (1000*60*60); //1 hour
 
     final long EXPIRATION_TIME = 1000*60*60; //1 hour
   
@@ -28,7 +29,7 @@ public class JWTUtil {
                 .setAudience(String.valueOf((userService.incrementAndGetTokenValue(username))))
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                .signWith(SignatureAlgorithm.HS256, JWT_SECRET)
+                .signWith(SignatureAlgorithm.HS256, jwtSecret)
                 .compact();
     }
 
@@ -39,7 +40,7 @@ public class JWTUtil {
 
     private Claims extractClaims(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(JWT_SECRET)
+                .setSigningKey(jwtSecret)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();

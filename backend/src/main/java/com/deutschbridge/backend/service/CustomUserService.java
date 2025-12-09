@@ -2,7 +2,6 @@ package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -11,8 +10,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class CustomUserService implements UserDetailsService {
 
-    @Autowired
-    UserRepository  userRepository;
+    private final UserRepository  userRepository;
+
+    public CustomUserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {

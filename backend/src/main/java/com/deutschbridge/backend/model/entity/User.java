@@ -16,7 +16,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @EnableJpaAuditing
-@Table(name = "users")
+@Table(name="users")
 public class User implements UserDetails {
     @Id
     private String id;
@@ -24,12 +24,12 @@ public class User implements UserDetails {
     @Getter
     @Column(unique = true, nullable = false)
     private String email;
+
     @Column(name = "password")
     @Setter
     private String password;
-    @Column(nullable = false, unique = true)
 
-    @Getter
+    @Column(nullable = false, unique = true)
     @Setter
     private String username;
     @Getter
@@ -52,15 +52,15 @@ public class User implements UserDetails {
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "profile_id")
-    private UserProfile profile;
+    private static UserProfile profile;
 
     @OneToMany(mappedBy = "userId")
     @ToString.Exclude
-    private List<DailyPracticeLog> dailyPracticeLog;
+    private static List<DailyPracticeLog> dailyPracticeLog;
 
     @OneToMany(mappedBy = "userId", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
-    private List<Vocabulary> vocabulary;
+    private static List<Vocabulary> vocabulary;
 
     @PrePersist
     public void ensureId() {
