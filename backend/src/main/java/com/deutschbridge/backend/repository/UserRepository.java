@@ -25,4 +25,6 @@ public interface UserRepository extends JpaRepository<User,String> {
 
     @Query("SELECT u.tokenValue FROM User u WHERE u.username = :username")
     int getTokenValue(@Param("username") String username);
+
+    void deleteByEmail(String email);
 }

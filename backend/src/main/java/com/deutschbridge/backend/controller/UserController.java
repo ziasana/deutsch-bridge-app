@@ -1,12 +1,16 @@
 package com.deutschbridge.backend.controller;
 
+import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.exception.UserVerificationException;
 import com.deutschbridge.backend.model.dto.UserDto;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.service.EmailService;
 import com.deutschbridge.backend.service.UserService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/user")
@@ -20,31 +24,36 @@ public class UserController {
         this.emailService = emailService;
     }
 
-    @GetMapping("/welcome")
-    public ResponseEntity <String> welcome() {
-        return ResponseEntity.ok().body("Welcome");
-    }
-
     @GetMapping
-    public ResponseEntity <String> user() {
-        return ResponseEntity.ok().body("Welcome to the user API");
+    public ResponseEntity <List<User>> getAll() {
+        return ResponseEntity.ok().body(userService.findAll());
     }
 
     @PostMapping("/register")
     public ResponseEntity <User> registerUser(@RequestBody UserDto user) throws UserVerificationException {
-        return ResponseEntity.ok().body(userService.registerUser(user));
+        return new ResponseEntity<>( userService.registerUser(user), HttpStatus.CREATED);
     }
 
-    @GetMapping("/sendMail")
+    @GetMapping("/send-mail")
     public ResponseEntity <String> sendMail() throws UserVerificationException {
         emailService.sendVerificationEmail("zs.U@gmail.com",
-                "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ6cy5ob3NzYWlueUBnbWFpbC5jb20iLCJhdWQiOiIwIiwiaWF0IjoxNzY1Mjg2MzEzLCJleHAiOjE3NjUyODk5MTN9.S3cJbRs7KKbiwtdHckP1dLB3PkT-ALg7XOq0Y7pd47w"
+                "S3cJbRs7KKbiwtdHckP1dLB3PkT-ALg7XOq0Y7pd47w"
                 );
         return ResponseEntity.ok().body("Email sent successfully");
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity <String> passwordReset(@RequestBody UserDto user) throws UserVerificationException {
-        return ResponseEntity.ok().body(userService.resetPassword(user.getEmail())?"Password reset successfully":"Password reset failed");
+    public ResponseEntity <String> passwordReset(@RequestBody UserDto user) throws UserVerificationException, DataNotFoundException {
+        return ResponseEntity.ok().body(userService.resetPassword(user.getEmail()) ? "Password reset successfully" : "Password reset failed");
+    }
+
+    @PutMapping("/update-password")
+    public ResponseEntity<User> updatePassword(@RequestBody UserDto userDto) throws DataNotFoundException {
+        return new ResponseEntity<>(userService.update(userDto), HttpStatus.OK);
+    }
+
+    @DeleteMapping("/delete-user")
+    public ResponseEntity<Boolean> deleteByEmail(@RequestBody UserDto userDto) throws DataNotFoundException {
+        return new ResponseEntity<>(userService.deleteByEmail(userDto),HttpStatus.NO_CONTENT);
     }
 }
