@@ -41,6 +41,7 @@ class UserServiceTest {
 
     @BeforeEach
     void setup() {
+
         MockitoAnnotations.openMocks(this);
         user = new User("john", "john@example.com", "pass", UserRole.STUDENT.getValue());
         user.setVerified(true);
