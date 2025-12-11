@@ -63,7 +63,7 @@ class EmailServiceTest {
     @Test
     @DisplayName("Should throw exception for invalid email")
     void testInvalidEmail() {
-        assertThrows(UserVerificationException.class, () ->
+        assertThrows(IllegalArgumentException.class, () ->
                 emailService.sendVerificationEmail("invalid-email", "token123")
         );
     }
