@@ -23,6 +23,10 @@ public class EmailService {
         this.mailSender = mailSender;
     }
 
+    public void setFrom(String from) {
+        this.from = from;
+    }
+
     public void sendVerificationEmail(String email, String verificationToken) throws UserVerificationException {
         String subject = "Email Verification";
         String message = "Click the button below to verify your email address:";

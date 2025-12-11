@@ -20,7 +20,7 @@ public class JWTUtil {
     private final Key key;
     private static final long EXPIRATION_TIME = (1000*60*60); //1 hour
 
-    public JWTUtil(UserRepository userRepository,  @Value("${jwt.secret}") String jwtSecret) {
+    public JWTUtil(UserRepository userRepository, @Value("${jwt.secret}") String jwtSecret){
         this.userRepository = userRepository;
         this.key= Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }

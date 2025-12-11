@@ -1,16 +1,19 @@
 package com.deutschbridge.backend.service;
 
+import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.exception.UserVerificationException;
 import com.deutschbridge.backend.model.dto.UserDto;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.enums.UserRole;
 import com.deutschbridge.backend.repository.UserRepository;
 import com.deutschbridge.backend.util.JWTUtil;
+import jakarta.transaction.Transactional;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -31,6 +34,11 @@ public class UserService {
         this.jwtUtil = jwtUtil;
     }
 
+    public List<User> findAll()
+    {
+        return userRepository.findAll();
+    }
+
     public User findByEmail(String email) {
         return userRepository.findByEmail(email).orElseThrow(
                 () -> new UsernameNotFoundException("User not found with email: " + email)
@@ -44,14 +52,14 @@ public class UserService {
         }
         // check email uniqueness
         if (userRepository.existsByEmail(userDto.getEmail())) {
-            throw new UserVerificationException("Email already registered");
+            throw new UserVerificationException("Email already registered!");
         }
         Optional<User> existingUser= userRepository.findByEmail(userDto.getEmail());
         if(existingUser.isPresent())
         {
             if(existingUser.get().isVerified())
             {
-                throw new UserVerificationException("User is already verified");
+                throw new UserVerificationException("User is already verified!");
             }else{
                 String verificationToken = jwtUtil.generateToken(userDto.getEmail());
                 existingUser.get().setVerificationToken(verificationToken);
@@ -75,28 +83,38 @@ public class UserService {
     }
 
 
-    public boolean resetPassword(String email) throws UserVerificationException {
-        // check if user exist
-        if (!userRepository.existsByEmail(email)) {
-            throw new UserVerificationException("This user is not registered yet!");
+    public boolean resetPassword(String email) throws UserVerificationException, DataNotFoundException {
+        // Try to get the user directly
+        User existingUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new DataNotFoundException("User not registered yet!"));
+
+        // Check if user is verified
+        if (!existingUser.isVerified()) {
+            throw new UserVerificationException("User is not verified!");
         }
-        Optional<User> existingUser= userRepository.findByEmail(email);
-        if(existingUser.isPresent())
-        {
-            if(!existingUser.get().isVerified())
-            {
-                throw new UserVerificationException("User is not verified");
-            }else
-            {
-                String resetToken = jwtUtil.generateToken(email);
-                existingUser.get().setResetToken(resetToken);
-                userRepository.save(existingUser.get());
-                //send rest link email
-                emailService.sendForgotPasswordEmail(email, resetToken);
-                return true;
-            }
-        }
-        return false;
+
+        String resetToken = jwtUtil.generateToken(email);
+        existingUser.setResetToken(resetToken);
+        userRepository.save(existingUser);
+        //send rest link email
+        emailService.sendForgotPasswordEmail(email, resetToken);
+        return true;
+
     }
 
+    @Transactional
+    public User update(UserDto userDto) throws DataNotFoundException {
+        User existing = userRepository.findByEmail(userDto.getEmail())
+                .orElseThrow(() -> new DataNotFoundException("User not found!"));
+        if (userDto.getPassword() != null) existing.setPassword( passwordEncoder.encode(userDto.getPassword()));
+        return userRepository.save(existing);
+    }
+
+    @Transactional
+    public boolean deleteByEmail(UserDto  userDto) throws DataNotFoundException {
+        userRepository.findByEmail(userDto.getEmail())
+                .orElseThrow( ()-> new DataNotFoundException("User not found!"));
+        userRepository.deleteByEmail(userDto.getEmail());
+        return true;
+    }
 }

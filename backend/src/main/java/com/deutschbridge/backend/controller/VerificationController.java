@@ -6,10 +6,7 @@ import com.deutschbridge.backend.service.UserService;
 import com.deutschbridge.backend.util.JWTUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("req/")
@@ -38,6 +35,6 @@ public class VerificationController {
         user.setVerificationToken(null);
         user.setVerified(true);
         userRepository.save(user);
-        return ResponseEntity.ok().body("Email successfuly Verified!");
+        return ResponseEntity.ok().body("Email successfully Verified!");
     }
 }
