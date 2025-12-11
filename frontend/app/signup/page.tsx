@@ -6,6 +6,7 @@ import {useState} from "react";
 import {registerUser} from "@/services/userService";
 import {UserType} from "@/types/user";
 import {toast, ToastContainer} from "react-toastify";
+import Loading from "@/componenets/Loading";
 interface FormDataType {
   name: string;
   email: string;
@@ -23,7 +24,6 @@ const initialFormState: FormDataType = {
 };
 
 export default function SignupPage() {
-
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState<FormDataType>(initialFormState);
 
@@ -65,7 +65,7 @@ export default function SignupPage() {
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white text-center mb-8">
           Create an Account
         </h1>
-
+        {isLoading && <Loading message="Please wait..." />}
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Name */}

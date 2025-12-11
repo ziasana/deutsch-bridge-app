@@ -36,7 +36,7 @@ public class UserController {
     }
 
     @GetMapping("/send-mail")
-    public ResponseEntity <String> sendMail() throws UserVerificationException {
+    public ResponseEntity <String> sendMail() {
         emailService.sendVerificationEmail("zs.U@gmail.com",
                 "S3cJbRs7KKbiwtdHckP1dLB3PkT-ALg7XOq0Y7pd47w"
                 );

@@ -1,10 +1,10 @@
 package com.deutschbridge.backend.controller;
 
+import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.AuthRequest;
 import com.deutschbridge.backend.util.JWTUtil;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,14 +20,14 @@ public class AuthController {
     }
 
     @PostMapping
-    public String generateToken(@RequestBody AuthRequest authRequest) {
+    public String login(@RequestBody AuthRequest authRequest) throws DataNotFoundException {
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword())
             );
            return jwtUtil.generateToken(authRequest.getUsername());
         }catch (Exception e) {
-            throw new UsernameNotFoundException(e.getMessage());
+            throw new DataNotFoundException(e.getMessage());
         }
     }
 }

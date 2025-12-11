@@ -7,6 +7,8 @@ import com.deutschbridge.backend.util.JWTUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.view.RedirectView;
 
 @RestController
 @RequestMapping("req/")
@@ -36,5 +38,12 @@ public class VerificationController {
         user.setVerified(true);
         userRepository.save(user);
         return ResponseEntity.ok().body("Email successfully Verified!");
+    }
+
+    @GetMapping("/reset-password")
+    public RedirectView handlePasswordReset(@RequestParam("token") String token) {
+        if(!jwtUtil.validateToken(token))
+            return new RedirectView("http://localhost:3000/resetPassword?error=invalid-token");
+        return new RedirectView("http://localhost:3000/resetPassword?token=" + token);
     }
 }

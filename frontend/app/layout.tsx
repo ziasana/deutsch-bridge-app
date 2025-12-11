@@ -32,7 +32,6 @@ export default function RootLayout({
       >
       <DarkModeProvider>
           <Navbar />
-
           <main>{children}</main>
       </DarkModeProvider>
       </body>

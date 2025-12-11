@@ -6,13 +6,13 @@ import Link from "next/link";
 import { useState } from "react";
 import {UserType} from "@/types/user";
 import {ToastContainer, toast} from "react-toastify";
-import {loginUser} from "@/services/userService";
+import {resetPassword} from "@/services/userService";
 import Loading from "@/componenets/Loading";
 
 const initialFormState: UserType ={
-  username: "", password: ""
+  email: ""
 }
-export default function LoginPage() {
+export default function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState<UserType>(initialFormState);
 
@@ -25,10 +25,10 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    loginUser(form)
+    resetPassword(form)
         .then((data) => {
           if (data?.status == 200) {
-            toast("You are loged in!");
+            toast("Please check your email! The reset password has been reset successfully send!");
             console.log(data?.data);
             setForm(initialFormState);
           }
@@ -43,8 +43,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
       <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
         {/* Title */}
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white text-center mb-8">
-          Login
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white text-center mb-12">
+          Rest Password
         </h1>
         {isLoading && <Loading message="Please wait..." />}
         {/* Form */}
@@ -52,55 +52,31 @@ export default function LoginPage() {
           {/* Email */}
           <div>
             <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
-              Username <Input
-              type="text"
-              name="username"
-              value={form.username}
+              Email <Input
+              type="email"
+              name="email"
+              value={form.email}
               onChange={handleChange}
-              placeholder="Enter your username."
-            />
-            </label>
-          </div>
-
-          {/* Password */}
-          <div>
-            <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
-              Password <Input
-              name={"password"}
-              type="password"
-              value={form.password}
-              onChange={handleChange}
-              placeholder="Enter your password."
+              placeholder="Enter your email."
             />
             </label>
           </div>
 
           {/* Submit */}
           <Button variant="primary" className="w-full rounded-lg  py-3">
-            {isLoading ? "logging..." : "Log In"}
+            {isLoading ? "sending..." : "Send Reset Link"}
           </Button>
         </form>
 
         {/* Divider */}
         <div className="mt-6 text-center text-gray-600 dark:text-gray-400">
+          Click here to go to the login page?
           <Link
-              href="/resetPassword"
-              className="text-blue-600 dark:text-blue-400 hover:underline ml-1"
-          >
-            Forgot password?
-          </Link>
-        </div>
-
-        <div className="mt-6 text-center text-gray-600 dark:text-gray-400">
-          Don&#39;t have an account?
-          <Link
-            href="/signup"
+            href="/login"
             className="text-blue-600 dark:text-blue-400 hover:underline ml-1"
           >
-            Sign up
-
+            Login
           </Link>
-
           <ToastContainer />
         </div>
       </div>
