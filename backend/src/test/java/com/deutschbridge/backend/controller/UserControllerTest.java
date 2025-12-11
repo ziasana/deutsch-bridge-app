@@ -5,7 +5,6 @@ import com.deutschbridge.backend.exception.GlobalExceptionHandler;
 import com.deutschbridge.backend.exception.UserVerificationException;
 import com.deutschbridge.backend.model.dto.UserDto;
 import com.deutschbridge.backend.model.entity.User;
-import com.deutschbridge.backend.repository.UserRepository;
 import com.deutschbridge.backend.service.EmailService;
 import com.deutschbridge.backend.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
