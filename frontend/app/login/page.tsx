@@ -3,41 +3,38 @@
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Link from "next/link";
-import { useState } from "react";
+import {useEffect, useState, useActionState} from "react";
 import {UserType} from "@/types/user";
 import {ToastContainer, toast} from "react-toastify";
-import {loginUser} from "@/services/userService";
 import Loading from "@/componenets/Loading";
+import { loginAction } from "@/app/actions/auth";
+import { useRouter } from "next/navigation";
 
 const initialFormState: UserType ={
   username: "", password: ""
 }
+type LoginState = {
+  success?: boolean;
+  data?: never;
+  error?: string;
+};
 export default function LoginPage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const [state, formAction, isPending] = useActionState<LoginState>(loginAction, {});
   const [form, setForm] = useState<UserType>(initialFormState);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    console.log("Form data", form);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    loginUser(form)
-        .then((data) => {
-          if (data?.status == 200) {
-            toast("You are loged in!");
-            console.log(data?.data);
-            setForm(initialFormState);
-          }
-        })
-        .catch((err) => {
-          toast(err?.message)
-        })
-        .finally(() => setIsLoading(false));
-  };
+  useEffect(() => {
+    if (state?.error) {
+      toast.error(state.error);
+    }
+    if (state?.success) {
+      toast.success("Login successful!");
+      router.push("/dashboard"); // redirect to dashboard page
+    }
+  }, [state, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
@@ -46,9 +43,9 @@ export default function LoginPage() {
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white text-center mb-8">
           Login
         </h1>
-        {isLoading && <Loading message="Please wait..." />}
+        {isPending && <Loading message="Please wait..." />}
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form action={formAction} className="space-y-6">
           {/* Email */}
           <div>
             <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
@@ -75,9 +72,10 @@ export default function LoginPage() {
             </label>
           </div>
 
+
           {/* Submit */}
-          <Button variant="primary" className="w-full rounded-lg  py-3">
-            {isLoading ? "logging..." : "Log In"}
+          <Button variant="primary" type="submit" disabled={isPending} className="w-full rounded-lg  py-3">
+            {isPending ? "Loading..." : "Login"}
           </Button>
         </form>
 
