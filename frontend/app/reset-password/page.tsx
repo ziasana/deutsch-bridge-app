@@ -68,17 +68,9 @@ export default function ResetPasswordPage() {
           </Button>
         </form>
 
+        <ToastContainer />
         {/* Divider */}
-        <div className="mt-6 text-center text-gray-600 dark:text-gray-400">
-          Click here to go to the login page?
-          <Link
-            href="/login"
-            className="text-blue-600 dark:text-blue-400 hover:underline ml-1"
-          >
-            Login
-          </Link>
-          <ToastContainer />
-        </div>
+
       </div>
     </div>
   );

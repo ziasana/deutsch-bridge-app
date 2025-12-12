@@ -84,7 +84,7 @@ export default function LoginPage() {
         {/* Divider */}
         <div className="mt-6 text-center text-gray-600 dark:text-gray-400">
           <Link
-              href="/resetPassword"
+              href="/reset-password"
               className="text-blue-600 dark:text-blue-400 hover:underline ml-1"
           >
             Forgot password?
