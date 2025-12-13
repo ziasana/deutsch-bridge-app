@@ -4,6 +4,7 @@ import com.deutschbridge.backend.service.CustomUserService;
 import com.deutschbridge.backend.util.JWTUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -28,15 +29,32 @@ public class JWTAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String autHeader= request.getHeader("Authorization");
 
         String token=null;
         String username=null;
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie c : cookies) {
+                if ("jwt".equals(c.getName())) {
+                    token = c.getValue();
+                }
+            }
+        }
+        if (token == null) {
+            // No token → don't call jwtUtil yet
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        username= jwtUtil.extractUsernameOrEmail(token);
+
+       // String autHeader= request.getHeader("Authorization");
+
         //extract data from header and get username from token
-        if(autHeader != null && autHeader.startsWith("Bearer ")) {
+       /* if(autHeader != null && autHeader.startsWith("Bearer ")) {
             token = autHeader.substring(7);
             username= jwtUtil.extractUsernameOrEmail(token);
-        }
+        }*/
 
         if(username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             //check if user exist in DB and not expired

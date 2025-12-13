@@ -33,6 +33,7 @@ import static org.mockito.Mockito.when;
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+
 class UserControllerTest {
 
     @Autowired private MockMvc mockMvc;

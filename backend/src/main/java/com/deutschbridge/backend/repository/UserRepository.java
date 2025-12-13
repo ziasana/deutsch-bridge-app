@@ -1,5 +1,6 @@
 package com.deutschbridge.backend.repository;
 
+import com.deutschbridge.backend.model.dto.UserDto;
 import com.deutschbridge.backend.model.entity.User;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;

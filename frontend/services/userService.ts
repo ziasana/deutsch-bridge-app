@@ -13,8 +13,10 @@ export const resetPassword = async (user: UserType) => {
     return await api.post(BASE_URL+ "/user/reset-password", user);
 }
 
-export const getUser = async () => {
-    const response = await api.get("/api/user");
-    return response.data;
+export const getUsers = async () => {
+    return  await api.get(BASE_URL+ "/user", {withCredentials: true});
+}
 
+export const getMe = async (user:UserType) => {
+    return  await api.post(BASE_URL+ "/user/me", user, {withCredentials:true});
 }

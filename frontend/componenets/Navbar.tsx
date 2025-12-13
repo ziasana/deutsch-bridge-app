@@ -2,8 +2,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useDarkMode } from "./DarkModeProvider";
+import useAuthStore from "@/store/useAuthStore";
 
 export default function Navbar() {
+  const {user, isLoggedIn} = useAuthStore();
+  const logout = useAuthStore((state) => state.logout);
+
   const [isOpen, setIsOpen] = useState(false);
   const { darkMode, toggle } = useDarkMode();
 
@@ -45,14 +49,21 @@ export default function Navbar() {
             className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
           >
             {darkMode ? "🌙" : "☀️"}
-          </button>
 
-          <Link href="/login" className="btn-outline">
+          </button>
+          <h1>{user?.username}</h1>
+          {isLoggedIn && user ? (
+                  <Link href="#" onClick={logout} className="btn-primary">
+                    Logout
+                  </Link>
+            ):
+              <><Link href="/login" className="btn-outline">
             Login
-          </Link>
-          <Link href="/signup" className="btn-primary">
+              </Link><Link href="/signup" className="btn-primary">
             Signup
-          </Link>
+              </Link>
+              </>
+          }
         </div>
 
         {/* Mobile Menu Button */}

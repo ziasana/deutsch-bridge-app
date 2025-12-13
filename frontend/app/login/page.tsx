@@ -9,6 +9,7 @@ import {ToastContainer, toast} from "react-toastify";
 import Loading from "@/componenets/Loading";
 import { loginAction } from "@/app/actions/auth";
 import { useRouter } from "next/navigation";
+import useAuthStore from "@/store/useAuthStore";
 
 const initialFormState: UserType ={
   username: "", password: ""
@@ -20,6 +21,7 @@ type LoginState = {
 };
 export default function LoginPage() {
   const router = useRouter();
+  const authState = useAuthStore((state) => state.login);
   const [state, formAction, isPending] = useActionState<LoginState>(loginAction, {});
   const [form, setForm] = useState<UserType>(initialFormState);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,10 +33,12 @@ export default function LoginPage() {
       toast.error(state.error);
     }
     if (state?.success) {
+      authState(state?.data.user)
+      console.log(state?.data.user);
       toast.success("Login successful!");
       router.push("/dashboard"); // redirect to dashboard page
     }
-  }, [state, router]);
+  }, [state, router, authState]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">

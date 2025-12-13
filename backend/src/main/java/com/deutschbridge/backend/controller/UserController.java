@@ -4,10 +4,12 @@ import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.exception.UserVerificationException;
 import com.deutschbridge.backend.model.dto.UserDto;
 import com.deutschbridge.backend.model.entity.User;
+import com.deutschbridge.backend.service.CustomUserService;
 import com.deutschbridge.backend.service.EmailService;
 import com.deutschbridge.backend.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,10 +21,12 @@ public class UserController {
 
     private final UserService userService;
     private final EmailService emailService;
+    private final CustomUserService customUserService;
 
-    public UserController(UserService userService, EmailService emailService) {
+    public UserController(UserService userService, EmailService emailService, CustomUserService customUserService) {
         this.userService = userService;
         this.emailService = emailService;
+        this.customUserService = customUserService;
     }
 
     @GetMapping
@@ -30,6 +34,10 @@ public class UserController {
         return ResponseEntity.ok().body(userService.findAll());
     }
 
+    @PostMapping("/me")
+    public ResponseEntity <UserDetails> getMe(@RequestBody UserDto user) {
+            return new ResponseEntity<>(customUserService.loadUserByUsername(user.getUsername()), HttpStatus.OK);
+    }
     @PostMapping("/register")
     public ResponseEntity <User> registerUser(@RequestBody UserDto user) throws UserVerificationException {
         return new ResponseEntity<>( userService.registerUser(user), HttpStatus.CREATED);
