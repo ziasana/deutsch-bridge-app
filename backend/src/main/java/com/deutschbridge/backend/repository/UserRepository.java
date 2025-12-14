@@ -1,6 +1,5 @@
 package com.deutschbridge.backend.repository;
 
-import com.deutschbridge.backend.model.dto.UserDto;
 import com.deutschbridge.backend.model.entity.User;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -26,6 +25,11 @@ public interface UserRepository extends JpaRepository<User,String> {
 
     @Query("SELECT u.tokenValue FROM User u WHERE u.username = :username")
     int getTokenValue(@Param("username") String username);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE User u SET u.refreshToken = :refreshToken WHERE u.username = :username")
+    void saveRefreshToken(@Param("username") String username, @Param("refreshToken") String refreshToken);
 
     void deleteByEmail(String email);
 }

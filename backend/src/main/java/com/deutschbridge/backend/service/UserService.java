@@ -61,7 +61,7 @@ public class UserService {
             {
                 throw new UserVerificationException("User is already verified!");
             }else{
-                String verificationToken = jwtUtil.generateToken(userDto.getEmail());
+                String verificationToken = jwtUtil.generateAccessToken(userDto.getEmail());
                 existingUser.get().setVerificationToken(verificationToken);
                 userRepository.save(existingUser.get());
                 //send verification email
@@ -76,7 +76,7 @@ public class UserService {
                 passwordEncoder.encode(userDto.getPassword()),
                 UserRole.STUDENT.getValue()
         );
-        user.setVerificationToken(jwtUtil.generateToken(userDto.getEmail()));
+        user.setVerificationToken(jwtUtil.generateAccessToken(userDto.getEmail()));
         //send email verification
         emailService.sendVerificationEmail(userDto.getEmail(), user.getVerificationToken());
         return userRepository.save(user);
@@ -93,7 +93,7 @@ public class UserService {
             throw new UserVerificationException("User is not verified!");
         }
 
-        String resetToken = jwtUtil.generateToken(email);
+        String resetToken = jwtUtil.generateAccessToken(email);
         existingUser.setResetToken(resetToken);
         userRepository.save(existingUser);
         //send rest link email
@@ -116,5 +116,17 @@ public class UserService {
                 .orElseThrow( ()-> new DataNotFoundException("User not found!"));
         userRepository.deleteByEmail(userDto.getEmail());
         return true;
+    }
+
+    public void saveRefreshToken(String username, String refreshToken){
+        userRepository.saveRefreshToken(username, refreshToken);
+    }
+
+    public String getRefreshToken(String username){
+      User user=  userRepository.findByUsername(username).orElseThrow(()-> new UsernameNotFoundException("User not found!"));
+      if(user.getRefreshToken() != null){
+          return user.getRefreshToken();
+      }
+      return null;
     }
 }

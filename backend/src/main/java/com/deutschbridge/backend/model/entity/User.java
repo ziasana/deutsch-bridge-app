@@ -36,6 +36,9 @@ public class User implements UserDetails {
     private int tokenValue =0;
     @Getter
     @Setter
+    private String refreshToken;
+    @Getter
+    @Setter
     private String role="USER";
     @Setter
     @Getter

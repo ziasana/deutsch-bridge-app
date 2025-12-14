@@ -53,7 +53,7 @@ export default function SignupPage() {
           }
         })
         .catch((err) => {
-          toast(err?.message)
+          toast(err?.data.message)
         })
         .finally(() => setIsLoading(false));
   };

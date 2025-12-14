@@ -1,10 +1,10 @@
 package com.deutschbridge.backend.filter;
 
+import com.deutschbridge.backend.service.CookieService;
 import com.deutschbridge.backend.service.CustomUserService;
 import com.deutschbridge.backend.util.JWTUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,37 +21,39 @@ public class JWTAuthFilter extends OncePerRequestFilter {
 
    private final JWTUtil jwtUtil;
    private final CustomUserService customUserService;
+   private final CookieService cookieService;
 
-    public JWTAuthFilter(JWTUtil jwtUtil, CustomUserService customUserService) {
+    public JWTAuthFilter(JWTUtil jwtUtil, CustomUserService customUserService, CookieService cookieService) {
         this.jwtUtil = jwtUtil;
         this.customUserService = customUserService;
+        this.cookieService = cookieService;
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException
+    {
+        String path = request.getRequestURI();
 
-        String token=null;
-        String username=null;
-        Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            for (Cookie c : cookies) {
-                if ("jwt".equals(c.getName())) {
-                    token = c.getValue();
-                }
-            }
+        // Skip JWT check for login or public endpoints
+        if (path.startsWith("/api/auth/login")) {
+            filterChain.doFilter(request, response);
+            return;
         }
+
+        String token= cookieService.extractTokenFromCookie(request);
         if (token == null) {
             // No token → don't call jwtUtil yet
             filterChain.doFilter(request, response);
             return;
         }
 
-        username= jwtUtil.extractUsernameOrEmail(token);
+        String username = jwtUtil.extractUsernameOrEmail(token);
+        System.out.println("doFilterInternal:" + username );
 
        // String autHeader= request.getHeader("Authorization");
 
         //extract data from header and get username from token
-       /* if(autHeader != null && autHeader.startsWith("Bearer ")) {
+       /*  if(autHeader != null && autHeader.startsWith("Bearer ")) {
             token = autHeader.substring(7);
             username= jwtUtil.extractUsernameOrEmail(token);
         }*/

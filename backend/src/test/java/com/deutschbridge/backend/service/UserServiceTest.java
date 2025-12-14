@@ -135,7 +135,7 @@ class UserServiceTest {
         when(userRepository.findByUsername("john")).thenReturn(Optional.empty());
         when(userRepository.existsByEmail("john@example.com")).thenReturn(false);
         when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
-        when(jwtUtil.generateToken("john@example.com")).thenReturn("token123");
+        when(jwtUtil.generateAccessToken("john@example.com")).thenReturn("token123");
         when(userRepository.save(user)).thenReturn(user);
 
         User result = userService.registerUser(userDto);
@@ -151,7 +151,7 @@ class UserServiceTest {
         when(userRepository.existsByEmail("john@example.com")).thenReturn(false);
         when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("secret")).thenReturn("hashedPassword");
-        when(jwtUtil.generateToken("john@example.com")).thenReturn("token123");
+        when(jwtUtil.generateAccessToken("john@example.com")).thenReturn("token123");
 
         User savedUser = new User("john", "john@example.com", "hashedPassword", UserRole.STUDENT.getValue());
         savedUser.setVerificationToken("token123");
@@ -196,7 +196,7 @@ class UserServiceTest {
 
         when(userRepository.existsByEmail("john@example.com")).thenReturn(true);
         when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
-        when(jwtUtil.generateToken("john@example.com")).thenReturn("reset123");
+        when(jwtUtil.generateAccessToken("john@example.com")).thenReturn("reset123");
 
         boolean result = userService.resetPassword("john@example.com");
 

@@ -3,42 +3,51 @@
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Link from "next/link";
-import {useEffect, useState, useActionState} from "react";
+import {useState} from "react";
 import {UserType} from "@/types/user";
 import {ToastContainer, toast} from "react-toastify";
 import Loading from "@/componenets/Loading";
-import { loginAction } from "@/app/actions/auth";
 import { useRouter } from "next/navigation";
 import useAuthStore from "@/store/useAuthStore";
+import {loginUser} from "@/services/userService";
 
-const initialFormState: UserType ={
-  username: "", password: ""
+interface FormDataType {
+  password: string;
+  username: string;
 }
-type LoginState = {
-  success?: boolean;
-  data?: never;
-  error?: string;
+// define a clear initial state
+const initialFormState: FormDataType = {
+  username: "",
+  password: ""
 };
+
 export default function LoginPage() {
-  const router = useRouter();
-  const authState = useAuthStore((state) => state.login);
-  const [state, formAction, isPending] = useActionState<LoginState>(loginAction, {});
+  const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState<UserType>(initialFormState);
+  const { login } = useAuthStore();
+  const router = useRouter();
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  useEffect(() => {
-    if (state?.error) {
-      toast.error(state.error);
-    }
-    if (state?.success) {
-      authState(state?.data.user)
-      console.log(state?.data.user);
-      toast.success("Login successful!");
-      router.push("/dashboard"); // redirect to dashboard page
-    }
-  }, [state, router, authState]);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    loginUser(form)
+        .then((data) => {
+          if (data?.status == 200) {
+            login(data?.data.user)
+            router.push("/dashboard"); // redirect to dashboard page
+          }
+        })
+        .catch((err) => {
+         toast(err?.data.message);
+          console.log(err);
+        })
+        .finally(() => setIsLoading(false));
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
@@ -47,9 +56,9 @@ export default function LoginPage() {
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white text-center mb-8">
           Login
         </h1>
-        {isPending && <Loading message="Please wait..." />}
+        {isLoading && <Loading />}
         {/* Form */}
-        <form action={formAction} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* Email */}
           <div>
             <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
@@ -78,8 +87,8 @@ export default function LoginPage() {
 
 
           {/* Submit */}
-          <Button variant="primary" type="submit" disabled={isPending} className="w-full rounded-lg  py-3">
-            {isPending ? "Loading..." : "Login"}
+          <Button variant="primary" type="submit"  className="w-full rounded-lg  py-3">
+           submit
           </Button>
         </form>
 

@@ -1,10 +1,10 @@
 // services/api.js
 
 import axios from "axios";
+import useAuthStore from "@/store/useAuthStore";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const api = axios.create({
-  baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -13,10 +13,13 @@ const api = axios.create({
 // Optional: Add interceptors
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    console.log("API Error:", error.response?.data || error.message);
-    return Promise.reject(error?.response?.data || error);
-  }
+    async (error) => {
+        if (error.response?.status === 401) {
+            useAuthStore.getState().logout();
+            window.location.href = '/login';
+        }
+        return Promise.reject(error.response);
+    }
 );
 
 export default api;

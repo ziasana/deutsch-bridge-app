@@ -18,19 +18,26 @@ public class JWTUtil {
     private final UserRepository userRepository;
 
     private final Key key;
-    private static final long EXPIRATION_TIME = (1000*60*60); //1 hour
+    private static final long EXPIRATION_TIME_ACCESS_TOKEN = (1000 * 60 * 15); //15 min
+    private static final long EXPIRATION_TIME_REFRESH_TOKEN = (1000 * 60 * 60 * 24 *15); //10 days
 
     public JWTUtil(UserRepository userRepository, @Value("${jwt.secret}") String jwtSecret){
         this.userRepository = userRepository;
         this.key= Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
+    public String generateRefreshToken(String username) {
+        return generateToken(username, EXPIRATION_TIME_REFRESH_TOKEN);
+    }
+    public String generateAccessToken(String username) {
+        return generateToken(username, EXPIRATION_TIME_ACCESS_TOKEN);
+    }
 
-    public String generateToken(String username) {
-         return  Jwts.builder()
+    private String generateToken(String username, long expirationTime) {
+        return Jwts.builder()
                 .setSubject(username)
                 .setAudience(String.valueOf(userRepository.incrementTokenValue(username)))
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
                 .signWith(SignatureAlgorithm.HS256, key)
                 .compact();
     }
@@ -55,7 +62,7 @@ public class JWTUtil {
         //check if username is same as username in userDetails
         //check if token is not expired
         return username.equals(userDetails.getUsername())
-                && isValidateTokenValue(username,token)
+               // && isValidateTokenValue(username,token)
                 && isTokenExpired(token);
     }
 

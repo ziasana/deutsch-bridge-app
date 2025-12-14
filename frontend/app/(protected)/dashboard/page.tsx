@@ -9,9 +9,8 @@ import {
     SpellCheck,
 } from "lucide-react";
 import Link from "next/link";
-
-
 const DashboardPage = () => {
+
     const modules = [
         {
             title: "Daily Words",

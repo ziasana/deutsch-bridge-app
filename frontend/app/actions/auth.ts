@@ -2,6 +2,8 @@
 
 import {loginUser} from "@/services/userService";
 import {UserType} from "@/types/user";
+
+import { cookies } from 'next/headers'
 type LoginState = {
     success?: boolean;
     data?: any;
@@ -22,6 +24,31 @@ export async function loginAction(prevState:LoginState, formData: FormData): Pro
         password: password,
     }
 
+   /* try {
+        //const cookieStore = await cookies()
+
+        const response = await fetch("http://localhost:8080/api/auth", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            credentials: "include", // important for HttpOnly cookies
+            body: JSON.stringify({ username, password }),
+        });
+
+        // parse JSON body
+        const data = await response.json();
+
+        if (response.ok) { // same as response.status >= 200 && < 300
+            //cookieStore.set('my data ', 'lee')
+
+            return { success: true, data };
+        } else {
+            return { error: data?.message || "Login failed" };
+        }
+    } catch (err: any) {
+        return { error: err.message || "Server error" };
+    }*/
     try {
         // Use await instead of .then
         const response = await loginUser(payload);

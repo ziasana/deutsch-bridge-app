@@ -1,26 +1,43 @@
 'use client';
 
-import { ReactNode, useEffect } from 'react';
+import {ReactNode, useEffect} from 'react';
 import { useRouter } from 'next/navigation';
 import useAuthStore from '@/store/useAuthStore';
+import AutoRefreshStarter from "@/componenets/AutoRefreshStarter";
 
 interface ProtectedLayoutProps {
     children: ReactNode;
 }
 
 export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
-    const isAuthenticated = useAuthStore((state) => state.isLoggedIn);
+    const {
+        isLoggedIn,
+        hasHydrated,
+        sessionExpiresAt,
+        refreshSession
+    } = useAuthStore();
     const router = useRouter();
 
     useEffect(() => {
-        if (!isAuthenticated) {
-            router.replace('/login');
+        if (!hasHydrated) return;
+
+        if (!isLoggedIn) {
+            router.push('/login')
+            return;
         }
-    }, [isAuthenticated, router]);
+        if (sessionExpiresAt && Date.now() >= sessionExpiresAt) {
+            //get a fresh token
+            refreshSession();
+        }
+    }, [hasHydrated, isLoggedIn, sessionExpiresAt, refreshSession, router]);
 
-    if (!isAuthenticated) {
-        return null; // or a loading spinner
-    }
 
-    return <>{children}</>;
+    if (!hasHydrated) return null;
+    if (!isLoggedIn) return null; // hide protected page while redirecting
+
+
+    return <>
+        {isLoggedIn && <AutoRefreshStarter/> }
+        {children}
+    </>;
 }
