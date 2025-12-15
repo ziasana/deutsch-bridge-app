@@ -127,7 +127,7 @@ class UserControllerTest {
     void resetPassword_EmailNotFound() throws Exception {
 
         // Mock service throwing exception
-        when(userService.resetPassword("john@example.com"))
+        when(userService.forgotPassword("john@example.com"))
                 .thenThrow(new DataNotFoundException("User not registered yet!"));
 
         mockMvc.perform(post("/api/user/reset-password")
@@ -144,7 +144,7 @@ class UserControllerTest {
     @Test
     @DisplayName("POST /api/user/reset-password → user not verified")
     void resetPassword_UserNotVerified() throws Exception {
-        when(userService.resetPassword("john@example.com"))
+        when(userService.forgotPassword("john@example.com"))
                 .thenThrow(new UserVerificationException("User is not verified!"));
 
         mockMvc.perform(post("/api/user/reset-password")
@@ -159,7 +159,7 @@ class UserControllerTest {
     @Test
     @DisplayName("POST /users/reset-password →  should reset send reset link")
     void testResetPasswordSuccess() throws Exception {
-        when(userService.resetPassword("john@example.com")).thenReturn(true);
+        when(userService.forgotPassword("john@example.com")).thenReturn(true);
 
         mockMvc.perform(post("/api/user/reset-password")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -29,11 +29,10 @@ const useAuthStore = create<AuthState>()
             isRefreshing: false,
 
             login: (user) => {
-                const expiresAt = Date.now() + ACCESS_TOKEN_TTL;
+                //const expiresAt = Date.now() + ACCESS_TOKEN_TTL;
                 set({
                     user,
                     isLoggedIn: true,
-                    sessionExpiresAt: expiresAt,
                 })
             },
 
@@ -55,8 +54,8 @@ const useAuthStore = create<AuthState>()
                 set({ isRefreshing: true });
 
                 try {
-                    startSimpleRefresh();
-                     console.log("refreshing now: ", new Date());
+                   // startSimpleRefresh();
+                   //  console.log("refreshing now: ", new Date());
                     const expiresAt = Date.now() + ACCESS_TOKEN_TTL;
                     set({
                         sessionExpiresAt: expiresAt,

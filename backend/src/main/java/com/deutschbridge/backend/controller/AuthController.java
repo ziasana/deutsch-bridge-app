@@ -59,7 +59,8 @@ public class AuthController {
             userService.saveRefreshToken(authRequest.getUsername(), refreshToken);
 
             // create and add cookie to response
-            response.addCookie(cookieService.create(token));
+            response.addCookie(cookieService.createAccessToken(token));
+            response.addCookie(cookieService.createRefreshToken(refreshToken));
 
             //get user data
              UserDetails userDetails= customUserService.loadUserByUsername(authRequest.getUsername());
@@ -79,23 +80,21 @@ public class AuthController {
 
     @GetMapping("/refresh")
     public ResponseEntity<?> refreshToken(HttpServletRequest request, HttpServletResponse response) {
-        String token= cookieService.extractTokenFromCookie(request);
+        String token= cookieService.extractRefreshToken(request);
 
         if (token == null || token.isBlank()) {
-            // No token → don't call jwtUtil yet
+            // No token - don't call jwtUtil yet
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        //regenerate access token if fresh token is still valid
+        if(!jwtUtil.validateToken(token)) {
+            throw new AuthenticationCredentialsNotFoundException("Invalid token");
         }
 
         String username= jwtUtil.extractUsernameOrEmail(token);
-        //get the refresh token value from DB
-        String refreshment = userService.getRefreshToken(username);
-
-        //regenerate access token if fresh token is still valid
-        if(!jwtUtil.validateToken(refreshment)) {
-            throw new AuthenticationCredentialsNotFoundException("Invalid token");
-        }
+        String newAccessToken = jwtUtil.generateAccessToken(username);
         //create cookie
-        response.addCookie(cookieService.create(jwtUtil.generateAccessToken(username)));
+        response.addCookie(cookieService.createAccessToken(newAccessToken));
         return new ResponseEntity<>("successfully refreshed" , HttpStatus.OK);
     }
 
@@ -110,15 +109,15 @@ public class AuthController {
         return new ResponseEntity<>( userService.registerUser(user), HttpStatus.CREATED);
     }
 
-    @PostMapping("/reset-password")
-    public ResponseEntity <String> passwordReset(@RequestBody UserDto user) throws UserVerificationException, DataNotFoundException {
-        return ResponseEntity.ok().body(userService.resetPassword(user.getEmail()) ? "Password reset successfully" : "Password reset failed");
+    @PostMapping("/forgot-password")
+    public ResponseEntity <String> forgotReset(@RequestBody UserDto user) throws UserVerificationException, DataNotFoundException {
+        return ResponseEntity.ok().body(userService.forgotPassword(user.getEmail()) ? "Password reset successfully" : "Password reset failed");
     }
 
-    @PutMapping("/update-password")
-    public ResponseEntity<User> updatePassword(@RequestBody UserDto userDto) throws DataNotFoundException {
-        return new ResponseEntity<>(userService.update(userDto), HttpStatus.OK);
+    @PutMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestBody Map<String,String> body) throws DataNotFoundException, UserVerificationException {
+        userService.resetPassword(body.get("password"), body.get("token"));
+        return new ResponseEntity<>("Password rested successfully", HttpStatus.OK);
     }
-
 
 }

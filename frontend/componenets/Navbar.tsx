@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useDarkMode } from "./DarkModeProvider";
 import useAuthStore from "@/store/useAuthStore";
+import {  Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 
 export default function Navbar() {
   const {user, isLoggedIn} = useAuthStore();
@@ -24,47 +25,177 @@ export default function Navbar() {
 
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center gap-6">
-          <Link href="/" className="nav-link">
-            Home
-          </Link>
-          <Link href="/features" className="nav-link">
-            Features
-          </Link>
-          <Link href="/about" className="nav-link">
-            About
-          </Link>
-          <Link href="/contact" className="nav-link">
-            Contact
-          </Link>
-          <Link href="/dashboard" className="nav-link">
-            Dashboard
-          </Link>
+
+
+          {isLoggedIn && user ? (
+
+              <>
+                <Link href="/dashboard" className="nav-link">
+                  Dashboard
+                </Link>
+                <Link href="#" onClick={logout} className="nav-link">
+                  Chat AI
+                </Link>
+                <Link href="#" className="nav-link">
+                  Vocabulary
+                </Link>
+                <Link href="#" className="nav-link">
+                  Grammar
+                </Link>
+                <Link href="#" className="nav-link">
+                  Nomen-Verb
+                </Link>
+              </>
+          ) : (
+              <>
+                <Link href="/" className="nav-link">
+                  Home
+                </Link>
+                <Link href="/about" className="nav-link">
+                  About
+                </Link>
+                <Link href="/contact" className="nav-link">
+                  Contact
+                </Link>
+                <Link href="/dashboard" className="nav-link">
+                  Dashboard
+                </Link>
+
+              </>
+          )}
+
         </div>
 
         {/* Right Side Buttons */}
-        <div className="hidden md:flex items-center gap-4">
+        <div className="hidden md:flex ">
           {/* Dark Mode Toggle */}
-          <button
-            onClick={toggle}
-            className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-          >
-            {darkMode ? "🌙" : "☀️"}
 
-          </button>
-          <h1>{user?.username}</h1>
-          {isLoggedIn && user ? (
-                  <Link href="#" onClick={logout} className="btn-primary">
-                    Logout
-                  </Link>
-            ):
-              <><Link href="/login" className="btn-outline">
-            Login
-              </Link><Link href="/signup" className="btn-primary">
-            Signup
+        </div>
+
+        <div className="hidden md:flex  justify-between gap-2">
+          {/* Dark Mode Toggle */}
+
+          {!isLoggedIn && !user && (
+              <>
+                <Link href="/login" className="btn-primary">
+                  Login
+                </Link>
+              <Link href="/signup" className="btn-outline">
+                Signup
               </Link>
               </>
+          )
           }
+
+          <button
+              onClick={toggle}
+              className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+          >
+            {darkMode ? "🌙" : "☀️"}
+          </button>
         </div>
+        {isLoggedIn && user && (
+            <>
+            <div className="hidden md:flex relative float-left ">
+              <h1 className="px-5 font-mono text-gray-700 dark:text-gray-300">
+                {"{ "}{user?.username} { " }"}
+              </h1>
+            </div>
+            <Menu as="div" className="relative">
+              <MenuButton className="relative flex rounded-full focus-visible:outline-2 focus-visible:outline-offset-2">
+                <span className="absolute -inset-1.5"/>
+                <span className="sr-only">Open user menu</span>
+
+                <img
+                    alt=""
+                    src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                    className="size-8 rounded-full bg-gray-200 dark:bg-gray-700 outline -outline-offset-1 outline-gray-300 dark:outline-white/10"
+                />
+              </MenuButton>
+
+              <MenuItems
+                  transition
+                  className="
+    absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md
+    bg-white dark:bg-gray-800
+    py-1 shadow-lg
+    ring-1 ring-black/5 dark:ring-white/10
+    outline-none focus:outline-none focus-visible:outline-none
+    transition
+    data-closed:scale-95 data-closed:opacity-0
+    data-enter:duration-100 data-enter:ease-out
+    data-leave:duration-75 data-leave:ease-in
+  "
+              >
+                <MenuItem>
+                  <Link
+                      href="/profile"
+                      className="
+          block px-4 py-2 text-sm
+          text-gray-700 dark:text-gray-300
+          data-focus:bg-gray-100 dark:data-focus:bg-gray-700
+           dark:data-focus:text-white
+          outline-none
+        "
+                  >
+                    Your profile
+                  </Link>
+                </MenuItem>
+
+                <MenuItem>
+                  <a
+                      href="#"
+                      className="
+          block px-4 py-2 text-sm
+          text-gray-700 dark:text-gray-300
+          data-focus:bg-gray-100 dark:data-focus:bg-gray-700
+          data-focus:text-gray-900 dark:data-focus:text-white
+          outline-none
+        "
+                  >
+                    Settings
+                  </a>
+                </MenuItem>
+
+                <MenuItem>
+                  {isLoggedIn && user ? (
+                      <a
+                          href="#"
+                          onClick={logout}
+                          className="
+          block px-4 py-2 text-sm
+          text-gray-700 dark:text-gray-300
+          data-focus:bg-gray-100 dark:data-focus:bg-gray-700
+          data-focus:text-gray-900 dark:data-focus:text-white
+          outline-none
+        "
+                      >
+                        Sign out
+                      </a>
+                  ) : (
+                      <Link
+                          href="/login"
+
+                          className="
+          block px-4 py-2 text-sm
+          text-gray-700 dark:text-gray-300
+          data-focus:bg-gray-100 dark:data-focus:bg-gray-700
+          data-focus:text-gray-900 dark:data-focus:text-white
+          outline-none
+        "
+                      >
+                        Login
+                      </Link>
+                  )
+                  }
+
+                </MenuItem>
+              </MenuItems>
+
+            </Menu>
+            </>
+        )}
+
 
         {/* Mobile Menu Button */}
         <button
@@ -80,9 +211,6 @@ export default function Navbar() {
         <div className="md:hidden bg-white dark:bg-gray-800 shadow-md">
           <Link href="/" className="mobile-link">
             Home
-          </Link>
-          <Link href="/features" className="mobile-link">
-            Features
           </Link>
           <Link href="/about" className="mobile-link">
             About
@@ -100,12 +228,20 @@ export default function Navbar() {
               {darkMode ? "Dark Mode 🌙" : "Light Mode ☀️"}
             </button>
 
-            <Link href="/login" className="btn-outline w-full text-center">
-              Login
-            </Link>
-            <Link href="/signup" className="btn-primary w-full text-center">
-              Signup
-            </Link>
+            {isLoggedIn && user ? (
+                <Link href="#" onClick={logout}  className="btn-outline w-full text-center">
+                  Logout
+                </Link>
+                ):
+              <>
+                <Link href="/login" className="btn-outline w-full text-center">
+                  Login
+                </Link>
+                <Link href="/signup" className="btn-primary w-full text-center">
+                  Signup
+                </Link>
+              </>
+            }
           </div>
         </div>
       )}

@@ -7,10 +7,20 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class CookieService {
+    private static final String accessToken = "access_token";
+    private static final String  reFreshToken= "refresh_token";
 
-    public Cookie create(String token)
+     public Cookie createAccessToken(String token){
+         return this.create(accessToken, token);
+     }
+
+    public Cookie createRefreshToken(String token){
+        return this.create(reFreshToken, token);
+    }
+
+    public Cookie create(String name,String token)
     {
-        Cookie cookie = new Cookie("access_token",token);
+        Cookie cookie = new Cookie(name,token);
         cookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
         cookie.setSecure(false);
         cookie.setHttpOnly(true);
@@ -18,13 +28,21 @@ public class CookieService {
         return cookie;
     }
 
-    public String extractTokenFromCookie(HttpServletRequest request)
+    public String extractAccessToken(HttpServletRequest request){
+         return  extractTokenFromCookie(accessToken, request);
+    }
+
+    public String extractRefreshToken(HttpServletRequest request){
+        return  extractTokenFromCookie(reFreshToken, request);
+    }
+
+    public String extractTokenFromCookie(String name, HttpServletRequest request)
     {
         String token = null;
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             for (Cookie c : cookies) {
-                if ("access_token".equals(c.getName())) {
+                if (name.equals(c.getName())) {
                     token = c.getValue();
                 }
             }

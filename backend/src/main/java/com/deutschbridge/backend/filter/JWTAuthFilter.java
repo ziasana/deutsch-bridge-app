@@ -35,23 +35,26 @@ public class JWTAuthFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
 
         // Skip JWT check for login or public endpoints
-        if (path.startsWith("/api/auth/login")) {
+        if (path.startsWith("/api/auth/login") || path.equals("/api/auth/refresh")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String token= cookieService.extractTokenFromCookie(request);
+        String token= cookieService.extractAccessToken(request);
         if (token == null) {
-            // No token → don't call jwtUtil yet
-            filterChain.doFilter(request, response);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401
+            return; // stop filter chain
+        }
+
+        String username="";
+        try {
+            username = jwtUtil.extractUsernameOrEmail(token);
+        } catch (Exception e) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401
             return;
         }
 
-        String username = jwtUtil.extractUsernameOrEmail(token);
-        System.out.println("doFilterInternal:" + username );
-
-       // String autHeader= request.getHeader("Authorization");
-
+      // String autHeader= request.getHeader("Authorization");
         //extract data from header and get username from token
        /*  if(autHeader != null && autHeader.startsWith("Bearer ")) {
             token = autHeader.substring(7);
@@ -61,7 +64,11 @@ public class JWTAuthFilter extends OncePerRequestFilter {
         if(username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             //check if user exist in DB and not expired
             UserDetails userDetails = customUserService.loadUserByUsername(username);
-           if( jwtUtil.validateToken(username, userDetails, token))
+            if (!jwtUtil.validateToken(username, userDetails, token)) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
+           else
            {
                UsernamePasswordAuthenticationToken authToken= new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

@@ -61,7 +61,7 @@ public class UserService {
             {
                 throw new UserVerificationException("User is already verified!");
             }else{
-                String verificationToken = jwtUtil.generateAccessToken(userDto.getEmail());
+                String verificationToken = jwtUtil.generateVerificationToken(userDto.getEmail());
                 existingUser.get().setVerificationToken(verificationToken);
                 userRepository.save(existingUser.get());
                 //send verification email
@@ -83,7 +83,7 @@ public class UserService {
     }
 
 
-    public boolean resetPassword(String email) throws UserVerificationException, DataNotFoundException {
+    public boolean forgotPassword(String email) throws UserVerificationException, DataNotFoundException {
         // Try to get the user directly
         User existingUser = userRepository.findByEmail(email)
                 .orElseThrow(() -> new DataNotFoundException("User not registered yet!"));
@@ -93,13 +93,32 @@ public class UserService {
             throw new UserVerificationException("User is not verified!");
         }
 
-        String resetToken = jwtUtil.generateAccessToken(email);
+        String resetToken = jwtUtil.generateVerificationToken(email);
         existingUser.setResetToken(resetToken);
         userRepository.save(existingUser);
         //send rest link email
         emailService.sendForgotPasswordEmail(email, resetToken);
         return true;
 
+    }
+
+    @Transactional
+    public User resetPassword(String password, String token) throws DataNotFoundException, UserVerificationException {
+        if(!jwtUtil.validateToken(token))
+        {
+            throw new UserVerificationException("Invalid Token!");
+        }
+
+        String username = jwtUtil.extractUsernameOrEmail(token);
+        User existing = userRepository.findByEmail(username)
+                .orElseThrow(() -> new DataNotFoundException("User not found!"));
+
+        if (password != null)
+        {
+            existing.setPassword( passwordEncoder.encode(password));
+            existing.setResetToken(null);
+        }
+        return userRepository.save(existing);
     }
 
     @Transactional

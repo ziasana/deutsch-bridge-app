@@ -8,6 +8,7 @@ import {ToastContainer, toast} from "react-toastify";
 import {resetPassword} from "@/services/userService";
 import Loading from "@/componenets/Loading";
 import {useSearchParams} from "next/navigation";
+import {ResetPasswordType} from "@/types/user";
 
 interface FormDataType {
     password: string;
@@ -23,23 +24,23 @@ export default function IndexPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [form, setForm] = useState<FormDataType>(initialFormState);
     const searchParams = useSearchParams();
-    const token = searchParams.get("token");
-    console.log("token value is:"+ token)
+    const [resetToken, setResetToken] = useState(searchParams.get("token"));
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setForm({ ...form, [e.target.name]: e.target.value });
-        console.log("Form data", form);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-
-        resetPassword(form)
+        const updatedPassword : ResetPasswordType ={
+            password: form.password ,
+            token: resetToken,
+        };
+        resetPassword(updatedPassword)
             .then((data) => {
                 if (data?.status == 200) {
-                    toast("Please check your email! The reset password has been reset successfully send!");
-                    console.log(data?.data);
+                    toast("Your password successfully reset!");
                     setForm(initialFormState);
                 }
             })

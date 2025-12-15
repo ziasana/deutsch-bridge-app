@@ -29,7 +29,6 @@ public class UserController {
         this.userService = userService;
         this.emailService = emailService;
         this.customUserService = customUserService;
-
     }
 
     @GetMapping

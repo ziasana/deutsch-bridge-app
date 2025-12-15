@@ -25,10 +25,10 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
             router.push('/login')
             return;
         }
-        if (sessionExpiresAt && Date.now() >= sessionExpiresAt) {
+        /*if (sessionExpiresAt && Date.now() >= sessionExpiresAt) {
             //get a fresh token
-            refreshSession();
-        }
+            //refreshSession();
+        }*/
     }, [hasHydrated, isLoggedIn, sessionExpiresAt, refreshSession, router]);
 
 
@@ -37,7 +37,7 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
 
 
     return <>
-        {isLoggedIn && <AutoRefreshStarter/> }
+
         {children}
     </>;
 }

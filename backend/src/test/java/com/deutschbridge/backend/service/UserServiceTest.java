@@ -168,37 +168,37 @@ class UserServiceTest {
     // ---------------------------------------------------------------
     @Test
     @DisplayName("resetPassword should throw when user doesn't exist")
-    void testResetPassword_UserNotFound() {
+    void testForgotPassword_UserNotFound() {
         when(userRepository.existsByEmail("john@example.com")).thenReturn(false);
 
-        assertThatThrownBy(() -> userService.resetPassword("john@example.com"))
+        assertThatThrownBy(() -> userService.forgotPassword("john@example.com"))
                 .isInstanceOf(DataNotFoundException.class)
                 .hasMessageContaining("User not registered yet!");
     }
 
     @Test
     @DisplayName("resetPassword should throw when user not verified")
-    void testResetPassword_NotVerified() {
+    void testForgotPassword_NotVerified() {
         user.setVerified(false);
 
         when(userRepository.existsByEmail("john@example.com")).thenReturn(true);
         when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
 
-        assertThatThrownBy(() -> userService.resetPassword("john@example.com"))
+        assertThatThrownBy(() -> userService.forgotPassword("john@example.com"))
                 .isInstanceOf(UserVerificationException.class)
                 .hasMessageContaining("User is not verified!");
     }
 
     @Test
     @DisplayName("resetPassword should generate token, save user, and send email")
-    void testResetPassword_Success() throws Exception {
+    void testForgotPassword_Success() throws Exception {
         user.setVerified(true);
 
         when(userRepository.existsByEmail("john@example.com")).thenReturn(true);
         when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
         when(jwtUtil.generateAccessToken("john@example.com")).thenReturn("reset123");
 
-        boolean result = userService.resetPassword("john@example.com");
+        boolean result = userService.forgotPassword("john@example.com");
 
         assertThat(result).isTrue();
         assertThat(user.getResetToken()).isEqualTo("reset123");

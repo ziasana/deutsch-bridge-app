@@ -4,3 +4,8 @@ export interface UserType{
     username?: string
     role?: string
 }
+
+export interface ResetPasswordType{
+    password?: string
+    token?: string
+}

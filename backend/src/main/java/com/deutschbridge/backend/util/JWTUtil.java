@@ -18,16 +18,22 @@ public class JWTUtil {
     private final UserRepository userRepository;
 
     private final Key key;
-    private static final long EXPIRATION_TIME_ACCESS_TOKEN = (1000 * 60 * 15); //15 min
+    private static final long EXPIRATION_TIME_ACCESS_TOKEN = (1000 * 60 * 15 ); //15 min
     private static final long EXPIRATION_TIME_REFRESH_TOKEN = (1000 * 60 * 60 * 24 *15); //10 days
+    private static final long EXPIRATION_TIME_VERIFICATION_TOKEN = (1000 * 60 * 60 * 24 ); //10 days
 
     public JWTUtil(UserRepository userRepository, @Value("${jwt.secret}") String jwtSecret){
         this.userRepository = userRepository;
         this.key= Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
+    public String generateVerificationToken(String username) {
+        return generateToken(username, EXPIRATION_TIME_VERIFICATION_TOKEN);
+    }
+
     public String generateRefreshToken(String username) {
         return generateToken(username, EXPIRATION_TIME_REFRESH_TOKEN);
     }
+
     public String generateAccessToken(String username) {
         return generateToken(username, EXPIRATION_TIME_ACCESS_TOKEN);
     }

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 import {UserType} from "@/types/user";
 import {ToastContainer, toast} from "react-toastify";
-import {resetPassword} from "@/services/userService";
+import {forgotPassword, resetPassword} from "@/services/userService";
 import Loading from "@/componenets/Loading";
 
 const initialFormState: UserType ={
@@ -25,7 +25,7 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    resetPassword(form)
+    forgotPassword(form)
         .then((data) => {
           if (data?.status == 200) {
             toast("Please check your email! The reset password has been reset successfully send!");
