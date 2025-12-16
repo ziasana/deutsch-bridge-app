@@ -23,20 +23,20 @@ public class VerificationController {
     }
 
     @GetMapping("/signup/verify")
-    public ResponseEntity<String> verifyEmail(@RequestParam("token") String token) {
+    public RedirectView verifyEmail(@RequestParam("token") String token) {
         String emailString= jwtUtil.extractUsernameOrEmail(token);
         User user= userService.findByEmail(emailString);
         if(emailString==null || user.getVerificationToken()==null) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Token Expired!");
+            return new RedirectView("http://localhost:3000/signup?error=invalid-token");
         }
         if(!jwtUtil.validateToken(token) || !user.getVerificationToken().equals(token))
         {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid Token!");
+            return new RedirectView("http://localhost:3000/signup?error=invalid-token");
         }
         user.setVerificationToken(null);
         user.setVerified(true);
         userRepository.save(user);
-        return ResponseEntity.ok().body("Email successfully Verified!");
+        return new RedirectView("http://localhost:3000/login?success=registered");
     }
 
     @GetMapping("/reset-password")

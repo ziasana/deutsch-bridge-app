@@ -4,9 +4,10 @@ import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.exception.UserVerificationException;
 import com.deutschbridge.backend.model.dto.AuthRequest;
 import com.deutschbridge.backend.model.dto.UserDto;
+import com.deutschbridge.backend.model.dto.UserProfileDto;
 import com.deutschbridge.backend.model.entity.User;
+import com.deutschbridge.backend.model.entity.UserProfile;
 import com.deutschbridge.backend.service.CookieService;
-import com.deutschbridge.backend.service.CustomUserService;
 import com.deutschbridge.backend.service.UserService;
 import com.deutschbridge.backend.util.JWTUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,7 +17,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -25,28 +25,23 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 
-//@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
-
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
-    private final CustomUserService customUserService;
     private final UserService userService;
     private  final JWTUtil jwtUtil;
     private final CookieService cookieService;
 
-    public AuthController(AuthenticationManager authenticationManager, CustomUserService customUserService, UserService userService, JWTUtil jwtUtil, CookieService cookieService) {
+    public AuthController(AuthenticationManager authenticationManager, UserService userService, JWTUtil jwtUtil, CookieService cookieService) {
         this.authenticationManager = authenticationManager;
-        this.customUserService = customUserService;
         this.userService = userService;
         this.jwtUtil = jwtUtil;
         this.cookieService = cookieService;
     }
 
     @PostMapping("/login")
-    @ResponseBody
-    public ResponseEntity<?> login( @RequestBody AuthRequest authRequest, HttpServletResponse response) throws DataNotFoundException {
-        try {
+    public ResponseEntity<Map<String, Object>> login(@RequestBody AuthRequest authRequest, HttpServletResponse response) throws DataNotFoundException {
+       try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword())
             );
@@ -62,20 +57,34 @@ public class AuthController {
             response.addCookie(cookieService.createAccessToken(token));
             response.addCookie(cookieService.createRefreshToken(refreshToken));
 
-            //get user data
-             UserDetails userDetails= customUserService.loadUserByUsername(authRequest.getUsername());
-             UserDto userDto = new UserDto();
-             userDto.setUsername(userDetails.getUsername());
-             Map<String,Object> dataMap = new HashMap<>();
-             dataMap.put("message","Login successful!");
-             dataMap.put("user",userDto);
+           // Get user & profile
+           User user = userService.findByUsername(authRequest.getUsername());
+           UserProfile profile = user.getProfile();
 
-            // return response entity
-            return new ResponseEntity<>(dataMap , HttpStatus.OK);
+           // Build DTO
+           UserProfileDto userDto = new UserProfileDto(
+                   profile != null ? profile.getDisplayName() : null,
+                   null,
+                   user.getUsername(),
+                   user.getEmail(),
+                   profile != null ? profile.getLearningLevel().getValue() : null,
+                   profile != null ? profile.getDailyGoalWords() : null,
+                   profile != null && profile.isNotificationsEnabled()
+           );
+
+           // Build response
+           Map<String, Object> data = Map.of(
+                   "message", "Login successful!",
+                   "user", userDto
+           );
+
+           return ResponseEntity.ok(data);
 
         }catch (Exception e) {
             throw new DataNotFoundException(e.getMessage());
         }
+
+
     }
 
     @GetMapping("/refresh")
@@ -101,6 +110,7 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletResponse response) {
         response.addCookie(cookieService.delete("access_token"));
+        response.addCookie(cookieService.delete("refresh_token"));
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
 
@@ -119,5 +129,4 @@ public class AuthController {
         userService.resetPassword(body.get("password"), body.get("token"));
         return new ResponseEntity<>("Password rested successfully", HttpStatus.OK);
     }
-
 }

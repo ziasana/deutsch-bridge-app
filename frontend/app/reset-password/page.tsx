@@ -18,7 +18,6 @@ export default function ResetPasswordPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    console.log("Form data", form);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -29,7 +28,6 @@ export default function ResetPasswordPage() {
         .then((data) => {
           if (data?.status == 200) {
             toast("Please check your email! The reset password has been reset successfully send!");
-            console.log(data?.data);
             setForm(initialFormState);
           }
         })

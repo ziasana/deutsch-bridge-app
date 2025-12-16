@@ -45,7 +45,14 @@ public class UserService {
         );
     }
 
+    public User findByUsername(String username) {
+        return userRepository.findByUsername(username).orElseThrow(
+                () -> new UsernameNotFoundException("User not found with username: " + username)
+        );
+    }
+
     public User registerUser(UserDto userDto) throws UserVerificationException {
+
         // check username uniqueness
         if (userRepository.findByUsername(userDto.getUsername()).isPresent()) {
             throw new UserVerificationException("Username already exists");
@@ -76,7 +83,7 @@ public class UserService {
                 passwordEncoder.encode(userDto.getPassword()),
                 UserRole.STUDENT.getValue()
         );
-        user.setVerificationToken(jwtUtil.generateAccessToken(userDto.getEmail()));
+        user.setVerificationToken(jwtUtil.generateVerificationToken(userDto.getEmail()));
         //send email verification
         emailService.sendVerificationEmail(userDto.getEmail(), user.getVerificationToken());
         return userRepository.save(user);
@@ -119,6 +126,14 @@ public class UserService {
             existing.setResetToken(null);
         }
         return userRepository.save(existing);
+    }
+
+    @Transactional
+    public void updatePassword(UserDto userDto) throws DataNotFoundException {
+        User existing = userRepository.findByUsername(userDto.getUsername())
+                .orElseThrow(() -> new DataNotFoundException("User not found!"));
+        if (userDto.getPassword() != null) existing.setPassword( passwordEncoder.encode(userDto.getPassword()));
+        userRepository.save(existing);
     }
 
     @Transactional

@@ -19,6 +19,7 @@ import java.util.List;
 @Table(name="users")
 public class User implements UserDetails {
     @Id
+    @Getter
     private String id;
 
     @Column(unique = true, nullable = false)
@@ -52,9 +53,12 @@ public class User implements UserDetails {
 
     private LearningLevel learningLevel;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "profile_id")
-    private static UserProfile profile;
+    @Setter
+    @Getter
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JoinColumn(name = "id")
+    private UserProfile profile;
+
 
     @OneToMany(mappedBy = "userId")
     @ToString.Exclude

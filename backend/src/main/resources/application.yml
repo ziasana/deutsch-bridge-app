@@ -64,3 +64,6 @@ server:
   shutdown: graceful
 
 jwt.secret: ${JWT_SECRET}
+
+frontend_url:
+  "http://localhost:3000"

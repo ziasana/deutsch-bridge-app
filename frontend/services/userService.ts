@@ -1,5 +1,5 @@
 import api from "./api"
-import {ResetPasswordType, UserType} from "@/types/user";
+import {ResetPasswordType, UserProfileType, UserType} from "@/types/user";
 
 
 export const registerUser = async (user: UserType) => {
@@ -24,6 +24,15 @@ export const forgotPassword = async (user: UserType) => {
 export const resetPassword = async (data: ResetPasswordType) => {
     return await api.put("/api/auth/reset-password", data);
 }
+
+export const updateProfile = async (data: UserProfileType) => {
+    return await api.put("/api/user/profile", data);
+}
+
+export const updatePassword = async (data: UserType) => {
+    return await api.put("/api/user/update-password", data);
+}
+
 
 export const getUsers = async () => {
     return  await api.get( "/api/user");

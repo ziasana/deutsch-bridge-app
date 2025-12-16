@@ -6,7 +6,7 @@ import useAuthStore from "@/store/useAuthStore";
 import {  Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 
 export default function Navbar() {
-  const {user, isLoggedIn} = useAuthStore();
+  const {userProfile, isLoggedIn} = useAuthStore();
   const logout = useAuthStore((state) => state.logout);
 
   const [isOpen, setIsOpen] = useState(false);
@@ -26,9 +26,7 @@ export default function Navbar() {
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center gap-6">
 
-
-          {isLoggedIn && user ? (
-
+          {isLoggedIn && userProfile != null ? (
               <>
                 <Link href="/dashboard" className="nav-link">
                   Dashboard
@@ -42,17 +40,11 @@ export default function Navbar() {
                 <Link href="#" className="nav-link">
                   Grammar
                 </Link>
-                <Link href="#" className="nav-link">
-                  Nomen-Verb
-                </Link>
               </>
           ) : (
               <>
                 <Link href="/" className="nav-link">
                   Home
-                </Link>
-                <Link href="/about" className="nav-link">
-                  About
                 </Link>
                 <Link href="/contact" className="nav-link">
                   Contact
@@ -69,13 +61,17 @@ export default function Navbar() {
         {/* Right Side Buttons */}
         <div className="hidden md:flex ">
           {/* Dark Mode Toggle */}
-
+          <div className="hidden md:flex relative float-left ">
+            <h1 className="px-5 font-mono text-gray-700 dark:text-gray-300">
+              {"("}{userProfile?.displayName?? userProfile?.username} { ")"}
+            </h1>
+          </div>
         </div>
 
-        <div className="hidden md:flex  justify-between gap-2">
+        <div className="hidden md:flex  items-center justify-between gap-2">
           {/* Dark Mode Toggle */}
 
-          {!isLoggedIn && !user && (
+          {!isLoggedIn && userProfile == null && (
               <>
                 <Link href="/login" className="btn-primary">
                   Login
@@ -94,18 +90,11 @@ export default function Navbar() {
             {darkMode ? "🌙" : "☀️"}
           </button>
         </div>
-        {isLoggedIn && user && (
-            <>
-            <div className="hidden md:flex relative float-left ">
-              <h1 className="px-5 font-mono text-gray-700 dark:text-gray-300">
-                {"{ "}{user?.username} { " }"}
-              </h1>
-            </div>
+        {isLoggedIn && userProfile != null && (
             <Menu as="div" className="relative">
               <MenuButton className="relative flex rounded-full focus-visible:outline-2 focus-visible:outline-offset-2">
                 <span className="absolute -inset-1.5"/>
                 <span className="sr-only">Open user menu</span>
-
                 <img
                     alt=""
                     src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
@@ -138,13 +127,13 @@ export default function Navbar() {
           outline-none
         "
                   >
-                    Your profile
+                    Profile
                   </Link>
                 </MenuItem>
 
                 <MenuItem>
-                  <a
-                      href="#"
+                  <Link
+                      href="/profile/update-password"
                       className="
           block px-4 py-2 text-sm
           text-gray-700 dark:text-gray-300
@@ -153,12 +142,12 @@ export default function Navbar() {
           outline-none
         "
                   >
-                    Settings
-                  </a>
+                    Update Password
+                  </Link>
                 </MenuItem>
 
                 <MenuItem>
-                  {isLoggedIn && user ? (
+                  {isLoggedIn && userProfile != null ? (
                       <a
                           href="#"
                           onClick={logout}
@@ -193,7 +182,6 @@ export default function Navbar() {
               </MenuItems>
 
             </Menu>
-            </>
         )}
 
 
@@ -228,7 +216,7 @@ export default function Navbar() {
               {darkMode ? "Dark Mode 🌙" : "Light Mode ☀️"}
             </button>
 
-            {isLoggedIn && user ? (
+            {isLoggedIn && userProfile != null ? (
                 <Link href="#" onClick={logout}  className="btn-outline w-full text-center">
                   Logout
                 </Link>

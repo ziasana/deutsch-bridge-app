@@ -2,11 +2,12 @@
 
 import Button from "@/componenets/Button";
 import Link from "next/link";
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {registerUser} from "@/services/userService";
 import {UserType} from "@/types/user";
 import {toast, ToastContainer} from "react-toastify";
 import Loading from "@/componenets/Loading";
+import {useRouter, useSearchParams} from "next/navigation";
 interface FormDataType {
   name: string;
   email: string;
@@ -25,18 +26,26 @@ const initialFormState: FormDataType = {
 
 export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [form, setForm] = useState<FormDataType>(initialFormState);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+  useEffect(() => {
+    if(searchParams.get("error"))
+      toast.error("Confirmation link expired! please register again! ");
+  },[router])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
+    if(form.password.length <6)
+      toast("Passwords must be between 6 characters.");
     if (form.password !== form.confirmPassword) {
-      alert("Passwords do not match!");
+      toast.error("Passwords do not match!");
       return;
     }
 

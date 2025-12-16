@@ -3,11 +3,11 @@
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Link from "next/link";
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {UserType} from "@/types/user";
 import {ToastContainer, toast} from "react-toastify";
 import Loading from "@/componenets/Loading";
-import { useRouter } from "next/navigation";
+import {useRouter, useSearchParams} from "next/navigation";
 import useAuthStore from "@/store/useAuthStore";
 import {loginUser} from "@/services/userService";
 
@@ -22,10 +22,16 @@ const initialFormState: FormDataType = {
 };
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState<UserType>(initialFormState);
   const { login } = useAuthStore();
   const router = useRouter();
+
+  useEffect(() => {
+    if(searchParams.get("success"))
+      toast.success("Registration completed successfully. Now you can log in.");
+  },[router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });

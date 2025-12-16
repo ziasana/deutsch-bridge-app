@@ -1,5 +1,6 @@
 package com.deutschbridge.backend.model.entity;
 
+import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,8 +15,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 public class Vocabulary {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
     @Version
     private Integer version;
     private String word;
@@ -32,6 +32,14 @@ public class Vocabulary {
         this.meaning = meaning;
         this.example = example;
         this.synonyms = synonyms;
+    }
+
+
+    @PrePersist
+    public void ensureId() {
+        if (this.id == null) {
+            this.id = NanoIdUtils.randomNanoId();
+        }
     }
 }
 

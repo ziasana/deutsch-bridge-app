@@ -46,12 +46,6 @@ const DashboardPage = () => {
             link: "/dashboard/vocabulary",
         },
         {
-            title: "Progress Tracking",
-            description: "Check your learning stats and weekly improvement.",
-            icon: TrendingUp,
-            link: "/dashboard/progress",
-        },
-        {
             title: "AI Chat",
             description: "Chat with an intelligent German tutor to practice freely.",
             icon: MessageSquare,
