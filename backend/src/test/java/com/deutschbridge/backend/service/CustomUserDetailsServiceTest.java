@@ -16,12 +16,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class CustomUserServiceTest {
+class CustomUserDetailsServiceTest {
 
     @Mock
     private UserRepository userRepository= mock(UserRepository.class);
     @InjectMocks
-    private CustomUserService customUserService;
+    private CustomUserDetailsService customUserDetailsService;
 
     @Test
     @DisplayName("loadUser should return user")
@@ -33,7 +33,7 @@ class CustomUserServiceTest {
         user.setEmail("email");
         userRepository.save(user);
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
-        UserDetails result = customUserService.loadUserByUsername(username);
+        UserDetails result = customUserDetailsService.loadUserByUsername(username);
         assertNotNull(result);
         assertThat(result.getUsername()).isEqualTo(username);
         verify(userRepository, times(1)).findByUsername(username);

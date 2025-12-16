@@ -2,7 +2,7 @@ package com.deutschbridge.backend.config;
 
 import com.deutschbridge.backend.filter.JWTAuthFilter;
 import com.deutschbridge.backend.repository.UserRepository;
-import com.deutschbridge.backend.service.CustomUserService;
+import com.deutschbridge.backend.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -54,7 +54,7 @@ public class SecurityConfig {
 
     @Bean
     public UserDetailsService userDetailsService(){
-        return new CustomUserService(userRepository);
+        return new CustomUserDetailsService(userRepository);
     }
 
     @Bean

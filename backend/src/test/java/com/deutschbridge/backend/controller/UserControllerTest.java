@@ -3,8 +3,10 @@ package com.deutschbridge.backend.controller;
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.exception.GlobalExceptionHandler;
 import com.deutschbridge.backend.exception.UserVerificationException;
+import com.deutschbridge.backend.model.dto.UpdatePasswordRequest;
 import com.deutschbridge.backend.model.dto.UserDto;
-import com.deutschbridge.backend.model.dto.UserRegistrationDto;
+import com.deutschbridge.backend.model.dto.UserRegistrationRequest;
+import com.deutschbridge.backend.model.entity.CustomUserDetails;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.service.EmailService;
 import com.deutschbridge.backend.service.UserService;
@@ -16,7 +18,12 @@ import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -25,14 +32,18 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.willDoNothing;
+import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(GlobalExceptionHandler.class)
 @AutoConfigureMockMvc
+
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 
 class UserControllerTest {
@@ -86,7 +97,7 @@ class UserControllerTest {
     @Test
     @DisplayName("POST /users/register should register user")
     void testRegisterUser() throws Exception {
-        when(userService.registerUser(any(UserRegistrationDto.class))).thenReturn(user());
+        when(userService.registerUser(any(UserRegistrationRequest.class))).thenReturn(user());
 
         mockMvc.perform(post("/api/user/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -128,7 +139,7 @@ class UserControllerTest {
     void resetPassword_EmailNotFound() throws Exception {
 
         // Mock service throwing exception
-        when(userService.forgotPassword("john@example.com"))
+        when(userService.sendResetLink("john@example.com"))
                 .thenThrow(new DataNotFoundException("User not registered yet!"));
 
         mockMvc.perform(post("/api/user/reset-password")
@@ -145,7 +156,7 @@ class UserControllerTest {
     @Test
     @DisplayName("POST /api/user/reset-password → user not verified")
     void resetPassword_UserNotVerified() throws Exception {
-        when(userService.forgotPassword("john@example.com"))
+        when(userService.sendResetLink("john@example.com"))
                 .thenThrow(new UserVerificationException("User is not verified!"));
 
         mockMvc.perform(post("/api/user/reset-password")
@@ -160,7 +171,7 @@ class UserControllerTest {
     @Test
     @DisplayName("POST /users/reset-password →  should reset send reset link")
     void testResetPasswordSuccess() throws Exception {
-        when(userService.forgotPassword("john@example.com")).thenReturn(true);
+        when(userService.sendResetLink("john@example.com")).thenReturn(true);
 
         mockMvc.perform(post("/api/user/reset-password")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -201,21 +212,32 @@ class UserControllerTest {
     @Test
     @DisplayName("PUT /users/update-password should return 404 on missing user")
     void testUpdatePassword_UserNotFound() throws Exception {
-        User updated = new User();
-        updated.setPassword("john");
-        updated.setEmail("johnt@example.com");
-        when(userService.update(any(UserDto.class)))
-                .thenThrow (new DataNotFoundException("User not found!"));
 
-        mockMvc.perform(put("/api/user/update-password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                    "email": "john@example.com",
-                                    "password": "hasheddd"
-                                }
-                """))
+        User user = new User();
+        user.setId("id123");
+        user.setEmail("john@example.com");
+
+        Authentication auth =
+                new UsernamePasswordAuthenticationToken(user, null, List.of());
+
+        doThrow(new DataNotFoundException("User not found"))
+                .when(userService)
+                .updatePassword(eq("id123"), anyString());
+
+        mockMvc.perform(
+                        put("/api/user/update-password")
+                                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication(auth))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                        {
+                          "password": "newPassword123",
+                          "confirmPassword": "newPassword123"
+                        }
+                    """)
+                )
                 .andExpect(status().isNotFound());
+
+        verify(userService).updatePassword(eq("id123"), anyString());
     }
 
     // -------------------------------------------------------------------------

@@ -11,7 +11,6 @@ import {toast, ToastContainer} from "react-toastify";
 import Loading from "@/componenets/Loading";
 import {UserProfileType} from "@/types/user";
 
-
 export default function UserProfile() {
     const levels: string[] = ["A1","A2", "B1", "B2", "C1", "C2"];
     const WORD_GOALS = [5, 10, 15, 20];
@@ -58,7 +57,6 @@ export default function UserProfile() {
             })
             .finally(() => setIsLoading(false));
     }
-
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">

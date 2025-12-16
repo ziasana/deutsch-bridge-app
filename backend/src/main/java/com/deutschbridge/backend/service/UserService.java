@@ -3,10 +3,9 @@ package com.deutschbridge.backend.service;
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.exception.UserVerificationException;
 import com.deutschbridge.backend.model.dto.UserDto;
-import com.deutschbridge.backend.model.dto.UserRegistrationDto;
+import com.deutschbridge.backend.model.dto.UserRegistrationRequest;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.entity.UserProfile;
-import com.deutschbridge.backend.model.enums.UserRole;
 import com.deutschbridge.backend.repository.UserProfileRepository;
 import com.deutschbridge.backend.repository.UserRepository;
 import com.deutschbridge.backend.util.JWTUtil;
@@ -27,6 +26,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserProfileRepository userProfileRepository;
+
+    static final String notFound= "User not found!";
 
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
@@ -51,59 +52,48 @@ public class UserService {
         );
     }
 
-    public User findByUsername(String username) {
-        return userRepository.findByUsername(username).orElseThrow(
-                () -> new UsernameNotFoundException("User not found with username: " + username)
-        );
-    }
+    public User registerUser(UserRegistrationRequest request) throws UserVerificationException {
 
-    public User registerUser(UserRegistrationDto userRegistrationDto) throws UserVerificationException {
-
-        // check username uniqueness
-        if (userRepository.findByUsername(userRegistrationDto.username()).isPresent()) {
-            throw new UserVerificationException("Username already exists");
-        }
         // check email uniqueness
-        if (userRepository.existsByEmail(userRegistrationDto.email())) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new UserVerificationException("Email already registered!");
         }
-        Optional<User> existingUser= userRepository.findByEmail(userRegistrationDto.email());
+
+        Optional<User> existingUser= userRepository.findByEmail(request.getEmail());
         if(existingUser.isPresent())
         {
             if(existingUser.get().isVerified())
             {
                 throw new UserVerificationException("User is already verified!");
             }else{
-                String verificationToken = jwtUtil.generateVerificationToken(userRegistrationDto.email());
+                String verificationToken = jwtUtil.generateVerificationToken(request.getEmail());
                 existingUser.get().setVerificationToken(verificationToken);
                 userRepository.save(existingUser.get());
                 //send verification email
-                emailService.sendVerificationEmail(userRegistrationDto.email(), verificationToken);
+                emailService.sendVerificationEmail(request.getEmail(), verificationToken);
             }
             return existingUser.get();
         }
 
         User user = new User(
-                userRegistrationDto.username(),
-                userRegistrationDto.email(),
-                passwordEncoder.encode(userRegistrationDto.password()),
-                UserRole.STUDENT.getValue()
+                request.getDisplayName(),
+                request.getEmail(),
+                passwordEncoder.encode(request.getPassword())
         );
-        user.setVerificationToken(jwtUtil.generateVerificationToken(userRegistrationDto.email()));
+        user.setVerificationToken(jwtUtil.generateVerificationToken(request.getEmail()));
         UserProfile userProfile = new UserProfile();
         userProfile.setUser(user);
-        userProfile.setDisplayName(userRegistrationDto.displayName());
+        userProfile.setDisplayName(request.getDisplayName());
         user.setProfile(userProfile);
         //send email verification
-        emailService.sendVerificationEmail(userRegistrationDto.email(), user.getVerificationToken());
+        emailService.sendVerificationEmail(request.getEmail(), user.getVerificationToken());
         userRepository.save(user);
         userProfileRepository.save(userProfile);
         return user;
-
     }
 
 
-    public boolean forgotPassword(String email) throws UserVerificationException, DataNotFoundException {
+    public boolean sendResetLink(String email) throws UserVerificationException, DataNotFoundException {
         // Try to get the user directly
         User existingUser = userRepository.findByEmail(email)
                 .orElseThrow(() -> new DataNotFoundException("User not registered yet!"));
@@ -129,10 +119,13 @@ public class UserService {
             throw new UserVerificationException("Invalid Token!");
         }
 
-        String username = jwtUtil.extractUsernameOrEmail(token);
-        User existing = userRepository.findByEmail(username)
-                .orElseThrow(() -> new DataNotFoundException("User not found!"));
-
+        String email = jwtUtil.extractEmail(token);
+        User existing = userRepository.findByEmail(email)
+                .orElseThrow(() -> new DataNotFoundException(notFound));
+        if(existing.getResetToken()==null)
+        {
+            throw new UserVerificationException("Invalid Token!");
+        }
         if (password != null)
         {
             existing.setPassword( passwordEncoder.encode(password));
@@ -142,17 +135,17 @@ public class UserService {
     }
 
     @Transactional
-    public void updatePassword(UserDto userDto) throws DataNotFoundException {
-        User existing = userRepository.findByUsername(userDto.getUsername())
-                .orElseThrow(() -> new DataNotFoundException("User not found!"));
-        if (userDto.getPassword() != null) existing.setPassword( passwordEncoder.encode(userDto.getPassword()));
+    public void updatePassword(String id, String password) throws DataNotFoundException {
+        User existing = userRepository.findById(id)
+                .orElseThrow(() -> new DataNotFoundException(notFound));
+        if (password != null) existing.setPassword(passwordEncoder.encode(password));
         userRepository.save(existing);
     }
 
     @Transactional
     public User update(UserDto userDto) throws DataNotFoundException {
         User existing = userRepository.findByEmail(userDto.getEmail())
-                .orElseThrow(() -> new DataNotFoundException("User not found!"));
+                .orElseThrow(() -> new DataNotFoundException(notFound));
         if (userDto.getPassword() != null) existing.setPassword( passwordEncoder.encode(userDto.getPassword()));
         return userRepository.save(existing);
     }
@@ -160,20 +153,12 @@ public class UserService {
     @Transactional
     public boolean deleteByEmail(UserDto  userDto) throws DataNotFoundException {
         userRepository.findByEmail(userDto.getEmail())
-                .orElseThrow( ()-> new DataNotFoundException("User not found!"));
+                .orElseThrow( ()-> new DataNotFoundException(notFound));
         userRepository.deleteByEmail(userDto.getEmail());
         return true;
     }
 
-    public void saveRefreshToken(String username, String refreshToken){
-        userRepository.saveRefreshToken(username, refreshToken);
-    }
-
-    public String getRefreshToken(String username){
-      User user=  userRepository.findByUsername(username).orElseThrow(()-> new UsernameNotFoundException("User not found!"));
-      if(user.getRefreshToken() != null){
-          return user.getRefreshToken();
-      }
-      return null;
+    public void saveRefreshToken(String email, String refreshToken){
+        userRepository.saveRefreshToken(email, refreshToken);
     }
 }

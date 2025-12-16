@@ -1,5 +1,8 @@
 package com.deutschbridge.backend.util;
 
+import com.deutschbridge.backend.model.AuthUser;
+import com.deutschbridge.backend.model.entity.CustomUserDetails;
+import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -26,29 +29,29 @@ public class JWTUtil {
         this.userRepository = userRepository;
         this.key= Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
-    public String generateVerificationToken(String username) {
-        return generateToken(username, EXPIRATION_TIME_VERIFICATION_TOKEN);
+    public String generateVerificationToken(String email) {
+        return generateToken(email, EXPIRATION_TIME_VERIFICATION_TOKEN);
     }
 
-    public String generateRefreshToken(String username) {
-        return generateToken(username, EXPIRATION_TIME_REFRESH_TOKEN);
+    public String generateRefreshToken(String email) {
+        return generateToken(email, EXPIRATION_TIME_REFRESH_TOKEN);
     }
 
-    public String generateAccessToken(String username) {
-        return generateToken(username, EXPIRATION_TIME_ACCESS_TOKEN);
+    public String generateAccessToken(String email) {
+        return generateToken(email, EXPIRATION_TIME_ACCESS_TOKEN);
     }
 
-    private String generateToken(String username, long expirationTime) {
+    private String generateToken(String email, long expirationTime) {
         return Jwts.builder()
-                .setSubject(username)
-                .setAudience(String.valueOf(userRepository.incrementTokenValue(username)))
+                .setSubject(email)
+                .setAudience(String.valueOf(userRepository.incrementTokenValue(email)))
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
                 .signWith(SignatureAlgorithm.HS256, key)
                 .compact();
     }
 
-    public String extractUsernameOrEmail(String token) {
+    public String extractEmail(String token) {
        return extractClaims(token).getSubject();
     }
 
@@ -64,18 +67,18 @@ public class JWTUtil {
         return isTokenExpired(token);
     }
 
-    public boolean validateToken(String username, UserDetails userDetails, String token) {
+    public boolean validateToken(String email, UserDetails userDetails, String token) {
         //check if username is same as username in userDetails
         //check if token is not expired
-        return username.equals(userDetails.getUsername())
+        return email.equals(userDetails.getUsername())
                // && isValidateTokenValue(username,token)
                 && isTokenExpired(token);
     }
 
-    public boolean isValidateTokenValue(String username, String token) {
+    public boolean isValidateTokenValue(String email, String token) {
         return extractClaims(token)
                 .getAudience()
-                .equals(String.valueOf(userRepository.getTokenValue(username)));
+                .equals(String.valueOf(userRepository.getTokenValue(email)));
     }
 
     private boolean isTokenExpired(String token) {

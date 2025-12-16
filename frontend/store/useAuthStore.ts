@@ -2,6 +2,7 @@ import { create } from "zustand";
 import {UserProfileType} from "@/types/user";
 import {persist} from "zustand/middleware";
 import { logOutUser} from "@/services/userService";
+import {redirect} from "next/navigation";
 
 interface AuthState {
     userProfile: UserProfileType | null;
@@ -34,6 +35,7 @@ const useAuthStore = create<AuthState>()
                     userProfile: null,
                     isLoggedIn: false,
                 });
+               redirect("/login");
             },
 
             updateUserProfile: (userProfile) => {
@@ -44,7 +46,6 @@ const useAuthStore = create<AuthState>()
             setHasHydrated: (value) =>
                 set({
                     hasHydrated: value,
-
                 }),
             }),
         {

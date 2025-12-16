@@ -1,13 +1,13 @@
 package com.deutschbridge.backend.service;
 
-import com.deutschbridge.backend.model.dto.UserProfileDto;
+import com.deutschbridge.backend.model.dto.UserProfileRequest;
+import com.deutschbridge.backend.model.dto.UserProfileResponse;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.entity.UserProfile;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.model.enums.PreferredLanguage;
 import com.deutschbridge.backend.repository.UserProfileRepository;
 import com.deutschbridge.backend.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -18,24 +18,22 @@ public class UserProfileService {
 
     private final UserProfileRepository userProfileRepository;
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
-    public UserProfileService(UserProfileRepository userProfileRepository, UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserProfileService(UserProfileRepository userProfileRepository, UserRepository userRepository) {
         this.userProfileRepository = userProfileRepository;
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
     }
 
-    public UserProfile save(UserProfileDto userProfileDto) {
-        User user = userRepository.findByUsername(userProfileDto.username())
+    public UserProfile save(UserProfileResponse userProfileResponse) {
+        User user = userRepository.findByEmail(userProfileResponse.email())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         UserProfile profile = new UserProfile(
                 UUID.randomUUID().toString(),
                 user,
-                userProfileDto.displayName(),
+                user.getDisplayName(),
                 PreferredLanguage.EN,
-                userProfileDto.dailyGoalWords(),
+                userProfileResponse.dailyGoalWords(),
                 30,
                 LearningLevel.B1,
                 true
@@ -45,16 +43,16 @@ public class UserProfileService {
     }
 
 
-    public void update(UserProfileDto userProfileDto) {
-        User user = userRepository.findByUsername(userProfileDto.username())
+    public void update(String userId, UserProfileRequest request) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         UserProfile profile= user.getProfile();
         if(profile == null) {
             profile = new UserProfile();
-            profile.setDisplayName(userProfileDto.displayName());
-            profile.setLearningLevel(LearningLevel.valueOf( userProfileDto.learningLevel()));
-            profile.setDailyGoalWords(userProfileDto.dailyGoalWords());
-            profile.setNotificationsEnabled(userProfileDto.notificationsEnabled());
+            profile.setDisplayName(request.displayName());
+            profile.setLearningLevel(LearningLevel.valueOf( request.learningLevel()));
+            profile.setDailyGoalWords(request.dailyGoalWords());
+            profile.setNotificationsEnabled(request.notificationsEnabled());
 
             // 🔑 THIS IS THE KEY PART
             profile.setUser(user);
@@ -62,13 +60,27 @@ public class UserProfileService {
             userProfileRepository.save(profile);
 
         }else {
-            if (userProfileDto.displayName() != null) profile.setDisplayName(userProfileDto.displayName());
-            if (userProfileDto.learningLevel() != null)
-                profile.setLearningLevel(LearningLevel.valueOf(userProfileDto.learningLevel()));
-            if (userProfileDto.dailyGoalWords() != null) profile.setDailyGoalWords(userProfileDto.dailyGoalWords());
-            profile.setNotificationsEnabled(userProfileDto.notificationsEnabled());
+            if (request.displayName() != null) profile.setDisplayName(request.displayName());
+            if (request.learningLevel() != null)
+                profile.setLearningLevel(LearningLevel.valueOf(request.learningLevel()));
+            if (request.dailyGoalWords() != null) profile.setDailyGoalWords(request.dailyGoalWords());
+            profile.setNotificationsEnabled(request.notificationsEnabled());
             user.setProfile(profile);
             userRepository.save(user);
         }
+    }
+
+    public UserProfileResponse getUserProfileResponse(User user) {
+        UserProfile profile = user.getProfile();
+
+        // Build DTO
+        return new UserProfileResponse(
+                profile != null ? user.getDisplayName() : null,
+                user.getEmail(),
+               // profile != null ? profile.getLearningLevel().getValue() : null,
+                null,
+                profile != null ? profile.getDailyGoalWords() : null,
+                profile != null && profile.isNotificationsEnabled()
+        );
     }
 }

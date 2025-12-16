@@ -12,8 +12,6 @@ export interface ResetPasswordType{
 
 export interface UserProfileType{
     email?: string,
-    password?: string
-    username?: string
     displayName?: string
     learningLevel?: string
     dailyGoalWords?: number

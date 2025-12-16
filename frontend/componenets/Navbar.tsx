@@ -63,7 +63,7 @@ export default function Navbar() {
           {/* Dark Mode Toggle */}
           <div className="hidden md:flex relative float-left ">
             <h1 className="px-5 font-mono text-gray-700 dark:text-gray-300">
-              {"("}{userProfile?.displayName?? userProfile?.username} { ")"}
+              {userProfile?.displayName ?? userProfile?.displayName}
             </h1>
           </div>
         </div>

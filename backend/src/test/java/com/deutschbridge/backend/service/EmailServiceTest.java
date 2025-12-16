@@ -1,5 +1,4 @@
 package com.deutschbridge.backend.service;
-import com.deutschbridge.backend.exception.UserVerificationException;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

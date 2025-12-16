@@ -33,7 +33,6 @@ export default function UserProfile() {
     const onSubmit = async (data: UpdatePasswordFormData) => {
         setIsLoading(true);
         const newPassword: UserType = {
-            username: userProfile?.username,
             password: data.password
         };
         updatePassword(newPassword)

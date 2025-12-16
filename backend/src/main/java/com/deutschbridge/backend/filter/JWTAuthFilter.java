@@ -1,7 +1,9 @@
 package com.deutschbridge.backend.filter;
 
+import com.deutschbridge.backend.model.AuthUser;
+import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.service.CookieService;
-import com.deutschbridge.backend.service.CustomUserService;
+import com.deutschbridge.backend.service.CustomUserDetailsService;
 import com.deutschbridge.backend.util.JWTUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -20,12 +22,12 @@ import java.io.IOException;
 public class JWTAuthFilter extends OncePerRequestFilter {
 
    private final JWTUtil jwtUtil;
-   private final CustomUserService customUserService;
+   private final CustomUserDetailsService customUserDetailsService;
    private final CookieService cookieService;
 
-    public JWTAuthFilter(JWTUtil jwtUtil, CustomUserService customUserService, CookieService cookieService) {
+    public JWTAuthFilter(JWTUtil jwtUtil, CustomUserDetailsService customUserDetailsService, CookieService cookieService) {
         this.jwtUtil = jwtUtil;
-        this.customUserService = customUserService;
+        this.customUserDetailsService = customUserDetailsService;
         this.cookieService = cookieService;
     }
 
@@ -38,6 +40,8 @@ public class JWTAuthFilter extends OncePerRequestFilter {
         if (path.startsWith("/api/auth/login")
                 || path.startsWith("/api/auth/refresh")
                 || path.startsWith("/req/signup/verify")
+                || path.startsWith("/api/auth/forgot-password")
+                || path.startsWith("/api/auth/reset-password")
                 || path.startsWith("/req/reset-password")
                 || path.startsWith("/api/auth/register")) {
 
@@ -51,9 +55,9 @@ public class JWTAuthFilter extends OncePerRequestFilter {
             return; // stop filter chain
         }
 
-        String username="";
+        String email="";
         try {
-            username = jwtUtil.extractUsernameOrEmail(token);
+            email = jwtUtil.extractEmail(token);
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401
             return;
@@ -66,10 +70,10 @@ public class JWTAuthFilter extends OncePerRequestFilter {
             username= jwtUtil.extractUsernameOrEmail(token);
         }*/
 
-        if(username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        if(email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             //check if user exist in DB and not expired
-            UserDetails userDetails = customUserService.loadUserByUsername(username);
-            if (!jwtUtil.validateToken(username, userDetails, token)) {
+            UserDetails userDetails  = customUserDetailsService.loadUserByUsername(email);
+            if (!jwtUtil.validateToken(email, userDetails, token)) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return;
             }

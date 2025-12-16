@@ -21,9 +21,8 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
 
         if (!isLoggedIn && userProfile != null)  {
             router.push('/login')
-            return;
         }
-    }, [hasHydrated, isLoggedIn, router]);
+    }, [hasHydrated, isLoggedIn, router, userProfile]);
 
 
     if (!hasHydrated) return null;

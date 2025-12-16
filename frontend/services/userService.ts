@@ -26,7 +26,7 @@ export const resetPassword = async (data: ResetPasswordType) => {
 }
 
 export const updateProfile = async (data: UserProfileType) => {
-    return await api.put("/api/user/profile", data);
+    return await api.put("/api/user/update-profile", data);
 }
 
 export const updatePassword = async (data: UserType) => {

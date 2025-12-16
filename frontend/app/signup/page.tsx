@@ -44,7 +44,7 @@ export default function SignupPage() {
         })
         .catch((err) => {
           toast.error(err?.response.data.message)
-          console.error(err?.response)
+          console.error(err)
         })
         .finally(() => setIsLoading(false));
   };

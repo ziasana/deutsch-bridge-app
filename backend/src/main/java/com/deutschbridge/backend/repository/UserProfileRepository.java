@@ -12,6 +12,6 @@ import java.util.Optional;
 public interface UserProfileRepository extends JpaRepository<UserProfile,String> {
 
     // Find UserProfile by associated User's username
-    @Query("SELECT up FROM user_profiles up WHERE up.user.username = :username")
-    Optional<UserProfile> findByUsername(@Param("username") String username);
+    @Query("SELECT up FROM user_profiles up WHERE up.user.email = :email")
+    Optional<UserProfile> findByUsername(@Param("email") String email);
 }

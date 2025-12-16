@@ -39,7 +39,7 @@ export default function LoginPage() {
     loginUser(data)
         .then((data) => {
           if (data?.status == 200) {
-            login(data?.data.user)
+            login(data?.data.data) // user data
             router.push("/dashboard"); // redirect to dashboard page
           }
         })
@@ -64,10 +64,10 @@ export default function LoginPage() {
           {/* Email */}
           <div>
             <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
-              Username <Input
+              Email <Input
               type="text"
-              {...register("username")}
-              placeholder="Enter your username."
+              {...register("email")}
+              placeholder="Enter your email."
             />
 
             </label>
