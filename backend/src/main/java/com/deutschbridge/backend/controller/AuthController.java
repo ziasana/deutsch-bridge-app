@@ -5,6 +5,7 @@ import com.deutschbridge.backend.exception.UserVerificationException;
 import com.deutschbridge.backend.model.dto.AuthRequest;
 import com.deutschbridge.backend.model.dto.UserDto;
 import com.deutschbridge.backend.model.dto.UserProfileDto;
+import com.deutschbridge.backend.model.dto.UserRegistrationDto;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.entity.UserProfile;
 import com.deutschbridge.backend.service.CookieService;
@@ -115,7 +116,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity <User> registerUser(@RequestBody UserDto user) throws UserVerificationException {
+    public ResponseEntity <User> registerUser(@RequestBody UserRegistrationDto user) throws UserVerificationException {
         return new ResponseEntity<>( userService.registerUser(user), HttpStatus.CREATED);
     }
 

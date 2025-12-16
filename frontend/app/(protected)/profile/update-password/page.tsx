@@ -10,52 +10,46 @@ import {updatePassword} from "@/services/userService";
 import {toast, ToastContainer} from "react-toastify";
 import Loading from "@/componenets/Loading";
 import {UserType} from "@/types/user";
+import {useForm} from "react-hook-form";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {UpdatePasswordFormData, updatePasswordSchema} from "@/schema/updatePasswordSchema";
+import {useFormErrorToast} from "@/hook/useFormErrorToast";
 
-interface UserPassword {
-    password: string;
-    confirmPassword: string;
-}
-const initialValue: UserPassword = {password: "", confirmPassword: ""};
+
 export default function UserProfile() {
     const [isLoading, setIsLoading] = useState(false);
     const {userProfile} = useAuthStore();
-    const [passwordData, setPasswordData] = useState<UserPassword>(initialValue);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
-    };
+    const {
+        reset,
+        register,
+        handleSubmit,
+        formState: { errors, isSubmitted },
+    } = useForm<UpdatePasswordFormData>({
+        resolver: zodResolver(updatePasswordSchema),
+        mode: "onSubmit", // validate on submit
+    });
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+    const onSubmit = async (data: UpdatePasswordFormData) => {
         setIsLoading(true);
-
-        if(passwordData.password=="" || passwordData.confirmPassword==""){
-            toast.error("Passwords is empty.");
-        }
-        if(passwordData.password!==passwordData.confirmPassword){
-            toast.error("Passwords don't match");
-        }
-        if(passwordData.password.length < 6)
-            toast.error("Passwords should be at least 6 characters");
-
         const newPassword: UserType = {
             username: userProfile?.username,
-            password:passwordData.password
+            password: data.password
         };
         updatePassword(newPassword)
             .then((data) => {
                 if (data?.status == 200) {
                     toast.success("Password updated!");
-                    setPasswordData(initialValue);
+                    reset();
                 }
             })
             .catch((err) => {
-                toast(err?.data.message);
-                console.log(err);
+                toast.error(err?.response.data.message)
+                console.error(err);
             })
             .finally(() => setIsLoading(false));
-    }
-
+    };
+    useFormErrorToast(errors, isSubmitted);
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
@@ -72,16 +66,14 @@ export default function UserProfile() {
                         </div>
 
                         {/* Profile form */}
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
                             <div >
                                 <Label>Password</Label>
                                 <Input
                                     required
-                                    name="password"
                                     type="password"
-                                    value={passwordData.password}
-                                    onChange={handleChange}
+                                    {...register("password")}
                                 />
                             </div>
                             <div>
@@ -89,21 +81,15 @@ export default function UserProfile() {
                                 <Input
                                     required
                                     type="password"
-                                    name="confirmPassword"
-                                    value={passwordData.confirmPassword}
-                                    onChange={handleChange}
+                                    {...register("password_confirmation")}
                                 />
                             </div>
 
                                 <div className="flex pt-4">
-                                    <Button onClick={handleSubmit}> {isLoading? "Saving...": "Save"}</Button>
+                                    <Button> {isLoading? "Saving...": "Save"}</Button>
                                 </div>
-
-
-                        </div>
+                        </form>
                     </CardContent>
-
-
                 </Card>
 
             </div>

@@ -4,27 +4,19 @@ import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Link from "next/link";
 import {useEffect, useState} from "react";
-import {UserType} from "@/types/user";
 import {ToastContainer, toast} from "react-toastify";
 import Loading from "@/componenets/Loading";
 import {useRouter, useSearchParams} from "next/navigation";
 import useAuthStore from "@/store/useAuthStore";
 import {loginUser} from "@/services/userService";
-
-interface FormDataType {
-  password: string;
-  username: string;
-}
-// define a clear initial state
-const initialFormState: FormDataType = {
-  username: "",
-  password: ""
-};
+import {zodResolver} from "@hookform/resolvers/zod";
+import {loginSchema, LoginFormData} from "@/schema/loginSchema"
+import { useForm} from "react-hook-form";
+import {useFormErrorToast} from "@/hook/useFormErrorToast";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
-  const [form, setForm] = useState<UserType>(initialFormState);
   const { login } = useAuthStore();
   const router = useRouter();
 
@@ -33,15 +25,18 @@ export default function LoginPage() {
       toast.success("Registration completed successfully. Now you can log in.");
   },[router])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitted },
+   } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    mode: "onSubmit", // validate on submit
+  });
 
-    loginUser(form)
+  const onSubmit = async (data: LoginFormData) => {
+    loginUser(data)
         .then((data) => {
           if (data?.status == 200) {
             login(data?.data.user)
@@ -49,11 +44,12 @@ export default function LoginPage() {
           }
         })
         .catch((err) => {
-         toast(err?.data.message);
-          console.log(err);
+          toast.error(err?.response.data.message)
+          console.log(err.message);
         })
         .finally(() => setIsLoading(false));
   };
+  useFormErrorToast(errors, isSubmitted);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
@@ -64,17 +60,16 @@ export default function LoginPage() {
         </h1>
         {isLoading && <Loading />}
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Email */}
           <div>
             <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
               Username <Input
               type="text"
-              name="username"
-              value={form.username}
-              onChange={handleChange}
+              {...register("username")}
               placeholder="Enter your username."
             />
+
             </label>
           </div>
 
@@ -82,19 +77,17 @@ export default function LoginPage() {
           <div>
             <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
               Password <Input
-              name={"password"}
               type="password"
-              value={form.password}
-              onChange={handleChange}
+              {...register("password")}
               placeholder="Enter your password."
             />
+
             </label>
           </div>
 
-
           {/* Submit */}
           <Button variant="primary" type="submit"  className="w-full rounded-lg  py-3">
-           submit
+            {isLoading ? "Logging in..." : "Login"}
           </Button>
         </form>
 
@@ -115,9 +108,7 @@ export default function LoginPage() {
             className="text-blue-600 dark:text-blue-400 hover:underline ml-1"
           >
             Sign up
-
           </Link>
-
           <ToastContainer />
         </div>
       </div>

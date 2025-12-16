@@ -9,46 +9,45 @@ import {resetPassword} from "@/services/userService";
 import Loading from "@/componenets/Loading";
 import {useSearchParams} from "next/navigation";
 import {ResetPasswordType} from "@/types/user";
-
-interface FormDataType {
-    password: string;
-    confirmPassword: string;
-}
-// define a clear initial state
-const initialFormState: FormDataType = {
-    password: "",
-    confirmPassword: "",
-};
+import {useForm} from "react-hook-form";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {UpdatePasswordFormData, updatePasswordSchema} from "@/schema/updatePasswordSchema";
+import {useFormErrorToast} from "@/hook/useFormErrorToast";
 
 export default function IndexPage() {
     const [isLoading, setIsLoading] = useState(false);
-    const [form, setForm] = useState<FormDataType>(initialFormState);
     const searchParams = useSearchParams();
-    const [resetToken, setResetToken] = useState(searchParams.get("token"));
+    const [resetToken] = useState(searchParams.get("token"));
+    const {
+        register,
+        reset,
+        handleSubmit,
+        formState: { errors, isSubmitted },
+    } = useForm<UpdatePasswordFormData>({
+        resolver: zodResolver(updatePasswordSchema),
+        mode: "onSubmit", // validate on submit
+    });
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+    const onSubmit = async (data: UpdatePasswordFormData) => {
         setIsLoading(true);
         const updatedPassword : ResetPasswordType ={
-            password: form.password ,
+            password: data.password ,
             token: resetToken,
         };
-        resetPassword(updatedPassword)
+          resetPassword(updatedPassword)
             .then((data) => {
                 if (data?.status == 200) {
                     toast("Your password successfully reset!");
-                    setForm(initialFormState);
+                    reset()
                 }
             })
             .catch((err) => {
-                toast(err?.message)
+                toast.error(err?.response.data.message)
+                console.error(err?.response)
             })
             .finally(() => setIsLoading(false));
     };
+    useFormErrorToast(errors, isSubmitted);
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
@@ -59,15 +58,13 @@ export default function IndexPage() {
                 </h1>
                 {isLoading && <Loading message="Please wait..." />}
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                     {/* Email */}
                     <div>
                         <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
                             Password <Input
                             type="password"
-                            name="password"
-                            value={form.password}
-                            onChange={handleChange}
+                            {...register("password")}
                             placeholder="Enter your password."
                         />
                         </label>
@@ -78,9 +75,8 @@ export default function IndexPage() {
                         <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
                             Confirm Password <Input
                             type="password"
-                            name="confirmPassword"
-                            value={form.confirmPassword}
-                            onChange={handleChange} />
+                            {...register("password_confirmation")}
+                             />
                         </label>
                     </div>
 

@@ -4,68 +4,51 @@ import Button from "@/componenets/Button";
 import Link from "next/link";
 import {useEffect, useState} from "react";
 import {registerUser} from "@/services/userService";
-import {UserType} from "@/types/user";
 import {toast, ToastContainer} from "react-toastify";
 import Loading from "@/componenets/Loading";
 import {useRouter, useSearchParams} from "next/navigation";
-interface FormDataType {
-  name: string;
-  email: string;
-  password: string;
-  username: string;
-  confirmPassword: string;
-}
-// define a clear initial state
-const initialFormState: FormDataType = {
-  name: "",
-  email: "",
-  username: "",
-  password: "",
-  confirmPassword: "",
-};
+import {useForm} from "react-hook-form";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {signupSchema, SignupSchemaFormData} from "@/schema/signupSchema"
+import {useFormErrorToast} from "@/hook/useFormErrorToast";
 
 export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [form, setForm] = useState<FormDataType>(initialFormState);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
   useEffect(() => {
     if(searchParams.get("error"))
       toast.error("Confirmation link expired! please register again! ");
   },[router])
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const {
+    register,
+    handleSubmit,
+      reset,
+    formState: { errors, isSubmitted },
+  } = useForm<SignupSchemaFormData>({
+    resolver: zodResolver(signupSchema),
+    mode: "onSubmit", // validate on submit
+  });
 
-    if(form.password.length <6)
-      toast("Passwords must be between 6 characters.");
-    if (form.password !== form.confirmPassword) {
-      toast.error("Passwords do not match!");
-      return;
-    }
 
-    const newUser: UserType = {
-      username: form.username,
-      password: form.password,
-      email: form.email
-    }
+  const onSubmit = async (data: SignupSchemaFormData) => {
+    const { password_confirmation, ...newUser } = data; // remove confirmPassword
     registerUser(newUser)
         .then((data) => {
           if (data?.status == 201) {
-            toast("You have successfully registered! check your email for verification!");
-            setForm(initialFormState);
+            toast.success("You have successfully registered! check your email for verification!");
+            reset();
           }
         })
         .catch((err) => {
-          toast(err?.data.message)
+          toast.error(err?.response.data.message)
+          console.error(err?.response)
         })
         .finally(() => setIsLoading(false));
   };
+  useFormErrorToast(errors, isSubmitted);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
@@ -76,16 +59,14 @@ export default function SignupPage() {
         </h1>
         {isLoading && <Loading message="Please wait..." />}
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Name */}
           <div>
             <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
               Full Name <input
               type="text"
-              name="name"
               required
-              value={form.name}
-              onChange={handleChange}
+              {...register("displayName")}
               className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
             </label>
@@ -96,10 +77,8 @@ export default function SignupPage() {
             <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
               Email <input
               type="email"
-              name="email"
               required
-              value={form.email}
-              onChange={handleChange}
+              {...register("email")}
               className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
             </label>
@@ -110,10 +89,8 @@ export default function SignupPage() {
             <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
               Username <input
                 type="text"
-                name="username"
                 required
-                value={form.username}
-                onChange={handleChange}
+                {...register("username")}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
             </label>
@@ -124,10 +101,8 @@ export default function SignupPage() {
             <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
               Password <input
               type="password"
-              name="password"
               required
-              value={form.password}
-              onChange={handleChange}
+              {...register("password")}
               className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
             </label>
@@ -138,9 +113,7 @@ export default function SignupPage() {
             <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
               Confirm Password <input
               type="password"
-              name="confirmPassword"
-              value={form.confirmPassword}
-              onChange={handleChange}
+              {...register("password_confirmation")}
               className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
             </label>

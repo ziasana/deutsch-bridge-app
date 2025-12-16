@@ -32,7 +32,8 @@ export default function ResetPasswordPage() {
           }
         })
         .catch((err) => {
-          toast(err?.message)
+          toast.error(err?.response.data.message)
+          console.error(err?.response);
         })
         .finally(() => setIsLoading(false));
   };

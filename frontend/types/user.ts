@@ -7,7 +7,7 @@ export interface UserType{
 
 export interface ResetPasswordType{
     password?: string
-    token?: string
+    token?: string | undefined | null
 }
 
 export interface UserProfileType{

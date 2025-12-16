@@ -53,11 +53,10 @@ export default function UserProfile() {
                 setEditing(!editing)
             })
             .catch((err) => {
-                toast(err?.data.message);
+                toast.error(err?.response.data.message)
                 console.log(err);
             })
             .finally(() => setIsLoading(false));
-
     }
 
 

@@ -3,8 +3,11 @@ package com.deutschbridge.backend.service;
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.exception.UserVerificationException;
 import com.deutschbridge.backend.model.dto.UserDto;
+import com.deutschbridge.backend.model.dto.UserRegistrationDto;
 import com.deutschbridge.backend.model.entity.User;
+import com.deutschbridge.backend.model.entity.UserProfile;
 import com.deutschbridge.backend.model.enums.UserRole;
+import com.deutschbridge.backend.repository.UserProfileRepository;
 import com.deutschbridge.backend.repository.UserRepository;
 import com.deutschbridge.backend.util.JWTUtil;
 import jakarta.transaction.Transactional;
@@ -23,15 +26,18 @@ public class UserService {
     private final EmailService emailService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserProfileRepository userProfileRepository;
+
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        EmailService emailService,
-                       JWTUtil jwtUtil
-    ) {
+                       JWTUtil jwtUtil,
+                       UserProfileRepository userProfileRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
         this.jwtUtil = jwtUtil;
+        this.userProfileRepository = userProfileRepository;
     }
 
     public List<User> findAll()
@@ -51,42 +57,49 @@ public class UserService {
         );
     }
 
-    public User registerUser(UserDto userDto) throws UserVerificationException {
+    public User registerUser(UserRegistrationDto userRegistrationDto) throws UserVerificationException {
 
         // check username uniqueness
-        if (userRepository.findByUsername(userDto.getUsername()).isPresent()) {
+        if (userRepository.findByUsername(userRegistrationDto.username()).isPresent()) {
             throw new UserVerificationException("Username already exists");
         }
         // check email uniqueness
-        if (userRepository.existsByEmail(userDto.getEmail())) {
+        if (userRepository.existsByEmail(userRegistrationDto.email())) {
             throw new UserVerificationException("Email already registered!");
         }
-        Optional<User> existingUser= userRepository.findByEmail(userDto.getEmail());
+        Optional<User> existingUser= userRepository.findByEmail(userRegistrationDto.email());
         if(existingUser.isPresent())
         {
             if(existingUser.get().isVerified())
             {
                 throw new UserVerificationException("User is already verified!");
             }else{
-                String verificationToken = jwtUtil.generateVerificationToken(userDto.getEmail());
+                String verificationToken = jwtUtil.generateVerificationToken(userRegistrationDto.email());
                 existingUser.get().setVerificationToken(verificationToken);
                 userRepository.save(existingUser.get());
                 //send verification email
-                emailService.sendVerificationEmail(userDto.getEmail(), verificationToken);
+                emailService.sendVerificationEmail(userRegistrationDto.email(), verificationToken);
             }
             return existingUser.get();
         }
 
         User user = new User(
-                userDto.getUsername(),
-                userDto.getEmail(),
-                passwordEncoder.encode(userDto.getPassword()),
+                userRegistrationDto.username(),
+                userRegistrationDto.email(),
+                passwordEncoder.encode(userRegistrationDto.password()),
                 UserRole.STUDENT.getValue()
         );
-        user.setVerificationToken(jwtUtil.generateVerificationToken(userDto.getEmail()));
+        user.setVerificationToken(jwtUtil.generateVerificationToken(userRegistrationDto.email()));
+        UserProfile userProfile = new UserProfile();
+        userProfile.setUser(user);
+        userProfile.setDisplayName(userRegistrationDto.displayName());
+        user.setProfile(userProfile);
         //send email verification
-        emailService.sendVerificationEmail(userDto.getEmail(), user.getVerificationToken());
-        return userRepository.save(user);
+        emailService.sendVerificationEmail(userRegistrationDto.email(), user.getVerificationToken());
+        userRepository.save(user);
+        userProfileRepository.save(userProfile);
+        return user;
+
     }
 
 

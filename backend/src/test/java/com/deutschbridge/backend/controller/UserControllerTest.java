@@ -4,6 +4,7 @@ import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.exception.GlobalExceptionHandler;
 import com.deutschbridge.backend.exception.UserVerificationException;
 import com.deutschbridge.backend.model.dto.UserDto;
+import com.deutschbridge.backend.model.dto.UserRegistrationDto;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.service.EmailService;
 import com.deutschbridge.backend.service.UserService;
@@ -85,7 +86,7 @@ class UserControllerTest {
     @Test
     @DisplayName("POST /users/register should register user")
     void testRegisterUser() throws Exception {
-        when(userService.registerUser(any(UserDto.class))).thenReturn(user());
+        when(userService.registerUser(any(UserRegistrationDto.class))).thenReturn(user());
 
         mockMvc.perform(post("/api/user/register")
                         .contentType(MediaType.APPLICATION_JSON)
