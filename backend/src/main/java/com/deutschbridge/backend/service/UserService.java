@@ -54,41 +54,57 @@ public class UserService {
 
     public User registerUser(UserRegistrationRequest request) throws UserVerificationException {
 
-        // check email uniqueness
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new UserVerificationException("Email already registered!");
-        }
+        Optional<User> existingUserOpt =
+                userRepository.findByEmail(request.getEmail());
 
-        Optional<User> existingUser= userRepository.findByEmail(request.getEmail());
-        if(existingUser.isPresent())
-        {
-            if(existingUser.get().isVerified())
-            {
-                throw new UserVerificationException("User is already verified!");
-            }else{
-                String verificationToken = jwtUtil.generateVerificationToken(request.getEmail());
-                existingUser.get().setVerificationToken(verificationToken);
-                userRepository.save(existingUser.get());
-                //send verification email
-                emailService.sendVerificationEmail(request.getEmail(), verificationToken);
+        // Case 1 & 2: user exists
+        if (existingUserOpt.isPresent()) {
+            User existingUser = existingUserOpt.get();
+
+            // Case 1: already verified → exception
+            if (existingUser.isVerified()) {
+                throw new UserVerificationException("Email already registered");
             }
-            return existingUser.get();
+
+            // Case 2: exists but not verified → resend verification
+            String verificationToken =
+                    jwtUtil.generateVerificationToken(existingUser.getEmail());
+
+            existingUser.setVerificationToken(verificationToken);
+            userRepository.save(existingUser);
+
+            emailService.sendVerificationEmail(
+                    existingUser.getEmail(),
+                    verificationToken
+            );
+
+            return existingUser;
         }
 
+        // Case 3: new user
         User user = new User(
                 request.getDisplayName(),
                 request.getEmail(),
                 passwordEncoder.encode(request.getPassword())
         );
-        user.setVerificationToken(jwtUtil.generateVerificationToken(request.getEmail()));
-        UserProfile userProfile = new UserProfile();
-        userProfile.setUser(user);
-        userProfile.setDisplayName(request.getDisplayName());
-        user.setProfile(userProfile);
-        //send email verification
-        emailService.sendVerificationEmail(request.getEmail(), user.getVerificationToken());
+
+        String verificationToken =
+                jwtUtil.generateVerificationToken(user.getEmail());
+        user.setVerificationToken(verificationToken);
+
+        UserProfile profile = new UserProfile();
+        profile.setDisplayName(request.getDisplayName());
+        profile.setUser(user);
+        user.setProfile(profile);
+
         userRepository.save(user);
-        userProfileRepository.save(userProfile);
+        userProfileRepository.save(profile);
+
+        emailService.sendVerificationEmail(
+                user.getEmail(),
+                verificationToken
+        );
+
         return user;
     }
 
@@ -109,7 +125,6 @@ public class UserService {
         //send rest link email
         emailService.sendForgotPasswordEmail(email, resetToken);
         return true;
-
     }
 
     @Transactional

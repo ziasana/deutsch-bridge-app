@@ -31,4 +31,6 @@ public interface UserRepository extends JpaRepository<User,String> {
     void saveRefreshToken(@Param("email") String email, @Param("refreshToken") String refreshToken);
 
     void deleteByEmail(String email);
+
+    Optional<Object> findByUsername(String email);
 }

@@ -9,13 +9,15 @@ import com.deutschbridge.backend.service.CustomUserDetailsService;
 import com.deutschbridge.backend.service.EmailService;
 import com.deutschbridge.backend.service.UserProfileService;
 import com.deutschbridge.backend.service.UserService;
+import com.deutschbridge.backend.util.SecurityUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
 import java.util.List;
 
 
@@ -40,19 +42,12 @@ public class UserController {
         return ResponseEntity.ok().body(userService.findAll());
     }
 
-    @PostMapping("/me")
-    public ResponseEntity <UserDetails> getMe(@RequestBody @AuthenticationPrincipal AuthUser authUser) {
-            return new ResponseEntity<>(customUserDetailsService.loadUserByUsername(authUser.getEmail()), HttpStatus.OK);
+    @GetMapping("/me")
+    public ResponseEntity<User> me() {
+        String userEmail = SecurityUtils.getAuthenticatedEmail();
+        User user = userService.findByEmail(userEmail);
+        return new ResponseEntity<>(user, HttpStatus.OK);
     }
-
-    @GetMapping("/send-mail")
-    public ResponseEntity <String> sendMail() {
-        emailService.sendVerificationEmail("zs.U@gmail.com",
-                "S3cJbRs7KKbiwtdHckP1dLB3PkT-ALg7XOq0Y7pd47w"
-                );
-        return ResponseEntity.ok().body("Email sent successfully");
-    }
-
 
     @DeleteMapping("/delete-user")
     public ResponseEntity<Boolean> deleteByEmail(@RequestBody UserDto userDto) throws DataNotFoundException {
@@ -95,10 +90,10 @@ public class UserController {
     public ResponseEntity<ApiResponse<Void>> updatePassword(@RequestBody @Valid UpdatePasswordRequest request,
                                                             @AuthenticationPrincipal AuthUser authUser
     ) throws DataNotFoundException {
-       // System.out.println("The principle is:"+ principal.getClass());
         userService.updatePassword(authUser.getId(), request.password());
         return new ResponseEntity<>(
                 new ApiResponse<>("Password updated successfully", null), HttpStatus.OK);
     }
+
 
 }

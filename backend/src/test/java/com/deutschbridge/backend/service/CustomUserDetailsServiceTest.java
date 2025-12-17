@@ -26,16 +26,14 @@ class CustomUserDetailsServiceTest {
     @Test
     @DisplayName("loadUser should return user")
     void loadUserByUsername_ShouldReturnUser() {
-        String username = "username";
         User user= new User();
-        user.setUsername(username);
         user.setPassword("password");
         user.setEmail("email");
         userRepository.save(user);
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
-        UserDetails result = customUserDetailsService.loadUserByUsername(username);
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        UserDetails result = customUserDetailsService.loadUserByUsername(user.getEmail());
         assertNotNull(result);
-        assertThat(result.getUsername()).isEqualTo(username);
-        verify(userRepository, times(1)).findByUsername(username);
+        assertThat(result.getUsername()).isEqualTo(user.getEmail());
+        verify(userRepository, times(1)).findByEmail(user.getEmail());
     }
 }

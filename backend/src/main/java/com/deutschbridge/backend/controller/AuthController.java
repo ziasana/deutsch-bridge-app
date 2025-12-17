@@ -100,7 +100,6 @@ public class AuthController {
 
     @PutMapping("/reset-password")
     public ResponseEntity<ApiResponse<Void>> resetPassword(@RequestBody @Valid ResetPasswordRequest request) throws DataNotFoundException, UserVerificationException {
-
         userService.resetPassword(request.password(), request.token());
         return new ResponseEntity<>(new ApiResponse<>("Password reset successfully", null), HttpStatus.OK);
     }

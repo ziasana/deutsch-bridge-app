@@ -16,11 +16,11 @@ public class AuthUser implements UserDetails {
     private final String id;
     @Getter
     @Setter
-    private final String email;
+    private String email;
     private final String password;
     @Getter
     @Setter
-    private String role="STUDENT";
+    private String role = "STUDENT";
 
 
     public AuthUser(User user) {
@@ -39,10 +39,29 @@ public class AuthUser implements UserDetails {
     public String getPassword() {
         return password;
     }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(role));
     }
 
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
 
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
 }

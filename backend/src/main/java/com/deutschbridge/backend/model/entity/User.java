@@ -3,9 +3,6 @@ package com.deutschbridge.backend.model.entity;
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import java.util.List;
@@ -23,6 +20,7 @@ public class User {
 
     @Column(unique = true, nullable = false)
     private String email;
+    private String username;
     private String password;
     private String displayName;
 
@@ -53,14 +51,6 @@ public class User {
         if (this.id == null) {
             this.id = "user-"+ NanoIdUtils.randomNanoId();
         }
-    }
-
-    public User(String id, String email, String password, LearningLevel learningLevel) {
-        this.id = id;
-        this.email = email;
-        this.password = password;
-        this.learningLevel = learningLevel;
-
     }
 
     public User(String displayName, String email, String password) {

@@ -8,7 +8,6 @@ import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.model.enums.PreferredLanguage;
 import com.deutschbridge.backend.repository.UserProfileRepository;
 import com.deutschbridge.backend.repository.UserRepository;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -49,7 +48,7 @@ public class UserProfileService {
         UserProfile profile= user.getProfile();
         if(profile == null) {
             profile = new UserProfile();
-            profile.setDisplayName(request.displayName());
+            user.setDisplayName(request.displayName());
             profile.setLearningLevel(LearningLevel.valueOf( request.learningLevel()));
             profile.setDailyGoalWords(request.dailyGoalWords());
             profile.setNotificationsEnabled(request.notificationsEnabled());
@@ -57,16 +56,18 @@ public class UserProfileService {
             // 🔑 THIS IS THE KEY PART
             profile.setUser(user);
             user.setProfile(profile);
+            userRepository.save(user);
             userProfileRepository.save(profile);
 
         }else {
-            if (request.displayName() != null) profile.setDisplayName(request.displayName());
+            if (request.displayName() != null) user.setDisplayName(request.displayName());
             if (request.learningLevel() != null)
                 profile.setLearningLevel(LearningLevel.valueOf(request.learningLevel()));
             if (request.dailyGoalWords() != null) profile.setDailyGoalWords(request.dailyGoalWords());
             profile.setNotificationsEnabled(request.notificationsEnabled());
             user.setProfile(profile);
             userRepository.save(user);
+            userProfileRepository.save(profile);
         }
     }
 
@@ -77,8 +78,7 @@ public class UserProfileService {
         return new UserProfileResponse(
                 profile != null ? user.getDisplayName() : null,
                 user.getEmail(),
-               // profile != null ? profile.getLearningLevel().getValue() : null,
-                null,
+                profile != null ? String.valueOf(profile.getLearningLevel()) : null,
                 profile != null ? profile.getDailyGoalWords() : null,
                 profile != null && profile.isNotificationsEnabled()
         );
