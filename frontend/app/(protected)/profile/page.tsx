@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {ChangeEvent, useState} from "react";
 import { Card, CardContent } from "@/componenets/Card";
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
@@ -32,7 +32,7 @@ export default function UserProfile() {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setProfile({ ...profile, [e.target.name]: e.target.value });
     };
-    const handleChangeNotification = (e) => {
+    const handleChangeNotification = (e: ChangeEvent<HTMLInputElement>) => {
         const value = e.target.checked; // boolean
         setEnabled(value);
         setProfile({ ...profile, notificationsEnabled: !enabled });
