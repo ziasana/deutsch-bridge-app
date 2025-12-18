@@ -156,8 +156,8 @@
                         </goals>
                         <configuration>
                             <excludes>
-                                <exclude>com/deutschbridge/backend/model/**</exclude>
-                                <exclude>com/deutschbridge/backend/repository/**</exclude>
+                                <exclude>com/deutschbridge/**/model/**</exclude>
+                                <exclude>com/deutschbridge/**/repository/**</exclude>
                             </excludes>
                         </configuration>
                     </execution>
