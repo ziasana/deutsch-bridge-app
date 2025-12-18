@@ -23,7 +23,7 @@ export default function LoginPage() {
   useEffect(() => {
     if(searchParams.get("success"))
       toast.success("Registration completed successfully. Now you can log in.");
-  },[router])
+  },[router, searchParams]);
 
 
   const {

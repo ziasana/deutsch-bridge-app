@@ -8,7 +8,7 @@ interface LabelProps {
 }
 
 
-export function Label({ htmlFor, children, className = '' }: LabelProps) {
+export function Label({ htmlFor, children, className = '' }: Readonly<LabelProps>) {
     return (
         <label
             htmlFor={htmlFor}

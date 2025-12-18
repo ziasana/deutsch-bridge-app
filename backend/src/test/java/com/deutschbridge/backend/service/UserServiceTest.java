@@ -105,17 +105,14 @@ class UserServiceTest {
     @Test
     @DisplayName("registerUser should throw when email is already registered")
     void registerUser_verifiedUser_shouldThrow() {
-        User newUser = new User();
         user.setVerified(true);
-
-        when(userRepository.findByEmail("john@example.com"))
-                .thenReturn(Optional.of(newUser));
+        when(userRepository.findByEmail(user.getEmail()))
+                .thenReturn(Optional.of(user));
 
         assertThatThrownBy(() ->
                 userService.registerUser(userRegistrationRequest))
                 .isInstanceOf(UserVerificationException.class)
                 .hasMessageContaining("Email already registered");
-
         verify(emailService, never()).sendVerificationEmail(any(), any());
     }
 
@@ -123,11 +120,8 @@ class UserServiceTest {
     @Test
     @DisplayName("registerUser should update existing unverified user and send email")
     void registerUser_unverifiedUser_shouldResendVerification() throws UserVerificationException {
-        User user = new User();
-        user.setEmail("john@example.com");
         user.setVerified(false);
-
-        when(userRepository.findByEmail("john@example.com"))
+        when(userRepository.findByEmail(user.getEmail()))
                 .thenReturn(Optional.of(user));
         when(jwtUtil.generateVerificationToken(any()))
                 .thenReturn("token");

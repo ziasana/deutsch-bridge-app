@@ -20,7 +20,7 @@ export default function SignupPage() {
   useEffect(() => {
     if(searchParams.get("error"))
       toast.error("Confirmation link expired! please register again! ");
-  },[router])
+  },[router, searchParams]);
 
   const {
     register,

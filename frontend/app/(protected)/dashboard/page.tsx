@@ -5,7 +5,6 @@ import {
     MessageSquare,
     ClipboardList,
     Layers,
-    TrendingUp,
     SpellCheck,
 } from "lucide-react";
 import Link from "next/link";

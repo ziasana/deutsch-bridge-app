@@ -2,11 +2,10 @@
 
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
-import Link from "next/link";
 import { useState } from "react";
 import {UserType} from "@/types/user";
 import {ToastContainer, toast} from "react-toastify";
-import {forgotPassword, resetPassword} from "@/services/userService";
+import {forgotPassword} from "@/services/userService";
 import Loading from "@/componenets/Loading";
 
 const initialFormState: UserType ={

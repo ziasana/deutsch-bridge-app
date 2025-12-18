@@ -4,10 +4,10 @@ import clsx from 'clsx'
 export function Card({
                          children,
                          className,
-                     }: {
+                     }: Readonly<{
     children: React.ReactNode
     className?: string
-}) {
+}>) {
     return (
         <div
             className={clsx(
@@ -23,10 +23,10 @@ export function Card({
 export function CardHeader({
                                children,
                                className,
-                           }: {
+                           }: Readonly<{
     children: React.ReactNode
     className?: string
-}) {
+}>) {
     return (
         <div
             className={clsx(
@@ -42,10 +42,10 @@ export function CardHeader({
 export function CardContent({
                                 children,
                                 className,
-                            }: {
+                            }: Readonly<{
     children: React.ReactNode
     className?: string
-}) {
+}>) {
     return (
         <div className={clsx('px-6 py-5', className)}>{children}</div>
     )
@@ -54,10 +54,10 @@ export function CardContent({
 export function CardFooter({
                                children,
                                className,
-                           }: {
+                           }: Readonly<{
     children: React.ReactNode
     className?: string
-}) {
+}>) {
     return (
         <div
             className={clsx(

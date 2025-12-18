@@ -1,8 +1,10 @@
 import { useEffect } from "react";
 import { toast } from "react-toastify";
-
+interface FormError {
+    message?: string;
+}
 export function useFormErrorToast(
-    errors: Record<string, any>,
+    errors: Record<string, FormError>,
     isSubmitted: boolean
 ) {
     useEffect(() => {

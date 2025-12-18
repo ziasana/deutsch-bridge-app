@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/componenets/Card";
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import { Label } from "@/componenets/Label";
-import useAuthStore from "@/store/useAuthStore";
 import {updatePassword} from "@/services/userService";
 import {toast, ToastContainer} from "react-toastify";
 import Loading from "@/componenets/Loading";
@@ -18,7 +17,6 @@ import {useFormErrorToast} from "@/hook/useFormErrorToast";
 
 export default function UserProfile() {
     const [isLoading, setIsLoading] = useState(false);
-    const {userProfile} = useAuthStore();
 
     const {
         reset,

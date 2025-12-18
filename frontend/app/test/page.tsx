@@ -1,7 +1,7 @@
 "use client";
 import * as React from 'react';
 import {useEffect} from "react";
-import {getTest, getUsers} from "@/services/userService";
+import {getTest} from "@/services/userService";
 import {useRouter} from "next/navigation";
 import {UserType} from "@/types/user";
 

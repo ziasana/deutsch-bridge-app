@@ -41,7 +41,9 @@ api.interceptors.response.use(
                     failedQueue.push({ resolve, reject });
                 })
                     .then(() => api(originalRequest))
-                    .catch(err => Promise.reject(err));
+                    .catch(err => {
+                        throw err;
+                    });
             }
 
             originalRequest._retry = true;
@@ -56,7 +58,7 @@ api.interceptors.response.use(
                 } catch (err) {
                     processQueue(err, null); // reject queued requests
                     useAuthStore.getState().logout(); // logout
-                    window.location.href = "/login"; // redirect to login
+                    globalThis.location.href = "/login"; // redirect to login
                     reject(err);
                 } finally {
                     isRefreshing = false;
@@ -64,7 +66,7 @@ api.interceptors.response.use(
             });
         }
 
-        return Promise.reject(error);
+        throw error;
     }
 );
 

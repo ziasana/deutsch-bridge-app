@@ -10,6 +10,7 @@ import {updateProfile} from "@/services/userService";
 import {toast, ToastContainer} from "react-toastify";
 import Loading from "@/componenets/Loading";
 import {UserProfileType} from "@/types/user";
+import Image from "next/image";
 
 export default function UserProfile() {
     const levels: string[] = ["A1","A2", "B1", "B2", "C1", "C2"];
@@ -21,7 +22,6 @@ export default function UserProfile() {
     const [profile, setProfile] = useState<UserProfileType>({
         displayName: userProfile?.displayName,
         email: userProfile?.email,
-        username: userProfile?.username,
         learningLevel: userProfile?.learningLevel,
         dailyGoalWords: userProfile?.dailyGoalWords,
         notificationsEnabled:userProfile?.notificationsEnabled
@@ -77,16 +77,18 @@ export default function UserProfile() {
 
                         {/* Avatar */}
                         <div className="flex items-center gap-4">
-                            <img
+                            <Image
                                 src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e"
                                 alt="avatar"
+                                width={50}
+                                height={50}
                                 className="h-20 w-20 rounded-full object-cover"
                             />
                             <div>
                                 <p className="text-lg font-medium text-gray-900 dark:text-white">
                                     {profile.displayName}
                                 </p>
-                                <p className="text-sm text-gray-500">@{profile.username}</p>
+                                <p className="text-sm text-gray-500">@{profile.displayName}</p>
                             </div>
                         </div>
 
@@ -103,16 +105,6 @@ export default function UserProfile() {
                             </div>
 
                             <div>
-                                <Label>Username</Label>
-                                <Input
-                                    name="username"
-                                    value={profile.username}
-                                    onChange={handleChange}
-                                    disabled
-                                />
-                            </div>
-
-                            <div className="sm:col-span-2">
                                 <Label>Email</Label>
                                 <Input
                                     name="email"
