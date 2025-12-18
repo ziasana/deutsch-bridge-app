@@ -13,11 +13,17 @@ const api = axios.create({
 });
 
 
+type FailedRequest = {
+    resolve: (token: string | null) => void;
+    reject: (error: unknown) => void;
+};
+
 // ---------------- Queue logic ----------------
 let isRefreshing = false;
-let failedQueue = [];
+let failedQueue: FailedRequest[] = [];
 
-const processQueue = (error, token = null) => {
+
+const processQueue = (error:unknown, token = null) => {
     failedQueue.forEach(prom => {
         if (error) {
             prom.reject(error);

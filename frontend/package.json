@@ -11,8 +11,8 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
-      "next lint --fix",
-      "next lint --max-warnings=0"
+      "eslint --fix",
+      "eslint --max-warnings=0"
     ]
   },
   "dependencies": {
