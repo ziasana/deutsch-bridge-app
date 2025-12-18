@@ -3,7 +3,6 @@
 import {ReactNode, useEffect} from 'react';
 import { useRouter } from 'next/navigation';
 import useAuthStore from '@/store/useAuthStore';
-
 interface ProtectedLayoutProps {
     children: ReactNode;
 }
@@ -30,7 +29,6 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
 
 
     return <>
-
         {children}
     </>;
 }

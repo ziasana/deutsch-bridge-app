@@ -2,7 +2,7 @@
 
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
-import { useState } from "react";
+import {Suspense, useState} from "react";
 import {UserType} from "@/types/user";
 import {ToastContainer, toast} from "react-toastify";
 import {forgotPassword} from "@/services/userService";
@@ -11,7 +11,11 @@ import Loading from "@/componenets/Loading";
 const initialFormState: UserType ={
   email: ""
 }
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+
 export default function ResetPasswordPage() {
+
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState<UserType>(initialFormState);
 
@@ -38,6 +42,7 @@ export default function ResetPasswordPage() {
   };
 
   return (
+      <Suspense fallback={<Loading />}>
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
       <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
         {/* Title */}
@@ -71,5 +76,6 @@ export default function ResetPasswordPage() {
 
       </div>
     </div>
+        </Suspense>
   );
 }
