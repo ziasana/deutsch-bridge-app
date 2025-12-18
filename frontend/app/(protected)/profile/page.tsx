@@ -29,7 +29,7 @@ export default function UserProfile() {
 
     const [enabled, setEnabled] = useState(profile.notificationsEnabled);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setProfile({ ...profile, [e.target.name]: e.target.value });
     };
     const handleChangeNotification = (e: ChangeEvent<HTMLInputElement>) => {

@@ -34,6 +34,7 @@ export default function SignupPage() {
 
 
   const onSubmit = async (data: SignupSchemaFormData) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password_confirmation, ...newUser } = data; // remove confirmPassword
     registerUser(newUser)
         .then((data) => {
