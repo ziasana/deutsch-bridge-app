@@ -27,7 +27,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserProfileRepository userProfileRepository;
 
-    static final String notFound= "User not found!";
+    static final String NOT_FOUND= "User not found!";
 
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
@@ -136,7 +136,7 @@ public class UserService {
 
         String email = jwtUtil.extractEmail(token);
         User existing = userRepository.findByEmail(email)
-                .orElseThrow(() -> new DataNotFoundException(notFound));
+                .orElseThrow(() -> new DataNotFoundException(NOT_FOUND));
         if(existing.getResetToken()==null)
         {
             throw new UserVerificationException("Invalid Token!");
@@ -150,17 +150,23 @@ public class UserService {
     }
 
     @Transactional
-    public void updatePassword(String id, String password) throws DataNotFoundException {
+    public boolean updatePassword(String id, String password) throws DataNotFoundException {
         User existing = userRepository.findById(id)
-                .orElseThrow(() -> new DataNotFoundException(notFound));
-        if (password != null) existing.setPassword(passwordEncoder.encode(password));
+                .orElseThrow(() -> new DataNotFoundException(NOT_FOUND));
+        // nothing to update
+        if (password == null || password.isBlank()) {
+            return false;
+        }
+        existing.setPassword(passwordEncoder.encode(password));
         userRepository.save(existing);
+
+        return true;
     }
 
     @Transactional
     public User update(UserDto userDto) throws DataNotFoundException {
         User existing = userRepository.findByEmail(userDto.getEmail())
-                .orElseThrow(() -> new DataNotFoundException(notFound));
+                .orElseThrow(() -> new DataNotFoundException(NOT_FOUND));
         if (userDto.getPassword() != null) existing.setPassword( passwordEncoder.encode(userDto.getPassword()));
         return userRepository.save(existing);
     }
@@ -168,7 +174,7 @@ public class UserService {
     @Transactional
     public boolean deleteByEmail(UserDto  userDto) throws DataNotFoundException {
         userRepository.findByEmail(userDto.getEmail())
-                .orElseThrow( ()-> new DataNotFoundException(notFound));
+                .orElseThrow( ()-> new DataNotFoundException(NOT_FOUND));
         userRepository.deleteByEmail(userDto.getEmail());
         return true;
     }

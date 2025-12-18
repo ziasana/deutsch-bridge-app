@@ -7,15 +7,15 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class CookieService {
-    private static final String accessToken = "access_token";
-    private static final String  reFreshToken= "refresh_token";
+    private static final String ACCESS_TOKEN = "access_token";
+    private static final String  REFRESH_TOKEN= "refresh_token";
 
      public Cookie createAccessToken(String token){
-         return this.create(accessToken, token);
+         return this.create(ACCESS_TOKEN, token);
      }
 
     public Cookie createRefreshToken(String token){
-        return this.create(reFreshToken, token);
+        return this.create(REFRESH_TOKEN, token);
     }
 
     public Cookie create(String name,String token)
@@ -29,11 +29,11 @@ public class CookieService {
     }
 
     public String extractAccessToken(HttpServletRequest request){
-         return  extractTokenFromCookie(accessToken, request);
+         return  extractTokenFromCookie(ACCESS_TOKEN, request);
     }
 
     public String extractRefreshToken(HttpServletRequest request){
-        return  extractTokenFromCookie(reFreshToken, request);
+        return  extractTokenFromCookie(REFRESH_TOKEN, request);
     }
 
     public String extractTokenFromCookie(String name, HttpServletRequest request)

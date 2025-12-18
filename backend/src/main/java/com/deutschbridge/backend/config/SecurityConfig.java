@@ -35,10 +35,7 @@ public class SecurityConfig {
     {
         http
                 .cors(Customizer.withDefaults())
-                .csrf(AbstractHttpConfigurer::disable)
-                //  .cors(cors -> cors.configurationSource(corsConfigurationSource))
-               // .csrf(csrf -> csrf.disable())
-                // .csrf(AbstractHttpConfigurer::disable)  // IMPORTANT for POST/PUT/DELETE
+                .csrf(AbstractHttpConfigurer::disable)  // IMPORTANT for POST/PUT/DELETE
                 .authorizeHttpRequests(auth ->
                         auth
                                 .requestMatchers(

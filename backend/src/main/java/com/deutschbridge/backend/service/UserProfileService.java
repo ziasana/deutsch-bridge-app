@@ -1,5 +1,6 @@
 package com.deutschbridge.backend.service;
 
+import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.UserProfileRequest;
 import com.deutschbridge.backend.model.dto.UserProfileResponse;
 import com.deutschbridge.backend.model.entity.User;
@@ -37,29 +38,26 @@ public class UserProfileService {
                 LearningLevel.B1,
                 true
         );
-
         return userProfileRepository.save(profile);
     }
 
 
-    public void update(String userId, UserProfileRequest request) {
+    public boolean update(String userId, UserProfileRequest request) throws DataNotFoundException {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        UserProfile profile= user.getProfile();
-        if(profile == null) {
+                .orElseThrow(() -> new DataNotFoundException("User not found"));
+        UserProfile profile = user.getProfile();
+        if (profile == null) {
             profile = new UserProfile();
             user.setDisplayName(request.displayName());
-            profile.setLearningLevel(LearningLevel.valueOf( request.learningLevel()));
+            profile.setLearningLevel(LearningLevel.valueOf(request.learningLevel()));
             profile.setDailyGoalWords(request.dailyGoalWords());
             profile.setNotificationsEnabled(request.notificationsEnabled());
 
-            // 🔑 THIS IS THE KEY PART
             profile.setUser(user);
             user.setProfile(profile);
             userRepository.save(user);
             userProfileRepository.save(profile);
-
-        }else {
+        } else {
             if (request.displayName() != null) user.setDisplayName(request.displayName());
             if (request.learningLevel() != null)
                 profile.setLearningLevel(LearningLevel.valueOf(request.learningLevel()));
@@ -69,6 +67,7 @@ public class UserProfileService {
             userRepository.save(user);
             userProfileRepository.save(profile);
         }
+        return true;
     }
 
     public UserProfileResponse getUserProfileResponse(User user) {

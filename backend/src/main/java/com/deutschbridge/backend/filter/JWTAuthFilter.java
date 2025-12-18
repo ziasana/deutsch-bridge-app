@@ -1,7 +1,5 @@
 package com.deutschbridge.backend.filter;
 
-import com.deutschbridge.backend.model.AuthUser;
-import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.service.CookieService;
 import com.deutschbridge.backend.service.CustomUserDetailsService;
 import com.deutschbridge.backend.util.JWTUtil;
@@ -62,13 +60,6 @@ public class JWTAuthFilter extends OncePerRequestFilter {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401
             return;
         }
-
-      // String autHeader= request.getHeader("Authorization");
-        //extract data from header and get username from token
-       /*  if(autHeader != null && autHeader.startsWith("Bearer ")) {
-            token = autHeader.substring(7);
-            username= jwtUtil.extractUsernameOrEmail(token);
-        }*/
 
         if(email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             //check if user exist in DB and not expired

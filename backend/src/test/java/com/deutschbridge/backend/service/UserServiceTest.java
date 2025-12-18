@@ -105,11 +105,11 @@ class UserServiceTest {
     @Test
     @DisplayName("registerUser should throw when email is already registered")
     void registerUser_verifiedUser_shouldThrow() {
-        User user = new User();
+        User newUser = new User();
         user.setVerified(true);
 
         when(userRepository.findByEmail("john@example.com"))
-                .thenReturn(Optional.of(user));
+                .thenReturn(Optional.of(newUser));
 
         assertThatThrownBy(() ->
                 userService.registerUser(userRegistrationRequest))

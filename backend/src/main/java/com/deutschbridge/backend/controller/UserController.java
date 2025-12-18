@@ -17,7 +17,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.Principal;
 import java.util.List;
 
 
@@ -26,14 +25,10 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
-    private final EmailService emailService;
-    private final CustomUserDetailsService customUserDetailsService;
     private final UserProfileService userProfileService;
 
-    public UserController(UserService userService, EmailService emailService, CustomUserDetailsService customUserDetailsService, UserProfileService userProfileService) {
+    public UserController(UserService userService, UserProfileService userProfileService) {
         this.userService = userService;
-        this.emailService = emailService;
-        this.customUserDetailsService = customUserDetailsService;
         this.userProfileService = userProfileService;
     }
 
@@ -43,7 +38,7 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<User> me() {
+    public ResponseEntity<User> me() throws DataNotFoundException {
         String userEmail = SecurityUtils.getAuthenticatedEmail();
         User user = userService.findByEmail(userEmail);
         return new ResponseEntity<>(user, HttpStatus.OK);
@@ -60,9 +55,11 @@ public class UserController {
     }
 
     @PostMapping("/save-profile")
-    public ResponseEntity<?> saveProfile(@RequestBody UserProfileResponse userProfileResponse) {
+    public ResponseEntity<ApiResponse<UserProfileResponse>> saveProfile(@RequestBody UserProfileResponse userProfileResponse) {
         userProfileService.save(userProfileResponse);
-        return new ResponseEntity<>(userProfileResponse, HttpStatus.OK);
+        return new ResponseEntity<>(
+                new ApiResponse<>("Profile saved", userProfileResponse), HttpStatus.OK);
+
     }
 
     @GetMapping("/profile")
@@ -80,19 +77,22 @@ public class UserController {
     }
 
     @PutMapping("/update-profile")
-    public ResponseEntity<ApiResponse<Void>> updateProfile(@RequestBody UserProfileRequest request,  @AuthenticationPrincipal AuthUser authUser) {
-        userProfileService.update(authUser.getId(), request);
+    public ResponseEntity<ApiResponse<Void>> updateProfile(@RequestBody UserProfileRequest request) throws DataNotFoundException {
+        String authId = SecurityUtils.getCurrentUser().getId();
+        userProfileService.update(authId, request);
         return new ResponseEntity<>(
                 new ApiResponse<>("Profile updated successfully", null), HttpStatus.OK);
     }
 
     @PutMapping("/update-password")
-    public ResponseEntity<ApiResponse<Void>> updatePassword(@RequestBody @Valid UpdatePasswordRequest request,
-                                                            @AuthenticationPrincipal AuthUser authUser
-    ) throws DataNotFoundException {
-        userService.updatePassword(authUser.getId(), request.password());
-        return new ResponseEntity<>(
-                new ApiResponse<>("Password updated successfully", null), HttpStatus.OK);
+    public ResponseEntity<ApiResponse<Void>> updatePassword(@RequestBody @Valid UpdatePasswordRequest request) throws DataNotFoundException {
+        String authId = SecurityUtils.getCurrentUser().getId();
+        boolean updated = userService.updatePassword(authId, request.password());
+        if (!updated) {
+            return new ResponseEntity<>(new ApiResponse<>("Password not updated", null), HttpStatus.BAD_REQUEST);
+        }
+
+        return new ResponseEntity<>(new ApiResponse<>("Password updated successfully", null), HttpStatus.OK);
     }
 
 

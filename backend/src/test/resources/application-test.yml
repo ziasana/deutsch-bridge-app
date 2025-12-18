@@ -23,7 +23,7 @@ spring:
  #     connect-timeout: 30000 # 30 seconds
  #     socket-timeout: 60000  # 60 seconds
 
-jwt.secret: ${JWT_SECRET}
+jwt.secret: "c416a9b8edf43ebf7a42ac14802b9b21ea932c3e6b18670300389e02daf78de2"
 
 de:
   flapdoodle:

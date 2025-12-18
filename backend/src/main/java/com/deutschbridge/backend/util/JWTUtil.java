@@ -1,8 +1,5 @@
 package com.deutschbridge.backend.util;
 
-import com.deutschbridge.backend.model.AuthUser;
-import com.deutschbridge.backend.model.entity.CustomUserDetails;
-import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -21,24 +18,29 @@ public class JWTUtil {
     private final UserRepository userRepository;
 
     private final Key key;
-    private static final long EXPIRATION_TIME_ACCESS_TOKEN = (1000 * 60 * 15 ); //15 min
-    private static final long EXPIRATION_TIME_REFRESH_TOKEN = (1000 * 60 * 60 * 24 *15); //10 days
-    private static final long EXPIRATION_TIME_VERIFICATION_TOKEN = (1000 * 60 * 60 * 24 ); //10 days
+    @Value("${jwt.expiration.access-token}")
+    private long expirationTimeAccessToken;
+
+    @Value("${jwt.expiration.refresh-token}")
+    private long expirationTimeRefreshToken;
+
+    @Value("${jwt.expiration.verification-token}")
+    private long expirationTimeVerificationToken;
 
     public JWTUtil(UserRepository userRepository, @Value("${jwt.secret}") String jwtSecret){
         this.userRepository = userRepository;
         this.key= Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
     public String generateVerificationToken(String email) {
-        return generateToken(email, EXPIRATION_TIME_VERIFICATION_TOKEN);
+        return generateToken(email, expirationTimeVerificationToken);
     }
 
     public String generateRefreshToken(String email) {
-        return generateToken(email, EXPIRATION_TIME_REFRESH_TOKEN);
+        return generateToken(email, expirationTimeRefreshToken);
     }
 
     public String generateAccessToken(String email) {
-        return generateToken(email, EXPIRATION_TIME_ACCESS_TOKEN);
+        return generateToken(email, expirationTimeAccessToken);
     }
 
     private String generateToken(String email, long expirationTime) {

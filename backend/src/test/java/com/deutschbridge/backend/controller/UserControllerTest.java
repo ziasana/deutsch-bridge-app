@@ -1,9 +1,13 @@
 package com.deutschbridge.backend.controller;
 
+import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.exception.GlobalExceptionHandler;
 import com.deutschbridge.backend.model.AuthUser;
+import com.deutschbridge.backend.model.dto.UpdatePasswordRequest;
 import com.deutschbridge.backend.model.dto.UserDto;
+import com.deutschbridge.backend.model.dto.UserProfileRequest;
 import com.deutschbridge.backend.model.entity.User;
+import com.deutschbridge.backend.service.UserProfileService;
 import com.deutschbridge.backend.service.UserService;
 import org.junit.jupiter.api.*;
 import org.junit.runner.RunWith;
@@ -44,6 +48,8 @@ class UserControllerTest {
     private UserController userController;
     @Mock
     private UserService userService;
+    @Mock
+    private UserProfileService userProfileService;
 
     private User user() {
         return new User("john", "john@example.com", "hashed" );
@@ -60,6 +66,7 @@ class UserControllerTest {
     void setupAuthentication() {
         User userEntity = new User("id123", "john@example.com", "hashedpassword");
         AuthUser authUser = new AuthUser(userEntity);
+        authUser.setId("user123");
 
         Authentication auth = new UsernamePasswordAuthenticationToken(
                 authUser,
@@ -118,6 +125,89 @@ class UserControllerTest {
                                 }
                       """))
                 .andExpect(status().isNoContent());
+    }
+
+    // -------------------------------------------------------------------------
+    // PUT /users/update-password
+    // -------------------------------------------------------------------------
+    @Test
+    @DisplayName("UPDATE /users/update-password should return success message")
+    void testUpdatePassword() throws Exception {
+        setupAuthentication();
+        UpdatePasswordRequest request = new UpdatePasswordRequest("newPassword");
+        when(userService.updatePassword(anyString(), eq(request.password()))).thenReturn(true);
+        mockMvc.perform(put("/api/user/update-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                          {
+                                              "id": "user123",
+                                              "password": "newPassword"
+                                          }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Password updated successfully"));
+
+    }
+
+    @Test
+    @DisplayName("UPDATE /users/update-password should throw bad request")
+    void testUpdatePassword_UserNotFound() throws Exception {
+        setupAuthentication();
+        mockMvc.perform(put("/api/user/update-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                          {
+                                              "id": "",
+                                              "password": "newPassword"
+                                          }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Password not updated"));
+
+    }
+
+    // -------------------------------------------------------------------------
+    // PUT /users/update-profile
+    // -------------------------------------------------------------------------
+    @Test
+    @DisplayName("UPDATE /users/update-profile should return success message")
+    void testUpdateProfile() throws Exception {
+        setupAuthentication();
+           when(userProfileService.update(anyString(), any(UserProfileRequest.class))).thenReturn(true);
+        mockMvc.perform(put("/api/user/update-profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                          {
+                                              "displayName": "john",
+                                              "learningLevel": "A1",
+                                              "dailyGoalWords": 10,
+                                              "notificationEnabled": false
+                                          }
+                                """))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.message").value("Profile updated successfully"));
+    }
+
+    @Test
+    @DisplayName("UPDATE /users/update-profile should throw user not found")
+    void testUpdateProfile_UserNotFound() throws Exception {
+        setupAuthentication();
+        when(userProfileService.update(anyString(), any(UserProfileRequest.class)))
+                .thenThrow(new DataNotFoundException("User not found"));
+
+        mockMvc.perform(put("/api/user/update-profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                          {
+                                              "displayName": "john",
+                                              "learningLevel": "A1",
+                                              "dailyGoalWords": 10,
+                                              "notificationEnabled": false
+                                          }
+                                """))
+
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("User not found"));
     }
 
 }

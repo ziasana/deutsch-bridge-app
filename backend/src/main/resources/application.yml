@@ -63,7 +63,12 @@ logging:
 server:
   shutdown: graceful
 
-jwt.secret: ${JWT_SECRET}
+jwt:
+  secret: ${JWT_SECRET}
+  expiration:
+    access-token: 900000          # 15 minutes in ms (1000*60*15)
+    refresh-token: 1296000000     # 15 days in ms (1000*60*60*24*15)
+    verification-token: 86400000  # 1 day in ms (1000*60*60*24)
 
 frontend_url:
   "http://localhost:3000"

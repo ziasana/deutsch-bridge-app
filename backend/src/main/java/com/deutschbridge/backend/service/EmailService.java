@@ -1,7 +1,6 @@
 package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.exception.MailServerException;
-import com.deutschbridge.backend.exception.UserVerificationException;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;

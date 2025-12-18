@@ -45,7 +45,6 @@ class AuthControllerTest {
     private AuthController authController;
     @Mock
     private UserService userService;
-
     UserRegistrationRequest userRegistrationRequest;
 
     private User user() {

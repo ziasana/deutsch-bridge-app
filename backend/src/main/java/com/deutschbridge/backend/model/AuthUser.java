@@ -12,8 +12,10 @@ import java.util.List;
 
 public class AuthUser implements UserDetails {
 
+    // setter only if needed internally
+    @Setter
     @Getter
-    private final String id;
+    private String id;
     @Getter
     @Setter
     private String email;
