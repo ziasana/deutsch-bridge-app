@@ -5,12 +5,9 @@ import com.deutschbridge.backend.model.AuthUser;
 import com.deutschbridge.backend.model.dto.*;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.entity.UserProfile;
-import com.deutschbridge.backend.service.CustomUserDetailsService;
-import com.deutschbridge.backend.service.EmailService;
 import com.deutschbridge.backend.service.UserProfileService;
 import com.deutschbridge.backend.service.UserService;
 import com.deutschbridge.backend.util.SecurityUtils;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -49,10 +46,6 @@ public class UserController {
         return new ResponseEntity<>(userService.deleteByEmail(userDto),HttpStatus.NO_CONTENT);
     }
 
-    @PostMapping("/cookie-test")
-    public ResponseEntity<?> cookieTest(@RequestBody User user, HttpServletResponse response) {
-        return new ResponseEntity<>("you called me now from test cookie",HttpStatus.OK);
-    }
 
     @PostMapping("/save-profile")
     public ResponseEntity<ApiResponse<UserProfileResponse>> saveProfile(@RequestBody UserProfileResponse userProfileResponse) {

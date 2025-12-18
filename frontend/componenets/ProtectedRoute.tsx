@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
     children: ReactNode;
 }
 
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
+export default function ProtectedRoute({ children }: Readonly<ProtectedRouteProps>) {
     const isAuthenticated = useAuthStore((state) => state.isLoggedIn);
     const router = useRouter();
 

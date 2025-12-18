@@ -6,6 +6,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 public class SecurityUtils {
+    private SecurityUtils() {
+        throw new IllegalStateException("Security Utils class");
+    }
     /**
      * Returns the currently authenticated AuthUser
      */

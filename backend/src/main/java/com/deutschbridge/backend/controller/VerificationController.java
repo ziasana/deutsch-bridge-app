@@ -28,18 +28,19 @@ public class VerificationController {
     @GetMapping("/signup/verify")
     public RedirectView verifyEmail(@RequestParam("token") TokenRequest request) {
 
+        String signup = "/signup";
         String token = request.token();
         if(token == null) {
-            return getRedirectErrorView("/signup");
+            return getRedirectErrorView(signup);
         }
         if(!jwtUtil.validateToken(token))
         {
-            return getRedirectErrorView("/signup");
+            return getRedirectErrorView(signup);
         }
 
         User user= userService.findByEmail(jwtUtil.extractEmail(token));
         if(user.getVerificationToken() == null) {
-            return getRedirectErrorView("/signup");
+            return getRedirectErrorView(signup);
         }
 
         user.setVerificationToken(null);

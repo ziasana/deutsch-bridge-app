@@ -20,7 +20,7 @@ export default function VocabularyPage() {
             setData(data.data)
             console.log(data);
         })
-    }, [router]);
+    }, [router,testData]);
     return (
         <div>
             <div>
