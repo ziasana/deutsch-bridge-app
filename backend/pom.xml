@@ -154,6 +154,12 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>com/deutschbridge/backend/model/**</exclude>
+                                <exclude>com/deutschbridge/backend/repository/**</exclude>
+                            </excludes>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
