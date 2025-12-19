@@ -1,11 +1,12 @@
 package com.deutschbridge.backend.controller;
 
-import com.deutschbridge.backend.model.dto.TokenRequest;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.repository.UserRepository;
 import com.deutschbridge.backend.service.UserService;
 import com.deutschbridge.backend.util.JWTUtil;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
 
@@ -26,10 +27,9 @@ public class VerificationController {
     }
 
     @GetMapping("/signup/verify")
-    public RedirectView verifyEmail(@RequestParam("token") TokenRequest request) {
+    public RedirectView verifyEmail(@RequestParam("token") @NotBlank String token) {
 
         String signup = "/signup";
-        String token = request.token();
         if(token == null) {
             return getRedirectErrorView(signup);
         }
@@ -50,15 +50,14 @@ public class VerificationController {
     }
 
     private RedirectView getRedirectErrorView(String path) {
-        return new RedirectView(frontendURL + path + "?error=invalid-token");
+        return new RedirectView( frontendURL + path+ "?error=invalid-token", false);
     }
     private RedirectView getRedirectView(String path) {
-        return new RedirectView(frontendURL + path);
+        return new RedirectView(frontendURL + path, false);
     }
 
     @GetMapping("/reset-password")
-    public RedirectView handlePasswordReset(@RequestParam("token") TokenRequest request) {
-        String token = request.token();
+    public RedirectView handlePasswordReset(@RequestParam("token") @NotBlank String token) {
         if(token == null) {
             return getRedirectErrorView("/reset-password");
         }

@@ -33,3 +33,5 @@ de:
         database-dir: ./embedded-mongo-data
 
 
+frontend_url:
+  "http://localhost:3000"
