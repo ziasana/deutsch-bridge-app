@@ -73,7 +73,6 @@ public class UserProfileService {
     public UserProfileResponse getUserProfileResponse(User user) {
         UserProfile profile = user.getProfile();
 
-        // Build DTO
         return new UserProfileResponse(
                 profile != null ? user.getDisplayName() : null,
                 user.getEmail(),

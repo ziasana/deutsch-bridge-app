@@ -31,7 +31,7 @@ class EmailServiceTest {
 
 
     @Test
-    @DisplayName("Should send verification email successfully")
+    @DisplayName("sendVerificationEmail -> should send verification email successfully")
     void testSendVerificationEmail() throws Exception {
 
         MimeMessage mimeMessage = mock(MimeMessage.class);
@@ -46,7 +46,7 @@ class EmailServiceTest {
     }
 
     @Test
-    @DisplayName("Should send password reset email successfully")
+    @DisplayName("sendResetEmail -> should send password reset email successfully")
     void testSendResetEmail() throws Exception {
         MimeMessage mimeMessage = mock(MimeMessage.class);
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
@@ -60,7 +60,7 @@ class EmailServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw exception for invalid email")
+    @DisplayName("invalidEmail -> should throw exception for invalid email")
     void testInvalidEmail() {
         assertThrows(IllegalArgumentException.class, () ->
                 emailService.sendVerificationEmail("invalid-email", "token123")
@@ -68,7 +68,7 @@ class EmailServiceTest {
     }
 
     @Test
-    @DisplayName("Generated email content should contain token URL")
+    @DisplayName("generatedEmailContainsUrl -> email content should contain token URL")
     void testGeneratedEmailContainsUrl() throws Exception {
         MimeMessage mimeMessage = mock(MimeMessage.class);
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);

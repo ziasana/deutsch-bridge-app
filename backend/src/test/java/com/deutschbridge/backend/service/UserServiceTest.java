@@ -65,7 +65,7 @@ class UserServiceTest {
     // findAll
     // ---------------------------------------------------------------
     @Test
-    @DisplayName("findAll should return list of users")
+    @DisplayName("findAll -> should return list of users")
     void testFindAll_ShouldReturnListOfUsers() {
         when(userRepository.findAll()).thenReturn(List.of(user));
         List<User> result = userService.findAll();
@@ -79,7 +79,7 @@ class UserServiceTest {
     // findByEmail
     // ---------------------------------------------------------------
     @Test
-    @DisplayName("findByEmail should return user")
+    @DisplayName("findByEmail -> should find and return user by email")
     void testFindByEmail() {
         when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
 
@@ -89,7 +89,7 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("findByEmail should throw exception if not found")
+    @DisplayName("findByEmail -> should throw exception if not found")
     void testFindByEmail_NotFound() {
         when(userRepository.findByEmail("unknown@example.com")).thenReturn(Optional.empty());
 
@@ -99,11 +99,11 @@ class UserServiceTest {
 
 
     // ---------------------------------------------------------------
-    // registerUser
+    // Register User
     // ---------------------------------------------------------------
 
     @Test
-    @DisplayName("registerUser should throw when email is already registered")
+    @DisplayName("registerUser -> should throw when email is already registered")
     void registerUser_verifiedUser_shouldThrow() {
         user.setVerified(true);
         when(userRepository.findByEmail(user.getEmail()))
@@ -118,7 +118,7 @@ class UserServiceTest {
 
 
     @Test
-    @DisplayName("registerUser should update existing unverified user and send email")
+    @DisplayName("registerUser -> should update existing unverified user and send email")
     void registerUser_unverifiedUser_shouldResendVerification() throws UserVerificationException {
         user.setVerified(false);
         when(userRepository.findByEmail(user.getEmail()))
@@ -135,7 +135,7 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("registerUser should create new user when no conflicts")
+    @DisplayName("registerUser -> should create new user when no conflicts")
     void registerUser_newUser_shouldRegister() throws UserVerificationException {
         when(userRepository.findByEmail("john@example.com"))
                 .thenReturn(Optional.empty());
@@ -152,10 +152,10 @@ class UserServiceTest {
 
 
     // ---------------------------------------------------------------
-    // resetPassword
+    // Forgot Password
     // ---------------------------------------------------------------
     @Test
-    @DisplayName("sendResetLink should throw when user doesn't exist")
+    @DisplayName("sendResetLink -> should throw when user doesn't exist")
     void testSendResetLink_UserNotFound() {
         when(userRepository.existsByEmail("john@example.com")).thenReturn(false);
 
@@ -165,7 +165,7 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("sendResetLink should throw when user not verified")
+    @DisplayName("sendResetLink -> should throw when user not verified")
     void testSendResetLink_NotVerified() {
         user.setVerified(false);
 
@@ -178,7 +178,7 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("sendResetLink should generate token, save user, and send email")
+    @DisplayName("sendResetLink -> should generate token, save user, and send email")
     void testSendResetLink_Success() throws Exception {
         user.setVerified(true);
 
@@ -194,10 +194,10 @@ class UserServiceTest {
     }
 
     // ---------------------------------------------------------------
-    // update
+    // Update User Password
     // ---------------------------------------------------------------
     @Test
-    @DisplayName("update should update password and save")
+    @DisplayName("update -> should update password and save")
     void testUpdate() throws Exception {
         when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.encode("secret")).thenReturn("encodedPass");
@@ -209,7 +209,7 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("update should throw when user not found")
+    @DisplayName("update -> should throw when user not found")
     void testUpdate_NotFound() {
         when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.empty());
 
@@ -218,10 +218,10 @@ class UserServiceTest {
     }
 
     // ---------------------------------------------------------------
-    // deleteByEmail
+    // Delete By Email
     // ---------------------------------------------------------------
     @Test
-    @DisplayName("deleteByEmail should delete user")
+    @DisplayName("deleteByEmail -> should delete user")
     void testDeleteByEmail() throws Exception {
         when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
 
@@ -232,7 +232,7 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("deleteByEmail should throw when user not found")
+    @DisplayName("deleteByEmail -> should throw when user not found")
     void testDeleteByEmail_NotFound() {
         when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.empty());
 

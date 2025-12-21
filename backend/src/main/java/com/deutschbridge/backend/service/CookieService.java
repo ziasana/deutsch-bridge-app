@@ -10,7 +10,7 @@ public class CookieService {
     private static final String ACCESS_TOKEN = "access_token";
     private static final String  REFRESH_TOKEN= "refresh_token";
 
-     public Cookie createAccessToken(String token){
+    public Cookie createAccessToken(String token){
          return this.create(ACCESS_TOKEN, token);
      }
 

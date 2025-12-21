@@ -78,10 +78,10 @@ class UserControllerTest {
 
 
     // -------------------------------------------------------------------------
-    // GET /users
+    // GET /api/user
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("GET /users should return list of users")
+    @DisplayName("GET /api/user -> should return list of users")
     void testGetAllUsers() throws Exception {
         when(userService.findAll()).thenReturn(List.of(user()));
 
@@ -92,10 +92,10 @@ class UserControllerTest {
     }
 
     // -------------------------------------------------------------------------
-    // GET /users
+    // GET /api/user/me
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("GET /me should return user details")
+    @DisplayName("GET /api/user/me -> should return user details")
     //@WithMockUser(username = "john@example.com")
     void testMe() throws Exception {
         setupAuthentication();
@@ -106,10 +106,10 @@ class UserControllerTest {
     }
 
     // -------------------------------------------------------------------------
-    // DELETE /users/delete-user
+    // DELETE /api/user/delete-user
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("DELETE /users/delete-user should return 204")
+    @DisplayName("DELETE /api/user/delete-user -> should delete user 204")
     void testDeleteUser() throws Exception {
 
         UserDto userDto = new UserDto();
@@ -128,10 +128,10 @@ class UserControllerTest {
     }
 
     // -------------------------------------------------------------------------
-    // PUT /users/update-password
+    // PUT /api/user/update-password
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("UPDATE /users/update-password should return success message")
+    @DisplayName("UPDATE /api/user/update-password -> should return success message")
     void testUpdatePassword() throws Exception {
         setupAuthentication();
         UpdatePasswordRequest request = new UpdatePasswordRequest("newPassword");
@@ -150,7 +150,7 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("UPDATE /users/update-password should throw bad request")
+    @DisplayName("UPDATE /api/user/update-password -> should throw bad request")
     void testUpdatePassword_UserNotFound() throws Exception {
         setupAuthentication();
         mockMvc.perform(put("/api/user/update-password")
@@ -167,10 +167,10 @@ class UserControllerTest {
     }
 
     // -------------------------------------------------------------------------
-    // PUT /users/update-profile
+    // PUT /api/user/update-profile
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("UPDATE /users/update-profile should return success message")
+    @DisplayName("UPDATE /api/user/update-profile -> should return success message")
     void testUpdateProfile() throws Exception {
         setupAuthentication();
            when(userProfileService.update(anyString(), any(UserProfileRequest.class))).thenReturn(true);
@@ -189,7 +189,7 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("UPDATE /users/update-profile should throw user not found")
+    @DisplayName("UPDATE /api/user/update-profile -> should throw user not found")
     void testUpdateProfile_UserNotFound() throws Exception {
         setupAuthentication();
         when(userProfileService.update(anyString(), any(UserProfileRequest.class)))

@@ -78,10 +78,10 @@ class AuthControllerTest {
 
 
     // -------------------------------------------------------------------------
-    // POST /users/register
+    // POST /api/user/register
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("POST /users/register should register user")
+    @DisplayName("POST /api/auth/register -> should register user")
     void testRegisterUser() throws Exception {
 
         when(userService.registerUser(any(UserRegistrationRequest.class))).thenReturn(user());
@@ -103,16 +103,12 @@ class AuthControllerTest {
     }
 
 
-
-
     // -------------------------------------------------------------------------
     // POST /auth/forgot-password
     // -------------------------------------------------------------------------
-
     @Test
-    @DisplayName("POST /users/forgot-password (Reset Link) → email not found")
+    @DisplayName("POST /api/auth/forgot-password (Reset Link) -> user email not found")
     void testForgotPassword_EmailNotFound() throws Exception {
-
         // Mock service throwing exception
         when(userService.sendResetLink("john@example.com"))
                 .thenThrow(new DataNotFoundException("User not registered yet!"));
@@ -130,7 +126,7 @@ class AuthControllerTest {
 
 
     @Test
-    @DisplayName("POST /api/user/forgot-password → user not verified")
+    @DisplayName("POST /api/auth/forgot-password -> user not verified")
     void testForgotPassword_UserNotVerified() throws Exception {
         when(userService.sendResetLink("john@example.com"))
                 .thenThrow(new UserVerificationException("User is not verified!"));
@@ -146,7 +142,7 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("POST /users/forgot-password →  should reset send reset link")
+    @DisplayName("POST /api/auth/forgot-password -> should reset send reset link")
     void testForgotPasswordSuccess() throws Exception {
         when(userService.sendResetLink("john@example.com")).thenReturn(true);
 
@@ -162,10 +158,10 @@ class AuthControllerTest {
     }
 
     // -------------------------------------------------------------------------
-    // PUT /auth/reset-password
+    // PUT /api/user/reset-password
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("PUT /users/rest-password should reset password and return User JSON")
+    @DisplayName("PUT /api/auth/rest-password -> should reset password and return User JSON")
     void testResetPassword() throws Exception {
         User updated = new User();
         updated.setPassword("john");
@@ -187,7 +183,7 @@ class AuthControllerTest {
 
 
     @Test
-    @DisplayName("PUT /users/reset-password should return 404 on missing user")
+    @DisplayName("PUT /api/auth/reset-password -> should return 404 on missing user")
     @WithMockUser
     void testResetPassword_UserNotFound() throws Exception {
 
@@ -198,8 +194,6 @@ class AuthControllerTest {
                   "token": ""
                 }
                 """;
-
-
         mockMvc.perform(
                         put("/api/auth/reset-password")
                                 .contentType(MediaType.APPLICATION_JSON)

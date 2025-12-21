@@ -24,7 +24,7 @@ class CustomUserDetailsServiceTest {
     private CustomUserDetailsService customUserDetailsService;
 
     @Test
-    @DisplayName("loadUser should return user")
+    @DisplayName("loadUser -> should return user")
     void loadUserByUsername_ShouldReturnUser() {
         User user= new User();
         user.setPassword("password");
