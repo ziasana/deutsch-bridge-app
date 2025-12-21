@@ -1,15 +1,14 @@
 package com.deutschbridge.backend.model.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserDto {
         private String  username;
-        private String password;
+        private String  password;
         private String  email;
         private String  role;
 }

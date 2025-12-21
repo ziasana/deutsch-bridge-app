@@ -2,12 +2,13 @@ package com.deutschbridge.backend.config;
 
 import com.deutschbridge.backend.filter.JWTAuthFilter;
 import com.deutschbridge.backend.repository.UserRepository;
-import com.deutschbridge.backend.service.CustomUserService;
+import com.deutschbridge.backend.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -16,6 +17,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
 
 @Configuration
 @EnableWebSecurity
@@ -32,13 +34,13 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception
     {
         http
+                .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)  // IMPORTANT for POST/PUT/DELETE
                 .authorizeHttpRequests(auth ->
                         auth
                                 .requestMatchers(
                                         "/api/auth/**",
                                         "/api/welcome",
-                                        "/api/user/**",
                                         "/req/**"
                                 ).permitAll()
                                // .requestMatchers("/api/test/authenticate").permitAll()
@@ -49,7 +51,7 @@ public class SecurityConfig {
 
     @Bean
     public UserDetailsService userDetailsService(){
-        return new CustomUserService(userRepository);
+        return new CustomUserDetailsService(userRepository);
     }
 
     @Bean

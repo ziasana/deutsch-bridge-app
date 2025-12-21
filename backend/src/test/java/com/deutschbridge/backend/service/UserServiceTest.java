@@ -3,8 +3,9 @@ package com.deutschbridge.backend.service;
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.exception.UserVerificationException;
 import com.deutschbridge.backend.model.dto.UserDto;
+import com.deutschbridge.backend.model.dto.UserRegistrationRequest;
 import com.deutschbridge.backend.model.entity.User;
-import com.deutschbridge.backend.model.enums.UserRole;
+import com.deutschbridge.backend.repository.UserProfileRepository;
 import com.deutschbridge.backend.util.JWTUtil;
 import com.deutschbridge.backend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,13 +23,14 @@ import java.util.Optional;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.*;
 
 class UserServiceTest {
 
     @Mock private UserRepository userRepository;
+    @Mock private UserProfileRepository userProfileRepository;
+
     @Mock JWTUtil jwtUtil;
     @Mock private EmailService emailService;
     @Mock private PasswordEncoder passwordEncoder;
@@ -37,14 +39,21 @@ class UserServiceTest {
     private UserService userService;
 
     private User user;
+    private UserRegistrationRequest userRegistrationRequest;
+
     private UserDto userDto;
 
     @BeforeEach
     void setup() {
 
         MockitoAnnotations.openMocks(this);
-        user = new User("john", "john@example.com", "pass", UserRole.STUDENT.getValue());
+        user = new User("john", "john@example.com", "pass");
         user.setVerified(true);
+
+        userRegistrationRequest = new UserRegistrationRequest();
+        userRegistrationRequest.setEmail("john@example.com");
+        userRegistrationRequest.setPassword("secret");
+        userRegistrationRequest.setDisplayName("John");
 
         userDto = new UserDto();
         userDto.setUsername("john");
@@ -56,7 +65,7 @@ class UserServiceTest {
     // findAll
     // ---------------------------------------------------------------
     @Test
-    @DisplayName("findAll should return list of users")
+    @DisplayName("findAll -> should return list of users")
     void testFindAll_ShouldReturnListOfUsers() {
         when(userRepository.findAll()).thenReturn(List.of(user));
         List<User> result = userService.findAll();
@@ -70,7 +79,7 @@ class UserServiceTest {
     // findByEmail
     // ---------------------------------------------------------------
     @Test
-    @DisplayName("findByEmail should return user")
+    @DisplayName("findByEmail -> should find and return user by email")
     void testFindByEmail() {
         when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
 
@@ -80,7 +89,7 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("findByEmail should throw exception if not found")
+    @DisplayName("findByEmail -> should throw exception if not found")
     void testFindByEmail_NotFound() {
         when(userRepository.findByEmail("unknown@example.com")).thenReturn(Optional.empty());
 
@@ -90,115 +99,94 @@ class UserServiceTest {
 
 
     // ---------------------------------------------------------------
-    // registerUser
+    // Register User
     // ---------------------------------------------------------------
-    @Test
-    @DisplayName("registerUser should throw when username exists")
-    void testRegisterUser_UsernameExists() {
-        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
-
-        assertThatThrownBy(() -> userService.registerUser(userDto))
-                .isInstanceOf(UserVerificationException.class)
-                .hasMessageContaining("Username already exists");
-    }
 
     @Test
-    @DisplayName("registerUser should throw when email is already registered")
-    void testRegisterUser_EmailExists() {
-        when(userRepository.findByUsername("john")).thenReturn(Optional.empty());
-        when(userRepository.existsByEmail("john@example.com")).thenReturn(true);
+    @DisplayName("registerUser -> should throw when email is already registered")
+    void registerUser_verifiedUser_shouldThrow() {
+        user.setVerified(true);
+        when(userRepository.findByEmail(user.getEmail()))
+                .thenReturn(Optional.of(user));
 
-        assertThatThrownBy(() -> userService.registerUser(userDto))
+        assertThatThrownBy(() ->
+                userService.registerUser(userRegistrationRequest))
                 .isInstanceOf(UserVerificationException.class)
                 .hasMessageContaining("Email already registered");
+        verify(emailService, never()).sendVerificationEmail(any(), any());
     }
 
-    @Test
-    @DisplayName("registerUser should throw when existing user is already verified")
-    void testRegisterUser_UserAlreadyVerified() {
-        when(userRepository.findByUsername("john")).thenReturn(Optional.empty());
-        when(userRepository.existsByEmail("john@example.com")).thenReturn(false);
-        when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
-
-        user.setVerified(true);
-
-        assertThatThrownBy(() -> userService.registerUser(userDto))
-                .isInstanceOf(UserVerificationException.class)
-                .hasMessageContaining("User is already verified");
-    }
 
     @Test
-    @DisplayName("registerUser should update existing unverified user and send email")
-    void testRegisterUser_ExistingUnverifiedUser() throws Exception {
+    @DisplayName("registerUser -> should update existing unverified user and send email")
+    void registerUser_unverifiedUser_shouldResendVerification() throws UserVerificationException {
         user.setVerified(false);
+        when(userRepository.findByEmail(user.getEmail()))
+                .thenReturn(Optional.of(user));
+        when(jwtUtil.generateVerificationToken(any()))
+                .thenReturn("token");
 
-        when(userRepository.findByUsername("john")).thenReturn(Optional.empty());
-        when(userRepository.existsByEmail("john@example.com")).thenReturn(false);
-        when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
-        when(jwtUtil.generateToken("john@example.com")).thenReturn("token123");
-        when(userRepository.save(user)).thenReturn(user);
+        User result = userService.registerUser(userRegistrationRequest);
 
-        User result = userService.registerUser(userDto);
-
-        assertThat(result.getVerificationToken()).isEqualTo("token123");
-        then(emailService).should().sendVerificationEmail("john@example.com", "token123");
+        assertThat(result).isSameAs(user);
+        verify(userRepository).save(user);
+        verify(emailService).sendVerificationEmail(
+                eq("john@example.com"), eq("token"));
     }
 
     @Test
-    @DisplayName("registerUser should create new user when no conflicts")
-    void testRegisterUser_NewUser() throws Exception {
-        when(userRepository.findByUsername("john")).thenReturn(Optional.empty());
-        when(userRepository.existsByEmail("john@example.com")).thenReturn(false);
-        when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.empty());
-        when(passwordEncoder.encode("secret")).thenReturn("hashedPassword");
-        when(jwtUtil.generateToken("john@example.com")).thenReturn("token123");
+    @DisplayName("registerUser -> should create new user when no conflicts")
+    void registerUser_newUser_shouldRegister() throws UserVerificationException {
+        when(userRepository.findByEmail("john@example.com"))
+                .thenReturn(Optional.empty());
+        when(jwtUtil.generateVerificationToken(any()))
+                .thenReturn("token");
 
-        User savedUser = new User("john", "john@example.com", "hashedPassword", UserRole.STUDENT.getValue());
-        savedUser.setVerificationToken("token123");
+        User result = userService.registerUser(userRegistrationRequest);
 
-        given(userRepository.save(any(User.class))).willReturn(savedUser);
-
-        User result = userService.registerUser(userDto);
-
-        assertThat(result.getVerificationToken()).isEqualTo("token123");
+        assertThat(result.getEmail()).isEqualTo("john@example.com");
+        verify(userRepository).save(any(User.class));
+        verify(emailService).sendVerificationEmail(
+                eq("john@example.com"), eq("token"));
     }
 
+
     // ---------------------------------------------------------------
-    // resetPassword
+    // Forgot Password
     // ---------------------------------------------------------------
     @Test
-    @DisplayName("resetPassword should throw when user doesn't exist")
-    void testResetPassword_UserNotFound() {
+    @DisplayName("sendResetLink -> should throw when user doesn't exist")
+    void testSendResetLink_UserNotFound() {
         when(userRepository.existsByEmail("john@example.com")).thenReturn(false);
 
-        assertThatThrownBy(() -> userService.resetPassword("john@example.com"))
+        assertThatThrownBy(() -> userService.sendResetLink("john@example.com"))
                 .isInstanceOf(DataNotFoundException.class)
                 .hasMessageContaining("User not registered yet!");
     }
 
     @Test
-    @DisplayName("resetPassword should throw when user not verified")
-    void testResetPassword_NotVerified() {
+    @DisplayName("sendResetLink -> should throw when user not verified")
+    void testSendResetLink_NotVerified() {
         user.setVerified(false);
 
         when(userRepository.existsByEmail("john@example.com")).thenReturn(true);
         when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
 
-        assertThatThrownBy(() -> userService.resetPassword("john@example.com"))
+        assertThatThrownBy(() -> userService.sendResetLink("john@example.com"))
                 .isInstanceOf(UserVerificationException.class)
                 .hasMessageContaining("User is not verified!");
     }
 
     @Test
-    @DisplayName("resetPassword should generate token, save user, and send email")
-    void testResetPassword_Success() throws Exception {
+    @DisplayName("sendResetLink -> should generate token, save user, and send email")
+    void testSendResetLink_Success() throws Exception {
         user.setVerified(true);
 
         when(userRepository.existsByEmail("john@example.com")).thenReturn(true);
         when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
-        when(jwtUtil.generateToken("john@example.com")).thenReturn("reset123");
-
-        boolean result = userService.resetPassword("john@example.com");
+        when(jwtUtil.generateVerificationToken("john@example.com")).thenReturn("reset123");
+        when(userRepository.save(any(User.class))).thenReturn(user);
+        boolean result = userService.sendResetLink("john@example.com");
 
         assertThat(result).isTrue();
         assertThat(user.getResetToken()).isEqualTo("reset123");
@@ -206,10 +194,10 @@ class UserServiceTest {
     }
 
     // ---------------------------------------------------------------
-    // update
+    // Update User Password
     // ---------------------------------------------------------------
     @Test
-    @DisplayName("update should update password and save")
+    @DisplayName("update -> should update password and save")
     void testUpdate() throws Exception {
         when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.encode("secret")).thenReturn("encodedPass");
@@ -221,7 +209,7 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("update should throw when user not found")
+    @DisplayName("update -> should throw when user not found")
     void testUpdate_NotFound() {
         when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.empty());
 
@@ -230,10 +218,10 @@ class UserServiceTest {
     }
 
     // ---------------------------------------------------------------
-    // deleteByEmail
+    // Delete By Email
     // ---------------------------------------------------------------
     @Test
-    @DisplayName("deleteByEmail should delete user")
+    @DisplayName("deleteByEmail -> should delete user")
     void testDeleteByEmail() throws Exception {
         when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
 
@@ -244,7 +232,7 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("deleteByEmail should throw when user not found")
+    @DisplayName("deleteByEmail -> should throw when user not found")
     void testDeleteByEmail_NotFound() {
         when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.empty());
 
