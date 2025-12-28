@@ -9,9 +9,6 @@ jobs:
   build:
     name: Build and analyze
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,4 +34,5 @@ jobs:
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        working-directory: backend
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=ziatest_deutsch-bridge-app

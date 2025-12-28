@@ -12,7 +12,6 @@ import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User,String> {
-    Optional<User> findByUsername(String username);
 
     Optional<User> findByEmail(String email);
 
@@ -20,11 +19,24 @@ public interface UserRepository extends JpaRepository<User,String> {
 
     @Modifying
     @Transactional
-    @Query("UPDATE User u SET u.tokenValue = u.tokenValue + 1 WHERE u.username = :username")
-    int incrementTokenValue(@Param("username") String username);
+    @Query("UPDATE User u SET u.accessTokenFlag = u.accessTokenFlag + 1 WHERE u.email = :email")
+    int incrementAccessTokenFlag(@Param("email") String email);
 
-    @Query("SELECT u.tokenValue FROM User u WHERE u.username = :username")
-    int getTokenValue(@Param("username") String username);
+
+    @Query("SELECT u.accessTokenFlag FROM User u WHERE u.email = :email")
+     int getAccessTokenFlag(@Param("email") String email);
+
+    default int incrementAndGetAccessTokenFlag(@Param("email") String email) {
+        this.incrementAccessTokenFlag(email);
+        return getAccessTokenFlag(email);
+    }
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE User u SET u.refreshToken = :refreshToken WHERE u.email = :email")
+    void saveRefreshToken(@Param("email") String email, @Param("refreshToken") String refreshToken);
 
     void deleteByEmail(String email);
+
+    Optional<Object> findByUsername(String email);
 }

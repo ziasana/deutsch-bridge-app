@@ -20,12 +20,12 @@ public class AdminUserInitializer {
     @Bean
     public CommandLineRunner createAdminUser(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         return args -> {
-            if(userRepository.findByUsername("admin").isEmpty()) {
+            if(userRepository.findByEmail("admin@example.com").isEmpty()) {
                 User user = new User();
-                user.setUsername("admin");
+                user.setDisplayName("Admin");
+                user.setEmail("admin@example.com");
                 user.setPassword(passwordEncoder.encode("admin12345"));
                 user.setRole("ADMIN");
-                user.setEmail("admin@gmail.com");
                 userRepository.save(user);
                 log.info("Default user admin created!");
             }

@@ -2,6 +2,7 @@ package com.deutschbridge.backend.util;
 
 import com.deutschbridge.backend.repository.UserRepository;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -17,25 +18,52 @@ public class JWTUtil {
 
     private final UserRepository userRepository;
 
+    private static final String ACCESS_TOKEN_NAME= "ACCESS_TOKEN";
     private final Key key;
-    private static final long EXPIRATION_TIME = (1000*60*60); //1 hour
+    @Value("${jwt.expiration.access-token}")
+    private long expirationTimeAccessToken;
+
+    @Value("${jwt.expiration.refresh-token}")
+    private long expirationTimeRefreshToken;
+
+    @Value("${jwt.expiration.verification-token}")
+    private long expirationTimeVerificationToken;
 
     public JWTUtil(UserRepository userRepository, @Value("${jwt.secret}") String jwtSecret){
         this.userRepository = userRepository;
         this.key= Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
 
-    public String generateToken(String username) {
-         return  Jwts.builder()
-                .setSubject(username)
-                .setAudience(String.valueOf(userRepository.incrementTokenValue(username)))
+    public String generateAccessToken(String email) {
+        return buildToken(email, expirationTimeAccessToken, ACCESS_TOKEN_NAME);
+    }
+
+    public String generateRefreshToken(String email) {
+        return buildToken(email, expirationTimeRefreshToken, "");
+    }
+
+    public String generateVerificationToken(String email) {
+        return buildToken(email, expirationTimeVerificationToken, "");
+    }
+
+    private String buildToken(String email, long expirationTime, String type) {
+        JwtBuilder builder = Jwts.builder()
+                .setSubject(email)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTime));
+
+        if (type.equals(ACCESS_TOKEN_NAME)) {
+            builder.claim("type", ACCESS_TOKEN_NAME);
+            builder.claim("tokenVersion", userRepository.incrementAndGetAccessTokenFlag(email));
+        }
+
+        return builder
                 .signWith(SignatureAlgorithm.HS256, key)
                 .compact();
     }
 
-    public String extractUsernameOrEmail(String token) {
+
+    public String extractEmail(String token) {
        return extractClaims(token).getSubject();
     }
 
@@ -51,18 +79,23 @@ public class JWTUtil {
         return isTokenExpired(token);
     }
 
-    public boolean validateToken(String username, UserDetails userDetails, String token) {
+    public boolean validateToken(String email, UserDetails userDetails, String token) {
         //check if username is same as username in userDetails
         //check if token is not expired
-        return username.equals(userDetails.getUsername())
-                && isValidateTokenValue(username,token)
+        return email.equals(userDetails.getUsername())
+                && isValidateTokenFlag(email,token)
                 && isTokenExpired(token);
     }
 
-    public boolean isValidateTokenValue(String username, String token) {
-        return extractClaims(token)
-                .getAudience()
-                .equals(String.valueOf(userRepository.getTokenValue(username)));
+    public boolean isValidateTokenFlag(String email, String token) {
+        Claims claims = extractClaims(token);
+        String type= claims.get("type").toString();
+        if(type==null)
+            return true;
+        if(type.equals(ACCESS_TOKEN_NAME)) {
+         return   claims.get("tokenVersion") .equals(String.valueOf(userRepository.getAccessTokenFlag(email)));
+        }
+        return  false;
     }
 
     private boolean isTokenExpired(String token) {
