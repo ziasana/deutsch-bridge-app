@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import {createContext, useCallback, useContext, useEffect, useMemo, useState} from "react";
 
 const DarkModeContext = createContext({
   darkMode: false,
@@ -18,10 +18,14 @@ export function DarkModeProvider({ children }: Readonly<{ children: React.ReactN
     }
   }, [darkMode]);
 
-  const toggle = () => setDarkMode((prev) => !prev);
 
-  return (
-    <DarkModeContext.Provider value={{ darkMode, toggle }}>
+  const toggle = useCallback(() => {
+    setDarkMode(prev => !prev);
+  }, []);
+  const value = useMemo(() => ({ darkMode, toggle }), [darkMode, toggle]);
+
+ return (
+    <DarkModeContext.Provider value={value}>
       {children}
     </DarkModeContext.Provider>
   );

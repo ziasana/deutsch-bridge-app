@@ -6,7 +6,6 @@ import com.deutschbridge.backend.service.UserService;
 import com.deutschbridge.backend.util.JWTUtil;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
 

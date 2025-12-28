@@ -19,11 +19,17 @@ public interface UserRepository extends JpaRepository<User,String> {
 
     @Modifying
     @Transactional
-    @Query("UPDATE User u SET u.tokenValue = u.tokenValue + 1 WHERE u.email = :email")
-    int incrementTokenValue(@Param("email") String email);
+    @Query("UPDATE User u SET u.accessTokenFlag = u.accessTokenFlag + 1 WHERE u.email = :email")
+    int incrementAccessTokenFlag(@Param("email") String email);
 
-    @Query("SELECT u.tokenValue FROM User u WHERE u.email = :email")
-    int getTokenValue(@Param("email") String email);
+
+    @Query("SELECT u.accessTokenFlag FROM User u WHERE u.email = :email")
+     int getAccessTokenFlag(@Param("email") String email);
+
+    default int incrementAndGetAccessTokenFlag(@Param("email") String email) {
+        this.incrementAccessTokenFlag(email);
+        return getAccessTokenFlag(email);
+    }
 
     @Modifying
     @Transactional

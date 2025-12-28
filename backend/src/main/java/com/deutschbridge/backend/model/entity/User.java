@@ -27,11 +27,11 @@ public class User {
     private String role="STUDENT";
     @Enumerated(EnumType.STRING)
     private LearningLevel learningLevel;
-    private int tokenValue =0;
+    private int accessTokenFlag = 0;
+    private String resetToken;
     private String refreshToken;
     private String verificationToken;
     private boolean isVerified;
-    private String resetToken;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinColumn(name = "id")
