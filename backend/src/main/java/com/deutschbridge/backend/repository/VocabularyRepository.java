@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface VocabularyRepository extends JpaRepository<Vocabulary,String> {
+    Vocabulary findByWord(String word);
 }

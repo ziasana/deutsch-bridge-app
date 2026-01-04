@@ -1,0 +1,16 @@
+package com.deutschbridge.backend.model.dto;
+
+import jakarta.validation.constraints.NotBlank;
+
+public record VocabularyRequest(
+    @NotBlank(message = "Word is required")
+    String word,
+    String example,
+    String synonyms,
+    String meaning,
+    @NotBlank(message = "Language is required")
+    String language,
+    String userEmail
+)
+{
+}

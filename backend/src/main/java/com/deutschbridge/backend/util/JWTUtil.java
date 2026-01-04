@@ -93,7 +93,7 @@ public class JWTUtil {
         if(type==null)
             return true;
         if(type.equals(ACCESS_TOKEN_NAME)) {
-         return   claims.get("tokenVersion") .equals(String.valueOf(userRepository.getAccessTokenFlag(email)));
+         return   claims.get("tokenVersion").equals(userRepository.getAccessTokenFlag(email));
         }
         return  false;
     }
