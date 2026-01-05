@@ -1,11 +1,11 @@
 package com.deutschbridge.backend.model.entity;
 
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 import java.util.List;
@@ -15,7 +15,6 @@ import java.util.List;
 @AllArgsConstructor
 @Data
 @Entity (name = "vocabularies")
-
 public class Vocabulary {
     @Id
     private String id;
@@ -25,8 +24,9 @@ public class Vocabulary {
     private String example;
     private String synonyms;
 
-    @OneToMany(mappedBy = "vocabulary_contents_id", cascade = CascadeType.ALL, orphanRemoval = true)
-    private static List<VocabularyContent> vocabularyContents;
+    @OneToMany(mappedBy = "vocabulary", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<VocabularyContent> vocabularyContents;
 
     @ManyToOne
     @JoinColumn(name = "user_id")

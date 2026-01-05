@@ -3,6 +3,7 @@ package com.deutschbridge.backend.controller;
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.ApiResponse;
 import com.deutschbridge.backend.model.dto.VocabularyRequest;
+import com.deutschbridge.backend.model.dto.VocabularyResponse;
 import com.deutschbridge.backend.model.entity.Vocabulary;
 import com.deutschbridge.backend.service.VocabularyService;
 import org.springframework.http.HttpStatus;
@@ -26,22 +27,27 @@ public class VocabularyController {
         return new ResponseEntity<>(vocabularyService.findAll(), HttpStatus.OK);
     }
 
+    @PostMapping("/get-user")
+    public ResponseEntity<List<VocabularyResponse>> getUserVocabularies(@RequestBody VocabularyRequest request) {
+        return new ResponseEntity<>(vocabularyService.getUserVocabularies(request.userEmail(),request.language()), HttpStatus.OK);
+    }
+
     @PostMapping
-    public ResponseEntity<ApiResponse> save(@RequestBody VocabularyRequest request) {
+    public ResponseEntity<ApiResponse<String>> save(@RequestBody VocabularyRequest request) {
         vocabularyService.save(request);
         return new ResponseEntity<>(
                 new ApiResponse<>("Vocabulary saved", ""), HttpStatus.CREATED);
     }
 
     @PutMapping
-    public ResponseEntity<ApiResponse> update(@RequestBody VocabularyRequest request) {
-        vocabularyService.update(request);
+    public ResponseEntity<ApiResponse<VocabularyResponse>> update(@RequestBody VocabularyRequest request) {
+        VocabularyResponse response = vocabularyService.update(request);
         return new ResponseEntity<>(
-                new ApiResponse<>("Vocabulary updated", ""), HttpStatus.OK);
+                new ApiResponse<>("Vocabulary updated", response), HttpStatus.OK);
     }
 
     @DeleteMapping
-    public ResponseEntity<ApiResponse> delete(@RequestBody VocabularyRequest request) throws DataNotFoundException {
+    public ResponseEntity<ApiResponse<String>> delete(@RequestBody VocabularyRequest request) throws DataNotFoundException {
         vocabularyService.delete(request);
         return new ResponseEntity<>(
                 new ApiResponse<>("Vocabulary deleted", ""), HttpStatus.OK);

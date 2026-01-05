@@ -1,6 +1,7 @@
 package com.deutschbridge.backend.model.entity;
 
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -18,6 +19,7 @@ public class VocabularyContent {
     private String id;
     @ManyToOne
     @JoinColumn(name = "vocabulary_id")
+    @JsonBackReference
     private Vocabulary vocabulary;
     private String meaning;
     private String language;
