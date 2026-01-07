@@ -30,7 +30,6 @@ public class VocabularyContent {
         this.language = language;
     }
 
-
     @PrePersist
     public void ensureId() {
         if (this.id == null) {

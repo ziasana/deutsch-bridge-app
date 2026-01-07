@@ -1,17 +1,15 @@
 // services/api.js
-
 import axios from "axios";
 import useAuthStore from "@/store/useAuthStore";
 const API_URL = "http://localhost:8080";
 
 const api = axios.create({
     baseURL: API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+    headers: {
+        "Content-Type": "application/json",
+    },
     withCredentials: true,
 });
-
 
 type FailedRequest = {
     resolve: (token: string | null) => void;
@@ -33,6 +31,13 @@ const processQueue = (error:unknown, token = null) => {
     });
     failedQueue = [];
 };
+//  Add language automatically
+api.interceptors.request.use((config) => {
+    const state = useAuthStore.getState(); // ✅ correct
+    const language = state.userProfile?.preferredLanguage || "EN";
+    config.headers["Accept-Language"] = language.toUpperCase();
+    return config;
+});
 
 // ---------------- Interceptor ----------------
 api.interceptors.response.use(

@@ -40,6 +40,5 @@
     "lint-staged": "^16.2.7",
     "tailwindcss": "^4",
     "typescript": "^5"
-
   }
 }

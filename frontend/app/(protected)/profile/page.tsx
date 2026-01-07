@@ -11,6 +11,15 @@ import {toast, ToastContainer} from "react-toastify";
 import Loading from "@/componenets/Loading";
 import {UserProfileType} from "@/types/user";
 import Image from "next/image";
+type LanguageOption = {
+    name: string;
+    value: string;
+};
+
+const languages: LanguageOption[] = [
+    { name: "English", value: "EN" },
+    { name: "Persian", value: "PR" },
+];
 
 export default function UserProfile() {
     const levels: string[] = ["A1","A2", "B1", "B2", "C1", "C2"];
@@ -24,7 +33,8 @@ export default function UserProfile() {
         email: userProfile?.email,
         learningLevel: userProfile?.learningLevel,
         dailyGoalWords: userProfile?.dailyGoalWords,
-        notificationsEnabled:userProfile?.notificationsEnabled
+        notificationsEnabled:userProfile?.notificationsEnabled,
+        preferredLanguage:userProfile?.preferredLanguage,
     });
 
     const [enabled, setEnabled] = useState(profile.notificationsEnabled);
@@ -41,7 +51,6 @@ export default function UserProfile() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        console.log("profile", profile);
 
         updateProfile(profile)
             .then((data) => {
@@ -213,6 +222,22 @@ export default function UserProfile() {
                                     />
                                 </div>
                             </label>
+                        </div>
+
+                        {/* Learning level */}
+                        <div>
+                            <Label>Preferred Language</Label>
+                            <select
+                                value={profile.preferredLanguage}
+                                name="preferredLanguage"
+                                disabled={!editing}
+                                onChange={handleChange} className="mt-2 w-60 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                {languages.map((item) => (
+                                    <option key={item.name} value={item.value}>
+                                        {item.name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         {editing && (

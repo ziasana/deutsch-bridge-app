@@ -1,7 +1,6 @@
 "use client";
 import {addVocabulary} from "@/services/vocabularyService";
 import {AddVocabularyType} from "@/types/vocabulary";
-import useAuthStore from "@/store/useAuthStore";
 import {toast} from "react-toastify";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
@@ -19,7 +18,6 @@ export default function AddVocabularyModal({
   onClose,
   onSave,
 }: Readonly<VocabularyProps>) {
-  const {userProfile} = useAuthStore();
   const defaultValues = {
     word: "",
     example: "",
@@ -45,9 +43,7 @@ export default function AddVocabularyModal({
     const addData: AddVocabularyType = {
       word: data.word,
       example: data.example,
-      meaning: data.meaning,
-      userEmail: userProfile?.email,
-      language: userProfile?.preferredLanguage
+      meaning: data.meaning
     }
     addVocabulary(addData)
       .then(() => {

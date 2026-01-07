@@ -4,7 +4,6 @@ import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.ApiResponse;
 import com.deutschbridge.backend.model.dto.VocabularyRequest;
 import com.deutschbridge.backend.model.dto.VocabularyResponse;
-import com.deutschbridge.backend.model.entity.Vocabulary;
 import com.deutschbridge.backend.service.VocabularyService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,16 +22,16 @@ public class VocabularyController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Vocabulary>> getAllVocabularies() {
+    public ResponseEntity<List<VocabularyResponse>> getAllVocabularies() {
         return new ResponseEntity<>(vocabularyService.findAll(), HttpStatus.OK);
     }
 
-    @PostMapping("/get-user")
-    public ResponseEntity<List<VocabularyResponse>> getUserVocabularies(@RequestBody VocabularyRequest request) {
-        return new ResponseEntity<>(vocabularyService.getUserVocabularies(request.userEmail(),request.language()), HttpStatus.OK);
+    @GetMapping("/get-user")
+    public ResponseEntity<List<VocabularyResponse>> getUserVocabularies() {
+        return new ResponseEntity<>(vocabularyService.getUserVocabularies(), HttpStatus.OK);
     }
 
-    @PostMapping
+   @PostMapping
     public ResponseEntity<ApiResponse<String>> save(@RequestBody VocabularyRequest request) {
         vocabularyService.save(request);
         return new ResponseEntity<>(

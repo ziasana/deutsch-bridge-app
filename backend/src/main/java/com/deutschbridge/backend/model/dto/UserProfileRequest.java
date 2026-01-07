@@ -4,6 +4,7 @@ public record UserProfileRequest(
          String displayName,
          String learningLevel,
          Integer dailyGoalWords,
-         boolean notificationsEnabled
+         boolean notificationsEnabled,
+         String preferredLanguage
 ) {
 }

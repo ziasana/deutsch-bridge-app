@@ -5,11 +5,11 @@ import java.util.List;
 
 public record VocabularyResponse(
         String id,
-    String word,
-    String example,
-    String synonyms,
-    String userEmail,
-    List<VocabularyContentResponse> vocabularyContents
-)
-{
+        String word,
+        String example,
+        String synonyms,
+        String userEmail,
+        List<VocabularyContentResponse> vocabularyContents,
+        List<UserVocabularyPracticeDTO> vocabularyPractice
+) {
 }

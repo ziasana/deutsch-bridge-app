@@ -2,7 +2,6 @@
 import { useEffect } from "react";
 import { updateVocabulary } from "@/services/vocabularyService";
 import {UpdateVocabularyType, VocabularyType} from "@/types/vocabulary";
-import useAuthStore from "@/store/useAuthStore";
 import {toast} from "react-toastify";
 import {useForm} from "react-hook-form";
 import {AddVocabularyFormData, AddVocabularySchema} from "@/schema/AddVocabularySchema";
@@ -20,7 +19,6 @@ export default function EditVocabularyModal({
   word,
   onSave,
 }: Readonly<VocabularyProps>) {
-  const {userProfile} = useAuthStore();
   const defaultValues = {
     word: "",
     example: "",
@@ -59,8 +57,7 @@ export default function EditVocabularyModal({
       id: word?.id,
       word: data.word,
       example: data.example,
-      meaning: data.meaning,
-      language: userProfile?.preferredLanguage
+      meaning: data.meaning
     }
 
     updateVocabulary(updateData)

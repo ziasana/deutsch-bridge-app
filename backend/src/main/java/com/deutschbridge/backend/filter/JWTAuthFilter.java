@@ -1,5 +1,6 @@
 package com.deutschbridge.backend.filter;
 
+import com.deutschbridge.backend.context.LanguageContext;
 import com.deutschbridge.backend.service.CookieService;
 import com.deutschbridge.backend.service.CustomUserDetailsService;
 import com.deutschbridge.backend.util.JWTUtil;
@@ -32,6 +33,9 @@ public class JWTAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException
     {
+
+        // Read language from header
+        extractLanguage(request);
 
         String path = request.getRequestURI();
         // Skip JWT check for login or public endpoints
@@ -77,5 +81,13 @@ public class JWTAuthFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private static void extractLanguage(HttpServletRequest request) {
+        String language = request.getHeader("Accept-Language");
+        if(language == null || language.isEmpty()) {
+            language = "EN";
+        }
+        LanguageContext.set(language);
     }
 }

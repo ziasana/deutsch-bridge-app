@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.UUID;
 
 @Repository
 public interface VocabularyRepository extends JpaRepository<Vocabulary,String> {
@@ -21,4 +22,13 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary,String> {
       AND c.language = :language
 """)
    List<Vocabulary> getVocabularyByUserAndLanguage(@Param("userId") String userId, @Param("language") String language);
+
+    @Query("""
+    SELECT vp
+    FROM UserVocabularyPractice vp
+    JOIN FETCH vp.vocabulary v
+    WHERE v.id = :vocabularyId
+""")
+    List<UserVocabularyPracticeRepository> findByVocabularyId(UUID vocabularyId);
+
 }

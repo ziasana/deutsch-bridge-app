@@ -2,19 +2,18 @@
 
 import {toast, ToastContainer} from "react-toastify";
 import * as React from "react";
-import useAuthStore from "@/store/useAuthStore";
 import EditVocabularyModal from "@/componenets/EditVocabularyModal";
 import {useEffect, useState} from "react";
-import {DeleteVocabularyType, VocabularyType} from "@/types/vocabulary";
-import {deleteVocabulary, getUserVocabularies} from "@/services/vocabularyService";
+import {DeleteVocabularyType, VocabularyPracticeType, VocabularyType} from "@/types/vocabulary";
+import {deleteVocabulary, getUserVocabularyWithPractice} from "@/services/vocabularyService";
 import Loading from "@/componenets/Loading";
-import {AuthenticatedRequest} from "@/types/authenticatedRequest";
 import AddVocabularyModal from "@/componenets/AddVocabularyModal";
+import CircularProgress from "@/componenets/CircularProgress";
+import { useRouter } from "next/navigation";
 
 export default function VocabularyPage() {
-    const {userProfile} = useAuthStore();
-
-    const [vocabList, setVocabList] = useState<VocabularyType[]>([]);
+    const router = useRouter();
+    const [vocabList, setVocabList] = useState<VocabularyPracticeType[]>([]);
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(true);
 
@@ -23,13 +22,12 @@ export default function VocabularyPage() {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     const getList = () => {
-        const authRequest: AuthenticatedRequest = {
-            userEmail: userProfile?.email,
-            language: userProfile?.preferredLanguage
-        }
-        getUserVocabularies(authRequest)
-            .then((data) =>
-                setVocabList(data?.data))
+        getUserVocabularyWithPractice()
+            .then((data) => {
+                    setVocabList(data?.data)
+                console.log(data?.data)
+                }
+            )
             .catch((err) => console.error(err))
             .finally(() => setLoading(false));
     };
@@ -44,8 +42,7 @@ export default function VocabularyPage() {
         setLoading(true);
         if (confirm("Are you sure you want to delete this word?")) {
             const deleteData: DeleteVocabularyType = {
-                id: id,
-                language: userProfile?.preferredLanguage
+                id: id
             }
             deleteVocabulary(deleteData)
                 .then(() => {
@@ -83,11 +80,39 @@ export default function VocabularyPage() {
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6 flex flex-col items-center">
             <div className="w-full max-w-3xl flex flex-col space-y-4 h-[calc(100vh-48px)]">
                 {/* Sticky Header */}
+
+                <div className="fixed right-4 top-1/2 -translate-y-1/2 z-50 group">
+                    <button
+                        onClick={() => router.push(" /dashboard/vocabularyPractice")}
+                        className="
+            w-14 h-14
+            bg-green-600 hover:bg-green-700
+            text-white text-xl
+            rounded-full
+            flex items-center justify-center
+            animate-pulse
+        ">
+                        ▶
+                    </button>
+                    {/* Tooltip */}
+                    <span
+                        className="
+            absolute right-16 top-1/2 -translate-y-1/2
+            whitespace-nowrap
+            bg-gray-800 text-white text-sm
+            px-3 py-1 rounded
+            opacity-0 group-hover:opacity-100
+            transition
+        ">
+        Start vocabulary practice
+    </span></div>
+
                 <div
                     className="sticky top-0 bg-gray-100 dark:bg-gray-900 z-10 p-2 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                         My Vocabulary
                     </h1>
+
                     <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                         <input
                             type="text"
@@ -143,6 +168,25 @@ export default function VocabularyPage() {
                                     )}
                                 </div>
                                 <div className="flex gap-2 mt-2 md:mt-0">
+                                    {vocab.vocabularyPractice?.[0]?.successRate == null ?
+                                        <div className="relative w-[60px] h-[60px]">
+                                            <CircularProgress value={0}/>
+                                            <span
+                                                className="absolute inset-0 flex items-center justify-center text-sm font-bold">
+                                        {0}%
+                                       </span>
+                                        </div> :
+                                        (
+                                            <div className="relative w-[60px] h-[60px]">
+                                                <CircularProgress value={vocab.vocabularyPractice[0].successRate}/>
+                                                <span
+                                                    className="absolute inset-0 flex items-center justify-center text-sm font-bold">
+                                        {vocab.vocabularyPractice[0].successRate}%
+                                       </span>
+                                            </div>
+                                        )
+                                    }
+
                                     <button
                                         onClick={() => {
                                             setSelectedWord(vocab);
@@ -209,6 +253,7 @@ export default function VocabularyPage() {
                         onSave={handleWordSaved}
                     />
                 </div>
+
             </div>
         </div>
     );

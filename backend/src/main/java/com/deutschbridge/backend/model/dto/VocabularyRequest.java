@@ -4,14 +4,10 @@ import jakarta.validation.constraints.NotBlank;
 
 public record VocabularyRequest(
         String id,
-    @NotBlank(message = "Word is required")
-    String word,
-    String example,
-    String synonyms,
-    String meaning,
-    @NotBlank(message = "Language is required")
-    String language,
-    String userEmail
-)
-{
+        @NotBlank(message = "Word is required")
+        String word,
+        String example,
+        String synonyms,
+        String meaning
+) {
 }

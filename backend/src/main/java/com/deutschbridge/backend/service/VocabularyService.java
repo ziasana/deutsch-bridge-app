@@ -1,7 +1,7 @@
 package com.deutschbridge.backend.service;
 
+import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.exception.DataNotFoundException;
-import com.deutschbridge.backend.model.dto.VocabularyContentResponse;
 import com.deutschbridge.backend.model.dto.VocabularyRequest;
 import com.deutschbridge.backend.model.dto.VocabularyResponse;
 import com.deutschbridge.backend.model.entity.User;
@@ -9,6 +9,7 @@ import com.deutschbridge.backend.model.entity.Vocabulary;
 import com.deutschbridge.backend.model.entity.VocabularyContent;
 import com.deutschbridge.backend.repository.VocabularyContentRepository;
 import com.deutschbridge.backend.repository.VocabularyRepository;
+import com.deutschbridge.backend.util.VocabularyMapper;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -18,54 +19,48 @@ import java.util.List;
 public class VocabularyService {
 
     private final VocabularyRepository vocabularyRepository;
+    private final RequestContext requestContext; // inject per-request
 
     static final String NOT_FOUND= "Vocabulary not found!";
     private final UserService userService;
     private final VocabularyContentRepository vocabularyContentRepository;
 
-    public VocabularyService(VocabularyRepository vocabularyRepository, UserService userService, VocabularyContentRepository vocabularyContentRepository) {
+    public VocabularyService(VocabularyRepository vocabularyRepository, RequestContext requestContext, UserService userService, VocabularyContentRepository vocabularyContentRepository) {
         this.vocabularyRepository = vocabularyRepository;
+        this.requestContext = requestContext;
         this.userService = userService;
         this.vocabularyContentRepository = vocabularyContentRepository;
     }
 
-    public List<Vocabulary> findAll()
+    public List<VocabularyResponse> findAll()
     {
-        return vocabularyRepository.findAll();
+        List<Vocabulary> vocabularies = vocabularyRepository.findAll();
+             return    vocabularies.stream().
+                        map(VocabularyMapper::mapToVocabularyResponse).toList();
     }
 
-    @SuppressWarnings("java:S5804")
-    public List<VocabularyResponse> getUserVocabularies(String email,String language) {
-        User user = userService.findByEmail(email);
-        if(user == null) {
-            throw new UsernameNotFoundException(NOT_FOUND);
-        }
-      List<Vocabulary> vocabularies= vocabularyRepository.getVocabularyByUserAndLanguage(user.getId(), language);
-       return vocabularies.stream().map(
-                v ->  new VocabularyResponse(
-                        v.getId(),
-                        v.getWord(),
-                        v.getExample(),
-                        v.getSynonyms(),
-                        v.getUser().getEmail(),
-                        v.getVocabularyContents().stream()
-                                .map(c -> new VocabularyContentResponse(
-                                        c.getLanguage(),
-                                        c.getMeaning())
-                                ).toList()
+    public Vocabulary findById(String id) throws DataNotFoundException {
+        return vocabularyRepository.findById(id)
+                .orElseThrow(() -> new DataNotFoundException("Vocabulary not found"));
+    }
 
-                )
-        )
+    public List<Vocabulary> getVocabularyByUserAndLanguage(String userId, String language) {
+        return vocabularyRepository.getVocabularyByUserAndLanguage(userId, language);
+    }
+
+
+    public List<VocabularyResponse> getUserVocabularies() {
+        userService.existsByEmail(requestContext.getUserEmail());
+        List<Vocabulary> vocabularies= vocabularyRepository.getVocabularyByUserAndLanguage(requestContext.getUserId(), requestContext.getLanguage());
+        return vocabularies.stream()
+               .map(VocabularyMapper::mapToVocabularyResponse)
                .toList();
-
     }
 
-    @SuppressWarnings("java:S5804")
+    //@SuppressWarnings("java:S5804")
     public void save(VocabularyRequest request) throws UsernameNotFoundException {
 
-        User user = userService.findByEmail(request.userEmail());
-        if (user == null)
-            throw new UsernameNotFoundException(NOT_FOUND);
+        User user = userService.findByEmail(requestContext.getUserEmail());
 
         Vocabulary vocabulary = vocabularyRepository.findByWord(request.word());
         if (vocabulary == null) {
@@ -75,20 +70,20 @@ public class VocabularyService {
             vocabularyRepository.save(newVocabulary);
 
             VocabularyContent vocabularyContent = new VocabularyContent(
-                    newVocabulary,request.meaning(), request.language()
+                    newVocabulary,request.meaning(),requestContext.getLanguage()
             );
             vocabularyContentRepository.save(vocabularyContent);
             return;
         }
 
         VocabularyContent contentExists = vocabularyContentRepository.findVocabularyContentByVocabularyIdAndLanguage(
-               vocabulary.getId(), request.language());
+               vocabulary.getId(), requestContext.getLanguage());
         if(contentExists!=null)
         {
             throw new IllegalArgumentException("Vocabulary already exists!");
         }
         VocabularyContent newVocabularyContent = new VocabularyContent(
-                vocabulary,request.meaning(), request.language()
+                vocabulary,request.meaning(), requestContext.getLanguage()
         );
         vocabularyContentRepository.save(newVocabularyContent);
     }
@@ -101,24 +96,13 @@ public class VocabularyService {
             if(request.example() != null) vocabulary.setExample(request.example());
             vocabularyRepository.save(vocabulary);
             VocabularyContent vocabularyContent = vocabularyContentRepository.findVocabularyContentByVocabularyIdAndLanguage(
-                    request.id(), request.language());
+                    request.id(), requestContext.getLanguage());
             if(request.meaning() != null)  vocabularyContent.setMeaning(request.meaning());
             vocabularyContentRepository.save(vocabularyContent);
 
             Vocabulary updated = vocabularyRepository.getVocabularyById(request.id());
 
-            return new VocabularyResponse(
-                    updated.getId(),
-                    updated.getWord(),
-                    updated.getExample(),
-                    updated.getSynonyms(),
-                    updated.getUser().getEmail(),
-                    updated.getVocabularyContents().stream()
-                            .map(c -> new VocabularyContentResponse(
-                                    c.getLanguage(),
-                                    c.getMeaning()
-                            )).toList()
-            );
+            return VocabularyMapper.mapToVocabularyResponse(updated);
         }
         return null;
     }
@@ -127,7 +111,7 @@ public class VocabularyService {
         Vocabulary vocabulary = vocabularyRepository.getVocabularyById(request.id());
         if (vocabulary != null) {
             VocabularyContent vocabularyContent = vocabularyContentRepository.findVocabularyContentByVocabularyIdAndLanguage(
-                    vocabulary.getId(),request.language());
+                    vocabulary.getId(), requestContext.getLanguage());
             if (vocabularyContent!=null) {
                 vocabularyContentRepository.delete(vocabularyContent);
             }

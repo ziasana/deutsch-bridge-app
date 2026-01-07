@@ -3,18 +3,18 @@ package com.deutschbridge.backend.model.entity;
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
-import java.util.List;
+import java.util.Set;
 
 @EnableJpaAuditing
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Setter
+@Getter
 @Entity (name = "vocabularies")
+@ToString(exclude = {"practices", "vocabularyContents"})
 public class Vocabulary {
     @Id
     private String id;
@@ -26,11 +26,15 @@ public class Vocabulary {
 
     @OneToMany(mappedBy = "vocabulary", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
-    private List<VocabularyContent> vocabularyContents;
+    private Set<VocabularyContent> vocabularyContents;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
+
+    @OneToMany(mappedBy = "vocabulary", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private Set<UserVocabularyPractice> practices;
 
     public Vocabulary(String word, String example, String synonyms, User user) {
         this.word = word;

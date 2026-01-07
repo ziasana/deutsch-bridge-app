@@ -95,7 +95,9 @@ class UserProfileServiceTest {
                 user.getEmail(),
                 profile.getLearningLevel().getValue(),
                 profile.getDailyGoalWords(),
-                profile.isNotificationsEnabled()
+                profile.isNotificationsEnabled(),
+                profile.getPreferredLanguage()
+
         );
 
         assertEquals(user.getDisplayName(), response.displayName());
