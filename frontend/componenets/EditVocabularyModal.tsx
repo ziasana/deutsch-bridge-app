@@ -97,12 +97,12 @@ export default function EditVocabularyModal({
             </label>
           </div>
           <div>
-            <label className="text-sm font-medium">Example <input
-              className="w-full mt-1 p-2 border rounded dark:bg-gray-700 dark:text-white"
-              {...register("example")}
-              placeholder="Example"
-            />
-            </label>
+            <label className="text-sm font-medium">Example <textarea
+                className="w-full mt-1 p-2 border rounded h-25 dark:bg-gray-700"
+                {...register("example")}
+                placeholder="Example"
+            /></label>
+
           </div>
         </div>
 

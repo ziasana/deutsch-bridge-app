@@ -60,3 +60,7 @@ export interface AddVocabularyType {
     userEmail?: string
     language?: string
 }
+
+export interface GenerateAiWordType {
+    word?: string
+}

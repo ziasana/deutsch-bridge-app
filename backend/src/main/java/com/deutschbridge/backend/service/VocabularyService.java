@@ -20,14 +20,15 @@ public class VocabularyService {
 
     private final VocabularyRepository vocabularyRepository;
     private final RequestContext requestContext; // inject per-request
-
+    private final OllamaService ollamaService;
     static final String NOT_FOUND= "Vocabulary not found!";
     private final UserService userService;
     private final VocabularyContentRepository vocabularyContentRepository;
 
-    public VocabularyService(VocabularyRepository vocabularyRepository, RequestContext requestContext, UserService userService, VocabularyContentRepository vocabularyContentRepository) {
+    public VocabularyService(VocabularyRepository vocabularyRepository, RequestContext requestContext, OllamaService ollamaService, UserService userService, VocabularyContentRepository vocabularyContentRepository) {
         this.vocabularyRepository = vocabularyRepository;
         this.requestContext = requestContext;
+        this.ollamaService = ollamaService;
         this.userService = userService;
         this.vocabularyContentRepository = vocabularyContentRepository;
     }
@@ -61,11 +62,11 @@ public class VocabularyService {
     public void save(VocabularyRequest request) throws UsernameNotFoundException {
 
         User user = userService.findByEmail(requestContext.getUserEmail());
-
+        String synonyms = ollamaService.generateAiSynonyms(request.word());
         Vocabulary vocabulary = vocabularyRepository.findByWord(request.word());
         if (vocabulary == null) {
             Vocabulary newVocabulary = new Vocabulary(
-                    request.word(), request.example(), request.synonyms(), user
+                    request.word(), request.example(), synonyms, user
             );
             vocabularyRepository.save(newVocabulary);
 

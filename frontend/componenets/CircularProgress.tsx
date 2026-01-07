@@ -1,7 +1,7 @@
 type CircularProgressProps = {
     value: number
 }
-export default function CircularProgress(value: Readonly<CircularProgressProps> ) {
+export default function CircularProgress({value}: Readonly<CircularProgressProps> ) {
     const radius = 24;
     const circumference: number = 2 * Math.PI * radius;
     const offset: number = circumference - (value / 100) * circumference;

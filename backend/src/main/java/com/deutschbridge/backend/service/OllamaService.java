@@ -1,0 +1,101 @@
+package com.deutschbridge.backend.service;
+
+import com.deutschbridge.backend.context.RequestContext;
+import com.deutschbridge.backend.model.dto.*;
+import com.deutschbridge.backend.util.PromptLibrary;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class OllamaService {
+
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final HttpHeaders headers;
+    private  static final String OLLAMA_COM_API_CHAT = "https://ollama.com/api/chat";
+
+    private final ChatMessageService chatMessageService;
+    private final ChatSessionService chatSessionService;
+    private final RequestContext requestContext;
+
+    public OllamaService(
+            @Value("${ollama.api.key}") String apiKey,
+            ChatMessageService chatMessageService,
+            ChatSessionService chatSessionService,
+            RequestContext requestContext) {
+        this.chatMessageService = chatMessageService;
+        this.chatSessionService = chatSessionService;
+        headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(apiKey);
+        this.requestContext = requestContext;
+    }
+
+    public ResponseMessageDto chatWithUser(OllamaChatRequestDto requestDto) {
+        String userId = requestContext.getUserId();
+        String sessionId = resolveSessionId(requestDto.sessionId(), userId);
+
+        String aiAnswer = chatWithOllama(null, requestDto.question());
+
+        chatMessageService.save(sessionId, requestDto.question(), aiAnswer);
+
+        return new ResponseMessageDto(sessionId, userId, aiAnswer, "");
+    }
+
+    public OllamaGenerateExampleDto generateAiExample(OllamaGenerateExampleDto requestDto) {
+        String aiAnswer = chatWithOllama("example",requestDto.word());
+        return new OllamaGenerateExampleDto(aiAnswer);
+    }
+
+    public String generateAiSynonyms(String word) {
+        return chatWithOllama("synonym",word);
+    }
+
+    private String resolveSessionId(String sessionId, String userId) {
+        if (sessionId != null && chatSessionService.getBySessionId(sessionId) != null) {
+            return sessionId;
+        }
+        return chatSessionService.save(userId).getId();
+    }
+
+    public String chatWithOllama(String prompt, String question) {
+        List<OllamaMessage> messages = createChatMessages(prompt, question);
+
+        OllamaRequest request = new OllamaRequest(messages);
+        HttpEntity<OllamaRequest> entity = new HttpEntity<>(request, headers);
+
+        ResponseEntity<OllamaResponse> response = restTemplate.exchange(
+                OLLAMA_COM_API_CHAT,
+                HttpMethod.POST,
+                entity,
+                OllamaResponse.class
+        );
+        return extractAiAnswer(response);
+    }
+
+    private List<OllamaMessage> createChatMessages(String prompt, String question) {
+       String userPrompt = PromptLibrary.systemPrompt();
+        if (prompt.equals("example")) {
+            userPrompt = PromptLibrary.generateWordExamples(question, "B1");
+        }
+        if (prompt.equals("synonym")) {
+            userPrompt = PromptLibrary.generateWordSynonyms(question, "B1");
+        }
+
+        return List.of(
+                new OllamaMessage("system", userPrompt),
+                new OllamaMessage("user", question)
+        );
+    }
+
+    private String extractAiAnswer(ResponseEntity<OllamaResponse> response) {
+        return Optional.ofNullable(response.getBody())
+                .map(OllamaResponse::getMessage)
+                .map(OllamaMessage::getContent)
+                .orElse("");
+    }
+}

@@ -1,7 +1,7 @@
 import api from "./api";
 import {
     AddVocabularyType,
-    DeleteVocabularyType, SaveVocabularyPracticeType,
+    DeleteVocabularyType, GenerateAiWordType, SaveVocabularyPracticeType,
     UpdateVocabularyType, VocabularyForPracticeType,
     VocabularyPracticeType,
     VocabularyType
@@ -25,6 +25,10 @@ export const addUserVocabularyPractice = async (data:SaveVocabularyPracticeType)
 
 export const addVocabulary = async (data: AddVocabularyType) => {
     return await api.post<VocabularyType[]>("/api/vocabulary", data);
+}
+
+export const generateAiExample = async (data: GenerateAiWordType) => {
+    return await api.post<GenerateAiWordType[]>("/api/ollama/generate-example", data);
 }
 
 export const deleteVocabulary= async(data: DeleteVocabularyType) => {
