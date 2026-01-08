@@ -69,7 +69,8 @@ class UserProfileServiceTest {
                 "Alice",
                 "A1",
                 10,
-                false
+                false,
+                "EN"
         );
         boolean result = userProfileService.update("user456", request);
         assertTrue(result);

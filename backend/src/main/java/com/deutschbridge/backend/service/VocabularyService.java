@@ -58,9 +58,7 @@ public class VocabularyService {
                .toList();
     }
 
-    //@SuppressWarnings("java:S5804")
     public void save(VocabularyRequest request) throws UsernameNotFoundException {
-
         User user = userService.findByEmail(requestContext.getUserEmail());
         String synonyms = ollamaService.generateAiSynonyms(request.word());
         Vocabulary vocabulary = vocabularyRepository.findByWord(request.word());
