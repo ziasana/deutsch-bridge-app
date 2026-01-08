@@ -8,35 +8,35 @@ import {
 } from "@/types/vocabulary";
 
 export const getUserVocabularies = async () => {
-    return await api.get<VocabularyType[]>("/api/vocabulary/get-user");
+    return await api.get<VocabularyType[]>("/vocabulary/get-user");
 }
 
 export const getUserVocabularyWithPractice = async () => {
-    return await api.get<VocabularyPracticeType[]>("/api/vocabulary-practice");
+    return await api.get<VocabularyPracticeType[]>("/vocabulary-practice");
 }
 
 export const getUserVocabularyForPractice = async () => {
-    return await api.get<VocabularyForPracticeType[]>("/api/vocabulary-practice/for-practice");
+    return await api.get<VocabularyForPracticeType[]>("/vocabulary-practice/for-practice");
 }
 
 export const addUserVocabularyPractice = async (data:SaveVocabularyPracticeType) => {
-    return await api.post("/api/vocabulary-practice", data);
+    return await api.post("/vocabulary-practice", data);
 }
 
 export const addVocabulary = async (data: AddVocabularyType) => {
-    return await api.post<VocabularyType[]>("/api/vocabulary", data);
+    return await api.post<VocabularyType[]>("/vocabulary", data);
 }
 
 export const generateAiExample = async (data: GenerateAiWordType) => {
-    return await api.post<GenerateAiWordType[]>("/api/ollama/generate-example", data);
+    return await api.post<GenerateAiWordType[]>("/ollama/generate-example", data);
 }
 
 export const deleteVocabulary= async(data: DeleteVocabularyType) => {
-    return await api.delete("api/vocabulary", { data: data });
+    return await api.delete("/vocabulary", { data: data });
 
 }
 
 export const updateVocabulary= async(data: UpdateVocabularyType ) => {
-    return await api.put("/api/vocabulary", data )
+    return await api.put("/vocabulary", data )
 
 }

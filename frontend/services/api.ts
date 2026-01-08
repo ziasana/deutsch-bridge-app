@@ -4,7 +4,7 @@ import useAuthStore from "@/store/useAuthStore";
 const API_URL = "http://localhost:8080";
 
 const api = axios.create({
-    baseURL: API_URL,
+    baseURL: API_URL + "/api",
     headers: {
         "Content-Type": "application/json",
     },
@@ -63,7 +63,7 @@ api.interceptors.response.use(
             return new Promise(async (resolve, reject) => {
                 try {
                     // Call refresh endpoint
-                    await api.get("/api/auth/refresh", { withCredentials: true });
+                    await api.get("/auth/refresh", { withCredentials: true });
                     processQueue(null); // retry queued requests
                     resolve(api(originalRequest)); // retry original request
                 } catch (err) {

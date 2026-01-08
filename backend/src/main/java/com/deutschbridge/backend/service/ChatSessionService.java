@@ -1,5 +1,6 @@
 package com.deutschbridge.backend.service;
 
+import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.model.dto.ChatSessionDto;
 import com.deutschbridge.backend.model.entity.ChatSession;
 import com.deutschbridge.backend.repository.ChatSessionRepository;
@@ -10,9 +11,11 @@ import java.util.List;
 public class ChatSessionService {
 
     private final ChatSessionRepository chatSessionRepository;
+    private final RequestContext requestContext;
 
-    public ChatSessionService(ChatSessionRepository chatSessionRepository) {
+    public ChatSessionService(ChatSessionRepository chatSessionRepository, RequestContext requestContext) {
         this.chatSessionRepository = chatSessionRepository;
+        this.requestContext = requestContext;
     }
 
     public List<ChatSession> findAll() {
@@ -23,8 +26,8 @@ public class ChatSessionService {
         return chatSessionRepository.save(new ChatSession(userId, "teacher"));
     }
 
-    public List<ChatSessionDto> getByUserId(String userId) {
-        return chatSessionRepository.findByUserId(userId);
+    public List<ChatSessionDto> getByUserId() {
+        return chatSessionRepository.findByUserId(requestContext.getUserId());
     }
 
     public ChatSession getBySessionId(String sessionId) {

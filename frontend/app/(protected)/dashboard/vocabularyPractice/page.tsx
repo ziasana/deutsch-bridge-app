@@ -15,7 +15,6 @@ export default function PracticePage() {
         getUserVocabularyForPractice()
             .then((data) => {
                 setVocabularies(data?.data)
-                    //console.log("for practice:",data?.data)
                 }
             )
             .catch((err) => console.error(err))

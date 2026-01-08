@@ -1,27 +1,20 @@
 package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.context.RequestContext;
-import com.deutschbridge.backend.model.dto.UserDto;
-import com.deutschbridge.backend.model.dto.UserRegistrationRequest;
 import com.deutschbridge.backend.model.dto.VocabularyResponse;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.entity.UserVocabularyPractice;
 import com.deutschbridge.backend.model.entity.Vocabulary;
 import com.deutschbridge.backend.model.entity.VocabularyContent;
-import com.deutschbridge.backend.repository.UserProfileRepository;
-import com.deutschbridge.backend.repository.UserRepository;
 import com.deutschbridge.backend.repository.VocabularyContentRepository;
 import com.deutschbridge.backend.repository.VocabularyRepository;
-import com.deutschbridge.backend.util.JWTUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.HashSet;
 import java.util.List;
@@ -33,7 +26,6 @@ import static org.mockito.Mockito.*;
 class VocabularyServiceTest {
 
     @Mock private VocabularyRepository vocabularyRepository;
-    //@Mock private VocabularyRepository vocabularyRepository;
     @Mock private RequestContext requestContext;
     @Mock private OllamaService ollamaService;
     @Mock private UserService userService;

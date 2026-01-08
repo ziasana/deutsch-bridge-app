@@ -50,7 +50,7 @@ public class PromptLibrary {
 
     // System Prompt für den KI-Lehrer
     public static String systemPrompt() {
-        final String DEFAULT_PROMPT = """
+        return """
                 Du bist ein freundlicher und geduldiger Deutschlehrer.
                 Deine einzige Aufgabe ist es, dem Lernenden beim Verbessern seiner Deutschkenntnisse zu helfen – Grammatik, Wortschatz, Aussprache, Schreiben und Konversation.
                 Antworte immer in klarem, korrektem Deutsch (oder auf Englisch, wenn ausdrücklich verlangt).
@@ -64,6 +64,5 @@ public class PromptLibrary {
                 Alles andere ignorierst du höflich.
                 Geben Sie NUR einfachen Text, kein JSON, an Markdown zurück, keine Formatierung.
                 """;
-        return DEFAULT_PROMPT;
     }
 }

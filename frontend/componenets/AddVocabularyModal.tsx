@@ -62,6 +62,7 @@ export default function AddVocabularyModal({
             );
     };
     const handleGenerateAiExample = () => {
+        // eslint-disable-next-line react-hooks/incompatible-library
         if (watch("word") == "") {
             toast.warning("Word is required");
             return;
@@ -72,7 +73,9 @@ export default function AddVocabularyModal({
         }
         generateAiExample(requestData)
             .then((response) => {
+                // @ts-ignore
                 toast.success(response?.data.word);
+                // @ts-ignore
                 setValue("example", response?.data.word)
             })
             .catch((err) => {

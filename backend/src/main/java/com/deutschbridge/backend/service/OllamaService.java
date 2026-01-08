@@ -2,6 +2,7 @@ package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.model.dto.*;
+import com.deutschbridge.backend.model.enums.PromptType;
 import com.deutschbridge.backend.util.PromptLibrary;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -39,7 +40,7 @@ public class OllamaService {
         String userId = requestContext.getUserId();
         String sessionId = resolveSessionId(requestDto.sessionId(), userId);
 
-        String aiAnswer = chatWithOllama(null, requestDto.question());
+        String aiAnswer = chatWithOllama(PromptType.CHAT, requestDto.question());
 
         chatMessageService.save(sessionId, requestDto.question(), aiAnswer);
 
@@ -47,12 +48,12 @@ public class OllamaService {
     }
 
     public OllamaGenerateExampleDto generateAiExample(OllamaGenerateExampleDto requestDto) {
-        String aiAnswer = chatWithOllama("example",requestDto.word());
+        String aiAnswer = chatWithOllama(PromptType.EXAMPLE,requestDto.word());
         return new OllamaGenerateExampleDto(aiAnswer);
     }
 
     public String generateAiSynonyms(String word) {
-        return chatWithOllama("synonym",word);
+        return chatWithOllama(PromptType.SYNONYM,word);
     }
 
     private String resolveSessionId(String sessionId, String userId) {
@@ -62,8 +63,8 @@ public class OllamaService {
         return chatSessionService.save(userId).getId();
     }
 
-    public String chatWithOllama(String prompt, String question) {
-        List<OllamaMessage> messages = createChatMessages(prompt, question);
+    public String chatWithOllama(PromptType promptType, String question) {
+        List<OllamaMessage> messages = createChatMessages(promptType, question);
 
         OllamaRequest request = new OllamaRequest(messages);
         HttpEntity<OllamaRequest> entity = new HttpEntity<>(request, headers);
@@ -77,12 +78,15 @@ public class OllamaService {
         return extractAiAnswer(response);
     }
 
-    private List<OllamaMessage> createChatMessages(String prompt, String question) {
-       String userPrompt = PromptLibrary.systemPrompt();
-        if (prompt.equals("example")) {
+    private List<OllamaMessage> createChatMessages(PromptType promptType, String question) {
+       String userPrompt= "";
+        if(promptType == (PromptType.CHAT)) {
+            userPrompt = PromptLibrary.systemPrompt();
+        }
+        if (promptType == PromptType.EXAMPLE) {
             userPrompt = PromptLibrary.generateWordExamples(question, "B1");
         }
-        if (prompt.equals("synonym")) {
+        if (promptType == PromptType.SYNONYM) {
             userPrompt = PromptLibrary.generateWordSynonyms(question, "B1");
         }
 

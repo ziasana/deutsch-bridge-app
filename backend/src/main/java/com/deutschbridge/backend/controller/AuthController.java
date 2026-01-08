@@ -40,18 +40,18 @@ public class AuthController {
         String email = request.getEmail();
         String password = request.getPassword();
         authService.login(email, password);
-        //generate access token JWT
+        // generate access token JWT
         String token = jwtUtil.generateAccessToken(email);
-        //generate refresh token JWT
+        // generate refresh token JWT
         String refreshToken = jwtUtil.generateRefreshToken(email);
-        //save refresh token for user
+        // save refresh token for user
         userService.saveRefreshToken(email, refreshToken);
 
         // create and add cookie to response
         response.addCookie(cookieService.createAccessToken(token));
         response.addCookie(cookieService.createRefreshToken(refreshToken));
 
-        // Get user & profile
+        // get user & profile
         User user = userService.findByEmail(email);
         UserProfileResponse userResponse = userProfileService.getUserProfileResponse(user);
         return new ResponseEntity<>(new ApiResponse<>("Login successful!", userResponse), HttpStatus.OK);
@@ -60,19 +60,18 @@ public class AuthController {
     @GetMapping("/refresh")
     public ResponseEntity<ApiResponse<Void>> refreshToken(HttpServletRequest request, HttpServletResponse response) {
         String token= cookieService.extractRefreshToken(request);
-
         if (token == null || token.isBlank()) {
-            // No token - don't call jwtUtil yet
+            // no token - don't call jwtUtil yet
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        //regenerate access token if fresh token is still valid
+        // regenerate access token if fresh token is still valid
         if(!jwtUtil.validateToken(token)) {
             throw new AuthenticationCredentialsNotFoundException("Invalid token");
         }
 
         String email= jwtUtil.extractEmail(token);
         String newAccessToken = jwtUtil.generateAccessToken(email);
-        //create cookie
+        // create cookie
         response.addCookie(cookieService.createAccessToken(newAccessToken));
         return new ResponseEntity<>(new ApiResponse<>("successfully refreshed",null), HttpStatus.OK);
     }

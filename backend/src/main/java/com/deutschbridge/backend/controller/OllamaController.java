@@ -41,9 +41,9 @@ public class OllamaController {
         return ollamaService.generateAiSynonyms(request.word());
     }
 
-    @GetMapping("/sessions/{userId}")
-    public List<ChatSessionDto> getSessions(@PathVariable String userId) {
-        return chatSessionService.getByUserId(userId);
+    @GetMapping("/user-sessions")
+    public List<ChatSessionDto> getSessions() {
+        return chatSessionService.getByUserId();
     }
 
     @GetMapping("/message/{sessionId}")

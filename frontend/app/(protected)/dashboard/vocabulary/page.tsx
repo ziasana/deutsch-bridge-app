@@ -25,7 +25,6 @@ export default function VocabularyPage() {
         getUserVocabularyWithPractice()
             .then((data) => {
                     setVocabList(data?.data)
-                console.log(data?.data)
                 }
             )
             .catch((err) => console.error(err))
