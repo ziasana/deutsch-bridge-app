@@ -15,29 +15,33 @@ import java.util.Optional;
 @Service
 public class OllamaService {
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
     private final HttpHeaders headers;
     private  static final String OLLAMA_COM_API_CHAT = "https://ollama.com/api/chat";
 
     private final ChatMessageService chatMessageService;
     private final ChatSessionService chatSessionService;
     private final RequestContext requestContext;
+    private final UserService userService;
 
     public OllamaService(
             @Value("${ollama.api.key}") String apiKey,
             ChatMessageService chatMessageService,
             ChatSessionService chatSessionService,
-            RequestContext requestContext) {
+            RequestContext requestContext, UserService userService) {
+        this.restTemplate = new RestTemplate();
         this.chatMessageService = chatMessageService;
         this.chatSessionService = chatSessionService;
         headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(apiKey);
         this.requestContext = requestContext;
+        this.userService = userService;
     }
 
     public ResponseMessageDto chatWithUser(OllamaChatRequestDto requestDto) {
         String userId = requestContext.getUserId();
+
         String sessionId = resolveSessionId(requestDto.sessionId(), userId);
 
         String aiAnswer = chatWithOllama(PromptType.CHAT, requestDto.question());
@@ -48,6 +52,7 @@ public class OllamaService {
     }
 
     public OllamaGenerateExampleDto generateAiExample(OllamaGenerateExampleDto requestDto) {
+
         String aiAnswer = chatWithOllama(PromptType.EXAMPLE,requestDto.word());
         return new OllamaGenerateExampleDto(aiAnswer);
     }
@@ -79,15 +84,16 @@ public class OllamaService {
     }
 
     private List<OllamaMessage> createChatMessages(PromptType promptType, String question) {
+       String learningLevel = String.valueOf(userService.getLearningLevel(requestContext.getUserEmail()));
        String userPrompt= "";
         if(promptType == (PromptType.CHAT)) {
             userPrompt = PromptLibrary.systemPrompt();
         }
         if (promptType == PromptType.EXAMPLE) {
-            userPrompt = PromptLibrary.generateWordExamples(question, "B1");
+            userPrompt = PromptLibrary.generateWordExamples(question, learningLevel);
         }
         if (promptType == PromptType.SYNONYM) {
-            userPrompt = PromptLibrary.generateWordSynonyms(question, "B1");
+            userPrompt = PromptLibrary.generateWordSynonyms(question, learningLevel);
         }
 
         return List.of(

@@ -6,12 +6,12 @@ public class LanguageContext {
     }
     private static final ThreadLocal<String> CURRENT_LANGUAGE = new ThreadLocal<>();
 
-    // Set language for current request
+    // set language for current request
     public static void set(String language) {
         CURRENT_LANGUAGE.set(language);
     }
 
-    // Get language for current request
+    // get language for current request
     public static String get() {
         return CURRENT_LANGUAGE.get();
     }

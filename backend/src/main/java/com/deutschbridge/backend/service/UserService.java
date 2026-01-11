@@ -6,10 +6,12 @@ import com.deutschbridge.backend.model.dto.UserDto;
 import com.deutschbridge.backend.model.dto.UserRegistrationRequest;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.entity.UserProfile;
+import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.UserProfileRepository;
 import com.deutschbridge.backend.repository.UserRepository;
 import com.deutschbridge.backend.util.JWTUtil;
 import jakarta.transaction.Transactional;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -182,6 +184,12 @@ public class UserService {
                 .orElseThrow( ()-> new DataNotFoundException(NOT_FOUND));
         userRepository.deleteByEmail(userDto.getEmail());
         return true;
+    }
+
+    public String  getLearningLevel(String email) {
+        return userRepository.findByEmail(email)
+                .map(User::getProfile)
+                .map(UserProfile::getLearningLevel).get().getValue();
     }
 
     public void saveRefreshToken(String email, String refreshToken){

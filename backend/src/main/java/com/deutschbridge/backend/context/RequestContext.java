@@ -1,6 +1,7 @@
 package com.deutschbridge.backend.context;
 
 import com.deutschbridge.backend.exception.DataNotFoundException;
+import com.deutschbridge.backend.model.enums.PromptType;
 import com.deutschbridge.backend.util.SecurityUtils;
 import lombok.Getter;
 import org.springframework.stereotype.Component;
@@ -15,11 +16,13 @@ public class RequestContext {
     private final String userId;
 
     public RequestContext() throws DataNotFoundException {
-        // Get language from LanguageContext (ThreadLocal)
+        // get language from (ThreadLocal)
         this.language = LanguageContext.get() != null ? LanguageContext.get() : "EN";
 
-        // Get user info from SecurityUtils
+
+        // get user info from SecurityUtils
         this.userEmail = SecurityUtils.getAuthenticatedEmail();
         this.userId = SecurityUtils.getCurrentUser().getId();
+
     }
 }

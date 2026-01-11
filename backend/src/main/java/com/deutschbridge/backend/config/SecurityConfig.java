@@ -22,8 +22,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-    private  final UserRepository userRepository;
-    private final   JWTAuthFilter jwtAuthFilter;
+    private final UserRepository userRepository;
+    private final  JWTAuthFilter jwtAuthFilter;
 
     public SecurityConfig(UserRepository userRepository, JWTAuthFilter jwtAuthFilter) {
         this.userRepository = userRepository;
@@ -49,10 +49,10 @@ public class SecurityConfig {
         return http.build();
     }
 
-    @Bean
-    public UserDetailsService userDetailsService(){
+   /* @Bean
+    public UserDetailsService userDetailsService() {
         return new CustomUserDetailsService(userRepository);
-    }
+    }*/
 
     @Bean
     public PasswordEncoder passwordEncoder(){

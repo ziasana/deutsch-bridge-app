@@ -25,8 +25,6 @@ public class User {
     private String displayName;
 
     private String role="STUDENT";
-    @Enumerated(EnumType.STRING)
-    private LearningLevel learningLevel;
     private int accessTokenFlag = 0;
     private String resetToken;
     private String refreshToken;

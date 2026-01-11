@@ -1,14 +1,16 @@
 package com.deutschbridge.backend.model.entity;
 
+import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.mongodb.core.mapping.Document;
-
 import java.time.LocalDateTime;
 
-@Document(collection = "chat_messages")
+@Entity(name = "chat_messages")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -17,6 +19,7 @@ public class ChatMessage {
     private String id;
     private String sessionId;     // Link to ChatSession
     private String role;          // system, user, assistant
+    @Column(columnDefinition = "TEXT")
     private String content;
     private LocalDateTime timestamp = LocalDateTime.now();
 
@@ -24,5 +27,12 @@ public class ChatMessage {
         this.sessionId = sessionId;
         this.role = role;
         this.content = content;
+    }
+
+    @PrePersist
+    public void ensureId() {
+        if (this.id == null) {
+            this.id = NanoIdUtils.randomNanoId();
+        }
     }
 }

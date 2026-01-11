@@ -7,6 +7,7 @@ import {zodResolver} from "@hookform/resolvers/zod";
 import {AddVocabularyFormData, AddVocabularySchema} from "@/schema/AddVocabularySchema";
 import {useFormErrorToast} from "@/hook/useFormErrorToast";
 import {useState} from "react";
+import Loading from "@/componenets/Loading";
 
 interface VocabularyProps {
     isOpen: boolean; // Modal open/close state
@@ -25,13 +26,14 @@ export default function AddVocabularyModal({
         meaning: ""
     }
     const [loading, setLoading] = useState(false);
+    const [generating, setGenerating] = useState(false);
     const {
         register,
         watch,
         setValue,
         handleSubmit,
         reset,
-        formState: {errors, isSubmitted},
+        formState: {errors, isSubmitted, isSubmitting},
     } = useForm<AddVocabularyFormData>({
         resolver: zodResolver(AddVocabularySchema),
         defaultValues: defaultValues,
@@ -42,6 +44,7 @@ export default function AddVocabularyModal({
     if (!isOpen) return null;
 
     const onSubmit = async (data: AddVocabularyFormData) => {
+        setLoading(true)
         //Save to DB here
         const addData: AddVocabularyType = {
             word: data.word,
@@ -59,7 +62,8 @@ export default function AddVocabularyModal({
                     console.error(err)
                     toast.error(err?.response.data.message)
                 }
-            );
+            ).finally(() => setLoading(false)
+        );
     };
     const handleGenerateAiExample = () => {
         // eslint-disable-next-line react-hooks/incompatible-library
@@ -67,14 +71,12 @@ export default function AddVocabularyModal({
             toast.warning("Word is required");
             return;
         }
-        setLoading(true);
+        setGenerating(true);
         const requestData: GenerateAiWordType = {
             word: watch("word")
         }
         generateAiExample(requestData)
             .then((response) => {
-                // @ts-ignore
-                toast.success(response?.data.word);
                 // @ts-ignore
                 setValue("example", response?.data.word)
             })
@@ -82,13 +84,13 @@ export default function AddVocabularyModal({
                     console.error(err)
                     toast.error(err?.response.data.message)
                 }
-            ).finally(() => setLoading(false));
+            ).finally(() => setGenerating(false));
     };
-
     return (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl w-full max-w-md shadow-lg">
                 <h2 className="text-xl font-bold mb-4">Add New Vocabulary</h2>
+
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <div className="space-y-4">
                         <div>
@@ -112,12 +114,11 @@ export default function AddVocabularyModal({
                             <div className="mb-1 flex items-center justify-between">
                                 <label className="text-sm font-medium">
                                     Example <button
-                                    type="button"
                                     onClick={handleGenerateAiExample}
                                     className="flex items-center gap-1 cursor-pointer text-sm font-medium text-blue-500 hover:text-blue-600"
                                 >
                                     <span>✨</span>
-                                    <span> {loading ? "Generating..." : "Generate"}</span>
+                                    <span> {generating ? "Generating..." : "Generate"}</span>
                                 </button>
                                 </label>
                             </div>
@@ -129,7 +130,7 @@ export default function AddVocabularyModal({
                             />
                         </div>
                     </div>
-
+                    {loading && <Loading />}
                     {/* Buttons */}
                     <div className="flex justify-end gap-3 mt-6">
                         <button
@@ -144,7 +145,7 @@ export default function AddVocabularyModal({
                             disabled={loading}
                             className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
                         >
-                            Save
+                            {loading ? "Saving...": "Save" }
                         </button>
                     </div>
                 </form>

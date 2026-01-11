@@ -2,11 +2,14 @@ package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.model.AuthUser;
 import com.deutschbridge.backend.model.entity.User;
+import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {

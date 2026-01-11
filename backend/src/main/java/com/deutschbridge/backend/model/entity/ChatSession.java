@@ -1,16 +1,18 @@
 package com.deutschbridge.backend.model.entity;
 
+import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
+import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Document(collection = "chat_sessions")
+@Entity(name = "chat_sessions")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -28,5 +30,12 @@ public class ChatSession {
     {
         this.userId= userId;
         this.mode= mode;
+    }
+
+    @PrePersist
+    public void ensureId() {
+        if (this.id == null) {
+            this.id = NanoIdUtils.randomNanoId();
+        }
     }
 }
