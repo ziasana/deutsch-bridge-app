@@ -50,6 +50,15 @@ public class GlobalExceptionHandler  {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
     }
 
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    @ExceptionHandler(MailServerException.class)
+    public ResponseEntity<ResponseException> handleMailServerException(Exception e){
+        ResponseException responseException = new ResponseException(
+                "Mail service is currently unavailable",
+                HttpStatus.SERVICE_UNAVAILABLE.value()
+        );
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(responseException);
+    }
         @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
         @ExceptionHandler(Exception.class)
         public ResponseEntity<ResponseException> handleException(Exception e){

@@ -45,7 +45,8 @@ public class JWTAuthFilter extends OncePerRequestFilter {
                 || path.startsWith("/api/auth/forgot-password")
                 || path.startsWith("/api/auth/reset-password")
                 || path.startsWith("/req/reset-password")
-                || path.startsWith("/api/auth/register")) {
+                || path.startsWith("/api/auth/register")
+                || path.startsWith("/api/test/")) {
 
             filterChain.doFilter(request, response);
             return;
