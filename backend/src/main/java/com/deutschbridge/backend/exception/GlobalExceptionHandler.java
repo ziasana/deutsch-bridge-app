@@ -52,7 +52,7 @@ public class GlobalExceptionHandler  {
 
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
     @ExceptionHandler(MailServerException.class)
-    public ResponseEntity<ResponseException> handleMailServerException(Exception e){
+    public ResponseEntity<ResponseException> handleMailServerException(){
         ResponseException responseException = new ResponseException(
                 "Mail service is currently unavailable",
                 HttpStatus.SERVICE_UNAVAILABLE.value()

@@ -116,7 +116,7 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/auth/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { 
+                                {
                                                             "email": "john@example.com" }
                                 """))
 

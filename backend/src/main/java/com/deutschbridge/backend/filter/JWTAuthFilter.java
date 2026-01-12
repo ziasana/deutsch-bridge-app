@@ -32,7 +32,7 @@ public class JWTAuthFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull FilterChain filterChain) throws ServletException, IOException
+    protected void doFilterInternal(HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull FilterChain filterChain) throws ServletException, IOException
     {
         // Read language from header
         extractLanguage(request);
@@ -58,7 +58,7 @@ public class JWTAuthFilter extends OncePerRequestFilter {
             return; // stop filter chain
         }
 
-        String email="";
+        String email;
         try {
             email = jwtUtil.extractEmail(token);
         } catch (Exception e) {
