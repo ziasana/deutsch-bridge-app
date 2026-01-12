@@ -20,6 +20,7 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary,String> {
     JOIN FETCH v.vocabularyContents c
     WHERE v.user.id = :userId
       AND c.language = :language
+      ORDER BY v.createdAt DESC
 """)
    List<Vocabulary> getVocabularyByUserAndLanguage(@Param("userId") String userId, @Param("language") String language);
 

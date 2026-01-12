@@ -16,11 +16,11 @@ export default function VocabularyPage() {
     const [vocabList, setVocabList] = useState<VocabularyPracticeType[]>([]);
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(true);
-
+    const [page, setPage] = useState(1);
     const [selectedWord, setSelectedWord] = useState<VocabularyType | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-
+    const ITEMS_PER_PAGE = 5;
     const getList = () => {
         getUserVocabularyWithPractice()
             .then((data) => {
@@ -74,6 +74,13 @@ export default function VocabularyPage() {
     const handleWordSaved = () => {
         getList();
     };
+
+    // PAGINATION
+    const totalPages = Math.ceil(filteredVocab.length / ITEMS_PER_PAGE);
+    const paginatedData = filteredVocab.slice(
+        (page - 1) * ITEMS_PER_PAGE,
+        page * ITEMS_PER_PAGE
+    );
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6 flex flex-col items-center">
@@ -134,8 +141,8 @@ export default function VocabularyPage() {
 
                 {/* Scrollable Vocabulary List */}
                 <div className="overflow-y-auto flex-1 space-y-4 pr-2">
-                    {filteredVocab.length > 0 ? (
-                        filteredVocab.map((vocab) => (
+                    {paginatedData.length > 0 ? (
+                        paginatedData.map((vocab) => (
                             <div
                                 key={vocab.id}
                                 className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow flex flex-col md:flex-row justify-between items-start md:items-center"
@@ -237,6 +244,7 @@ export default function VocabularyPage() {
                             No vocabulary found.
                         </p>
                     )}
+
                     <ToastContainer/>
                     {/* Edit Modal */}
                     <EditVocabularyModal
@@ -251,7 +259,31 @@ export default function VocabularyPage() {
                         onClose={() => setIsAddModalOpen(false)}
                         onSave={handleWordSaved}
                     />
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex justify-center gap-3 pt-4">
+                            <button
+                                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                className="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700"
+                            >
+                                Zurück
+                            </button>
+
+                            <span className="text-gray-700 dark:text-gray-300">
+                Seite {page} / {totalPages}
+              </span>
+
+                            <button
+                                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                className="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700"
+                            >
+                                Weiter
+                            </button>
+                        </div>
+                    )}
                 </div>
+
+
 
             </div>
         </div>

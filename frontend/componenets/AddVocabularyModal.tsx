@@ -33,7 +33,7 @@ export default function AddVocabularyModal({
         setValue,
         handleSubmit,
         reset,
-        formState: {errors, isSubmitted, isSubmitting},
+        formState: {errors, isSubmitted},
     } = useForm<AddVocabularyFormData>({
         resolver: zodResolver(AddVocabularySchema),
         defaultValues: defaultValues,
@@ -65,6 +65,7 @@ export default function AddVocabularyModal({
             ).finally(() => setLoading(false)
         );
     };
+
     const handleGenerateAiExample = () => {
         // eslint-disable-next-line react-hooks/incompatible-library
         if (watch("word") == "") {
@@ -77,8 +78,7 @@ export default function AddVocabularyModal({
         }
         generateAiExample(requestData)
             .then((response) => {
-                // @ts-ignore
-                setValue("example", response?.data.word)
+                setValue("example", response.data.word)
             })
             .catch((err) => {
                     console.error(err)
@@ -86,6 +86,7 @@ export default function AddVocabularyModal({
                 }
             ).finally(() => setGenerating(false));
     };
+
     return (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl w-full max-w-md shadow-lg">
@@ -113,13 +114,13 @@ export default function AddVocabularyModal({
                         <div>
                             <div className="mb-1 flex items-center justify-between">
                                 <label className="text-sm font-medium">
-                                    Example <button
+                                    Example <p
                                     onClick={handleGenerateAiExample}
                                     className="flex items-center gap-1 cursor-pointer text-sm font-medium text-blue-500 hover:text-blue-600"
                                 >
                                     <span>✨</span>
                                     <span> {generating ? "Generating..." : "Generate"}</span>
-                                </button>
+                                </p>
                                 </label>
                             </div>
 

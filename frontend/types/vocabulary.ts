@@ -62,5 +62,5 @@ export interface AddVocabularyType {
 }
 
 export interface GenerateAiWordType {
-    word?: string
+    word: string
 }

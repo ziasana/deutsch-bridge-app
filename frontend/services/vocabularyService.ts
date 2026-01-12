@@ -28,7 +28,7 @@ export const addVocabulary = async (data: AddVocabularyType) => {
 }
 
 export const generateAiExample = async (data: GenerateAiWordType) => {
-    return await api.post<GenerateAiWordType[]>("/ollama/generate-example", data);
+    return await api.post<GenerateAiWordType>("/ollama/generate-example", data);
 }
 
 export const deleteVocabulary= async(data: DeleteVocabularyType) => {

@@ -10,7 +10,6 @@ interface Topic {
 interface SidebarProps {
   sessions: Topic[];
   onSelect: (sessionId: string) => void;
-  onClose?: () => void; // for mobile
   onNewChat: () => void;
   selectedSessionId: string;
   onRefresh:() => void;
@@ -22,7 +21,6 @@ export default function ChatSidebar({
   onNewChat,
     onRefresh,
   selectedSessionId,
-  onClose,
 }: Readonly<SidebarProps>) {
 
   return (

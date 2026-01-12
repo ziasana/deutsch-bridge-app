@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @EnableJpaAuditing
@@ -23,7 +24,7 @@ public class Vocabulary {
     @Column(columnDefinition = "TEXT")
     private String example;
     private String synonyms;
-
+    private LocalDateTime createdAt;
     @OneToMany(mappedBy = "vocabulary", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private Set<VocabularyContent> vocabularyContents;
@@ -45,10 +46,11 @@ public class Vocabulary {
 
 
     @PrePersist
-    public void ensureId() {
+    public void prePersist() {
         if (this.id == null) {
             this.id = NanoIdUtils.randomNanoId();
         }
+        createdAt = LocalDateTime.now();
     }
 }
 

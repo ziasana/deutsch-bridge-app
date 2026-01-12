@@ -15,7 +15,7 @@ export default function GrammarPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sessionId, setSessionId] = useState("");
-  const [newChat, setNewChat] = useState<boolean>(false);
+  const [, setNewChat] = useState<boolean>(false);
 
 
   const getData = () =>{

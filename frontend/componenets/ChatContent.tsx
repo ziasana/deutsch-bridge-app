@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useLayoutEffect, useMemo, useEffect } from "react";
 import { chatAi, updateSessionTitle } from "@/services/chatAi";
 import { type ChatRequest, ChatResponse, ChatMessage } from "@/types/chat";
 import ReactMarkdown from "react-markdown";
@@ -18,16 +18,9 @@ export default function ChatContent({
   sessionId,
   onSaveTitle,
 }: Readonly<ChatContentProps>) {
-  const initialAssistantMessage: ChatMessage = {
-    id: "1",
-    role: "assistant",
-    content:
-      "Hello! I'm DeutschBridge Assistant. Ask me anything in German or English.",
-    timestamp: "",
-  };
 
-  // Local messages state
-  const [messages, setMessages] = useState<ChatMessage[]>([initialAssistantMessage]);
+
+  const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
   const [chatData, setChatData] = useState<ChatResponse | null>(null);
@@ -35,20 +28,33 @@ export default function ChatContent({
   const [sessionTitle, setSessionTitle] = useState("");
   const [timestamp] = useState(() => Date.now().toString());
 
-
   // Scroll to bottom whenever messages change
   useEffect(() => {
     containerRef.current?.scrollTo({
       top: containerRef.current.scrollHeight,
       behavior: "smooth",
     });
-  }, [messages]);
+  }, [localMessages]);
 
-  // Update local messages whenever parent `allmessages` changes
-  useEffect(() => {
-    if (!Array.isArray(allMessages)) return;
-    setMessages([initialAssistantMessage, ...allMessages]);
-  }, [allMessages]);
+// Reset local messages on session switch
+  useLayoutEffect(() => {
+    setTimeout(() => {
+      setLocalMessages([]);
+    }, 0);
+  }, [sessionId]);
+
+  // Update local messages whenever parent All Messages changes
+  const messages = useMemo(() => {
+    const initialAssistantMessage: ChatMessage = {
+      id: "1",
+      role: "assistant",
+      content:
+          "Hello! I'm DeutschBridge Assistant. Ask me anything in German or English.",
+      timestamp: "",
+    };
+    return [initialAssistantMessage, ...allMessages, ...localMessages];
+  }, [allMessages, localMessages]);
+
 
   // Handle sending a new message
   const send = async (e?: React.FormEvent) => {
@@ -62,7 +68,9 @@ export default function ChatContent({
       timestamp: timestamp.toString(),
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    // Append user message
+    setLocalMessages(prev => [...prev, userMsg]);
+
     setInput("");
     setThinking(true);
 
@@ -82,6 +90,7 @@ export default function ChatContent({
       .catch((err) => console.error(err));
   };
 
+
   // Update messages when AI responds
   useEffect(() => {
     if (!chatData) return;
@@ -93,8 +102,11 @@ export default function ChatContent({
       timestamp: Date.now().toString(),
     };
 
-    setMessages((prev) => [...prev, assistantMsg]);
-    setThinking(false);
+    // Delay state update to avoid ESLint warning
+    setTimeout(() => {
+      setLocalMessages(prev => [...prev, assistantMsg]);
+      setThinking(false);
+    }, 0);
   }, [chatData]);
 
   const getChatData = (request: ChatRequest) => {
