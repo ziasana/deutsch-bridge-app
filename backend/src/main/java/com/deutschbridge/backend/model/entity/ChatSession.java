@@ -26,6 +26,11 @@ public class ChatSession {
     private LocalDateTime lastActivity = LocalDateTime.now();
     private List<String> messageIds = new ArrayList<>();
 
+    public ChatSession(String id)
+    {
+        this.id = id;
+    }
+
     public ChatSession(String userId, String mode)
     {
         this.userId= userId;

@@ -52,7 +52,6 @@ public class OllamaService {
     }
 
     public OllamaGenerateExampleDto generateAiExample(OllamaGenerateExampleDto requestDto) {
-
         String aiAnswer = chatWithOllama(PromptType.EXAMPLE,requestDto.word());
         return new OllamaGenerateExampleDto(aiAnswer);
     }
