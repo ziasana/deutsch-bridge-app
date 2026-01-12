@@ -1,7 +1,6 @@
 package com.deutschbridge.backend.config;
 
 import com.deutschbridge.backend.filter.JWTAuthFilter;
-import com.deutschbridge.backend.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
