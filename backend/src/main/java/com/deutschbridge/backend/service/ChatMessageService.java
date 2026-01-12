@@ -1,8 +1,6 @@
 package com.deutschbridge.backend.service;
 
-import com.deutschbridge.backend.model.dto.OllamaMessage;
 import com.deutschbridge.backend.model.entity.ChatMessage;
-import com.deutschbridge.backend.model.entity.ChatSession;
 import com.deutschbridge.backend.repository.ChatMessageRepository;
 import org.springframework.stereotype.Service;
 

@@ -28,6 +28,7 @@ public class TestExceptionController {
 
     @PostMapping("/validation")
     public void validation(@Valid @RequestBody TestDto dto) {
+        // this method is empty, just performing data validation
     }
 
     @GetMapping("/mail-error")

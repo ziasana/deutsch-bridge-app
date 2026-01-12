@@ -1,7 +1,5 @@
 package com.deutschbridge.backend;
 
-import com.deutschbridge.backend.context.RequestContext;
-import com.deutschbridge.backend.exception.DataNotFoundException;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -9,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class BackendApplication {
 
 
-    public static void main(String[] args) throws DataNotFoundException {
+    public static void main(String[] args)  {
         SpringApplication.run(BackendApplication.class, args);
     }
 
