@@ -6,6 +6,7 @@ import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -29,10 +30,23 @@ public class JWTUtil {
     @Value("${jwt.expiration.verification-token}")
     private long expirationTimeVerificationToken;
 
+    // Original constructor for Spring
+    @Autowired
     public JWTUtil(UserRepository userRepository, @Value("${jwt.secret}") String jwtSecret){
         this.userRepository = userRepository;
         this.key= Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
+
+    // Test constructor
+    JWTUtil(UserRepository userRepository, String jwtSecret,
+                   long expirationAccess, long expirationRefresh, long expirationVerification) {
+        this.userRepository = userRepository;
+        this.key= Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        this.expirationTimeAccessToken = expirationAccess;
+        this.expirationTimeRefreshToken = expirationRefresh;
+        this.expirationTimeVerificationToken = expirationVerification;
+    }
+
 
     public String generateAccessToken(String email) {
         return buildToken(email, expirationTimeAccessToken, ACCESS_TOKEN_NAME);
@@ -67,7 +81,7 @@ public class JWTUtil {
        return extractClaims(token).getSubject();
     }
 
-    private Claims extractClaims(String token) {
+    Claims extractClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()

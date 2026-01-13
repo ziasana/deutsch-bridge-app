@@ -50,10 +50,6 @@ export default function Navbar() {
                 <Link href="/contact" className="nav-link">
                   Contact
                 </Link>
-                <Link href="/dashboard" className="nav-link">
-                  Dashboard
-                </Link>
-
               </>
           )}
 
