@@ -5,6 +5,8 @@ import com.deutschbridge.backend.exception.UserVerificationException;
 import com.deutschbridge.backend.model.dto.UserDto;
 import com.deutschbridge.backend.model.dto.UserRegistrationRequest;
 import com.deutschbridge.backend.model.entity.User;
+import com.deutschbridge.backend.model.entity.UserProfile;
+import com.deutschbridge.backend.repository.UserProfileRepository;
 import com.deutschbridge.backend.util.JWTUtil;
 import com.deutschbridge.backend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,11 +30,10 @@ import static org.mockito.Mockito.*;
 class UserServiceTest {
 
     @Mock private UserRepository userRepository;
-
     @Mock JWTUtil jwtUtil;
     @Mock private EmailService emailService;
     @Mock private PasswordEncoder passwordEncoder;
-
+    @Mock private UserProfileRepository userProfileRepository;
     @InjectMocks
     private UserService userService;
 
@@ -57,6 +58,9 @@ class UserServiceTest {
         userDto.setUsername("john");
         userDto.setEmail("john@example.com");
         userDto.setPassword("secret");
+
+        UserProfile userProfile = new UserProfile();
+        userProfile.setId("123");
     }
 
     // ---------------------------------------------------------------
@@ -139,6 +143,8 @@ class UserServiceTest {
                 .thenReturn(Optional.empty());
         when(jwtUtil.generateVerificationToken(any()))
                 .thenReturn("token");
+        when(userProfileRepository.save(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         User result = userService.registerUser(userRegistrationRequest);
 
