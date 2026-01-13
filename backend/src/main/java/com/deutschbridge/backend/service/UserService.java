@@ -6,6 +6,7 @@ import com.deutschbridge.backend.model.dto.UserDto;
 import com.deutschbridge.backend.model.dto.UserRegistrationRequest;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.entity.UserProfile;
+import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.UserProfileRepository;
 import com.deutschbridge.backend.repository.UserRepository;
 import com.deutschbridge.backend.util.JWTUtil;
@@ -184,10 +185,12 @@ public class UserService {
         return true;
     }
 
-    public String  getLearningLevel(String email) {
+    public String getLearningLevel(String email) {
         return userRepository.findByEmail(email)
                 .map(User::getProfile)
-                .map(UserProfile::getLearningLevel).get().getValue();
+                .map(UserProfile::getLearningLevel)
+                .map(LearningLevel::getValue)
+                .orElse("A1");
     }
 
     public void saveRefreshToken(String email, String refreshToken){
