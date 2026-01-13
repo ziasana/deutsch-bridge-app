@@ -1,6 +1,5 @@
 package com.deutschbridge.backend.controller;
 
-import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.exception.GlobalExceptionHandler;
 import com.deutschbridge.backend.model.dto.*;

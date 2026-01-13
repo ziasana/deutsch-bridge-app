@@ -83,9 +83,9 @@ class OllamaServiceTest {
         assertEquals("Hi there!", result.getContent());
 
         verify(chatMessageService).save(
-                eq(resolvedSessionId),
-                eq(question),
-                eq("Hi there!")
+                (resolvedSessionId),
+                (question),
+                ("Hi there!")
         );
     }
 

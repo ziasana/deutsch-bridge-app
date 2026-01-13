@@ -131,7 +131,7 @@ class UserServiceTest {
         assertThat(result).isSameAs(user);
         verify(userRepository).save(user);
         verify(emailService).sendVerificationEmail(
-                eq("john@example.com"), eq("token"));
+                "john@example.com","token");
     }
 
     @Test
@@ -147,7 +147,7 @@ class UserServiceTest {
         assertThat(result.getEmail()).isEqualTo("john@example.com");
         verify(userRepository).save(any(User.class));
         verify(emailService).sendVerificationEmail(
-                eq("john@example.com"), eq("token"));
+                "john@example.com", "token");
     }
 
 

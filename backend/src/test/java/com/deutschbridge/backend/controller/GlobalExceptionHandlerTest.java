@@ -19,10 +19,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Import(GlobalExceptionHandler.class)
 @AutoConfigureMockMvc
-public class GlobalExceptionHandlerTest {
+class GlobalExceptionHandlerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
     // -------------------------------------------------------------------------
     // GET /api/test/not-foun
     // -------------------------------------------------------------------------

@@ -1,7 +1,6 @@
 package com.deutschbridge.backend.context;
 
 import com.deutschbridge.backend.exception.DataNotFoundException;
-import com.deutschbridge.backend.model.enums.PromptType;
 import com.deutschbridge.backend.util.SecurityUtils;
 import lombok.Getter;
 import org.springframework.stereotype.Component;

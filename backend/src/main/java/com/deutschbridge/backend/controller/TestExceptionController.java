@@ -23,7 +23,7 @@ public class TestExceptionController {
 
     @GetMapping("/error")
     public void error() {
-        throw new RuntimeException("Unexpected error");
+        throw new RuntimeException("Unexpected error"); // NOSONAR java:S112
     }
 
     @PostMapping("/validation")
