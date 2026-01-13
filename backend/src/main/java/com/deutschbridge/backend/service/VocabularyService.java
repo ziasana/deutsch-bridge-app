@@ -51,7 +51,8 @@ public class VocabularyService {
     }
 
     public List<VocabularyResponse> getUserVocabularies() {
-        userService.existsByEmail(requestContext.getUserEmail());
+        if(!userService.existsByEmail(requestContext.getUserEmail()))
+            throw new UsernameNotFoundException("User not found");
         List<Vocabulary> vocabularies= vocabularyRepository.getVocabularyByUserAndLanguage(requestContext.getUserId(), requestContext.getLanguage());
         return vocabularies.stream()
                .map(VocabularyMapper::mapToVocabularyResponse)

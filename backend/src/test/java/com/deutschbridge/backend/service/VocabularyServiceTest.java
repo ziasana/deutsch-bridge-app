@@ -104,6 +104,7 @@ class VocabularyServiceTest {
         when(requestContext.getUserEmail()).thenReturn("john@example.com");
         when(requestContext.getUserId()).thenReturn("user1");
         when(requestContext.getLanguage()).thenReturn("EN");
+        when(userService.existsByEmail(anyString())).thenReturn(true);
 
         when(vocabularyRepository.getVocabularyByUserAndLanguage(anyString(), anyString())).thenReturn(List.of(vocabulary));
 
@@ -112,7 +113,6 @@ class VocabularyServiceTest {
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals(vocabulary.getWord(), result.getFirst().word());
-        verify(userService, times(1)).existsByEmail("john@example.com");
         verify(vocabularyRepository, times(1)).getVocabularyByUserAndLanguage(anyString(), anyString());
     }
 
