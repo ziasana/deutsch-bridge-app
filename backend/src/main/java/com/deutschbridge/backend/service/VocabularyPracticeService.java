@@ -9,7 +9,6 @@ import com.deutschbridge.backend.model.entity.UserVocabularyPractice;
 import com.deutschbridge.backend.model.entity.Vocabulary;
 import com.deutschbridge.backend.repository.UserVocabularyPracticeRepository;
 import com.deutschbridge.backend.util.VocabularyMapper;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -32,8 +31,7 @@ public class VocabularyPracticeService {
     }
 
     public List<VocabularyResponse> getUserWithPractice() {
-        if(!userService.existsByEmail(requestContext.getUserEmail()))
-            throw new UsernameNotFoundException("User not found");
+        userService.findByEmail(requestContext.getUserEmail());
         List<Vocabulary> vocabulary = vocabularyService.getVocabularyByUserAndLanguage(
                 requestContext.getUserId(),requestContext.getLanguage()
         );
@@ -42,9 +40,8 @@ public class VocabularyPracticeService {
 
 
     public void save(VocabularyPracticeRequest request) throws DataNotFoundException {
-        if (!userService.existsByEmail(requestContext.getUserEmail())) {
-            throw new UsernameNotFoundException("User not found");
-        }
+        userService.findByEmail(requestContext.getUserEmail());
+
 
         Vocabulary vocabulary = vocabularyService.findById(request.vocabularyId());
 
@@ -79,8 +76,7 @@ public class VocabularyPracticeService {
     }
 
     public List<VocabularyPracticeResponse> getVocabularyForPractice() {
-        if(!userService.existsByEmail(requestContext.getUserEmail()))
-            throw new UsernameNotFoundException("User not found");
+        userService.findByEmail(requestContext.getUserEmail());
         List<Vocabulary> vocabulary = vocabularyService.getVocabularyByUserAndLanguage(
                 requestContext.getUserId(),requestContext.getLanguage()
         );

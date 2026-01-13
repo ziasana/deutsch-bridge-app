@@ -71,9 +71,7 @@ class VocabularyPracticeServiceTest {
         when(requestContext.getUserEmail()).thenReturn("john@example.com");
         when(requestContext.getUserId()).thenReturn("user1");
         when(requestContext.getLanguage()).thenReturn("EN");
-
-        // Mock existsByEmail to avoid real DB check
-        when(userService.existsByEmail(anyString())).thenReturn(true);
+        when(userService.findByEmail(anyString())).thenReturn(user);
 
         when(vocabularyService.getVocabularyByUserAndLanguage(anyString(), anyString()))
                 .thenReturn(List.of(vocabulary));
@@ -95,15 +93,10 @@ class VocabularyPracticeServiceTest {
     void testSave_ShouldSaveVocabularyPractice() throws DataNotFoundException {
         VocabularyPracticeRequest request = new VocabularyPracticeRequest(vocabulary.getId(), true);
 
-        // Stub vocabularyService
         when(vocabularyService.findById(vocabulary.getId())).thenReturn(vocabulary);
-
-        // Stub requestContext
         when(requestContext.getUserId()).thenReturn("user1");
         when(requestContext.getUserEmail()).thenReturn("john@example.com");
-
-        // Stub userService.existsByEmail to avoid UsernameNotFoundException
-        when(userService.existsByEmail(anyString())).thenReturn(true);
+        when(userService.findByEmail(anyString())).thenReturn(user);
 
         vocabularyPracticeService.save(request);
 
@@ -122,7 +115,7 @@ class VocabularyPracticeServiceTest {
         when(requestContext.getUserEmail()).thenReturn("john@example.com");
         when(requestContext.getUserId()).thenReturn("user1");
         when(requestContext.getLanguage()).thenReturn("EN");
-        when(userService.existsByEmail(anyString())).thenReturn(true); // stub it!
+        when(userService.findByEmail(anyString())).thenReturn(user);
         when(vocabularyService.getVocabularyByUserAndLanguage(anyString(), anyString()))
                 .thenReturn(List.of(vocabulary));
 
