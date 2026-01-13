@@ -10,6 +10,9 @@ import com.deutschbridge.backend.model.entity.VocabularyContent;
 import com.deutschbridge.backend.repository.VocabularyContentRepository;
 import com.deutschbridge.backend.repository.VocabularyRepository;
 import com.deutschbridge.backend.util.VocabularyMapper;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +25,9 @@ public class VocabularyService {
     private final RequestContext requestContext; // inject per-request
     private final OllamaService ollamaService;
     static final String NOT_FOUND= "Vocabulary not found!";
+    public static final String VOCABULARY_ENTITY_CACHE = "vocabularyEntity";
+    public static final String VOCABULARY_RESPONSE_CACHE = "vocabularyResponse";
+
     private final UserService userService;
     private final VocabularyContentRepository vocabularyContentRepository;
 
@@ -33,6 +39,7 @@ public class VocabularyService {
         this.vocabularyContentRepository = vocabularyContentRepository;
     }
 
+    @Cacheable(cacheNames = VOCABULARY_RESPONSE_CACHE, key = "'all'")
     public List<VocabularyResponse> findAll()
     {
         List<Vocabulary> vocabularies = vocabularyRepository.findAll();
@@ -40,16 +47,18 @@ public class VocabularyService {
                         map(VocabularyMapper::mapToVocabularyResponse).toList();
     }
 
+    @Cacheable(cacheNames = VOCABULARY_ENTITY_CACHE, key = "#id")
     public Vocabulary findById(String id) throws DataNotFoundException {
         return vocabularyRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("Vocabulary not found"));
     }
 
+    @Cacheable(cacheNames = VOCABULARY_ENTITY_CACHE, key = "'all'")
     public List<Vocabulary> getVocabularyByUserAndLanguage(String userId, String language) {
         return vocabularyRepository.getVocabularyByUserAndLanguage(userId, language);
     }
 
-
+   @Cacheable(cacheNames = VOCABULARY_RESPONSE_CACHE, key = "'all'")
     public List<VocabularyResponse> getUserVocabularies() {
         userService.existsByEmail(requestContext.getUserEmail());
         List<Vocabulary> vocabularies= vocabularyRepository.getVocabularyByUserAndLanguage(requestContext.getUserId(), requestContext.getLanguage());
@@ -58,6 +67,8 @@ public class VocabularyService {
                .toList();
     }
 
+    @CachePut(cacheNames = VOCABULARY_ENTITY_CACHE, key = "#result.id")
+    @CacheEvict(cacheNames = VOCABULARY_RESPONSE_CACHE, allEntries = true)
     public void save(VocabularyRequest request) throws UsernameNotFoundException {
         User user = userService.findByEmail(requestContext.getUserEmail());
         String synonyms = ollamaService.generateAiSynonyms(request.word());
@@ -87,6 +98,8 @@ public class VocabularyService {
         vocabularyContentRepository.save(newVocabularyContent);
     }
 
+    @CachePut(cacheNames = VOCABULARY_ENTITY_CACHE, key = "#result.id")
+    @CacheEvict(cacheNames = VOCABULARY_RESPONSE_CACHE, allEntries = true)
     public VocabularyResponse update(VocabularyRequest request) {
         Vocabulary vocabulary = vocabularyRepository.getVocabularyById(request.id());
         if (vocabulary!=null) {
@@ -106,6 +119,8 @@ public class VocabularyService {
         return null;
     }
 
+    @CachePut(cacheNames = VOCABULARY_ENTITY_CACHE, key = "#result.id")
+    @CacheEvict(cacheNames = VOCABULARY_RESPONSE_CACHE, allEntries = true)
     public void delete(VocabularyRequest request) throws DataNotFoundException {
         Vocabulary vocabulary = vocabularyRepository.getVocabularyById(request.id());
         if (vocabulary != null) {
