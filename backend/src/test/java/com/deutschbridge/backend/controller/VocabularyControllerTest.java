@@ -61,11 +61,11 @@ class VocabularyControllerTest {
     @InjectMocks
     private VocabularyController vocabularyController;
 
-    private Vocabulary vocabulary;
-    private  User user;
-    private UserVocabularyPractice userVocabularyPractice;
-    private VocabularyResponse vocabularyResponse;
-    private UserVocabularyPracticeDTO userVocabularyPracticeDTO;
+    Vocabulary vocabulary;
+    User user;
+    UserVocabularyPractice userVocabularyPractice;
+    VocabularyResponse vocabularyResponse;
+    UserVocabularyPracticeDTO userVocabularyPracticeDTO;
 
     @BeforeEach
     void setup() {

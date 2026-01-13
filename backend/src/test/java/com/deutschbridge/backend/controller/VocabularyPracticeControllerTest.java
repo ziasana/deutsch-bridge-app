@@ -52,8 +52,6 @@ class VocabularyPracticeControllerTest {
     @Mock
     private VocabularyPracticeService vocabularyPracticeService;
 
-    @Mock private RequestContext requestContext;
-
     @InjectMocks
     private VocabularyPracticeController vocabularyPracticeController;
 
