@@ -1,7 +1,6 @@
 package com.deutschbridge.backend.controller;
 
 import com.deutschbridge.backend.exception.GlobalExceptionHandler;
-import com.deutschbridge.backend.model.AuthUser;
 import com.deutschbridge.backend.model.dto.UserVocabularyPracticeDTO;
 import com.deutschbridge.backend.model.dto.VocabularyContentResponse;
 import com.deutschbridge.backend.model.dto.VocabularyRequest;
@@ -22,9 +21,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -98,20 +94,6 @@ class VocabularyControllerTest {
         vocabularyResponse = new VocabularyResponse("voc1","kaufen", "Ich kaufe ein Buch", "synonym"
                 ,"user@example.com", List.of(vocabularyContentResponse), List.of(userVocabularyPracticeDTO));
    }
-
-    void setupAuthentication() {
-        User userEntity = new User("id123", "john@example.com", "hashedpassword");
-        AuthUser authUser = new AuthUser(userEntity);
-        authUser.setId("user123");
-
-        Authentication auth = new UsernamePasswordAuthenticationToken(
-                authUser,
-                null,
-                authUser.getAuthorities()
-        );
-        SecurityContextHolder.getContext().setAuthentication(auth);
-    }
-
 
     // -------------------------------------------------------------------------
     // GET /api/vocabulary
