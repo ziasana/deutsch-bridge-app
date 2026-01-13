@@ -52,9 +52,6 @@ public class UserService {
                 () -> new UsernameNotFoundException("User not found")
         );
     }
-    public boolean existsByEmail(String email) {
-        return userRepository.existsByEmail(email);
-    }
 
     public User registerUser(UserRegistrationRequest request) throws UserVerificationException {
 

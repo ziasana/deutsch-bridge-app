@@ -80,7 +80,7 @@ class VocabularyPracticeServiceTest {
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals(vocabulary.getWord(), result.get(0).word()); // get(0) instead of getFirst()
+        assertEquals(vocabulary.getWord(), result.getFirst().word()); // get(0) instead of getFirst()
         verify(vocabularyService, times(1))
                 .getVocabularyByUserAndLanguage(anyString(), anyString());
     }
@@ -122,7 +122,7 @@ class VocabularyPracticeServiceTest {
         List<VocabularyResponse> result = vocabularyPracticeService.getUserWithPractice();
 
         assertNotNull(result);
-        assertEquals(vocabulary.getWord(), result.get(0).word());
+        assertEquals(vocabulary.getWord(), result.getFirst().word());
         verify(vocabularyService, times(1)).getVocabularyByUserAndLanguage(anyString(), anyString());
     }
 
