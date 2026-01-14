@@ -70,5 +70,4 @@ jwt:
     refresh-token: 1296000000     # 15 days in ms (1000*60*60*24*15)
     verification-token: 86400000  # 1 day in ms (1000*60*60*24)
 
-frontend_url:
-  "http://localhost:3000"
+frontend_url: ${FRONTEND_URI}
