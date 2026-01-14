@@ -23,4 +23,12 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary,String> {
 """)
    List<Vocabulary> getVocabularyByUserAndLanguage(@Param("userId") String userId, @Param("language") String language);
 
+    @Query("""
+    SELECT DISTINCT v
+    FROM vocabularies v
+    WHERE v.user.id = :userId
+      AND v.word = :word
+""")
+    Vocabulary findByWordAndUser(@Param("userId") String userId, @Param("word") String word);
+
 }

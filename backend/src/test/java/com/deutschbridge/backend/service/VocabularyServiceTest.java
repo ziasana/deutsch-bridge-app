@@ -24,14 +24,20 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+
 @ExtendWith(MockitoExtension.class)
 class VocabularyServiceTest {
 
-    @Mock private VocabularyRepository vocabularyRepository;
-    @Mock private RequestContext requestContext;
-    @Mock private OllamaService ollamaService;
-    @Mock private UserService userService;
-    @Mock private VocabularyContentRepository vocabularyContentRepository;
+    @Mock
+    private VocabularyRepository vocabularyRepository;
+    @Mock
+    private RequestContext requestContext;
+    @Mock
+    private OllamaService ollamaService;
+    @Mock
+    private UserService userService;
+    @Mock
+    private VocabularyContentRepository vocabularyContentRepository;
 
     @InjectMocks
     private VocabularyService vocabularyService;
@@ -123,58 +129,109 @@ class VocabularyServiceTest {
     @DisplayName("save -> should save a new vocabulary")
     void testSave_ShouldSaveVocabulary() {
 
-        VocabularyRequest request = new VocabularyRequest(null, "kaufen", "Ich kaufe ein Auto", null, "to buy something");
+        VocabularyRequest request = new VocabularyRequest(
+                null,
+                "kaufen",
+                "Ich kaufe ein Auto",
+                null,
+                "to buy something"
+        );
+
         when(requestContext.getUserEmail()).thenReturn("john@example.com");
+        when(requestContext.getUserId()).thenReturn("user1");
         when(requestContext.getLanguage()).thenReturn("EN");
-        when(userService.findByEmail(requestContext.getUserEmail())).thenReturn(user);
-        when(ollamaService.generateAiSynonyms(anyString())).thenReturn(anyString());
-        when(vocabularyRepository.findByWord(vocabulary.getWord())).thenReturn(null);
+
+        when(userService.findByEmail("john@example.com")).thenReturn(user);
+
+        when(vocabularyRepository.findByWordAndUser("user1", "kaufen"))
+                .thenReturn(null);
+
+        when(ollamaService.generateAiSynonyms("kaufen"))
+                .thenReturn("buy, purchase");
+        when(vocabularyRepository.save(any(Vocabulary.class)))
+                .thenAnswer(invocation -> {
+                    Vocabulary v = invocation.getArgument(0);
+                    v.setId("voc123");
+                    return v;
+                });
+
+        when(vocabularyContentRepository
+                .findVocabularyContentByVocabularyIdAndLanguage("voc123", "EN"))
+                .thenReturn(null);
 
         vocabularyService.save(request);
-        verify(vocabularyRepository, times(1)).save(any());
+
+        verify(vocabularyRepository).save(any(Vocabulary.class));
+        verify(vocabularyContentRepository).save(any(VocabularyContent.class));
     }
+
 
     @Test
     @DisplayName("save -> should save on existing vocabulary (vocabulary exists but content not)")
     void testSaveExistingVocabulary_ShouldSaveContentOnly() {
 
-        VocabularyRequest request = new VocabularyRequest(null, "kaufen", "Ich kaufe ein Auto", null, "to buy something");
+        VocabularyRequest request = new VocabularyRequest(
+                null,
+                "kaufen",
+                "Ich kaufe ein Auto",
+                null,
+                "to buy something"
+        );
+        vocabulary = new Vocabulary("kaufen", "Ich kaufe ein Auto", "buy, purchase", user);
         vocabulary.setId("voc123");
-        when(requestContext.getUserEmail()).thenReturn("john@example.com");
-        when(requestContext.getLanguage()).thenReturn("EN");
-        when(userService.findByEmail(requestContext.getUserEmail())).thenReturn(user);
-        when(ollamaService.generateAiSynonyms(anyString())).thenReturn(anyString());
-        when(vocabularyRepository.findByWord(vocabulary.getWord())).thenReturn(vocabulary);
-        when(vocabularyContentRepository.findVocabularyContentByVocabularyIdAndLanguage("voc123", "EN"))
-                .thenReturn(null);
 
+        when(requestContext.getUserEmail()).thenReturn("john@example.com");
+        when(requestContext.getUserId()).thenReturn("user1");
+        when(requestContext.getLanguage()).thenReturn("EN");
+
+        when(userService.findByEmail("john@example.com")).thenReturn(user);
+        when(vocabularyRepository.findByWordAndUser("user1", "kaufen"))
+                .thenReturn(vocabulary);
+        when(vocabularyContentRepository
+                .findVocabularyContentByVocabularyIdAndLanguage("voc123", "EN"))
+                .thenReturn(null);
         vocabularyService.save(request);
 
-        // Verify vocabularyRepository.save is NOT called
         verify(vocabularyRepository, never()).save(any());
         verify(vocabularyContentRepository, times(1)).save(any());
     }
 
-    @Test
-    @DisplayName("save -> should throw an exception")
-    void testSaveExistingVocabulary_ExistingContent_ShouldThrowException() {
 
-        VocabularyRequest request = new VocabularyRequest(null, "kaufen", "Ich kaufe ein Auto", null, "to buy something");
+    @Test
+    @DisplayName("save -> existing vocabulary with existing language content -> throws exception")
+    void save_existingVocabulary_existingContent_shouldThrowException() {
+
+        VocabularyRequest request = new VocabularyRequest(
+                null,
+                "kaufen",
+                "Ich kaufe ein Auto",
+                null,
+                "to buy something"
+        );
+
         vocabulary.setId("voc123");
+
         when(requestContext.getUserEmail()).thenReturn("john@example.com");
+        when(requestContext.getUserId()).thenReturn("user1");
         when(requestContext.getLanguage()).thenReturn("EN");
 
-        when(userService.findByEmail(requestContext.getUserEmail())).thenReturn(user);
-        when(ollamaService.generateAiSynonyms(anyString())).thenReturn(anyString());
-        when(vocabularyRepository.findByWord(vocabulary.getWord())).thenReturn(vocabulary);
-        when(vocabularyContentRepository.findVocabularyContentByVocabularyIdAndLanguage("voc123", "EN"))
-                .thenReturn(vocabularyContent);
+        when(userService.findByEmail("john@example.com")).thenReturn(user);
 
-        assertThrows(IllegalArgumentException.class, () -> vocabularyService.save(request));
+        when(vocabularyRepository.findByWordAndUser(
+                "user1",
+                "kaufen" )).thenReturn(vocabulary);
 
-        // Verify vocabularyRepository.save is NOT called
+        when(vocabularyContentRepository.findVocabularyContentByVocabularyIdAndLanguage(
+                        "voc123",
+                        "EN")).thenReturn(vocabularyContent);
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> vocabularyService.save(request)
+        );
+
         verify(vocabularyRepository, never()).save(any());
         verify(vocabularyContentRepository, never()).save(any());
+        verify(ollamaService, never()).generateAiSynonyms(anyString());
     }
 
     // ---------------------------------------------------------------
@@ -191,7 +248,7 @@ class VocabularyServiceTest {
         when(vocabularyContentRepository.findVocabularyContentByVocabularyIdAndLanguage("voc123", "EN"))
                 .thenReturn(vocabularyContent);
 
-        VocabularyResponse result= vocabularyService.update(request);
+        VocabularyResponse result = vocabularyService.update(request);
         assertNotNull(result);
         verify(vocabularyRepository, times(1)).save(any());
         verify(vocabularyContentRepository, times(1)).save(any());
@@ -232,7 +289,7 @@ class VocabularyServiceTest {
 
     @Test
     @DisplayName("delete -> should throw DataNotFoundException (when vocabulary not found)")
-    void testDelete_ShouldThrowException_WhenVocabularyNotFound()  {
+    void testDelete_ShouldThrowException_WhenVocabularyNotFound() {
 
         VocabularyRequest request = new VocabularyRequest("voc123", "kaufen", "Ich kaufe ein Auto", null, "to buy something");
 
