@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import {UserProfileType} from "@/types/user";
 import {persist} from "zustand/middleware";
-import { logOutUser} from "@/services/userService";
+import {logOutUser} from "@/services/userService";
 import {redirect} from "next/navigation";
 
 interface AuthState {
@@ -21,7 +21,7 @@ const useAuthStore = create<AuthState>()
             isLoggedIn: false,
             hasHydrated: false,
 
-            login: (userProfile) => {
+            login: (userProfile:UserProfileType) => {
                 set({
                     userProfile,
                     isLoggedIn: true,

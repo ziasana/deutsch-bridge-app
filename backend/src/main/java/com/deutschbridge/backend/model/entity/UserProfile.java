@@ -25,7 +25,7 @@ public class UserProfile{
         private User user;
         private String displayName;
         @Enumerated(EnumType.STRING)
-        private PreferredLanguage preferredLanguage;
+        private PreferredLanguage preferredLanguage =  PreferredLanguage.EN;
         private Integer dailyGoalWords;
         private Integer dailyGoalTime;
         @Enumerated(EnumType.STRING)

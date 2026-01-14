@@ -1,7 +1,6 @@
 package com.deutschbridge.backend.model.entity;
 
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
-import com.deutschbridge.backend.model.enums.LearningLevel;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
@@ -25,8 +24,6 @@ public class User {
     private String displayName;
 
     private String role="STUDENT";
-    @Enumerated(EnumType.STRING)
-    private LearningLevel learningLevel;
     private int accessTokenFlag = 0;
     private String resetToken;
     private String refreshToken;
@@ -38,11 +35,11 @@ public class User {
     private UserProfile profile;
 
 
-    @OneToMany(mappedBy = "userId")
+    @OneToMany(mappedBy = "userId", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @ToString.Exclude
     private static List<DailyPracticeLog> dailyPracticeLog;
 
-    @OneToMany(mappedBy = "userId", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "userId", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @ToString.Exclude
     private static List<Vocabulary> vocabulary;
 

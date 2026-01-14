@@ -1,5 +1,6 @@
 package com.deutschbridge.backend.filter;
 
+import com.deutschbridge.backend.context.LanguageContext;
 import com.deutschbridge.backend.service.CookieService;
 import com.deutschbridge.backend.service.CustomUserDetailsService;
 import com.deutschbridge.backend.util.JWTUtil;
@@ -7,6 +8,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -30,8 +32,10 @@ public class JWTAuthFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException
+    protected void doFilterInternal(HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull FilterChain filterChain) throws ServletException, IOException
     {
+        // Read language from header
+        extractLanguage(request);
 
         String path = request.getRequestURI();
         // Skip JWT check for login or public endpoints
@@ -41,7 +45,8 @@ public class JWTAuthFilter extends OncePerRequestFilter {
                 || path.startsWith("/api/auth/forgot-password")
                 || path.startsWith("/api/auth/reset-password")
                 || path.startsWith("/req/reset-password")
-                || path.startsWith("/api/auth/register")) {
+                || path.startsWith("/api/auth/register")
+                || path.startsWith("/api/test/")) {
 
             filterChain.doFilter(request, response);
             return;
@@ -53,7 +58,7 @@ public class JWTAuthFilter extends OncePerRequestFilter {
             return; // stop filter chain
         }
 
-        String email="";
+        String email;
         try {
             email = jwtUtil.extractEmail(token);
         } catch (Exception e) {
@@ -64,6 +69,7 @@ public class JWTAuthFilter extends OncePerRequestFilter {
         if(email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             //check if user exist in DB and not expired
             UserDetails userDetails  = customUserDetailsService.loadUserByUsername(email);
+
             if (!jwtUtil.validateToken(email, userDetails, token)) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return;
@@ -77,5 +83,13 @@ public class JWTAuthFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private static void extractLanguage(HttpServletRequest request) {
+        String language = request.getHeader("Accept-Language");
+        if(language == null || language.isEmpty()) {
+            language = "EN";
+        }
+        LanguageContext.set(language);
     }
 }

@@ -1,45 +1,56 @@
 package com.deutschbridge.backend.model.entity;
 
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
+import java.time.LocalDateTime;
+import java.util.Set;
+
 @EnableJpaAuditing
-@Entity(name = "vocabularies")
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
-
+@Setter
+@Getter
+@Entity (name = "vocabularies")
+@ToString(exclude = {"practices", "vocabularyContents"})
 public class Vocabulary {
     @Id
     private String id;
-    @Version
-    private Integer version;
+    @Column(unique = true, nullable = false)
     private String word;
-    private String meaning;
     @Column(columnDefinition = "TEXT")
     private String example;
     private String synonyms;
+    private LocalDateTime createdAt;
+    @OneToMany(mappedBy = "vocabulary", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private Set<VocabularyContent> vocabularyContents;
+
     @ManyToOne
     @JoinColumn(name = "user_id")
-    private User userId;
+    private User user;
 
-    public Vocabulary(String word, String meaning, String example, String synonyms){
+    @OneToMany(mappedBy = "vocabulary", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private Set<UserVocabularyPractice> practices;
+
+    public Vocabulary(String word, String example, String synonyms, User user) {
         this.word = word;
-        this.meaning = meaning;
         this.example = example;
         this.synonyms = synonyms;
+        this.user = user;
     }
 
 
     @PrePersist
-    public void ensureId() {
+    public void prePersist() {
         if (this.id == null) {
             this.id = NanoIdUtils.randomNanoId();
         }
+        createdAt = LocalDateTime.now();
     }
 }
 

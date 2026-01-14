@@ -16,4 +16,5 @@ export interface UserProfileType{
     learningLevel?: string
     dailyGoalWords?: number
     notificationsEnabled?: boolean
+    preferredLanguage?: string
 }

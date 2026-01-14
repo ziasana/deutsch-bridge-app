@@ -69,7 +69,8 @@ class UserProfileServiceTest {
                 "Alice",
                 "A1",
                 10,
-                false
+                false,
+                "EN"
         );
         boolean result = userProfileService.update("user456", request);
         assertTrue(result);
@@ -95,7 +96,9 @@ class UserProfileServiceTest {
                 user.getEmail(),
                 profile.getLearningLevel().getValue(),
                 profile.getDailyGoalWords(),
-                profile.isNotificationsEnabled()
+                profile.isNotificationsEnabled(),
+                profile.getPreferredLanguage()
+
         );
 
         assertEquals(user.getDisplayName(), response.displayName());

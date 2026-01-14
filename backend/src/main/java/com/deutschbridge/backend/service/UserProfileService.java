@@ -52,6 +52,7 @@ public class UserProfileService {
             profile.setLearningLevel(LearningLevel.valueOf(request.learningLevel()));
             profile.setDailyGoalWords(request.dailyGoalWords());
             profile.setNotificationsEnabled(request.notificationsEnabled());
+            profile.setPreferredLanguage(PreferredLanguage.valueOf(request.preferredLanguage()));
 
             profile.setUser(user);
             user.setProfile(profile);
@@ -63,6 +64,7 @@ public class UserProfileService {
                 profile.setLearningLevel(LearningLevel.valueOf(request.learningLevel()));
             if (request.dailyGoalWords() != null) profile.setDailyGoalWords(request.dailyGoalWords());
             profile.setNotificationsEnabled(request.notificationsEnabled());
+            profile.setPreferredLanguage(PreferredLanguage.valueOf(request.preferredLanguage()));
             user.setProfile(profile);
             userRepository.save(user);
             userProfileRepository.save(profile);
@@ -78,7 +80,8 @@ public class UserProfileService {
                 user.getEmail(),
                 profile != null ? String.valueOf(profile.getLearningLevel()) : null,
                 profile != null ? profile.getDailyGoalWords() : null,
-                profile != null && profile.isNotificationsEnabled()
+                profile != null && profile.isNotificationsEnabled(),
+                profile != null ? profile.getPreferredLanguage(): null
         );
     }
 }

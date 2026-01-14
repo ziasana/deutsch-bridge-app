@@ -44,7 +44,6 @@ export default function LoginPage() {
           }
         })
         .catch((err) => {
-          toast.error(err?.response.data.message)
           console.log(err.message);
         })
         .finally(() => setIsLoading(false));

@@ -32,14 +32,14 @@ export default function Navbar() {
                 <Link href="/dashboard" className="nav-link">
                   Dashboard
                 </Link>
-                <Link href="#" onClick={logout} className="nav-link">
+                <Link href="/dashboard/chat" className="nav-link">
                   Chat AI
                 </Link>
-                <Link href="#" className="nav-link">
+                <Link href="/dashboard/vocabulary" className="nav-link">
                   Vocabulary
                 </Link>
-                <Link href="#" className="nav-link">
-                  Grammar
+                <Link href="/dashboard/nomenVerbSection" className="nav-link">
+                  NomenVerb
                 </Link>
               </>
           ) : (
@@ -50,10 +50,6 @@ export default function Navbar() {
                 <Link href="/contact" className="nav-link">
                   Contact
                 </Link>
-                <Link href="/dashboard" className="nav-link">
-                  Dashboard
-                </Link>
-
               </>
           )}
 

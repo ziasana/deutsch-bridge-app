@@ -29,7 +29,19 @@
     <properties>
         <java.version>21</java.version>
         <sonar.organization>ziatest</sonar.organization>
+        <spring-ai.version>1.1.0</spring-ai.version>
     </properties>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -98,7 +110,6 @@
         </dependency>
         <!-- end JWT -->
 
-
         <dependency>
             <groupId>com.aventrix.jnanoid</groupId>
             <artifactId>jnanoid</artifactId>
@@ -110,6 +121,11 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
+        <!-- Ollama -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-ollama</artifactId>
+        </dependency>
 
         <!-- PostgreSQL Module -->
         <dependency>
@@ -128,16 +144,22 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Testcontainers Core -->
         <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-test</artifactId>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>1.19.4</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- JUnit 5 -->
         <dependency>
-            <groupId>org.sonarsource.scanner.maven</groupId>
-            <artifactId>sonar-maven-plugin</artifactId>
-            <version>5.5.0.6356</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.12.2</version>
+            <scope>test</scope>
         </dependency>
+
     </dependencies>
 
     <build>

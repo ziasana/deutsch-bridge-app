@@ -44,7 +44,7 @@ class AuthServiceTest {
 
     @Test
     @DisplayName("login -> should throw a bad credential exception")
-    void login_failure() {
+    void testLogin_failure() {
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new BadCredentialsException("Bad credentials"));
 

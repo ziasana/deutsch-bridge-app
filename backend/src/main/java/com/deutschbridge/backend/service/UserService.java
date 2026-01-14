@@ -6,6 +6,7 @@ import com.deutschbridge.backend.model.dto.UserDto;
 import com.deutschbridge.backend.model.dto.UserRegistrationRequest;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.entity.UserProfile;
+import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.UserProfileRepository;
 import com.deutschbridge.backend.repository.UserRepository;
 import com.deutschbridge.backend.util.JWTUtil;
@@ -48,7 +49,7 @@ public class UserService {
 
     public User findByEmail(String email) {
         return userRepository.findByEmail(email).orElseThrow(
-                () -> new UsernameNotFoundException("User not found with email: " + email)
+                () -> new UsernameNotFoundException("User not found")
         );
     }
 
@@ -177,6 +178,14 @@ public class UserService {
                 .orElseThrow( ()-> new DataNotFoundException(NOT_FOUND));
         userRepository.deleteByEmail(userDto.getEmail());
         return true;
+    }
+
+    public String getLearningLevel(String email) {
+        return userRepository.findByEmail(email)
+                .map(User::getProfile)
+                .map(UserProfile::getLearningLevel)
+                .map(LearningLevel::getValue)
+                .orElse("A1");
     }
 
     public void saveRefreshToken(String email, String refreshToken){
