@@ -10,7 +10,6 @@ import java.util.List;
 
 @Repository
 public interface VocabularyRepository extends JpaRepository<Vocabulary,String> {
-    Vocabulary findByWord(String word);
     Vocabulary getVocabularyById(String id);
 
     @Query("""
