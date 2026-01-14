@@ -1,6 +1,5 @@
 import Image from "next/image";
-
-export default function HomePage() {
+export default async function HomePage() {
   return (
       <main className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
         {/* Hero Section */}
