@@ -19,7 +19,7 @@ import java.util.Set;
 public class Vocabulary {
     @Id
     private String id;
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false)
     private String word;
     @Column(columnDefinition = "TEXT")
     private String example;

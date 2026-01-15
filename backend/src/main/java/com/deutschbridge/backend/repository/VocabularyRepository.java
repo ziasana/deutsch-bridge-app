@@ -10,7 +10,6 @@ import java.util.List;
 
 @Repository
 public interface VocabularyRepository extends JpaRepository<Vocabulary,String> {
-    Vocabulary findByWord(String word);
     Vocabulary getVocabularyById(String id);
 
     @Query("""
@@ -22,5 +21,13 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary,String> {
       ORDER BY v.createdAt DESC
 """)
    List<Vocabulary> getVocabularyByUserAndLanguage(@Param("userId") String userId, @Param("language") String language);
+
+    @Query("""
+    SELECT DISTINCT v
+    FROM vocabularies v
+    WHERE v.user.id = :userId
+      AND v.word = :word
+""")
+    Vocabulary findByWordAndUser(@Param("userId") String userId, @Param("word") String word);
 
 }

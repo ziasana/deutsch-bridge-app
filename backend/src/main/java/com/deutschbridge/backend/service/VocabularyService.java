@@ -10,6 +10,7 @@ import com.deutschbridge.backend.model.entity.VocabularyContent;
 import com.deutschbridge.backend.repository.VocabularyContentRepository;
 import com.deutschbridge.backend.repository.VocabularyRepository;
 import com.deutschbridge.backend.util.VocabularyMapper;
+import jakarta.transaction.Transactional;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -57,40 +58,55 @@ public class VocabularyService {
                .map(VocabularyMapper::mapToVocabularyResponse)
                .toList();
     }
-
+    @Transactional
     public void save(VocabularyRequest request) throws UsernameNotFoundException {
+
         User user = userService.findByEmail(requestContext.getUserEmail());
-        String synonyms = ollamaService.generateAiSynonyms(request.word());
-        Vocabulary vocabulary = vocabularyRepository.findByWord(request.word());
+
+        // 1. Check if vocabulary already exists for this user
+        Vocabulary vocabulary = vocabularyRepository
+                .findByWordAndUser(requestContext.getUserId(), normalize(request.word()));
+
+        // 2. Create vocabulary if it does not exist
         if (vocabulary == null) {
-            Vocabulary newVocabulary = new Vocabulary(
-                    request.word(), request.example(), synonyms, user
-            );
-            vocabularyRepository.save(newVocabulary);
+            String synonyms = ollamaService.generateAiSynonyms(request.word());
 
-            VocabularyContent vocabularyContent = new VocabularyContent(
-                    newVocabulary,request.meaning(),requestContext.getLanguage()
+            vocabulary = new Vocabulary(
+                    normalize(request.word()),
+                    request.example(),
+                    synonyms,
+                    user
             );
-            vocabularyContentRepository.save(vocabularyContent);
-            return;
+            vocabularyRepository.save(vocabulary);
         }
 
-        VocabularyContent contentExists = vocabularyContentRepository.findVocabularyContentByVocabularyIdAndLanguage(
-               vocabulary.getId(), requestContext.getLanguage());
-        if(contentExists!=null)
-        {
-            throw new IllegalArgumentException("Vocabulary already exists!");
+        // 3. Check if content already exists for this language
+        VocabularyContent contentExists =
+                vocabularyContentRepository
+                        .findVocabularyContentByVocabularyIdAndLanguage(
+                                vocabulary.getId(),
+                                requestContext.getLanguage()
+                        );
+
+        if (contentExists != null) {
+            throw new IllegalArgumentException("Vocabulary already exists for this language!");
         }
+
+        // 4. Save new content
         VocabularyContent newVocabularyContent = new VocabularyContent(
-                vocabulary,request.meaning(), requestContext.getLanguage()
+                vocabulary,
+                request.meaning(),
+                requestContext.getLanguage()
         );
+
         vocabularyContentRepository.save(newVocabularyContent);
     }
+
 
     public VocabularyResponse update(VocabularyRequest request) {
         Vocabulary vocabulary = vocabularyRepository.getVocabularyById(request.id());
         if (vocabulary!=null) {
-            if(request.word() != null) vocabulary.setWord(request.word());
+            if(request.word() != null) vocabulary.setWord(  normalize(request.word()));
             if(request.synonyms() != null) vocabulary.setSynonyms(request.synonyms());
             if(request.example() != null) vocabulary.setExample(request.example());
             vocabularyRepository.save(vocabulary);
@@ -118,5 +134,9 @@ public class VocabularyService {
               vocabularyRepository.delete(vocabulary);
         }
         else throw new DataNotFoundException(NOT_FOUND);
+    }
+
+    private String normalize(String word) {
+        return word.trim().toLowerCase();
     }
 }
