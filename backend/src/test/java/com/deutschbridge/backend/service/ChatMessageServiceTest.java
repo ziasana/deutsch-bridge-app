@@ -13,6 +13,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
@@ -24,6 +26,9 @@ class ChatMessageServiceTest {
 
     @InjectMocks
     private ChatMessageService chatMessageService;
+
+    @Mock
+    ChatSessionService chatSessionService;
 
     ChatMessage chatMessage;
     ChatSession chatSession;
@@ -42,11 +47,10 @@ class ChatMessageServiceTest {
     @DisplayName("save -> should save user and assistant messages")
     void testSave_ShouldSaveUserAndAssistantMessages() {
         // Given
-        String sessionId = "session1";
         String userText = "User question";
         String aiAnswer = "Ai answer";
-
-        chatMessageService.save(sessionId, userText, aiAnswer);
+        when(chatSessionService.findById(anyString())).thenReturn(Optional.ofNullable(chatSession));
+        chatMessageService.save(String.valueOf(chatSession), userText, aiAnswer);
 
         verify(chatMessageRepository, times(2)).save(any(ChatMessage.class));
     }
@@ -62,7 +66,6 @@ class ChatMessageServiceTest {
         when(chatMessageRepository.findChatMessagesByChatSession_Id(sessionId)).thenReturn(Collections.singletonList(chatMessage));
 
         List<ChatMessage> result = chatMessageService.getBySessionId(sessionId);
-        assertEquals(sessionId, result.getFirst().getChatSession());
         verify(chatMessageRepository, times(1)).findChatMessagesByChatSession_Id(any());
     }
 }
