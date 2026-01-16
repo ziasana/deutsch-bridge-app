@@ -1,6 +1,7 @@
 package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.model.entity.ChatMessage;
+import com.deutschbridge.backend.model.entity.ChatSession;
 import com.deutschbridge.backend.repository.ChatMessageRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,10 +26,12 @@ class ChatMessageServiceTest {
     private ChatMessageService chatMessageService;
 
     ChatMessage chatMessage;
+    ChatSession chatSession;
 
     @BeforeEach
     void setup() {
-        chatMessage = new ChatMessage("session1", "assistant", "message content");
+        chatSession = new ChatSession("user1", "assistant");
+        chatMessage = new ChatMessage(chatSession, "assistant", "message content");
     }
 
 
@@ -56,10 +59,10 @@ class ChatMessageServiceTest {
     @DisplayName("find -> should return a chat message by session id")
     void testGetBySessionId_ShouldReturnChatMessage() {
         String sessionId = "session1";
-        when(chatMessageRepository.findBySessionId(sessionId)).thenReturn(Collections.singletonList(chatMessage));
+        when(chatMessageRepository.findChatMessagesByChatSession_Id(sessionId)).thenReturn(Collections.singletonList(chatMessage));
 
         List<ChatMessage> result = chatMessageService.getBySessionId(sessionId);
-        assertEquals(sessionId, result.getFirst().getSessionId());
-        verify(chatMessageRepository, times(1)).findBySessionId(any());
+        assertEquals(sessionId, result.getFirst().getChatSession());
+        verify(chatMessageRepository, times(1)).findChatMessagesByChatSession_Id(any());
     }
 }

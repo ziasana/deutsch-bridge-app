@@ -8,6 +8,8 @@ import com.deutschbridge.backend.model.entity.ChatMessage;
 import com.deutschbridge.backend.service.ChatMessageService;
 import com.deutschbridge.backend.service.ChatSessionService;
 import com.deutschbridge.backend.service.OllamaService;
+import jakarta.validation.constraints.NotNull;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -55,4 +57,11 @@ public class OllamaController {
     public ChatSessionDto updateSessionTitle(@PathVariable String sessionId, @RequestBody ChatSessionDto dto) {
         return chatSessionService.updateTitle(sessionId, dto.title());
     }
+
+    @DeleteMapping("/session/{sessionId}")
+    public ResponseEntity<String> deleteSession(@PathVariable @NotNull String sessionId) {
+        return ResponseEntity.noContent().build(); // 204
+    }
+
+
 }

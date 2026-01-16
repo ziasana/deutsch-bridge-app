@@ -1,12 +1,15 @@
 package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.context.RequestContext;
+import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.ChatSessionDto;
 import com.deutschbridge.backend.model.entity.ChatSession;
 import com.deutschbridge.backend.repository.ChatSessionRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
+
 @Service
 public class ChatSessionService {
 
@@ -40,4 +43,16 @@ public class ChatSessionService {
         ChatSession updatedSession= chatSessionRepository.save(chatSession);
         return new ChatSessionDto(updatedSession.getId(), updatedSession.getUserId(), updatedSession.getTitle());
     }
+
+    public Optional<ChatSession> findById(String sessionId) {
+       return chatSessionRepository.findById(sessionId);
+    }
+
+    public void delete(String sessionId) throws DataNotFoundException {
+        if (!chatSessionRepository.existsById(sessionId)) {
+            throw new DataNotFoundException("ChatSession not found");
+        }
+        chatSessionRepository.deleteById(sessionId);
+    }
+
 }
