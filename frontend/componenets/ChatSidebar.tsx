@@ -2,7 +2,7 @@
 import RefreshButton from "@/componenets/RefreshButton";
 import { useEffect, useRef, useState } from "react";
 import {deleteSession} from "../services/chatAi";
-import {toast, ToastContainer} from "react-toastify";
+import {toast} from "react-toastify";
 interface Topic {
   id: string;
   title?: string;
@@ -39,7 +39,7 @@ export default function ChatSidebar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleDelete = (sessionId) =>{
+  const handleDelete = (sessionId:string) =>{
     if(confirm("Are you sure to delete all chat in this session!")) {
       if (sessionId)
         deleteSession(sessionId)
