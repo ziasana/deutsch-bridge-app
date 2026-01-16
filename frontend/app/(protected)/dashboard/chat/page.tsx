@@ -15,8 +15,6 @@ export default function GrammarPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sessionId, setSessionId] = useState("");
-  const [, setNewChat] = useState<boolean>(false);
-
 
   const getData = () =>{
     getSessions()
@@ -40,7 +38,6 @@ export default function GrammarPage() {
   };
 
   const handleOnNewChat = () => {
-    setNewChat(true);
     setMessages([]);
     setSessionId("");
     toast("New chat is initiated!");
@@ -53,7 +50,7 @@ export default function GrammarPage() {
     );
   };
   const handleRefreshList =() =>{
-    toast("Chat list refresh!");
+    setMessages([]);
     getData();
   }
 

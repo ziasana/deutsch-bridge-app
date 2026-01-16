@@ -1,6 +1,8 @@
 "use client";
 import RefreshButton from "@/componenets/RefreshButton";
-
+import { useEffect, useRef, useState } from "react";
+import {deleteSession} from "../services/chatAi";
+import {toast} from "react-toastify";
 interface Topic {
   id: string;
   title?: string;
@@ -18,10 +20,39 @@ interface SidebarProps {
 export default function ChatSidebar({
   sessions,
   onSelect,
-  onNewChat,
-    onRefresh,
+  onNewChat, onRefresh,
   selectedSessionId,
 }: Readonly<SidebarProps>) {
+
+  const [openId, setOpenId] = useState<string | null>(null);
+  const containerRef = useRef<HTMLUListElement>(null);
+
+  // Close tooltip if clicked outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpenId(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleDelete = (sessionId:string) =>{
+    if(confirm("Are you sure to delete all chat in this session!")) {
+      if (sessionId)
+        deleteSession(sessionId)
+            .then((res) => {
+              if (res.status == 204)
+                toast.success("Session deleted!")
+              onRefresh();
+            })
+            .catch((err) => {
+              console.error(err.message);
+            });
+    }
+  };
 
   return (
     <aside className="w-full h-full ">
@@ -64,23 +95,58 @@ export default function ChatSidebar({
         <h3 className="text-sm font-semibold pl-2.5 text-gray-900 dark:text-gray-400 mb-2">
           Chat History
         </h3>
-        <ul>
+        <ul ref={containerRef} className="space-y-2 group">
           {sessions.map((session) => (
-            <li
-              key={session.id} >
-              <button type={"button"}
-              onClick={() => onSelect(session.id)}
-              className={`cursor-pointer px-2 py-1 rounded text-gray-700 dark:text-gray-300
-              ${
-                session.id === selectedSessionId
-                  ? "bg-gray-300 dark:bg-gray-600"
-                  : "hover:bg-gray-200 dark:hover:bg-gray-700"
-              }`}
+              <li
+                  key={session.id}
+                  className={` flex justify-between items-center py-1 rounded
+                  ${session.id === selectedSessionId
+                      ? "bg-gray-300 dark:bg-gray-600"
+                      : "hover:bg-gray-200 dark:hover:bg-gray-700"
+                  }
+ `}
+              >
+                {/* Session button */}
+                <button
+                    type="button"
+                    onClick={() => onSelect(session.id)}
+                    className={`
+              cursor-pointer text-gray-700 dark:text-gray-300
+              px-2 py-1 rounded flex-1 text-left
+            `}
+                >
+                  {session.title ?? session.id}
+                </button>
+
+                {/* Three dots button */}
+                <div className="relative inline-block  opacity-0 group-hover:opacity-100">
+            <span
+                onClick={() => setOpenId(openId === session.id ? null : session.id)}
+                className="cursor-pointer px-2 py-1 text-gray-500 hover:text-gray-700 select-none"
             >
-              {" "}
-              {session.title ?? session.id}
-              </button>
-            </li>
+              &#8942; {/* vertical ellipsis */}
+            </span>
+
+                  {/* Tooltip / menu */}
+                  {openId === session.id && (
+                      <div className="absolute top-full right-0 mt-2 min-w-[120px] rounded-md bg-black py-1 text-sm text-white shadow-lg z-50">
+                        <a
+                            href={session.id}
+                            className="block px-4 py-2 hover:bg-gray-700 transition-colors"
+                            onClick={() => setOpenId(null)}
+                        >
+                          Edit
+                        </a>
+                        <a
+                            className="block cursor-pointer px-4 py-2  hover:bg-gray-700 transition-colors"
+                            onClick={() => handleDelete(session.id)}
+                        >
+                          Delete
+                        </a>
+                      </div>
+                  )}
+                </div>
+              </li>
           ))}
         </ul>
       </div>

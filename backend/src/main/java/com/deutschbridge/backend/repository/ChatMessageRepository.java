@@ -8,6 +8,6 @@ import java.util.List;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, String> {
 
-    List<ChatMessage> findBySessionId(String sessionId);
+    List<ChatMessage> findChatMessagesByChatSession_Id(String sessionId);
 
 }

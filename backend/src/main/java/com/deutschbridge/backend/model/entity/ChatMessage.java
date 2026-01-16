@@ -1,10 +1,8 @@
 package com.deutschbridge.backend.model.entity;
 
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,14 +15,17 @@ import java.time.LocalDateTime;
 public class ChatMessage {
     @Id
     private String id;
-    private String sessionId;     // Link to ChatSession
+    @ManyToOne
+    @JoinColumn(name = "chatSession_id")
+    @JsonBackReference
+    private ChatSession chatSession;
     private String role;          // system, user, assistant
     @Column(columnDefinition = "TEXT")
     private String content;
     private LocalDateTime timestamp = LocalDateTime.now();
 
-    public ChatMessage(String sessionId, String role, String content) {
-        this.sessionId = sessionId;
+    public ChatMessage(ChatSession chatSession, String role, String content) {
+        this.chatSession = chatSession;
         this.role = role;
         this.content = content;
     }

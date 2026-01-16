@@ -6,6 +6,7 @@ import com.deutschbridge.backend.model.dto.OllamaChatRequestDto;
 import com.deutschbridge.backend.model.dto.OllamaGenerateExampleDto;
 import com.deutschbridge.backend.model.dto.ResponseMessageDto;
 import com.deutschbridge.backend.model.entity.ChatMessage;
+import com.deutschbridge.backend.model.entity.ChatSession;
 import com.deutschbridge.backend.service.ChatMessageService;
 import com.deutschbridge.backend.service.ChatSessionService;
 import com.deutschbridge.backend.service.OllamaService;
@@ -176,10 +177,11 @@ class OllamaControllerTest {
     void testGetMessages_ShouldReturnUpdatedSession() throws Exception {
 
         String sessionId = "session1";
+        ChatSession session = new ChatSession("user1", "assistant");
 
         ChatMessage chatMessage = new ChatMessage();
         chatMessage.setId("123");
-        chatMessage.setSessionId(sessionId);
+        chatMessage.setChatSession(session);
         chatMessage.setContent("this is a test message");
         when(chatMessageService.getBySessionId(sessionId))
                 .thenReturn(List.of(chatMessage));
@@ -222,5 +224,19 @@ class OllamaControllerTest {
 
         verify(chatSessionService, times(1))
                 .updateTitle((sessionId), ("new title"));
+    }
+
+    // -------------------------------------------------------------------------
+    // DELETE /api/ollama/session/sessionId
+    // -------------------------------------------------------------------------
+    @DisplayName("DELETE /api/ollama/session/{sessionId} -> should delete chat session")
+    @Test
+    void testDeleteSession_ShouldReturn402() throws Exception {
+
+        String sessionId = "session1";
+        mockMvc.perform(delete("/api/ollama/session/{sessionId}", sessionId))
+                .andExpect(status().isNoContent());
+        verify(chatSessionService, times(1))
+                .delete((sessionId));
     }
 }

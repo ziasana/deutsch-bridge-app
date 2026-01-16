@@ -1,19 +1,16 @@
 package com.deutschbridge.backend.model.entity;
 
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Set;
 
 @Entity(name = "chat_sessions")
-@Data
+@Setter
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 public class ChatSession {
@@ -24,7 +21,9 @@ public class ChatSession {
     private String mode; // teacher, student, correction
     private LocalDateTime createdAt = LocalDateTime.now();
     private LocalDateTime lastActivity = LocalDateTime.now();
-    private List<String> messageIds = new ArrayList<>();
+    @OneToMany(mappedBy = "chatSession", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private Set<ChatMessage> chatMessages;
 
     public ChatSession(String id)
     {

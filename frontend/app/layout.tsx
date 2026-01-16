@@ -4,8 +4,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import {DarkModeProvider} from "@/componenets/DarkModeProvider";
 import Navbar from "@/componenets/Navbar";
-import { connection } from 'next/server'
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
