@@ -14,8 +14,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -65,7 +63,7 @@ class ChatMessageServiceTest {
         String sessionId = "session1";
         when(chatMessageRepository.findChatMessagesByChatSession_Id(sessionId)).thenReturn(Collections.singletonList(chatMessage));
 
-        List<ChatMessage> result = chatMessageService.getBySessionId(sessionId);
+        chatMessageService.getBySessionId(sessionId);
         verify(chatMessageRepository, times(1)).findChatMessagesByChatSession_Id(any());
     }
 }
