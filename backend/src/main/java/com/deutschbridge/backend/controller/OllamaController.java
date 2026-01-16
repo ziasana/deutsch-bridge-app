@@ -1,5 +1,6 @@
 package com.deutschbridge.backend.controller;
 
+import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.ChatSessionDto;
 import com.deutschbridge.backend.model.dto.OllamaChatRequestDto;
 import com.deutschbridge.backend.model.dto.OllamaGenerateExampleDto;
@@ -59,7 +60,8 @@ public class OllamaController {
     }
 
     @DeleteMapping("/session/{sessionId}")
-    public ResponseEntity<String> deleteSession(@PathVariable @NotNull String sessionId) {
+    public ResponseEntity<String> deleteSession(@PathVariable @NotNull String sessionId) throws DataNotFoundException {
+        chatSessionService.delete(sessionId);
         return ResponseEntity.noContent().build(); // 204
     }
 

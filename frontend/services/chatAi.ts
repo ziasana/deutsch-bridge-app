@@ -23,3 +23,7 @@ export const updateSessionTitle= async(sessionId: string, title: string ) => {
     })
     return response.data;
 }
+
+export const deleteSession= async(sessionId: string ) => {
+    return await api.delete(`/ollama/session/${sessionId}`)
+}
