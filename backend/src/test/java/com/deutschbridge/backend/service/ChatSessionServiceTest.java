@@ -1,6 +1,7 @@
 package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.context.RequestContext;
+import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.ChatSessionDto;
 import com.deutschbridge.backend.model.entity.ChatSession;
 import com.deutschbridge.backend.repository.ChatSessionRepository;
@@ -120,5 +121,37 @@ class ChatSessionServiceTest {
         assertEquals("second chat", result.title());
         verify(chatSessionRepository, times(1)).save(any());
     }
+
+    // ---------------------------------------------------------------
+    // delete
+    // ---------------------------------------------------------------
+    @Test
+    @DisplayName("delete -> should delete chat session")
+    void testDelete_ShouldDeleteSession() throws DataNotFoundException {
+        String sessionId = "session1";
+
+        when(chatSessionRepository.existsById(sessionId))
+                .thenReturn(true);
+
+        chatSessionService.delete(sessionId);
+        verify(chatSessionRepository, times(1)).deleteById(any());
+    }
+
+    @Test
+    @DisplayName("delete -> should throw exception")
+    void testDelete_ShouldThrowNotFoundException() {
+        String sessionId = "session1";
+
+        when(chatSessionRepository.existsById(sessionId))
+                .thenReturn(false);
+
+        assertThrows(
+                DataNotFoundException.class,
+                () -> chatSessionService.delete(sessionId)
+        );
+
+        verify(chatSessionRepository, never()).deleteById(anyString());
+    }
+
 
 }

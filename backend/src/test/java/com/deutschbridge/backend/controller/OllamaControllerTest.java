@@ -225,4 +225,18 @@ class OllamaControllerTest {
         verify(chatSessionService, times(1))
                 .updateTitle((sessionId), ("new title"));
     }
+
+    // -------------------------------------------------------------------------
+    // DELETE /api/ollama/session/sessionId
+    // -------------------------------------------------------------------------
+    @DisplayName("DELETE /api/ollama/session/{sessionId} -> should delete chat session")
+    @Test
+    void testDeleteSession_ShouldReturn402() throws Exception {
+
+        String sessionId = "session1";
+        mockMvc.perform(delete("/api/ollama/session/{sessionId}", sessionId))
+                .andExpect(status().isNoContent());
+        verify(chatSessionService, times(1))
+                .delete((sessionId));
+    }
 }

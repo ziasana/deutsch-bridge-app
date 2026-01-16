@@ -50,7 +50,7 @@ public class ChatSessionService {
 
     public void delete(String sessionId) throws DataNotFoundException {
         if (!chatSessionRepository.existsById(sessionId)) {
-            throw new DataNotFoundException("ChatSession not found");
+            throw new DataNotFoundException("Chat Session not found");
         }
         chatSessionRepository.deleteById(sessionId);
     }
