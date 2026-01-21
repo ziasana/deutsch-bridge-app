@@ -1,4 +1,8 @@
 # DeutschBridge
+![Java CI with Maven](https://github.com/ziasana/deutsch-bridge-app/actions/workflows/maven.yml/badge.svg)
+![Frontend CI](https://github.com/ziasana/deutsch-bridge-app/actions/workflows/frontend.yml/badge.svg)
+![SonarQube CI Backend](https://github.com/ziasana/deutsch-bridge-app/actions/workflows/sonar-backend.yml/badge.svg)
+![Coverage](https://sonarcloud.io/api/project_badges/measure?project=ziatest_deutsch-bridge-app&metric=coverage)
 
 DeutschBridge is a full‑stack language‑learning platform that helps
 learners improve their German skills through daily vocabulary,
@@ -21,9 +25,9 @@ experience to make consistent learning simple and effective.
 
 **Frontend:** Next.js, React, TailwindCSS\
 **Backend:** Spring Boot (Java)\
-**Database:** MongoDB / PostgreSQL\
+**Database:** PostgreSQL\
 **AI Integration:** Ollama API\
-**Other Tools:** GitHub Actions (CI), Docker, JWT Authentication
+**Other Tools:** GitHub Actions (CI), Docker, JWT Authentication, SonarQube
 
 ## 📦 Installation
 
