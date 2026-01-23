@@ -1,8 +1,10 @@
 package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.exception.DataNotFoundException;
+import com.deutschbridge.backend.model.dto.NomenVerbConnectionResponse;
 import com.deutschbridge.backend.model.entity.NomenVerbConnection;
 import com.deutschbridge.backend.repository.NomenVerbConnectionRepository;
+import com.deutschbridge.backend.util.NomenVerbConnectionMapper;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -21,8 +23,9 @@ public class NomenVerbConnectionService {
     }
 
     @Cacheable(cacheNames = CACHE_NAME, key = "'all'")
-    public List<NomenVerbConnection> findAll() {
-        return nomenVerbConnectionRepository.findAll();
+    public List<NomenVerbConnectionResponse> findAll() {
+        return nomenVerbConnectionRepository.findAll().stream()
+                .map(NomenVerbConnectionMapper::mapToNomenVerbConnectionResponse).toList();
     }
 
     @CachePut (cacheNames = CACHE_NAME, key = "#result.id")
@@ -59,5 +62,11 @@ public class NomenVerbConnectionService {
         if (existing.getLevel() != null) existing.setLevel(word.getLevel());
         if (existing.getTags() != null) existing.setTags(word.getTags());
        return nomenVerbConnectionRepository.save(existing);
+    }
+
+    public List<NomenVerbConnectionResponse> getWithLearningProgress() {
+        return nomenVerbConnectionRepository.getWithLearningProgress().stream()
+                .map(NomenVerbConnectionMapper::mapToNomenVerbConnectionResponse).toList();
+
     }
 }

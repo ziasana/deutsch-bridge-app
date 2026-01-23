@@ -1,6 +1,7 @@
 package com.deutschbridge.backend.controller;
 
 import com.deutschbridge.backend.exception.DataNotFoundException;
+import com.deutschbridge.backend.model.dto.NomenVerbConnectionResponse;
 import com.deutschbridge.backend.model.entity.NomenVerbConnection;
 import com.deutschbridge.backend.service.NomenVerbConnectionService;
 import org.springframework.http.HttpStatus;
@@ -20,7 +21,7 @@ public class NomenVerbConnectionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<NomenVerbConnection>> getAllNomenVerbConnections() {
+    public ResponseEntity<List<NomenVerbConnectionResponse>> getAllNomenVerbConnections() {
         return new ResponseEntity<>(nomenVerbConnectionService.findAll(), HttpStatus.OK);
     }
 
@@ -37,6 +38,11 @@ public class NomenVerbConnectionController {
     @GetMapping("/{id}")
     public ResponseEntity<NomenVerbConnection> getNomenVerbConnectionById(@PathVariable String id) throws DataNotFoundException {
         return new ResponseEntity<>(nomenVerbConnectionService.findById(id), HttpStatus.FOUND);
+    }
+
+    @GetMapping("/learning-progress")
+    public ResponseEntity<List<NomenVerbConnectionResponse>> getNomenVerbConnectionWithLearningProgress() {
+        return new ResponseEntity<>(nomenVerbConnectionService.getWithLearningProgress(), HttpStatus.FOUND);
     }
 
     @PutMapping("/{id}")
