@@ -23,7 +23,6 @@ public class LearningProgressService {
 
     private final LearningProgressRepository repository;
     private final RequestContext requestContext;
-    static final String NOT_FOUND= "Progress not found!";
     private final UserService userService;
     private final NomenVerbConnectionService nomenVerbConnectionService;
     private final GrammarService grammarService;

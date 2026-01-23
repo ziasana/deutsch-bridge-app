@@ -30,10 +30,6 @@ public class GrammarLesson{
     @Column(columnDefinition = "jsonb")
     private List<QuizQuestion> quiz;
 
-    public List<QuizQuestion> getQuiz() {
-        return quiz;
-    }
-
     @PrePersist
     public void prePersist() {
         if (this.id == null) {
