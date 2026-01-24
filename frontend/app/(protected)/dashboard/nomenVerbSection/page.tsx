@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { getNomenVerbs } from "@/services/nomenVerbService";
 import { NomenVerb } from "@/types/nomenVerb";
 import Loading from "@/componenets/Loading";
+import {LearningProgressRequest} from "../../../../types/nomenVerb";
+import {setLearningProgress} from "../../../../services/nomenVerbService";
 
 export default function NomenVerbAccordionDemo() {
   const [search, setSearch] = useState("");
@@ -17,7 +19,9 @@ export default function NomenVerbAccordionDemo() {
 
   useEffect(() => {
     getNomenVerbs()
-      .then((response) => setNomenVerbs(response.data))
+      .then((response) => {
+            setNomenVerbs(response.data);
+      })
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
   }, []);
@@ -55,9 +59,37 @@ export default function NomenVerbAccordionDemo() {
     page * ITEMS_PER_PAGE
   );
 
-  const toggleAccordion = (id: string | number) => {
+  const toggleAccordion = (id: string) => {
     setOpenId(openId === id ? null : id);
   };
+  const markAsLearned = (id: string, isLearned:boolean) => {
+    const request:LearningProgressRequest ={
+      nomenVerbId: id,
+      learned: isLearned
+    }
+    setLoading(true);
+    setLearningProgress(request)
+        .then((response) => {
+          // Optimistic update
+          if(response.status==201)
+          setNomenVerbs((prev) =>
+              prev.map((nv) => {
+                if (nv.id !== id) return nv;
+                return {
+                  ...nv,
+                  learningProgresses: [
+                    {
+                      learned: isLearned,
+                    },
+                  ],
+                };
+              })
+          );
+        })
+        .catch((err) => console.error(err))
+        .finally(() => setLoading(false));
+  };
+
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6">
@@ -116,7 +148,11 @@ export default function NomenVerbAccordionDemo() {
           {/* Accordion list */}
           <div className="max-h-[600px] overflow-y-auto space-y-2">
             {paginatedData.length > 0 ? (
-              paginatedData.map((item) => (
+              paginatedData.map((item) => {
+                const isLearned = item.learningProgresses?.some(
+                    (lp) => lp.learned == true
+                );
+                return(
                 <div
                   key={item.id}
                   className="border border-gray-200 rounded-lg shadow-sm dark:border-gray-700 dark:bg-gray-700"
@@ -125,9 +161,22 @@ export default function NomenVerbAccordionDemo() {
                     className="w-full text-left px-4 py-3 flex justify-between items-center font-semibold hover:bg-gray-100 dark:hover:bg-gray-600 transition"
                     onClick={() => toggleAccordion(item.id)}
                   >
-                    <span className="text-gray-900 dark:text-white">
-                      {item.word}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-900 dark:text-white">
+                        {item.word}
+                      </span>
+
+                      {isLearned ? (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                      ✓ Learned
+                        </span>
+                      ) : (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-300">
+                        Not learned
+                      </span>
+                      )}
+                    </div>
+
                     <span className="text-sm text-gray-500 dark:text-gray-300">
                       {item.level}
                     </span>
@@ -167,13 +216,23 @@ export default function NomenVerbAccordionDemo() {
                       <p className="text-sm pt-3 text-gray-500 dark:text-gray-400">
                         <strong>Tags:</strong> {item.tags}
                       </p>
+
+                      <button
+                          onClick={() => markAsLearned(item.id, !isLearned)}
+                          className="mt-4 px-3 py-1 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
+                      >
+                        {isLearned ? "Mark as not learned" : "Mark as learned"}
+                      </button>
+
                     </div>
                   )}
                 </div>
-              ))
+                )}
+              )
             ) : (
               <p className="text-center text-gray-400">Keine Ergebnisse.</p>
             )}
+
           </div>
 
           {/* Pagination */}

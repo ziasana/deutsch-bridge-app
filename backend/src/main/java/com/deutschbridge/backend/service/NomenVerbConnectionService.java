@@ -22,18 +22,18 @@ public class NomenVerbConnectionService {
         this.nomenVerbConnectionRepository = nomenVerbConnectionRepository;
     }
 
-    @Cacheable(cacheNames = CACHE_NAME, key = "'all'")
+    //@Cacheable(cacheNames = CACHE_NAME, key = "'all'")
     public List<NomenVerbConnectionResponse> findAll() {
         return nomenVerbConnectionRepository.findAll().stream()
                 .map(NomenVerbConnectionMapper::mapToNomenVerbConnectionResponse).toList();
     }
 
-    @CachePut (cacheNames = CACHE_NAME, key = "#result.id")
+    //@CachePut (cacheNames = CACHE_NAME, key = "#result.id")
     public NomenVerbConnection save(NomenVerbConnection word) {
         return nomenVerbConnectionRepository.save(word);
     }
 
-    @Cacheable(cacheNames = CACHE_NAME, key = "'all'")
+    //@Cacheable(cacheNames = CACHE_NAME, key = "'all'")
     public List<NomenVerbConnection> saveAll(List<NomenVerbConnection> list) {
         return nomenVerbConnectionRepository.saveAll(list);
     }
