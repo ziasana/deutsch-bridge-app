@@ -10,6 +10,7 @@ import {setLearningProgress} from "../../../../services/nomenVerbService";
 export default function NomenVerbAccordionDemo() {
   const [search, setSearch] = useState("");
   const [levelFilter, setLevelFilter] = useState("ALL");
+  const [learnedFilter, setLearnedFilter] = useState("ALL");
   const [tagFilter, setTagFilter] = useState("ALL");
   const [openId, setOpenId] = useState<string | number | null>(null);
   const [page, setPage] = useState(1);
@@ -37,20 +38,33 @@ export default function NomenVerbAccordionDemo() {
     )
   );
 
-  // FILTERING
   const filteredData = nomenVerbs
-    .filter((item) => item.word.toLowerCase().includes(search.toLowerCase()))
-    .filter((item) =>
-      levelFilter === "ALL" ? true : item.level === levelFilter
-    )
-    .filter((item) =>
-      tagFilter === "ALL"
-        ? true
-        : item.tags
-            .split(",")
-            .map((t) => t.trim())
-            .includes(tagFilter)
-    );
+      .filter((item) =>
+          item.word.toLowerCase().includes(search.toLowerCase())
+      )
+      .filter((item) =>
+          levelFilter === "ALL" ? true : item.level === levelFilter
+      )
+      .filter((item) => {
+        if (learnedFilter === "ALL") return true;
+
+        const isLearned = item.learningProgresses?.some(
+            (lp) => lp.learned === true
+        );
+
+        return learnedFilter === "LEARNED"
+            ? isLearned
+            : !isLearned;
+      })
+      .filter((item) =>
+          tagFilter === "ALL"
+              ? true
+              : item.tags
+                  .split(",")
+                  .map((t) => t.trim())
+                  .includes(tagFilter)
+      );
+
 
   // PAGINATION
   const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
@@ -107,7 +121,7 @@ export default function NomenVerbAccordionDemo() {
         {/* Container */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow space-y-4">
           {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
             {/* Search */}
             <input
               type="text"
@@ -117,6 +131,16 @@ export default function NomenVerbAccordionDemo() {
               className="w-full px-3 py-2 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
 
+            {/* Level Filter */}
+            <select
+                value={learnedFilter}
+                onChange={(e) => setLearnedFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
+              <option value="ALL">Alle</option>
+              <option value="LEARNED">Learned</option>
+              <option value="NOT_LEARNED">Not Learned</option>
+            </select>
             {/* Level Filter */}
             <select
               value={levelFilter}
