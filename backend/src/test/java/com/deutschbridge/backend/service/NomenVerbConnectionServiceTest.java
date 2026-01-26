@@ -1,6 +1,7 @@
 package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.exception.DataNotFoundException;
+import com.deutschbridge.backend.model.dto.NomenVerbConnectionResponse;
 import com.deutschbridge.backend.model.entity.*;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.NomenVerbConnectionRepository;
@@ -12,8 +13,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -25,30 +28,53 @@ class NomenVerbConnectionServiceTest {
 
     @InjectMocks
     private NomenVerbConnectionService nomenVerbConnectionService;
-
     NomenVerbConnection nomenVerbConnection;
+    private LearningProgress learningProgress;
 
     @BeforeEach
     void setup() {
-        nomenVerbConnection = new NomenVerbConnection( "123","zur Verfugung stehen"
-                , "example explanation", "ich stehen ihnen zur Verfugung", LearningLevel.A2 ,null);
+        nomenVerbConnection= new NomenVerbConnection();
+        nomenVerbConnection.setId("123");
+        nomenVerbConnection.setWord("eine Entscheidung treffen");
+        nomenVerbConnection.setExplanation("to make a decision");
+        nomenVerbConnection.setExample("Ich treffe eine Entscheidung.");
+        nomenVerbConnection.setLevel(LearningLevel.valueOf("A2"));
+        nomenVerbConnection.setTags("business");
+
+        learningProgress = new LearningProgress();
+        learningProgress.setId("123");
+        learningProgress.setNomenVerb(nomenVerbConnection);
     }
 
     // ---------------------------------------------------------------
     // findAll
     // ---------------------------------------------------------------
     @Test
-    @DisplayName("findAll -> should return list of nomen verb connections")
-    void testFindAll_ShouldReturnListOfNomenVerbConnections() {
+    @DisplayName("findAll -> should return mapped responses")
+    void findAll_shouldReturnMappedResponses() {
+        // given
 
-        when(nomenVerbConnectionRepository.findAll()).thenReturn(List.of(nomenVerbConnection));
+        Set<LearningProgress> progresses = new HashSet<>();
+        progresses.add(learningProgress);
 
-        List<NomenVerbConnection> result = nomenVerbConnectionService.findAll();
+        nomenVerbConnection.setLearningProgresses(progresses);
 
-        assertNotNull(result);
-        assertEquals(nomenVerbConnection.getWord(), result.getFirst().getWord());
-        verify(nomenVerbConnectionRepository, times(1)).findAll();
+        when(nomenVerbConnectionRepository.findAll())
+                .thenReturn(List.of(nomenVerbConnection));
+
+        // when
+        List<NomenVerbConnectionResponse> result =
+                nomenVerbConnectionService.findAll();
+
+        // then
+        assertEquals(1, result.size());
+        assertEquals("eine Entscheidung treffen", result.get(0).word());
+
+        verify(nomenVerbConnectionRepository).findAll();
     }
+
+
+
 
 
     // ---------------------------------------------------------------
@@ -91,8 +117,7 @@ class NomenVerbConnectionServiceTest {
         when(nomenVerbConnectionRepository.findById(anyString())).thenReturn(Optional.ofNullable(nomenVerbConnection));
         NomenVerbConnection result = nomenVerbConnectionService.findById("123");
         assertEquals("123", result.getId() );
-        assertEquals("zur Verfugung stehen", result.getWord());
-
+        assertEquals("eine Entscheidung treffen", result.getWord());
     }
 
     // ---------------------------------------------------------------
@@ -101,8 +126,13 @@ class NomenVerbConnectionServiceTest {
     @Test
     @DisplayName("update -> should update nomen verb connection")
     void testUpdate_ShouldUpdateVocabulary() throws DataNotFoundException {
-      NomenVerbConnection  update = new NomenVerbConnection( "123","zur Verfugung stehen"
-                , "example explanation", "ich stehen zur Verfugung", LearningLevel.B2 ,null);
+        NomenVerbConnection update = new NomenVerbConnection();
+        update.setId("123");
+        update.setWord("eine Entscheidung treffen");
+        update.setExplanation("to make a decision");
+        update.setExample("Ich treffe eine Entscheidung.");
+        update.setLevel(LearningLevel.valueOf("A2"));
+        update.setTags("business");
 
         when(nomenVerbConnectionRepository.findById("123")).thenReturn(Optional.of(nomenVerbConnection));
         // mock repository save to return the object being saved
@@ -111,7 +141,7 @@ class NomenVerbConnectionServiceTest {
 
         NomenVerbConnection result = nomenVerbConnectionService.update(update, "123");
         assertEquals("123", result.getId());
-        assertEquals("ich stehen zur Verfugung", result.getExample());
+        assertEquals("Ich treffe eine Entscheidung.", result.getExample());
         verify(nomenVerbConnectionRepository, times(1)).save(any());
     }
 

@@ -18,7 +18,9 @@ public class NomenVerbConnectionMapper {
                 v.getWord(),
                 v.getExplanation(),
                 v.getExample(),
-                v.getLevel().getValue(),
+                v.getLevel() != null
+                        ? v.getLevel().getValue()
+                        : null,
                 v.getTags(),
                 mapToProgressResponse(v.getLearningProgresses())
         );
@@ -28,7 +30,7 @@ public class NomenVerbConnectionMapper {
         return response.stream()
                 .map(c -> new LearningProgressResponse(
                         c.getId(),
-                        c.getLearned()
+                        c.getIsLearned()
                 ))
                 .toList();
     }

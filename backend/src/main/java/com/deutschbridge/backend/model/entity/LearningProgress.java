@@ -29,7 +29,7 @@ public class LearningProgress {
 
     private User user;
 
-    private Boolean learned= false;
+    private Boolean isLearned = false;
     private LocalDateTime learnedAt;
 
     @PrePersist

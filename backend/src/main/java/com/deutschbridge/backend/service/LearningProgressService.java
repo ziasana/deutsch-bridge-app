@@ -91,7 +91,7 @@ public class LearningProgressService {
                     return lp;
                 });
 
-        progress.setLearned(learned);
+        progress.setIsLearned(learned);
         progress.setLearnedAt(now);
 
         repository.save(progress);
