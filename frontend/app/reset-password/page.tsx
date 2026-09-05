@@ -30,13 +30,13 @@ export default function ResetPasswordPage() {
     forgotPassword(form)
         .then((data) => {
           if (data?.status == 200) {
-            toast("Please check your email! The reset password has been reset successfully send!");
+            toast("Please check your email! A password reset link has been sent.");
             setForm(initialFormState);
           }
         })
         .catch((err) => {
-          toast.error(err?.response.data.message)
-          console.error(err?.response);
+          toast.error(err?.response?.data?.message ?? "Something went wrong. Please try again.");
+          console.error(err?.response ?? err);
         })
         .finally(() => setIsLoading(false));
   };
@@ -47,7 +47,7 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
         {/* Title */}
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white text-center mb-12">
-          Rest Password
+          Reset Password
         </h1>
         {isLoading && <Loading message="Please wait..." />}
         {/* Form */}

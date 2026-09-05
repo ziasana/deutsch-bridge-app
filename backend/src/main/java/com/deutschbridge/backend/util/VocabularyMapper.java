@@ -1,10 +1,7 @@
 package com.deutschbridge.backend.util;
 
 
-import com.deutschbridge.backend.model.dto.UserVocabularyPracticeDTO;
-import com.deutschbridge.backend.model.dto.VocabularyContentResponse;
-import com.deutschbridge.backend.model.dto.VocabularyPracticeResponse;
-import com.deutschbridge.backend.model.dto.VocabularyResponse;
+import com.deutschbridge.backend.model.dto.*;
 import com.deutschbridge.backend.model.entity.UserVocabularyPractice;
 import com.deutschbridge.backend.model.entity.Vocabulary;
 import com.deutschbridge.backend.model.entity.VocabularyContent;
@@ -56,6 +53,15 @@ public class VocabularyMapper {
                 v.getSynonyms(),
                 v.getVocabularyContents().stream().map(VocabularyContent::getMeaning).findFirst()
                 );
+    }
+
+    public static RecentVocabularyResponse mapVocabularyRecentPracticeResponse(Vocabulary v, String status) {
+        return new RecentVocabularyResponse(
+                v.getId(),
+                v.getWord(),
+                v.getVocabularyContents().stream().map(VocabularyContent::getMeaning).findFirst(),
+                status
+        );
     }
 
 }

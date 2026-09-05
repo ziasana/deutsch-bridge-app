@@ -8,6 +8,7 @@ public record UserProfileResponse(
          String learningLevel,
          Integer dailyGoalWords,
          boolean notificationsEnabled,
-         PreferredLanguage preferredLanguage
+         PreferredLanguage preferredLanguage,
+         String role
 ) {
 }

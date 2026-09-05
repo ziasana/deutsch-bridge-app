@@ -81,7 +81,8 @@ public class UserProfileService {
                 profile != null ? String.valueOf(profile.getLearningLevel()) : null,
                 profile != null ? profile.getDailyGoalWords() : null,
                 profile != null && profile.isNotificationsEnabled(),
-                profile != null ? profile.getPreferredLanguage(): null
+                profile != null ? profile.getPreferredLanguage(): null,
+                user.getRole()
         );
     }
 }

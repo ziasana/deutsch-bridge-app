@@ -65,7 +65,8 @@ public class UserController {
                 profile.getLearningLevel().getValue(),
                 profile.getDailyGoalWords(),
                 profile.isNotificationsEnabled(),
-                profile.getPreferredLanguage()
+                profile.getPreferredLanguage(),
+                user.getRole()
         );
         return new ResponseEntity<>(
                 new ApiResponse<>("Profile loaded", response), HttpStatus.OK);

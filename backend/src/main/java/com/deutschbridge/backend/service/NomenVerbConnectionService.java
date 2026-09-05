@@ -1,28 +1,48 @@
 package com.deutschbridge.backend.service;
 
+import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.exception.DataNotFoundException;
+import com.deutschbridge.backend.model.dto.NomenVerbConnectionResponse;
+import com.deutschbridge.backend.model.entity.LearningProgress;
 import com.deutschbridge.backend.model.entity.NomenVerbConnection;
+import com.deutschbridge.backend.model.entity.User;
+import com.deutschbridge.backend.repository.LearningProgressRepository;
 import com.deutschbridge.backend.repository.NomenVerbConnectionRepository;
+import com.deutschbridge.backend.util.NomenVerbConnectionMapper;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class NomenVerbConnectionService {
 
     private final NomenVerbConnectionRepository nomenVerbConnectionRepository;
+    private final LearningProgressRepository learningProgressRepository;
+    private final UserService userService;
+    private final RequestContext requestContext;
     private static final String NOT_FOUND_MSG= "Nomen-verb-verbindung not found!";
     private static final String CACHE_NAME = "nomenVerb";
-    public NomenVerbConnectionService(NomenVerbConnectionRepository nomenVerbConnectionRepository) {
+
+    public NomenVerbConnectionService(NomenVerbConnectionRepository nomenVerbConnectionRepository,
+                                       LearningProgressRepository learningProgressRepository,
+                                       UserService userService,
+                                       RequestContext requestContext) {
         this.nomenVerbConnectionRepository = nomenVerbConnectionRepository;
+        this.learningProgressRepository = learningProgressRepository;
+        this.userService = userService;
+        this.requestContext = requestContext;
     }
 
-    @Cacheable(cacheNames = CACHE_NAME, key = "'all'")
-    public List<NomenVerbConnection> findAll() {
-        return nomenVerbConnectionRepository.findAll();
+    // Not cached: the response is scoped to the current user's learning
+    // progress, so a shared 'all' cache key would leak one user's progress
+    // to every other user reading it.
+    public List<NomenVerbConnectionResponse> findAll() {
+        return mapWithCurrentUserProgress(nomenVerbConnectionRepository.findAll());
     }
 
     @CachePut (cacheNames = CACHE_NAME, key = "#result.id")
@@ -59,5 +79,22 @@ public class NomenVerbConnectionService {
         if (existing.getLevel() != null) existing.setLevel(word.getLevel());
         if (existing.getTags() != null) existing.setTags(word.getTags());
        return nomenVerbConnectionRepository.save(existing);
+    }
+
+    public List<NomenVerbConnectionResponse> getWithLearningProgress() {
+        return mapWithCurrentUserProgress(nomenVerbConnectionRepository.getWithLearningProgress());
+    }
+
+    private List<NomenVerbConnectionResponse> mapWithCurrentUserProgress(List<NomenVerbConnection> connections) {
+        if (connections.isEmpty()) return List.of();
+
+        User user = userService.findByEmail(requestContext.getUserEmail());
+        List<LearningProgress> progresses = learningProgressRepository.findByUserAndNomenVerbIn(user, connections);
+        Map<String, LearningProgress> progressByConnectionId = progresses.stream()
+                .collect(Collectors.toMap(p -> p.getNomenVerb().getId(), p -> p, (first, second) -> first));
+
+        return connections.stream()
+                .map(c -> NomenVerbConnectionMapper.mapToNomenVerbConnectionResponse(c, progressByConnectionId.get(c.getId())))
+                .toList();
     }
 }

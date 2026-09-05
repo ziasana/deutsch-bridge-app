@@ -28,6 +28,11 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-6">
 
           {isLoggedIn && userProfile != null ? (
+              userProfile.role === "ADMIN" ? (
+                  <Link href="/admin" className="nav-link">
+                    Admin Dashboard
+                  </Link>
+              ) : (
               <>
                 <Link href="/dashboard" className="nav-link">
                   Dashboard
@@ -42,6 +47,7 @@ export default function Navbar() {
                   NomenVerb
                 </Link>
               </>
+              )
           ) : (
               <>
                 <Link href="/" className="nav-link">
@@ -129,7 +135,20 @@ export default function Navbar() {
                     Profile
                   </Link>
                 </MenuItem>
-
+                <MenuItem>
+                  <Link
+                      href="/user-progress"
+                      className="
+          block px-4 py-2 text-sm
+          text-gray-700 dark:text-gray-300
+          data-focus:bg-gray-100 dark:data-focus:bg-gray-700
+          data-focus:text-gray-900 dark:data-focus:text-white
+          outline-none
+        "
+                  >
+                    Your progress
+                  </Link>
+                </MenuItem>
                 <MenuItem>
                   <Link
                       href="/profile/update-password"

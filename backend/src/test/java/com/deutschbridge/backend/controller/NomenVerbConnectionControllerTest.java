@@ -2,6 +2,7 @@ package com.deutschbridge.backend.controller;
 
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.exception.GlobalExceptionHandler;
+import com.deutschbridge.backend.model.dto.NomenVerbConnectionResponse;
 import com.deutschbridge.backend.model.entity.NomenVerbConnection;
 import com.deutschbridge.backend.service.NomenVerbConnectionService;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +44,7 @@ class NomenVerbConnectionControllerTest {
     private NomenVerbConnectionController nomenVerbConnectionController;
 
     private NomenVerbConnection nomenVerbConnection;
+    private NomenVerbConnectionResponse nomenVerbConnectionResponse;
 
     @BeforeEach
     void setup() {
@@ -56,6 +58,13 @@ class NomenVerbConnectionControllerTest {
         nomenVerbConnection.setWord("zur Verfügung stehen");
         nomenVerbConnection.setExplanation("example explanation");
         nomenVerbConnection.setExample("ich stehe Ihnen zur Verfügung");
+        nomenVerbConnectionResponse = new NomenVerbConnectionResponse("123","zur Verfügung stehen"
+                ,"explination"
+        ,"example"
+        ,"A2"
+        ,"Breuf"
+                ,null);
+
     }
 
     // -------------------------------------------------------------------------
@@ -64,7 +73,7 @@ class NomenVerbConnectionControllerTest {
     @Test
     @DisplayName("GET /api/nomen-verb -> should return all nomen verb connections")
     void testGetAllNomenVerbConnections_shouldReturnList() throws Exception {
-        when(service.findAll()).thenReturn(List.of(nomenVerbConnection));
+        when(service.findAll()).thenReturn(List.of(nomenVerbConnectionResponse));
 
         mockMvc.perform(get("/api/nomen-verb"))
                 .andExpect(status().isOk())

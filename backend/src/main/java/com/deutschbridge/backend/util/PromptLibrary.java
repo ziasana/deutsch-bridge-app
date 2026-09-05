@@ -48,6 +48,48 @@ public class PromptLibrary {
         """, level, word, level);
     }
 
+    public static String generateReadingArticle(String topic, String level) {
+        return String.format("""
+        Erstelle einen Lesetext auf Deutsch zum Thema "%s" für das Sprachniveau %s.
+
+        Wichtige Regeln:
+        - Passe Wortschatz, Satzbau und Textlänge genau an das Niveau %s an
+        - Schreibe einen zusammenhängenden, interessanten Text mit mehreren Absätzen
+        - Wähle 6 bis 10 Schlüsselwörter aus, die tatsächlich im Text vorkommen und für Niveau %s neu oder wichtig sind
+        - Erkläre jedes Schlüsselwort mit einer kurzen, einfachen Bedeutung auf Deutsch
+
+        Antworte GENAU in diesem Format, ohne zusätzlichen Text davor oder danach:
+
+        TITEL: <Titel des Textes>
+        TEXT:
+        <Text, mehrere Absätze>
+        VOKABELN:
+        - wort1: bedeutung1
+        - wort2: bedeutung2
+        """, topic, level, level, level);
+    }
+
+    public static String extractKeyVocabulary(String content, String level) {
+        return String.format("""
+        Analysiere den folgenden deutschen Text und wähle 6 bis 10 Schlüsselwörter aus,
+        die für das Sprachniveau %s neu oder wichtig sind.
+
+        Text:
+        "%s"
+
+        Wichtige Regeln:
+        - Wähle nur Wörter, die tatsächlich im Text vorkommen
+        - Erkläre jedes Wort mit einer kurzen, einfachen Bedeutung auf Deutsch, passend zu Niveau %s
+        - Jedes Wort steht in einer eigenen Zeile
+
+        Antworte GENAU in diesem Format, ohne zusätzlichen Text davor oder danach:
+
+        VOKABELN:
+        - wort1: bedeutung1
+        - wort2: bedeutung2
+        """, level, content, level);
+    }
+
     // System Prompt für den KI-Lehrer
     public static String systemPrompt() {
         return """

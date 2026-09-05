@@ -1,14 +1,28 @@
 "use client";
 import * as React from 'react'
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
     BookOpen,
     MessageSquare,
     ClipboardList,
     Layers,
     SpellCheck,
+    Newspaper,
 } from "lucide-react";
 import Link from "next/link";
+import useAuthStore from "@/store/useAuthStore";
 const DashboardPage = () => {
+    const router = useRouter();
+    const { userProfile, hasHydrated } = useAuthStore();
+
+    useEffect(() => {
+        if (hasHydrated && userProfile?.role === "ADMIN") {
+            router.push("/admin");
+        }
+    }, [hasHydrated, userProfile, router]);
+
+    if (hasHydrated && userProfile?.role === "ADMIN") return null;
 
     const modules = [
         {
@@ -31,6 +45,13 @@ const DashboardPage = () => {
                 "Learn Nomen-Verb Verbindungen with example and explanation.",
             icon: BookOpen,
             link: "/dashboard/nomenVerbSection",
+        },
+        {
+            title: "Reading",
+            description:
+                "Read articles at your level and learn new words in context.",
+            icon: Newspaper,
+            link: "/dashboard/reading",
         },
         {
             title: "Exercises",

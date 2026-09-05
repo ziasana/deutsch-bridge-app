@@ -89,7 +89,7 @@ export default function VocabularyPage() {
 
                 <div className="fixed right-4 top-1/2 -translate-y-1/2 z-50 group">
                     <button
-                        onClick={() => router.push(" /dashboard/vocabularyPractice")}
+                        onClick={() => router.push("/dashboard/vocabularyPractice")}
                         className="
             w-14 h-14
             bg-green-600 hover:bg-green-700
