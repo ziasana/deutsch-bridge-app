@@ -5,14 +5,18 @@ import com.deutschbridge.backend.model.dto.*;
 import com.deutschbridge.backend.model.entity.*;
 
 import java.util.List;
-import java.util.Set;
 
 public class NomenVerbConnectionMapper {
     private NomenVerbConnectionMapper() {
         throw new IllegalStateException("Mapper Utils class");
     }
 
-    public static NomenVerbConnectionResponse mapToNomenVerbConnectionResponse(NomenVerbConnection v) {
+    /**
+     * userProgress must already be scoped to the current authenticated user
+     * (see NomenVerbConnectionService) - never pass the entity's own
+     * learningProgresses collection here, as it holds every user's progress.
+     */
+    public static NomenVerbConnectionResponse mapToNomenVerbConnectionResponse(NomenVerbConnection v, LearningProgress userProgress) {
         return new NomenVerbConnectionResponse(
                 v.getId(),
                 v.getWord(),
@@ -22,17 +26,10 @@ public class NomenVerbConnectionMapper {
                         ? v.getLevel().getValue()
                         : null,
                 v.getTags(),
-                mapToProgressResponse(v.getLearningProgresses())
+                userProgress != null
+                        ? List.of(new LearningProgressResponse(userProgress.getId(), Boolean.TRUE.equals(userProgress.getIsLearned())))
+                        : List.of()
         );
-    }
-
-    private static List<LearningProgressResponse> mapToProgressResponse(Set<LearningProgress> response) {
-        return response.stream()
-                .map(c -> new LearningProgressResponse(
-                        c.getId(),
-                        c.getIsLearned()
-                ))
-                .toList();
     }
 
 }

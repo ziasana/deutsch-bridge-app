@@ -1,12 +1,15 @@
 package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.context.RequestContext;
+import com.deutschbridge.backend.exception.AiGenerationException;
 import com.deutschbridge.backend.model.dto.*;
+import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.model.enums.PromptType;
 import com.deutschbridge.backend.util.PromptLibrary;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -69,17 +72,43 @@ public class OllamaService {
 
     public String chatWithOllama(PromptType promptType, String question) {
         List<OllamaMessage> messages = createChatMessages(promptType, question);
+        return callOllama(messages);
+    }
 
+    public String generateReadingArticle(String topic, LearningLevel level) {
+        List<OllamaMessage> messages = List.of(
+                new OllamaMessage("system", PromptLibrary.generateReadingArticle(topic, level.name())),
+                new OllamaMessage("user", topic)
+        );
+        return callOllama(messages);
+    }
+
+    public String extractKeyVocabulary(String content, LearningLevel level) {
+        List<OllamaMessage> messages = List.of(
+                new OllamaMessage("system", PromptLibrary.extractKeyVocabulary(content, level.name())),
+                new OllamaMessage("user", content)
+        );
+        return callOllama(messages);
+    }
+
+    private String callOllama(List<OllamaMessage> messages) {
         OllamaRequest request = new OllamaRequest(messages);
         HttpEntity<OllamaRequest> entity = new HttpEntity<>(request, headers);
 
-        ResponseEntity<OllamaResponse> response = restTemplate.exchange(
-                OLLAMA_COM_API_CHAT,
-                HttpMethod.POST,
-                entity,
-                OllamaResponse.class
-        );
-        return extractAiAnswer(response);
+        try {
+            ResponseEntity<OllamaResponse> response = restTemplate.exchange(
+                    OLLAMA_COM_API_CHAT,
+                    HttpMethod.POST,
+                    entity,
+                    OllamaResponse.class
+            );
+            return extractAiAnswer(response);
+        } catch (RestClientException e) {
+            throw new AiGenerationException(
+                    "AI generation is currently unavailable. Please check the Ollama API key/quota and try again.",
+                    e
+            );
+        }
     }
 
     private List<OllamaMessage> createChatMessages(PromptType promptType, String question) {

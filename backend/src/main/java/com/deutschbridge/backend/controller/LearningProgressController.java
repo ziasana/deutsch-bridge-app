@@ -3,6 +3,9 @@ package com.deutschbridge.backend.controller;
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.ApiResponse;
 import com.deutschbridge.backend.model.dto.LearningProgressRequest;
+import com.deutschbridge.backend.model.dto.OverviewResponse;
+import com.deutschbridge.backend.model.dto.RecentVocabularyResponse;
+import com.deutschbridge.backend.model.dto.StreakResponse;
 import com.deutschbridge.backend.model.entity.LearningProgress;
 import com.deutschbridge.backend.service.LearningProgressService;
 import org.springframework.http.HttpStatus;
@@ -34,6 +37,19 @@ public class LearningProgressController {
                 new ApiResponse<>("Learning progress saved", ""), HttpStatus.CREATED);
     }
 
+    @GetMapping("/recent-vocabulary-progress")
+    public ResponseEntity<List<RecentVocabularyResponse>> getRecentVocabularyWithPractice() {
+        return new ResponseEntity<>(learningProgressService.getRecentVocabularyWithPractice(), HttpStatus.OK);
+    }
 
+    @GetMapping("/overview")
+    public ResponseEntity<OverviewResponse> getOverview() {
+        return new ResponseEntity<>(learningProgressService.getOverview(), HttpStatus.OK);
+    }
+
+    @GetMapping("/streak")
+    public ResponseEntity<StreakResponse> getStreak() {
+        return new ResponseEntity<>(learningProgressService.getStreak(), HttpStatus.OK);
+    }
 
 }

@@ -22,8 +22,15 @@ public class LearningProgress {
     private NomenVerbConnection nomenVerb;
 
     @ManyToOne(fetch = FetchType.LAZY)
-
+    @JsonBackReference("lesson-progress")
     private GrammarLesson lesson;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private DailyWord dailyWord;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonBackReference("reading-progress")
+    private ReadingArticle reading;
 
     @ManyToOne(fetch = FetchType.LAZY)
 
@@ -37,7 +44,6 @@ public class LearningProgress {
         if (this.id == null) {
             this.id = NanoIdUtils.randomNanoId();
         }
-        learnedAt = LocalDateTime.now();
     }
 }
 

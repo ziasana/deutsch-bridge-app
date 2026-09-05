@@ -12,6 +12,12 @@
 backend/mvnw.cmd
 backend/mvnw
 backend/.mvn
+backend/node_modules
+backend/package.json
+backend/package-lock.json
+
+# Claude Code session-local tooling (launch configs, worktrees)
+.claude/
 
 #Frontend
 frontend/node_modules

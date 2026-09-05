@@ -97,7 +97,8 @@ class UserProfileServiceTest {
                 profile.getLearningLevel().getValue(),
                 profile.getDailyGoalWords(),
                 profile.isNotificationsEnabled(),
-                profile.getPreferredLanguage()
+                profile.getPreferredLanguage(),
+                user.getRole()
 
         );
 

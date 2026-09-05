@@ -51,6 +51,10 @@ public class VocabularyService {
         return vocabularyRepository.getVocabularyByUserAndLanguage(userId, language);
     }
 
+    public List<Vocabulary> getTop10VocabularyByUserAndLanguage(String userId, String language) {
+        return vocabularyRepository.getTop10VocabularyByUserAndLanguage(userId, language);
+    }
+
     public List<VocabularyResponse> getUserVocabularies() {
         userService.findByEmail(requestContext.getUserEmail());
         List<Vocabulary> vocabularies= vocabularyRepository.getVocabularyByUserAndLanguage(requestContext.getUserId(), requestContext.getLanguage());

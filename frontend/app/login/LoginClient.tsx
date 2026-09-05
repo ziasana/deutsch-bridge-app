@@ -43,11 +43,13 @@ export default function LoginClient() {
         loginUser(data)
             .then((res) => {
                 if (res?.status === 200) {
-                    login(res.data.data);
-                    router.push("/dashboard");
+                    const profile = res.data.data;
+                    login(profile);
+                    router.push(profile?.role === "ADMIN" ? "/admin" : "/dashboard");
                 }
             })
             .catch((err) => {
+                toast.error(err?.response?.data?.message ?? "Login failed. Please check your credentials.");
                 console.error(err.message);
             })
             .finally(() => setIsLoading(false));

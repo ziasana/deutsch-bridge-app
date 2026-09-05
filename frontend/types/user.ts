@@ -17,4 +17,5 @@ export interface UserProfileType{
     dailyGoalWords?: number
     notificationsEnabled?: boolean
     preferredLanguage?: string
+    role?: string
 }

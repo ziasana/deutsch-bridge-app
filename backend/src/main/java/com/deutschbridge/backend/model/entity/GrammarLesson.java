@@ -2,6 +2,7 @@ package com.deutschbridge.backend.model.entity;
 
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import com.deutschbridge.backend.model.enums.LearningLevel;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.vladmihalcea.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -10,6 +11,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Type;
 
 import java.util.List;
+import java.util.Set;
 
 @Entity(name = "grammarLessons")
 @Data
@@ -29,6 +31,10 @@ public class GrammarLesson{
     @Type(JsonType.class)
     @Column(columnDefinition = "jsonb")
     private List<QuizQuestion> quiz;
+
+    @OneToMany(mappedBy = "lesson")
+    @JsonManagedReference("lesson-progress")
+    private Set<LearningProgress> learningProgresses;
 
     @PrePersist
     public void prePersist() {

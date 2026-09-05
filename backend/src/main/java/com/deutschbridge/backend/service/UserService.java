@@ -2,6 +2,7 @@ package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.exception.UserVerificationException;
+import com.deutschbridge.backend.model.dto.AdminUpdateUserRequest;
 import com.deutschbridge.backend.model.dto.UserDto;
 import com.deutschbridge.backend.model.dto.UserRegistrationRequest;
 import com.deutschbridge.backend.model.entity.User;
@@ -178,6 +179,21 @@ public class UserService {
                 .orElseThrow( ()-> new DataNotFoundException(NOT_FOUND));
         userRepository.deleteByEmail(userDto.getEmail());
         return true;
+    }
+
+    public User findById(String id) throws DataNotFoundException {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new DataNotFoundException(NOT_FOUND));
+    }
+
+    @Transactional
+    public User adminUpdateUser(String id, AdminUpdateUserRequest request) throws DataNotFoundException {
+        User existing = userRepository.findById(id)
+                .orElseThrow(() -> new DataNotFoundException(NOT_FOUND));
+        if (request.displayName() != null) existing.setDisplayName(request.displayName());
+        if (request.role() != null) existing.setRole(request.role());
+        if (request.verified() != null) existing.setVerified(request.verified());
+        return userRepository.save(existing);
     }
 
     public String getLearningLevel(String email) {

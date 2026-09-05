@@ -1,9 +1,11 @@
 package com.deutschbridge.backend.service;
 
+import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.NomenVerbConnectionResponse;
 import com.deutschbridge.backend.model.entity.*;
 import com.deutschbridge.backend.model.enums.LearningLevel;
+import com.deutschbridge.backend.repository.LearningProgressRepository;
 import com.deutschbridge.backend.repository.NomenVerbConnectionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,10 +15,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -25,11 +25,15 @@ import static org.mockito.Mockito.*;
 class NomenVerbConnectionServiceTest {
 
     @Mock private NomenVerbConnectionRepository nomenVerbConnectionRepository;
+    @Mock private LearningProgressRepository learningProgressRepository;
+    @Mock private UserService userService;
+    @Mock private RequestContext requestContext;
 
     @InjectMocks
     private NomenVerbConnectionService nomenVerbConnectionService;
     NomenVerbConnection nomenVerbConnection;
     private LearningProgress learningProgress;
+    private User user;
 
     @BeforeEach
     void setup() {
@@ -44,23 +48,25 @@ class NomenVerbConnectionServiceTest {
         learningProgress = new LearningProgress();
         learningProgress.setId("123");
         learningProgress.setNomenVerb(nomenVerbConnection);
+
+        user = new User();
+        user.setId("u1");
+        user.setEmail("user@example.com");
     }
 
     // ---------------------------------------------------------------
     // findAll
     // ---------------------------------------------------------------
     @Test
-    @DisplayName("findAll -> should return mapped responses")
+    @DisplayName("findAll -> should return responses scoped to the current user's progress")
     void findAll_shouldReturnMappedResponses() {
         // given
-
-        Set<LearningProgress> progresses = new HashSet<>();
-        progresses.add(learningProgress);
-
-        nomenVerbConnection.setLearningProgresses(progresses);
-
         when(nomenVerbConnectionRepository.findAll())
                 .thenReturn(List.of(nomenVerbConnection));
+        when(requestContext.getUserEmail()).thenReturn("user@example.com");
+        when(userService.findByEmail("user@example.com")).thenReturn(user);
+        when(learningProgressRepository.findByUserAndNomenVerbIn(user, List.of(nomenVerbConnection)))
+                .thenReturn(List.of(learningProgress));
 
         // when
         List<NomenVerbConnectionResponse> result =
@@ -69,6 +75,7 @@ class NomenVerbConnectionServiceTest {
         // then
         assertEquals(1, result.size());
         assertEquals("eine Entscheidung treffen", result.get(0).word());
+        assertEquals(1, result.get(0).learningProgresses().size());
 
         verify(nomenVerbConnectionRepository).findAll();
     }

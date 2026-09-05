@@ -21,7 +21,9 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(List.of(frontendURL));
+        // allowedOriginPatterns (rather than a fixed allowedOrigins list) lets any local dev
+        // port work even when the configured frontend_url's port is taken by another project.
+        config.setAllowedOriginPatterns(List.of(frontendURL, "http://localhost:*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true); // ⭐ REQUIRED for cookies
