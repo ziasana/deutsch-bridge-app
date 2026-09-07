@@ -11,18 +11,57 @@ import {
     updateReadingArticle,
     deleteReadingArticle,
     suggestVocabulary,
+    suggestAnnotations,
+    generateQuiz,
+    getArticleQuizForAdmin,
 } from "@/services/adminReadingService";
-import { KeyVocabularyItem, ReadingArticle } from "@/types/reading";
+import { Annotation, AnnotationType, KeyVocabularyItem, ReadingArticle, ReadingQuizQuestion, ReadingQuizQuestionType } from "@/types/reading";
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
+const ANNOTATION_TYPES: AnnotationType[] = ["WORD", "NOMEN_VERB_VERBINDUNG", "REDEWENDUNG"];
+const QUIZ_TYPES: ReadingQuizQuestionType[] = [
+    "HAUPTIDEE",
+    "DETAIL",
+    "VOCAB_CONTEXT",
+    "INFERENCE",
+    "RICHTIG_FALSCH_NICHT_IM_TEXT",
+];
 
 type Mode = "generate" | "paste";
 
-const emptyManualForm = { title: "", topic: "", level: "A2", content: "" };
+const emptyManualForm = { title: "", topic: "", level: "A2", content: "", linkedGroupId: "" };
+
+const emptyAnnotation = (): Annotation => ({
+    id: crypto.randomUUID(),
+    spans: [],
+    surfaceText: "",
+    type: "WORD",
+    lemma: "",
+    pos: null,
+    gender: null,
+    pluralForm: null,
+    translationEn: "",
+    literalTranslation: null,
+    cefrLevel: "A2",
+    exampleSentence: "",
+    known: false,
+});
+
+const emptyQuizQuestion = (): ReadingQuizQuestion => ({
+    id: "",
+    type: "DETAIL",
+    prompt: "",
+    options: [],
+    correctAnswer: "",
+    relatedAnnotationId: null,
+    explanation: "",
+    supportingSentence: "",
+    minLevel: "A1",
+});
 
 export default function AdminReadingPage() {
     const router = useRouter();
@@ -39,7 +78,11 @@ export default function AdminReadingPage() {
 
     const [manualForm, setManualForm] = useState(emptyManualForm);
     const [manualVocab, setManualVocab] = useState<KeyVocabularyItem[]>([]);
+    const [manualAnnotations, setManualAnnotations] = useState<Annotation[]>([]);
+    const [manualQuiz, setManualQuiz] = useState<ReadingQuizQuestion[]>([]);
     const [isSuggesting, setIsSuggesting] = useState(false);
+    const [isSuggestingAnnotations, setIsSuggestingAnnotations] = useState(false);
+    const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
 
     const [editingArticle, setEditingArticle] = useState<ReadingArticle | null>(null);
 
@@ -65,6 +108,8 @@ export default function AdminReadingPage() {
     const resetManualForm = () => {
         setManualForm(emptyManualForm);
         setManualVocab([]);
+        setManualAnnotations([]);
+        setManualQuiz([]);
         setEditingArticle(null);
     };
 
@@ -77,7 +122,7 @@ export default function AdminReadingPage() {
         setIsSaving(true);
         generateReadingArticle({ topic: genTopic, level: genLevel })
             .then(() => {
-                toast.success("Article generated successfully.");
+                toast.success("Article generated. Edit it to add annotations and a quiz.");
                 setGenTopic("");
                 fetchArticles();
             })
@@ -100,17 +145,65 @@ export default function AdminReadingPage() {
             .finally(() => setIsSuggesting(false));
     };
 
+    const runSuggestAnnotations = () => {
+        if (!manualForm.content.trim()) {
+            toast.error("Paste the article content first.");
+            return;
+        }
+        setIsSuggestingAnnotations(true);
+        suggestAnnotations({ content: manualForm.content, level: manualForm.level })
+            .then((res) => {
+                setManualAnnotations(res.data);
+                toast.success("Annotations suggested — review before saving.");
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to suggest annotations."))
+            .finally(() => setIsSuggestingAnnotations(false));
+    };
+
+    const runGenerateQuiz = () => {
+        if (!manualForm.content.trim()) {
+            toast.error("Paste the article content first.");
+            return;
+        }
+        setIsGeneratingQuiz(true);
+        generateQuiz({ content: manualForm.content, level: manualForm.level, annotations: manualAnnotations })
+            .then((res) => {
+                setManualQuiz(res.data);
+                toast.success("Quiz generated — review before saving.");
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to generate quiz."))
+            .finally(() => setIsGeneratingQuiz(false));
+    };
+
     const updateVocabItem = (idx: number, field: "word" | "meaning", value: string) => {
         setManualVocab((prev) => prev.map((v, i) => (i === idx ? { ...v, [field]: value } : v)));
     };
+    const removeVocabItem = (idx: number) => setManualVocab((prev) => prev.filter((_, i) => i !== idx));
+    const addVocabItem = () => setManualVocab((prev) => [...prev, { word: "", meaning: "" }]);
 
-    const removeVocabItem = (idx: number) => {
-        setManualVocab((prev) => prev.filter((_, i) => i !== idx));
+    const updateAnnotation = (idx: number, field: keyof Annotation, value: string) => {
+        setManualAnnotations((prev) =>
+            prev.map((a, i) => (i === idx ? { ...a, [field]: value } : a))
+        );
     };
+    const removeAnnotation = (idx: number) => setManualAnnotations((prev) => prev.filter((_, i) => i !== idx));
+    const addAnnotation = () => setManualAnnotations((prev) => [...prev, emptyAnnotation()]);
 
-    const addVocabItem = () => {
-        setManualVocab((prev) => [...prev, { word: "", meaning: "" }]);
+    const updateQuizQuestion = (idx: number, field: keyof ReadingQuizQuestion, value: string) => {
+        setManualQuiz((prev) => prev.map((q, i) => (i === idx ? { ...q, [field]: value } : q)));
     };
+    const updateQuizOptions = (idx: number, value: string) => {
+        setManualQuiz((prev) =>
+            prev.map((q, i) => (i === idx ? { ...q, options: value.split(";").map((o) => o.trim()) } : q))
+        );
+    };
+    const updateRelatedAnnotation = (idx: number, annotationId: string) => {
+        setManualQuiz((prev) =>
+            prev.map((q, i) => (i === idx ? { ...q, relatedAnnotationId: annotationId || null } : q))
+        );
+    };
+    const removeQuizQuestion = (idx: number) => setManualQuiz((prev) => prev.filter((_, i) => i !== idx));
+    const addQuizQuestion = () => setManualQuiz((prev) => [...prev, emptyQuizQuestion()]);
 
     const startEdit = (article: ReadingArticle) => {
         setEditingArticle(article);
@@ -119,9 +212,16 @@ export default function AdminReadingPage() {
             topic: article.topic,
             level: article.level,
             content: article.content,
+            linkedGroupId: article.linkedGroupId ?? "",
         });
         setManualVocab(article.keyVocabulary);
+        setManualAnnotations(article.annotations ?? []);
+        setManualQuiz([]);
         setMode("paste");
+
+        getArticleQuizForAdmin(article.id)
+            .then((res) => setManualQuiz(res.data))
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load existing quiz."));
     };
 
     const submitManual = (e: React.FormEvent) => {
@@ -137,6 +237,11 @@ export default function AdminReadingPage() {
             level: manualForm.level,
             content: manualForm.content,
             keyVocabulary: manualVocab.filter((v) => v.word.trim() && v.meaning.trim()),
+            annotations: manualAnnotations.filter((a) => a.surfaceText.trim() && a.lemma.trim()),
+            quiz: manualQuiz
+                .filter((q) => q.prompt.trim() && q.correctAnswer.trim())
+                .map((q) => ({ ...q, options: (q.options ?? []).map((o) => o.trim()).filter(Boolean) })),
+            linkedGroupId: manualForm.linkedGroupId.trim() || null,
         };
 
         setIsSaving(true);
@@ -219,9 +324,13 @@ export default function AdminReadingPage() {
                             <Button variant="primary" type="submit" disabled={isSaving}>
                                 {isSaving ? "Generating..." : "Generate article"}
                             </Button>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                After generating, use &quot;Edit&quot; on the article below to add annotations and a
+                                quiz.
+                            </p>
                         </form>
                     ) : (
-                        <form onSubmit={submitManual} className="space-y-4">
+                        <form onSubmit={submitManual} className="space-y-6">
                             {editingArticle && (
                                 <p className="text-sm text-blue-600 dark:text-blue-400">
                                     Editing &quot;{editingArticle.title}&quot; —{" "}
@@ -260,6 +369,21 @@ export default function AdminReadingPage() {
                                         </option>
                                     ))}
                                 </select>
+                            </div>
+                            <div>
+                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                                    Linked group ID (optional)
+                                </label>
+                                <Input
+                                    value={manualForm.linkedGroupId}
+                                    onChange={(e) => setManualForm({ ...manualForm, linkedGroupId: e.target.value })}
+                                    placeholder="e.g. berlin-weekend-story"
+                                    required={false}
+                                />
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Give a simplified article and its authentic version the same group ID so the
+                                    adaptive difficulty loop can suggest the authentic one after strong scores.
+                                </p>
                             </div>
                             <div>
                                 <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
@@ -324,6 +448,222 @@ export default function AdminReadingPage() {
                                 </div>
                             </div>
 
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="text-gray-700 dark:text-gray-300 text-sm">
+                                        Annotations (words, Nomen-Verb-Verbindungen, Redewendungen)
+                                    </label>
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        className="text-xs px-3 py-1"
+                                        disabled={isSuggestingAnnotations}
+                                        onClick={runSuggestAnnotations}
+                                    >
+                                        {isSuggestingAnnotations ? "Suggesting..." : "Suggest annotations"}
+                                    </Button>
+                                </div>
+                                <div className="space-y-3">
+                                    {manualAnnotations.map((a, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 space-y-2"
+                                        >
+                                            <div className="flex gap-2 items-center flex-wrap">
+                                                <select
+                                                    value={a.type}
+                                                    onChange={(e) => updateAnnotation(idx, "type", e.target.value)}
+                                                    className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm"
+                                                >
+                                                    {ANNOTATION_TYPES.map((t) => (
+                                                        <option key={t} value={t}>
+                                                            {t}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <Input
+                                                    value={a.surfaceText}
+                                                    onChange={(e) => updateAnnotation(idx, "surfaceText", e.target.value)}
+                                                    placeholder="Surface text (as in article)"
+                                                    required={false}
+                                                    className="flex-1"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeAnnotation(idx)}
+                                                    className="text-red-500 text-sm px-2"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                            <div className="flex gap-2 flex-wrap">
+                                                <Input
+                                                    value={a.lemma}
+                                                    onChange={(e) => updateAnnotation(idx, "lemma", e.target.value)}
+                                                    placeholder="Lemma (dictionary form)"
+                                                    required={false}
+                                                    className="flex-1"
+                                                />
+                                                <Input
+                                                    value={a.translationEn ?? ""}
+                                                    onChange={(e) => updateAnnotation(idx, "translationEn", e.target.value)}
+                                                    placeholder="Translation"
+                                                    required={false}
+                                                    className="flex-1"
+                                                />
+                                            </div>
+                                            {a.type === "WORD" && (
+                                                <div className="flex gap-2 flex-wrap">
+                                                    <select
+                                                        value={a.gender ?? ""}
+                                                        onChange={(e) => updateAnnotation(idx, "gender", e.target.value)}
+                                                        className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm"
+                                                    >
+                                                        <option value="">no gender</option>
+                                                        <option value="der">der</option>
+                                                        <option value="die">die</option>
+                                                        <option value="das">das</option>
+                                                    </select>
+                                                    <Input
+                                                        value={a.pluralForm ?? ""}
+                                                        onChange={(e) => updateAnnotation(idx, "pluralForm", e.target.value)}
+                                                        placeholder="Plural form"
+                                                        required={false}
+                                                        className="flex-1"
+                                                    />
+                                                </div>
+                                            )}
+                                            {a.type === "REDEWENDUNG" && (
+                                                <Input
+                                                    value={a.literalTranslation ?? ""}
+                                                    onChange={(e) =>
+                                                        updateAnnotation(idx, "literalTranslation", e.target.value)
+                                                    }
+                                                    placeholder="Literal translation"
+                                                    required={false}
+                                                />
+                                            )}
+                                            <Input
+                                                value={a.exampleSentence ?? ""}
+                                                onChange={(e) => updateAnnotation(idx, "exampleSentence", e.target.value)}
+                                                placeholder="Example sentence (from the article)"
+                                                required={false}
+                                            />
+                                        </div>
+                                    ))}
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        className="text-xs px-3 py-1"
+                                        onClick={addAnnotation}
+                                    >
+                                        + Add annotation
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="text-gray-700 dark:text-gray-300 text-sm">
+                                        Quiz (5 questions recommended)
+                                    </label>
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        className="text-xs px-3 py-1"
+                                        disabled={isGeneratingQuiz}
+                                        onClick={runGenerateQuiz}
+                                    >
+                                        {isGeneratingQuiz ? "Generating..." : "Generate quiz"}
+                                    </Button>
+                                </div>
+                                <div className="space-y-3">
+                                    {manualQuiz.map((q, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 space-y-2"
+                                        >
+                                            <div className="flex gap-2 items-center flex-wrap">
+                                                <select
+                                                    value={q.type}
+                                                    onChange={(e) => updateQuizQuestion(idx, "type", e.target.value)}
+                                                    className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm"
+                                                >
+                                                    {QUIZ_TYPES.map((t) => (
+                                                        <option key={t} value={t}>
+                                                            {t}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeQuizQuestion(idx)}
+                                                    className="text-red-500 text-sm px-2 ml-auto"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                            <Input
+                                                value={q.prompt}
+                                                onChange={(e) => updateQuizQuestion(idx, "prompt", e.target.value)}
+                                                placeholder="Question prompt"
+                                                required={false}
+                                            />
+                                            <Input
+                                                value={(q.options ?? []).join("; ")}
+                                                onChange={(e) => updateQuizOptions(idx, e.target.value)}
+                                                placeholder="Options, separated by ;"
+                                                required={false}
+                                            />
+                                            {q.type === "VOCAB_CONTEXT" && (
+                                                <select
+                                                    value={q.relatedAnnotationId ?? ""}
+                                                    onChange={(e) => updateRelatedAnnotation(idx, e.target.value)}
+                                                    className="w-full px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm"
+                                                >
+                                                    <option value="">No related word (won&apos;t suggest saving on a miss)</option>
+                                                    {manualAnnotations
+                                                        .filter((a) => a.lemma.trim())
+                                                        .map((a) => (
+                                                            <option key={a.id} value={a.id}>
+                                                                {a.lemma}
+                                                            </option>
+                                                        ))}
+                                                </select>
+                                            )}
+                                            <Input
+                                                value={q.correctAnswer}
+                                                onChange={(e) => updateQuizQuestion(idx, "correctAnswer", e.target.value)}
+                                                placeholder="Correct answer (must match an option exactly)"
+                                                required={false}
+                                            />
+                                            <Input
+                                                value={q.explanation}
+                                                onChange={(e) => updateQuizQuestion(idx, "explanation", e.target.value)}
+                                                placeholder="Explanation (shown after answering)"
+                                                required={false}
+                                            />
+                                            <Input
+                                                value={q.supportingSentence}
+                                                onChange={(e) =>
+                                                    updateQuizQuestion(idx, "supportingSentence", e.target.value)
+                                                }
+                                                placeholder="Supporting sentence from the article"
+                                                required={false}
+                                            />
+                                        </div>
+                                    ))}
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        className="text-xs px-3 py-1"
+                                        onClick={addQuizQuestion}
+                                    >
+                                        + Add question
+                                    </Button>
+                                </div>
+                            </div>
+
                             <Button variant="primary" type="submit" disabled={isSaving}>
                                 {isSaving ? "Saving..." : editingArticle ? "Save changes" : "Save article"}
                             </Button>
@@ -345,6 +685,7 @@ export default function AdminReadingPage() {
                                         <th className="px-6 py-3">Title</th>
                                         <th className="px-6 py-3">Level</th>
                                         <th className="px-6 py-3">Vocabulary</th>
+                                        <th className="px-6 py-3">Annotations</th>
                                         <th className="px-6 py-3">Actions</th>
                                     </tr>
                                 </thead>
@@ -359,6 +700,9 @@ export default function AdminReadingPage() {
                                             </td>
                                             <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
                                                 {article.keyVocabulary.length} words
+                                            </td>
+                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
+                                                {article.annotations?.length ?? 0}
                                             </td>
                                             <td className="px-6 py-4 space-x-2 whitespace-nowrap">
                                                 <Button
@@ -380,7 +724,7 @@ export default function AdminReadingPage() {
                                     ))}
                                     {articles.length === 0 && (
                                         <tr>
-                                            <td colSpan={4} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                                            <td colSpan={5} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
                                                 No reading articles found.
                                             </td>
                                         </tr>

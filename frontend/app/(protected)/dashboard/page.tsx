@@ -9,6 +9,7 @@ import {
     Layers,
     SpellCheck,
     Newspaper,
+    Brain,
 } from "lucide-react";
 import Link from "next/link";
 import useAuthStore from "@/store/useAuthStore";
@@ -52,6 +53,13 @@ const DashboardPage = () => {
                 "Read articles at your level and learn new words in context.",
             icon: Newspaper,
             link: "/dashboard/reading",
+        },
+        {
+            title: "Word Review",
+            description:
+                "Review the words and phrases you saved while reading, spaced out over time.",
+            icon: Brain,
+            link: "/dashboard/reading/review",
         },
         {
             title: "Exercises",

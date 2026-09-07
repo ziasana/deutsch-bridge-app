@@ -92,7 +92,7 @@ class LearningProgressServiceTest {
         GrammarLesson lesson = new GrammarLesson();
 
         LearningProgressRequest request =
-                new LearningProgressRequest("lesson1", null, null, true);
+                new LearningProgressRequest("lesson1", null, null, null, true);
 
         when(requestContext.getUserEmail()).thenReturn(user.getEmail());
         when(userService.findByEmail(user.getEmail())).thenReturn(user);
@@ -117,7 +117,7 @@ class LearningProgressServiceTest {
         LearningProgress existing = new LearningProgress();
 
         LearningProgressRequest request =
-                new LearningProgressRequest("lesson1", null, null, false);
+                new LearningProgressRequest("lesson1", null, null, null, false);
 
         when(requestContext.getUserEmail()).thenReturn(user.getEmail());
         when(userService.findByEmail(user.getEmail())).thenReturn(user);
@@ -141,7 +141,7 @@ class LearningProgressServiceTest {
         NomenVerbConnection nv = new NomenVerbConnection();
 
         LearningProgressRequest request =
-                new LearningProgressRequest(null, "nv1", null, true);
+                new LearningProgressRequest(null, "nv1", null, null, true);
 
         when(requestContext.getUserEmail()).thenReturn(user.getEmail());
         when(userService.findByEmail(user.getEmail())).thenReturn(user);
@@ -166,7 +166,7 @@ class LearningProgressServiceTest {
         LearningProgress existing = new LearningProgress();
 
         LearningProgressRequest request =
-                new LearningProgressRequest(null, "nv1", null, false);
+                new LearningProgressRequest(null, "nv1", null, null, false);
 
         when(requestContext.getUserEmail()).thenReturn(user.getEmail());
         when(userService.findByEmail(user.getEmail())).thenReturn(user);

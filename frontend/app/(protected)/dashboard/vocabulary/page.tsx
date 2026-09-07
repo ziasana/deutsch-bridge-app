@@ -6,14 +6,17 @@ import EditVocabularyModal from "@/componenets/EditVocabularyModal";
 import {useEffect, useState} from "react";
 import {DeleteVocabularyType, VocabularyPracticeType, VocabularyType} from "@/types/vocabulary";
 import {deleteVocabulary, getUserVocabularyWithPractice} from "@/services/vocabularyService";
+import {getUserVocab, removeVocab} from "@/services/vocabService";
 import Loading from "@/componenets/Loading";
 import AddVocabularyModal from "@/componenets/AddVocabularyModal";
 import CircularProgress from "@/componenets/CircularProgress";
 import { useRouter } from "next/navigation";
 
+type DisplayVocabItem = VocabularyPracticeType & { source: "practice" | "dictionary" };
+
 export default function VocabularyPage() {
     const router = useRouter();
-    const [vocabList, setVocabList] = useState<VocabularyPracticeType[]>([]);
+    const [vocabList, setVocabList] = useState<DisplayVocabItem[]>([]);
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -22,12 +25,31 @@ export default function VocabularyPage() {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const ITEMS_PER_PAGE = 5;
     const getList = () => {
-        getUserVocabularyWithPractice()
-            .then((data) => {
-                    setVocabList(data?.data)
-                }
-            )
-            .catch((err) => console.error(err))
+        setLoading(true);
+        Promise.all([
+            getUserVocabularyWithPractice().then((res) => res.data ?? []).catch((err) => {
+                console.error(err);
+                return [];
+            }),
+            getUserVocab().then((res) => res.data ?? []).catch((err) => {
+                console.error(err);
+                return [];
+            }),
+        ])
+            .then(([practiceWords, dictionaryWords]) => {
+                const fromPractice: DisplayVocabItem[] = practiceWords.map((v) => ({
+                    ...v,
+                    source: "practice",
+                }));
+                const fromDictionary: DisplayVocabItem[] = dictionaryWords.map((v) => ({
+                    id: v.entryId,
+                    word: v.article ? `${v.article} ${v.lemma}` : v.lemma,
+                    example: "",
+                    vocabularyContents: v.meaning ? [{ language: "EN", meaning: v.meaning }] : [],
+                    source: "dictionary",
+                }));
+                setVocabList([...fromDictionary, ...fromPractice]);
+            })
             .finally(() => setLoading(false));
     };
 
@@ -37,13 +59,14 @@ export default function VocabularyPage() {
 
     if (loading) return <Loading/>;
 
-    const handleDelete = (id: VocabularyType["id"]) => {
+    const handleDelete = (item: DisplayVocabItem) => {
         setLoading(true);
         if (confirm("Are you sure you want to delete this word?")) {
-            const deleteData: DeleteVocabularyType = {
-                id: id
-            }
-            deleteVocabulary(deleteData)
+            const deleteRequest =
+                item.source === "dictionary"
+                    ? removeVocab(item.id as string)
+                    : deleteVocabulary({ id: item.id } as DeleteVocabularyType);
+            deleteRequest
                 .then(() => {
                     toast.success("Vocabulary deleted!")
                 })
@@ -173,8 +196,12 @@ export default function VocabularyPage() {
                                         </>
                                     )}
                                 </div>
-                                <div className="flex gap-2 mt-2 md:mt-0">
-                                    {vocab.vocabularyPractice?.[0]?.successRate == null ?
+                                <div className="flex gap-2 mt-2 md:mt-0 items-center">
+                                    {vocab.source === "dictionary" ? (
+                                        <span className="text-xs px-2 py-1 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                                            From reading
+                                        </span>
+                                    ) : vocab.vocabularyPractice?.[0]?.successRate == null ?
                                         <div className="relative w-[60px] h-[60px]">
                                             <CircularProgress value={0}/>
                                             <span
@@ -193,31 +220,33 @@ export default function VocabularyPage() {
                                         )
                                     }
 
-                                    <button
-                                        onClick={() => {
-                                            setSelectedWord(vocab);
-                                            setIsEditModalOpen(true);
-                                        }}
-                                        className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition"
-                                        title="Edit"
-                                    >
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            className="h-4 w-4"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
+                                    {vocab.source !== "dictionary" && (
+                                        <button
+                                            onClick={() => {
+                                                setSelectedWord(vocab);
+                                                setIsEditModalOpen(true);
+                                            }}
+                                            className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition"
+                                            title="Edit"
                                         >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M15.232 5.232l3.536 3.536M4 20h4l11-11-4-4-11 11v4z"
-                                            />
-                                        </svg>
-                                    </button>
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                className="h-4 w-4"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M15.232 5.232l3.536 3.536M4 20h4l11-11-4-4-11 11v4z"
+                                                />
+                                            </svg>
+                                        </button>
+                                    )}
                                     <button
-                                        onClick={() => handleDelete(vocab.id)}
+                                        onClick={() => handleDelete(vocab)}
                                         className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
                                         title="Delete"
                                     >

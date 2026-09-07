@@ -91,6 +91,30 @@ public class OllamaService {
         return callOllama(messages);
     }
 
+    public String generateAnnotations(String content, LearningLevel level) {
+        List<OllamaMessage> messages = List.of(
+                new OllamaMessage("system", PromptLibrary.generateAnnotations(content, level.name())),
+                new OllamaMessage("user", content)
+        );
+        return callOllama(messages);
+    }
+
+    public String generateReadingQuiz(String content, LearningLevel level) {
+        List<OllamaMessage> messages = List.of(
+                new OllamaMessage("system", PromptLibrary.generateReadingQuiz(content, level.name())),
+                new OllamaMessage("user", content)
+        );
+        return callOllama(messages);
+    }
+
+    public String lemmatizeWords(List<String> words) {
+        List<OllamaMessage> messages = List.of(
+                new OllamaMessage("system", PromptLibrary.lemmatizeWords(words)),
+                new OllamaMessage("user", String.join("\n", words))
+        );
+        return callOllama(messages);
+    }
+
     private String callOllama(List<OllamaMessage> messages) {
         OllamaRequest request = new OllamaRequest(messages);
         HttpEntity<OllamaRequest> entity = new HttpEntity<>(request, headers);
