@@ -16,7 +16,6 @@ export default function PracticePage() {
     const [finished, setFinished] = useState(false)
 
     const getList = () => {
-        setLoading(true)
         getUserVocabularyForPractice()
             .then((data) => {
                 setVocabularies(data?.data)
@@ -60,6 +59,7 @@ export default function PracticePage() {
         setIndex(0)
         setKnownCount(0)
         setFinished(false)
+        setLoading(true)
         getList();
     }
 

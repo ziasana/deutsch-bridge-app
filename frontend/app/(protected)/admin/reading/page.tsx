@@ -87,7 +87,6 @@ export default function AdminReadingPage() {
     const [editingArticle, setEditingArticle] = useState<ReadingArticle | null>(null);
 
     const fetchArticles = useCallback(() => {
-        setIsLoading(true);
         getReadingArticles()
             .then((res) => setArticles(res.data))
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load reading articles."))

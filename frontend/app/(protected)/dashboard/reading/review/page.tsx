@@ -24,7 +24,6 @@ export default function ReadingReviewPage() {
     const [finished, setFinished] = useState(false);
 
     const loadQueue = () => {
-        setLoading(true);
         getReviewQueue()
             .then((res) => setQueue(res.data))
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load your review queue."))
@@ -61,6 +60,7 @@ export default function ReadingReviewPage() {
         setCorrectCount(0);
         setFinished(false);
         setShowAnswer(false);
+        setLoading(true);
         loadQueue();
     };
 

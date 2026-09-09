@@ -25,7 +25,6 @@ export default function VocabularyPage() {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const ITEMS_PER_PAGE = 5;
     const getList = () => {
-        setLoading(true);
         Promise.all([
             getUserVocabularyWithPractice().then((res) => res.data ?? []).catch((err) => {
                 console.error(err);
@@ -89,7 +88,7 @@ export default function VocabularyPage() {
     // Update only the edited item
     const handleWordUpdated = (updatedWord: VocabularyType) => {
         setVocabList((prev) =>
-            prev.map((w) => (w.id === updatedWord.id ? updatedWord : w))
+            prev.map((w) => (w.id === updatedWord.id ? { ...updatedWord, source: "practice" as const } : w))
         );
     };
 

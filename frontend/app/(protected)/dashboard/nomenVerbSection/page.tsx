@@ -93,6 +93,7 @@ export default function NomenVerbAccordionDemo() {
                   ...nv,
                   learningProgresses: [
                     {
+                      id: nv.learningProgresses?.[0]?.id ?? nv.id,
                       learned: isLearned,
                     },
                   ],

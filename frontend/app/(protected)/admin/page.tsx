@@ -25,7 +25,6 @@ export default function AdminPage() {
     const [isSaving, setIsSaving] = useState(false);
 
     const fetchUsers = useCallback(() => {
-        setIsLoading(true);
         getAllUsers()
             .then((res) => setUsers(res.data))
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load users."))
