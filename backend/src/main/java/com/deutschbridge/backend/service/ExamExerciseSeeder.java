@@ -172,7 +172,7 @@ public class ExamExerciseSeeder {
     }
 
     private ExamPassage passage(String label, String content) {
-        ExamPassage passage = new ExamPassage(null, label, content.strip());
+        ExamPassage passage = new ExamPassage(null, label, content.strip(), null);
         return passage.ensureId();
     }
 

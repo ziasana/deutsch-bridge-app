@@ -60,7 +60,7 @@ public class ExamAttemptService {
         List<ExamQuestion> questions = exercise.getQuestions() != null ? exercise.getQuestions() : List.of();
 
         List<ExamPassagePublic> passagesPublic = passages.stream()
-                .map(p -> new ExamPassagePublic(p.getId(), p.getLabel(), p.getContent()))
+                .map(p -> new ExamPassagePublic(p.getId(), p.getLabel(), p.getContent(), p.getImageUrl()))
                 .toList();
         List<ExamQuestionPublic> questionsPublic = questions.stream()
                 .map(q -> new ExamQuestionPublic(q.getId(), q.getTaskType(), q.getPrompt(), q.getSectionIndex(), q.getOptions()))

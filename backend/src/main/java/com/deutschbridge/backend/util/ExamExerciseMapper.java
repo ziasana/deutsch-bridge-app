@@ -48,7 +48,7 @@ public class ExamExerciseMapper {
                 exercise.getTaskType() != null ? exercise.getTaskType().name() : null,
                 exercise.getLevel() != null ? exercise.getLevel().getValue() : null,
                 exercise.getPartNumber(),
-                passages.stream().map(p -> new ExamPassagePublic(p.getId(), p.getLabel(), p.getContent())).toList(),
+                passages.stream().map(p -> new ExamPassagePublic(p.getId(), p.getLabel(), p.getContent(), p.getImageUrl())).toList(),
                 questions.stream()
                         .map(q -> new ExamQuestionPublic(q.getId(), q.getTaskType(), q.getPrompt(), q.getSectionIndex(), q.getOptions()))
                         .toList(),

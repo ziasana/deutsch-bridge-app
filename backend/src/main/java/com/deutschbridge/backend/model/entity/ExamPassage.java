@@ -11,7 +11,12 @@ import lombok.NoArgsConstructor;
 public class ExamPassage {
     private String id;
     private String label;
+
+    /** HTML content (rich text: bold/italic/alignment), authored via the admin's rich-text editor. */
     private String content;
+
+    /** Relative URL under /uploads (e.g. "/uploads/exam-passages/xyz.jpg") - null if no image was attached. */
+    private String imageUrl;
 
     public ExamPassage ensureId() {
         if (this.id == null || this.id.isBlank()) {

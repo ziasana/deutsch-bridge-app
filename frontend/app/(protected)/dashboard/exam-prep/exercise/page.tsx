@@ -43,6 +43,22 @@ function HeadlinesView({ answerOptions }: Readonly<{ answerOptions: string[] }>)
     );
 }
 
+function PassageBody({ passage }: Readonly<{ passage: ExamPassagePublic }>) {
+    return (
+        <>
+            {passage.imageUrl && (
+                <img src={passage.imageUrl} alt="" className="max-w-full rounded-lg mb-2" />
+            )}
+            {passage.content && (
+                <div
+                    className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed [&_p]:my-1"
+                    dangerouslySetInnerHTML={{ __html: passage.content }}
+                />
+            )}
+        </>
+    );
+}
+
 function PassagesView({ passages, taskType }: Readonly<{ passages: ExamPassagePublic[]; taskType: string }>) {
     if (passages.length === 0) return null;
 
@@ -50,9 +66,7 @@ function PassagesView({ passages, taskType }: Readonly<{ passages: ExamPassagePu
         return (
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-2">
                 {passages.map((p) => (
-                    <p key={p.id} className="text-gray-800 dark:text-gray-200 whitespace-pre-line leading-relaxed">
-                        {p.content}
-                    </p>
+                    <PassageBody key={p.id} passage={p} />
                 ))}
             </div>
         );
@@ -63,7 +77,7 @@ function PassagesView({ passages, taskType }: Readonly<{ passages: ExamPassagePu
             {passages.map((p) => (
                 <div key={p.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4">
                     <p className="font-semibold text-gray-900 dark:text-white mb-1">{p.label}</p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{p.content}</p>
+                    <PassageBody passage={p} />
                 </div>
             ))}
         </div>
@@ -264,7 +278,7 @@ function ExerciseQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRespo
             {currentPassage && (
                 <div className="rounded-lg border-2 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/20 p-4">
                     <p className="font-semibold text-gray-900 dark:text-white mb-1">{currentPassage.label}</p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{currentPassage.content}</p>
+                    <PassageBody passage={currentPassage} />
                 </div>
             )}
 

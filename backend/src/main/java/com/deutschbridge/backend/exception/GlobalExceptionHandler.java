@@ -50,6 +50,16 @@ public class GlobalExceptionHandler  {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
     }
 
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ResponseException> handleIllegalArgumentException(IllegalArgumentException e) {
+        ResponseException responseException = new ResponseException(
+                e.getMessage(),
+                HttpStatus.BAD_REQUEST.value()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseException);
+    }
+
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
     @ExceptionHandler(MailServerException.class)
     public ResponseEntity<ResponseException> handleMailServerException(){

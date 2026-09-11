@@ -15,6 +15,7 @@ backend/.mvn
 backend/node_modules
 backend/package.json
 backend/package-lock.json
+/backend/uploads/
 
 # Claude Code session-local tooling (launch configs, worktrees)
 .claude/

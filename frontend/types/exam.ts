@@ -9,7 +9,9 @@ export type ExamTaskType = "MATCHING" | "MULTIPLE_CHOICE" | "TRUE_FALSE_NOT_GIVE
 export interface ExamPassage {
     id: string;
     label: string;
+    /** HTML content authored with the rich-text editor. */
     content: string;
+    imageUrl: string | null;
 }
 
 export interface ExamQuestion {
@@ -47,6 +49,7 @@ export interface ExamPassagePublic {
     id: string;
     label: string;
     content: string;
+    imageUrl: string | null;
 }
 
 export interface ExamQuestionPublic {

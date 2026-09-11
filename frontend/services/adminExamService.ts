@@ -1,6 +1,14 @@
 import api from "./api";
 import { ExamExerciseManualRequest, ExamExerciseResponse } from "@/types/exam";
 
+export const uploadExamPassageImage = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return await api.post<{ url: string }>("/admin/exam/upload-image", formData, {
+        headers: { "Content-Type": undefined },
+    });
+};
+
 export const getExamExercisesForAdmin = async () => {
     return await api.get<ExamExerciseResponse[]>("/admin/exam");
 };

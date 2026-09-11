@@ -18,6 +18,11 @@ spring:
   lifecycle:
     timeout-per-shutdown-phase: 20s
 
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+
 
     #Postgresql setting
   datasource:
@@ -78,3 +83,7 @@ jwt:
     verification-token: 86400000  # 1 day in ms (1000*60*60*24)
 
 frontend_url: ${FRONTEND_URI}
+
+app:
+  upload:
+    dir: ${UPLOAD_DIR:uploads}

@@ -3,10 +3,13 @@ package com.deutschbridge.backend.controller;
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.ExamExerciseManualRequest;
 import com.deutschbridge.backend.model.dto.ExamExerciseResponse;
+import com.deutschbridge.backend.model.dto.ImageUploadResponse;
 import com.deutschbridge.backend.service.ExamExerciseService;
+import com.deutschbridge.backend.service.FileStorageService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -16,9 +19,16 @@ import java.util.List;
 public class AdminExamController {
 
     private final ExamExerciseService examExerciseService;
+    private final FileStorageService fileStorageService;
 
-    public AdminExamController(ExamExerciseService examExerciseService) {
+    public AdminExamController(ExamExerciseService examExerciseService, FileStorageService fileStorageService) {
         this.examExerciseService = examExerciseService;
+        this.fileStorageService = fileStorageService;
+    }
+
+    @PostMapping(value = "/upload-image", consumes = "multipart/form-data")
+    public ResponseEntity<ImageUploadResponse> uploadImage(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(new ImageUploadResponse(fileStorageService.storeExamPassageImage(file)));
     }
 
     @GetMapping

@@ -40,7 +40,8 @@ public class SecurityConfig {
                                         "/api/auth/**",
                                         "/api/test/**",
                                         "/api/welcome",
-                                        "/req/**"
+                                        "/req/**",
+                                        "/uploads/**"
                                 ).permitAll()
                                // .requestMatchers("/api/test/authenticate").permitAll()
                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")

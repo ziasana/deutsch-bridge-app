@@ -9,11 +9,13 @@ import {
     createExamExercise,
     updateExamExercise,
     deleteExamExercise,
+    uploadExamPassageImage,
 } from "@/services/adminExamService";
 import { ExamExerciseResponse, ExamPassage, ExamQuestion, ExamTaskType } from "@/types/exam";
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
+import RichTextEditor from "@/componenets/RichTextEditor";
 import { Badge } from "@/componenets/ui/badge";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1"];
@@ -30,10 +32,13 @@ const emptyForm = {
     published: true,
 };
 
+const hasPassageContent = (p: ExamPassage) => Boolean(p.content.replace(/<[^>]*>/g, "").trim() || p.imageUrl);
+
 const emptyPassage = (index: number): ExamPassage => ({
     id: crypto.randomUUID(),
     label: `Text ${index + 1}`,
     content: "",
+    imageUrl: null,
 });
 
 const emptyQuestion = (taskType: ExamTaskType): ExamQuestion => ({
@@ -60,6 +65,7 @@ export default function AdminExamPrepPage() {
     const [questions, setQuestions] = useState<ExamQuestion[]>([]);
     const [answerOptions, setAnswerOptions] = useState<string[]>([]);
     const [editingExercise, setEditingExercise] = useState<ExamExerciseResponse | null>(null);
+    const [uploadingPassageImage, setUploadingPassageImage] = useState<number | null>(null);
 
     const fetchExercises = useCallback(() => {
         getExamExercisesForAdmin()
@@ -97,6 +103,19 @@ export default function AdminExamPrepPage() {
     };
     const removePassage = (idx: number) => setPassages((prev) => prev.filter((_, i) => i !== idx));
     const addPassage = () => setPassages((prev) => [...prev, emptyPassage(prev.length)]);
+
+    const uploadPassageImage = (idx: number, file: File) => {
+        setUploadingPassageImage(idx);
+        uploadExamPassageImage(file)
+            .then((res) => {
+                setPassages((prev) => prev.map((p, i) => (i === idx ? { ...p, imageUrl: res.data.url } : p)));
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to upload image."))
+            .finally(() => setUploadingPassageImage(null));
+    };
+    const removePassageImage = (idx: number) => {
+        setPassages((prev) => prev.map((p, i) => (i === idx ? { ...p, imageUrl: null } : p)));
+    };
 
     const updateQuestion = (idx: number, field: keyof ExamQuestion, value: string) => {
         setQuestions((prev) => prev.map((q, i) => (i === idx ? { ...q, [field]: value } : q)));
@@ -148,7 +167,7 @@ export default function AdminExamPrepPage() {
         const passageIndexRemap = new Map<number, number>();
         const cleanedPassages = passages
             .map((p, originalIdx) => ({ p, originalIdx }))
-            .filter(({ p }) => p.content.trim())
+            .filter(({ p }) => hasPassageContent(p))
             .map(({ p, originalIdx }, newIdx) => {
                 passageIndexRemap.set(originalIdx, newIdx);
                 return { ...p, label: p.label.trim() || `Text ${newIdx + 1}` };
@@ -317,13 +336,46 @@ export default function AdminExamPrepPage() {
                                             ✕
                                         </button>
                                     </div>
-                                    <textarea
+                                    <RichTextEditor
                                         value={p.content}
-                                        onChange={(e) => updatePassage(idx, "content", e.target.value)}
+                                        onChange={(html) => updatePassage(idx, "content", html)}
                                         placeholder="Passage text"
-                                        rows={4}
-                                        className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                                     />
+
+                                    <div className="flex items-center gap-4 pt-1">
+                                        {p.imageUrl && (
+                                            <img
+                                                src={p.imageUrl}
+                                                alt=""
+                                                className="w-24 h-16 object-cover rounded-lg border border-gray-300 dark:border-gray-700"
+                                            />
+                                        )}
+                                        <div className="flex flex-col gap-1">
+                                            <input
+                                                type="file"
+                                                accept="image/jpeg,image/png,image/webp"
+                                                disabled={uploadingPassageImage === idx}
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    e.target.value = "";
+                                                    if (file) uploadPassageImage(idx, file);
+                                                }}
+                                                className="text-xs text-gray-600 dark:text-gray-300"
+                                            />
+                                            {p.imageUrl && (
+                                                <button
+                                                    type="button"
+                                                    className="text-xs text-left underline text-gray-500 dark:text-gray-400 w-fit"
+                                                    onClick={() => removePassageImage(idx)}
+                                                >
+                                                    Remove image
+                                                </button>
+                                            )}
+                                            {uploadingPassageImage === idx && (
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">Uploading...</span>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                             <Button type="button" variant="secondary" className="text-xs px-3 py-1" onClick={addPassage}>
