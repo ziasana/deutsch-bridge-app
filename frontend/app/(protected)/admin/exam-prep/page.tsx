@@ -30,7 +30,11 @@ const emptyForm = {
     published: true,
 };
 
-const emptyPassage = (): ExamPassage => ({ id: crypto.randomUUID(), label: "", content: "" });
+const emptyPassage = (index: number): ExamPassage => ({
+    id: crypto.randomUUID(),
+    label: `Text ${index + 1}`,
+    content: "",
+});
 
 const emptyQuestion = (taskType: ExamTaskType): ExamQuestion => ({
     id: "",
@@ -92,7 +96,7 @@ export default function AdminExamPrepPage() {
         setPassages((prev) => prev.map((p, i) => (i === idx ? { ...p, [field]: value } : p)));
     };
     const removePassage = (idx: number) => setPassages((prev) => prev.filter((_, i) => i !== idx));
-    const addPassage = () => setPassages((prev) => [...prev, emptyPassage()]);
+    const addPassage = () => setPassages((prev) => [...prev, emptyPassage(prev.length)]);
 
     const updateQuestion = (idx: number, field: keyof ExamQuestion, value: string) => {
         setQuestions((prev) => prev.map((q, i) => (i === idx ? { ...q, [field]: value } : q)));
@@ -139,17 +143,29 @@ export default function AdminExamPrepPage() {
             return;
         }
 
+        // Passages with no content are dropped, but that shifts array indices - remap each
+        // question's sectionIndex (which points into the passages array) so links survive.
+        const passageIndexRemap = new Map<number, number>();
+        const cleanedPassages = passages
+            .map((p, originalIdx) => ({ p, originalIdx }))
+            .filter(({ p }) => p.content.trim())
+            .map(({ p, originalIdx }, newIdx) => {
+                passageIndexRemap.set(originalIdx, newIdx);
+                return { ...p, label: p.label.trim() || `Text ${newIdx + 1}` };
+            });
+
         const payload = {
             title: form.title,
             section: "LESEVERSTEHEN" as const,
             taskType: form.taskType,
             level: form.level,
             partNumber: form.partNumber.trim() ? Number(form.partNumber) : null,
-            passages: passages.filter((p) => p.label.trim() && p.content.trim()),
+            passages: cleanedPassages,
             questions: questions
                 .filter((q) => q.prompt.trim())
                 .map((q) => ({
                     ...q,
+                    sectionIndex: q.sectionIndex != null ? passageIndexRemap.get(q.sectionIndex) ?? null : null,
                     options: q.options ? q.options.map((o) => o.trim()).filter(Boolean) : null,
                 })),
             answerOptions: answerOptions.map((o) => o.trim()).filter(Boolean),
