@@ -33,7 +33,11 @@ const emptyForm = {
     published: true,
 };
 
-const hasPassageContent = (p: ExamPassage) => Boolean(p.content.replace(/<[^>]*>/g, "").trim() || p.imageUrl);
+const hasPassageContent = (p: ExamPassage) => {
+    const hasText = p.content.replace(/<[^>]*>/g, "").trim().length > 0;
+    const hasEmbeddedImage = /<img[\s>]/i.test(p.content);
+    return hasText || hasEmbeddedImage || Boolean(p.imageUrl);
+};
 
 const emptyPassage = (index: number): ExamPassage => ({
     id: crypto.randomUUID(),
