@@ -117,6 +117,18 @@ export default function AdminExamPrepPage() {
         setPassages((prev) => prev.map((p, i) => (i === idx ? { ...p, imageUrl: null } : p)));
     };
 
+    /** Used by RichTextEditor for both the toolbar's "insert image" button and pasted images. */
+    const uploadInlineImage = async (file: File) => {
+        try {
+            const res = await uploadExamPassageImage(file);
+            return res.data.url;
+        } catch (err) {
+            const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+            toast.error(message ?? "Failed to upload image.");
+            throw err;
+        }
+    };
+
     const updateQuestion = (idx: number, field: keyof ExamQuestion, value: string) => {
         setQuestions((prev) => prev.map((q, i) => (i === idx ? { ...q, [field]: value } : q)));
     };
@@ -340,6 +352,7 @@ export default function AdminExamPrepPage() {
                                         value={p.content}
                                         onChange={(html) => updatePassage(idx, "content", html)}
                                         placeholder="Passage text"
+                                        onUploadImage={uploadInlineImage}
                                     />
 
                                     <div className="flex items-center gap-4 pt-1">
