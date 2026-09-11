@@ -10,6 +10,7 @@ import {
     SpellCheck,
     Newspaper,
     Brain,
+    GraduationCap,
 } from "lucide-react";
 import Link from "next/link";
 import useAuthStore from "@/store/useAuthStore";
@@ -53,6 +54,13 @@ const DashboardPage = () => {
                 "Read articles at your level and learn new words in context.",
             icon: Newspaper,
             link: "/dashboard/reading",
+        },
+        {
+            title: "Prüfungsvorbereitung",
+            description:
+                "Practice real exam-style Leseverstehen tasks, section by section.",
+            icon: GraduationCap,
+            link: "/dashboard/exam-prep",
         },
         {
             title: "Word Review",

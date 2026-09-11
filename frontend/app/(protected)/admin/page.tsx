@@ -93,9 +93,14 @@ export default function AdminPage() {
                             Manage users, roles, and account access.
                         </p>
                     </div>
-                    <Button variant="secondary" onClick={() => router.push("/admin/reading")}>
-                        Manage Reading Articles
-                    </Button>
+                    <div className="flex gap-3">
+                        <Button variant="secondary" onClick={() => router.push("/admin/reading")}>
+                            Manage Reading Articles
+                        </Button>
+                        <Button variant="secondary" onClick={() => router.push("/admin/exam-prep")}>
+                            Manage Exam Prep
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
