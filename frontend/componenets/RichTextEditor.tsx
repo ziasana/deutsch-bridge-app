@@ -7,6 +7,7 @@ import Underline from "@tiptap/extension-underline";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import { useEffect, useRef } from "react";
+import { resolveUploadUrl, resolveUploadUrlsInHtml, stripBackendOrigin } from "@/lib/backendOrigin";
 
 function ToolbarButton({
     active,
@@ -38,11 +39,15 @@ function ToolbarButton({
     );
 }
 
-/** Uploads a single File and inserts it as an image node at the current cursor position. */
+/**
+ * Uploads a single File and inserts it as an image node at the current cursor position.
+ * The uploaded URL is backend-relative (like every other upload in the app); resolve it to
+ * absolute here so it renders while editing - onUpdate strips it back off before it's saved.
+ */
 async function insertUploadedImage(editor: Editor, file: File, onUploadImage: (file: File) => Promise<string>) {
     try {
         const url = await onUploadImage(file);
-        editor.chain().focus().setImage({ src: url }).run();
+        editor.chain().focus().setImage({ src: resolveUploadUrl(url) ?? url }).run();
     } catch {
         // Upload failures are surfaced by onUploadImage's own caller (e.g. a toast) - nothing more to do here.
     }
@@ -70,7 +75,7 @@ async function uploadEmbeddedImages(editor: Editor, onUploadImage: (file: File) 
             editor.commands.command(({ tr }) => {
                 const node = tr.doc.nodeAt(pos);
                 if (!node) return false;
-                tr.setNodeMarkup(pos, undefined, { ...node.attrs, src: url });
+                tr.setNodeMarkup(pos, undefined, { ...node.attrs, src: resolveUploadUrl(url) ?? url });
                 return true;
             });
         } catch {
@@ -173,7 +178,7 @@ export default function RichTextEditor({
             Image.configure({ allowBase64: true, HTMLAttributes: { class: "max-w-full rounded-lg" } }),
             Placeholder.configure({ placeholder: placeholder ?? "" }),
         ],
-        content: value,
+        content: resolveUploadUrlsInHtml(value),
         immediatelyRender: false,
         editorProps: {
             attributes: {
@@ -196,13 +201,13 @@ export default function RichTextEditor({
                 return false;
             },
         },
-        onUpdate: ({ editor }) => onChange(editor.getHTML()),
+        onUpdate: ({ editor }) => onChange(stripBackendOrigin(editor.getHTML())),
     });
 
     useEffect(() => {
         if (!editor) return;
-        if (value !== editor.getHTML()) {
-            editor.commands.setContent(value, { emitUpdate: false });
+        if (value !== stripBackendOrigin(editor.getHTML())) {
+            editor.commands.setContent(resolveUploadUrlsInHtml(value), { emitUpdate: false });
         }
         // Only re-syncs when the external value changes out from under us (e.g. loading a
         // different passage into the form) - not on every keystroke, which would fight the cursor.

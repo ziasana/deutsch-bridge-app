@@ -17,6 +17,7 @@ import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
 import RichTextEditor from "@/componenets/RichTextEditor";
 import { Badge } from "@/componenets/ui/badge";
+import { resolveUploadUrl } from "@/lib/backendOrigin";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1"];
 const TASK_TYPES: ExamTaskType[] = ["MATCHING", "MULTIPLE_CHOICE", "TRUE_FALSE_NOT_GIVEN"];
@@ -358,7 +359,7 @@ export default function AdminExamPrepPage() {
                                     <div className="flex items-center gap-4 pt-1">
                                         {p.imageUrl && (
                                             <img
-                                                src={p.imageUrl}
+                                                src={resolveUploadUrl(p.imageUrl) ?? undefined}
                                                 alt=""
                                                 className="w-24 h-16 object-cover rounded-lg border border-gray-300 dark:border-gray-700"
                                             />

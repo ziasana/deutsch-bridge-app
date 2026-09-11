@@ -16,6 +16,7 @@ import {
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
 import Button from "@/componenets/Button";
+import { resolveUploadUrl, resolveUploadUrlsInHtml } from "@/lib/backendOrigin";
 
 const TFN_OPTIONS = [
     { value: "RICHTIG", label: "Richtig" },
@@ -47,12 +48,12 @@ function PassageBody({ passage }: Readonly<{ passage: ExamPassagePublic }>) {
     return (
         <>
             {passage.imageUrl && (
-                <img src={passage.imageUrl} alt="" className="max-w-full rounded-lg mb-2" />
+                <img src={resolveUploadUrl(passage.imageUrl) ?? undefined} alt="" className="max-w-full rounded-lg mb-2" />
             )}
             {passage.content && (
                 <div
                     className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed [&_p]:my-1"
-                    dangerouslySetInnerHTML={{ __html: passage.content }}
+                    dangerouslySetInnerHTML={{ __html: resolveUploadUrlsInHtml(passage.content) }}
                 />
             )}
         </>
