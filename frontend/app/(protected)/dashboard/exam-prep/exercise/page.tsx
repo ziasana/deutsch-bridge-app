@@ -8,7 +8,6 @@ import { getExamExerciseById } from "@/services/examService";
 import { completeExamAttempt, startExamAttempt, submitExamAnswer } from "@/services/examAttemptService";
 import {
     ExamAnswerFeedbackResponse,
-    ExamAnswerRecord,
     ExamExercisePublicResponse,
     ExamPassagePublic,
     ExamQuestionPublic,
@@ -90,57 +89,40 @@ function PassagesView({ passages, taskType }: Readonly<{ passages: ExamPassagePu
     );
 }
 
-function FeedbackCard({ feedback }: Readonly<{ feedback: ExamAnswerFeedbackResponse }>) {
-    return (
-        <div
-            className={`rounded-lg p-3 text-sm space-y-1 ${
-                feedback.correct
-                    ? "bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200"
-                    : "bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200"
-            }`}
-        >
-            <p className="font-semibold">{feedback.correct ? "Richtig!" : "Leider falsch."}</p>
-            {!feedback.correct && (
-                <p>
-                    Richtige Antwort: <span className="font-medium">{feedback.correctAnswer}</span>
-                </p>
-            )}
-            {feedback.explanation && <p className="mt-1">💡 {feedback.explanation}</p>}
-            {feedback.commonMistake && <p className="mt-1 italic">⚠️ Häufiger Fehler: {feedback.commonMistake}</p>}
-        </div>
-    );
-}
-
 interface QuizState {
     attemptId: string;
     passages: ExamPassagePublic[];
     questions: ExamQuestionPublic[];
     answerOptions: string[];
-    currentIndex: number;
-    selectedAnswer: string;
-    feedback: ExamAnswerFeedbackResponse | null;
+    answers: Record<string, string>;
     submitting: boolean;
+}
+
+interface ResultItem {
+    question: ExamQuestionPublic;
+    feedback: ExamAnswerFeedbackResponse;
 }
 
 interface ResultsState {
     score: number;
-    breakdown: ExamAnswerRecord[];
+    items: ResultItem[];
 }
 
-function QuestionInput({
+/** Dropdown of answer choices - MC/TFN use the question's own options, MATCHING/WORD_BANK_CLOZE share one pool. */
+function QuestionSelect({
     question,
     answerOptions,
     taskType,
-    selectedAnswer,
+    value,
     disabled,
-    onSelect,
+    onChange,
 }: Readonly<{
     question: ExamQuestionPublic;
     answerOptions: string[];
     taskType: string;
-    selectedAnswer: string;
+    value: string;
     disabled: boolean;
-    onSelect: (value: string) => void;
+    onChange: (value: string) => void;
 }>) {
     const options =
         taskType === "TRUE_FALSE_NOT_GIVEN"
@@ -150,22 +132,42 @@ function QuestionInput({
                 : (question.options ?? []).map((o) => ({ value: o, label: o }));
 
     return (
-        <div className="space-y-2">
+        <select
+            value={value}
+            disabled={disabled}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
+        >
+            <option value="">Antwort wählen...</option>
             {options.map((option) => (
-                <button
-                    key={option.value}
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => onSelect(option.value)}
-                    className={`w-full text-left px-3 py-2 rounded-lg border text-sm ${
-                        selectedAnswer === option.value
-                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
-                            : "border-gray-300 dark:border-gray-600"
-                    }`}
-                >
+                <option key={option.value} value={option.value}>
                     {option.label}
-                </button>
+                </option>
             ))}
+        </select>
+    );
+}
+
+function ResultCard({ index, item }: Readonly<{ index: number; item: ResultItem }>) {
+    const { question, feedback } = item;
+    return (
+        <div
+            className={`rounded-lg p-3 text-sm space-y-1 ${
+                feedback.correct
+                    ? "bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200"
+                    : "bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200"
+            }`}
+        >
+            <p className="font-semibold">
+                Aufgabe {index + 1}{question.prompt ? ` — ${question.prompt}` : ""}: {feedback.correct ? "Richtig" : "Falsch"}
+            </p>
+            {!feedback.correct && (
+                <p>
+                    Richtige Antwort: <span className="font-medium">{feedback.correctAnswer}</span>
+                </p>
+            )}
+            {feedback.explanation && <p className="mt-1">💡 {feedback.explanation}</p>}
+            {feedback.commonMistake && <p className="mt-1 italic">⚠️ Häufiger Fehler: {feedback.commonMistake}</p>}
         </div>
     );
 }
@@ -184,9 +186,7 @@ function ExerciseQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRespo
                     passages: res.data.passages,
                     questions: res.data.questions,
                     answerOptions: res.data.answerOptions ?? [],
-                    currentIndex: 0,
-                    selectedAnswer: "",
-                    feedback: null,
+                    answers: {},
                     submitting: false,
                 });
             })
@@ -194,59 +194,40 @@ function ExerciseQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRespo
             .finally(() => setStarting(false));
     };
 
-    const answerQuestion = () => {
+    const submitAll = async () => {
         if (!quiz) return;
-        const question = quiz.questions[quiz.currentIndex];
         setQuiz({ ...quiz, submitting: true });
-        submitExamAnswer(quiz.attemptId, { questionId: question.id, answer: quiz.selectedAnswer })
-            .then((res) => {
-                setQuiz((prev) => (prev ? { ...prev, feedback: res.data, submitting: false } : prev));
-            })
-            .catch((err) => {
-                toast.error(err?.response?.data?.message ?? "Antwort konnte nicht übermittelt werden.");
-                setQuiz((prev) => (prev ? { ...prev, submitting: false } : prev));
-            });
-    };
-
-    const nextQuestion = () => {
-        if (!quiz) return;
-        if (quiz.currentIndex + 1 >= quiz.questions.length) {
-            completeExamAttempt(quiz.attemptId)
-                .then((res) => {
-                    setResults({ score: res.data.score, breakdown: res.data.answerBreakdown });
-                })
-                .catch((err) => toast.error(err?.response?.data?.message ?? "Übung konnte nicht abgeschlossen werden."));
-            return;
+        try {
+            const items: ResultItem[] = [];
+            for (const question of quiz.questions) {
+                const res = await submitExamAnswer(quiz.attemptId, {
+                    questionId: question.id,
+                    answer: quiz.answers[question.id] ?? "",
+                });
+                items.push({ question, feedback: res.data });
+            }
+            const completeRes = await completeExamAttempt(quiz.attemptId);
+            setResults({ score: completeRes.data.score, items });
+        } catch (err) {
+            const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+            toast.error(message ?? "Übung konnte nicht abgeschlossen werden.");
+            setQuiz((prev) => (prev ? { ...prev, submitting: false } : prev));
         }
-        setQuiz({ ...quiz, currentIndex: quiz.currentIndex + 1, selectedAnswer: "", feedback: null });
     };
 
     if (results) {
-        const correctCount = results.breakdown.filter((a) => a.correct).length;
+        const correctCount = results.items.filter((item) => item.feedback.correct).length;
         return (
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-4">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Ergebnis</h2>
                 <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{Math.round(results.score)}%</p>
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                    {correctCount} von {results.breakdown.length} Aufgaben richtig
+                    {correctCount} von {results.items.length} Aufgaben richtig
                 </p>
 
                 <div className="space-y-3 pt-2">
-                    {results.breakdown.map((answer, idx) => (
-                        <div
-                            key={answer.questionId}
-                            className={`rounded-lg p-3 text-sm ${
-                                answer.correct
-                                    ? "bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200"
-                                    : "bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200"
-                            }`}
-                        >
-                            <p className="font-semibold">
-                                Aufgabe {idx + 1}: {answer.correct ? "Richtig" : "Falsch"}
-                            </p>
-                            {answer.explanation && <p className="mt-1">💡 {answer.explanation}</p>}
-                            {answer.commonMistake && <p className="mt-1 italic">⚠️ {answer.commonMistake}</p>}
-                        </div>
+                    {results.items.map((item, idx) => (
+                        <ResultCard key={item.question.id} index={idx} item={item} />
                     ))}
                 </div>
             </div>
@@ -257,7 +238,7 @@ function ExerciseQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRespo
         return (
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-3">
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                    Bereit? Starte die Übung und bearbeite die Aufgaben der Reihe nach.
+                    Bereit? Starte die Übung, beantworte alle Aufgaben und gib sie anschließend ab.
                 </p>
                 <Button variant="primary" className="text-sm px-4 py-2" disabled={starting} onClick={beginAttempt}>
                     {starting ? "Wird geladen..." : "Übung starten"}
@@ -266,56 +247,44 @@ function ExerciseQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRespo
         );
     }
 
-    const question = quiz.questions[quiz.currentIndex];
-    if (!question) {
+    if (quiz.questions.length === 0) {
         return <p className="text-sm text-gray-500 dark:text-gray-400">Diese Übung enthält noch keine Aufgaben.</p>;
     }
 
-    const currentPassage =
-        exercise.taskType === "MATCHING" && question.sectionIndex != null ? quiz.passages[question.sectionIndex] : null;
+    const allAnswered = quiz.questions.every((q) => quiz.answers[q.id]);
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-3">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-                Aufgabe {quiz.currentIndex + 1} von {quiz.questions.length}
-                {currentPassage && ` — ${currentPassage.label}`}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-4">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+                Beantworte alle {quiz.questions.length} Aufgaben und klicke dann auf &quot;Antworten abgeben&quot;.
             </p>
 
-            {currentPassage && (
-                <div className="rounded-lg border-2 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/20 p-4">
-                    <p className="font-semibold text-gray-900 dark:text-white mb-1">{currentPassage.label}</p>
-                    <PassageBody passage={currentPassage} />
-                </div>
-            )}
-
-            <p className="font-medium text-gray-900 dark:text-white">{question.prompt}</p>
-
-            <QuestionInput
-                question={question}
-                answerOptions={quiz.answerOptions}
-                taskType={exercise.taskType}
-                selectedAnswer={quiz.selectedAnswer}
-                disabled={Boolean(quiz.feedback)}
-                onSelect={(value) => setQuiz({ ...quiz, selectedAnswer: value })}
-            />
-
-            {quiz.feedback && <FeedbackCard feedback={quiz.feedback} />}
+            {quiz.questions.map((question, idx) => {
+                const referencedPassage = question.sectionIndex != null ? quiz.passages[question.sectionIndex] : null;
+                return (
+                    <div key={question.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2">
+                        <p className="font-medium text-gray-900 dark:text-white">
+                            {idx + 1}. {referencedPassage && `${referencedPassage.label}: `}
+                            {question.prompt}
+                        </p>
+                        <QuestionSelect
+                            question={question}
+                            answerOptions={quiz.answerOptions}
+                            taskType={exercise.taskType}
+                            value={quiz.answers[question.id] ?? ""}
+                            disabled={quiz.submitting}
+                            onChange={(value) =>
+                                setQuiz((prev) => (prev ? { ...prev, answers: { ...prev.answers, [question.id]: value } } : prev))
+                            }
+                        />
+                    </div>
+                );
+            })}
 
             <div className="flex justify-end pt-2">
-                {quiz.feedback ? (
-                    <Button variant="primary" className="text-sm px-4 py-2" onClick={nextQuestion}>
-                        {quiz.currentIndex + 1 >= quiz.questions.length ? "Ergebnis anzeigen" : "Nächste Aufgabe"}
-                    </Button>
-                ) : (
-                    <Button
-                        variant="primary"
-                        className="text-sm px-4 py-2"
-                        disabled={!quiz.selectedAnswer || quiz.submitting}
-                        onClick={answerQuestion}
-                    >
-                        {quiz.submitting ? "Wird geprüft..." : "Antwort abgeben"}
-                    </Button>
-                )}
+                <Button variant="primary" className="text-sm px-4 py-2" disabled={!allAnswered || quiz.submitting} onClick={submitAll}>
+                    {quiz.submitting ? "Wird geprüft..." : "Antworten abgeben"}
+                </Button>
             </div>
         </div>
     );
