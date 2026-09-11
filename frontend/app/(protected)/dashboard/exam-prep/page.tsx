@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ToastContainer, toast } from "react-toastify";
 import { getExamExercises } from "@/services/examService";
-import { ExamExercisePublicResponse, ExamTaskType } from "@/types/exam";
+import { ExamExercisePublicResponse, ExamSection, ExamTaskType } from "@/types/exam";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
 
@@ -12,16 +12,23 @@ const TASK_TYPE_LABELS: Record<ExamTaskType, string> = {
     MATCHING: "Überschriften zuordnen",
     MULTIPLE_CHOICE: "Multiple Choice",
     TRUE_FALSE_NOT_GIVEN: "Richtig / Falsch / Nicht im Text",
+    WORD_BANK_CLOZE: "Lückentext",
 };
+
+const SECTION_TABS: { value: ExamSection; label: string }[] = [
+    { value: "LESEVERSTEHEN", label: "Leseverstehen" },
+    { value: "SPRACHBAUSTEINE", label: "Sprachbausteine" },
+];
 
 export default function ExamPrepPage() {
     const router = useRouter();
     const [exercises, setExercises] = useState<ExamExercisePublicResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [levelFilter, setLevelFilter] = useState("ALL");
+    const [sectionFilter, setSectionFilter] = useState<ExamSection>("LESEVERSTEHEN");
 
     useEffect(() => {
-        getExamExercises("LESEVERSTEHEN")
+        getExamExercises()
             .then((res) => setExercises(res.data))
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load exercises."))
             .finally(() => setLoading(false));
@@ -29,8 +36,9 @@ export default function ExamPrepPage() {
 
     if (loading) return <Loading />;
 
-    const levels = Array.from(new Set(exercises.map((e) => e.level))).sort();
-    const filtered = exercises.filter((e) => levelFilter === "ALL" || e.level === levelFilter);
+    const inSection = exercises.filter((e) => e.section === sectionFilter);
+    const levels = Array.from(new Set(inSection.map((e) => e.level))).sort();
+    const filtered = inSection.filter((e) => levelFilter === "ALL" || e.level === levelFilter);
 
     const byTaskType = filtered.reduce<Record<string, ExamExercisePublicResponse[]>>((acc, e) => {
         (acc[e.taskType] ??= []).push(e);
@@ -42,11 +50,30 @@ export default function ExamPrepPage() {
             <div className="max-w-4xl mx-auto">
                 <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Prüfungsvorbereitung</h1>
                 <p className="text-gray-600 dark:text-gray-300 mt-2">
-                    Übe Leseverstehen im echten Telc-Prüfungsformat. Nach jeder Aufgabe erhältst du eine
-                    Bewertung sowie Tipps zur Lösung und häufige Fehlerquellen.
+                    Übe im echten Telc-Prüfungsformat. Nach jeder Aufgabe erhältst du eine Bewertung sowie
+                    Tipps zur Lösung und häufige Fehlerquellen.
                 </p>
 
-                <div className="mt-6 flex items-center gap-3">
+                <div className="mt-6 flex gap-2">
+                    {SECTION_TABS.map((tab) => (
+                        <button
+                            key={tab.value}
+                            onClick={() => {
+                                setSectionFilter(tab.value);
+                                setLevelFilter("ALL");
+                            }}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                                sectionFilter === tab.value
+                                    ? "bg-blue-600 text-white"
+                                    : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-700"
+                            }`}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="mt-4 flex items-center gap-3">
                     <label className="text-sm text-gray-600 dark:text-gray-300">Niveau:</label>
                     <select
                         value={levelFilter}

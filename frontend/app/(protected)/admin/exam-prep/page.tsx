@@ -11,20 +11,30 @@ import {
     deleteExamExercise,
     uploadExamPassageImage,
 } from "@/services/adminExamService";
-import { ExamExerciseResponse, ExamPassage, ExamQuestion, ExamTaskType } from "@/types/exam";
+import { ExamExerciseResponse, ExamPassage, ExamQuestion, ExamSection, ExamTaskType } from "@/types/exam";
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
 import RichTextEditor from "@/componenets/RichTextEditor";
 import { Badge } from "@/componenets/ui/badge";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
+import { extractGapNumbers } from "@/lib/examGap";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1"];
-const TASK_TYPES: ExamTaskType[] = ["MATCHING", "MULTIPLE_CHOICE", "TRUE_FALSE_NOT_GIVEN"];
 const TFN_ANSWERS = ["RICHTIG", "FALSCH", "NICHT_IM_TEXT"];
+
+const TASK_TYPES_BY_SECTION: Record<ExamSection, ExamTaskType[]> = {
+    LESEVERSTEHEN: ["MATCHING", "MULTIPLE_CHOICE", "TRUE_FALSE_NOT_GIVEN"],
+    SPRACHBAUSTEINE: ["WORD_BANK_CLOZE"],
+    HOERVERSTEHEN: [],
+    SCHRIFTLICHER_AUSDRUCK: [],
+};
+
+const SHARED_POOL_TASK_TYPES: ExamTaskType[] = ["MATCHING", "WORD_BANK_CLOZE"];
 
 const emptyForm = {
     title: "",
+    section: "LESEVERSTEHEN" as ExamSection,
     taskType: "MULTIPLE_CHOICE" as ExamTaskType,
     level: "B1",
     partNumber: "",
@@ -53,9 +63,33 @@ const emptyQuestion = (taskType: ExamTaskType): ExamQuestion => ({
     sectionIndex: null,
     options: taskType === "MULTIPLE_CHOICE" ? [] : null,
     correctAnswer: taskType === "TRUE_FALSE_NOT_GIVEN" ? "RICHTIG" : "",
+    gapNumber: null,
     explanation: "",
     commonMistake: "",
 });
+
+/**
+ * WORD_BANK_CLOZE questions are auto-managed: the passage text (via the rich-text editor's
+ * "insert blank" button) is the source of truth for which gaps exist. This reconciles the
+ * questions list against whatever gap numbers are currently embedded in the passages, keeping
+ * each gap's already-typed correctAnswer/explanation/commonMistake and ordering by gap number.
+ */
+function syncGapQuestions(passagesList: ExamPassage[], existingQuestions: ExamQuestion[]): ExamQuestion[] {
+    const gapNumbers = passagesList.flatMap((p) => extractGapNumbers(p.content));
+    const uniqueGapNumbers = Array.from(new Set(gapNumbers));
+    const byGapNumber = new Map(existingQuestions.filter((q) => q.gapNumber != null).map((q) => [q.gapNumber, q]));
+
+    return uniqueGapNumbers.map((gapNumber) => {
+        const existing = byGapNumber.get(gapNumber);
+        if (existing) return existing;
+        return {
+            ...emptyQuestion("WORD_BANK_CLOZE"),
+            id: crypto.randomUUID(),
+            prompt: `Lücke ${gapNumber}`,
+            gapNumber,
+        };
+    });
+}
 
 export default function AdminExamPrepPage() {
     const router = useRouter();
@@ -98,13 +132,26 @@ export default function AdminExamPrepPage() {
         setEditingExercise(null);
     };
 
+    const changeSection = (section: ExamSection) => {
+        const taskType = TASK_TYPES_BY_SECTION[section][0] ?? form.taskType;
+        setForm({ ...form, section, taskType });
+        setQuestions([]);
+        setAnswerOptions([]);
+    };
+
     const changeTaskType = (taskType: ExamTaskType) => {
         setForm({ ...form, taskType });
         setQuestions((prev) => prev.map((q) => ({ ...q, taskType })));
     };
 
     const updatePassage = (idx: number, field: "label" | "content", value: string) => {
-        setPassages((prev) => prev.map((p, i) => (i === idx ? { ...p, [field]: value } : p)));
+        setPassages((prev) => {
+            const next = prev.map((p, i) => (i === idx ? { ...p, [field]: value } : p));
+            if (field === "content" && form.taskType === "WORD_BANK_CLOZE") {
+                setQuestions((prevQuestions) => syncGapQuestions(next, prevQuestions));
+            }
+            return next;
+        });
     };
     const removePassage = (idx: number) => setPassages((prev) => prev.filter((_, i) => i !== idx));
     const addPassage = () => setPassages((prev) => [...prev, emptyPassage(prev.length)]);
@@ -160,6 +207,7 @@ export default function AdminExamPrepPage() {
         setEditingExercise(exercise);
         setForm({
             title: exercise.title,
+            section: exercise.section,
             taskType: exercise.taskType,
             level: exercise.level,
             partNumber: exercise.partNumber != null ? String(exercise.partNumber) : "",
@@ -192,7 +240,7 @@ export default function AdminExamPrepPage() {
 
         const payload = {
             title: form.title,
-            section: "LESEVERSTEHEN" as const,
+            section: form.section,
             taskType: form.taskType,
             level: form.level,
             partNumber: form.partNumber.trim() ? Number(form.partNumber) : null,
@@ -238,9 +286,9 @@ export default function AdminExamPrepPage() {
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
             <div className="max-w-4xl mx-auto">
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Prüfungsvorbereitung — Leseverstehen</h1>
+                <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Prüfungsvorbereitung</h1>
                 <p className="text-gray-600 dark:text-gray-300 mt-2">
-                    Create exam-style reading exercises: matching, multiple choice, or true/false/not-given.
+                    Create exam-style Leseverstehen and Sprachbausteine exercises.
                 </p>
 
                 <form onSubmit={submit} className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-6">
@@ -264,13 +312,24 @@ export default function AdminExamPrepPage() {
 
                     <div className="flex gap-4 flex-wrap">
                         <div>
+                            <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Section</label>
+                            <select
+                                value={form.section}
+                                onChange={(e) => changeSection(e.target.value as ExamSection)}
+                                className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+                            >
+                                <option value="LESEVERSTEHEN">Leseverstehen</option>
+                                <option value="SPRACHBAUSTEINE">Sprachbausteine</option>
+                            </select>
+                        </div>
+                        <div>
                             <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Task type</label>
                             <select
                                 value={form.taskType}
                                 onChange={(e) => changeTaskType(e.target.value as ExamTaskType)}
                                 className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
                             >
-                                {TASK_TYPES.map((t) => (
+                                {TASK_TYPES_BY_SECTION[form.section].map((t) => (
                                     <option key={t} value={t}>
                                         {t}
                                     </option>
@@ -358,6 +417,7 @@ export default function AdminExamPrepPage() {
                                         onChange={(html) => updatePassage(idx, "content", html)}
                                         placeholder="Passage text"
                                         onUploadImage={uploadInlineImage}
+                                        allowGapInsertion={form.taskType === "WORD_BANK_CLOZE"}
                                     />
 
                                     <div className="flex items-center gap-4 pt-1">
@@ -402,11 +462,13 @@ export default function AdminExamPrepPage() {
                         </div>
                     </div>
 
-                    {form.taskType === "MATCHING" && (
+                    {SHARED_POOL_TASK_TYPES.includes(form.taskType) && (
                         <div>
                             <div className="flex items-center justify-between mb-2">
                                 <label className="text-gray-700 dark:text-gray-300 text-sm">
-                                    Answer options (headlines) — include a few extra distractors that don&apos;t match any text
+                                    {form.taskType === "WORD_BANK_CLOZE"
+                                        ? "Answer options (words) — include a few extra distractors that don't fit any gap"
+                                        : "Answer options (headlines) — include a few extra distractors that don't match any text"}
                                 </label>
                             </div>
                             <div className="space-y-2">
@@ -434,6 +496,64 @@ export default function AdminExamPrepPage() {
                         </div>
                     )}
 
+                    {form.taskType === "WORD_BANK_CLOZE" && (
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="text-gray-700 dark:text-gray-300 text-sm">
+                                    Gaps — click the ▢N button in the text above to add a numbered blank
+                                </label>
+                            </div>
+                            <div className="space-y-3">
+                                {questions.length === 0 && (
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        No blanks yet - insert one from the text editor above.
+                                    </p>
+                                )}
+                                {questions
+                                    .slice()
+                                    .sort((a, b) => (a.gapNumber ?? 0) - (b.gapNumber ?? 0))
+                                    .map((q) => {
+                                        const idx = questions.indexOf(q);
+                                        return (
+                                            <div
+                                                key={q.id}
+                                                className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 space-y-2"
+                                            >
+                                                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                                                    Lücke {q.gapNumber}
+                                                </span>
+                                                <select
+                                                    value={q.correctAnswer}
+                                                    onChange={(e) => updateQuestion(idx, "correctAnswer", e.target.value)}
+                                                    className="w-full px-2 py-2 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm"
+                                                >
+                                                    <option value="">Select correct word...</option>
+                                                    {answerOptions.map((option, oIdx) => (
+                                                        <option key={option || oIdx} value={option}>
+                                                            {String.fromCharCode(97 + oIdx)}) {option}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <Input
+                                                    value={q.explanation}
+                                                    onChange={(e) => updateQuestion(idx, "explanation", e.target.value)}
+                                                    placeholder="Explanation (why this word fits)"
+                                                    required={false}
+                                                />
+                                                <Input
+                                                    value={q.commonMistake}
+                                                    onChange={(e) => updateQuestion(idx, "commonMistake", e.target.value)}
+                                                    placeholder="Common mistake"
+                                                    required={false}
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                            </div>
+                        </div>
+                    )}
+
+                    {form.taskType !== "WORD_BANK_CLOZE" && (
                     <div>
                         <div className="flex items-center justify-between mb-2">
                             <label className="text-gray-700 dark:text-gray-300 text-sm">Questions</label>
@@ -549,6 +669,7 @@ export default function AdminExamPrepPage() {
                             </Button>
                         </div>
                     </div>
+                    )}
 
                     <Button variant="primary" type="submit" disabled={isSaving}>
                         {isSaving ? "Saving..." : editingExercise ? "Save changes" : "Save exercise"}
@@ -565,6 +686,7 @@ export default function AdminExamPrepPage() {
                                 <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm">
                                     <tr>
                                         <th className="px-6 py-3">Title</th>
+                                        <th className="px-6 py-3">Section</th>
                                         <th className="px-6 py-3">Task type</th>
                                         <th className="px-6 py-3">Level</th>
                                         <th className="px-6 py-3">Questions</th>
@@ -576,6 +698,7 @@ export default function AdminExamPrepPage() {
                                     {exercises.map((exercise) => (
                                         <tr key={exercise.id}>
                                             <td className="px-6 py-4 text-gray-900 dark:text-white">{exercise.title}</td>
+                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{exercise.section}</td>
                                             <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{exercise.taskType}</td>
                                             <td className="px-6 py-4">
                                                 <Badge variant="secondary">{exercise.level}</Badge>
@@ -598,7 +721,7 @@ export default function AdminExamPrepPage() {
                                     ))}
                                     {exercises.length === 0 && (
                                         <tr>
-                                            <td colSpan={6} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                                            <td colSpan={7} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
                                                 No exercises found.
                                             </td>
                                         </tr>

@@ -4,7 +4,7 @@ export type ExamSection =
     | "HOERVERSTEHEN"
     | "SCHRIFTLICHER_AUSDRUCK";
 
-export type ExamTaskType = "MATCHING" | "MULTIPLE_CHOICE" | "TRUE_FALSE_NOT_GIVEN";
+export type ExamTaskType = "MATCHING" | "MULTIPLE_CHOICE" | "TRUE_FALSE_NOT_GIVEN" | "WORD_BANK_CLOZE";
 
 export interface ExamPassage {
     id: string;
@@ -22,8 +22,10 @@ export interface ExamQuestion {
     sectionIndex: number | null;
     /** MULTIPLE_CHOICE options; null for MATCHING (uses the exercise-level shared answerOptions pool) and TRUE_FALSE_NOT_GIVEN. */
     options: string[] | null;
-    /** MC: matches an options entry. TFN: "RICHTIG"|"FALSCH"|"NICHT_IM_TEXT". MATCHING: matches an entry in the exercise's answerOptions. */
+    /** MC: matches an options entry. TFN: "RICHTIG"|"FALSCH"|"NICHT_IM_TEXT". MATCHING/WORD_BANK_CLOZE: matches an entry in the exercise's answerOptions. */
     correctAnswer: string;
+    /** WORD_BANK_CLOZE only: the gap's number, matching the marker embedded in the passage content. */
+    gapNumber: number | null;
     explanation: string;
     commonMistake: string;
 }
@@ -58,6 +60,7 @@ export interface ExamQuestionPublic {
     prompt: string;
     sectionIndex: number | null;
     options: string[] | null;
+    gapNumber: number | null;
 }
 
 export interface ExamExercisePublicResponse {

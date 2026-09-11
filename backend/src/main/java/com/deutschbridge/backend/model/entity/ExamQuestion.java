@@ -24,8 +24,14 @@ public class ExamQuestion {
     /** MULTIPLE_CHOICE options; null for MATCHING (which uses the exercise-level shared answerOptions pool) and TRUE_FALSE_NOT_GIVEN. */
     private List<String> options;
 
-    /** MC: matches an options entry. TFN: "RICHTIG"|"FALSCH"|"NICHT_IM_TEXT". MATCHING: matches an entry in the exercise's shared answerOptions pool. */
+    /**
+     * MC: matches an options entry. TFN: "RICHTIG"|"FALSCH"|"NICHT_IM_TEXT". MATCHING/WORD_BANK_CLOZE:
+     * matches an entry in the exercise's shared answerOptions pool.
+     */
     private String correctAnswer;
+
+    /** WORD_BANK_CLOZE only: the gap's number, matching the marker embedded in the passage's content. */
+    private Integer gapNumber;
 
     /** Admin-authored: how to approach this question type / why the answer is correct. */
     private String explanation;

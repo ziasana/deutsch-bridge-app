@@ -63,7 +63,7 @@ public class ExamAttemptService {
                 .map(p -> new ExamPassagePublic(p.getId(), p.getLabel(), p.getContent(), p.getImageUrl()))
                 .toList();
         List<ExamQuestionPublic> questionsPublic = questions.stream()
-                .map(q -> new ExamQuestionPublic(q.getId(), q.getTaskType(), q.getPrompt(), q.getSectionIndex(), q.getOptions()))
+                .map(q -> new ExamQuestionPublic(q.getId(), q.getTaskType(), q.getPrompt(), q.getSectionIndex(), q.getOptions(), q.getGapNumber()))
                 .toList();
 
         return new StartExamAttemptResponse(attempt.getId(), passagesPublic, questionsPublic, exercise.getAnswerOptions());

@@ -26,17 +26,22 @@ const TFN_OPTIONS = [
 
 const letterFor = (index: number) => String.fromCharCode(97 + index);
 
-function HeadlinesView({ answerOptions }: Readonly<{ answerOptions: string[] }>) {
+function AnswerOptionsPoolView({
+    answerOptions,
+    taskType,
+}: Readonly<{ answerOptions: string[]; taskType: string }>) {
     if (answerOptions.length === 0) return null;
     return (
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                Überschriften — nicht jede passt zu einem Text:
+                {taskType === "WORD_BANK_CLOZE"
+                    ? "Wörter — nicht jedes passt in eine Lücke:"
+                    : "Überschriften — nicht jede passt zu einem Text:"}
             </p>
             <ul className="space-y-2">
-                {answerOptions.map((headline, idx) => (
-                    <li key={headline} className="text-sm text-gray-800 dark:text-gray-200">
-                        <span className="font-semibold">{letterFor(idx)})</span> {headline}
+                {answerOptions.map((option, idx) => (
+                    <li key={option} className="text-sm text-gray-800 dark:text-gray-200">
+                        <span className="font-semibold">{letterFor(idx)})</span> {option}
                     </li>
                 ))}
             </ul>
@@ -63,7 +68,7 @@ function PassageBody({ passage }: Readonly<{ passage: ExamPassagePublic }>) {
 function PassagesView({ passages, taskType }: Readonly<{ passages: ExamPassagePublic[]; taskType: string }>) {
     if (passages.length === 0) return null;
 
-    if (taskType === "MULTIPLE_CHOICE") {
+    if (taskType === "MULTIPLE_CHOICE" || taskType === "WORD_BANK_CLOZE") {
         return (
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-2">
                 {passages.map((p) => (
@@ -140,7 +145,7 @@ function QuestionInput({
     const options =
         taskType === "TRUE_FALSE_NOT_GIVEN"
             ? TFN_OPTIONS
-            : taskType === "MATCHING"
+            : taskType === "MATCHING" || taskType === "WORD_BANK_CLOZE"
                 ? answerOptions.map((o, idx) => ({ value: o, label: `${letterFor(idx)}) ${o}` }))
                 : (question.options ?? []).map((o) => ({ value: o, label: o }));
 
@@ -373,7 +378,9 @@ function ExamExerciseContent() {
                     <Badge variant="secondary">{exercise.level}</Badge>
                 </div>
 
-                {exercise.taskType === "MATCHING" && <HeadlinesView answerOptions={exercise.answerOptions ?? []} />}
+                {(exercise.taskType === "MATCHING" || exercise.taskType === "WORD_BANK_CLOZE") && (
+                    <AnswerOptionsPoolView answerOptions={exercise.answerOptions ?? []} taskType={exercise.taskType} />
+                )}
 
                 <PassagesView passages={exercise.passages} taskType={exercise.taskType} />
 

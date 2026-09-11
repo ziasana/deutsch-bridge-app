@@ -3,11 +3,11 @@
 import { useEditor, EditorContent, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import TextAlign from "@tiptap/extension-text-align";
-import Underline from "@tiptap/extension-underline";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import { useEffect, useRef } from "react";
 import { resolveUploadUrl, resolveUploadUrlsInHtml, stripBackendOrigin } from "@/lib/backendOrigin";
+import { ExamGap, extractGapNumbers } from "@/lib/examGap";
 
 function ToolbarButton({
     active,
@@ -84,10 +84,18 @@ async function uploadEmbeddedImages(editor: Editor, onUploadImage: (file: File) 
     }
 }
 
+/** Inserts a numbered gap marker at the cursor, numbered one past the highest gap already in the doc. */
+function insertGapAtCursor(editor: Editor) {
+    const existing = extractGapNumbers(editor.getHTML());
+    const nextNumber = existing.length > 0 ? Math.max(...existing) + 1 : 1;
+    editor.chain().focus().insertContent({ type: "examGap", attrs: { number: nextNumber } }).run();
+}
+
 function Toolbar({
     editor,
     onInsertImage,
-}: Readonly<{ editor: Editor; onInsertImage: () => void }>) {
+    allowGapInsertion,
+}: Readonly<{ editor: Editor; onInsertImage: () => void; allowGapInsertion?: boolean }>) {
     return (
         <div className="flex flex-wrap gap-1 border-b border-gray-300 dark:border-gray-600 p-1">
             <ToolbarButton
@@ -152,6 +160,11 @@ function Toolbar({
             <ToolbarButton title="Insert image" onClick={onInsertImage}>
                 🖼
             </ToolbarButton>
+            {allowGapInsertion && (
+                <ToolbarButton title="Insert blank" onClick={() => insertGapAtCursor(editor)}>
+                    ▢N
+                </ToolbarButton>
+            )}
         </div>
     );
 }
@@ -161,21 +174,24 @@ export default function RichTextEditor({
     onChange,
     placeholder,
     onUploadImage,
+    allowGapInsertion,
 }: Readonly<{
     value: string;
     onChange: (html: string) => void;
     placeholder?: string;
     /** Uploads a file and resolves to its served URL - used for both the toolbar button and pasted images. */
     onUploadImage: (file: File) => Promise<string>;
+    /** Shows the "insert blank" toolbar button for authoring Sprachbausteine word-bank cloze passages. */
+    allowGapInsertion?: boolean;
 }>) {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const editor = useEditor({
         extensions: [
             StarterKit.configure({ heading: { levels: [1, 2] } }),
-            Underline,
             TextAlign.configure({ types: ["paragraph", "heading"] }),
             Image.configure({ allowBase64: true, HTMLAttributes: { class: "max-w-full rounded-lg" } }),
+            ExamGap,
             Placeholder.configure({ placeholder: placeholder ?? "" }),
         ],
         content: resolveUploadUrlsInHtml(value),
@@ -217,7 +233,11 @@ export default function RichTextEditor({
 
     return (
         <div className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 overflow-hidden">
-            <Toolbar editor={editor} onInsertImage={() => fileInputRef.current?.click()} />
+            <Toolbar
+                editor={editor}
+                onInsertImage={() => fileInputRef.current?.click()}
+                allowGapInsertion={allowGapInsertion}
+            />
             <EditorContent editor={editor} />
             <input
                 ref={fileInputRef}

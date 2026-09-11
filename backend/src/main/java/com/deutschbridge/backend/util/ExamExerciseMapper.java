@@ -50,7 +50,7 @@ public class ExamExerciseMapper {
                 exercise.getPartNumber(),
                 passages.stream().map(p -> new ExamPassagePublic(p.getId(), p.getLabel(), p.getContent(), p.getImageUrl())).toList(),
                 questions.stream()
-                        .map(q -> new ExamQuestionPublic(q.getId(), q.getTaskType(), q.getPrompt(), q.getSectionIndex(), q.getOptions()))
+                        .map(q -> new ExamQuestionPublic(q.getId(), q.getTaskType(), q.getPrompt(), q.getSectionIndex(), q.getOptions(), q.getGapNumber()))
                         .toList(),
                 exercise.getAnswerOptions()
         );

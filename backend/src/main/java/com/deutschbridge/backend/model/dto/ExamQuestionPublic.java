@@ -6,13 +6,14 @@ import java.util.List;
 
 /**
  * Question shape sent to the client before it is answered - never carries correctAnswer,
- * matchTargetId, explanation, or commonMistake.
+ * explanation, or commonMistake.
  */
 public record ExamQuestionPublic(
         String id,
         ExamTaskType taskType,
         String prompt,
         Integer sectionIndex,
-        List<String> options
+        List<String> options,
+        Integer gapNumber
 ) {
 }

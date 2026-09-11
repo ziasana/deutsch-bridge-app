@@ -35,8 +35,9 @@ public class ExamExerciseSeeder {
             repository.save(multipleChoiceExercise());
             repository.save(matchingExercise());
             repository.save(trueFalseNotGivenExercise());
+            repository.save(wordBankClozeExercise());
 
-            log.info("Seeded 3 exam exercises!");
+            log.info("Seeded 4 exam exercises!");
         };
     }
 
@@ -171,6 +172,97 @@ public class ExamExerciseSeeder {
         return exercise;
     }
 
+    /**
+     * Real Telc Sprachbausteine Teil 2: one running text with numbered gaps, filled from a shared
+     * pool of connector/particle words that has more entries than gaps (here 10 gaps + 4 distractors).
+     * Gap markers are embedded directly in the passage HTML as
+     * {@code <span data-exam-gap="N">N</span>} - the same contract the admin rich-text editor's
+     * "insert blank" button produces, and what the student view renders as a numbered badge.
+     */
+    private ExamExercise wordBankClozeExercise() {
+        String content = """
+                <p>Sehr geehrte Frau Keller,</p>
+                <p>ich habe Ihre Anzeige gelesen und interessiere mich %s für den Deutschkurs im Sommer. \
+                Ich würde gerne im Juli teilnehmen und hätte %s noch ein paar Fragen.</p>
+                <p>Mich interessiert vor allem, ob es auch einen Kurs %s Anfänger gibt, %s ich erst seit \
+                einem Jahr Deutsch lerne. Gibt es außerdem einen Einstufungstest, und %s ja, wann findet \
+                er statt?</p>
+                <p>In Ihrer Anzeige steht, dass der Kurs auch Ausflüge beinhaltet. Wie viel %s wir \
+                zusätzlich dafür bezahlen?</p>
+                <p>Und %s noch eine Frage: Ich arbeite von zu Hause aus und bräuchte deshalb einen \
+                ruhigen Platz %s W-LAN in der Nähe. Wäre das möglich?</p>
+                <p>Bitte schreiben Sie mir so bald wie möglich, %s ich mich rechtzeitig entscheiden kann. \
+                Außerdem wäre ich Ihnen sehr %s, wenn Sie mir den Kursplan zusenden könnten.</p>
+                <p>Mit freundlichen Grüßen<br>Laura Fischer</p>
+                """.formatted(
+                gapMarker(1), gapMarker(2), gapMarker(3), gapMarker(4), gapMarker(5),
+                gapMarker(6), gapMarker(7), gapMarker(8), gapMarker(9), gapMarker(10)
+        );
+
+        ExamPassage passage = passage("Brief", content.strip());
+
+        List<String> answerOptions = List.of(
+                "besonders", "deshalb", "für", "da", "wenn", "müssten", "schließlich", "mit", "damit", "dankbar",
+                "gerne", "könnten", "wann", "damals"
+        );
+
+        ExamQuestion q1 = clozeQuestion(1, "besonders",
+                "'Besonders' verstärkt das Interesse - es passt zu 'ich interessiere mich ... für'.",
+                "Verwechsle nicht 'besonders' mit 'deshalb' - Letzteres leitet eine Folge ein, hier geht es aber um eine Verstärkung.");
+        ExamQuestion q2 = clozeQuestion(2, "deshalb",
+                "'Deshalb' leitet die Folge ein: weil er im Juli teilnehmen möchte, hat er deshalb Fragen.",
+                "Ein Grund-Folge-Signal wie 'deshalb' braucht einen vorherigen Grund im Satz - prüfe, ob das zutrifft.");
+        ExamQuestion q3 = clozeQuestion(3, "für",
+                "Die Präposition 'für' gehört fest zu 'ein Kurs für Anfänger' - eine feste Wendung.",
+                "Achte auf feste Präpositionen bei bestimmten Nomen - sie lassen sich nicht durch eine beliebige andere Präposition ersetzen.");
+        ExamQuestion q4 = clozeQuestion(4, "da",
+                "'Da' leitet hier einen Grund ein ('weil/da ich erst seit einem Jahr lerne') - ein kausaler Nebensatz.",
+                "Verwechsle 'da' (Grund) nicht mit 'damals' (Zeitpunkt in der Vergangenheit) - sie klingen im Kontext leicht ähnlich.");
+        ExamQuestion q5 = clozeQuestion(5, "wenn",
+                "'Und wenn ja' ist eine feste Wendung nach einer Ja/Nein-Frage, um eine Bedingung weiterzuführen.",
+                "'Wann' fragt nach einem Zeitpunkt, 'wenn' leitet eine Bedingung ein - hier ist eine Bedingung gemeint, kein Zeitpunkt.");
+        ExamQuestion q6 = clozeQuestion(6, "müssten",
+                "Die höfliche Konjunktiv-II-Form 'müssten' passt zur höflichen Nachfrage nach den Kosten.",
+                "Achte auf die Höflichkeitsform (Konjunktiv II) in Anfragen - eine direkte Form wie 'müssen' klingt hier zu fordernd.");
+        ExamQuestion q7 = clozeQuestion(7, "schließlich",
+                "'Und schließlich' leitet die letzte, abschließende Frage im Brief ein.",
+                "Verwechsle 'schließlich' (zum Schluss) nicht mit 'besonders' - hier geht es um die Reihenfolge der Fragen, nicht um Betonung.");
+        ExamQuestion q8 = clozeQuestion(8, "mit",
+                "'Ein Platz mit W-LAN' - 'mit' beschreibt hier die Ausstattung des Platzes.",
+                "Prüfe, ob die Präposition eine Ausstattung/Eigenschaft ('mit W-LAN') oder einen anderen Bezug beschreibt.");
+        ExamQuestion q9 = clozeQuestion(9, "damit",
+                "'Damit' leitet einen Zweck-Nebensatz ein: das frühzeitige Schreiben ermöglicht die rechtzeitige Entscheidung.",
+                "Verwechsle 'damit' (Zweck, + Nebensatz) nicht mit 'dafür' (Verweis auf etwas Genanntes) - hier folgt ein ganzer Nebensatz.");
+        ExamQuestion q10 = clozeQuestion(10, "dankbar",
+                "'Sehr dankbar' ist eine feste, höfliche Wendung ('ich wäre Ihnen sehr dankbar, wenn...').",
+                "'Dankbar' und 'gerne' werden oft verwechselt - nur 'dankbar' passt in die feste Wendung 'ich wäre Ihnen sehr ___'.");
+
+        ExamExercise exercise = new ExamExercise();
+        exercise.setTitle("Sprachbausteine B1 - Anfrage zu einem Deutschkurs");
+        exercise.setSection(ExamSection.SPRACHBAUSTEINE);
+        exercise.setTaskType(ExamTaskType.WORD_BANK_CLOZE);
+        exercise.setLevel(LearningLevel.B1);
+        exercise.setPartNumber(2);
+        exercise.setPassages(List.of(passage));
+        exercise.setQuestions(List.of(q1, q2, q3, q4, q5, q6, q7, q8, q9, q10));
+        exercise.setAnswerOptions(answerOptions);
+        exercise.setDefaultExplanation("Lies den ganzen Satz (nicht nur die Lücke) und achte auf feste Wendungen, Präpositionen und Konnektoren.");
+        exercise.setDefaultCommonMistake("Manche Wörter im Angebot passen grammatisch, aber nicht inhaltlich - prüfe immer den ganzen Satzzusammenhang.");
+        return exercise;
+    }
+
+    private String gapMarker(int number) {
+        return "<span data-exam-gap=\"" + number + "\">" + number + "</span>";
+    }
+
+    private ExamQuestion clozeQuestion(int gapNumber, String correctAnswer, String explanation, String commonMistake) {
+        ExamQuestion question = new ExamQuestion(
+                null, ExamTaskType.WORD_BANK_CLOZE, "Lücke " + gapNumber, null, null, correctAnswer,
+                gapNumber, explanation, commonMistake
+        );
+        return question.ensureId();
+    }
+
     private ExamPassage passage(String label, String content) {
         ExamPassage passage = new ExamPassage(null, label, content.strip(), null);
         return passage.ensureId();
@@ -179,14 +271,14 @@ public class ExamExerciseSeeder {
     private ExamQuestion question(ExamTaskType taskType, String prompt, List<String> options, String correctAnswer,
                                    String explanation, String commonMistake) {
         ExamQuestion question = new ExamQuestion(
-                null, taskType, prompt, null, options, correctAnswer, explanation, commonMistake
+                null, taskType, prompt, null, options, correctAnswer, null, explanation, commonMistake
         );
         return question.ensureId();
     }
 
     private ExamQuestion matchingQuestion(int passageIndex, String correctHeadline) {
         ExamQuestion question = new ExamQuestion(
-                null, ExamTaskType.MATCHING, "Welche Überschrift passt zu diesem Text?", passageIndex, null, correctHeadline,
+                null, ExamTaskType.MATCHING, "Welche Überschrift passt zu diesem Text?", passageIndex, null, correctHeadline, null,
                 "Achte auf Synonyme: die Überschrift nutzt oft andere Wörter als der Text, meint aber dasselbe.",
                 "Ordne nicht nach nur einem auffälligen Wort zu, sondern lies den gesamten Textabschnitt - manche Distraktoren enthalten ähnliche Schlüsselwörter."
         );
@@ -196,7 +288,7 @@ public class ExamExerciseSeeder {
     private ExamQuestion tfnQuestion(int sectionIndex, String statement, String correctAnswer,
                                       String explanation, String commonMistake) {
         ExamQuestion question = new ExamQuestion(
-                null, ExamTaskType.TRUE_FALSE_NOT_GIVEN, statement, sectionIndex, null, correctAnswer,
+                null, ExamTaskType.TRUE_FALSE_NOT_GIVEN, statement, sectionIndex, null, correctAnswer, null,
                 explanation, commonMistake
         );
         return question.ensureId();
