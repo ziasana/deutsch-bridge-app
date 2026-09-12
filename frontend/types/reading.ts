@@ -61,6 +61,9 @@ export interface ReadingArticle {
     topic: string;
     level: string;
     content: string;
+    imageUrl: string | null;
+    viewCount: number;
+    createdAt: string;
     keyVocabulary: KeyVocabularyItem[];
     annotations: Annotation[];
     newWordCount: number;
@@ -79,6 +82,7 @@ export interface ReadingArticleManualRequest {
     topic: string;
     level: string;
     content: string;
+    imageUrl: string | null;
     keyVocabulary: KeyVocabularyItem[];
     annotations: Annotation[];
     quiz: ReadingQuizQuestion[];

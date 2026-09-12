@@ -77,6 +77,8 @@ public class ReadingArticleService {
 
     public ReadingArticleResponse findByIdWithLearningProgress(String id) throws DataNotFoundException {
         ReadingArticle article = findById(id);
+        article.setViewCount(article.getViewCount() + 1);
+        readingArticleRepository.save(article);
         return mapWithCurrentUserProgress(List.of(article)).get(0);
     }
 
@@ -152,6 +154,7 @@ public class ReadingArticleService {
         article.setTopic(request.topic());
         article.setLevel(request.level());
         article.setContent(request.content());
+        article.setImageUrl(request.imageUrl());
         article.setKeyVocabulary(request.keyVocabulary() != null ? request.keyVocabulary() : new ArrayList<>());
         article.setAnnotations(prepareAnnotations(request.annotations(), article.getContent()));
         article.setQuiz(prepareQuiz(request.quiz()));
@@ -170,6 +173,7 @@ public class ReadingArticleService {
         if (request.topic() != null) existing.setTopic(request.topic());
         if (request.level() != null) existing.setLevel(request.level());
         if (request.content() != null) existing.setContent(request.content());
+        if (request.imageUrl() != null) existing.setImageUrl(request.imageUrl());
         if (request.keyVocabulary() != null) existing.setKeyVocabulary(request.keyVocabulary());
         if (request.annotations() != null) existing.setAnnotations(prepareAnnotations(request.annotations(), existing.getContent()));
         if (request.quiz() != null) existing.setQuiz(prepareQuiz(request.quiz()));

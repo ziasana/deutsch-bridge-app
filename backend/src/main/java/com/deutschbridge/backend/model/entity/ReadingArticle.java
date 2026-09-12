@@ -26,6 +26,12 @@ public class ReadingArticle {
     private @Column(columnDefinition = "TEXT") String content;
     private LearningLevel level;
 
+    /** Relative URL under /uploads (e.g. "/uploads/reading-articles/xyz.jpg") - null until an admin uploads one. */
+    private @Column(columnDefinition = "TEXT") String imageUrl;
+
+    @Column(columnDefinition = "bigint not null default 0")
+    private long viewCount = 0;
+
     /** Groups a simplified/authentic pair of the same story (spec 1.1) - null if standalone. */
     private String linkedGroupId;
 

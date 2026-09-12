@@ -14,12 +14,14 @@ import {
     suggestAnnotations,
     generateQuiz,
     getArticleQuizForAdmin,
+    uploadReadingArticleImage,
 } from "@/services/adminReadingService";
 import { Annotation, AnnotationType, KeyVocabularyItem, ReadingArticle, ReadingQuizQuestion, ReadingQuizQuestionType } from "@/types/reading";
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
+import { getArticleImageSrc } from "@/lib/readingImages";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const ANNOTATION_TYPES: AnnotationType[] = ["WORD", "NOMEN_VERB_VERBINDUNG", "REDEWENDUNG"];
@@ -33,7 +35,14 @@ const QUIZ_TYPES: ReadingQuizQuestionType[] = [
 
 type Mode = "generate" | "paste";
 
-const emptyManualForm = { title: "", topic: "", level: "A2", content: "", linkedGroupId: "" };
+const emptyManualForm = {
+    title: "",
+    topic: "",
+    level: "A2",
+    content: "",
+    linkedGroupId: "",
+    imageUrl: null as string | null,
+};
 
 const emptyAnnotation = (): Annotation => ({
     id: crypto.randomUUID(),
@@ -81,6 +90,7 @@ export default function AdminReadingPage() {
     const [manualAnnotations, setManualAnnotations] = useState<Annotation[]>([]);
     const [manualQuiz, setManualQuiz] = useState<ReadingQuizQuestion[]>([]);
     const [isSuggesting, setIsSuggesting] = useState(false);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [isSuggestingAnnotations, setIsSuggestingAnnotations] = useState(false);
     const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
 
@@ -128,6 +138,23 @@ export default function AdminReadingPage() {
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to generate article."))
             .finally(() => setIsSaving(false));
     };
+
+    const handleImageSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (!file) return;
+
+        setIsUploadingImage(true);
+        uploadReadingArticleImage(file)
+            .then((res) => {
+                setManualForm((prev) => ({ ...prev, imageUrl: res.data.url }));
+                toast.success("Image uploaded.");
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to upload image."))
+            .finally(() => setIsUploadingImage(false));
+    };
+
+    const removeImage = () => setManualForm((prev) => ({ ...prev, imageUrl: "" }));
 
     const runSuggestVocabulary = () => {
         if (!manualForm.content.trim()) {
@@ -212,6 +239,7 @@ export default function AdminReadingPage() {
             level: article.level,
             content: article.content,
             linkedGroupId: article.linkedGroupId ?? "",
+            imageUrl: article.imageUrl,
         });
         setManualVocab(article.keyVocabulary);
         setManualAnnotations(article.annotations ?? []);
@@ -235,6 +263,7 @@ export default function AdminReadingPage() {
             topic: manualForm.topic,
             level: manualForm.level,
             content: manualForm.content,
+            imageUrl: manualForm.imageUrl,
             keyVocabulary: manualVocab.filter((v) => v.word.trim() && v.meaning.trim()),
             annotations: manualAnnotations.filter((a) => a.surfaceText.trim() && a.lemma.trim()),
             quiz: manualQuiz
@@ -368,6 +397,43 @@ export default function AdminReadingPage() {
                                         </option>
                                     ))}
                                 </select>
+                            </div>
+                            <div>
+                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                                    Article image (optional)
+                                </label>
+                                <div className="flex items-center gap-4">
+                                    <img
+                                        src={getArticleImageSrc(manualForm.imageUrl, manualForm.level)}
+                                        alt="Article cover preview"
+                                        className="w-24 h-16 object-cover rounded-lg border border-gray-300 dark:border-gray-700"
+                                    />
+                                    <div className="flex flex-col gap-2">
+                                        <input
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp"
+                                            onChange={handleImageSelected}
+                                            disabled={isUploadingImage}
+                                            className="text-sm text-gray-600 dark:text-gray-300"
+                                        />
+                                        {manualForm.imageUrl && (
+                                            <button
+                                                type="button"
+                                                className="text-xs text-left underline text-gray-500 dark:text-gray-400 w-fit"
+                                                onClick={removeImage}
+                                            >
+                                                Remove image (use default)
+                                            </button>
+                                        )}
+                                        {isUploadingImage && (
+                                            <span className="text-xs text-gray-500 dark:text-gray-400">Uploading...</span>
+                                        )}
+                                    </div>
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    JPEG, PNG, or WEBP, up to 5MB. If you don&apos;t upload one, a default image for
+                                    the selected level is shown instead.
+                                </p>
                             </div>
                             <div>
                                 <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
@@ -681,6 +747,7 @@ export default function AdminReadingPage() {
                             <table className="w-full text-left">
                                 <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm">
                                     <tr>
+                                        <th className="px-6 py-3">Image</th>
                                         <th className="px-6 py-3">Title</th>
                                         <th className="px-6 py-3">Level</th>
                                         <th className="px-6 py-3">Vocabulary</th>
@@ -691,6 +758,13 @@ export default function AdminReadingPage() {
                                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                                     {articles.map((article) => (
                                         <tr key={article.id}>
+                                            <td className="px-6 py-4">
+                                                <img
+                                                    src={getArticleImageSrc(article.imageUrl, article.level)}
+                                                    alt=""
+                                                    className="w-14 h-10 object-cover rounded-md border border-gray-200 dark:border-gray-700"
+                                                />
+                                            </td>
                                             <td className="px-6 py-4 text-gray-900 dark:text-white">
                                                 {article.title}
                                             </td>
@@ -723,7 +797,7 @@ export default function AdminReadingPage() {
                                     ))}
                                     {articles.length === 0 && (
                                         <tr>
-                                            <td colSpan={5} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                                            <td colSpan={6} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
                                                 No reading articles found.
                                             </td>
                                         </tr>
