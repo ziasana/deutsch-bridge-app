@@ -29,6 +29,7 @@ public class ExamExerciseMapper {
                 exercise.getAnswerOptions(),
                 exercise.getDefaultExplanation(),
                 exercise.getDefaultCommonMistake(),
+                exercise.getModelSolution(),
                 exercise.isPublished(),
                 exercise.getCreatedAt()
         );
@@ -53,11 +54,12 @@ public class ExamExerciseMapper {
                 exercise.getTaskType() != null ? exercise.getTaskType().name() : null,
                 exercise.getLevel() != null ? exercise.getLevel().getValue() : null,
                 exercise.getPartNumber(),
-                passages.stream().map(p -> new ExamPassagePublic(p.getId(), p.getLabel(), p.getContent(), p.getImageUrl())).toList(),
+                passages.stream().map(p -> new ExamPassagePublic(p.getId(), p.getLabel(), p.getContent(), p.getImageUrl(), p.getAudioUrl())).toList(),
                 questions.stream()
                         .map(q -> new ExamQuestionPublic(q.getId(), q.getTaskType(), q.getPrompt(), q.getSectionIndex(), q.getOptions(), q.getGapNumber()))
                         .toList(),
                 exercise.getAnswerOptions(),
+                exercise.getModelSolution(),
                 completedExerciseIds.contains(exercise.getId())
         );
     }

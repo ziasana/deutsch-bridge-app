@@ -19,6 +19,7 @@ public record ExamExerciseManualRequest(
         List<String> answerOptions,
         String defaultExplanation,
         String defaultCommonMistake,
+        String modelSolution,
         Boolean published
 ) {
 }

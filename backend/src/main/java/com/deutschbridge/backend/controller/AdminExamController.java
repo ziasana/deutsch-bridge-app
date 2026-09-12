@@ -31,6 +31,11 @@ public class AdminExamController {
         return ResponseEntity.ok(new ImageUploadResponse(fileStorageService.storeExamPassageImage(file)));
     }
 
+    @PostMapping(value = "/upload-audio", consumes = "multipart/form-data")
+    public ResponseEntity<ImageUploadResponse> uploadAudio(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(new ImageUploadResponse(fileStorageService.storeExamPassageAudio(file)));
+    }
+
     @GetMapping
     public ResponseEntity<List<ExamExerciseResponse>> getAll() {
         return ResponseEntity.ok(examExerciseService.findAllForAdmin());

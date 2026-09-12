@@ -31,6 +31,7 @@ public class ExamAttemptService {
 
     private static final String ATTEMPT_NOT_FOUND_MSG = "Exam attempt not found!";
     private static final String QUESTION_NOT_FOUND_MSG = "Exam question not found!";
+    private static final String ATTEMPT_ALREADY_COMPLETED_MSG = "This exam attempt has already been completed.";
 
     private final ExamAttemptRepository attemptRepository;
     private final ExamExerciseService examExerciseService;
@@ -60,7 +61,7 @@ public class ExamAttemptService {
         List<ExamQuestion> questions = exercise.getQuestions() != null ? exercise.getQuestions() : List.of();
 
         List<ExamPassagePublic> passagesPublic = passages.stream()
-                .map(p -> new ExamPassagePublic(p.getId(), p.getLabel(), p.getContent(), p.getImageUrl()))
+                .map(p -> new ExamPassagePublic(p.getId(), p.getLabel(), p.getContent(), p.getImageUrl(), p.getAudioUrl()))
                 .toList();
         List<ExamQuestionPublic> questionsPublic = questions.stream()
                 .map(q -> new ExamQuestionPublic(q.getId(), q.getTaskType(), q.getPrompt(), q.getSectionIndex(), q.getOptions(), q.getGapNumber()))
@@ -71,6 +72,7 @@ public class ExamAttemptService {
 
     public ExamAnswerFeedbackResponse submitAnswer(String attemptId, SubmitExamAnswerRequest request) throws DataNotFoundException {
         ExamAttempt attempt = findAttempt(attemptId);
+        requireNotCompleted(attempt);
         ExamExercise exercise = attempt.getExercise();
 
         ExamQuestion question = (exercise.getQuestions() != null ? exercise.getQuestions() : List.<ExamQuestion>of())
@@ -87,15 +89,23 @@ public class ExamAttemptService {
         String commonMistake = question.getCommonMistake() != null && !question.getCommonMistake().isBlank()
                 ? question.getCommonMistake()
                 : exercise.getDefaultCommonMistake();
+        String transcript = referencedTranscript(exercise, question);
 
-        recordAnswer(attempt, question, request, correct, explanation, commonMistake);
+        recordAnswer(attempt, question, request, correct, explanation, commonMistake, transcript);
         attemptRepository.save(attempt);
 
-        return new ExamAnswerFeedbackResponse(correct, question.getCorrectAnswer(), explanation, commonMistake);
+        return new ExamAnswerFeedbackResponse(correct, question.getCorrectAnswer(), explanation, commonMistake, transcript);
+    }
+
+    private String referencedTranscript(ExamExercise exercise, ExamQuestion question) {
+        if (question.getSectionIndex() == null || exercise.getPassages() == null) return null;
+        if (question.getSectionIndex() < 0 || question.getSectionIndex() >= exercise.getPassages().size()) return null;
+        return exercise.getPassages().get(question.getSectionIndex()).getTranscript();
     }
 
     public ExamAttemptResultResponse complete(String attemptId, CompleteExamAttemptRequest request) throws DataNotFoundException {
         ExamAttempt attempt = findAttempt(attemptId);
+        requireNotCompleted(attempt);
         List<ExamQuestion> questions = attempt.getExercise().getQuestions() != null
                 ? attempt.getExercise().getQuestions() : List.of();
 
@@ -120,11 +130,17 @@ public class ExamAttemptService {
                 .orElseThrow(() -> new DataNotFoundException(ATTEMPT_NOT_FOUND_MSG));
     }
 
+    private void requireNotCompleted(ExamAttempt attempt) {
+        if (attempt.getCompletedAt() != null) {
+            throw new IllegalArgumentException(ATTEMPT_ALREADY_COMPLETED_MSG);
+        }
+    }
+
     private void recordAnswer(ExamAttempt attempt, ExamQuestion question, SubmitExamAnswerRequest request,
-                               boolean correct, String explanation, String commonMistake) {
+                               boolean correct, String explanation, String commonMistake, String transcript) {
         List<ExamAnswerRecord> answers = attempt.getAnswers() != null ? attempt.getAnswers() : new ArrayList<>();
         answers.removeIf(a -> a.getQuestionId().equals(question.getId()));
-        answers.add(new ExamAnswerRecord(question.getId(), request.answer(), correct, explanation, commonMistake));
+        answers.add(new ExamAnswerRecord(question.getId(), request.answer(), correct, explanation, commonMistake, transcript));
         attempt.setAnswers(answers);
     }
 }

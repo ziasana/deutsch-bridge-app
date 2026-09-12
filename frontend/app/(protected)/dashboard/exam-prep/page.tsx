@@ -13,6 +13,7 @@ const TASK_TYPE_LABELS: Record<ExamTaskType, string> = {
     MULTIPLE_CHOICE: "Multiple Choice",
     TRUE_FALSE_NOT_GIVEN: "Richtig / Falsch / Nicht im Text",
     WORD_BANK_CLOZE: "Lückentext",
+    WRITING_TASK: "Schriftlicher Ausdruck",
 };
 
 const SPRACHBAUSTEINE_TASK_TYPE_LABELS: Partial<Record<ExamTaskType, string>> = {
@@ -23,6 +24,8 @@ const SPRACHBAUSTEINE_TASK_TYPE_LABELS: Partial<Record<ExamTaskType, string>> = 
 const SECTION_TABS: { value: ExamSection; label: string }[] = [
     { value: "LESEVERSTEHEN", label: "Leseverstehen" },
     { value: "SPRACHBAUSTEINE", label: "Sprachbausteine" },
+    { value: "HOERVERSTEHEN", label: "Hörverstehen" },
+    { value: "SCHRIFTLICHER_AUSDRUCK", label: "Schriftlicher Ausdruck" },
 ];
 
 type CompletedFilter = "ALL" | "COMPLETED" | "OPEN";
@@ -56,13 +59,16 @@ export default function ExamPrepPage() {
     );
 
     const isLeseverstehen = sectionFilter === "LESEVERSTEHEN";
+    const isHoerverstehen = sectionFilter === "HOERVERSTEHEN";
+    const groupsByPart = isLeseverstehen || isHoerverstehen;
 
-    const groupKeyOf = (e: ExamExercisePublicResponse) => (isLeseverstehen ? String(e.partNumber ?? 1) : e.taskType);
-    const groupOrder = isLeseverstehen ? ["1", "2", "3"] : ["MULTIPLE_CHOICE", "WORD_BANK_CLOZE"];
-    const groupLabel = (key: string) =>
-        isLeseverstehen
-            ? `Leseverstehen Teil ${key}`
-            : SPRACHBAUSTEINE_TASK_TYPE_LABELS[key as ExamTaskType] ?? TASK_TYPE_LABELS[key as ExamTaskType] ?? key;
+    const groupKeyOf = (e: ExamExercisePublicResponse) => (groupsByPart ? String(e.partNumber ?? 1) : e.taskType);
+    const groupOrder = groupsByPart ? ["1", "2", "3"] : ["MULTIPLE_CHOICE", "WORD_BANK_CLOZE"];
+    const groupLabel = (key: string) => {
+        if (isLeseverstehen) return `Leseverstehen Teil ${key}`;
+        if (isHoerverstehen) return `Hörverstehen Teil ${key}`;
+        return SPRACHBAUSTEINE_TASK_TYPE_LABELS[key as ExamTaskType] ?? TASK_TYPE_LABELS[key as ExamTaskType] ?? key;
+    };
 
     const sortedFiltered = [...filtered].sort((a, b) => {
         const ai = groupOrder.indexOf(groupKeyOf(a));
@@ -174,7 +180,9 @@ export default function ExamPrepPage() {
                                                 )}
                                             </div>
                                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                                {exercise.questions.length} Aufgaben
+                                                {exercise.section === "SCHRIFTLICHER_AUSDRUCK"
+                                                    ? "Schreibaufgabe"
+                                                    : `${exercise.questions.length} Aufgaben`}
                                             </p>
                                         </div>
                                         <span className="text-gray-400 text-xl shrink-0">›</span>

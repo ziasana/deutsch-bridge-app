@@ -4,6 +4,7 @@ public record ExamAnswerFeedbackResponse(
         boolean correct,
         String correctAnswer,
         String explanation,
-        String commonMistake
+        String commonMistake,
+        String transcript
 ) {
 }

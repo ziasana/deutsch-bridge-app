@@ -9,6 +9,14 @@ export const uploadExamPassageImage = async (file: File) => {
     });
 };
 
+export const uploadExamPassageAudio = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return await api.post<{ url: string }>("/admin/exam/upload-audio", formData, {
+        headers: { "Content-Type": undefined },
+    });
+};
+
 export const getExamExercisesForAdmin = async () => {
     return await api.get<ExamExerciseResponse[]>("/admin/exam");
 };

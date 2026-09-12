@@ -157,6 +157,13 @@ function Toolbar({
                 ⯈
             </ToolbarButton>
             <div className="w-px bg-gray-300 dark:bg-gray-600 mx-1" />
+            <ToolbarButton
+                title="Line break (Shift+Enter)"
+                onClick={() => editor.chain().focus().setHardBreak().run()}
+            >
+                ↵
+            </ToolbarButton>
+            <div className="w-px bg-gray-300 dark:bg-gray-600 mx-1" />
             <ToolbarButton title="Insert image" onClick={onInsertImage}>
                 🖼
             </ToolbarButton>

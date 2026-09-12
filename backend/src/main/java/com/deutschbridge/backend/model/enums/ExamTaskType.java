@@ -13,5 +13,7 @@ public enum ExamTaskType {
     /** Leseverstehen Teil 3: richtig/falsch/nicht im Text statements about short passages. */
     TRUE_FALSE_NOT_GIVEN,
     /** Sprachbausteine Teil 2: one running text with numbered gaps filled from a shared word pool. */
-    WORD_BANK_CLOZE
+    WORD_BANK_CLOZE,
+    /** Schriftlicher Ausdruck: a writing prompt with no grading, just a revealable model solution. */
+    WRITING_TASK
 }

@@ -10,6 +10,7 @@ import {
     updateExamExercise,
     deleteExamExercise,
     uploadExamPassageImage,
+    uploadExamPassageAudio,
 } from "@/services/adminExamService";
 import { ExamExerciseResponse, ExamPassage, ExamQuestion, ExamSection, ExamTaskType } from "@/types/exam";
 import Button from "@/componenets/Button";
@@ -26,12 +27,13 @@ const TFN_ANSWERS = ["RICHTIG", "FALSCH", "NICHT_IM_TEXT"];
 const TASK_TYPES_BY_SECTION: Record<ExamSection, ExamTaskType[]> = {
     LESEVERSTEHEN: ["MATCHING", "MULTIPLE_CHOICE", "TRUE_FALSE_NOT_GIVEN"],
     SPRACHBAUSTEINE: ["MULTIPLE_CHOICE", "WORD_BANK_CLOZE"],
-    HOERVERSTEHEN: [],
-    SCHRIFTLICHER_AUSDRUCK: [],
+    HOERVERSTEHEN: ["TRUE_FALSE_NOT_GIVEN"],
+    SCHRIFTLICHER_AUSDRUCK: ["WRITING_TASK"],
 };
 
 const TASK_TYPE_LABELS: Partial<Record<ExamTaskType, string>> = {
     MULTIPLE_CHOICE: "Multiple choice",
+    WRITING_TASK: "Schriftlicher Ausdruck",
 };
 
 const TASK_TYPE_LABELS_BY_SECTION: Partial<Record<ExamSection, Partial<Record<ExamTaskType, string>>>> = {
@@ -39,23 +41,50 @@ const TASK_TYPE_LABELS_BY_SECTION: Partial<Record<ExamSection, Partial<Record<Ex
         MULTIPLE_CHOICE: "Sprachbausteine Teil 1",
         WORD_BANK_CLOZE: "Sprachbausteine Teil 2",
     },
+    HOERVERSTEHEN: {
+        TRUE_FALSE_NOT_GIVEN: "Richtig / Falsch (+/-)",
+    },
 };
 
 const SHARED_POOL_TASK_TYPES: ExamTaskType[] = ["MATCHING", "WORD_BANK_CLOZE"];
 
+/** Hoerverstehen's Richtig/Falsch answer is authored via the same editable pool as MATCHING's
+ * headlines, just pre-seeded with "+"/"-" - so the Section/Task type dropdowns don't govern this,
+ * only the section does (all three Hoeren Teile share the one true/false format). */
+const usesAnswerOptionsPool = (section: ExamSection, taskType: ExamTaskType) =>
+    section === "HOERVERSTEHEN" || SHARED_POOL_TASK_TYPES.includes(taskType);
+
 const taskTypeLabel = (section: ExamSection, taskType: ExamTaskType): string =>
     TASK_TYPE_LABELS_BY_SECTION[section]?.[taskType] ?? TASK_TYPE_LABELS[taskType] ?? taskType;
 
-const sectionLabel = (section: ExamSection, partNumber: number | null): string =>
-    section === "LESEVERSTEHEN" ? `Leseverstehen Teil ${partNumber ?? 1}` : "Sprachbausteine";
+const sectionLabel = (section: ExamSection, partNumber: number | null): string => {
+    if (section === "LESEVERSTEHEN") return `Leseverstehen Teil ${partNumber ?? 1}`;
+    if (section === "HOERVERSTEHEN") return `Hörverstehen Teil ${partNumber ?? 1}`;
+    if (section === "SCHRIFTLICHER_AUSDRUCK") return "Schriftlicher Ausdruck";
+    return "Sprachbausteine";
+};
 
-type SectionOption = "LESEVERSTEHEN_1" | "LESEVERSTEHEN_2" | "LESEVERSTEHEN_3" | "SPRACHBAUSTEINE";
+type SectionOption =
+    | "LESEVERSTEHEN_1"
+    | "LESEVERSTEHEN_2"
+    | "LESEVERSTEHEN_3"
+    | "SPRACHBAUSTEINE"
+    | "HOERVERSTEHEN"
+    | "SCHRIFTLICHER_AUSDRUCK";
 
 const SECTION_OPTIONS: { value: SectionOption; label: string }[] = [
     { value: "LESEVERSTEHEN_1", label: "Leseverstehen Teil 1" },
     { value: "LESEVERSTEHEN_2", label: "Leseverstehen Teil 2" },
     { value: "LESEVERSTEHEN_3", label: "Leseverstehen Teil 3" },
     { value: "SPRACHBAUSTEINE", label: "Sprachbausteine" },
+    { value: "HOERVERSTEHEN", label: "Hörverstehen" },
+    { value: "SCHRIFTLICHER_AUSDRUCK", label: "Schriftlicher Ausdruck" },
+];
+
+const HOERVERSTEHEN_TEIL_OPTIONS = [
+    { value: "1", label: "Hörverstehen Teil 1" },
+    { value: "2", label: "Hörverstehen Teil 2" },
+    { value: "3", label: "Hörverstehen Teil 3" },
 ];
 
 const emptyForm = {
@@ -66,13 +95,14 @@ const emptyForm = {
     partNumber: "",
     defaultExplanation: "",
     defaultCommonMistake: "",
+    modelSolution: "",
     published: true,
 };
 
 const hasPassageContent = (p: ExamPassage) => {
     const hasText = p.content.replace(/<[^>]*>/g, "").trim().length > 0;
     const hasEmbeddedImage = /<img[\s>]/i.test(p.content);
-    return hasText || hasEmbeddedImage || Boolean(p.imageUrl);
+    return hasText || hasEmbeddedImage || Boolean(p.imageUrl) || Boolean(p.audioUrl);
 };
 
 const emptyPassage = (index: number): ExamPassage => ({
@@ -80,15 +110,17 @@ const emptyPassage = (index: number): ExamPassage => ({
     label: `Text ${index + 1}`,
     content: "",
     imageUrl: null,
+    audioUrl: null,
+    transcript: null,
 });
 
-const emptyQuestion = (taskType: ExamTaskType): ExamQuestion => ({
+const emptyQuestion = (taskType: ExamTaskType, section?: ExamSection): ExamQuestion => ({
     id: "",
     taskType,
     prompt: taskType === "MATCHING" ? "Welche Überschrift passt zu diesem Text?" : "",
     sectionIndex: null,
     options: taskType === "MULTIPLE_CHOICE" ? [] : null,
-    correctAnswer: taskType === "TRUE_FALSE_NOT_GIVEN" ? "RICHTIG" : "",
+    correctAnswer: taskType === "TRUE_FALSE_NOT_GIVEN" && section !== "HOERVERSTEHEN" ? "RICHTIG" : "",
     gapNumber: null,
     explanation: "",
     commonMistake: "",
@@ -131,6 +163,7 @@ export default function AdminExamPrepPage() {
     const [answerOptions, setAnswerOptions] = useState<string[]>([]);
     const [editingExercise, setEditingExercise] = useState<ExamExerciseResponse | null>(null);
     const [uploadingPassageImage, setUploadingPassageImage] = useState<number | null>(null);
+    const [uploadingPassageAudio, setUploadingPassageAudio] = useState<number | null>(null);
 
     const fetchExercises = useCallback(() => {
         getExamExercisesForAdmin()
@@ -161,15 +194,31 @@ export default function AdminExamPrepPage() {
     const sectionOptionValue: SectionOption =
         form.section === "SPRACHBAUSTEINE"
             ? "SPRACHBAUSTEINE"
-            : (`LESEVERSTEHEN_${form.partNumber === "2" || form.partNumber === "3" ? form.partNumber : "1"}` as SectionOption);
+            : form.section === "HOERVERSTEHEN"
+                ? "HOERVERSTEHEN"
+                : form.section === "SCHRIFTLICHER_AUSDRUCK"
+                    ? "SCHRIFTLICHER_AUSDRUCK"
+                    : (`LESEVERSTEHEN_${form.partNumber === "2" || form.partNumber === "3" ? form.partNumber : "1"}` as SectionOption);
 
     const changeSectionOption = (value: SectionOption) => {
-        const section: ExamSection = value === "SPRACHBAUSTEINE" ? "SPRACHBAUSTEINE" : "LESEVERSTEHEN";
-        const partNumber = value === "SPRACHBAUSTEINE" ? "" : value.replace("LESEVERSTEHEN_", "");
+        const section: ExamSection =
+            value === "SPRACHBAUSTEINE"
+                ? "SPRACHBAUSTEINE"
+                : value === "HOERVERSTEHEN"
+                    ? "HOERVERSTEHEN"
+                    : value === "SCHRIFTLICHER_AUSDRUCK"
+                        ? "SCHRIFTLICHER_AUSDRUCK"
+                        : "LESEVERSTEHEN";
+        const partNumber =
+            value === "SPRACHBAUSTEINE" || value === "SCHRIFTLICHER_AUSDRUCK"
+                ? ""
+                : value === "HOERVERSTEHEN"
+                    ? "1"
+                    : value.replace("LESEVERSTEHEN_", "");
         const taskType = TASK_TYPES_BY_SECTION[section][0] ?? form.taskType;
         setForm({ ...form, section, partNumber, taskType });
         setQuestions([]);
-        setAnswerOptions([]);
+        setAnswerOptions(section === "HOERVERSTEHEN" ? ["+", "-"] : []);
     };
 
     const changeTaskType = (taskType: ExamTaskType) => {
@@ -177,7 +226,11 @@ export default function AdminExamPrepPage() {
         setQuestions((prev) => prev.map((q) => ({ ...q, taskType })));
     };
 
-    const updatePassage = (idx: number, field: "label" | "content", value: string) => {
+    const changeHoerenTeil = (partNumber: string) => {
+        setForm({ ...form, partNumber });
+    };
+
+    const updatePassage = (idx: number, field: "label" | "content" | "transcript", value: string) => {
         setPassages((prev) => {
             const next = prev.map((p, i) => (i === idx ? { ...p, [field]: value } : p));
             if (field === "content" && form.taskType === "WORD_BANK_CLOZE") {
@@ -200,6 +253,19 @@ export default function AdminExamPrepPage() {
     };
     const removePassageImage = (idx: number) => {
         setPassages((prev) => prev.map((p, i) => (i === idx ? { ...p, imageUrl: null } : p)));
+    };
+
+    const uploadPassageAudio = (idx: number, file: File) => {
+        setUploadingPassageAudio(idx);
+        uploadExamPassageAudio(file)
+            .then((res) => {
+                setPassages((prev) => prev.map((p, i) => (i === idx ? { ...p, audioUrl: res.data.url } : p)));
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to upload audio."))
+            .finally(() => setUploadingPassageAudio(null));
+    };
+    const removePassageAudio = (idx: number) => {
+        setPassages((prev) => prev.map((p, i) => (i === idx ? { ...p, audioUrl: null } : p)));
     };
 
     /** Used by RichTextEditor for both the toolbar's "insert image" button and pasted images. */
@@ -234,7 +300,7 @@ export default function AdminExamPrepPage() {
         );
     };
     const removeQuestion = (idx: number) => setQuestions((prev) => prev.filter((_, i) => i !== idx));
-    const addQuestion = () => setQuestions((prev) => [...prev, emptyQuestion(form.taskType)]);
+    const addQuestion = () => setQuestions((prev) => [...prev, emptyQuestion(form.taskType, form.section)]);
 
     const startEdit = (exercise: ExamExerciseResponse) => {
         setEditingExercise(exercise);
@@ -246,6 +312,7 @@ export default function AdminExamPrepPage() {
             partNumber: exercise.partNumber != null ? String(exercise.partNumber) : "",
             defaultExplanation: exercise.defaultExplanation ?? "",
             defaultCommonMistake: exercise.defaultCommonMistake ?? "",
+            modelSolution: exercise.modelSolution ?? "",
             published: exercise.published,
         });
         setPassages(exercise.passages);
@@ -288,6 +355,7 @@ export default function AdminExamPrepPage() {
             answerOptions: answerOptions.map((o) => o.trim()).filter(Boolean),
             defaultExplanation: form.defaultExplanation.trim() || null,
             defaultCommonMistake: form.defaultCommonMistake.trim() || null,
+            modelSolution: form.modelSolution.trim() || null,
             published: form.published,
         };
 
@@ -321,7 +389,7 @@ export default function AdminExamPrepPage() {
             <div className="max-w-4xl mx-auto">
                 <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Prüfungsvorbereitung</h1>
                 <p className="text-gray-600 dark:text-gray-300 mt-2">
-                    Create exam-style Leseverstehen and Sprachbausteine exercises.
+                    Create exam-style Leseverstehen, Sprachbausteine, and Hörverstehen exercises.
                 </p>
 
                 <form onSubmit={submit} className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-6">
@@ -360,17 +428,31 @@ export default function AdminExamPrepPage() {
                         </div>
                         <div>
                             <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Task type</label>
-                            <select
-                                value={form.taskType}
-                                onChange={(e) => changeTaskType(e.target.value as ExamTaskType)}
-                                className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
-                            >
-                                {TASK_TYPES_BY_SECTION[form.section].map((t) => (
-                                    <option key={t} value={t}>
-                                        {taskTypeLabel(form.section, t)}
-                                    </option>
-                                ))}
-                            </select>
+                            {form.section === "HOERVERSTEHEN" ? (
+                                <select
+                                    value={form.partNumber || "1"}
+                                    onChange={(e) => changeHoerenTeil(e.target.value)}
+                                    className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+                                >
+                                    {HOERVERSTEHEN_TEIL_OPTIONS.map((opt) => (
+                                        <option key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <select
+                                    value={form.taskType}
+                                    onChange={(e) => changeTaskType(e.target.value as ExamTaskType)}
+                                    className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+                                >
+                                    {TASK_TYPES_BY_SECTION[form.section].map((t) => (
+                                        <option key={t} value={t}>
+                                            {taskTypeLabel(form.section, t)}
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
                         </div>
                         <div>
                             <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Level</label>
@@ -386,16 +468,18 @@ export default function AdminExamPrepPage() {
                                 ))}
                             </select>
                         </div>
-                        <div>
-                            <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Teil (optional)</label>
-                            <Input
-                                value={form.partNumber}
-                                onChange={(e) => setForm({ ...form, partNumber: e.target.value })}
-                                placeholder="1"
-                                required={false}
-                                className="w-24"
-                            />
-                        </div>
+                        {form.section !== "HOERVERSTEHEN" && (
+                            <div>
+                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Teil (optional)</label>
+                                <Input
+                                    value={form.partNumber}
+                                    onChange={(e) => setForm({ ...form, partNumber: e.target.value })}
+                                    placeholder="1"
+                                    required={false}
+                                    className="w-24"
+                                />
+                            </div>
+                        )}
                         <div className="flex items-end pb-3">
                             <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                                 <input
@@ -408,26 +492,30 @@ export default function AdminExamPrepPage() {
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
-                            Default explanation (fallback hint when a question has none)
-                        </label>
-                        <Input
-                            value={form.defaultExplanation}
-                            onChange={(e) => setForm({ ...form, defaultExplanation: e.target.value })}
-                            required={false}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
-                            Default common mistake (fallback)
-                        </label>
-                        <Input
-                            value={form.defaultCommonMistake}
-                            onChange={(e) => setForm({ ...form, defaultCommonMistake: e.target.value })}
-                            required={false}
-                        />
-                    </div>
+                    {form.section !== "SCHRIFTLICHER_AUSDRUCK" && (
+                        <>
+                            <div>
+                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                                    Default explanation (fallback hint when a question has none)
+                                </label>
+                                <Input
+                                    value={form.defaultExplanation}
+                                    onChange={(e) => setForm({ ...form, defaultExplanation: e.target.value })}
+                                    required={false}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                                    Default common mistake (fallback)
+                                </label>
+                                <Input
+                                    value={form.defaultCommonMistake}
+                                    onChange={(e) => setForm({ ...form, defaultCommonMistake: e.target.value })}
+                                    required={false}
+                                />
+                            </div>
+                        </>
+                    )}
 
                     <div>
                         <div className="flex items-center justify-between mb-2">
@@ -490,6 +578,48 @@ export default function AdminExamPrepPage() {
                                             )}
                                         </div>
                                     </div>
+
+                                    {form.section === "HOERVERSTEHEN" && (
+                                        <div className="space-y-2 pt-1 border-t border-gray-100 dark:border-gray-700">
+                                            <div className="flex items-center gap-4">
+                                                {p.audioUrl && (
+                                                    <audio controls src={resolveUploadUrl(p.audioUrl) ?? undefined} className="h-9" />
+                                                )}
+                                                <div className="flex flex-col gap-1">
+                                                    <input
+                                                        type="file"
+                                                        accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav,audio/ogg,.mp3,.m4a,.wav,.ogg"
+                                                        disabled={uploadingPassageAudio === idx}
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            e.target.value = "";
+                                                            if (file) uploadPassageAudio(idx, file);
+                                                        }}
+                                                        className="text-xs text-gray-600 dark:text-gray-300"
+                                                    />
+                                                    {p.audioUrl && (
+                                                        <button
+                                                            type="button"
+                                                            className="text-xs text-left underline text-gray-500 dark:text-gray-400 w-fit"
+                                                            onClick={() => removePassageAudio(idx)}
+                                                        >
+                                                            Remove audio
+                                                        </button>
+                                                    )}
+                                                    {uploadingPassageAudio === idx && (
+                                                        <span className="text-xs text-gray-500 dark:text-gray-400">Uploading...</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <textarea
+                                                value={p.transcript ?? ""}
+                                                onChange={(e) => updatePassage(idx, "transcript", e.target.value)}
+                                                placeholder="Transcript (shown to students only after they answer the related question)"
+                                                rows={3}
+                                                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                             <Button type="button" variant="secondary" className="text-xs px-3 py-1" onClick={addPassage}>
@@ -498,27 +628,31 @@ export default function AdminExamPrepPage() {
                         </div>
                     </div>
 
-                    {SHARED_POOL_TASK_TYPES.includes(form.taskType) && (
+                    {usesAnswerOptionsPool(form.section, form.taskType) && (
                         <div>
                             <div className="flex items-center justify-between mb-2">
                                 <label className="text-gray-700 dark:text-gray-300 text-sm">
-                                    {form.taskType === "WORD_BANK_CLOZE"
-                                        ? "Answer options (words) — include a few extra distractors that don't fit any gap"
-                                        : "Answer options (headlines) — include a few extra distractors that don't match any text"}
+                                    {form.section === "HOERVERSTEHEN"
+                                        ? "Answer options (Richtig/Falsch) — e.g. \"+\" and \"-\", used by every question below"
+                                        : form.taskType === "WORD_BANK_CLOZE"
+                                            ? "Answer options (words) — include a few extra distractors that don't fit any gap"
+                                            : "Answer options (headlines) — include a few extra distractors that don't match any text"}
                                 </label>
                             </div>
                             <div className="space-y-2">
                                 {answerOptions.map((option, idx) => (
                                     <div key={idx} className="flex gap-2 items-center">
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 w-5">
-                                            {String.fromCharCode(97 + idx)})
-                                        </span>
+                                        {form.section !== "HOERVERSTEHEN" && (
+                                            <span className="text-xs text-gray-500 dark:text-gray-400 w-5">
+                                                {String.fromCharCode(97 + idx)})
+                                            </span>
+                                        )}
                                         <Input
                                             value={option}
                                             onChange={(e) => updateAnswerOption(idx, e.target.value)}
-                                            placeholder="Headline text"
+                                            placeholder={form.section === "HOERVERSTEHEN" ? "e.g. + or -" : "Headline text"}
                                             required={false}
-                                            className="flex-1"
+                                            className={form.section === "HOERVERSTEHEN" ? "w-24" : "flex-1"}
                                         />
                                         <button type="button" onClick={() => removeAnswerOption(idx)} className="text-red-500 text-sm px-2">
                                             ✕
@@ -526,7 +660,7 @@ export default function AdminExamPrepPage() {
                                     </div>
                                 ))}
                                 <Button type="button" variant="secondary" className="text-xs px-3 py-1" onClick={addAnswerOption}>
-                                    + Add headline
+                                    {form.section === "HOERVERSTEHEN" ? "+ Add option" : "+ Add headline"}
                                 </Button>
                             </div>
                         </div>
@@ -589,7 +723,7 @@ export default function AdminExamPrepPage() {
                         </div>
                     )}
 
-                    {form.taskType !== "WORD_BANK_CLOZE" && (
+                    {form.taskType !== "WORD_BANK_CLOZE" && form.taskType !== "WRITING_TASK" && (
                     <div>
                         <div className="flex items-center justify-between mb-2">
                             <label className="text-gray-700 dark:text-gray-300 text-sm">Questions</label>
@@ -608,7 +742,13 @@ export default function AdminExamPrepPage() {
                                     <Input
                                         value={q.prompt}
                                         onChange={(e) => updateQuestion(idx, "prompt", e.target.value)}
-                                        placeholder={form.taskType === "MATCHING" ? "Prompt shown above the text (optional)" : "Question prompt"}
+                                        placeholder={
+                                            form.taskType === "MATCHING"
+                                                ? "Prompt shown above the text (optional)"
+                                                : form.section === "HOERVERSTEHEN"
+                                                    ? "Statement, e.g. \"Der Zug hat Verspätung.\""
+                                                    : "Question prompt"
+                                        }
                                         required={false}
                                     />
 
@@ -665,24 +805,41 @@ export default function AdminExamPrepPage() {
                                                 onChange={(e) => updateSectionIndex(idx, e.target.value)}
                                                 className="px-2 py-2 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm"
                                             >
-                                                <option value="">No specific passage</option>
+                                                <option value="">
+                                                    {form.section === "HOERVERSTEHEN" ? "Select audio clip..." : "No specific passage"}
+                                                </option>
                                                 {passages.map((p, pIdx) => (
                                                     <option key={p.id} value={pIdx}>
                                                         {p.label}
                                                     </option>
                                                 ))}
                                             </select>
-                                            <select
-                                                value={q.correctAnswer}
-                                                onChange={(e) => updateQuestion(idx, "correctAnswer", e.target.value)}
-                                                className="px-2 py-2 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm"
-                                            >
-                                                {TFN_ANSWERS.map((a) => (
-                                                    <option key={a} value={a}>
-                                                        {a}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                            {form.section === "HOERVERSTEHEN" ? (
+                                                <select
+                                                    value={q.correctAnswer}
+                                                    onChange={(e) => updateQuestion(idx, "correctAnswer", e.target.value)}
+                                                    className="px-2 py-2 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm"
+                                                >
+                                                    <option value="">Select correct answer...</option>
+                                                    {answerOptions.map((option, oIdx) => (
+                                                        <option key={option || oIdx} value={option}>
+                                                            {option}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <select
+                                                    value={q.correctAnswer}
+                                                    onChange={(e) => updateQuestion(idx, "correctAnswer", e.target.value)}
+                                                    className="px-2 py-2 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm"
+                                                >
+                                                    {TFN_ANSWERS.map((a) => (
+                                                        <option key={a} value={a}>
+                                                            {a}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            )}
                                         </div>
                                     )}
 
@@ -705,6 +862,20 @@ export default function AdminExamPrepPage() {
                             </Button>
                         </div>
                     </div>
+                    )}
+
+                    {form.section === "SCHRIFTLICHER_AUSDRUCK" && (
+                        <div>
+                            <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                                Mögliche Antwort (model solution, shown to students behind a &quot;Lösung anzeigen&quot; button)
+                            </label>
+                            <RichTextEditor
+                                value={form.modelSolution}
+                                onChange={(html) => setForm({ ...form, modelSolution: html })}
+                                placeholder="Mögliche Antwort..."
+                                onUploadImage={uploadInlineImage}
+                            />
+                        </div>
                     )}
 
                     <Button variant="primary" type="submit" disabled={isSaving}>

@@ -129,6 +129,7 @@ public class ExamExerciseService {
         if (request.answerOptions() != null) exercise.setAnswerOptions(request.answerOptions());
         if (request.defaultExplanation() != null) exercise.setDefaultExplanation(request.defaultExplanation());
         if (request.defaultCommonMistake() != null) exercise.setDefaultCommonMistake(request.defaultCommonMistake());
+        if (request.modelSolution() != null) exercise.setModelSolution(request.modelSolution());
         if (request.published() != null) exercise.setPublished(request.published());
     }
 

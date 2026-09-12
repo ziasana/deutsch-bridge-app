@@ -27,6 +27,31 @@ public class FileStorageService {
             "image/webp", ".webp"
     );
 
+    private static final Map<String, String> AUDIO_EXTENSION_BY_CONTENT_TYPE = Map.ofEntries(
+            Map.entry("audio/mpeg", ".mp3"),
+            Map.entry("audio/mp3", ".mp3"),
+            Map.entry("audio/mp4", ".m4a"),
+            Map.entry("audio/x-m4a", ".m4a"),
+            Map.entry("audio/m4a", ".m4a"),
+            Map.entry("audio/wav", ".wav"),
+            Map.entry("audio/x-wav", ".wav"),
+            Map.entry("audio/wave", ".wav"),
+            Map.entry("audio/ogg", ".ogg"),
+            Map.entry("application/ogg", ".ogg")
+    );
+
+    /**
+     * Browsers/OSes are unreliable about the multipart Content-Type they report for audio files
+     * (e.g. some send "application/octet-stream" for .mp3/.m4a) - fall back to the filename
+     * extension so a valid audio file is never rejected just because of a wrong/missing MIME type.
+     */
+    private static final Map<String, String> AUDIO_EXTENSION_BY_FILE_SUFFIX = Map.of(
+            ".mp3", ".mp3",
+            ".m4a", ".m4a",
+            ".wav", ".wav",
+            ".ogg", ".ogg"
+    );
+
     private final Path uploadRoot;
 
     public FileStorageService(@Value("${app.upload.dir}") String uploadDir) {
@@ -41,6 +66,28 @@ public class FileStorageService {
         return storeImage(file, "exam-passages");
     }
 
+    public String storeExamPassageAudio(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("No file was uploaded.");
+        }
+
+        String extension = AUDIO_EXTENSION_BY_CONTENT_TYPE.get(file.getContentType());
+        if (extension == null) {
+            extension = AUDIO_EXTENSION_BY_FILE_SUFFIX.get(fileSuffix(file.getOriginalFilename()));
+        }
+        if (extension == null) {
+            throw new IllegalArgumentException("Only MP3, M4A, WAV, or OGG audio files are allowed.");
+        }
+
+        return store(file, "exam-audio", extension, "Failed to store uploaded audio.");
+    }
+
+    private String fileSuffix(String filename) {
+        if (filename == null) return "";
+        int dotIndex = filename.lastIndexOf('.');
+        return dotIndex >= 0 ? filename.substring(dotIndex).toLowerCase() : "";
+    }
+
     private String storeImage(MultipartFile file, String subdirName) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("No file was uploaded.");
@@ -50,14 +97,18 @@ public class FileStorageService {
             throw new IllegalArgumentException("Only JPEG, PNG, or WEBP images are allowed.");
         }
 
-        String filename = NanoIdUtils.randomNanoId() + EXTENSION_BY_CONTENT_TYPE.get(contentType);
+        return store(file, subdirName, EXTENSION_BY_CONTENT_TYPE.get(contentType), "Failed to store uploaded image.");
+    }
+
+    private String store(MultipartFile file, String subdirName, String extension, String errorMessage) {
+        String filename = NanoIdUtils.randomNanoId() + extension;
         Path subdir = uploadRoot.resolve(subdirName);
 
         try {
             Files.createDirectories(subdir);
             file.transferTo(subdir.resolve(filename));
         } catch (IOException e) {
-            throw new UncheckedIOException("Failed to store uploaded image.", e);
+            throw new UncheckedIOException(errorMessage, e);
         }
 
         return "/uploads/" + subdirName + "/" + filename;

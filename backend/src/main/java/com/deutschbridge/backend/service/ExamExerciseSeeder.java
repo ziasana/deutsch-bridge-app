@@ -36,8 +36,10 @@ public class ExamExerciseSeeder {
             repository.save(matchingExercise());
             repository.save(trueFalseNotGivenExercise());
             repository.save(wordBankClozeExercise());
+            repository.save(hoerverstehenTeil1Exercise());
+            repository.save(schriftlicherAusdruckExercise());
 
-            log.info("Seeded 4 exam exercises!");
+            log.info("Seeded 6 exam exercises!");
         };
     }
 
@@ -251,6 +253,133 @@ public class ExamExerciseSeeder {
         return exercise;
     }
 
+    /**
+     * Real Telc Hoerverstehen Teil 1: five short, unrelated announcements/messages, each followed
+     * by exactly one Richtig("+")/Falsch("-") statement about that clip. The "+"/"-" answers come
+     * from the exercise's shared answerOptions pool (same mechanism as MATCHING's headline pool),
+     * so admins can author them like any other answer-options-driven question.
+     */
+    private ExamExercise hoerverstehenTeil1Exercise() {
+        ExamPassage clip1 = audioPassage("Durchsage 1", "/uploads/exam-audio/clip1.m4a",
+                "Achtung, eine Durchsage für alle Fahrgäste. Der Regionalexpress nach Hamburg auf Gleis drei hat heute eine Verspätung von etwa fünfzehn Minuten. Wir bitten um Ihr Verständnis.");
+        ExamPassage clip2 = audioPassage("Nachricht 2", "/uploads/exam-audio/clip2.m4a",
+                "Hallo Sabine, hier ist Julia. Ich kann heute Abend leider nicht zum Sport kommen, weil ich noch für die Prüfung morgen lernen muss. Können wir stattdessen am Wochenende laufen gehen? Ruf mich zurück, wenn du Zeit hast.");
+        ExamPassage clip3 = audioPassage("Durchsage 3", "/uploads/exam-audio/clip3.m4a",
+                "Liebe Kundinnen und Kunden, unser Geschäft schließt heute bereits um achtzehn Uhr wegen einer internen Fortbildung. Ab morgen sind wir wieder zu unseren gewohnten Öffnungszeiten für Sie da.");
+        ExamPassage clip4 = audioPassage("Nachricht 4", "/uploads/exam-audio/clip4.m4a",
+                "Guten Tag, hier spricht die Arztpraxis Doktor Weber. Ihr Termin am Donnerstag um zehn Uhr musste leider verschoben werden. Bitte rufen Sie in der Praxis an, um einen neuen Termin zu vereinbaren.");
+        ExamPassage clip5 = audioPassage("Durchsage 5", "/uploads/exam-audio/clip5.m4a",
+                "Achtung, liebe Reisende. Der ICE nach München fährt heute nicht von Gleis fünf, sondern von Gleis neun ab. Bitte beeilen Sie sich, der Zug fährt in wenigen Minuten.");
+
+        ExamQuestion q1 = audioTfnQuestion(0,
+                "Der Zug hat fünfzehn Minuten Verspätung.",
+                "+",
+                "Die Durchsage nennt eine konkrete Verspätung von fünfzehn Minuten - die Aussage stimmt.",
+                "Verwechsle 'Verspätung' nicht mit 'Ausfall' - der Zug fährt weiterhin, nur später.");
+        ExamQuestion q2 = audioTfnQuestion(1,
+                "Julia kann heute nicht zum Sport kommen, weil sie lernen muss.",
+                "+",
+                "Julia nennt den Grund direkt: 'weil ich noch für die Prüfung morgen lernen muss' - die Aussage stimmt.",
+                "Achte auf den Nebensatz mit 'weil' - er enthält meist den gefragten Grund.");
+        ExamQuestion q3 = audioTfnQuestion(2,
+                "Das Geschäft schließt heute wie gewohnt um zwanzig Uhr.",
+                "-",
+                "Die Durchsage sagt, das Geschäft schließt schon um achtzehn Uhr wegen einer Fortbildung - die Aussage ist falsch.",
+                "Verwechsle die genannte frühere Schließzeit nicht mit den gewohnten Öffnungszeiten, die erst 'ab morgen' wieder gelten.");
+        ExamQuestion q4 = audioTfnQuestion(3,
+                "Der Termin am Donnerstag findet wie geplant statt.",
+                "-",
+                "Die Nachricht sagt ausdrücklich, der Termin 'musste verschoben werden' - die Aussage ist falsch.",
+                "Eine Formulierung wie 'musste verschoben werden' widerspricht der Aussage, dass alles beim Alten bleibt.");
+        ExamQuestion q5 = audioTfnQuestion(4,
+                "Der Zug nach München fährt von Gleis fünf ab.",
+                "-",
+                "Die Durchsage korrigiert sich selbst: 'nicht von Gleis fünf, sondern von Gleis neun' - die Aussage ist falsch.",
+                "Achte auf Korrekturen mit 'nicht ..., sondern ...' - die zweite Angabe ist die richtige.");
+
+        ExamExercise exercise = new ExamExercise();
+        exercise.setTitle("Hörverstehen B1 - Kurze Durchsagen und Nachrichten");
+        exercise.setSection(ExamSection.HOERVERSTEHEN);
+        exercise.setTaskType(ExamTaskType.TRUE_FALSE_NOT_GIVEN);
+        exercise.setLevel(LearningLevel.B1);
+        exercise.setPartNumber(1);
+        exercise.setPassages(List.of(clip1, clip2, clip3, clip4, clip5));
+        exercise.setQuestions(List.of(q1, q2, q3, q4, q5));
+        exercise.setAnswerOptions(List.of("+", "-"));
+        exercise.setDefaultExplanation("Höre die Durchsage genau an und achte auf Schlüsselwörter wie Zahlen, Orte und Zeitangaben.");
+        exercise.setDefaultCommonMistake("Verwechsle nicht ähnliche Zahlen oder Orte, die im Hörtext genannt werden (z.B. verschiedene Gleisnummern).");
+        return exercise;
+    }
+
+    /**
+     * Real Telc Schriftlicher Ausdruck: a friend's email plus four bullet points to address. There
+     * is no grading - the student writes freely and can reveal a model solution afterward.
+     */
+    private ExamExercise schriftlicherAusdruckExercise() {
+        String content = """
+                <p><em>Sie haben von einer Freundin folgende E-Mail erhalten:</em></p>
+                <blockquote>
+                <p>Liebe/r ___,</p>
+                <p>danke für deine nette Einladung! Ich komme dich sehr gerne besuchen, um dein Land \
+                kennenzulernen - wie du weißt, war ich ja noch nie da. Wann wäre die beste Zeit, dich zu \
+                besuchen? Ich weiß noch nicht einmal, ob es bei euch im Sommer sehr heiß wird – allzu \
+                große Hitze mag ich nämlich nicht so sehr. Und gibt es sonst noch irgendwelche Dinge, \
+                die ich wissen sollte, bevor ich diese Reise mache?</p>
+                <p>Bitte schreib mir möglichst bald, damit ich mich gut auf die Reise vorbereiten kann.</p>
+                <p>Herzliche Grüße<br>Marianne</p>
+                </blockquote>
+                <p><em>Antworten Sie auf die E-Mail. Schreiben Sie etwas zu allen vier Punkten:</em></p>
+                <ul>
+                <li>welche Ausflüge Sie mit Marianne machen wollen</li>
+                <li>was die beste Jahreszeit für die Reise ist</li>
+                <li>welche Kleidung sie mitnehmen soll</li>
+                <li>wie sie sich am besten auf die Reise vorbereiten kann</li>
+                </ul>
+                <p><em>Überlegen Sie sich vor dem Schreiben eine passende Reihenfolge der Punkte, einen \
+                passenden Betreff, eine passende Anrede, Einleitung und einen passenden Schluss.</em></p>
+                """;
+
+        String modelSolution = """
+                <p><strong>Betreff: Endlich geht's los - meine Antwort auf deine Einladung</strong></p>
+                <p>Liebe Marianne,</p>
+                <p>vielen Dank für deine Einladung, ich freue mich schon riesig auf meinen Besuch bei dir!</p>
+                <p>Am besten wäre es, wenn ich im Frühling käme, denn dann ist es bei uns weder zu heiß \
+                noch zu kalt und man kann viel draußen unternehmen. Ich würde gerne ein paar Ausflüge mit \
+                dir machen, zum Beispiel eine Wanderung in den Bergen oder einen Ausflug in die nächste \
+                Stadt, um die Altstadt und die Museen zu besichtigen.</p>
+                <p>Was die Kleidung angeht: Ich packe am besten ein paar leichte Sachen für warme Tage, \
+                aber auch eine Jacke für den Fall, dass es abends kühler wird und es regnet.</p>
+                <p>Um mich gut vorzubereiten, werde ich mir vorher ein paar wichtige Wörter und Redewendungen \
+                in eurer Sprache anschauen und mich über die wichtigsten Sitten und Gebräuche informieren.</p>
+                <p>Ich freue mich schon sehr auf unser Wiedersehen!</p>
+                <p>Viele liebe Grüße<br>Deine Freundin</p>
+                """;
+
+        ExamExercise exercise = new ExamExercise();
+        exercise.setTitle("Schriftlicher Ausdruck B1 - Antwort auf eine Einladung");
+        exercise.setSection(ExamSection.SCHRIFTLICHER_AUSDRUCK);
+        exercise.setTaskType(ExamTaskType.WRITING_TASK);
+        exercise.setLevel(LearningLevel.B1);
+        exercise.setPassages(List.of(passage("Aufgabe", content.strip())));
+        exercise.setQuestions(List.of());
+        exercise.setModelSolution(modelSolution.strip());
+        return exercise;
+    }
+
+    private ExamPassage audioPassage(String label, String audioUrl, String transcript) {
+        ExamPassage passage = new ExamPassage(null, label, null, null, audioUrl, transcript);
+        return passage.ensureId();
+    }
+
+    private ExamQuestion audioTfnQuestion(int passageIndex, String statement, String correctAnswer,
+                                           String explanation, String commonMistake) {
+        ExamQuestion question = new ExamQuestion(
+                null, ExamTaskType.TRUE_FALSE_NOT_GIVEN, statement, passageIndex, null, correctAnswer, null,
+                explanation, commonMistake
+        );
+        return question.ensureId();
+    }
+
     private String gapMarker(int number) {
         return "<span data-exam-gap=\"" + number + "\">" + number + "</span>";
     }
@@ -264,7 +393,7 @@ public class ExamExerciseSeeder {
     }
 
     private ExamPassage passage(String label, String content) {
-        ExamPassage passage = new ExamPassage(null, label, content.strip(), null);
+        ExamPassage passage = new ExamPassage(null, label, content.strip(), null, null, null);
         return passage.ensureId();
     }
 

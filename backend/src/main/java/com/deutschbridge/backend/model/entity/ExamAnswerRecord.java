@@ -17,4 +17,7 @@ public class ExamAnswerRecord {
     private boolean correct;
     private String explanation;
     private String commonMistake;
+
+    /** Transcript of the audio passage the question referenced, if any (Hoerverstehen review). */
+    private String transcript;
 }

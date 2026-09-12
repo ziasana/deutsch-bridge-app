@@ -4,6 +4,7 @@ public record ExamPassagePublic(
         String id,
         String label,
         String content,
-        String imageUrl
+        String imageUrl,
+        String audioUrl
 ) {
 }

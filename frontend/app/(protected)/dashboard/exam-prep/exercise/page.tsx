@@ -20,6 +20,7 @@ import {
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
 import Button from "@/componenets/Button";
+import AudioPlayer from "@/componenets/AudioPlayer";
 import { resolveUploadUrl, resolveUploadUrlsInHtml } from "@/lib/backendOrigin";
 
 const TFN_OPTIONS = [
@@ -54,8 +55,10 @@ function AnswerOptionsPoolView({
 }
 
 function PassageBody({ passage }: Readonly<{ passage: ExamPassagePublic }>) {
+    const audioSrc = resolveUploadUrl(passage.audioUrl);
     return (
         <>
+            {audioSrc && <AudioPlayer key={audioSrc} src={audioSrc} />}
             {passage.imageUrl && (
                 <img src={resolveUploadUrl(passage.imageUrl) ?? undefined} alt="" className="max-w-full rounded-lg mb-2" />
             )}
@@ -124,6 +127,12 @@ function ResultCard({ index, item }: Readonly<{ index: number; item: ResultItem 
             )}
             {feedback.explanation && <p className="mt-1">💡 {feedback.explanation}</p>}
             {feedback.commonMistake && <p className="mt-1 italic">⚠️ Häufiger Fehler: {feedback.commonMistake}</p>}
+            {feedback.transcript && (
+                <div className="mt-2 pt-2 border-t border-current/20">
+                    <p className="font-semibold text-xs uppercase tracking-wide mb-1">Transkript</p>
+                    <p className="whitespace-pre-line font-normal">{feedback.transcript}</p>
+                </div>
+            )}
         </div>
     );
 }
@@ -168,6 +177,56 @@ function ResultsView({
                 >
                     {completed ? "Als erledigt markiert ✓" : markingCompleted ? "Wird markiert..." : "Als erledigt markieren"}
                 </Button>
+            </div>
+        </div>
+    );
+}
+
+/**
+ * Schriftlicher Ausdruck: no attempt/grading flow at all - just the writing prompt (as a passage)
+ * and a "Lösung anzeigen" button that reveals the admin-authored model solution. The student can
+ * still mark the exercise as done via the shared completion hook.
+ */
+function SchriftlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse }>) {
+    const [showSolution, setShowSolution] = useState(false);
+    const { completed, marking, markCompleted } = useExerciseCompletion(exercise);
+
+    return (
+        <div className="space-y-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-2">
+                {exercise.passages.map((p) => (
+                    <PassageBody key={p.id} passage={p} />
+                ))}
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-4">
+                {showSolution && exercise.modelSolution ? (
+                    <div
+                        className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed [&_p]:my-1"
+                        dangerouslySetInnerHTML={{ __html: resolveUploadUrlsInHtml(exercise.modelSolution) }}
+                    />
+                ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Schreibe deine Antwort in einem eigenen Dokument. Wenn du fertig bist, kannst du dir eine
+                        mögliche Lösung ansehen.
+                    </p>
+                )}
+
+                <div className="flex justify-end gap-2 flex-wrap">
+                    {!showSolution && (
+                        <Button variant="secondary" className="text-sm px-4 py-2" onClick={() => setShowSolution(true)}>
+                            Lösung anzeigen
+                        </Button>
+                    )}
+                    <Button
+                        variant="primary"
+                        className="text-sm px-4 py-2"
+                        disabled={completed || marking}
+                        onClick={markCompleted}
+                    >
+                        {completed ? "Als erledigt markiert ✓" : marking ? "Wird markiert..." : "Als erledigt markieren"}
+                    </Button>
+                </div>
             </div>
         </div>
     );
@@ -422,6 +481,12 @@ function FeedbackCard({ feedback }: Readonly<{ feedback: ExamAnswerFeedbackRespo
             )}
             {feedback.explanation && <p className="mt-1">💡 {feedback.explanation}</p>}
             {feedback.commonMistake && <p className="mt-1 italic">⚠️ Häufiger Fehler: {feedback.commonMistake}</p>}
+            {feedback.transcript && (
+                <div className="mt-2 pt-2 border-t border-current/20">
+                    <p className="font-semibold text-xs uppercase tracking-wide mb-1">Transkript</p>
+                    <p className="whitespace-pre-line font-normal">{feedback.transcript}</p>
+                </div>
+            )}
         </div>
     );
 }
@@ -572,6 +637,167 @@ function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse 
     );
 }
 
+interface HoerenListQuizState {
+    attemptId: string;
+    passages: ExamPassagePublic[];
+    questions: ExamQuestionPublic[];
+    answerOptions: string[];
+    answers: Record<string, string>;
+    submitting: boolean;
+}
+
+/**
+ * Hoerverstehen: every clip is listed at once as a numbered item with its own audio player and
+ * inline +/- buttons for Richtig/Falsch; a single "Antworten abgeben" grades everything together
+ * and only then reveals correctness/explanations/transcripts (mirrors ClozeGridQuiz's batching,
+ * so a student can revisit any clip before submitting but never sees feedback mid-attempt).
+ */
+function HoerenListQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse }>) {
+    const [quiz, setQuiz] = useState<HoerenListQuizState | null>(null);
+    const [results, setResults] = useState<ResultsState | null>(null);
+    const [starting, setStarting] = useState(false);
+    const { completed, marking, markCompleted } = useExerciseCompletion(exercise);
+
+    const beginAttempt = () => {
+        setStarting(true);
+        startExamAttempt(exercise.id)
+            .then((res) => {
+                setQuiz({
+                    attemptId: res.data.attemptId,
+                    passages: res.data.passages,
+                    questions: res.data.questions,
+                    answerOptions: res.data.answerOptions ?? [],
+                    answers: {},
+                    submitting: false,
+                });
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Übung konnte nicht gestartet werden."))
+            .finally(() => setStarting(false));
+    };
+
+    const practiceAgain = () => {
+        setResults(null);
+        setQuiz(null);
+    };
+
+    const submitAll = async () => {
+        if (!quiz) return;
+        setQuiz({ ...quiz, submitting: true });
+        try {
+            const items: ResultItem[] = [];
+            for (const question of quiz.questions) {
+                const res = await submitExamAnswer(quiz.attemptId, {
+                    questionId: question.id,
+                    answer: quiz.answers[question.id] ?? "",
+                });
+                items.push({ question, feedback: res.data });
+            }
+            const completeRes = await completeExamAttempt(quiz.attemptId);
+            setResults({ score: completeRes.data.score, items });
+        } catch (err) {
+            const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+            toast.error(message ?? "Übung konnte nicht abgeschlossen werden.");
+            setQuiz((prev) => (prev ? { ...prev, submitting: false } : prev));
+        }
+    };
+
+    if (results) {
+        return (
+            <ResultsView
+                results={results}
+                completed={completed}
+                markingCompleted={marking}
+                onPracticeAgain={practiceAgain}
+                onMarkCompleted={markCompleted}
+            />
+        );
+    }
+    if (!quiz) return <StartCard starting={starting} onStart={beginAttempt} />;
+    if (quiz.questions.length === 0) {
+        return <p className="text-sm text-gray-500 dark:text-gray-400">Diese Übung enthält noch keine Aufgaben.</p>;
+    }
+
+    const allAnswered = quiz.questions.every((q) => quiz.answers[q.id]);
+    const showPassageLabels = quiz.passages.length > 1;
+
+    return (
+        <div className="space-y-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-3">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                    Höre jeden Text an und markiere, ob die Aussage richtig ({quiz.answerOptions[0] ?? "+"}) oder falsch (
+                    {quiz.answerOptions[1] ?? "-"}) ist. Dein Ergebnis siehst du, sobald du alle Antworten abgegeben hast.
+                </p>
+                {quiz.passages.map((passage) => (
+                    <div
+                        key={passage.id}
+                        className="rounded-lg border-2 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/20 p-4"
+                    >
+                        <p className="font-semibold text-gray-900 dark:text-white mb-1">{passage.label}</p>
+                        <PassageBody passage={passage} />
+                    </div>
+                ))}
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-4">
+                <ol className="space-y-3">
+                    {quiz.questions.map((question, idx) => {
+                        const passage = question.sectionIndex != null ? quiz.passages[question.sectionIndex] : null;
+                        const selected = quiz.answers[question.id] ?? "";
+                        return (
+                            <li
+                                key={question.id}
+                                className="flex gap-3 items-start border border-gray-200 dark:border-gray-700 rounded-lg p-3"
+                            >
+                                <span className="font-semibold text-gray-400 dark:text-gray-500 pt-1.5 w-5 shrink-0">{idx + 1}.</span>
+                                <div className="flex gap-2 pt-0.5 shrink-0">
+                                    {quiz.answerOptions.map((option) => (
+                                        <button
+                                            key={option}
+                                            type="button"
+                                            disabled={quiz.submitting}
+                                            onClick={() =>
+                                                setQuiz((prev) =>
+                                                    prev ? { ...prev, answers: { ...prev.answers, [question.id]: option } } : prev
+                                                )
+                                            }
+                                            className={`w-9 h-9 rounded-lg border text-sm font-semibold ${
+                                                selected === option
+                                                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                                                    : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200"
+                                            }`}
+                                        >
+                                            {option}
+                                        </button>
+                                    ))}
+                                </div>
+                                <p className="font-medium text-gray-900 dark:text-white pt-1.5">
+                                    {showPassageLabels && passage && (
+                                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                                            {passage.label}:{" "}
+                                        </span>
+                                    )}
+                                    {question.prompt}
+                                </p>
+                            </li>
+                        );
+                    })}
+                </ol>
+
+                <div className="flex justify-end pt-2">
+                    <Button
+                        variant="primary"
+                        className="text-sm px-4 py-2"
+                        disabled={!allAnswered || quiz.submitting}
+                        onClick={submitAll}
+                    >
+                        {quiz.submitting ? "Wird geprüft..." : "Antworten abgeben"}
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function ExamExerciseContent() {
     const searchParams = useSearchParams();
     const exerciseId = searchParams.get("id") ?? "";
@@ -629,13 +855,20 @@ function ExamExerciseContent() {
                     <Badge variant="secondary">{exercise.level}</Badge>
                 </div>
 
-                {(exercise.taskType === "MATCHING" || exercise.taskType === "WORD_BANK_CLOZE") && (
-                    <AnswerOptionsPoolView answerOptions={exercise.answerOptions ?? []} taskType={exercise.taskType} />
+                {exercise.section !== "HOERVERSTEHEN" && exercise.section !== "SCHRIFTLICHER_AUSDRUCK" && (
+                    <>
+                        {(exercise.taskType === "MATCHING" || exercise.taskType === "WORD_BANK_CLOZE") && (
+                            <AnswerOptionsPoolView answerOptions={exercise.answerOptions ?? []} taskType={exercise.taskType} />
+                        )}
+                        <PassagesView passages={exercise.passages} taskType={exercise.taskType} />
+                    </>
                 )}
 
-                <PassagesView passages={exercise.passages} taskType={exercise.taskType} />
-
-                {exercise.taskType === "WORD_BANK_CLOZE" ? (
+                {exercise.section === "HOERVERSTEHEN" ? (
+                    <HoerenListQuiz exercise={exercise} />
+                ) : exercise.section === "SCHRIFTLICHER_AUSDRUCK" ? (
+                    <SchriftlicherAusdruckView exercise={exercise} />
+                ) : exercise.taskType === "WORD_BANK_CLOZE" ? (
                     <ClozeGridQuiz exercise={exercise} />
                 ) : (
                     <StepQuiz exercise={exercise} />

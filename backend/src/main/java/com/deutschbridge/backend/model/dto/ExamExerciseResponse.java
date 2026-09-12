@@ -19,6 +19,7 @@ public record ExamExerciseResponse(
         List<String> answerOptions,
         String defaultExplanation,
         String defaultCommonMistake,
+        String modelSolution,
         boolean published,
         LocalDateTime createdAt
 ) {

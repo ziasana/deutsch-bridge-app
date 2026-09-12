@@ -4,7 +4,7 @@ export type ExamSection =
     | "HOERVERSTEHEN"
     | "SCHRIFTLICHER_AUSDRUCK";
 
-export type ExamTaskType = "MATCHING" | "MULTIPLE_CHOICE" | "TRUE_FALSE_NOT_GIVEN" | "WORD_BANK_CLOZE";
+export type ExamTaskType = "MATCHING" | "MULTIPLE_CHOICE" | "TRUE_FALSE_NOT_GIVEN" | "WORD_BANK_CLOZE" | "WRITING_TASK";
 
 export interface ExamPassage {
     id: string;
@@ -12,6 +12,10 @@ export interface ExamPassage {
     /** HTML content authored with the rich-text editor. */
     content: string;
     imageUrl: string | null;
+    /** Relative "/uploads/exam-audio/..." URL - set for Hoerverstehen listening clips. */
+    audioUrl: string | null;
+    /** Full script of the audio. Admin-only (never sent to students before they answer). */
+    transcript: string | null;
 }
 
 export interface ExamQuestion {
@@ -43,6 +47,8 @@ export interface ExamExerciseResponse {
     answerOptions: string[] | null;
     defaultExplanation: string | null;
     defaultCommonMistake: string | null;
+    /** SCHRIFTLICHER_AUSDRUCK only: the "mögliche Antwort" revealed to students via a button. */
+    modelSolution: string | null;
     published: boolean;
     createdAt: string;
 }
@@ -52,6 +58,7 @@ export interface ExamPassagePublic {
     label: string;
     content: string;
     imageUrl: string | null;
+    audioUrl: string | null;
 }
 
 export interface ExamQuestionPublic {
@@ -73,6 +80,8 @@ export interface ExamExercisePublicResponse {
     passages: ExamPassagePublic[];
     questions: ExamQuestionPublic[];
     answerOptions: string[] | null;
+    /** SCHRIFTLICHER_AUSDRUCK only: the "mögliche Antwort" revealed via a button. */
+    modelSolution: string | null;
     completed: boolean;
 }
 
@@ -87,6 +96,7 @@ export interface ExamExerciseManualRequest {
     answerOptions: string[] | null;
     defaultExplanation: string | null;
     defaultCommonMistake: string | null;
+    modelSolution: string | null;
     published: boolean;
 }
 
@@ -109,6 +119,7 @@ export interface ExamAnswerFeedbackResponse {
     correctAnswer: string;
     explanation: string;
     commonMistake: string;
+    transcript: string | null;
 }
 
 export interface ExamAnswerRecord {
@@ -117,6 +128,7 @@ export interface ExamAnswerRecord {
     correct: boolean;
     explanation: string;
     commonMistake: string;
+    transcript: string | null;
 }
 
 export type CompleteExamAttemptRequest = Record<string, never>;

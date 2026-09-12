@@ -50,6 +50,9 @@ public class ExamExercise {
     private @Column(columnDefinition = "TEXT") String defaultExplanation;
     private @Column(columnDefinition = "TEXT") String defaultCommonMistake;
 
+    /** SCHRIFTLICHER_AUSDRUCK only: the "mögliche Antwort" a student can reveal via a button. */
+    private @Column(columnDefinition = "TEXT") String modelSolution;
+
     private boolean published = true;
     private LocalDateTime createdAt;
 
