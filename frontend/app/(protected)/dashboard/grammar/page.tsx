@@ -1,19 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ToastContainer, toast } from "react-toastify";
-import { getGrammarLessons, setLearningProgress } from "@/services/grammarService";
+import { getGrammarLessons } from "@/services/grammarService";
 import { GrammarLesson } from "@/types/grammar";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
-import Button from "@/componenets/Button";
+
+const ITEMS_PER_PAGE = 10;
 
 export default function GrammarLessonsPage() {
+    const router = useRouter();
     const [lessons, setLessons] = useState<GrammarLesson[]>([]);
     const [loading, setLoading] = useState(true);
-    const [openId, setOpenId] = useState<string | null>(null);
     const [levelFilter, setLevelFilter] = useState("ALL");
-    const [updatingId, setUpdatingId] = useState<string | null>(null);
+    const [search, setSearch] = useState("");
+    const [page, setPage] = useState(1);
 
     useEffect(() => {
         getGrammarLessons()
@@ -25,28 +28,18 @@ export default function GrammarLessonsPage() {
     if (loading) return <Loading />;
 
     const levels = Array.from(new Set(lessons.map((l) => l.level))).filter(Boolean);
-
-    const filtered = lessons.filter((l) => levelFilter === "ALL" || l.level === levelFilter);
+    const filtered = lessons.filter(
+        (l) =>
+            (levelFilter === "ALL" || l.level === levelFilter) &&
+            l.title.toLowerCase().includes(search.trim().toLowerCase())
+    );
 
     const isLearned = (lesson: GrammarLesson) =>
         lesson.learningProgresses?.some((lp) => lp.learned === true) ?? false;
 
-    const toggleLearned = (lesson: GrammarLesson) => {
-        setUpdatingId(lesson.id);
-        setLearningProgress({ lessonId: lesson.id, learned: !isLearned(lesson) })
-            .then(() => {
-                setLessons((prev) =>
-                    prev.map((l) =>
-                        l.id === lesson.id
-                            ? { ...l, learningProgresses: [{ id: "local", learned: !isLearned(lesson) }] }
-                            : l
-                    )
-                );
-                toast.success(!isLearned(lesson) ? "Marked as learned!" : "Marked as not learned.");
-            })
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to update progress."))
-            .finally(() => setUpdatingId(null));
-    };
+    const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+    const currentPage = Math.min(page, totalPages);
+    const paginated = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
@@ -56,11 +49,24 @@ export default function GrammarLessonsPage() {
                     Structured grammar explanations with examples and exercises.
                 </p>
 
-                <div className="mt-6 flex items-center gap-3">
+                <div className="mt-6 flex flex-wrap items-center gap-3">
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={(e) => {
+                            setSearch(e.target.value);
+                            setPage(1);
+                        }}
+                        placeholder="Search by title..."
+                        className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm flex-1 min-w-[200px]"
+                    />
                     <label className="text-sm text-gray-600 dark:text-gray-300">Level:</label>
                     <select
                         value={levelFilter}
-                        onChange={(e) => setLevelFilter(e.target.value)}
+                        onChange={(e) => {
+                            setLevelFilter(e.target.value);
+                            setPage(1);
+                        }}
                         className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
                     >
                         <option value="ALL">All levels</option>
@@ -72,79 +78,29 @@ export default function GrammarLessonsPage() {
                     </select>
                 </div>
 
-                <div className="mt-6 space-y-4">
-                    {filtered.map((lesson) => {
-                        const open = openId === lesson.id;
+                <div className="mt-6 space-y-3">
+                    {paginated.map((lesson) => {
                         const learned = isLearned(lesson);
                         return (
-                            <div
+                            <button
                                 key={lesson.id}
-                                className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden"
+                                onClick={() => router.push(`/dashboard/grammar/lesson?id=${lesson.id}`)}
+                                className="w-full flex items-center gap-4 bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden p-4 text-left hover:shadow-xl transition"
                             >
-                                <button
-                                    className="w-full flex items-center justify-between px-6 py-4 text-left"
-                                    onClick={() => setOpenId(open ? null : lesson.id)}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-lg font-semibold text-gray-900 dark:text-white">
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-lg font-semibold text-gray-900 dark:text-white truncate">
                                             {lesson.title}
                                         </span>
                                         <Badge variant="secondary">{lesson.level}</Badge>
                                         {learned && <Badge variant="default">Learned</Badge>}
                                     </div>
-                                    <span className="text-gray-400">{open ? "−" : "+"}</span>
-                                </button>
-
-                                {open && (
-                                    <div className="px-6 pb-6 space-y-4">
-                                        <p className="text-gray-600 dark:text-gray-300">{lesson.summary}</p>
-                                        <p className="text-gray-800 dark:text-gray-200 whitespace-pre-line">
-                                            {lesson.content}
-                                        </p>
-                                        {lesson.example && (
-                                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                                                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                                    Example:{" "}
-                                                </span>
-                                                <span className="text-gray-700 dark:text-gray-300">
-                                                    {lesson.example}
-                                                </span>
-                                            </div>
-                                        )}
-                                        {lesson.usageTips && (
-                                            <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4">
-                                                <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-                                                    Usage tip:{" "}
-                                                </span>
-                                                <span className="text-blue-700 dark:text-blue-300">
-                                                    {lesson.usageTips}
-                                                </span>
-                                            </div>
-                                        )}
-
-                                        <div className="flex items-center justify-between pt-2">
-                                            <a
-                                                href="/dashboard/exercises"
-                                                className="text-blue-600 dark:text-blue-400 font-medium hover:underline"
-                                            >
-                                                Practice this lesson →
-                                            </a>
-                                            <Button
-                                                variant={learned ? "secondary" : "primary"}
-                                                className="text-sm px-4 py-2"
-                                                disabled={updatingId === lesson.id}
-                                                onClick={() => toggleLearned(lesson)}
-                                            >
-                                                {updatingId === lesson.id
-                                                    ? "Saving..."
-                                                    : learned
-                                                        ? "Mark as not learned"
-                                                        : "Mark as learned"}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
+                                        {lesson.summary}
+                                    </p>
+                                </div>
+                                <span className="text-gray-400 text-xl shrink-0">›</span>
+                            </button>
                         );
                     })}
 
@@ -154,6 +110,28 @@ export default function GrammarLessonsPage() {
                         </div>
                     )}
                 </div>
+
+                {totalPages > 1 && (
+                    <div className="flex justify-center items-center gap-3 pt-6">
+                        <button
+                            onClick={() => setPage((p) => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 text-sm disabled:opacity-50"
+                        >
+                            Previous
+                        </button>
+                        <span className="text-sm text-gray-600 dark:text-gray-300">
+                            Page {currentPage} of {totalPages}
+                        </span>
+                        <button
+                            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 text-sm disabled:opacity-50"
+                        >
+                            Next
+                        </button>
+                    </div>
+                )}
             </div>
             <ToastContainer />
         </div>
