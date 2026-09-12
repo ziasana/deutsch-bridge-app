@@ -9,6 +9,7 @@ import com.deutschbridge.backend.model.entity.ExamPassage;
 import com.deutschbridge.backend.model.entity.ExamQuestion;
 
 import java.util.List;
+import java.util.Set;
 
 public class ExamExerciseMapper {
     private ExamExerciseMapper() {
@@ -38,6 +39,10 @@ public class ExamExerciseMapper {
      * start-attempt flow) is fetched directly, so passages/questions must never leak answers here.
      */
     public static ExamExercisePublicResponse mapToPublicResponse(ExamExercise exercise) {
+        return mapToPublicResponse(exercise, Set.of());
+    }
+
+    public static ExamExercisePublicResponse mapToPublicResponse(ExamExercise exercise, Set<String> completedExerciseIds) {
         List<ExamPassage> passages = exercise.getPassages() != null ? exercise.getPassages() : List.of();
         List<ExamQuestion> questions = exercise.getQuestions() != null ? exercise.getQuestions() : List.of();
 
@@ -52,7 +57,8 @@ public class ExamExerciseMapper {
                 questions.stream()
                         .map(q -> new ExamQuestionPublic(q.getId(), q.getTaskType(), q.getPrompt(), q.getSectionIndex(), q.getOptions(), q.getGapNumber()))
                         .toList(),
-                exercise.getAnswerOptions()
+                exercise.getAnswerOptions(),
+                completedExerciseIds.contains(exercise.getId())
         );
     }
 }

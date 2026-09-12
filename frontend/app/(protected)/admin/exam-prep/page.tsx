@@ -25,12 +25,38 @@ const TFN_ANSWERS = ["RICHTIG", "FALSCH", "NICHT_IM_TEXT"];
 
 const TASK_TYPES_BY_SECTION: Record<ExamSection, ExamTaskType[]> = {
     LESEVERSTEHEN: ["MATCHING", "MULTIPLE_CHOICE", "TRUE_FALSE_NOT_GIVEN"],
-    SPRACHBAUSTEINE: ["WORD_BANK_CLOZE"],
+    SPRACHBAUSTEINE: ["MULTIPLE_CHOICE", "WORD_BANK_CLOZE"],
     HOERVERSTEHEN: [],
     SCHRIFTLICHER_AUSDRUCK: [],
 };
 
+const TASK_TYPE_LABELS: Partial<Record<ExamTaskType, string>> = {
+    MULTIPLE_CHOICE: "Multiple choice",
+};
+
+const TASK_TYPE_LABELS_BY_SECTION: Partial<Record<ExamSection, Partial<Record<ExamTaskType, string>>>> = {
+    SPRACHBAUSTEINE: {
+        MULTIPLE_CHOICE: "Sprachbausteine Teil 1",
+        WORD_BANK_CLOZE: "Sprachbausteine Teil 2",
+    },
+};
+
 const SHARED_POOL_TASK_TYPES: ExamTaskType[] = ["MATCHING", "WORD_BANK_CLOZE"];
+
+const taskTypeLabel = (section: ExamSection, taskType: ExamTaskType): string =>
+    TASK_TYPE_LABELS_BY_SECTION[section]?.[taskType] ?? TASK_TYPE_LABELS[taskType] ?? taskType;
+
+const sectionLabel = (section: ExamSection, partNumber: number | null): string =>
+    section === "LESEVERSTEHEN" ? `Leseverstehen Teil ${partNumber ?? 1}` : "Sprachbausteine";
+
+type SectionOption = "LESEVERSTEHEN_1" | "LESEVERSTEHEN_2" | "LESEVERSTEHEN_3" | "SPRACHBAUSTEINE";
+
+const SECTION_OPTIONS: { value: SectionOption; label: string }[] = [
+    { value: "LESEVERSTEHEN_1", label: "Leseverstehen Teil 1" },
+    { value: "LESEVERSTEHEN_2", label: "Leseverstehen Teil 2" },
+    { value: "LESEVERSTEHEN_3", label: "Leseverstehen Teil 3" },
+    { value: "SPRACHBAUSTEINE", label: "Sprachbausteine" },
+];
 
 const emptyForm = {
     title: "",
@@ -132,9 +158,16 @@ export default function AdminExamPrepPage() {
         setEditingExercise(null);
     };
 
-    const changeSection = (section: ExamSection) => {
+    const sectionOptionValue: SectionOption =
+        form.section === "SPRACHBAUSTEINE"
+            ? "SPRACHBAUSTEINE"
+            : (`LESEVERSTEHEN_${form.partNumber === "2" || form.partNumber === "3" ? form.partNumber : "1"}` as SectionOption);
+
+    const changeSectionOption = (value: SectionOption) => {
+        const section: ExamSection = value === "SPRACHBAUSTEINE" ? "SPRACHBAUSTEINE" : "LESEVERSTEHEN";
+        const partNumber = value === "SPRACHBAUSTEINE" ? "" : value.replace("LESEVERSTEHEN_", "");
         const taskType = TASK_TYPES_BY_SECTION[section][0] ?? form.taskType;
-        setForm({ ...form, section, taskType });
+        setForm({ ...form, section, partNumber, taskType });
         setQuestions([]);
         setAnswerOptions([]);
     };
@@ -314,12 +347,15 @@ export default function AdminExamPrepPage() {
                         <div>
                             <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Section</label>
                             <select
-                                value={form.section}
-                                onChange={(e) => changeSection(e.target.value as ExamSection)}
+                                value={sectionOptionValue}
+                                onChange={(e) => changeSectionOption(e.target.value as SectionOption)}
                                 className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
                             >
-                                <option value="LESEVERSTEHEN">Leseverstehen</option>
-                                <option value="SPRACHBAUSTEINE">Sprachbausteine</option>
+                                {SECTION_OPTIONS.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                    </option>
+                                ))}
                             </select>
                         </div>
                         <div>
@@ -331,7 +367,7 @@ export default function AdminExamPrepPage() {
                             >
                                 {TASK_TYPES_BY_SECTION[form.section].map((t) => (
                                     <option key={t} value={t}>
-                                        {t}
+                                        {taskTypeLabel(form.section, t)}
                                     </option>
                                 ))}
                             </select>
@@ -698,8 +734,12 @@ export default function AdminExamPrepPage() {
                                     {exercises.map((exercise) => (
                                         <tr key={exercise.id}>
                                             <td className="px-6 py-4 text-gray-900 dark:text-white">{exercise.title}</td>
-                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{exercise.section}</td>
-                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{exercise.taskType}</td>
+                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
+                                                {sectionLabel(exercise.section, exercise.partNumber)}
+                                            </td>
+                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
+                                                {taskTypeLabel(exercise.section, exercise.taskType)}
+                                            </td>
                                             <td className="px-6 py-4">
                                                 <Badge variant="secondary">{exercise.level}</Badge>
                                             </td>

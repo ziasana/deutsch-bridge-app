@@ -12,6 +12,7 @@ public record ExamExercisePublicResponse(
         Integer partNumber,
         List<ExamPassagePublic> passages,
         List<ExamQuestionPublic> questions,
-        List<String> answerOptions
+        List<String> answerOptions,
+        boolean completed
 ) {
 }

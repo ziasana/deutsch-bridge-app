@@ -7,6 +7,7 @@ import com.deutschbridge.backend.model.dto.ExamAttemptResultResponse;
 import com.deutschbridge.backend.model.dto.StartExamAttemptResponse;
 import com.deutschbridge.backend.model.dto.SubmitExamAnswerRequest;
 import com.deutschbridge.backend.service.ExamAttemptService;
+import com.deutschbridge.backend.service.ExamExerciseService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,9 +16,11 @@ import org.springframework.web.bind.annotation.*;
 public class ExamAttemptController {
 
     private final ExamAttemptService examAttemptService;
+    private final ExamExerciseService examExerciseService;
 
-    public ExamAttemptController(ExamAttemptService examAttemptService) {
+    public ExamAttemptController(ExamAttemptService examAttemptService, ExamExerciseService examExerciseService) {
         this.examAttemptService = examAttemptService;
+        this.examExerciseService = examExerciseService;
     }
 
     @PostMapping("/{exerciseId}/attempts")
@@ -39,5 +42,17 @@ public class ExamAttemptController {
             @RequestBody CompleteExamAttemptRequest request
     ) throws DataNotFoundException {
         return ResponseEntity.ok(examAttemptService.complete(attemptId, request));
+    }
+
+    @PostMapping("/{exerciseId}/mark-completed")
+    public ResponseEntity<Void> markCompleted(@PathVariable String exerciseId) throws DataNotFoundException {
+        examExerciseService.markCompleted(exerciseId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{exerciseId}/mark-completed")
+    public ResponseEntity<Void> unmarkCompleted(@PathVariable String exerciseId) {
+        examExerciseService.unmarkCompleted(exerciseId);
+        return ResponseEntity.noContent().build();
     }
 }

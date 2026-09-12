@@ -1,21 +1,27 @@
 package com.deutschbridge.backend.service;
 
+import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.ExamExerciseManualRequest;
 import com.deutschbridge.backend.model.dto.ExamExercisePublicResponse;
 import com.deutschbridge.backend.model.dto.ExamExerciseResponse;
 import com.deutschbridge.backend.model.entity.ExamExercise;
+import com.deutschbridge.backend.model.entity.ExamExerciseCompletion;
 import com.deutschbridge.backend.model.entity.ExamPassage;
 import com.deutschbridge.backend.model.entity.ExamQuestion;
 import com.deutschbridge.backend.model.enums.ExamSection;
 import com.deutschbridge.backend.model.enums.ExamTaskType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
+import com.deutschbridge.backend.repository.ExamExerciseCompletionRepository;
 import com.deutschbridge.backend.repository.ExamExerciseRepository;
 import com.deutschbridge.backend.util.ExamExerciseMapper;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class ExamExerciseService {
@@ -23,9 +29,15 @@ public class ExamExerciseService {
     private static final String NOT_FOUND_MSG = "Exam exercise not found!";
 
     private final ExamExerciseRepository examExerciseRepository;
+    private final ExamExerciseCompletionRepository examExerciseCompletionRepository;
+    private final RequestContext requestContext;
 
-    public ExamExerciseService(ExamExerciseRepository examExerciseRepository) {
+    public ExamExerciseService(ExamExerciseRepository examExerciseRepository,
+                                ExamExerciseCompletionRepository examExerciseCompletionRepository,
+                                RequestContext requestContext) {
         this.examExerciseRepository = examExerciseRepository;
+        this.examExerciseCompletionRepository = examExerciseCompletionRepository;
+        this.requestContext = requestContext;
     }
 
     public ExamExercise findById(String id) throws DataNotFoundException {
@@ -47,14 +59,38 @@ public class ExamExerciseService {
             exercises = examExerciseRepository.findBySection(section);
         }
 
+        Set<String> completedExerciseIds = examExerciseCompletionRepository.findByUserId(requestContext.getUserId()).stream()
+                .map(ExamExerciseCompletion::getExerciseId)
+                .collect(Collectors.toSet());
+
         return exercises.stream()
                 .filter(ExamExercise::isPublished)
-                .map(ExamExerciseMapper::mapToPublicResponse)
+                .map(exercise -> ExamExerciseMapper.mapToPublicResponse(exercise, completedExerciseIds))
                 .toList();
     }
 
     public ExamExercisePublicResponse findByIdPublic(String id) throws DataNotFoundException {
         return ExamExerciseMapper.mapToPublicResponse(findById(id));
+    }
+
+    public void markCompleted(String exerciseId) throws DataNotFoundException {
+        findById(exerciseId);
+        String userId = requestContext.getUserId();
+        ExamExerciseCompletion completion = examExerciseCompletionRepository
+                .findByUserIdAndExerciseId(userId, exerciseId)
+                .orElseGet(() -> {
+                    ExamExerciseCompletion c = new ExamExerciseCompletion();
+                    c.setUserId(userId);
+                    c.setExerciseId(exerciseId);
+                    return c;
+                });
+        completion.setCompletedAt(LocalDateTime.now());
+        examExerciseCompletionRepository.save(completion);
+    }
+
+    public void unmarkCompleted(String exerciseId) {
+        examExerciseCompletionRepository.findByUserIdAndExerciseId(requestContext.getUserId(), exerciseId)
+                .ifPresent(examExerciseCompletionRepository::delete);
     }
 
     public List<ExamExerciseResponse> findAllForAdmin() {

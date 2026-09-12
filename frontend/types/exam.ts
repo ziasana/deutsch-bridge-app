@@ -73,6 +73,7 @@ export interface ExamExercisePublicResponse {
     passages: ExamPassagePublic[];
     questions: ExamQuestionPublic[];
     answerOptions: string[] | null;
+    completed: boolean;
 }
 
 export interface ExamExerciseManualRequest {
