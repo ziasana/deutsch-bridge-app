@@ -29,6 +29,7 @@ const TASK_TYPES_BY_SECTION: Record<ExamSection, ExamTaskType[]> = {
     SPRACHBAUSTEINE: ["MULTIPLE_CHOICE", "WORD_BANK_CLOZE"],
     HOERVERSTEHEN: ["TRUE_FALSE_NOT_GIVEN"],
     SCHRIFTLICHER_AUSDRUCK: ["WRITING_TASK"],
+    TESTFORMAT_INFORMATION: [],
 };
 
 const TASK_TYPE_LABELS: Partial<Record<ExamTaskType, string>> = {
@@ -51,8 +52,8 @@ const SHARED_POOL_TASK_TYPES: ExamTaskType[] = ["MATCHING", "WORD_BANK_CLOZE"];
 /** Hoerverstehen's Richtig/Falsch answer is authored via the same editable pool as MATCHING's
  * headlines, just pre-seeded with "+"/"-" - so the Section/Task type dropdowns don't govern this,
  * only the section does (all three Hoeren Teile share the one true/false format). */
-const usesAnswerOptionsPool = (section: ExamSection, taskType: ExamTaskType) =>
-    section === "HOERVERSTEHEN" || SHARED_POOL_TASK_TYPES.includes(taskType);
+const usesAnswerOptionsPool = (section: ExamSection, taskType: ExamTaskType | null) =>
+    section === "HOERVERSTEHEN" || (taskType != null && SHARED_POOL_TASK_TYPES.includes(taskType));
 
 const taskTypeLabel = (section: ExamSection, taskType: ExamTaskType): string =>
     TASK_TYPE_LABELS_BY_SECTION[section]?.[taskType] ?? TASK_TYPE_LABELS[taskType] ?? taskType;
@@ -61,6 +62,7 @@ const sectionLabel = (section: ExamSection, partNumber: number | null): string =
     if (section === "LESEVERSTEHEN") return `Leseverstehen Teil ${partNumber ?? 1}`;
     if (section === "HOERVERSTEHEN") return `Hörverstehen Teil ${partNumber ?? 1}`;
     if (section === "SCHRIFTLICHER_AUSDRUCK") return "Schriftlicher Ausdruck";
+    if (section === "TESTFORMAT_INFORMATION") return "Testformat Information";
     return "Sprachbausteine";
 };
 
@@ -70,7 +72,8 @@ type SectionOption =
     | "LESEVERSTEHEN_3"
     | "SPRACHBAUSTEINE"
     | "HOERVERSTEHEN"
-    | "SCHRIFTLICHER_AUSDRUCK";
+    | "SCHRIFTLICHER_AUSDRUCK"
+    | "TESTFORMAT_INFORMATION";
 
 const SECTION_OPTIONS: { value: SectionOption; label: string }[] = [
     { value: "LESEVERSTEHEN_1", label: "Leseverstehen Teil 1" },
@@ -79,6 +82,7 @@ const SECTION_OPTIONS: { value: SectionOption; label: string }[] = [
     { value: "SPRACHBAUSTEINE", label: "Sprachbausteine" },
     { value: "HOERVERSTEHEN", label: "Hörverstehen" },
     { value: "SCHRIFTLICHER_AUSDRUCK", label: "Schriftlicher Ausdruck" },
+    { value: "TESTFORMAT_INFORMATION", label: "Testformat Information" },
 ];
 
 const HOERVERSTEHEN_TEIL_OPTIONS = [
@@ -90,11 +94,12 @@ const HOERVERSTEHEN_TEIL_OPTIONS = [
 const emptyForm = {
     title: "",
     section: "LESEVERSTEHEN" as ExamSection,
-    taskType: "MULTIPLE_CHOICE" as ExamTaskType,
+    taskType: "MULTIPLE_CHOICE" as ExamTaskType | null,
     level: "B1",
     partNumber: "",
     defaultExplanation: "",
     defaultCommonMistake: "",
+    teilDescription: "",
     modelSolution: "",
     published: true,
 };
@@ -198,7 +203,9 @@ export default function AdminExamPrepPage() {
                 ? "HOERVERSTEHEN"
                 : form.section === "SCHRIFTLICHER_AUSDRUCK"
                     ? "SCHRIFTLICHER_AUSDRUCK"
-                    : (`LESEVERSTEHEN_${form.partNumber === "2" || form.partNumber === "3" ? form.partNumber : "1"}` as SectionOption);
+                    : form.section === "TESTFORMAT_INFORMATION"
+                        ? "TESTFORMAT_INFORMATION"
+                        : (`LESEVERSTEHEN_${form.partNumber === "2" || form.partNumber === "3" ? form.partNumber : "1"}` as SectionOption);
 
     const changeSectionOption = (value: SectionOption) => {
         const section: ExamSection =
@@ -208,14 +215,16 @@ export default function AdminExamPrepPage() {
                     ? "HOERVERSTEHEN"
                     : value === "SCHRIFTLICHER_AUSDRUCK"
                         ? "SCHRIFTLICHER_AUSDRUCK"
-                        : "LESEVERSTEHEN";
+                        : value === "TESTFORMAT_INFORMATION"
+                            ? "TESTFORMAT_INFORMATION"
+                            : "LESEVERSTEHEN";
         const partNumber =
-            value === "SPRACHBAUSTEINE" || value === "SCHRIFTLICHER_AUSDRUCK"
+            value === "SPRACHBAUSTEINE" || value === "SCHRIFTLICHER_AUSDRUCK" || value === "TESTFORMAT_INFORMATION"
                 ? ""
                 : value === "HOERVERSTEHEN"
                     ? "1"
                     : value.replace("LESEVERSTEHEN_", "");
-        const taskType = TASK_TYPES_BY_SECTION[section][0] ?? form.taskType;
+        const taskType = section === "TESTFORMAT_INFORMATION" ? null : TASK_TYPES_BY_SECTION[section][0] ?? form.taskType;
         setForm({ ...form, section, partNumber, taskType });
         setQuestions([]);
         setAnswerOptions(section === "HOERVERSTEHEN" ? ["+", "-"] : []);
@@ -300,7 +309,7 @@ export default function AdminExamPrepPage() {
         );
     };
     const removeQuestion = (idx: number) => setQuestions((prev) => prev.filter((_, i) => i !== idx));
-    const addQuestion = () => setQuestions((prev) => [...prev, emptyQuestion(form.taskType, form.section)]);
+    const addQuestion = () => setQuestions((prev) => [...prev, emptyQuestion(form.taskType ?? "MULTIPLE_CHOICE", form.section)]);
 
     const startEdit = (exercise: ExamExerciseResponse) => {
         setEditingExercise(exercise);
@@ -308,10 +317,11 @@ export default function AdminExamPrepPage() {
             title: exercise.title,
             section: exercise.section,
             taskType: exercise.taskType,
-            level: exercise.level,
+            level: exercise.level ?? "B1",
             partNumber: exercise.partNumber != null ? String(exercise.partNumber) : "",
             defaultExplanation: exercise.defaultExplanation ?? "",
             defaultCommonMistake: exercise.defaultCommonMistake ?? "",
+            teilDescription: exercise.teilDescription ?? "",
             modelSolution: exercise.modelSolution ?? "",
             published: exercise.published,
         });
@@ -338,23 +348,28 @@ export default function AdminExamPrepPage() {
                 return { ...p, label: p.label.trim() || `Text ${newIdx + 1}` };
             });
 
+        const isTestformatInfo = form.section === "TESTFORMAT_INFORMATION";
+
         const payload = {
             title: form.title,
             section: form.section,
-            taskType: form.taskType,
+            taskType: isTestformatInfo ? null : form.taskType,
             level: form.level,
-            partNumber: form.partNumber.trim() ? Number(form.partNumber) : null,
+            partNumber: isTestformatInfo ? null : form.partNumber.trim() ? Number(form.partNumber) : null,
             passages: cleanedPassages,
-            questions: questions
-                .filter((q) => q.prompt.trim())
-                .map((q) => ({
-                    ...q,
-                    sectionIndex: q.sectionIndex != null ? passageIndexRemap.get(q.sectionIndex) ?? null : null,
-                    options: q.options ? q.options.map((o) => o.trim()).filter(Boolean) : null,
-                })),
-            answerOptions: answerOptions.map((o) => o.trim()).filter(Boolean),
-            defaultExplanation: form.defaultExplanation.trim() || null,
-            defaultCommonMistake: form.defaultCommonMistake.trim() || null,
+            questions: isTestformatInfo
+                ? []
+                : questions
+                    .filter((q) => q.prompt.trim())
+                    .map((q) => ({
+                        ...q,
+                        sectionIndex: q.sectionIndex != null ? passageIndexRemap.get(q.sectionIndex) ?? null : null,
+                        options: q.options ? q.options.map((o) => o.trim()).filter(Boolean) : null,
+                    })),
+            answerOptions: isTestformatInfo ? [] : answerOptions.map((o) => o.trim()).filter(Boolean),
+            defaultExplanation: isTestformatInfo ? null : form.defaultExplanation.trim() || null,
+            defaultCommonMistake: isTestformatInfo ? null : form.defaultCommonMistake.trim() || null,
+            teilDescription: isTestformatInfo ? null : form.teilDescription.trim() || null,
             modelSolution: form.modelSolution.trim() || null,
             published: form.published,
         };
@@ -389,7 +404,7 @@ export default function AdminExamPrepPage() {
             <div className="max-w-4xl mx-auto">
                 <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Prüfungsvorbereitung</h1>
                 <p className="text-gray-600 dark:text-gray-300 mt-2">
-                    Create exam-style Leseverstehen, Sprachbausteine, and Hörverstehen exercises.
+                    Create exam-style Leseverstehen, Sprachbausteine, Hörverstehen, and Testformat Information exercises.
                 </p>
 
                 <form onSubmit={submit} className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-6">
@@ -426,34 +441,36 @@ export default function AdminExamPrepPage() {
                                 ))}
                             </select>
                         </div>
-                        <div>
-                            <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Task type</label>
-                            {form.section === "HOERVERSTEHEN" ? (
-                                <select
-                                    value={form.partNumber || "1"}
-                                    onChange={(e) => changeHoerenTeil(e.target.value)}
-                                    className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
-                                >
-                                    {HOERVERSTEHEN_TEIL_OPTIONS.map((opt) => (
-                                        <option key={opt.value} value={opt.value}>
-                                            {opt.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            ) : (
-                                <select
-                                    value={form.taskType}
-                                    onChange={(e) => changeTaskType(e.target.value as ExamTaskType)}
-                                    className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
-                                >
-                                    {TASK_TYPES_BY_SECTION[form.section].map((t) => (
-                                        <option key={t} value={t}>
-                                            {taskTypeLabel(form.section, t)}
-                                        </option>
-                                    ))}
-                                </select>
-                            )}
-                        </div>
+                        {form.section !== "TESTFORMAT_INFORMATION" && (
+                            <div>
+                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Task type</label>
+                                {form.section === "HOERVERSTEHEN" ? (
+                                    <select
+                                        value={form.partNumber || "1"}
+                                        onChange={(e) => changeHoerenTeil(e.target.value)}
+                                        className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+                                    >
+                                        {HOERVERSTEHEN_TEIL_OPTIONS.map((opt) => (
+                                            <option key={opt.value} value={opt.value}>
+                                                {opt.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <select
+                                        value={form.taskType ?? ""}
+                                        onChange={(e) => changeTaskType(e.target.value as ExamTaskType)}
+                                        className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+                                    >
+                                        {TASK_TYPES_BY_SECTION[form.section].map((t) => (
+                                            <option key={t} value={t}>
+                                                {taskTypeLabel(form.section, t)}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
+                            </div>
+                        )}
                         <div>
                             <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Level</label>
                             <select
@@ -468,7 +485,7 @@ export default function AdminExamPrepPage() {
                                 ))}
                             </select>
                         </div>
-                        {form.section !== "HOERVERSTEHEN" && (
+                        {form.section !== "HOERVERSTEHEN" && form.section !== "TESTFORMAT_INFORMATION" && (
                             <div>
                                 <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Teil (optional)</label>
                                 <Input
@@ -492,7 +509,20 @@ export default function AdminExamPrepPage() {
                         </div>
                     </div>
 
-                    {form.section !== "SCHRIFTLICHER_AUSDRUCK" && (
+                    {form.section !== "TESTFORMAT_INFORMATION" && (
+                        <div>
+                            <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                                Teil description (shown to students before the passages/questions)
+                            </label>
+                            <Input
+                                value={form.teilDescription}
+                                onChange={(e) => setForm({ ...form, teilDescription: e.target.value })}
+                                required={false}
+                            />
+                        </div>
+                    )}
+
+                    {form.section !== "SCHRIFTLICHER_AUSDRUCK" && form.section !== "TESTFORMAT_INFORMATION" && (
                         <>
                             <div>
                                 <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
@@ -723,7 +753,7 @@ export default function AdminExamPrepPage() {
                         </div>
                     )}
 
-                    {form.taskType !== "WORD_BANK_CLOZE" && form.taskType !== "WRITING_TASK" && (
+                    {form.section !== "TESTFORMAT_INFORMATION" && form.taskType !== "WORD_BANK_CLOZE" && form.taskType !== "WRITING_TASK" && (
                     <div>
                         <div className="flex items-center justify-between mb-2">
                             <label className="text-gray-700 dark:text-gray-300 text-sm">Questions</label>
@@ -909,10 +939,10 @@ export default function AdminExamPrepPage() {
                                                 {sectionLabel(exercise.section, exercise.partNumber)}
                                             </td>
                                             <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                                                {taskTypeLabel(exercise.section, exercise.taskType)}
+                                                {exercise.taskType ? taskTypeLabel(exercise.section, exercise.taskType) : "—"}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <Badge variant="secondary">{exercise.level}</Badge>
+                                                <Badge variant="secondary">{exercise.level ?? "All levels"}</Badge>
                                             </td>
                                             <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
                                                 {exercise.questions.length}

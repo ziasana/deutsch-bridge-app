@@ -26,6 +26,7 @@ const SECTION_TABS: { value: ExamSection; label: string }[] = [
     { value: "SPRACHBAUSTEINE", label: "Sprachbausteine" },
     { value: "HOERVERSTEHEN", label: "Hörverstehen" },
     { value: "SCHRIFTLICHER_AUSDRUCK", label: "Schriftlicher Ausdruck" },
+    { value: "TESTFORMAT_INFORMATION", label: "Testformat Information" },
 ];
 
 type CompletedFilter = "ALL" | "COMPLETED" | "OPEN";
@@ -50,23 +51,26 @@ export default function ExamPrepPage() {
     if (loading) return <Loading />;
 
     const inSection = exercises.filter((e) => e.section === sectionFilter);
-    const levels = Array.from(new Set(inSection.map((e) => e.level))).sort();
+    const levels = Array.from(new Set(inSection.map((e) => e.level).filter((lvl): lvl is string => lvl != null))).sort();
     const filtered = inSection.filter(
         (e) =>
-            (levelFilter === "ALL" || e.level === levelFilter) &&
+            (levelFilter === "ALL" || e.level === levelFilter || e.level == null) &&
             (completedFilter === "ALL" ||
                 (completedFilter === "COMPLETED" ? e.completed : !e.completed))
     );
 
     const isLeseverstehen = sectionFilter === "LESEVERSTEHEN";
     const isHoerverstehen = sectionFilter === "HOERVERSTEHEN";
+    const isTestformatInfo = sectionFilter === "TESTFORMAT_INFORMATION";
     const groupsByPart = isLeseverstehen || isHoerverstehen;
 
-    const groupKeyOf = (e: ExamExercisePublicResponse) => (groupsByPart ? String(e.partNumber ?? 1) : e.taskType);
-    const groupOrder = groupsByPart ? ["1", "2", "3"] : ["MULTIPLE_CHOICE", "WORD_BANK_CLOZE"];
+    const groupKeyOf = (e: ExamExercisePublicResponse) =>
+        groupsByPart ? String(e.partNumber ?? 1) : isTestformatInfo ? "INFO" : (e.taskType as string);
+    const groupOrder = groupsByPart ? ["1", "2", "3"] : isTestformatInfo ? ["INFO"] : ["MULTIPLE_CHOICE", "WORD_BANK_CLOZE"];
     const groupLabel = (key: string) => {
         if (isLeseverstehen) return `Leseverstehen Teil ${key}`;
         if (isHoerverstehen) return `Hörverstehen Teil ${key}`;
+        if (isTestformatInfo) return "Testformat Information";
         return SPRACHBAUSTEINE_TASK_TYPE_LABELS[key as ExamTaskType] ?? TASK_TYPE_LABELS[key as ExamTaskType] ?? key;
     };
 
@@ -172,7 +176,7 @@ export default function ExamPrepPage() {
                                                 <span className="text-lg font-semibold text-gray-900 dark:text-white truncate">
                                                     {exercise.title}
                                                 </span>
-                                                <Badge variant="secondary">{exercise.level}</Badge>
+                                                <Badge variant="secondary">{exercise.level ?? "Alle Niveaus"}</Badge>
                                                 {exercise.completed && (
                                                     <Badge className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
                                                         Erledigt ✓
@@ -182,7 +186,9 @@ export default function ExamPrepPage() {
                                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                                                 {exercise.section === "SCHRIFTLICHER_AUSDRUCK"
                                                     ? "Schreibaufgabe"
-                                                    : `${exercise.questions.length} Aufgaben`}
+                                                    : exercise.section === "TESTFORMAT_INFORMATION"
+                                                        ? "Informationen"
+                                                        : `${exercise.questions.length} Aufgaben`}
                                             </p>
                                         </div>
                                         <span className="text-gray-400 text-xl shrink-0">›</span>

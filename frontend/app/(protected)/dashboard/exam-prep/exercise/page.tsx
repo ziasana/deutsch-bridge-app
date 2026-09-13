@@ -232,6 +232,26 @@ function SchriftlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExerci
     );
 }
 
+function TestformatInformationView({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse }>) {
+    const { completed, marking, markCompleted } = useExerciseCompletion(exercise);
+
+    return (
+        <div className="space-y-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-2">
+                {exercise.passages.map((p) => (
+                    <PassageBody key={p.id} passage={p} />
+                ))}
+            </div>
+
+            <div className="flex justify-end">
+                <Button variant="primary" className="text-sm px-4 py-2" disabled={completed || marking} onClick={markCompleted}>
+                    {completed ? "Als erledigt markiert ✓" : marking ? "Wird markiert..." : "Als erledigt markieren"}
+                </Button>
+            </div>
+        </div>
+    );
+}
+
 function StartCard({ starting, onStart }: Readonly<{ starting: boolean; onStart: () => void }>) {
     return (
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-3">
@@ -400,7 +420,7 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
                             <QuestionSelect
                                 question={question}
                                 answerOptions={quiz.answerOptions}
-                                taskType={exercise.taskType}
+                                taskType={exercise.taskType ?? ""}
                                 value={quiz.answers[question.id] ?? ""}
                                 disabled={quiz.submitting}
                                 onChange={(value) =>
@@ -609,7 +629,7 @@ function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse 
             <QuestionInput
                 question={question}
                 answerOptions={quiz.answerOptions}
-                taskType={exercise.taskType}
+                taskType={exercise.taskType ?? ""}
                 selectedAnswer={quiz.selectedAnswer}
                 disabled={Boolean(quiz.feedback)}
                 onSelect={(value) => setQuiz({ ...quiz, selectedAnswer: value })}
@@ -852,15 +872,23 @@ function ExamExerciseContent() {
 
                 <div className="flex items-center gap-2 flex-wrap">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{exercise.title}</h1>
-                    <Badge variant="secondary">{exercise.level}</Badge>
+                    <Badge variant="secondary">{exercise.level ?? "Alle Niveaus"}</Badge>
                 </div>
 
-                {exercise.section !== "HOERVERSTEHEN" && exercise.section !== "SCHRIFTLICHER_AUSDRUCK" && (
+                {exercise.teilDescription && (
+                    <div className="rounded-lg border-2 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/20 p-4 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                        {exercise.teilDescription}
+                    </div>
+                )}
+
+                {exercise.section !== "HOERVERSTEHEN" &&
+                    exercise.section !== "SCHRIFTLICHER_AUSDRUCK" &&
+                    exercise.section !== "TESTFORMAT_INFORMATION" && (
                     <>
                         {(exercise.taskType === "MATCHING" || exercise.taskType === "WORD_BANK_CLOZE") && (
                             <AnswerOptionsPoolView answerOptions={exercise.answerOptions ?? []} taskType={exercise.taskType} />
                         )}
-                        <PassagesView passages={exercise.passages} taskType={exercise.taskType} />
+                        <PassagesView passages={exercise.passages} taskType={exercise.taskType ?? ""} />
                     </>
                 )}
 
@@ -868,6 +896,8 @@ function ExamExerciseContent() {
                     <HoerenListQuiz exercise={exercise} />
                 ) : exercise.section === "SCHRIFTLICHER_AUSDRUCK" ? (
                     <SchriftlicherAusdruckView exercise={exercise} />
+                ) : exercise.section === "TESTFORMAT_INFORMATION" ? (
+                    <TestformatInformationView exercise={exercise} />
                 ) : exercise.taskType === "WORD_BANK_CLOZE" ? (
                     <ClozeGridQuiz exercise={exercise} />
                 ) : (

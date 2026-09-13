@@ -13,6 +13,8 @@ public record ExamExercisePublicResponse(
         List<ExamPassagePublic> passages,
         List<ExamQuestionPublic> questions,
         List<String> answerOptions,
+        /** Shown to the student at the start of this Teil, before the passages/questions. */
+        String teilDescription,
         /** SCHRIFTLICHER_AUSDRUCK only: the "mögliche Antwort" revealed via a button - not an answer key to strip, unlike questions' correctAnswer. */
         String modelSolution,
         boolean completed

@@ -29,6 +29,7 @@ public class ExamExerciseMapper {
                 exercise.getAnswerOptions(),
                 exercise.getDefaultExplanation(),
                 exercise.getDefaultCommonMistake(),
+                exercise.getTeilDescription(),
                 exercise.getModelSolution(),
                 exercise.isPublished(),
                 exercise.getCreatedAt()
@@ -59,6 +60,7 @@ public class ExamExerciseMapper {
                         .map(q -> new ExamQuestionPublic(q.getId(), q.getTaskType(), q.getPrompt(), q.getSectionIndex(), q.getOptions(), q.getGapNumber()))
                         .toList(),
                 exercise.getAnswerOptions(),
+                exercise.getTeilDescription(),
                 exercise.getModelSolution(),
                 completedExerciseIds.contains(exercise.getId())
         );

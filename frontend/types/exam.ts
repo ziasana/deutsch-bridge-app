@@ -2,7 +2,8 @@ export type ExamSection =
     | "LESEVERSTEHEN"
     | "SPRACHBAUSTEINE"
     | "HOERVERSTEHEN"
-    | "SCHRIFTLICHER_AUSDRUCK";
+    | "SCHRIFTLICHER_AUSDRUCK"
+    | "TESTFORMAT_INFORMATION";
 
 export type ExamTaskType = "MATCHING" | "MULTIPLE_CHOICE" | "TRUE_FALSE_NOT_GIVEN" | "WORD_BANK_CLOZE" | "WRITING_TASK";
 
@@ -38,8 +39,10 @@ export interface ExamExerciseResponse {
     id: string;
     title: string;
     section: ExamSection;
-    taskType: ExamTaskType;
-    level: string;
+    /** Null for TESTFORMAT_INFORMATION, which has no quiz. */
+    taskType: ExamTaskType | null;
+    /** Null means the content applies to any level (used by TESTFORMAT_INFORMATION). */
+    level: string | null;
     partNumber: number | null;
     passages: ExamPassage[];
     questions: ExamQuestion[];
@@ -47,6 +50,8 @@ export interface ExamExerciseResponse {
     answerOptions: string[] | null;
     defaultExplanation: string | null;
     defaultCommonMistake: string | null;
+    /** Shown to the student at the start of this Teil, before the passages/questions. */
+    teilDescription: string | null;
     /** SCHRIFTLICHER_AUSDRUCK only: the "mögliche Antwort" revealed to students via a button. */
     modelSolution: string | null;
     published: boolean;
@@ -74,12 +79,14 @@ export interface ExamExercisePublicResponse {
     id: string;
     title: string;
     section: ExamSection;
-    taskType: ExamTaskType;
-    level: string;
+    taskType: ExamTaskType | null;
+    level: string | null;
     partNumber: number | null;
     passages: ExamPassagePublic[];
     questions: ExamQuestionPublic[];
     answerOptions: string[] | null;
+    /** Shown to the student at the start of this Teil, before the passages/questions. */
+    teilDescription: string | null;
     /** SCHRIFTLICHER_AUSDRUCK only: the "mögliche Antwort" revealed via a button. */
     modelSolution: string | null;
     completed: boolean;
@@ -88,14 +95,15 @@ export interface ExamExercisePublicResponse {
 export interface ExamExerciseManualRequest {
     title: string;
     section: ExamSection;
-    taskType: ExamTaskType;
-    level: string;
+    taskType: ExamTaskType | null;
+    level: string | null;
     partNumber: number | null;
     passages: ExamPassage[];
     questions: ExamQuestion[];
     answerOptions: string[] | null;
     defaultExplanation: string | null;
     defaultCommonMistake: string | null;
+    teilDescription: string | null;
     modelSolution: string | null;
     published: boolean;
 }

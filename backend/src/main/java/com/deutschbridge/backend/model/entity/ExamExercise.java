@@ -50,6 +50,9 @@ public class ExamExercise {
     private @Column(columnDefinition = "TEXT") String defaultExplanation;
     private @Column(columnDefinition = "TEXT") String defaultCommonMistake;
 
+    /** Shown to the student at the start of this Teil, before the passages/questions. */
+    private @Column(columnDefinition = "TEXT") String teilDescription;
+
     /** SCHRIFTLICHER_AUSDRUCK only: the "mögliche Antwort" a student can reveal via a button. */
     private @Column(columnDefinition = "TEXT") String modelSolution;
 
