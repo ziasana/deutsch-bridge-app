@@ -64,7 +64,7 @@ export default function DailyWordsPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
+        <div dir="ltr" className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10 text-left">
             <div className="max-w-3xl mx-auto">
                 <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Daily Words</h1>
                 <p className="text-gray-600 dark:text-gray-300 mt-2">

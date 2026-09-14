@@ -14,4 +14,12 @@ public class QuizQuestion {
     private String question;
     private List<String> options; // optional, only for MCQ
     private Object answer; // String for mcq/fill, Boolean for truefalse
+
+    /**
+     * Persian translations of the instructional text - only authored/shown for lessons at
+     * levels A1-B1. Options and the answer stay language-invariant (they're usually German
+     * grammatical forms), so only the title/question are translated.
+     */
+    private String titleFa;
+    private String questionFa;
 }

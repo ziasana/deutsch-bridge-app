@@ -9,6 +9,10 @@ import { GrammarLesson, QuizQuestion } from "@/types/grammar";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
 import Button from "@/componenets/Button";
+import { useI18n } from "@/componenets/I18nProvider";
+import { resolveUploadUrlsInHtml } from "@/lib/backendOrigin";
+import { isTranslatableLevel, localizedLessonText, localizedQuestionText } from "@/lib/grammarLocalization";
+import { AppLanguage } from "@/lib/i18n/translations";
 
 type QuizPhase = "idle" | "active" | "results";
 
@@ -23,7 +27,12 @@ function isCorrect(question: QuizQuestion, selected: string): boolean {
     return normalize(selected) === normalize(question.answer);
 }
 
-function QuizSection({ quiz }: Readonly<{ quiz: QuizQuestion[] }>) {
+function QuizSection({
+    quiz,
+    lessonLevel,
+    language,
+}: Readonly<{ quiz: QuizQuestion[]; lessonLevel: string; language: AppLanguage }>) {
+    const { t } = useI18n();
     const [phase, setPhase] = useState<QuizPhase>("idle");
     const [currentIndex, setCurrentIndex] = useState(0);
     const [selectedAnswer, setSelectedAnswer] = useState("");
@@ -41,6 +50,7 @@ function QuizSection({ quiz }: Readonly<{ quiz: QuizQuestion[] }>) {
     };
 
     const question = quiz[currentIndex];
+    const localizedQuestion = localizedQuestionText(question, lessonLevel, language);
     const correct = submitted && isCorrect(question, selectedAnswer);
 
     const submitAnswer = () => {
@@ -62,28 +72,30 @@ function QuizSection({ quiz }: Readonly<{ quiz: QuizQuestion[] }>) {
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Exercises</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{t.grammar.exercises}</h2>
 
             {phase === "idle" && (
                 <div className="space-y-3">
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                        Check your understanding with {quiz.length} quick question{quiz.length > 1 ? "s" : ""}.
+                        {t.grammar.checkUnderstanding(quiz.length)}
                     </p>
                     <Button variant="primary" className="text-sm px-4 py-2" onClick={beginQuiz}>
-                        Start exercises
+                        {t.grammar.startExercises}
                     </Button>
                 </div>
             )}
 
             {phase === "active" && (
-                <div className="space-y-3">
+                <div className="space-y-3" dir={localizedQuestion.dir}>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Question {currentIndex + 1} of {quiz.length}
+                        {t.grammar.questionOf(currentIndex + 1, quiz.length)}
                     </p>
-                    {question.title && (
-                        <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">{question.title}</p>
+                    {localizedQuestion.title && (
+                        <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+                            {localizedQuestion.title}
+                        </p>
                     )}
-                    <p className="font-medium text-gray-900 dark:text-white">{question.question}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{localizedQuestion.question}</p>
 
                     {question.type === "mcq" && (
                         <div className="space-y-2">
@@ -107,19 +119,22 @@ function QuizSection({ quiz }: Readonly<{ quiz: QuizQuestion[] }>) {
 
                     {question.type === "truefalse" && (
                         <div className="flex gap-2">
-                            {["True", "False"].map((option) => (
+                            {[
+                                { value: "True", label: t.grammar.true },
+                                { value: "False", label: t.grammar.false },
+                            ].map((option) => (
                                 <button
-                                    key={option}
+                                    key={option.value}
                                     type="button"
                                     disabled={submitted}
-                                    onClick={() => setSelectedAnswer(option)}
+                                    onClick={() => setSelectedAnswer(option.value)}
                                     className={`flex-1 px-3 py-2 rounded-lg border text-sm ${
-                                        selectedAnswer === option
+                                        selectedAnswer === option.value
                                             ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
                                             : "border-gray-300 dark:border-gray-600"
                                     }`}
                                 >
-                                    {option}
+                                    {option.label}
                                 </button>
                             ))}
                         </div>
@@ -131,7 +146,7 @@ function QuizSection({ quiz }: Readonly<{ quiz: QuizQuestion[] }>) {
                             value={selectedAnswer}
                             disabled={submitted}
                             onChange={(e) => setSelectedAnswer(e.target.value)}
-                            placeholder="Type your answer"
+                            placeholder={t.grammar.typeAnswer}
                             className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                         />
                     )}
@@ -144,15 +159,15 @@ function QuizSection({ quiz }: Readonly<{ quiz: QuizQuestion[] }>) {
                                     : "bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200"
                             }`}
                         >
-                            <p className="font-semibold">{correct ? "Correct!" : "Not quite."}</p>
+                            <p className="font-semibold">{correct ? t.grammar.correct : t.grammar.incorrect}</p>
                             {!correct && (
                                 <p>
-                                    Correct answer:{" "}
+                                    {t.grammar.correctAnswer}
                                     <span className="font-medium">
                                         {typeof question.answer === "boolean"
                                             ? question.answer
-                                                ? "True"
-                                                : "False"
+                                                ? t.grammar.true
+                                                : t.grammar.false
                                             : question.answer}
                                     </span>
                                 </p>
@@ -163,7 +178,7 @@ function QuizSection({ quiz }: Readonly<{ quiz: QuizQuestion[] }>) {
                     <div className="flex justify-end pt-2">
                         {submitted ? (
                             <Button variant="primary" className="text-sm px-4 py-2" onClick={nextQuestion}>
-                                {currentIndex + 1 >= quiz.length ? "See results" : "Next question"}
+                                {currentIndex + 1 >= quiz.length ? t.grammar.seeResults : t.grammar.nextQuestion}
                             </Button>
                         ) : (
                             <Button
@@ -172,7 +187,7 @@ function QuizSection({ quiz }: Readonly<{ quiz: QuizQuestion[] }>) {
                                 disabled={!selectedAnswer}
                                 onClick={submitAnswer}
                             >
-                                Submit answer
+                                {t.grammar.submitAnswer}
                             </Button>
                         )}
                     </div>
@@ -182,10 +197,10 @@ function QuizSection({ quiz }: Readonly<{ quiz: QuizQuestion[] }>) {
             {phase === "results" && (
                 <div className="space-y-3">
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {correctCount} / {quiz.length} correct
+                        {t.grammar.resultsScore(correctCount, quiz.length)}
                     </p>
                     <Button variant="secondary" className="text-sm px-4 py-2" onClick={beginQuiz}>
-                        Retry exercises
+                        {t.grammar.retry}
                     </Button>
                 </div>
             )}
@@ -204,6 +219,7 @@ export default function GrammarLessonDetailPage() {
 function GrammarLessonDetailContent() {
     const searchParams = useSearchParams();
     const lessonId = searchParams.get("id") ?? "";
+    const { language, t } = useI18n();
     const [lesson, setLesson] = useState<GrammarLesson | null>(null);
     const [loading, setLoading] = useState(true);
     const [updatingLearned, setUpdatingLearned] = useState(false);
@@ -220,9 +236,9 @@ function GrammarLessonDetailContent() {
         return (
             <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
                 <div className="max-w-4xl mx-auto text-center text-gray-500 dark:text-gray-400 py-20">
-                    No lesson selected.{" "}
+                    {t.grammar.noLesson}{" "}
                     <Link href="/dashboard/grammar" className="underline">
-                        Back to Grammar Lessons
+                        {t.grammar.back}
                     </Link>
                 </div>
             </div>
@@ -235,9 +251,9 @@ function GrammarLessonDetailContent() {
         return (
             <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
                 <div className="max-w-4xl mx-auto text-center text-gray-500 dark:text-gray-400 py-20">
-                    Lesson not found.{" "}
+                    {t.grammar.notFoundLesson}{" "}
                     <Link href="/dashboard/grammar" className="underline">
-                        Back to Grammar Lessons
+                        {t.grammar.back}
                     </Link>
                 </div>
             </div>
@@ -245,6 +261,8 @@ function GrammarLessonDetailContent() {
     }
 
     const learned = lesson.learningProgresses?.some((lp) => lp.learned === true) ?? false;
+    const localized = localizedLessonText(lesson, language);
+    const isTranslatable = isTranslatableLevel(lesson.level);
 
     const toggleLearned = () => {
         setUpdatingLearned(true);
@@ -253,7 +271,7 @@ function GrammarLessonDetailContent() {
                 setLesson((prev) =>
                     prev ? { ...prev, learningProgresses: [{ id: "local", learned: !learned }] } : prev
                 );
-                toast.success(!learned ? "Marked as learned!" : "Marked as not learned.");
+                toast.success(!learned ? t.grammar.markedLearned : t.grammar.markedNotLearned);
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to update progress."))
             .finally(() => setUpdatingLearned(false));
@@ -266,33 +284,54 @@ function GrammarLessonDetailContent() {
                     href="/dashboard/grammar"
                     className="text-sm text-blue-600 dark:text-blue-400 hover:underline inline-block"
                 >
-                    ← Back to Grammar Lessons
+                    {t.grammar.back}
                 </Link>
+                {language === "fa" && !isTranslatable && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t.grammar.notTranslatable}</p>
+                )}
 
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-4">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-4" dir={localized.dir}>
                     <div className="flex items-center gap-2 flex-wrap">
-                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{lesson.title}</h1>
+                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{localized.title}</h1>
                         <Badge variant="secondary">{lesson.level}</Badge>
-                        {learned && <Badge variant="default">Learned</Badge>}
+                        {learned && <Badge variant="default">{t.grammar.learned}</Badge>}
                     </div>
 
-                    <p className="text-gray-600 dark:text-gray-300">{lesson.summary}</p>
+                    <p className="text-gray-600 dark:text-gray-300">{localized.summary}</p>
 
-                    <p className="text-gray-800 dark:text-gray-200 whitespace-pre-line leading-relaxed">
-                        {lesson.content}
-                    </p>
+                    <div
+                        className="text-gray-800 dark:text-gray-200 leading-relaxed [&_p]:my-1 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:text-lg [&_h2]:font-bold"
+                        dangerouslySetInnerHTML={{ __html: resolveUploadUrlsInHtml(localized.content) }}
+                    />
 
-                    {lesson.example && (
-                        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Example: </span>
-                            <span className="text-gray-700 dark:text-gray-300">{lesson.example}</span>
+                    {lesson.videoLink && (
+                        <div className="pt-1">
+                            <a
+                                href={lesson.videoLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                            >
+                                {t.grammar.watchVideo}
+                            </a>
                         </div>
                     )}
 
-                    {lesson.usageTips && (
+                    {localized.example && (
+                        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                {t.grammar.example}
+                            </span>
+                            <span className="text-gray-700 dark:text-gray-300">{localized.example}</span>
+                        </div>
+                    )}
+
+                    {localized.usageTips && (
                         <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4">
-                            <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">Usage tip: </span>
-                            <span className="text-blue-700 dark:text-blue-300">{lesson.usageTips}</span>
+                            <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                                {t.grammar.usageTip}
+                            </span>
+                            <span className="text-blue-700 dark:text-blue-300">{localized.usageTips}</span>
                         </div>
                     )}
 
@@ -303,12 +342,16 @@ function GrammarLessonDetailContent() {
                             disabled={updatingLearned}
                             onClick={toggleLearned}
                         >
-                            {updatingLearned ? "Saving..." : learned ? "Mark as not learned" : "Mark as learned"}
+                            {updatingLearned
+                                ? t.grammar.saving
+                                : learned
+                                ? t.grammar.markNotLearned
+                                : t.grammar.markLearned}
                         </Button>
                     </div>
                 </div>
 
-                <QuizSection quiz={lesson.quiz ?? []} />
+                <QuizSection quiz={lesson.quiz ?? []} lessonLevel={lesson.level} language={language} />
             </div>
             <ToastContainer />
         </div>

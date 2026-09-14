@@ -111,14 +111,14 @@ public class GrammarLessonSeeder {
     }
 
     private static QuizQuestion mcq(String title, String question, List<String> options, String answer) {
-        return new QuizQuestion("mcq", title, question, options, answer);
+        return new QuizQuestion("mcq", title, question, options, answer, null, null);
     }
 
     private static QuizQuestion fill(String title, String question, String answer) {
-        return new QuizQuestion("fill", title, question, null, answer);
+        return new QuizQuestion("fill", title, question, null, answer, null, null);
     }
 
     private static QuizQuestion truefalse(String title, String question, boolean answer) {
-        return new QuizQuestion("truefalse", title, question, null, answer);
+        return new QuizQuestion("truefalse", title, question, null, answer, null, null);
     }
 }

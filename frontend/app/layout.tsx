@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import {DarkModeProvider} from "@/componenets/DarkModeProvider";
+import {I18nProvider} from "@/componenets/I18nProvider";
 import Navbar from "@/componenets/Navbar";
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,14 +28,24 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-      <DarkModeProvider>
-          <Navbar />
-          <main>{children}</main>
-          <Toaster richColors position="top-right" />
-      </DarkModeProvider>
+      <I18nProvider>
+        <DarkModeProvider>
+            <Navbar />
+            <main>{children}</main>
+            <Toaster richColors position="top-right" />
+        </DarkModeProvider>
+      </I18nProvider>
       </body>
     </html>
   );

@@ -100,6 +100,9 @@ export default function AdminPage() {
                         <Button variant="secondary" onClick={() => router.push("/admin/exam-prep")}>
                             Manage Exam Prep
                         </Button>
+                        <Button variant="secondary" onClick={() => router.push("/admin/grammar")}>
+                            Manage Grammar
+                        </Button>
                     </div>
                 </div>
 

@@ -66,6 +66,10 @@ public class FileStorageService {
         return storeImage(file, "exam-passages");
     }
 
+    public String storeGrammarLessonImage(MultipartFile file) {
+        return storeImage(file, "grammar-lessons");
+    }
+
     public String storeExamPassageAudio(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("No file was uploaded.");

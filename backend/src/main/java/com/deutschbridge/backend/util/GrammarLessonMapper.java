@@ -26,10 +26,25 @@ public class GrammarLessonMapper {
                 lesson.getLevel() != null ? lesson.getLevel().getValue() : null,
                 lesson.getExample(),
                 lesson.getUsageTips(),
+                lesson.getTitleFa(),
+                lesson.getSummaryFa(),
+                lesson.getContentFa(),
+                lesson.getExampleFa(),
+                lesson.getUsageTipsFa(),
+                lesson.getVideoLink(),
+                lesson.getStatus() != null ? lesson.getStatus().name() : null,
                 lesson.getQuiz(),
                 userProgress != null
                         ? List.of(new LearningProgressResponse(userProgress.getId(), Boolean.TRUE.equals(userProgress.getIsLearned())))
-                        : List.of()
+                        : List.of(),
+                lesson.getCreatedAt(),
+                lesson.getUpdatedAt()
         );
+    }
+
+    /** Admin views don't need per-user progress, and touching the entity's own lazy
+     * learningProgresses collection here would trip Jackson over the uninitialized Hibernate proxy. */
+    public static GrammarLessonResponse mapToAdminResponse(GrammarLesson lesson) {
+        return mapToResponse(lesson, null);
     }
 }

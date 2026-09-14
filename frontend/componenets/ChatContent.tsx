@@ -6,19 +6,22 @@ import { type ChatRequest, ChatResponse, ChatMessage } from "@/types/chat";
 import ReactMarkdown from "react-markdown";
 import Thinking from "@/componenets/Thinking";
 import { ChatSessionDto } from "@/types/chat";
+import { useI18n } from "@/componenets/I18nProvider";
 
 type ChatContentProps = {
   allMessages: ChatMessage[];
   sessionId: string;
   onSaveTitle: (updated: ChatSessionDto) => void;
+  onSessionResolved: (sessionId: string, title?: string | null) => void;
 };
 
 export default function ChatContent({
   allMessages,
   sessionId,
   onSaveTitle,
+  onSessionResolved,
 }: Readonly<ChatContentProps>) {
-
+  const { t } = useI18n();
 
   const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -26,7 +29,10 @@ export default function ChatContent({
   const [chatData, setChatData] = useState<ChatResponse | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [sessionTitle, setSessionTitle] = useState("");
-  const [timestamp] = useState(() => Date.now().toString());
+  // Set right before we resolve a brand-new chat's session id ourselves, so the reset-on-switch
+  // effect below can tell "the in-progress conversation just got its real id" apart from the
+  // user actually picking a different chat in the sidebar - only the latter should clear messages.
+  const resolvingOwnSessionRef = useRef(false);
 
   // Scroll to bottom whenever messages change
   useEffect(() => {
@@ -38,6 +44,10 @@ export default function ChatContent({
 
 // Reset local messages on session switch
   useLayoutEffect(() => {
+    if (resolvingOwnSessionRef.current) {
+      resolvingOwnSessionRef.current = false;
+      return;
+    }
     setTimeout(() => {
       setLocalMessages([]);
     }, 0);
@@ -48,12 +58,11 @@ export default function ChatContent({
     const initialAssistantMessage: ChatMessage = {
       id: "1",
       role: "assistant",
-      content:
-          "Hello! I'm DeutschBridge Assistant. Ask me anything in German or English.",
+      content: t.chat.greeting,
       timestamp: "",
     };
     return [initialAssistantMessage, ...allMessages, ...localMessages];
-  }, [allMessages, localMessages]);
+  }, [allMessages, localMessages, t]);
 
 
   // Handle sending a new message
@@ -61,11 +70,12 @@ export default function ChatContent({
     e?.preventDefault();
     if (!input.trim()) return;
 
+    const now = Date.now().toString();
     const userMsg: ChatMessage = {
-      id: timestamp.toString(),
+      id: now,
       role: "user",
       content: input.trim(),
-      timestamp: timestamp.toString(),
+      timestamp: now,
     };
 
     // Append user message
@@ -107,6 +117,12 @@ export default function ChatContent({
       setLocalMessages(prev => [...prev, assistantMsg]);
       setThinking(false);
     }, 0);
+
+    if (chatData.sessionId && chatData.sessionId !== sessionId) {
+      resolvingOwnSessionRef.current = true;
+      onSessionResolved(chatData.sessionId, chatData.sessionTitle);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatData]);
 
   const getChatData = (request: ChatRequest) => {
@@ -122,10 +138,10 @@ export default function ChatContent({
         <div className="sticky top-0 bg-gray-100 dark:bg-gray-900 z-10 p-2 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
           <header className="mb-4">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Your AI Tutor!
+              {t.chat.yourAiTutor}
             </h1>
             <p className="text-gray-600 dark:text-gray-300 mt-1">
-              Practice conversational German with an AI tutor.
+              {t.chat.subtitle}
             </p>
           </header>
           {sessionId && (
@@ -136,14 +152,14 @@ export default function ChatContent({
                   required
                   value={sessionTitle}
                   onChange={(e) => setSessionTitle(e.target.value)}
-                  placeholder="Set title..."
+                  placeholder={t.chat.setTitlePlaceholder}
                   className="px-2 py-2 rounded-lg border dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none w-full md:w-50"
                 />
                 <button
                   type="submit"
                   className="px-4 py-2 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 hover:cursor-pointer"
                 >
-                  Save
+                  {t.chat.save}
                 </button>
               </div>
             </form>
@@ -182,7 +198,7 @@ export default function ChatContent({
             name="message"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type a message..."
+            placeholder={t.chat.typePlaceholder}
             className="flex-1 px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none"
           />
           <button
@@ -190,7 +206,7 @@ export default function ChatContent({
             type="submit"
             disabled={thinking}
           >
-            Send
+            {t.chat.send}
           </button>
         </form>
       </div>

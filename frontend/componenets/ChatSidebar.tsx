@@ -3,6 +3,7 @@ import RefreshButton from "@/componenets/RefreshButton";
 import { useEffect, useRef, useState } from "react";
 import {deleteSession} from "../services/chatAi";
 import {toast} from "react-toastify";
+import {useI18n} from "@/componenets/I18nProvider";
 interface Topic {
   id: string;
   title?: string;
@@ -23,7 +24,7 @@ export default function ChatSidebar({
   onNewChat, onRefresh,
   selectedSessionId,
 }: Readonly<SidebarProps>) {
-
+  const { t } = useI18n();
   const [openId, setOpenId] = useState<string | null>(null);
   const containerRef = useRef<HTMLUListElement>(null);
 
@@ -40,12 +41,12 @@ export default function ChatSidebar({
   }, []);
 
   const handleDelete = (sessionId:string) =>{
-    if(confirm("Are you sure to delete all chat in this session!")) {
+    if(confirm(t.chat.confirmDelete)) {
       if (sessionId)
         deleteSession(sessionId)
             .then((res) => {
               if (res.status == 204)
-                toast.success("Session deleted!")
+                toast.success(t.chat.deleted)
               onRefresh();
             })
             .catch((err) => {
@@ -61,7 +62,7 @@ export default function ChatSidebar({
         <div className="flex-1">
           <div className="cursor-pointer px-2 py-1 bg-blue-100 rounded hover:bg-blue-300 dark:hover:bg-blue-700 text-gray-700 dark:text-gray-300">
           <button onClick={onNewChat} className=" text-sm font-semibold text-blue-500 transition">
-            New Chat
+            {t.chat.newChat}
           </button>
 
             <button onClick={onNewChat} className="text-base font-medium cursor-pointer  p-2 ml-3 bg-blue-100 text-blue-500 rounded-lg transition">
@@ -93,7 +94,7 @@ export default function ChatSidebar({
 
       <div className="mb-6">
         <h3 className="text-sm font-semibold pl-2.5 text-gray-900 dark:text-gray-400 mb-2">
-          Chat History
+          {t.chat.chatHistory}
         </h3>
         <ul ref={containerRef} className="space-y-2 group">
           {sessions.map((session) => (
@@ -119,7 +120,11 @@ export default function ChatSidebar({
                 </button>
 
                 {/* Three dots button */}
-                <div className="relative inline-block  opacity-0 group-hover:opacity-100">
+                <div
+                    className={`relative inline-block ${
+                        openId === session.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                    }`}
+                >
             <span
                 onClick={() => setOpenId(openId === session.id ? null : session.id)}
                 className="cursor-pointer px-2 py-1 text-gray-500 hover:text-gray-700 select-none"
@@ -129,19 +134,19 @@ export default function ChatSidebar({
 
                   {/* Tooltip / menu */}
                   {openId === session.id && (
-                      <div className="absolute top-full right-0 mt-2 min-w-[120px] rounded-md bg-black py-1 text-sm text-white shadow-lg z-50">
+                      <div className="absolute top-full end-0 mt-2 min-w-[120px] rounded-md bg-black py-1 text-sm text-white shadow-lg z-50">
                         <a
                             href={session.id}
                             className="block px-4 py-2 hover:bg-gray-700 transition-colors"
                             onClick={() => setOpenId(null)}
                         >
-                          Edit
+                          {t.chat.edit}
                         </a>
                         <a
                             className="block cursor-pointer px-4 py-2  hover:bg-gray-700 transition-colors"
                             onClick={() => handleDelete(session.id)}
                         >
-                          Delete
+                          {t.chat.delete}
                         </a>
                       </div>
                   )}

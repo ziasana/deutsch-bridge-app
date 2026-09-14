@@ -8,15 +8,17 @@ import { ReadingArticle } from "@/types/reading";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
 import { getArticleImageSrc } from "@/lib/readingImages";
+import { useI18n } from "@/componenets/I18nProvider";
 
 const ITEMS_PER_PAGE = 8;
 
-function formatPostedDate(iso: string): string {
-    return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+function formatPostedDate(iso: string, locale: string): string {
+    return new Date(iso).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
 }
 
 export default function ReadingPage() {
     const router = useRouter();
+    const { t, language } = useI18n();
     const [articles, setArticles] = useState<ReadingArticle[]>([]);
     const [loading, setLoading] = useState(true);
     const [levelFilter, setLevelFilter] = useState("ALL");
@@ -44,13 +46,11 @@ export default function ReadingPage() {
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
             <div className="max-w-4xl mx-auto">
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Reading</h1>
-                <p className="text-gray-600 dark:text-gray-300 mt-2">
-                    Read articles at your level and tap highlighted words to learn new vocabulary in context.
-                </p>
+                <h1 className="text-4xl font-bold text-gray-900 dark:text-white">{t.reading.title}</h1>
+                <p className="text-gray-600 dark:text-gray-300 mt-2">{t.reading.subtitle}</p>
 
                 <div className="mt-6 flex items-center gap-3">
-                    <label className="text-sm text-gray-600 dark:text-gray-300">Level:</label>
+                    <label className="text-sm text-gray-600 dark:text-gray-300">{t.reading.level}</label>
                     <select
                         value={levelFilter}
                         onChange={(e) => {
@@ -59,7 +59,7 @@ export default function ReadingPage() {
                         }}
                         className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
                     >
-                        <option value="ALL">All levels</option>
+                        <option value="ALL">{t.reading.allLevels}</option>
                         {levels.map((lvl) => (
                             <option key={lvl} value={lvl}>
                                 {lvl}
@@ -88,10 +88,10 @@ export default function ReadingPage() {
                                             {article.title}
                                         </span>
                                         <Badge variant="secondary">{article.level}</Badge>
-                                        {learned && <Badge variant="default">Learned</Badge>}
+                                        {learned && <Badge variant="default">{t.reading.learned}</Badge>}
                                         {article.newWordCount > 0 && (
                                             <span className="text-xs text-gray-500 dark:text-gray-400">
-                                                {article.newWordCount} new for you
+                                                {t.reading.newForYou(article.newWordCount)}
                                             </span>
                                         )}
                                     </div>
@@ -99,8 +99,15 @@ export default function ReadingPage() {
                                         {article.topic}
                                     </p>
                                     <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
-                                        <span>👁 {article.viewCount} views</span>
-                                        <span>Posted {formatPostedDate(article.createdAt)}</span>
+                                        <span>{t.reading.views(article.viewCount)}</span>
+                                        <span>
+                                            {t.reading.posted(
+                                                formatPostedDate(
+                                                    article.createdAt,
+                                                    language === "fa" ? "fa-IR-u-ca-gregory" : "en-US"
+                                                )
+                                            )}
+                                        </span>
                                     </div>
                                 </div>
                                 <span className="text-gray-400 text-xl shrink-0">›</span>
@@ -110,7 +117,7 @@ export default function ReadingPage() {
 
                     {filtered.length === 0 && (
                         <div className="text-center text-gray-500 dark:text-gray-400 py-10">
-                            No reading articles found.
+                            {t.reading.notFound}
                         </div>
                     )}
                 </div>
@@ -122,17 +129,17 @@ export default function ReadingPage() {
                             disabled={currentPage === 1}
                             className="px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 text-sm disabled:opacity-50"
                         >
-                            Previous
+                            {t.reading.previous}
                         </button>
                         <span className="text-sm text-gray-600 dark:text-gray-300">
-                            Page {currentPage} of {totalPages}
+                            {t.reading.pageOf(currentPage, totalPages)}
                         </span>
                         <button
                             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                             disabled={currentPage === totalPages}
                             className="px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 text-sm disabled:opacity-50"
                         >
-                            Next
+                            {t.reading.next}
                         </button>
                     </div>
                 )}

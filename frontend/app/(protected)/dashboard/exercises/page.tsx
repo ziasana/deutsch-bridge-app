@@ -94,7 +94,7 @@ export default function ExercisesPage() {
 
     if (topics.length === 0) {
         return (
-            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
+            <div dir="ltr" className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10 text-left">
                 <div className="max-w-2xl mx-auto text-center text-gray-500 dark:text-gray-400 py-20">
                     No exercises available yet. Check back once grammar lessons have been added.
                 </div>
@@ -105,7 +105,7 @@ export default function ExercisesPage() {
     // ---- Topic selection screen ----
     if (!selectedLessonId) {
         return (
-            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
+            <div dir="ltr" className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10 text-left">
                 <div className="max-w-2xl mx-auto">
                     <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Exercises</h1>
                     <p className="text-gray-600 dark:text-gray-300 mt-2">
@@ -211,7 +211,7 @@ export default function ExercisesPage() {
 
     if (finished) {
         return (
-            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
+            <div dir="ltr" className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10 text-left">
                 <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-10 text-center">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{lessonTitle} — complete!</h1>
                     <p className="text-gray-600 dark:text-gray-300 mt-4">
@@ -232,7 +232,7 @@ export default function ExercisesPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
+        <div dir="ltr" className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10 text-left">
             <div className="max-w-2xl mx-auto">
                 <button
                     onClick={backToTopics}

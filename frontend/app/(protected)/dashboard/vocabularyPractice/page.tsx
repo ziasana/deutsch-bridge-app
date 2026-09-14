@@ -7,8 +7,10 @@ import ActionButtons from '@/componenets/ActionButtons'
 import Loading from '@/componenets/Loading'
 import {addUserVocabularyPractice, getUserVocabularyForPractice} from "@/services/vocabularyService";
 import {SaveVocabularyPracticeType, VocabularyForPracticeType,} from "@/types/vocabulary";
+import {useI18n} from "@/componenets/I18nProvider";
 
 export default function PracticePage() {
+    const { t } = useI18n();
     const [vocabularies, setVocabularies] = useState<VocabularyForPracticeType[]>([]);
     const [index, setIndex] = useState(0)
     const [knownCount, setKnownCount] = useState(0)
@@ -71,16 +73,16 @@ export default function PracticePage() {
                 <div className="flex flex-col items-center rounded-2xl bg-white px-10 py-8 shadow-lg text-center">
                     <span className="text-5xl">📚</span>
                     <h1 className="mt-4 text-2xl font-semibold text-gray-800">
-                        No words to practice right now
+                        {t.vocabulary.practice.noWords}
                     </h1>
                     <p className="mt-2 text-gray-500 max-w-xs">
-                        Add new words to your vocabulary, or come back once you have more to review.
+                        {t.vocabulary.practice.noWordsSubtitle}
                     </p>
                     <Link
                         href="/dashboard/vocabulary"
                         className="mt-6 rounded-xl bg-blue-600 px-6 py-2.5 font-semibold text-white transition hover:bg-blue-700 active:scale-95"
                     >
-                        Go to My Vocabulary
+                        {t.vocabulary.practice.goToVocabulary}
                     </Link>
                 </div>
             </div>
@@ -93,19 +95,19 @@ export default function PracticePage() {
             <div className="flex min-h-screen items-center justify-center bg-gray-50">
                 <div className="flex flex-col items-center rounded-2xl bg-white px-10 py-8 shadow-lg">
                     <span className="text-5xl">🎉</span>
-                   Success Rate: { successRate }%
+                   {t.vocabulary.practice.successRate(successRate)}
                     <h1 className="mt-4 text-2xl font-semibold text-gray-800">
-                        Session finished
+                        {t.vocabulary.practice.sessionFinished}
                     </h1>
                     <p className="mt-2 text-gray-500">
-                        Great job! Ready for another round?
+                        {t.vocabulary.practice.readyForAnother}
                     </p>
 
                     <button
                         onClick={handleStartPractice}
                         className="mt-6 rounded-xl bg-blue-600 px-6 py-2.5 font-semibold text-white transition hover:bg-blue-700 active:scale-95"
                     >
-                        Start again
+                        {t.vocabulary.practice.startAgain}
                     </button>
                 </div>
             </div>

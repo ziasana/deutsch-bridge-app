@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useI18n } from '@/componenets/I18nProvider'
 
 type Props = {
     word: string
@@ -9,6 +10,7 @@ type Props = {
 }
 
 export default function Flashcard({ word, example,synonyms, meaning}: Readonly<Props>) {
+    const { t } = useI18n();
     const [showMeaning, setShowMeaning] = useState(false)
 
     return (
@@ -25,10 +27,10 @@ export default function Flashcard({ word, example,synonyms, meaning}: Readonly<P
             {showMeaning && (
                 <div className="border-t pt-2 pb-2">
                     <p>
-                        <strong>Meaning: {meaning}</strong>
+                        <strong>{t.vocabulary.flashcard.meaning} {meaning}</strong>
                     </p>
                     <p>
-                        <i> Synonyms: {synonyms}</i>
+                        <i> {t.vocabulary.flashcard.synonyms} {synonyms}</i>
                     </p>
 
                 </div>
@@ -39,7 +41,7 @@ export default function Flashcard({ word, example,synonyms, meaning}: Readonly<P
                     onClick={() => setShowMeaning(true)}
                     className="mt-6 w-full rounded-xl bg-blue-600 py-2 font-semibold text-white hover:bg-blue-700"
                 >
-                    Show meaning
+                    {t.vocabulary.flashcard.showMeaning}
                 </button>
             )}
         </div>

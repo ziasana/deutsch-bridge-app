@@ -834,7 +834,7 @@ function ExamExerciseContent() {
 
     if (!exerciseId) {
         return (
-            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
+            <div dir="ltr" className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
                 <div className="max-w-4xl mx-auto text-center text-gray-500 dark:text-gray-400 py-20">
                     Keine Übung ausgewählt.{" "}
                     <Link href="/dashboard/exam-prep" className="underline">
@@ -849,7 +849,7 @@ function ExamExerciseContent() {
 
     if (!exercise) {
         return (
-            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
+            <div dir="ltr" className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
                 <div className="max-w-4xl mx-auto text-center text-gray-500 dark:text-gray-400 py-20">
                     Übung nicht gefunden.{" "}
                     <Link href="/dashboard/exam-prep" className="underline">
@@ -861,7 +861,7 @@ function ExamExerciseContent() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
+        <div dir="ltr" className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
             <div className="max-w-4xl mx-auto space-y-6">
                 <Link
                     href="/dashboard/exam-prep"

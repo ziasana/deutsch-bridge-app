@@ -45,13 +45,34 @@ public class OllamaService {
     public ResponseMessageDto chatWithUser(OllamaChatRequestDto requestDto) {
         String userId = requestContext.getUserId();
 
+        boolean isNewSession = requestDto.sessionId() == null
+                || chatSessionService.getBySessionId(requestDto.sessionId()) == null;
         String sessionId = resolveSessionId(requestDto.sessionId(), userId);
 
         String aiAnswer = chatWithOllama(PromptType.CHAT, requestDto.question());
 
         chatMessageService.save(sessionId, requestDto.question(), aiAnswer);
 
-        return new ResponseMessageDto(sessionId, userId, aiAnswer, "");
+        String sessionTitle = null;
+        if (isNewSession) {
+            sessionTitle = generateSessionTitle(requestDto.question());
+            if (sessionTitle != null) {
+                chatSessionService.updateTitle(sessionId, sessionTitle);
+            }
+        }
+
+        return new ResponseMessageDto(sessionId, userId, aiAnswer, "", sessionTitle);
+    }
+
+    /** Best-effort - a title-generation failure shouldn't break the chat response itself. */
+    private String generateSessionTitle(String question) {
+        try {
+            String rawTitle = chatWithOllama(PromptType.SESSION_TITLE, question);
+            String title = rawTitle.strip().replaceAll("^[\"'\\s]+|[\"'\\s.!?]+$", "");
+            return title.isBlank() ? null : title;
+        } catch (AiGenerationException e) {
+            return null;
+        }
     }
 
     public OllamaGenerateExampleDto generateAiExample(OllamaGenerateExampleDto requestDto) {
@@ -139,13 +160,16 @@ public class OllamaService {
        String learningLevel = String.valueOf(userService.getLearningLevel(requestContext.getUserEmail()));
        String userPrompt= "";
         if(promptType == (PromptType.CHAT)) {
-            userPrompt = PromptLibrary.systemPrompt();
+            userPrompt = PromptLibrary.systemPrompt(requestContext.getLanguage());
         }
         if (promptType == PromptType.EXAMPLE) {
             userPrompt = PromptLibrary.generateWordExamples(question, learningLevel);
         }
         if (promptType == PromptType.SYNONYM) {
             userPrompt = PromptLibrary.generateWordSynonyms(question, learningLevel);
+        }
+        if (promptType == PromptType.SESSION_TITLE) {
+            userPrompt = PromptLibrary.generateSessionTitle(requestContext.getLanguage());
         }
 
         return List.of(

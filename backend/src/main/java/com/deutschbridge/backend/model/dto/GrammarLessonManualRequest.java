@@ -1,15 +1,16 @@
 package com.deutschbridge.backend.model.dto;
 
 import com.deutschbridge.backend.model.entity.QuizQuestion;
+import com.deutschbridge.backend.model.enums.GrammarLessonStatus;
+import com.deutschbridge.backend.model.enums.LearningLevel;
 
 import java.util.List;
 
-public record GrammarLessonResponse(
-        String id,
+public record GrammarLessonManualRequest(
         String title,
+        LearningLevel level,
         String summary,
         String content,
-        String level,
         String example,
         String usageTips,
         String titleFa,
@@ -18,10 +19,7 @@ public record GrammarLessonResponse(
         String exampleFa,
         String usageTipsFa,
         String videoLink,
-        String status,
-        List<QuizQuestion> quiz,
-        List<LearningProgressResponse> learningProgresses,
-        java.time.LocalDateTime createdAt,
-        java.time.LocalDateTime updatedAt
+        GrammarLessonStatus status,
+        List<QuizQuestion> quiz
 ) {
 }

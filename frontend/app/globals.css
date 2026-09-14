@@ -163,3 +163,9 @@
 .exam-gap-marker {
   @apply inline-flex items-center justify-center min-w-[1.5em] px-1 mx-0.5 rounded bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-bold align-middle;
 }
+
+/* Persian UI language - applied to <html> by I18nProvider when the account's preferred language is Persian */
+.font-fa,
+.font-fa body {
+  font-family: "Vazirmatn", var(--font-geist-sans), sans-serif;
+}

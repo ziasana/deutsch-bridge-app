@@ -11,6 +11,7 @@ import {toast, ToastContainer} from "react-toastify";
 import Loading from "@/componenets/Loading";
 import {UserProfileType} from "@/types/user";
 import Image from "next/image";
+import { useI18n } from "@/componenets/I18nProvider";
 type LanguageOption = {
     name: string;
     value: string;
@@ -27,6 +28,7 @@ export default function UserProfile() {
     const [isLoading, setIsLoading] = useState(false);
     const [editing, setEditing] = useState(false);
     const { userProfile, updateUserProfile } = useAuthStore();
+    const { t } = useI18n();
 
     const [profile, setProfile] = useState<UserProfileType>({
         displayName: userProfile?.displayName,
@@ -55,7 +57,7 @@ export default function UserProfile() {
         updateProfile(profile)
             .then((data) => {
                 if (data?.status == 200) {
-                    toast.success("Profile updated!");
+                    toast.success(t.profile.updated);
                     updateUserProfile(profile);
                 }
                 setEditing(!editing)
@@ -77,10 +79,10 @@ export default function UserProfile() {
                     <CardContent className="p-6 space-y-6">
                         <div className="flex items-center justify-between">
                             <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                                Profile
+                                {t.profile.title}
                             </h1>
                             <Button  onClick={() => setEditing(!editing)}>
-                                {editing ? "Cancel" : "Edit"}
+                                {editing ? t.profile.cancel : t.profile.edit}
                             </Button>
                         </div>
 
@@ -104,7 +106,7 @@ export default function UserProfile() {
                         {/* Profile form */}
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
-                                <Label>Name</Label>
+                                <Label>{t.profile.name}</Label>
                                 <Input
                                     name="displayName"
                                     value={profile.displayName}
@@ -114,7 +116,7 @@ export default function UserProfile() {
                             </div>
 
                             <div>
-                                <Label>Email</Label>
+                                <Label>{t.profile.email}</Label>
                                 <Input
                                     name="email"
                                     value={profile.email}
@@ -129,16 +131,16 @@ export default function UserProfile() {
                     <CardContent className="p-6 space-y-6 pb-10">
                         <div>
                             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                                Learning Preferences
+                                {t.profile.learningPreferences}
                             </h2>
                             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                Customize your daily learning experience.
+                                {t.profile.customizeDaily}
                             </p>
                         </div>
 
                         {/* Learning level */}
                         <div>
-                            <Label>Learning level</Label>
+                            <Label>{t.profile.learningLevel}</Label>
                             <select
                                 value={profile.learningLevel}
                                 name="learningLevel"
@@ -155,7 +157,7 @@ export default function UserProfile() {
 
                             {/* Presets */}
 
-                            <Label>Daily word goal</Label>
+                            <Label>{t.profile.dailyWordGoal}</Label>
                             <div className="mt-3 flex gap-3">
                                 {WORD_GOALS.map((n) => {
                                     const isSelected = profile.dailyGoalWords === n;
@@ -183,14 +185,14 @@ export default function UserProfile() {
                                             }
         `}
                                         >
-                                            {n} {"words"}
+                                            {n} {t.profile.words}
                                         </button>
                                     );
                                 })}
                             </div>
 
                             <p className="mt-2 text-xs text-gray-500">
-                                Recommended: 10–15 words per day
+                                {t.profile.recommendedGoal}
                             </p>
 
                         </div>
@@ -199,7 +201,7 @@ export default function UserProfile() {
                         {/* Reminder */}
                         <div>
                             <label className="flex items-center gap-3 cursor-pointer">
-                                <span className="text-sm">Enable Notification</span>
+                                <span className="text-sm">{t.profile.enableNotification}</span>
                                 <input
                                     type="checkbox"
                                     disabled={!editing}
@@ -226,7 +228,7 @@ export default function UserProfile() {
 
                         {/* Learning level */}
                         <div>
-                            <Label>Preferred Language</Label>
+                            <Label>{t.profile.preferredLanguage}</Label>
                             <select
                                 value={profile.preferredLanguage}
                                 name="preferredLanguage"
@@ -234,7 +236,7 @@ export default function UserProfile() {
                                 onChange={handleChange} className="mt-2 w-60 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 {languages.map((item) => (
                                     <option key={item.name} value={item.value}>
-                                        {item.name}
+                                        {item.value === "PR" ? "فارسی" : item.name}
                                     </option>
                                 ))}
                             </select>
@@ -243,9 +245,9 @@ export default function UserProfile() {
                         {editing && (
                             <div className="flex justify-end gap-3 pt-4">
                                 <Button variant="secondary" onClick={() => setEditing(false)}>
-                                    Cancel
+                                    {t.profile.cancel}
                                 </Button>
-                                <Button onClick={handleSubmit}>Save Profile</Button>
+                                <Button onClick={handleSubmit}>{t.profile.saveProfile}</Button>
                             </div>
                         )}
                     </CardContent>

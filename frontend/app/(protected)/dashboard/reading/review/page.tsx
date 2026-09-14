@@ -8,14 +8,11 @@ import ActionButtons from "@/componenets/ActionButtons";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
 import { UserWordProgress } from "@/types/reading";
-
-const TYPE_LABELS: Record<UserWordProgress["type"], string> = {
-    WORD: "Word",
-    NOMEN_VERB_VERBINDUNG: "Nomen-Verb-Verbindung",
-    REDEWENDUNG: "Redewendung",
-};
+import { useI18n } from "@/componenets/I18nProvider";
 
 export default function ReadingReviewPage() {
+    const { t } = useI18n();
+    const TYPE_LABELS: Record<UserWordProgress["type"], string> = t.readingReview.typeLabels;
     const [queue, setQueue] = useState<UserWordProgress[]>([]);
     const [index, setIndex] = useState(0);
     const [showAnswer, setShowAnswer] = useState(false);
@@ -72,16 +69,14 @@ export default function ReadingReviewPage() {
                 <div className="flex flex-col items-center rounded-2xl bg-white dark:bg-gray-800 px-10 py-8 shadow-lg text-center max-w-sm">
                     <span className="text-5xl">🎉</span>
                     <h1 className="mt-4 text-2xl font-semibold text-gray-900 dark:text-white">
-                        Nothing due for review
+                        {t.readingReview.nothingDue}
                     </h1>
-                    <p className="mt-2 text-gray-500 dark:text-gray-400">
-                        Words you save while reading show up here once they&apos;re due for review.
-                    </p>
+                    <p className="mt-2 text-gray-500 dark:text-gray-400">{t.readingReview.nothingDueSubtitle}</p>
                     <Link
                         href="/dashboard/reading"
                         className="mt-6 rounded-xl bg-blue-600 px-6 py-2.5 font-semibold text-white transition hover:bg-blue-700 active:scale-95"
                     >
-                        Go to Reading
+                        {t.readingReview.goToReading}
                     </Link>
                 </div>
                 <ToastContainer />
@@ -96,23 +91,23 @@ export default function ReadingReviewPage() {
                 <div className="flex flex-col items-center rounded-2xl bg-white dark:bg-gray-800 px-10 py-8 shadow-lg text-center">
                     <span className="text-5xl">✅</span>
                     <h1 className="mt-4 text-2xl font-semibold text-gray-900 dark:text-white">
-                        Review session finished
+                        {t.readingReview.sessionFinished}
                     </h1>
                     <p className="mt-2 text-gray-500 dark:text-gray-400">
-                        {correctCount} of {queue.length} correct ({successRate}%)
+                        {t.readingReview.resultsSummary(correctCount, queue.length, successRate)}
                     </p>
                     <div className="mt-6 flex gap-3">
                         <Link
                             href="/dashboard/reading"
                             className="rounded-xl border border-gray-300 dark:border-gray-600 px-6 py-2.5 font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
-                            Back to Reading
+                            {t.readingReview.backToReading}
                         </Link>
                         <button
                             onClick={startOver}
                             className="rounded-xl bg-blue-600 px-6 py-2.5 font-semibold text-white transition hover:bg-blue-700 active:scale-95"
                         >
-                            Check again
+                            {t.readingReview.checkAgain}
                         </button>
                     </div>
                 </div>
@@ -124,14 +119,15 @@ export default function ReadingReviewPage() {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
             <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
-                Card {index + 1} of {queue.length}
+                {t.readingReview.cardOf(index + 1, queue.length)}
             </p>
 
             <div className="w-full max-w-md rounded-2xl bg-white dark:bg-gray-800 p-6 shadow-lg">
                 <div className="flex items-center justify-between mb-4">
                     <Badge variant="secondary">{TYPE_LABELS[current.type]}</Badge>
                     <span className="text-xs text-gray-400 dark:text-gray-500">
-                        Status: {current.status}
+                        {t.readingReview.status}
+                        {current.status}
                     </span>
                 </div>
 
@@ -143,7 +139,7 @@ export default function ReadingReviewPage() {
                     <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
                         {current.translation && (
                             <p className="text-gray-800 dark:text-gray-100">
-                                <strong>Meaning:</strong> {current.translation}
+                                <strong>{t.readingReview.meaning}</strong> {current.translation}
                             </p>
                         )}
                         {current.firstSeenSentence && (
@@ -157,7 +153,7 @@ export default function ReadingReviewPage() {
                         onClick={() => setShowAnswer(true)}
                         className="mt-6 w-full rounded-xl bg-blue-600 py-2 font-semibold text-white hover:bg-blue-700"
                     >
-                        Show meaning
+                        {t.readingReview.showMeaning}
                     </button>
                 )}
             </div>

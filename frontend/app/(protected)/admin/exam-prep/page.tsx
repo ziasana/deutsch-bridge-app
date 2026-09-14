@@ -91,6 +91,19 @@ const HOERVERSTEHEN_TEIL_OPTIONS = [
     { value: "3", label: "Hörverstehen Teil 3" },
 ];
 
+const SECTION_FILTER_OPTIONS: { value: ExamSection | "ALL"; label: string }[] = [
+    { value: "ALL", label: "All sections" },
+    { value: "LESEVERSTEHEN", label: "Leseverstehen" },
+    { value: "SPRACHBAUSTEINE", label: "Sprachbausteine" },
+    { value: "HOERVERSTEHEN", label: "Hörverstehen" },
+    { value: "SCHRIFTLICHER_AUSDRUCK", label: "Schriftlicher Ausdruck" },
+    { value: "TESTFORMAT_INFORMATION", label: "Testformat Information" },
+];
+
+type PublishedFilter = "ALL" | "YES" | "NO";
+type SortOrder = "NEWEST" | "OLDEST";
+const EXERCISES_PAGE_SIZE = 10;
+
 const emptyForm = {
     title: "",
     section: "LESEVERSTEHEN" as ExamSection,
@@ -169,6 +182,12 @@ export default function AdminExamPrepPage() {
     const [editingExercise, setEditingExercise] = useState<ExamExerciseResponse | null>(null);
     const [uploadingPassageImage, setUploadingPassageImage] = useState<number | null>(null);
     const [uploadingPassageAudio, setUploadingPassageAudio] = useState<number | null>(null);
+
+    const [filterLevel, setFilterLevel] = useState<string>("ALL");
+    const [filterSection, setFilterSection] = useState<ExamSection | "ALL">("ALL");
+    const [filterPublished, setFilterPublished] = useState<PublishedFilter>("ALL");
+    const [sortOrder, setSortOrder] = useState<SortOrder>("NEWEST");
+    const [exercisesPage, setExercisesPage] = useState(1);
 
     const fetchExercises = useCallback(() => {
         getExamExercisesForAdmin()
@@ -389,6 +408,29 @@ export default function AdminExamPrepPage() {
             .finally(() => setIsSaving(false));
     };
 
+    const changeExercisesFilter = (fn: () => void) => {
+        fn();
+        setExercisesPage(1);
+    };
+
+    const exerciseLevels = Array.from(new Set(exercises.map((e) => e.level).filter((lvl): lvl is string => lvl != null))).sort();
+
+    const filteredExercises = exercises
+        .filter((e) => filterLevel === "ALL" || e.level === filterLevel)
+        .filter((e) => filterSection === "ALL" || e.section === filterSection)
+        .filter((e) => filterPublished === "ALL" || (filterPublished === "YES" ? e.published : !e.published))
+        .sort((a, b) => {
+            const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+            return sortOrder === "NEWEST" ? -diff : diff;
+        });
+
+    const exercisesTotalPages = Math.max(1, Math.ceil(filteredExercises.length / EXERCISES_PAGE_SIZE));
+    const exercisesCurrentPage = Math.min(exercisesPage, exercisesTotalPages);
+    const pagedExercises = filteredExercises.slice(
+        (exercisesCurrentPage - 1) * EXERCISES_PAGE_SIZE,
+        exercisesCurrentPage * EXERCISES_PAGE_SIZE
+    );
+
     const removeExercise = (exercise: ExamExerciseResponse) => {
         if (!confirm(`Delete "${exercise.title}"?`)) return;
         deleteExamExercise(exercise.id)
@@ -401,7 +443,7 @@ export default function AdminExamPrepPage() {
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-6xl mx-auto">
                 <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Prüfungsvorbereitung</h1>
                 <p className="text-gray-600 dark:text-gray-300 mt-2">
                     Create exam-style Leseverstehen, Sprachbausteine, Hörverstehen, and Testformat Information exercises.
@@ -915,6 +957,55 @@ export default function AdminExamPrepPage() {
 
                 <div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white px-6 pt-6">Existing exercises</h2>
+
+                    <div className="px-6 pt-4 flex items-center gap-3 flex-wrap">
+                        <select
+                            value={filterSection}
+                            onChange={(e) =>
+                                changeExercisesFilter(() => setFilterSection(e.target.value as ExamSection | "ALL"))
+                            }
+                            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                        >
+                            {SECTION_FILTER_OPTIONS.map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+
+                        <select
+                            value={filterLevel}
+                            onChange={(e) => changeExercisesFilter(() => setFilterLevel(e.target.value))}
+                            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                        >
+                            <option value="ALL">All levels</option>
+                            {exerciseLevels.map((lvl) => (
+                                <option key={lvl} value={lvl}>
+                                    {lvl}
+                                </option>
+                            ))}
+                        </select>
+
+                        <select
+                            value={filterPublished}
+                            onChange={(e) => changeExercisesFilter(() => setFilterPublished(e.target.value as PublishedFilter))}
+                            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                        >
+                            <option value="ALL">Published: all</option>
+                            <option value="YES">Published: yes</option>
+                            <option value="NO">Published: no</option>
+                        </select>
+
+                        <select
+                            value={sortOrder}
+                            onChange={(e) => changeExercisesFilter(() => setSortOrder(e.target.value as SortOrder))}
+                            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                        >
+                            <option value="NEWEST">Newest first</option>
+                            <option value="OLDEST">Oldest first</option>
+                        </select>
+                    </div>
+
                     {isLoading ? (
                         <div className="p-10 text-center text-gray-500 dark:text-gray-400">Loading exercises...</div>
                     ) : (
@@ -932,7 +1023,7 @@ export default function AdminExamPrepPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                    {exercises.map((exercise) => (
+                                    {pagedExercises.map((exercise) => (
                                         <tr key={exercise.id}>
                                             <td className="px-6 py-4 text-gray-900 dark:text-white">{exercise.title}</td>
                                             <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
@@ -960,7 +1051,7 @@ export default function AdminExamPrepPage() {
                                             </td>
                                         </tr>
                                     ))}
-                                    {exercises.length === 0 && (
+                                    {filteredExercises.length === 0 && (
                                         <tr>
                                             <td colSpan={7} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
                                                 No exercises found.
@@ -969,6 +1060,28 @@ export default function AdminExamPrepPage() {
                                     )}
                                 </tbody>
                             </table>
+                        </div>
+                    )}
+
+                    {!isLoading && exercisesTotalPages > 1 && (
+                        <div className="flex items-center justify-center gap-2 py-4">
+                            <button
+                                onClick={() => setExercisesPage((p) => Math.max(1, p - 1))}
+                                disabled={exercisesCurrentPage === 1}
+                                className="px-3 py-2 rounded-lg text-sm font-medium bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 disabled:opacity-40"
+                            >
+                                ‹ Back
+                            </button>
+                            <span className="text-sm text-gray-600 dark:text-gray-300 px-2">
+                                Page {exercisesCurrentPage} of {exercisesTotalPages}
+                            </span>
+                            <button
+                                onClick={() => setExercisesPage((p) => Math.min(exercisesTotalPages, p + 1))}
+                                disabled={exercisesCurrentPage === exercisesTotalPages}
+                                className="px-3 py-2 rounded-lg text-sm font-medium bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 disabled:opacity-40"
+                            >
+                                Next ›
+                            </button>
                         </div>
                     )}
                 </div>

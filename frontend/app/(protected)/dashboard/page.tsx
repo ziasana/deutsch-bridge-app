@@ -14,9 +14,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import useAuthStore from "@/store/useAuthStore";
+import { useI18n } from "@/componenets/I18nProvider";
 const DashboardPage = () => {
     const router = useRouter();
     const { userProfile, hasHydrated } = useAuthStore();
+    const { t } = useI18n();
 
     useEffect(() => {
         if (hasHydrated && userProfile?.role === "ADMIN") {
@@ -28,62 +30,47 @@ const DashboardPage = () => {
 
     const modules = [
         {
-            title: "Daily Words",
-            description:
-                "Learn 5 new C1-level words every day with examples and synonyms.",
+            ...t.dashboard.modules.dailyWords,
             icon: SpellCheck,
             link: "/dashboard/daily-words",
         },
         {
-            title: "Grammar Lessons",
-            description:
-                "Structured grammar explanations with examples and exercises.",
+            ...t.dashboard.modules.grammarLessons,
             icon: BookOpen,
             link: "/dashboard/grammar",
         },
         {
-            title: "Nomen-Verb Verbindungen",
-            description:
-                "Learn Nomen-Verb Verbindungen with example and explanation.",
+            ...t.dashboard.modules.nomenVerb,
             icon: BookOpen,
             link: "/dashboard/nomenVerbSection",
         },
         {
-            title: "Reading",
-            description:
-                "Read articles at your level and learn new words in context.",
+            ...t.dashboard.modules.reading,
             icon: Newspaper,
             link: "/dashboard/reading",
         },
         {
-            title: "Prüfungsvorbereitung",
-            description:
-                "Practice real exam-style Leseverstehen tasks, section by section.",
+            ...t.dashboard.modules.examPrep,
             icon: GraduationCap,
             link: "/dashboard/exam-prep",
         },
         {
-            title: "Word Review",
-            description:
-                "Review the words and phrases you saved while reading, spaced out over time.",
+            ...t.dashboard.modules.wordReview,
             icon: Brain,
             link: "/dashboard/reading/review",
         },
         {
-            title: "Exercises",
-            description: "Practice tasks to reinforce your grammar and vocabulary.",
+            ...t.dashboard.modules.exercises,
             icon: ClipboardList,
             link: "/dashboard/exercises",
         },
         {
-            title: "Vocabulary Trainer",
-            description: "Add, save, and memorize your own vocabulary list.",
+            ...t.dashboard.modules.vocabularyTrainer,
             icon: Layers,
             link: "/dashboard/vocabulary",
         },
         {
-            title: "AI Chat",
-            description: "Chat with an intelligent German tutor to practice freely.",
+            ...t.dashboard.modules.aiChat,
             icon: MessageSquare,
             link: "/dashboard/chat",
         },
@@ -95,10 +82,10 @@ const DashboardPage = () => {
 
             <div className="max-w-4xl mx-auto">
                 <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-                    Welcome to your Dashboard
+                    {t.dashboard.welcome}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-300 mt-2">
-                    Continue your journey to mastering German — step by step.
+                    {t.dashboard.subtitle}
                 </p>
             </div>
 
@@ -126,7 +113,7 @@ const DashboardPage = () => {
                             </p>
 
                             <div className="mt-4 text-blue-600 dark:text-blue-400 font-medium group-hover:underline">
-                                Start →
+                                {t.dashboard.start}
                             </div>
                         </Link>
                     );

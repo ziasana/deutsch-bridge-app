@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useDarkMode } from "./DarkModeProvider";
 import useAuthStore from "@/store/useAuthStore";
+import { useI18n } from "./I18nProvider";
 import {  Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import Image from "next/image";
 
@@ -12,6 +13,7 @@ export default function Navbar() {
 
   const [isOpen, setIsOpen] = useState(false);
   const { darkMode, toggle } = useDarkMode();
+  const { t } = useI18n();
 
   return (
     <nav className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50 transition">
@@ -30,31 +32,31 @@ export default function Navbar() {
           {isLoggedIn && userProfile != null ? (
               userProfile.role === "ADMIN" ? (
                   <Link href="/admin" className="nav-link">
-                    Admin Dashboard
+                    {t.nav.adminDashboard}
                   </Link>
               ) : (
               <>
                 <Link href="/dashboard" className="nav-link">
-                  Dashboard
+                  {t.nav.dashboard}
                 </Link>
                 <Link href="/dashboard/chat" className="nav-link">
-                  Chat AI
+                  {t.nav.chatAi}
                 </Link>
                 <Link href="/dashboard/vocabulary" className="nav-link">
-                  Vocabulary
+                  {t.nav.vocabulary}
                 </Link>
                 <Link href="/dashboard/nomenVerbSection" className="nav-link">
-                  NomenVerb
+                  {t.nav.nomenVerb}
                 </Link>
               </>
               )
           ) : (
               <>
                 <Link href="/" className="nav-link">
-                  Home
+                  {t.nav.home}
                 </Link>
                 <Link href="/contact" className="nav-link">
-                  Contact
+                  {t.nav.contact}
                 </Link>
               </>
           )}
@@ -77,10 +79,10 @@ export default function Navbar() {
           {!isLoggedIn && userProfile == null && (
               <>
                 <Link href="/login" className="btn-primary">
-                  Login
+                  {t.nav.login}
                 </Link>
               <Link href="/signup" className="btn-outline">
-                Signup
+                {t.nav.signup}
               </Link>
               </>
           )
@@ -132,7 +134,7 @@ export default function Navbar() {
           outline-none
         "
                   >
-                    Profile
+                    {t.nav.profile}
                   </Link>
                 </MenuItem>
                 <MenuItem>
@@ -146,7 +148,7 @@ export default function Navbar() {
           outline-none
         "
                   >
-                    Your progress
+                    {t.nav.yourProgress}
                   </Link>
                 </MenuItem>
                 <MenuItem>
@@ -160,7 +162,7 @@ export default function Navbar() {
           outline-none
         "
                   >
-                    Update Password
+                    {t.nav.updatePassword}
                   </Link>
                 </MenuItem>
 
@@ -177,7 +179,7 @@ export default function Navbar() {
           outline-none
         "
                       >
-                        Sign out
+                        {t.nav.signOut}
                       </a>
                   ) : (
                       <Link
@@ -191,7 +193,7 @@ export default function Navbar() {
           outline-none
         "
                       >
-                        Login
+                        {t.nav.login}
                       </Link>
                   )
                   }
@@ -216,13 +218,13 @@ export default function Navbar() {
       {isOpen && (
         <div className="md:hidden bg-white dark:bg-gray-800 shadow-md">
           <Link href="/" className="mobile-link">
-            Home
+            {t.nav.home}
           </Link>
           <Link href="/about" className="mobile-link">
-            About
+            {t.nav.about}
           </Link>
           <Link href="/contact" className="mobile-link">
-            Contact
+            {t.nav.contact}
           </Link>
 
           <div className="border-t border-gray-200 dark:border-gray-700 mt-2 pt-2 flex flex-col gap-2 px-6 pb-4">
@@ -231,20 +233,20 @@ export default function Navbar() {
               onClick={toggle}
               className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
             >
-              {darkMode ? "Dark Mode 🌙" : "Light Mode ☀️"}
+              {darkMode ? t.nav.darkMode : t.nav.lightMode}
             </button>
 
             {isLoggedIn && userProfile != null ? (
                 <Link href="#" onClick={logout}  className="btn-outline w-full text-center">
-                  Logout
+                  {t.nav.logout}
                 </Link>
                 ):
               <>
                 <Link href="/login" className="btn-outline w-full text-center">
-                  Login
+                  {t.nav.login}
                 </Link>
                 <Link href="/signup" className="btn-primary w-full text-center">
-                  Signup
+                  {t.nav.signup}
                 </Link>
               </>
             }

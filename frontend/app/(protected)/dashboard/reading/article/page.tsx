@@ -22,6 +22,7 @@ import { Badge } from "@/componenets/ui/badge";
 import Button from "@/componenets/Button";
 import DictionaryPanel from "@/componenets/DictionaryPanel";
 import { getArticleImageSrc } from "@/lib/readingImages";
+import { useI18n } from "@/componenets/I18nProvider";
 
 const GENDER_COLORS: Record<string, string> = {
     der: "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200",
@@ -130,7 +131,7 @@ function ArticleContent({
     );
 
     return (
-        <p className="text-gray-800 dark:text-gray-200 whitespace-pre-line leading-relaxed">
+        <p dir="ltr" className="text-gray-800 dark:text-gray-200 whitespace-pre-line leading-relaxed text-left">
             {segments.map((segment, idx) => {
                 if (segment.kind === "plain") return <span key={idx}>{segment.text}</span>;
 
@@ -173,6 +174,7 @@ function AnnotationPopup({
     onSave,
     isSaved,
 }: Readonly<{ annotation: Annotation; onSave: () => void; isSaved: boolean }>) {
+    const { t } = useI18n();
     return (
         <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 space-y-2">
             {annotation.type === "WORD" && (
@@ -188,7 +190,8 @@ function AnnotationPopup({
                         )}
                         {annotation.pluralForm && (
                             <span className="text-xs text-gray-500 dark:text-gray-400">
-                                Plural: {annotation.pluralForm}
+                                {t.readingArticle.plural}
+                                {annotation.pluralForm}
                             </span>
                         )}
                     </div>
@@ -207,9 +210,13 @@ function AnnotationPopup({
                 <div className="space-y-1">
                     <p className="text-sm font-semibold text-pink-800 dark:text-pink-200">{annotation.lemma}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Literal: <span className="italic">{annotation.literalTranslation}</span>
+                        {t.readingArticle.literal}
+                        <span className="italic">{annotation.literalTranslation}</span>
                     </p>
-                    <p className="text-pink-800 dark:text-pink-200 text-sm">Meaning: {annotation.translationEn}</p>
+                    <p className="text-pink-800 dark:text-pink-200 text-sm">
+                        {t.readingArticle.meaning}
+                        {annotation.translationEn}
+                    </p>
                 </div>
             )}
 
@@ -219,7 +226,7 @@ function AnnotationPopup({
                 disabled={isSaved}
                 onClick={onSave}
             >
-                {isSaved ? "Saved ✓" : "Save"}
+                {isSaved ? t.readingArticle.saved : t.readingArticle.save}
             </Button>
         </div>
     );
@@ -234,6 +241,7 @@ function GlossarySection({
     savedLemmas: Set<string>;
     onSave: (annotation: Annotation) => void;
 }>) {
+    const { t } = useI18n();
     const glossary = useMemo(() => {
         const byWord = new Map<string, KeyVocabularyItem>();
         for (const v of article.keyVocabulary) {
@@ -246,9 +254,9 @@ function GlossarySection({
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Key vocabulary</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{t.readingArticle.keyVocabulary}</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                The key words for this article.
+                {t.readingArticle.keyVocabularySubtitle}
             </p>
             <ul className="divide-y divide-gray-200 dark:divide-gray-700">
                 {glossary.map((v) => (
@@ -279,7 +287,7 @@ function GlossarySection({
                                 })
                             }
                         >
-                            {savedLemmas.has(v.word) ? "Saved ✓" : "Save"}
+                            {savedLemmas.has(v.word) ? t.readingArticle.saved : t.readingArticle.save}
                         </Button>
                     </li>
                 ))}
@@ -317,6 +325,7 @@ function QuizSection({
     onSaveWord: (annotation: Annotation) => void;
 }>) {
     const router = useRouter();
+    const { t } = useI18n();
     const [phase, setPhase] = useState<QuizPhase>("idle");
     const [quiz, setQuiz] = useState<QuizState | null>(null);
     const [results, setResults] = useState<ResultsState | null>(null);
@@ -383,15 +392,13 @@ function QuizSection({
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Quiz</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{t.readingArticle.quiz.title}</h2>
 
             {phase === "idle" && (
                 <div className="space-y-3">
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                        Ready to check your understanding? Start the quiz for this article.
-                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{t.readingArticle.quiz.ready}</p>
                     <Button variant="primary" className="text-sm px-4 py-2" disabled={starting} onClick={beginQuiz}>
-                        {starting ? "Loading quiz..." : "Start quiz"}
+                        {starting ? t.readingArticle.quiz.loadingQuiz : t.readingArticle.quiz.start}
                     </Button>
                 </div>
             )}
@@ -399,12 +406,12 @@ function QuizSection({
             {phase === "active" && quiz && (() => {
                 const question = quiz.questions[quiz.currentIndex];
                 if (!question) {
-                    return <p className="text-sm text-gray-500 dark:text-gray-400">This article has no quiz yet.</p>;
+                    return <p className="text-sm text-gray-500 dark:text-gray-400">{t.readingArticle.quiz.noQuiz}</p>;
                 }
                 return (
                     <div className="space-y-3">
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                            Question {quiz.currentIndex + 1} of {quiz.questions.length}
+                            {t.readingArticle.quiz.questionOf(quiz.currentIndex + 1, quiz.questions.length)}
                         </p>
                         <p className="font-medium text-gray-900 dark:text-white">{question.prompt}</p>
 
@@ -434,10 +441,13 @@ function QuizSection({
                                         : "bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200"
                                 }`}
                             >
-                                <p className="font-semibold">{quiz.feedback.correct ? "Correct!" : "Not quite."}</p>
+                                <p className="font-semibold">
+                                    {quiz.feedback.correct ? t.readingArticle.quiz.correct : t.readingArticle.quiz.incorrect}
+                                </p>
                                 {!quiz.feedback.correct && (
                                     <p>
-                                        Correct answer: <span className="font-medium">{quiz.feedback.correctAnswer}</span>
+                                        {t.readingArticle.quiz.correctAnswer}
+                                        <span className="font-medium">{quiz.feedback.correctAnswer}</span>
                                     </p>
                                 )}
                                 <p className="mt-1">{quiz.feedback.explanation}</p>
@@ -445,7 +455,9 @@ function QuizSection({
                                     <p className="mt-1 italic">&quot;{quiz.feedback.supportingSentence}&quot;</p>
                                 )}
                                 {quiz.feedback.relatedLemma && (
-                                    <p className="mt-1 text-xs">Added &quot;{quiz.feedback.relatedLemma}&quot; to your review list.</p>
+                                    <p className="mt-1 text-xs">
+                                        {t.readingArticle.quiz.addedToReview(quiz.feedback.relatedLemma)}
+                                    </p>
                                 )}
                             </div>
                         )}
@@ -453,7 +465,9 @@ function QuizSection({
                         <div className="flex justify-end pt-2">
                             {quiz.feedback ? (
                                 <Button variant="primary" className="text-sm px-4 py-2" onClick={nextQuestion}>
-                                    {quiz.currentIndex + 1 >= quiz.questions.length ? "See results" : "Next question"}
+                                    {quiz.currentIndex + 1 >= quiz.questions.length
+                                        ? t.readingArticle.quiz.seeResults
+                                        : t.readingArticle.quiz.nextQuestion}
                                 </Button>
                             ) : (
                                 <Button
@@ -462,7 +476,7 @@ function QuizSection({
                                     disabled={!quiz.selectedAnswer || quiz.submitting}
                                     onClick={answerQuestion}
                                 >
-                                    {quiz.submitting ? "Checking..." : "Submit answer"}
+                                    {quiz.submitting ? t.readingArticle.quiz.checking : t.readingArticle.quiz.submitAnswer}
                                 </Button>
                             )}
                         </div>
@@ -477,13 +491,13 @@ function QuizSection({
                             <p className="text-2xl font-bold text-gray-900 dark:text-white">
                                 {Math.round(results.comprehensionScore)}%
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Comprehension</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{t.readingArticle.quiz.comprehension}</p>
                         </div>
                         <div>
                             <p className="text-2xl font-bold text-gray-900 dark:text-white">
                                 {Math.round(results.vocabScore)}%
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Vocab in context</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{t.readingArticle.quiz.vocabInContext}</p>
                         </div>
                     </div>
 
@@ -503,7 +517,7 @@ function QuizSection({
                                 className="mt-2 underline font-medium"
                                 onClick={() => router.push(`/dashboard/reading/article?id=${results.recommendation.suggestedArticleId}`)}
                             >
-                                {results.recommendation.suggestedTitle ?? "Go to article"} →
+                                {results.recommendation.suggestedTitle ?? t.readingArticle.quiz.goToArticle} →
                             </button>
                         )}
                     </div>
@@ -513,8 +527,8 @@ function QuizSection({
     );
 }
 
-function formatPostedDate(iso: string): string {
-    return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+function formatPostedDate(iso: string, locale: string): string {
+    return new Date(iso).toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
 }
 
 export default function ReadingArticleDetailPage() {
@@ -528,6 +542,7 @@ export default function ReadingArticleDetailPage() {
 function ReadingArticleDetailContent() {
     const searchParams = useSearchParams();
     const articleId = searchParams.get("id") ?? "";
+    const { t, language } = useI18n();
     const [article, setArticle] = useState<ReadingArticle | null>(null);
     const [loading, setLoading] = useState(true);
     const [updatingLearned, setUpdatingLearned] = useState(false);
@@ -548,9 +563,9 @@ function ReadingArticleDetailContent() {
         return (
             <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
                 <div className="max-w-4xl mx-auto text-center text-gray-500 dark:text-gray-400 py-20">
-                    No article selected.{" "}
+                    {t.readingArticle.noArticleSelected}{" "}
                     <Link href="/dashboard/reading" className="underline">
-                        Back to Reading
+                        {t.readingArticle.back}
                     </Link>
                 </div>
             </div>
@@ -563,9 +578,9 @@ function ReadingArticleDetailContent() {
         return (
             <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
                 <div className="max-w-4xl mx-auto text-center text-gray-500 dark:text-gray-400 py-20">
-                    Article not found.{" "}
+                    {t.readingArticle.articleNotFound}{" "}
                     <Link href="/dashboard/reading" className="underline">
-                        Back to Reading
+                        {t.readingArticle.back}
                     </Link>
                 </div>
             </div>
@@ -581,7 +596,7 @@ function ReadingArticleDetailContent() {
                 setArticle((prev) =>
                     prev ? { ...prev, learningProgresses: [{ id: "local", learned: !learned }] } : prev
                 );
-                toast.success(!learned ? "Marked as learned!" : "Marked as not learned.");
+                toast.success(!learned ? t.readingArticle.markedLearned : t.readingArticle.markedNotLearned);
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to update progress."))
             .finally(() => setUpdatingLearned(false));
@@ -602,7 +617,7 @@ function ReadingArticleDetailContent() {
         })
             .then(() => {
                 setSavedLemmas((prev) => new Set(prev).add(annotation.lemma));
-                toast.success(`Saved "${annotation.lemma}" to your review list.`);
+                toast.success(t.readingArticle.savedToReview(annotation.lemma));
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to save word."));
     };
@@ -614,7 +629,7 @@ function ReadingArticleDetailContent() {
                     href="/dashboard/reading"
                     className="text-sm text-blue-600 dark:text-blue-400 hover:underline inline-block"
                 >
-                    ← Back to Reading
+                    {t.readingArticle.back}
                 </Link>
 
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
@@ -627,11 +642,15 @@ function ReadingArticleDetailContent() {
                         <div className="flex items-center gap-2 flex-wrap">
                             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{article.title}</h1>
                             <Badge variant="secondary">{article.level}</Badge>
-                            {learned && <Badge variant="default">Learned</Badge>}
+                            {learned && <Badge variant="default">{t.readingArticle.learned}</Badge>}
                         </div>
                         <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                            <span>👁 {article.viewCount} views</span>
-                            <span>Posted {formatPostedDate(article.createdAt)}</span>
+                            <span>{t.readingArticle.views(article.viewCount)}</span>
+                            <span>
+                                {t.readingArticle.posted(
+                                    formatPostedDate(article.createdAt, language === "fa" ? "fa-IR-u-ca-gregory" : "en-US")
+                                )}
+                            </span>
                         </div>
                         <p className="text-sm text-gray-500 dark:text-gray-400 italic">{article.topic}</p>
 
@@ -660,7 +679,11 @@ function ReadingArticleDetailContent() {
                                 disabled={updatingLearned}
                                 onClick={toggleLearned}
                             >
-                                {updatingLearned ? "Saving..." : learned ? "Mark as not learned" : "Mark as learned"}
+                                {updatingLearned
+                                    ? t.readingArticle.saving
+                                    : learned
+                                    ? t.readingArticle.markNotLearned
+                                    : t.readingArticle.markLearned}
                             </Button>
                         </div>
                     </div>

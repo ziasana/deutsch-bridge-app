@@ -7,6 +7,20 @@ public class PromptLibrary {
         throw new IllegalStateException("Prompt library class");
     }
 
+    public static String generateSessionTitle(String explanationLanguage) {
+        String languageInstruction = switch (explanationLanguage == null ? "" : explanationLanguage.toUpperCase()) {
+            case "PR", "FA" -> "Schreibe den Titel auf Persisch (Farsi).";
+            default -> "Schreibe den Titel auf Deutsch oder Englisch, je nachdem, welche Sprache der Lernende benutzt.";
+        };
+
+        return """
+                Du liest die erste Nachricht eines Lernenden an einen Deutschlehrer-Chatbot.
+                Erzeuge einen sehr kurzen, aussagekräftigen Titel (2-5 Wörter) für diesen Chat, der das Thema zusammenfasst.
+                %s
+                Gib NUR den Titel zurück - keine Anführungszeichen, keine Erklärung, kein Satzzeichen am Ende.
+                """.formatted(languageInstruction);
+    }
+
     public static String lemmatizeWords(List<String> words) {
         return String.format("""
         Für jedes der folgenden deutschen Wörter (wie sie in einem Lesetext vorkommen), gib die
@@ -176,20 +190,28 @@ public class PromptLibrary {
     }
 
     // System Prompt für den KI-Lehrer
-    public static String systemPrompt() {
+    public static String systemPrompt(String explanationLanguage) {
+        String languageInstruction = switch (explanationLanguage == null ? "" : explanationLanguage.toUpperCase()) {
+            case "PR", "FA" -> "Der Lernende bevorzugt Persisch (Farsi) als Erklärungssprache. " +
+                    "Gib deine Erklärungen, Übersetzungen und Kommentare auf Persisch. " +
+                    "Deutsche Beispielsätze, Vokabeln und Zitate aus der Übung bleiben weiterhin auf Deutsch, " +
+                    "da diese gelernt werden sollen.";
+            default -> "Antworte immer in klarem, korrektem Deutsch (oder auf Englisch, wenn ausdrücklich verlangt).";
+        };
+
         return """
                 Du bist ein freundlicher und geduldiger Deutschlehrer.
                 Deine einzige Aufgabe ist es, dem Lernenden beim Verbessern seiner Deutschkenntnisse zu helfen – Grammatik, Wortschatz, Aussprache, Schreiben und Konversation.
-                Antworte immer in klarem, korrektem Deutsch (oder auf Englisch, wenn ausdrücklich verlangt).
+                %s
                 Korrigiere Fehler höflich und erkläre kurz warum. Gib ein oder zwei Beispiele. Bleibe motivierend.
                 Wenn der Lernende Fehler macht, korrigierst du sie sanft und erklärst warum.
                 Wenn der Lernende einen neuen Satz oder ein neues Wort will, gibst du Beispiele
                 Beantworte ausschließlich Fragen zur deutschen Sprache.
                 Wenn etwas nicht mit Sprache/Deutschlernen zu tun hat, lenke sanft zurück zum Thema.
-                Der Nutzer kann die bestehende Unterhaltung fortführen oder eine neue Frage stellen.          
+                Der Nutzer kann die bestehende Unterhaltung fortführen oder eine neue Frage stellen.
                 Du beantwortest NUR Fragen zum Deutschlernen (Grammatik, Schreiben, Aussprache).
                 Alles andere ignorierst du höflich.
                 Geben Sie NUR einfachen Text, kein JSON, an Markdown zurück, keine Formatierung.
-                """;
+                """.formatted(languageInstruction);
     }
 }

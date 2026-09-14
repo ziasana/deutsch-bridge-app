@@ -8,9 +8,11 @@ import { getSessions, getMessagesBySession } from "@/services/chatAi";
 import { useParams } from "next/navigation";
 import { type ChatMessage, ChatSessionDto } from "@/types/chat";
 import {toast, ToastContainer} from "react-toastify";
+import { useI18n } from "@/componenets/I18nProvider";
 
 export default function GrammarPage() {
   const { slug } = useParams();
+  const { t } = useI18n();
   const [sessions, setSessions] = useState<ChatSessionDto[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -40,7 +42,7 @@ export default function GrammarPage() {
   const handleOnNewChat = () => {
     setMessages([]);
     setSessionId("");
-    toast("New chat is initiated!");
+    toast(t.chat.newChatToast);
   };
 
   // Update only the edited session title
@@ -53,6 +55,20 @@ export default function GrammarPage() {
     setMessages([]);
     getData();
   }
+
+  // Called once the backend has resolved/created the session for this exchange -
+  // keeps the local sessionId in sync (so later messages land in the same session)
+  // and, for a brand-new chat, adds its AI-generated title to the sidebar.
+  const handleSessionResolved = (resolvedSessionId: string, title?: string | null) => {
+    setSessionId(resolvedSessionId);
+    if (!title) return;
+    setSessions((prev) => {
+      if (prev.some((s) => s.id === resolvedSessionId)) {
+        return prev.map((s) => (s.id === resolvedSessionId ? { ...s, title } : s));
+      }
+      return [{ id: resolvedSessionId, userId: "", title }, ...prev];
+    });
+  };
 
   return (
     <div className="flex h-screen  bg-gray-100 dark:bg-gray-900 p-6">
@@ -100,6 +116,7 @@ export default function GrammarPage() {
               allMessages={messages}
               sessionId={sessionId}
               onSaveTitle={handleUpdatedTitle}
+              onSessionResolved={handleSessionResolved}
             />
 
             <ToastContainer
