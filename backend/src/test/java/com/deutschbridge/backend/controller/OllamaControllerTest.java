@@ -66,7 +66,7 @@ class OllamaControllerTest {
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
         ollamaChatRequestDto = new OllamaChatRequestDto("session1", "Hello AI");
-        response = new ResponseMessageDto("session1", "user1", "Hello human", "assistant");
+        response = new ResponseMessageDto("session1", "user1", "Hello human", "assistant", null);
 
     }
 
