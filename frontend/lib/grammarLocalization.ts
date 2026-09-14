@@ -6,12 +6,12 @@ export function isTranslatableLevel(level: string): boolean {
 }
 
 /** Farsi content only actually applies when the lesson's level is translatable AND a Farsi value was entered. */
-function useFa(lesson: Pick<GrammarLesson, "level">, lang: AppLanguage): boolean {
+function shouldUseFa(lesson: Pick<GrammarLesson, "level">, lang: AppLanguage): boolean {
     return lang === "fa" && isTranslatableLevel(lesson.level);
 }
 
 export function localizedLessonText(lesson: GrammarLesson, lang: AppLanguage) {
-    const fa = useFa(lesson, lang);
+    const fa = shouldUseFa(lesson, lang);
     return {
         title: (fa && lesson.titleFa) || lesson.title,
         summary: (fa && lesson.summaryFa) || lesson.summary,
