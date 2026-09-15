@@ -54,9 +54,9 @@ export default function ProgressPage() {
                         icon={<GraduationCap className="h-4 w-4" />}
                     />
                     <StatsCard
-                        title="Nomen-Verb Learned"
-                        value={overview?.nomenVerb.learned ?? "-"}
-                        subtitle={overview ? `Out of ${overview.nomenVerb.total} total` : undefined}
+                        title="Active Expressions"
+                        value={overview?.expressions.learned ?? "-"}
+                        subtitle={overview ? `Out of ${overview.expressions.total} total` : undefined}
                         icon={<Link2 className="h-4 w-4" />}
                     />
                     <StatsCard

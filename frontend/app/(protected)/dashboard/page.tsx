@@ -40,9 +40,9 @@ const DashboardPage = () => {
             link: "/dashboard/grammar",
         },
         {
-            ...t.dashboard.modules.nomenVerb,
+            ...t.dashboard.modules.expressions,
             icon: BookOpen,
-            link: "/dashboard/nomenVerbSection",
+            link: "/dashboard/expressions",
         },
         {
             ...t.dashboard.modules.reading,

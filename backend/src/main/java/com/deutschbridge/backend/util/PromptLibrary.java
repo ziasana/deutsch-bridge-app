@@ -189,6 +189,63 @@ public class PromptLibrary {
         %s""", level, content, inferenceLine.isEmpty() ? "" : ", INFERENCE", inferenceLine);
     }
 
+    public static String evaluateExpressionProduction(String expression, String meaningDe, String level, String userSentence) {
+        return String.format("""
+        Ein Deutschlernender auf Niveau %s soll die Wendung "%s" (Bedeutung: %s) aktiv in einem
+        eigenen Satz verwenden. Bewerte den folgenden Satz.
+
+        Satz des Lernenden:
+        "%s"
+
+        Wichtige Regeln:
+        - USED_CORRECTLY: wurde "%s" (auch leicht flektiert/umgestellt) korrekt in der richtigen Bedeutung verwendet?
+        - GRAMMAR_CORRECT: ist der Satz grammatisch korrekt (Kasus, Wortstellung, Kongruenz)?
+        - NATURAL: klingt der Satz wie von einem Muttersprachler, nicht konstruiert?
+        - FEEDBACK: 1-2 kurze, konkrete und ermutigende Sätze auf Deutsch, die erklären was gut war
+          und was verbessert werden kann. Schreibe NICHT den ganzen Satz neu.
+        - C1_SUGGESTION: falls der Satz auf C1-Niveau verbessert werden kann, gib EINE bessere
+          Umformulierung an; falls der Satz bereits sehr gut ist, schreibe genau "-"
+
+        Antworte GENAU in diesem Format, ohne zusätzlichen Text davor oder danach:
+
+        USED_CORRECTLY|true oder false
+        GRAMMAR_CORRECT|true oder false
+        NATURAL|true oder false
+        FEEDBACK|<Feedback-Text>
+        C1_SUGGESTION|<Vorschlag oder ->
+        """, level, expression, meaningDe, userSentence, expression);
+    }
+
+    public static String evaluateTransformation(String sourceSentence, String expression, String meaningDe, String level, String userSentence) {
+        return String.format("""
+        Ein Deutschlernender auf Niveau %s soll den folgenden Satz umformulieren und dabei die
+        Wendung "%s" (Bedeutung: %s) verwenden.
+
+        Ausgangssatz:
+        "%s"
+
+        Umformulierung des Lernenden:
+        "%s"
+
+        Wichtige Regeln:
+        - USED_EXPRESSION: wurde "%s" (auch leicht flektiert/umgestellt) korrekt verwendet?
+        - GRAMMAR_CORRECT: ist der Satz grammatisch korrekt (Kasus, Wortstellung, Kongruenz)?
+        - MEANING_PRESERVED: hat der umformulierte Satz noch dieselbe Bedeutung wie der Ausgangssatz?
+        - FEEDBACK: 1-2 kurze, konkrete und ermutigende Sätze auf Deutsch, die erklären was gut war
+          und was verbessert werden kann. Schreibe NICHT den ganzen Satz neu.
+        - C1_SUGGESTION: falls der Satz auf C1-Niveau verbessert werden kann, gib EINE bessere
+          Umformulierung an; falls der Satz bereits sehr gut ist, schreibe genau "-"
+
+        Antworte GENAU in diesem Format, ohne zusätzlichen Text davor oder danach:
+
+        USED_EXPRESSION|true oder false
+        GRAMMAR_CORRECT|true oder false
+        MEANING_PRESERVED|true oder false
+        FEEDBACK|<Feedback-Text>
+        C1_SUGGESTION|<Vorschlag oder ->
+        """, level, expression, meaningDe, sourceSentence, userSentence, expression);
+    }
+
     // System Prompt für den KI-Lehrer
     public static String systemPrompt(String explanationLanguage) {
         String languageInstruction = switch (explanationLanguage == null ? "" : explanationLanguage.toUpperCase()) {

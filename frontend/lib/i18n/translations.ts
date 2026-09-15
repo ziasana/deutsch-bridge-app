@@ -15,7 +15,7 @@ export interface Dictionary {
         dashboard: string;
         chatAi: string;
         vocabulary: string;
-        nomenVerb: string;
+        expressions: string;
         home: string;
         contact: string;
         about: string;
@@ -53,7 +53,7 @@ export interface Dictionary {
         modules: {
             dailyWords: { title: string; description: string };
             grammarLessons: { title: string; description: string };
-            nomenVerb: { title: string; description: string };
+            expressions: { title: string; description: string };
             reading: { title: string; description: string };
             examPrep: { title: string; description: string };
             wordReview: { title: string; description: string };
@@ -285,7 +285,7 @@ const en: Dictionary = {
         dashboard: "Dashboard",
         chatAi: "Chat AI",
         vocabulary: "Vocabulary",
-        nomenVerb: "NomenVerb",
+        expressions: "Expressions",
         home: "Home",
         contact: "Contact",
         about: "About",
@@ -329,9 +329,9 @@ const en: Dictionary = {
                 title: "Grammar Lessons",
                 description: "Structured grammar explanations with examples and exercises.",
             },
-            nomenVerb: {
-                title: "Nomen-Verb Verbindungen",
-                description: "Learn Nomen-Verb Verbindungen with example and explanation.",
+            expressions: {
+                title: "Active Expressions",
+                description: "Learn Nomen-Verb-Verbindungen and Redewendungen through active recall and production, not just reading.",
             },
             reading: {
                 title: "Reading",
@@ -588,7 +588,7 @@ const fa: Dictionary = {
         dashboard: "داشبورد",
         chatAi: "چت هوش مصنوعی",
         vocabulary: "واژگان",
-        nomenVerb: "اسم-فعل",
+        expressions: "عبارات کاربردی",
         home: "خانه",
         contact: "تماس با ما",
         about: "درباره ما",
@@ -632,9 +632,9 @@ const fa: Dictionary = {
                 title: "دروس گرامر",
                 description: "توضیحات ساختاریافته گرامر همراه با مثال و تمرین.",
             },
-            nomenVerb: {
-                title: "اسم-فعل (Nomen-Verb Verbindungen)",
-                description: "ترکیبات اسم-فعل را همراه با مثال و توضیح بیاموزید.",
+            expressions: {
+                title: "عبارات کاربردی",
+                description: "ترکیبات اسم-فعل و اصطلاحات را با یادآوری فعال و تولید جمله بیاموزید، نه فقط با خواندن.",
             },
             reading: {
                 title: "مطالعه",

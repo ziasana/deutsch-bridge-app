@@ -5,7 +5,7 @@ public record OverviewResponse(
         int itemsLearnedToday,
         CategoryProgress dailyWords,
         CategoryProgress grammar,
-        CategoryProgress nomenVerb,
+        CategoryProgress expressions,
         CategoryProgress reading,
         int totalLearned,
         int totalAvailable

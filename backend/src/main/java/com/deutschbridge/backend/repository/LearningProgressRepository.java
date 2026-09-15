@@ -3,7 +3,6 @@ package com.deutschbridge.backend.repository;
 import com.deutschbridge.backend.model.entity.DailyWord;
 import com.deutschbridge.backend.model.entity.GrammarLesson;
 import com.deutschbridge.backend.model.entity.LearningProgress;
-import com.deutschbridge.backend.model.entity.NomenVerbConnection;
 import com.deutschbridge.backend.model.entity.ReadingArticle;
 import com.deutschbridge.backend.model.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,15 +21,11 @@ public interface LearningProgressRepository extends JpaRepository<LearningProgre
 
     Optional<LearningProgress> findByUserAndLesson(User user, GrammarLesson lesson);
 
-    Optional<LearningProgress> findByUserAndNomenVerb(User user, NomenVerbConnection nomenVerb);
-
     Optional<LearningProgress> findByUserAndDailyWord(User user, DailyWord dailyWord);
 
     Optional<LearningProgress> findByUserAndReading(User user, ReadingArticle reading);
 
     List<LearningProgress> findByUserAndDailyWordIn(User user, List<DailyWord> dailyWords);
-
-    List<LearningProgress> findByUserAndNomenVerbIn(User user, List<NomenVerbConnection> nomenVerbs);
 
     List<LearningProgress> findByUserAndLessonIn(User user, List<GrammarLesson> lessons);
 
@@ -39,8 +34,6 @@ public interface LearningProgressRepository extends JpaRepository<LearningProgre
     long countByUserAndIsLearnedTrue(User user);
 
     long countByUserAndLessonIsNotNullAndIsLearnedTrue(User user);
-
-    long countByUserAndNomenVerbIsNotNullAndIsLearnedTrue(User user);
 
     long countByUserAndDailyWordIsNotNullAndIsLearnedTrue(User user);
 

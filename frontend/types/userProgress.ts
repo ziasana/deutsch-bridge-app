@@ -15,7 +15,7 @@ export interface OverviewResponse {
     itemsLearnedToday: number;
     dailyWords: CategoryProgress;
     grammar: CategoryProgress;
-    nomenVerb: CategoryProgress;
+    expressions: CategoryProgress;
     totalLearned: number;
     totalAvailable: number;
 }

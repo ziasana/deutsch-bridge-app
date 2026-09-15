@@ -59,7 +59,6 @@ export interface GrammarLessonManualRequest {
 
 export interface LearningProgressRequest {
     lessonId?: string;
-    nomenVerbId?: string;
     dailyWordId?: string;
     readingId?: string;
     learned: boolean;

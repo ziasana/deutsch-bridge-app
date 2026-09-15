@@ -18,10 +18,6 @@ public class LearningProgress {
     @Id
     private String id;
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonBackReference("nomenVerb-progress")
-    private NomenVerbConnection nomenVerb;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JsonBackReference("lesson-progress")
     private GrammarLesson lesson;
 

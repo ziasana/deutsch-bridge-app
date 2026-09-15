@@ -128,6 +128,22 @@ public class OllamaService {
         return callOllama(messages);
     }
 
+    public String evaluateExpressionProduction(String expression, String meaningDe, LearningLevel level, String userSentence) {
+        List<OllamaMessage> messages = List.of(
+                new OllamaMessage("system", PromptLibrary.evaluateExpressionProduction(expression, meaningDe, level.name(), userSentence)),
+                new OllamaMessage("user", userSentence)
+        );
+        return callOllama(messages);
+    }
+
+    public String evaluateTransformation(String sourceSentence, String expression, String meaningDe, LearningLevel level, String userSentence) {
+        List<OllamaMessage> messages = List.of(
+                new OllamaMessage("system", PromptLibrary.evaluateTransformation(sourceSentence, expression, meaningDe, level.name(), userSentence)),
+                new OllamaMessage("user", userSentence)
+        );
+        return callOllama(messages);
+    }
+
     public String lemmatizeWords(List<String> words) {
         List<OllamaMessage> messages = List.of(
                 new OllamaMessage("system", PromptLibrary.lemmatizeWords(words)),

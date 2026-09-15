@@ -9,10 +9,13 @@ import com.deutschbridge.backend.model.dto.RecentVocabularyResponse;
 import com.deutschbridge.backend.model.dto.RecentVocabularyWithStatsResponse;
 import com.deutschbridge.backend.model.dto.StreakResponse;
 import com.deutschbridge.backend.model.entity.*;
+import com.deutschbridge.backend.model.enums.ExpressionMasteryLevel;
+import com.deutschbridge.backend.model.enums.ExpressionStatus;
 import com.deutschbridge.backend.repository.DailyWordRepository;
+import com.deutschbridge.backend.repository.ExpressionProgressRepository;
+import com.deutschbridge.backend.repository.ExpressionRepository;
 import com.deutschbridge.backend.repository.GrammarLessonRepository;
 import com.deutschbridge.backend.repository.LearningProgressRepository;
-import com.deutschbridge.backend.repository.NomenVerbConnectionRepository;
 import com.deutschbridge.backend.repository.ReadingArticleRepository;
 import com.deutschbridge.backend.repository.VocabularyRepository;
 import com.deutschbridge.backend.util.VocabularyMapper;
@@ -35,28 +38,28 @@ public class LearningProgressService {
     private final LearningProgressRepository repository;
     private final RequestContext requestContext;
     private final UserService userService;
-    private final NomenVerbConnectionService nomenVerbConnectionService;
     private final GrammarService grammarService;
     private final VocabularyService vocabularyService;
     private final VocabularyRepository vocabularyRepository;
     private final DailyWordService dailyWordService;
     private final GrammarLessonRepository grammarLessonRepository;
-    private final NomenVerbConnectionRepository nomenVerbConnectionRepository;
+    private final ExpressionRepository expressionRepository;
+    private final ExpressionProgressRepository expressionProgressRepository;
     private final DailyWordRepository dailyWordRepository;
     private final ReadingArticleService readingArticleService;
     private final ReadingArticleRepository readingArticleRepository;
 
-    public LearningProgressService(LearningProgressRepository repository, RequestContext requestContext, UserService userService, NomenVerbConnectionService nomenVerbConnectionService, GrammarService grammarService, VocabularyService vocabularyService, VocabularyRepository vocabularyRepository, DailyWordService dailyWordService, GrammarLessonRepository grammarLessonRepository, NomenVerbConnectionRepository nomenVerbConnectionRepository, DailyWordRepository dailyWordRepository, ReadingArticleService readingArticleService, ReadingArticleRepository readingArticleRepository) {
+    public LearningProgressService(LearningProgressRepository repository, RequestContext requestContext, UserService userService, GrammarService grammarService, VocabularyService vocabularyService, VocabularyRepository vocabularyRepository, DailyWordService dailyWordService, GrammarLessonRepository grammarLessonRepository, ExpressionRepository expressionRepository, ExpressionProgressRepository expressionProgressRepository, DailyWordRepository dailyWordRepository, ReadingArticleService readingArticleService, ReadingArticleRepository readingArticleRepository) {
         this.repository = repository;
         this.requestContext = requestContext;
         this.userService = userService;
-        this.nomenVerbConnectionService = nomenVerbConnectionService;
         this.grammarService = grammarService;
         this.vocabularyService = vocabularyService;
         this.vocabularyRepository = vocabularyRepository;
         this.dailyWordService = dailyWordService;
         this.grammarLessonRepository = grammarLessonRepository;
-        this.nomenVerbConnectionRepository = nomenVerbConnectionRepository;
+        this.expressionRepository = expressionRepository;
+        this.expressionProgressRepository = expressionProgressRepository;
         this.dailyWordRepository = dailyWordRepository;
         this.readingArticleService = readingArticleService;
         this.readingArticleRepository = readingArticleRepository;
@@ -83,19 +86,6 @@ public class LearningProgressService {
             saveProgress(
                     () -> repository.findByUserAndLesson(user, lesson),
                     progress -> progress.setLesson(lesson),
-                    user,
-                    request.learned(),
-                    now
-            );
-        }
-
-        if (request.nomenVerbId() != null) {
-            NomenVerbConnection nv =
-                    nomenVerbConnectionService.findById(request.nomenVerbId());
-
-            saveProgress(
-                    () -> repository.findByUserAndNomenVerb(user, nv),
-                    progress -> progress.setNomenVerb(nv),
                     user,
                     request.learned(),
                     now
@@ -177,13 +167,16 @@ public class LearningProgressService {
 
         int dailyWordsLearned = (int) repository.countByUserAndDailyWordIsNotNullAndIsLearnedTrue(user);
         int grammarLearned = (int) repository.countByUserAndLessonIsNotNullAndIsLearnedTrue(user);
-        int nomenVerbLearned = (int) repository.countByUserAndNomenVerbIsNotNullAndIsLearnedTrue(user);
+        // "Learned" for expressions means active knowledge (ACTIVE/MASTERED mastery), not just
+        // recognition - a boolean checkbox can't capture that, see ExpressionPracticeService.
+        int expressionsActive = (int) expressionProgressRepository.countByUserAndMasteryLevelIn(
+                user, List.of(ExpressionMasteryLevel.ACTIVE, ExpressionMasteryLevel.MASTERED));
         int readingLearned = (int) repository.countByUserAndReadingIsNotNullAndIsLearnedTrue(user);
-        int totalLearned = (int) repository.countByUserAndIsLearnedTrue(user);
+        int totalLearned = (int) repository.countByUserAndIsLearnedTrue(user) + expressionsActive;
 
         int dailyWordsTotal = (int) dailyWordRepository.count();
         int grammarTotal = (int) grammarLessonRepository.count();
-        int nomenVerbTotal = (int) nomenVerbConnectionRepository.count();
+        int expressionsTotal = (int) expressionRepository.countByStatus(ExpressionStatus.PUBLISHED);
         int readingTotal = (int) readingArticleRepository.count();
 
         LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
@@ -199,10 +192,10 @@ public class LearningProgressService {
                 itemsLearnedToday,
                 new CategoryProgress(dailyWordsLearned, dailyWordsTotal),
                 new CategoryProgress(grammarLearned, grammarTotal),
-                new CategoryProgress(nomenVerbLearned, nomenVerbTotal),
+                new CategoryProgress(expressionsActive, expressionsTotal),
                 new CategoryProgress(readingLearned, readingTotal),
                 totalLearned,
-                dailyWordsTotal + grammarTotal + nomenVerbTotal + readingTotal
+                dailyWordsTotal + grammarTotal + expressionsTotal + readingTotal
         );
     }
 

@@ -103,6 +103,9 @@ export default function AdminPage() {
                         <Button variant="secondary" onClick={() => router.push("/admin/grammar")}>
                             Manage Grammar
                         </Button>
+                        <Button variant="secondary" onClick={() => router.push("/admin/expressionsSection")}>
+                            Manage Expressions
+                        </Button>
                     </div>
                 </div>
 

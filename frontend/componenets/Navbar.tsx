@@ -45,8 +45,8 @@ export default function Navbar() {
                 <Link href="/dashboard/vocabulary" className="nav-link">
                   {t.nav.vocabulary}
                 </Link>
-                <Link href="/dashboard/nomenVerbSection" className="nav-link">
-                  {t.nav.nomenVerb}
+                <Link href="/dashboard/expressions" className="nav-link">
+                  {t.nav.expressions}
                 </Link>
               </>
               )
@@ -233,8 +233,8 @@ export default function Navbar() {
                     <Link href="/dashboard/vocabulary" className="mobile-link">
                       {t.nav.vocabulary}
                     </Link>
-                    <Link href="/dashboard/nomenVerbSection" className="mobile-link">
-                      {t.nav.nomenVerb}
+                    <Link href="/dashboard/expressions" className="mobile-link">
+                      {t.nav.expressions}
                     </Link>
                     <Link href="/profile" className="mobile-link">
                       {t.nav.profile}
