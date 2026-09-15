@@ -217,15 +217,43 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {isOpen && (
         <div className="md:hidden bg-white dark:bg-gray-800 shadow-md">
-          <Link href="/" className="mobile-link">
-            {t.nav.home}
-          </Link>
-          <Link href="/about" className="mobile-link">
-            {t.nav.about}
-          </Link>
-          <Link href="/contact" className="mobile-link">
-            {t.nav.contact}
-          </Link>
+          {isLoggedIn && userProfile != null ? (
+              userProfile.role === "ADMIN" ? (
+                  <Link href="/admin" className="mobile-link">
+                    {t.nav.adminDashboard}
+                  </Link>
+              ) : (
+                  <>
+                    <Link href="/dashboard" className="mobile-link">
+                      {t.nav.dashboard}
+                    </Link>
+                    <Link href="/dashboard/chat" className="mobile-link">
+                      {t.nav.chatAi}
+                    </Link>
+                    <Link href="/dashboard/vocabulary" className="mobile-link">
+                      {t.nav.vocabulary}
+                    </Link>
+                    <Link href="/dashboard/nomenVerbSection" className="mobile-link">
+                      {t.nav.nomenVerb}
+                    </Link>
+                    <Link href="/profile" className="mobile-link">
+                      {t.nav.profile}
+                    </Link>
+                    <Link href="/user-progress" className="mobile-link">
+                      {t.nav.yourProgress}
+                    </Link>
+                  </>
+              )
+          ) : (
+              <>
+                <Link href="/" className="mobile-link">
+                  {t.nav.home}
+                </Link>
+                <Link href="/contact" className="mobile-link">
+                  {t.nav.contact}
+                </Link>
+              </>
+          )}
 
           <div className="border-t border-gray-200 dark:border-gray-700 mt-2 pt-2 flex flex-col gap-2 px-6 pb-4">
             {/* Dark Mode Button */}
