@@ -174,7 +174,10 @@ public class LearningProgressService {
         int readingLearned = (int) repository.countByUserAndReadingIsNotNullAndIsLearnedTrue(user);
         int totalLearned = (int) repository.countByUserAndIsLearnedTrue(user) + expressionsActive;
 
-        int dailyWordsTotal = (int) dailyWordRepository.count();
+        // Not a plain count(): daily words are now generated per-user per-day (see DailyWordService),
+        // so the raw table count grows unboundedly. countByAssignedToIsNull() reflects only the
+        // shared seed/fallback pool, keeping this stat meaningful.
+        int dailyWordsTotal = (int) dailyWordRepository.countByAssignedToIsNull();
         int grammarTotal = (int) grammarLessonRepository.count();
         int expressionsTotal = (int) expressionRepository.countByStatus(ExpressionStatus.PUBLISHED);
         int readingTotal = (int) readingArticleRepository.count();

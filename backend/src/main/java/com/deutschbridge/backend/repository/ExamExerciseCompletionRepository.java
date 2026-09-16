@@ -13,4 +13,6 @@ public interface ExamExerciseCompletionRepository extends JpaRepository<ExamExer
     List<ExamExerciseCompletion> findByUserId(String userId);
 
     Optional<ExamExerciseCompletion> findByUserIdAndExerciseId(String userId, String exerciseId);
+
+    void deleteByExerciseId(String exerciseId);
 }

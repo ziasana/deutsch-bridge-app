@@ -46,6 +46,11 @@ public class AdminGrammarController {
         return ResponseEntity.ok(grammarService.createManual(request));
     }
 
+    @PostMapping("/bulk")
+    public ResponseEntity<List<GrammarLessonResponse>> bulkImport(@RequestBody List<GrammarLessonManualRequest> requests) {
+        return ResponseEntity.ok(grammarService.bulkImport(requests));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<GrammarLessonResponse> update(
             @PathVariable String id,

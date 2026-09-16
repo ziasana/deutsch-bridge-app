@@ -132,6 +132,16 @@ export default function DailyWordsPage() {
                                     Synonyms: {word.synonyms}
                                 </p>
                             )}
+                            {(word.meaningFa || word.exampleFa) && (
+                                <div dir="rtl" className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 text-right">
+                                    {word.meaningFa && (
+                                        <p className="text-gray-600 dark:text-gray-300">🇮🇷 {word.meaningFa}</p>
+                                    )}
+                                    {word.exampleFa && (
+                                        <p className="text-gray-600 dark:text-gray-300 mt-1">{word.exampleFa}</p>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     ))}
 

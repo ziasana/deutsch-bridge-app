@@ -21,6 +21,33 @@ public class PromptLibrary {
                 """.formatted(languageInstruction);
     }
 
+    public static String generateDailyWords(String level, int count, boolean includePersian) {
+        String persianInstruction = includePersian
+                ? "- Gib zusätzlich MEANING_FA (persische Übersetzung der Bedeutung) und EXAMPLE_FA " +
+                  "(persische Übersetzung des Beispielsatzes) an - beides auf Farsi, in persischer Schrift."
+                : "- Lasse MEANING_FA und EXAMPLE_FA leer (schreibe genau \"-\") - sie werden nicht benötigt.";
+
+        return String.format("""
+        Erstelle %d neue, unterschiedliche deutsche Vokabeln für das Sprachniveau %s, passend zum
+        Wortschatz, der auf diesem Niveau erwartet wird.
+
+        Wichtige Regeln:
+        - Wähle Wörter, die für Niveau %s neu und lehrreich sind, keine trivialen Grundwörter
+        - MEANING_EN ist die englische Übersetzung/Bedeutung des Wortes
+        - EXAMPLE_DE ist ein natürlicher Beispielsatz auf Deutsch, der das Wort im Kontext zeigt,
+          mit Grammatik passend zu Niveau %s
+        - SYNONYME sind 1-3 deutsche Synonyme oder verwandte Wörter, getrennt durch Kommas
+        %s
+        - Jede Zeile steht für genau ein Wort, Felder getrennt durch "|"
+        - Keine zusätzlichen Zeilen, keine Erklärungen, keine leeren Zeilen
+
+        Antworte GENAU in diesem Format, ohne zusätzlichen Text davor oder danach:
+
+        WOERTER:
+        WORT|MEANING_EN|EXAMPLE_DE|SYNONYME|MEANING_FA|EXAMPLE_FA
+        """, count, level, level, level, persianInstruction);
+    }
+
     public static String lemmatizeWords(List<String> words) {
         return String.format("""
         Für jedes der folgenden deutschen Wörter (wie sie in einem Lesetext vorkommen), gib die

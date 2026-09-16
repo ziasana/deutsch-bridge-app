@@ -14,6 +14,7 @@ public record ExamQuestionPublic(
         String prompt,
         Integer sectionIndex,
         List<String> options,
-        Integer gapNumber
+        Integer gapNumber,
+        Integer questionNumber
 ) {
 }

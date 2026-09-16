@@ -57,7 +57,6 @@ export interface Dictionary {
             reading: { title: string; description: string };
             examPrep: { title: string; description: string };
             wordReview: { title: string; description: string };
-            exercises: { title: string; description: string };
             vocabularyTrainer: { title: string; description: string };
             aiChat: { title: string; description: string };
         };
@@ -344,10 +343,6 @@ const en: Dictionary = {
             wordReview: {
                 title: "Word Review",
                 description: "Review the words and phrases you saved while reading, spaced out over time.",
-            },
-            exercises: {
-                title: "Exercises",
-                description: "Practice tasks to reinforce your grammar and vocabulary.",
             },
             vocabularyTrainer: {
                 title: "Vocabulary Trainer",
@@ -647,10 +642,6 @@ const fa: Dictionary = {
             wordReview: {
                 title: "مرور کلمات",
                 description: "کلماتی را که هنگام مطالعه ذخیره کرده‌اید، به‌مرور زمان مرور کنید.",
-            },
-            exercises: {
-                title: "تمرین‌ها",
-                description: "تمرین‌هایی برای تقویت گرامر و واژگان شما.",
             },
             vocabularyTrainer: {
                 title: "تمرین واژگان",

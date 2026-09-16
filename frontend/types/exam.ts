@@ -31,6 +31,8 @@ export interface ExamQuestion {
     correctAnswer: string;
     /** WORD_BANK_CLOZE only: the gap's number, matching the marker embedded in the passage content. */
     gapNumber: number | null;
+    /** Admin-assigned exam numbering (e.g. 41, 56) shown to students instead of 1,2,3... Null until set; backend defaults it to list position on save. */
+    questionNumber: number | null;
     explanation: string;
     commonMistake: string;
 }
@@ -73,6 +75,8 @@ export interface ExamQuestionPublic {
     sectionIndex: number | null;
     options: string[] | null;
     gapNumber: number | null;
+    /** Admin-assigned exam numbering, sorted ascending by the server - null falls back to position. */
+    questionNumber: number | null;
 }
 
 export interface ExamExercisePublicResponse {
@@ -89,6 +93,9 @@ export interface ExamExercisePublicResponse {
     teilDescription: string | null;
     /** SCHRIFTLICHER_AUSDRUCK only: the "mögliche Antwort" revealed via a button. */
     modelSolution: string | null;
+    /** General tip/mistake-avoidance guidance for this whole Teil - shown once on the results screen, not per question. */
+    defaultExplanation: string | null;
+    defaultCommonMistake: string | null;
     completed: boolean;
 }
 

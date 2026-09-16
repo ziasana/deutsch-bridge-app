@@ -12,9 +12,11 @@ import com.deutschbridge.backend.model.entity.ExamQuestion;
 import com.deutschbridge.backend.model.enums.ExamSection;
 import com.deutschbridge.backend.model.enums.ExamTaskType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
+import com.deutschbridge.backend.repository.ExamAttemptRepository;
 import com.deutschbridge.backend.repository.ExamExerciseCompletionRepository;
 import com.deutschbridge.backend.repository.ExamExerciseRepository;
 import com.deutschbridge.backend.util.ExamExerciseMapper;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -30,13 +32,16 @@ public class ExamExerciseService {
 
     private final ExamExerciseRepository examExerciseRepository;
     private final ExamExerciseCompletionRepository examExerciseCompletionRepository;
+    private final ExamAttemptRepository examAttemptRepository;
     private final RequestContext requestContext;
 
     public ExamExerciseService(ExamExerciseRepository examExerciseRepository,
                                 ExamExerciseCompletionRepository examExerciseCompletionRepository,
+                                ExamAttemptRepository examAttemptRepository,
                                 RequestContext requestContext) {
         this.examExerciseRepository = examExerciseRepository;
         this.examExerciseCompletionRepository = examExerciseCompletionRepository;
+        this.examAttemptRepository = examAttemptRepository;
         this.requestContext = requestContext;
     }
 
@@ -113,8 +118,14 @@ public class ExamExerciseService {
         return ExamExerciseMapper.mapToResponse(examExerciseRepository.save(existing));
     }
 
+    /** Also clears attempts/completions referencing this exercise first - ExamAttempt has a
+     * non-nullable FK to it, so deleting without this fails with a foreign-key violation for any
+     * exercise a student has already attempted. */
+    @Transactional
     public void delete(String id) throws DataNotFoundException {
-        findById(id);
+        ExamExercise exercise = findById(id);
+        examAttemptRepository.deleteByExercise(exercise);
+        examExerciseCompletionRepository.deleteByExerciseId(id);
         examExerciseRepository.deleteById(id);
     }
 
@@ -140,9 +151,20 @@ public class ExamExerciseService {
         return passages;
     }
 
+    /**
+     * Assigns each question an id, and - for any question the admin left without an explicit
+     * questionNumber - a default of its position in this list (1, 2, 3...). Admin-authored order
+     * is otherwise left untouched; ascending display order by questionNumber only happens when
+     * building student-facing responses (see ExamExerciseMapper.mapQuestionsToPublic).
+     */
     private List<ExamQuestion> prepareQuestions(List<ExamQuestion> questions) {
         if (questions == null) return new ArrayList<>();
-        questions.forEach(ExamQuestion::ensureId);
+        for (int i = 0; i < questions.size(); i++) {
+            ExamQuestion question = questions.get(i).ensureId();
+            if (question.getQuestionNumber() == null) {
+                question.setQuestionNumber(i + 1);
+            }
+        }
         return questions;
     }
 }

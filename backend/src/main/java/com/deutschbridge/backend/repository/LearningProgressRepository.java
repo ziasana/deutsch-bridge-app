@@ -6,6 +6,7 @@ import com.deutschbridge.backend.model.entity.LearningProgress;
 import com.deutschbridge.backend.model.entity.ReadingArticle;
 import com.deutschbridge.backend.model.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -44,4 +45,7 @@ public interface LearningProgressRepository extends JpaRepository<LearningProgre
     @Query("SELECT DISTINCT CAST(lp.learnedAt AS localdate) FROM learning_progress lp " +
             "WHERE lp.user = :user AND lp.isLearned = true ORDER BY 1 DESC")
     List<LocalDate> findDistinctLearnedDatesByUser(@Param("user") User user);
+
+    @Modifying
+    void deleteByLesson(GrammarLesson lesson);
 }

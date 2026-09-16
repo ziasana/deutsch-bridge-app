@@ -21,7 +21,8 @@ import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
 import Button from "@/componenets/Button";
 import AudioPlayer from "@/componenets/AudioPlayer";
-import { resolveUploadUrl, resolveUploadUrlsInHtml } from "@/lib/backendOrigin";
+import LessonMarkdown from "@/componenets/LessonMarkdown";
+import { resolveUploadUrl } from "@/lib/backendOrigin";
 
 const TFN_OPTIONS = [
     { value: "RICHTIG", label: "Richtig" },
@@ -63,10 +64,7 @@ function PassageBody({ passage }: Readonly<{ passage: ExamPassagePublic }>) {
                 <img src={resolveUploadUrl(passage.imageUrl) ?? undefined} alt="" className="max-w-full rounded-lg mb-2" />
             )}
             {passage.content && (
-                <div
-                    className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed [&_p]:my-1"
-                    dangerouslySetInnerHTML={{ __html: resolveUploadUrlsInHtml(passage.content) }}
-                />
+                <LessonMarkdown content={passage.content} className="text-sm text-gray-700 dark:text-gray-300" />
             )}
         </>
     );
@@ -118,7 +116,7 @@ function ResultCard({ index, item }: Readonly<{ index: number; item: ResultItem 
             }`}
         >
             <p className="font-semibold">
-                Aufgabe {index + 1}{question.prompt ? ` — ${question.prompt}` : ""}: {feedback.correct ? "Richtig" : "Falsch"}
+                Aufgabe {question.questionNumber ?? index + 1}{question.prompt ? ` — ${question.prompt}` : ""}: {feedback.correct ? "Richtig" : "Falsch"}
             </p>
             {!feedback.correct && (
                 <p>
@@ -139,12 +137,16 @@ function ResultCard({ index, item }: Readonly<{ index: number; item: ResultItem 
 
 function ResultsView({
     results,
+    defaultExplanation,
+    defaultCommonMistake,
     completed,
     markingCompleted,
     onPracticeAgain,
     onMarkCompleted,
 }: Readonly<{
     results: ResultsState;
+    defaultExplanation?: string | null;
+    defaultCommonMistake?: string | null;
     completed: boolean;
     markingCompleted: boolean;
     onPracticeAgain: () => void;
@@ -158,6 +160,13 @@ function ResultsView({
             <p className="text-sm text-gray-600 dark:text-gray-300">
                 {correctCount} von {results.items.length} Aufgaben richtig
             </p>
+
+            {(defaultExplanation || defaultCommonMistake) && (
+                <div className="rounded-lg p-3 text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-200 space-y-1">
+                    {defaultExplanation && <p>💡 {defaultExplanation}</p>}
+                    {defaultCommonMistake && <p className="italic">⚠️ Häufiger Fehler: {defaultCommonMistake}</p>}
+                </div>
+            )}
 
             <div className="space-y-3 pt-2">
                 {results.items.map((item, idx) => (
@@ -201,9 +210,9 @@ function SchriftlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExerci
 
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-4">
                 {showSolution && exercise.modelSolution ? (
-                    <div
-                        className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed [&_p]:my-1"
-                        dangerouslySetInnerHTML={{ __html: resolveUploadUrlsInHtml(exercise.modelSolution) }}
+                    <LessonMarkdown
+                        content={exercise.modelSolution}
+                        className="text-sm text-gray-700 dark:text-gray-300"
                     />
                 ) : (
                     <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -388,6 +397,8 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
         return (
             <ResultsView
                 results={results}
+                defaultExplanation={exercise.defaultExplanation}
+                defaultCommonMistake={exercise.defaultCommonMistake}
                 completed={completed}
                 markingCompleted={marking}
                 onPracticeAgain={practiceAgain}
@@ -414,7 +425,7 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
                     return (
                         <div key={question.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2">
                             <p className="font-medium text-gray-900 dark:text-white">
-                                {idx + 1}. {referencedPassage && `${referencedPassage.label}: `}
+                                {question.questionNumber ?? idx + 1}. {referencedPassage && `${referencedPassage.label}: `}
                                 {question.prompt}
                             </p>
                             <QuestionSelect
@@ -593,6 +604,8 @@ function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse 
         return (
             <ResultsView
                 results={results}
+                defaultExplanation={exercise.defaultExplanation}
+                defaultCommonMistake={exercise.defaultCommonMistake}
                 completed={completed}
                 markingCompleted={marking}
                 onPracticeAgain={practiceAgain}
@@ -613,7 +626,7 @@ function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-3">
             <p className="text-xs text-gray-500 dark:text-gray-400">
-                Aufgabe {quiz.currentIndex + 1} von {quiz.questions.length}
+                Aufgabe {question.questionNumber ?? quiz.currentIndex + 1} von {quiz.questions.length}
                 {currentPassage && ` — ${currentPassage.label}`}
             </p>
 
@@ -725,6 +738,8 @@ function HoerenListQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRes
         return (
             <ResultsView
                 results={results}
+                defaultExplanation={exercise.defaultExplanation}
+                defaultCommonMistake={exercise.defaultCommonMistake}
                 completed={completed}
                 markingCompleted={marking}
                 onPracticeAgain={practiceAgain}
@@ -768,7 +783,9 @@ function HoerenListQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRes
                                 key={question.id}
                                 className="flex gap-3 items-start border border-gray-200 dark:border-gray-700 rounded-lg p-3"
                             >
-                                <span className="font-semibold text-gray-400 dark:text-gray-500 pt-1.5 w-5 shrink-0">{idx + 1}.</span>
+                                <span className="font-semibold text-gray-400 dark:text-gray-500 pt-1.5 w-5 shrink-0">
+                                    {question.questionNumber ?? idx + 1}.
+                                </span>
                                 <div className="flex gap-2 pt-0.5 shrink-0">
                                     {quiz.answerOptions.map((option) => (
                                         <button

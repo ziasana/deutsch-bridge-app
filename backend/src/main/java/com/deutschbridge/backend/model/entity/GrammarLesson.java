@@ -3,6 +3,7 @@ package com.deutschbridge.backend.model.entity;
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import com.deutschbridge.backend.model.enums.GrammarLessonStatus;
 import com.deutschbridge.backend.model.enums.LearningLevel;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.vladmihalcea.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
@@ -55,6 +56,15 @@ public class GrammarLesson{
     @JsonManagedReference("lesson-progress")
     private Set<LearningProgress> learningProgresses;
 
+    /** Which curriculum block this lesson belongs to - null if not yet assigned. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    @JsonBackReference("category-lessons")
+    private GrammarCategory category;
+
+    /** Position of this lesson among its category's other lessons - lower values come first. */
+    private Integer sortOrder = 0;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -65,6 +75,9 @@ public class GrammarLesson{
         }
         if (this.status == null) {
             this.status = GrammarLessonStatus.DRAFT;
+        }
+        if (this.sortOrder == null) {
+            this.sortOrder = 0;
         }
         this.createdAt = LocalDateTime.now();
         this.updatedAt = this.createdAt;

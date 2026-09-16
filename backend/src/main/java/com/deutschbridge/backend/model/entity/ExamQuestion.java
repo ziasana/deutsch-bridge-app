@@ -33,6 +33,14 @@ public class ExamQuestion {
     /** WORD_BANK_CLOZE only: the gap's number, matching the marker embedded in the passage's content. */
     private Integer gapNumber;
 
+    /**
+     * Admin-assigned exam numbering (e.g. 41, 56) shown to students instead of a plain 1,2,3...
+     * count - lets a Teil's questions match the numbering of a real exam paper. Null until an
+     * admin explicitly sets it; ExamExerciseService fills it positionally (list index + 1) on
+     * save if left blank. Questions are displayed to students sorted ascending by this value.
+     */
+    private Integer questionNumber;
+
     /** Admin-authored: how to approach this question type / why the answer is correct. */
     private String explanation;
 

@@ -38,7 +38,10 @@ public class GrammarLessonMapper {
                         ? List.of(new LearningProgressResponse(userProgress.getId(), Boolean.TRUE.equals(userProgress.getIsLearned())))
                         : List.of(),
                 lesson.getCreatedAt(),
-                lesson.getUpdatedAt()
+                lesson.getUpdatedAt(),
+                lesson.getCategory() != null ? lesson.getCategory().getId() : null,
+                lesson.getCategory() != null ? lesson.getCategory().getTitle() : null,
+                lesson.getSortOrder()
         );
     }
 

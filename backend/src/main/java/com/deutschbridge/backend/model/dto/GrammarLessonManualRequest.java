@@ -20,6 +20,8 @@ public record GrammarLessonManualRequest(
         String usageTipsFa,
         String videoLink,
         GrammarLessonStatus status,
-        List<QuizQuestion> quiz
+        List<QuizQuestion> quiz,
+        String categoryId,
+        Integer sortOrder
 ) {
 }

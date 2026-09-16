@@ -43,7 +43,7 @@ class ExamExerciseServiceTest {
         ExamPassage passage = new ExamPassage("p1", "Durchsage 1", null, null,
                 "/uploads/exam-audio/clip1.m4a", "Geheimes Transkript.");
         ExamQuestion question = new ExamQuestion("q1", ExamTaskType.MULTIPLE_CHOICE, "Frage?",
-                0, List.of("A", "B"), "B", null, "Erklärung, warum B richtig ist", "Häufiger Fehler");
+                0, List.of("A", "B"), "B", null, null, "Erklärung, warum B richtig ist", "Häufiger Fehler");
 
         ExamExercise exercise = new ExamExercise();
         exercise.setId("ex1");

@@ -69,7 +69,7 @@ class ExamAttemptServiceTest {
 
     private ExamQuestion mcQuestion(Integer sectionIndex, String correctAnswer) {
         return new ExamQuestion("q1", ExamTaskType.MULTIPLE_CHOICE, "Was erfahren die Fahrgäste?",
-                sectionIndex, List.of("A", "B", "C"), correctAnswer, null,
+                sectionIndex, List.of("A", "B", "C"), correctAnswer, null, null,
                 "Erklärung", "Häufiger Fehler");
     }
 
@@ -224,7 +224,7 @@ class ExamAttemptServiceTest {
     void complete_shouldComputeScore() throws DataNotFoundException {
         ExamPassage passage = audioPassage("x");
         ExamQuestion q1 = mcQuestion(0, "B");
-        ExamQuestion q2 = new ExamQuestion("q2", ExamTaskType.MULTIPLE_CHOICE, "Frage 2", 0, List.of("A", "B"), "A", null, null, null);
+        ExamQuestion q2 = new ExamQuestion("q2", ExamTaskType.MULTIPLE_CHOICE, "Frage 2", 0, List.of("A", "B"), "A", null, null, null, null);
         ExamExercise exercise = hoerverstehenExercise(passage, q1);
         exercise.setQuestions(List.of(q1, q2));
 

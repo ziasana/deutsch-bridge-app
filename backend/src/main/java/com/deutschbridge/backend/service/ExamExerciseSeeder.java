@@ -374,7 +374,7 @@ public class ExamExerciseSeeder {
     private ExamQuestion audioTfnQuestion(int passageIndex, String statement, String correctAnswer,
                                            String explanation, String commonMistake) {
         ExamQuestion question = new ExamQuestion(
-                null, ExamTaskType.TRUE_FALSE_NOT_GIVEN, statement, passageIndex, null, correctAnswer, null,
+                null, ExamTaskType.TRUE_FALSE_NOT_GIVEN, statement, passageIndex, null, correctAnswer, null, null,
                 explanation, commonMistake
         );
         return question.ensureId();
@@ -387,7 +387,7 @@ public class ExamExerciseSeeder {
     private ExamQuestion clozeQuestion(int gapNumber, String correctAnswer, String explanation, String commonMistake) {
         ExamQuestion question = new ExamQuestion(
                 null, ExamTaskType.WORD_BANK_CLOZE, "Lücke " + gapNumber, null, null, correctAnswer,
-                gapNumber, explanation, commonMistake
+                gapNumber, null, explanation, commonMistake
         );
         return question.ensureId();
     }
@@ -400,14 +400,14 @@ public class ExamExerciseSeeder {
     private ExamQuestion question(ExamTaskType taskType, String prompt, List<String> options, String correctAnswer,
                                    String explanation, String commonMistake) {
         ExamQuestion question = new ExamQuestion(
-                null, taskType, prompt, null, options, correctAnswer, null, explanation, commonMistake
+                null, taskType, prompt, null, options, correctAnswer, null, null, explanation, commonMistake
         );
         return question.ensureId();
     }
 
     private ExamQuestion matchingQuestion(int passageIndex, String correctHeadline) {
         ExamQuestion question = new ExamQuestion(
-                null, ExamTaskType.MATCHING, "Welche Überschrift passt zu diesem Text?", passageIndex, null, correctHeadline, null,
+                null, ExamTaskType.MATCHING, "Welche Überschrift passt zu diesem Text?", passageIndex, null, correctHeadline, null, null,
                 "Achte auf Synonyme: die Überschrift nutzt oft andere Wörter als der Text, meint aber dasselbe.",
                 "Ordne nicht nach nur einem auffälligen Wort zu, sondern lies den gesamten Textabschnitt - manche Distraktoren enthalten ähnliche Schlüsselwörter."
         );
@@ -417,7 +417,7 @@ public class ExamExerciseSeeder {
     private ExamQuestion tfnQuestion(int sectionIndex, String statement, String correctAnswer,
                                       String explanation, String commonMistake) {
         ExamQuestion question = new ExamQuestion(
-                null, ExamTaskType.TRUE_FALSE_NOT_GIVEN, statement, sectionIndex, null, correctAnswer, null,
+                null, ExamTaskType.TRUE_FALSE_NOT_GIVEN, statement, sectionIndex, null, correctAnswer, null, null,
                 explanation, commonMistake
         );
         return question.ensureId();

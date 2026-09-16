@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
     BookOpen,
     MessageSquare,
-    ClipboardList,
     Layers,
     SpellCheck,
     Newspaper,
@@ -58,11 +57,6 @@ const DashboardPage = () => {
             ...t.dashboard.modules.wordReview,
             icon: Brain,
             link: "/dashboard/reading/review",
-        },
-        {
-            ...t.dashboard.modules.exercises,
-            icon: ClipboardList,
-            link: "/dashboard/exercises",
         },
         {
             ...t.dashboard.modules.vocabularyTrainer,

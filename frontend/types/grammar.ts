@@ -38,6 +38,9 @@ export interface GrammarLesson {
     learningProgresses: LearningProgress[];
     createdAt: string;
     updatedAt: string;
+    categoryId: string | null;
+    categoryTitle: string | null;
+    sortOrder: number;
 }
 
 export interface GrammarLessonManualRequest {
@@ -55,6 +58,8 @@ export interface GrammarLessonManualRequest {
     videoLink: string | null;
     status: GrammarLessonStatus;
     quiz: QuizQuestion[];
+    categoryId: string | null;
+    sortOrder: number;
 }
 
 export interface LearningProgressRequest {
@@ -62,4 +67,47 @@ export interface LearningProgressRequest {
     dailyWordId?: string;
     readingId?: string;
     learned: boolean;
+}
+
+export interface GrammarCategory {
+    id: string;
+    title: string;
+    titleFa: string | null;
+    level: string;
+    sortOrder: number;
+    passThreshold: number;
+    lessonCount: number;
+}
+
+export interface GrammarCategoryManualRequest {
+    title: string;
+    titleFa: string | null;
+    level: string;
+    sortOrder: number;
+    passThreshold: number;
+}
+
+export interface CategoryTestStatus {
+    attempted: boolean;
+    score: number;
+    total: number;
+    passed: boolean;
+    completed: boolean;
+    passThreshold: number;
+}
+
+export interface GrammarCategoryWithLessons {
+    id: string;
+    title: string;
+    titleFa: string | null;
+    level: string;
+    sortOrder: number;
+    passThreshold: number;
+    lessons: GrammarLesson[];
+    testStatus: CategoryTestStatus;
+}
+
+export interface CategoryTestSubmitRequest {
+    score: number;
+    total: number;
 }

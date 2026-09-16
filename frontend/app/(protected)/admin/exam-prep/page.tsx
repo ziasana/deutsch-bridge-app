@@ -140,6 +140,7 @@ const emptyQuestion = (taskType: ExamTaskType, section?: ExamSection): ExamQuest
     options: taskType === "MULTIPLE_CHOICE" ? [] : null,
     correctAnswer: taskType === "TRUE_FALSE_NOT_GIVEN" && section !== "HOERVERSTEHEN" ? "RICHTIG" : "",
     gapNumber: null,
+    questionNumber: null,
     explanation: "",
     commonMistake: "",
 });
@@ -310,6 +311,12 @@ export default function AdminExamPrepPage() {
 
     const updateQuestion = (idx: number, field: keyof ExamQuestion, value: string) => {
         setQuestions((prev) => prev.map((q, i) => (i === idx ? { ...q, [field]: value } : q)));
+    };
+    const updateQuestionNumber = (idx: number, value: string) => {
+        const parsed = value.trim() === "" ? null : Number(value);
+        setQuestions((prev) =>
+            prev.map((q, i) => (i === idx ? { ...q, questionNumber: parsed !== null && Number.isNaN(parsed) ? q.questionNumber : parsed } : q))
+        );
     };
     const updateQuestionOptions = (idx: number, value: string) => {
         setQuestions((prev) =>
@@ -803,13 +810,26 @@ export default function AdminExamPrepPage() {
                         <div className="space-y-3">
                             {questions.map((q, idx) => (
                                 <div key={idx} className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 space-y-2">
-                                    <div className="flex justify-between items-center">
+                                    <div className="flex justify-between items-center gap-2">
                                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                                            Question {idx + 1} ({q.taskType})
+                                            Question {q.questionNumber ?? idx + 1} ({q.taskType})
                                         </span>
-                                        <button type="button" onClick={() => removeQuestion(idx)} className="text-red-500 text-sm px-2">
-                                            ✕
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-xs text-gray-500 dark:text-gray-400" htmlFor={`question-number-${idx}`}>
+                                                Nr.
+                                            </label>
+                                            <input
+                                                id={`question-number-${idx}`}
+                                                type="number"
+                                                value={q.questionNumber ?? ""}
+                                                onChange={(e) => updateQuestionNumber(idx, e.target.value)}
+                                                placeholder={String(idx + 1)}
+                                                className="w-20 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm"
+                                            />
+                                            <button type="button" onClick={() => removeQuestion(idx)} className="text-red-500 text-sm px-2">
+                                                ✕
+                                            </button>
+                                        </div>
                                     </div>
                                     <Input
                                         value={q.prompt}

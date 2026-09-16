@@ -16,6 +16,7 @@ import com.deutschbridge.backend.model.entity.ExamPassage;
 import com.deutschbridge.backend.model.entity.ExamQuestion;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.repository.ExamAttemptRepository;
+import com.deutschbridge.backend.util.ExamExerciseMapper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -63,9 +64,7 @@ public class ExamAttemptService {
         List<ExamPassagePublic> passagesPublic = passages.stream()
                 .map(p -> new ExamPassagePublic(p.getId(), p.getLabel(), p.getContent(), p.getImageUrl(), p.getAudioUrl()))
                 .toList();
-        List<ExamQuestionPublic> questionsPublic = questions.stream()
-                .map(q -> new ExamQuestionPublic(q.getId(), q.getTaskType(), q.getPrompt(), q.getSectionIndex(), q.getOptions(), q.getGapNumber()))
-                .toList();
+        List<ExamQuestionPublic> questionsPublic = ExamExerciseMapper.mapQuestionsToPublic(questions);
 
         return new StartExamAttemptResponse(attempt.getId(), passagesPublic, questionsPublic, exercise.getAnswerOptions());
     }
@@ -83,12 +82,12 @@ public class ExamAttemptService {
 
         boolean correct = isCorrect(question, request.answer());
 
-        String explanation = question.getExplanation() != null && !question.getExplanation().isBlank()
-                ? question.getExplanation()
-                : exercise.getDefaultExplanation();
-        String commonMistake = question.getCommonMistake() != null && !question.getCommonMistake().isBlank()
-                ? question.getCommonMistake()
-                : exercise.getDefaultCommonMistake();
+        // The Teil's defaultExplanation/defaultCommonMistake are a general tip for the whole
+        // exercise, not a per-question fallback - they're shown once on the results screen
+        // (via ExamExercisePublicResponse) instead of being repeated into every question's
+        // feedback here, which used to make the same tip appear on every single question.
+        String explanation = question.getExplanation();
+        String commonMistake = question.getCommonMistake();
         String transcript = referencedTranscript(exercise, question);
 
         recordAnswer(attempt, question, request, correct, explanation, commonMistake, transcript);

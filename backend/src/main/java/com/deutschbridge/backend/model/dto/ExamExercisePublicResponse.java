@@ -17,6 +17,9 @@ public record ExamExercisePublicResponse(
         String teilDescription,
         /** SCHRIFTLICHER_AUSDRUCK only: the "mögliche Antwort" revealed via a button - not an answer key to strip, unlike questions' correctAnswer. */
         String modelSolution,
+        /** General tip/mistake-avoidance guidance for this whole Teil - shown once on the results screen, not per question. */
+        String defaultExplanation,
+        String defaultCommonMistake,
         boolean completed
 ) {
 }

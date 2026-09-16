@@ -22,6 +22,9 @@ public record GrammarLessonResponse(
         List<QuizQuestion> quiz,
         List<LearningProgressResponse> learningProgresses,
         java.time.LocalDateTime createdAt,
-        java.time.LocalDateTime updatedAt
+        java.time.LocalDateTime updatedAt,
+        String categoryId,
+        String categoryTitle,
+        Integer sortOrder
 ) {
 }

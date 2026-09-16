@@ -10,8 +10,20 @@ import {
     updateGrammarLesson,
     deleteGrammarLesson,
     uploadGrammarLessonImage,
+    bulkImportGrammarLessons,
+    getGrammarCategoriesAdmin,
+    createGrammarCategory,
+    updateGrammarCategory,
+    deleteGrammarCategory,
 } from "@/services/grammarAdminService";
-import { GrammarLesson, GrammarLessonStatus, QuizQuestion } from "@/types/grammar";
+import {
+    GrammarCategory,
+    GrammarCategoryManualRequest,
+    GrammarLesson,
+    GrammarLessonManualRequest,
+    GrammarLessonStatus,
+    QuizQuestion,
+} from "@/types/grammar";
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
@@ -22,6 +34,8 @@ import { isTranslatableLevel } from "@/lib/grammarLocalization";
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const STATUSES: GrammarLessonStatus[] = ["DRAFT", "PUBLISHED"];
 const EXERCISE_TYPES: QuizQuestion["type"][] = ["mcq", "truefalse"];
+const LESSONS_PER_PAGE = 10;
+const CATEGORIES_PER_PAGE = 5;
 
 const emptyForm = {
     title: "",
@@ -37,6 +51,16 @@ const emptyForm = {
     usageTipsFa: "",
     videoLink: "",
     status: "DRAFT" as GrammarLessonStatus,
+    categoryId: "",
+    sortOrder: 0,
+};
+
+const emptyCategoryForm = {
+    title: "",
+    titleFa: "",
+    level: "A2",
+    sortOrder: 0,
+    passThreshold: 70,
 };
 
 const emptyExercise = (): QuizQuestion => ({
@@ -54,6 +78,7 @@ export default function AdminGrammarPage() {
     const { userProfile, hasHydrated } = useAuthStore();
 
     const [lessons, setLessons] = useState<GrammarLesson[]>([]);
+    const [categories, setCategories] = useState<GrammarCategory[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -61,12 +86,26 @@ export default function AdminGrammarPage() {
     const [exercises, setExercises] = useState<QuizQuestion[]>([]);
     const [editingLesson, setEditingLesson] = useState<GrammarLesson | null>(null);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [isImporting, setIsImporting] = useState(false);
+
+    const [categoryForm, setCategoryForm] = useState(emptyCategoryForm);
+    const [editingCategory, setEditingCategory] = useState<GrammarCategory | null>(null);
+    const [isSavingCategory, setIsSavingCategory] = useState(false);
+
+    const [lessonsPage, setLessonsPage] = useState(1);
+    const [categoriesPage, setCategoriesPage] = useState(1);
 
     const fetchLessons = useCallback(() => {
         getGrammarLessonsAdmin()
             .then((res) => setLessons(res.data))
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load grammar lessons."))
             .finally(() => setIsLoading(false));
+    }, []);
+
+    const fetchCategories = useCallback(() => {
+        getGrammarCategoriesAdmin()
+            .then((res) => setCategories(res.data))
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load categories."));
     }, []);
 
     useEffect(() => {
@@ -76,7 +115,8 @@ export default function AdminGrammarPage() {
             return;
         }
         fetchLessons();
-    }, [hasHydrated, userProfile, router, fetchLessons]);
+        fetchCategories();
+    }, [hasHydrated, userProfile, router, fetchLessons, fetchCategories]);
 
     if (!hasHydrated || userProfile?.role !== "ADMIN") return null;
 
@@ -84,6 +124,63 @@ export default function AdminGrammarPage() {
         setForm(emptyForm);
         setExercises([]);
         setEditingLesson(null);
+    };
+
+    const resetCategoryForm = () => {
+        setCategoryForm(emptyCategoryForm);
+        setEditingCategory(null);
+    };
+
+    const startEditCategory = (category: GrammarCategory) => {
+        setEditingCategory(category);
+        setCategoryForm({
+            title: category.title,
+            titleFa: category.titleFa ?? "",
+            level: category.level,
+            sortOrder: category.sortOrder,
+            passThreshold: category.passThreshold,
+        });
+    };
+
+    const submitCategoryForm = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!categoryForm.title.trim()) {
+            toast.error("Category title is required.");
+            return;
+        }
+
+        const payload: GrammarCategoryManualRequest = {
+            title: categoryForm.title.trim(),
+            titleFa: categoryForm.titleFa.trim() || null,
+            level: categoryForm.level,
+            sortOrder: categoryForm.sortOrder,
+            passThreshold: categoryForm.passThreshold,
+        };
+
+        setIsSavingCategory(true);
+        const request = editingCategory
+            ? updateGrammarCategory(editingCategory.id, payload)
+            : createGrammarCategory(payload);
+
+        request
+            .then(() => {
+                toast.success(editingCategory ? "Category updated." : "Category created.");
+                resetCategoryForm();
+                fetchCategories();
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to save category."))
+            .finally(() => setIsSavingCategory(false));
+    };
+
+    const removeCategory = (category: GrammarCategory) => {
+        if (!confirm(`Delete category "${category.title}"? Its lessons will become uncategorized.`)) return;
+        deleteGrammarCategory(category.id)
+            .then(() => {
+                toast.success("Category deleted.");
+                fetchCategories();
+                fetchLessons();
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to delete category."));
     };
 
     const uploadInlineImage = async (file: File) => {
@@ -153,6 +250,8 @@ export default function AdminGrammarPage() {
             usageTipsFa: lesson.usageTipsFa ?? "",
             videoLink: lesson.videoLink ?? "",
             status: lesson.status ?? "DRAFT",
+            categoryId: lesson.categoryId ?? "",
+            sortOrder: lesson.sortOrder ?? 0,
         });
         setExercises(lesson.quiz ?? []);
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -181,6 +280,8 @@ export default function AdminGrammarPage() {
             usageTipsFa: isTranslatable ? form.usageTipsFa.trim() || null : null,
             videoLink: form.videoLink.trim() || null,
             status: form.status,
+            categoryId: form.categoryId || null,
+            sortOrder: form.sortOrder,
             quiz: exercises
                 .filter((ex) => ex.question.trim())
                 .map((ex) => ({
@@ -206,6 +307,33 @@ export default function AdminGrammarPage() {
             .finally(() => setIsSaving(false));
     };
 
+    const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (!file) return;
+
+        let requests: GrammarLessonManualRequest[];
+        try {
+            const parsed = JSON.parse(await file.text());
+            requests = Array.isArray(parsed) ? parsed : [parsed];
+        } catch {
+            toast.error("That file isn't valid JSON.");
+            return;
+        }
+
+        setIsImporting(true);
+        bulkImportGrammarLessons(requests)
+            .then((res) => {
+                toast.success(`Imported ${res.data.length} lesson(s) as drafts.`);
+                fetchLessons();
+            })
+            .catch((err) => {
+                const message: string = err?.response?.data?.message ?? "Failed to import lessons.";
+                toast.error(<div style={{ whiteSpace: "pre-line" }}>{message}</div>);
+            })
+            .finally(() => setIsImporting(false));
+    };
+
     const removeLesson = (lesson: GrammarLesson) => {
         if (!confirm(`Delete "${lesson.title}"?`)) return;
         deleteGrammarLesson(lesson.id)
@@ -216,13 +344,214 @@ export default function AdminGrammarPage() {
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to delete lesson."));
     };
 
+    const categoriesTotalPages = Math.max(1, Math.ceil(categories.length / CATEGORIES_PER_PAGE));
+    const categoriesCurrentPage = Math.min(categoriesPage, categoriesTotalPages);
+    const paginatedCategories = categories.slice(
+        (categoriesCurrentPage - 1) * CATEGORIES_PER_PAGE,
+        categoriesCurrentPage * CATEGORIES_PER_PAGE
+    );
+
+    const lessonsTotalPages = Math.max(1, Math.ceil(lessons.length / LESSONS_PER_PAGE));
+    const lessonsCurrentPage = Math.min(lessonsPage, lessonsTotalPages);
+    const paginatedLessons = lessons.slice(
+        (lessonsCurrentPage - 1) * LESSONS_PER_PAGE,
+        lessonsCurrentPage * LESSONS_PER_PAGE
+    );
+
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
-            <div className="max-w-4xl mx-auto">
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Grammar Lessons</h1>
-                <p className="text-gray-600 dark:text-gray-300 mt-2">
-                    Create and manage grammar lessons and their exercises.
-                </p>
+            <div className="max-w-6xl mx-auto">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div>
+                        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Grammar Lessons</h1>
+                        <p className="text-gray-600 dark:text-gray-300 mt-2">
+                            Create and manage grammar lessons and their exercises.
+                        </p>
+                    </div>
+                    <label className="cursor-pointer">
+                        <span
+                            className={`inline-block px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                                isImporting ? "opacity-60 pointer-events-none" : ""
+                            }`}
+                        >
+                            {isImporting ? "Importing..." : "Import lessons (JSON)"}
+                        </span>
+                        <input
+                            type="file"
+                            accept="application/json"
+                            className="hidden"
+                            disabled={isImporting}
+                            onChange={handleImportFile}
+                        />
+                    </label>
+                </div>
+
+                <div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">Categories (Blocks)</h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                        Group a level&apos;s lessons into blocks (e.g. &quot;Block 1: Erste Sätze&quot;). Each block gets
+                        its own aggregate test drawing from its lessons&apos; exercises.
+                    </p>
+                    <form onSubmit={submitCategoryForm} className="space-y-4">
+                        {editingCategory && (
+                            <p className="text-sm text-blue-600 dark:text-blue-400">
+                                Editing &quot;{editingCategory.title}&quot; —{" "}
+                                <button type="button" className="underline" onClick={resetCategoryForm}>
+                                    cancel
+                                </button>
+                            </p>
+                        )}
+                        <div className="flex gap-4 flex-wrap items-end">
+                            <div className="flex-1 min-w-[180px]">
+                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Title</label>
+                                <Input
+                                    value={categoryForm.title}
+                                    onChange={(e) => setCategoryForm({ ...categoryForm, title: e.target.value })}
+                                    placeholder="e.g. Block 1: Erste Sätze"
+                                />
+                            </div>
+                            <div className="min-w-[120px]">
+                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Level</label>
+                                <select
+                                    value={categoryForm.level}
+                                    onChange={(e) => setCategoryForm({ ...categoryForm, level: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                >
+                                    {LEVELS.map((lvl) => (
+                                        <option key={lvl} value={lvl}>
+                                            {lvl}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="min-w-[100px]">
+                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Order</label>
+                                <input
+                                    type="number"
+                                    value={categoryForm.sortOrder}
+                                    onChange={(e) =>
+                                        setCategoryForm({ ...categoryForm, sortOrder: Number(e.target.value) })
+                                    }
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                />
+                            </div>
+                            <div className="min-w-[140px]">
+                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                                    Pass threshold (%)
+                                </label>
+                                <input
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    value={categoryForm.passThreshold}
+                                    onChange={(e) =>
+                                        setCategoryForm({ ...categoryForm, passThreshold: Number(e.target.value) })
+                                    }
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                />
+                            </div>
+                            <Button variant="primary" type="submit" disabled={isSavingCategory} className="px-4 py-3">
+                                {isSavingCategory ? "Saving..." : editingCategory ? "Save changes" : "Add category"}
+                            </Button>
+                        </div>
+                        {isTranslatableLevel(categoryForm.level) && (
+                            <div>
+                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                                    عنوان فارسی (Persian title, optional)
+                                </label>
+                                <Input
+                                    dir="rtl"
+                                    value={categoryForm.titleFa}
+                                    onChange={(e) => setCategoryForm({ ...categoryForm, titleFa: e.target.value })}
+                                    placeholder="عنوان بلوک"
+                                    required={false}
+                                />
+                            </div>
+                        )}
+                    </form>
+
+                    {categories.length > 0 && (
+                        <div className="mt-6 overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm">
+                                    <tr>
+                                        <th className="px-4 py-2">Title</th>
+                                        <th className="px-4 py-2">ID</th>
+                                        <th className="px-4 py-2">Level</th>
+                                        <th className="px-4 py-2">Order</th>
+                                        <th className="px-4 py-2">Pass %</th>
+                                        <th className="px-4 py-2">Lessons</th>
+                                        <th className="px-4 py-2">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                    {paginatedCategories.map((category) => (
+                                        <tr key={category.id}>
+                                            <td className="px-4 py-2 text-gray-900 dark:text-white">{category.title}</td>
+                                            <td className="px-4 py-2">
+                                                <code className="text-xs text-gray-500 dark:text-gray-400 select-all">
+                                                    {category.id}
+                                                </code>
+                                            </td>
+                                            <td className="px-4 py-2">
+                                                <Badge variant="secondary">{category.level}</Badge>
+                                            </td>
+                                            <td className="px-4 py-2 text-gray-600 dark:text-gray-300">
+                                                {category.sortOrder}
+                                            </td>
+                                            <td className="px-4 py-2 text-gray-600 dark:text-gray-300">
+                                                {category.passThreshold}%
+                                            </td>
+                                            <td className="px-4 py-2 text-gray-600 dark:text-gray-300">
+                                                {category.lessonCount}
+                                            </td>
+                                            <td className="px-4 py-2 space-x-2 whitespace-nowrap">
+                                                <Button
+                                                    variant="secondary"
+                                                    className="px-3 py-1 text-sm"
+                                                    onClick={() => startEditCategory(category)}
+                                                >
+                                                    Edit
+                                                </Button>
+                                                <Button
+                                                    variant="secondary"
+                                                    className="px-3 py-1 text-sm"
+                                                    onClick={() => removeCategory(category)}
+                                                >
+                                                    Delete
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            {categoriesTotalPages > 1 && (
+                                <div className="flex justify-center items-center gap-3 py-6">
+                                    <Button
+                                        variant="secondary"
+                                        className="px-4 py-2 text-sm"
+                                        onClick={() => setCategoriesPage((p) => Math.max(1, p - 1))}
+                                        disabled={categoriesCurrentPage === 1}
+                                    >
+                                        Zurück
+                                    </Button>
+                                    <span className="text-gray-700 dark:text-gray-300 text-sm">
+                                        Seite {categoriesCurrentPage} / {categoriesTotalPages}
+                                    </span>
+                                    <Button
+                                        variant="secondary"
+                                        className="px-4 py-2 text-sm"
+                                        onClick={() => setCategoriesPage((p) => Math.min(categoriesTotalPages, p + 1))}
+                                        disabled={categoriesCurrentPage === categoriesTotalPages}
+                                    >
+                                        Weiter
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
 
                 <div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
                     <form onSubmit={submitForm} className="space-y-6">
@@ -249,7 +578,7 @@ export default function AdminGrammarPage() {
                                 <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Level</label>
                                 <select
                                     value={form.level}
-                                    onChange={(e) => setForm({ ...form, level: e.target.value })}
+                                    onChange={(e) => setForm({ ...form, level: e.target.value, categoryId: "" })}
                                     className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                 >
                                     {LEVELS.map((lvl) => (
@@ -258,6 +587,35 @@ export default function AdminGrammarPage() {
                                         </option>
                                     ))}
                                 </select>
+                            </div>
+                            <div className="flex-1 min-w-[140px]">
+                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Category</label>
+                                <select
+                                    value={form.categoryId}
+                                    onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                >
+                                    <option value="">No category</option>
+                                    {categories
+                                        .filter((c) => c.level === form.level)
+                                        .map((c) => (
+                                            <option key={c.id} value={c.id}>
+                                                {c.title}
+                                            </option>
+                                        ))}
+                                </select>
+                            </div>
+                            <div className="min-w-[100px]">
+                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Order</label>
+                                <input
+                                    type="number"
+                                    value={form.sortOrder}
+                                    onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })}
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                />
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Lower shows first within its category.
+                                </p>
                             </div>
                             <div className="flex-1 min-w-[140px]">
                                 <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Status</label>
@@ -543,17 +901,25 @@ export default function AdminGrammarPage() {
                                     <tr>
                                         <th className="px-6 py-3">Title</th>
                                         <th className="px-6 py-3">Level</th>
+                                        <th className="px-6 py-3">Category</th>
+                                        <th className="px-6 py-3">Order</th>
                                         <th className="px-6 py-3">Status</th>
                                         <th className="px-6 py-3">Exercises</th>
                                         <th className="px-6 py-3">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                    {lessons.map((lesson) => (
+                                    {paginatedLessons.map((lesson) => (
                                         <tr key={lesson.id}>
                                             <td className="px-6 py-4 text-gray-900 dark:text-white">{lesson.title}</td>
                                             <td className="px-6 py-4">
                                                 <Badge variant="secondary">{lesson.level}</Badge>
+                                            </td>
+                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
+                                                {lesson.categoryTitle ?? "—"}
+                                            </td>
+                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
+                                                {lesson.sortOrder}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <Badge variant={lesson.status === "PUBLISHED" ? "default" : "secondary"}>
@@ -583,13 +949,37 @@ export default function AdminGrammarPage() {
                                     ))}
                                     {lessons.length === 0 && (
                                         <tr>
-                                            <td colSpan={5} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                                            <td colSpan={7} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
                                                 No grammar lessons found.
                                             </td>
                                         </tr>
                                     )}
                                 </tbody>
                             </table>
+
+                            {lessonsTotalPages > 1 && (
+                                <div className="flex justify-center items-center gap-3 py-6">
+                                    <Button
+                                        variant="secondary"
+                                        className="px-4 py-2 text-sm"
+                                        onClick={() => setLessonsPage((p) => Math.max(1, p - 1))}
+                                        disabled={lessonsCurrentPage === 1}
+                                    >
+                                        Zurück
+                                    </Button>
+                                    <span className="text-gray-700 dark:text-gray-300 text-sm">
+                                        Seite {lessonsCurrentPage} / {lessonsTotalPages}
+                                    </span>
+                                    <Button
+                                        variant="secondary"
+                                        className="px-4 py-2 text-sm"
+                                        onClick={() => setLessonsPage((p) => Math.min(lessonsTotalPages, p + 1))}
+                                        disabled={lessonsCurrentPage === lessonsTotalPages}
+                                    >
+                                        Weiter
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

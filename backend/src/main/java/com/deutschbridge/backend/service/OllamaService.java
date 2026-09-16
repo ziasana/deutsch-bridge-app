@@ -144,6 +144,14 @@ public class OllamaService {
         return callOllama(messages);
     }
 
+    public String generateDailyWords(LearningLevel level, int count, boolean includePersian) {
+        List<OllamaMessage> messages = List.of(
+                new OllamaMessage("system", PromptLibrary.generateDailyWords(level.name(), count, includePersian)),
+                new OllamaMessage("user", "Erstelle " + count + " Vokabeln für Niveau " + level.name() + ".")
+        );
+        return callOllama(messages);
+    }
+
     public String lemmatizeWords(List<String> words) {
         List<OllamaMessage> messages = List.of(
                 new OllamaMessage("system", PromptLibrary.lemmatizeWords(words)),
