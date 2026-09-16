@@ -27,10 +27,7 @@ function CategoryTestContent() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!categoryId) {
-            setLoading(false);
-            return;
-        }
+        if (!categoryId) return;
         getGrammarCategories()
             .then((res) => {
                 const found = res.data.find((c) => c.id === categoryId) ?? null;
@@ -39,6 +36,19 @@ function CategoryTestContent() {
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load this category."))
             .finally(() => setLoading(false));
     }, [categoryId]);
+
+    if (!categoryId) {
+        return (
+            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
+                <div className="max-w-3xl mx-auto text-center text-gray-500 dark:text-gray-400 py-20">
+                    Category not found.{" "}
+                    <Link href="/dashboard/grammar" className="underline">
+                        ← Back to Grammar Lessons
+                    </Link>
+                </div>
+            </div>
+        );
+    }
 
     if (loading) return <Loading />;
 
