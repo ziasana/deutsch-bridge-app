@@ -3,18 +3,23 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ToastContainer, toast } from "react-toastify";
+import { BookOpen, ChevronLeft, ChevronRight, RotateCw, ArrowRight } from "lucide-react";
 import { getGrammarLessons, getGrammarCategories } from "@/services/grammarService";
 import { GrammarCategoryWithLessons, GrammarLesson } from "@/types/grammar";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
+import { LearningLevelSelector, LearningSearch } from "@/componenets/learning";
+import { CategoryAccordionCard, ContentItemRow } from "@/componenets/CategoryAccordion";
 import { useI18n } from "@/componenets/I18nProvider";
 import { localizedLessonText } from "@/lib/grammarLocalization";
+import useAuthStore from "@/store/useAuthStore";
 
 const ITEMS_PER_PAGE = 10;
 
 export default function GrammarLessonsPage() {
     const router = useRouter();
     const { language, t } = useI18n();
+    const { userProfile } = useAuthStore();
     const [lessons, setLessons] = useState<GrammarLesson[]>([]);
     const [categories, setCategories] = useState<GrammarCategoryWithLessons[]>([]);
     const [loading, setLoading] = useState(true);
@@ -35,7 +40,20 @@ export default function GrammarLessonsPage() {
 
     if (loading) return <Loading />;
 
+    const isLearned = (lesson: GrammarLesson) =>
+        lesson.learningProgresses?.some((lp) => lp.learned === true) ?? false;
+
     const levels = Array.from(new Set(lessons.map((l) => l.level))).filter(Boolean);
+    const levelOptions = levels
+        .map((level) => {
+            const levelLessons = lessons.filter((l) => l.level === level);
+            return {
+                level,
+                total: levelLessons.length,
+                completed: levelLessons.filter(isLearned).length,
+            };
+        })
+        .sort((a, b) => a.level.localeCompare(b.level));
     const searchTerm = search.trim().toLowerCase();
     const matchesSearch = (lesson: GrammarLesson) =>
         localizedLessonText(lesson, language).title.toLowerCase().includes(searchTerm);
@@ -55,9 +73,6 @@ export default function GrammarLessonsPage() {
         );
     });
 
-    const isLearned = (lesson: GrammarLesson) =>
-        lesson.learningProgresses?.some((lp) => lp.learned === true) ?? false;
-
     const totalPages = Math.max(1, Math.ceil(uncategorized.length / ITEMS_PER_PAGE));
     const currentPage = Math.min(page, totalPages);
     const paginated = uncategorized.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -65,147 +80,136 @@ export default function GrammarLessonsPage() {
     const toggleCollapsed = (id: string) => setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }));
 
     const renderLessonRow = (lesson: GrammarLesson) => {
-        const learned = isLearned(lesson);
         const localized = localizedLessonText(lesson, language);
         const hasQuiz = (lesson.quiz?.length ?? 0) > 0;
+        const learned = isLearned(lesson);
         return (
-            <div
+            <ContentItemRow
                 key={lesson.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => router.push(`/dashboard/grammar/lesson?id=${lesson.id}`)}
-                onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                        router.push(`/dashboard/grammar/lesson?id=${lesson.id}`);
-                    }
-                }}
+                title={localized.title}
+                description={localized.summary}
+                level={lesson.level}
+                learned={learned}
                 dir={localized.dir}
-                className={`w-full flex items-center gap-4 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] overflow-hidden p-4 hover:shadow-xl transition cursor-pointer ${
-                    localized.dir === "rtl" ? "text-right" : "text-left"
-                }`}
-            >
-                <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-lg font-semibold text-gray-900 dark:text-white truncate">
-                            {localized.title}
-                        </span>
-                        <Badge variant="secondary">{lesson.level}</Badge>
-                        {learned && <Badge variant="default">{t.grammar.learned}</Badge>}
-                        {hasQuiz && (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    router.push(`/dashboard/grammar/practice?id=${lesson.id}`);
-                                }}
-                                className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-medium hover:bg-blue-100 dark:hover:bg-blue-900/60 transition shrink-0"
-                            >
-                                Practice →
-                            </button>
-                        )}
-                    </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">{localized.summary}</p>
-                </div>
-                <span className="text-gray-400 text-xl shrink-0">›</span>
-            </div>
+                onClick={() => router.push(`/dashboard/grammar/lesson?id=${lesson.id}`)}
+                actions={
+                    hasQuiz && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/dashboard/grammar/practice?id=${lesson.id}`);
+                            }}
+                            className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full bg-primary/10 text-primary font-medium hover:bg-primary/20 transition shrink-0"
+                        >
+                            {learned ? (
+                                <>
+                                    <RotateCw className="size-3.5" />
+                                    {t.grammar.review}
+                                </>
+                            ) : (
+                                <>
+                                    {t.grammar.practice}
+                                    <ArrowRight className="size-3.5" />
+                                </>
+                            )}
+                        </button>
+                    )
+                }
+            />
         );
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
+        <div className="min-h-screen bg-background px-6 py-10">
             <div className="max-w-4xl mx-auto">
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white">{t.grammar.title}</h1>
-                <p className="text-gray-600 dark:text-gray-300 mt-2">{t.grammar.subtitle}</p>
-
-                <div className="mt-6 flex flex-wrap items-center gap-3">
-                    <input
-                        type="text"
-                        value={search}
-                        onChange={(e) => {
-                            setSearch(e.target.value);
-                            setPage(1);
-                        }}
-                        placeholder={t.grammar.searchPlaceholder}
-                        className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm flex-1 min-w-[200px]"
-                    />
-                    <label className="text-sm text-gray-600 dark:text-gray-300">{t.grammar.level}</label>
-                    <select
-                        value={levelFilter}
-                        onChange={(e) => {
-                            setLevelFilter(e.target.value);
-                            setPage(1);
-                        }}
-                        className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-                    >
-                        <option value="ALL">{t.grammar.allLevels}</option>
-                        {levels.map((lvl) => (
-                            <option key={lvl} value={lvl}>
-                                {lvl}
-                            </option>
-                        ))}
-                    </select>
+                <div className="flex items-start gap-4">
+                    <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-accent">
+                        <BookOpen className="size-6 text-primary" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-foreground">{t.grammar.title}</h1>
+                        <p className="text-foreground/60 mt-1 text-sm">{t.grammar.subtitle}</p>
+                    </div>
                 </div>
+
+                <LearningLevelSelector
+                    className="mt-6"
+                    levels={levelOptions}
+                    selectedLevel={levelFilter === "ALL" ? null : levelFilter}
+                    onLevelChange={(level) => {
+                        setLevelFilter((prev) => (prev !== level ? level : "ALL"));
+                        setPage(1);
+                    }}
+                    unitLabel={t.grammar.lessonsUnit}
+                    currentLevel={userProfile?.learningLevel}
+                    currentLevelLabel={t.grammar.currentLevel}
+                    ariaLabel={t.grammar.level}
+                />
+
+                <LearningSearch
+                    className="mt-4"
+                    value={search}
+                    onChange={(value) => {
+                        setSearch(value);
+                        setPage(1);
+                    }}
+                    placeholder={t.grammar.searchPlaceholder}
+                />
 
                 <div className="mt-6 space-y-4">
                     {visibleCategories.map((category) => {
                         const isCollapsed = collapsed[category.id] ?? false;
                         const title = (language === "fa" && category.titleFa) || category.title;
                         const { testStatus } = category;
+                        const learnedCount = category.lessons.filter(isLearned).length;
                         return (
-                            <div
+                            <CategoryAccordionCard
                                 key={category.id}
-                                className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] overflow-hidden"
-                            >
-                                <button
-                                    type="button"
-                                    onClick={() => toggleCollapsed(category.id)}
-                                    className="w-full flex items-center justify-between gap-3 p-4 text-left"
-                                >
-                                    <div className="flex items-center gap-2 flex-wrap min-w-0">
-                                        <span className="text-lg font-semibold text-gray-900 dark:text-white truncate">
-                                            {title}
-                                        </span>
-                                        <Badge variant="secondary">{category.level}</Badge>
-                                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                                            {category.lessons.length} topic{category.lessons.length === 1 ? "" : "s"}
-                                        </span>
+                                title={title}
+                                level={category.level}
+                                itemCount={category.lessons.length}
+                                learnedCount={learnedCount}
+                                collapsed={isCollapsed}
+                                onToggle={() => toggleCollapsed(category.id)}
+                                headerExtra={
+                                    <>
                                         {testStatus.completed && (
-                                            <Badge variant="default">✓ Completed</Badge>
+                                            <Badge variant="default" className="rounded-full">
+                                                ✓ Completed
+                                            </Badge>
                                         )}
                                         {!testStatus.completed && testStatus.attempted && (
-                                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                                            <span className="text-xs text-foreground/50">
                                                 Last score: {testStatus.score}/{testStatus.total}
                                             </span>
                                         )}
-                                    </div>
-                                    <span className="text-gray-400 shrink-0">{isCollapsed ? "▸" : "▾"}</span>
-                                </button>
-
-                                {!isCollapsed && (
-                                    <div className="px-4 pb-4 space-y-3">
-                                        {category.lessons.map((lesson) => renderLessonRow(lesson))}
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                router.push(`/dashboard/grammar/category-test?id=${category.id}`);
-                                            }}
-                                            className="text-sm px-3 py-2 rounded-lg bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 font-medium hover:bg-purple-100 dark:hover:bg-purple-900/60 transition"
-                                        >
-                                            {testStatus.attempted ? "Retake category test →" : "Take category test →"}
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
+                                    </>
+                                }
+                                footer={
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            router.push(`/dashboard/grammar/category-test?id=${category.id}`);
+                                        }}
+                                        className="text-sm px-3 py-2 rounded-lg bg-primary/10 text-primary font-medium hover:bg-primary/20 transition"
+                                    >
+                                        {testStatus.attempted ? "Retake category test →" : "Take category test →"}
+                                    </button>
+                                }
+                            >
+                                {category.lessons.map((lesson) => renderLessonRow(lesson))}
+                            </CategoryAccordionCard>
                         );
                     })}
 
                     {uncategorized.length > 0 && visibleCategories.length > 0 && (
-                        <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 pt-2">Other lessons</p>
+                        <p className="text-sm font-semibold text-foreground/50 pt-2">Other lessons</p>
                     )}
 
                     {paginated.map((lesson) => renderLessonRow(lesson))}
 
                     {visibleCategories.length === 0 && uncategorized.length === 0 && (
-                        <div className="text-center text-gray-500 dark:text-gray-400 py-10">{t.grammar.notFound}</div>
+                        <div className="text-center text-foreground/50 py-10">{t.grammar.notFound}</div>
                     )}
                 </div>
 
@@ -214,19 +218,21 @@ export default function GrammarLessonsPage() {
                         <button
                             onClick={() => setPage((p) => Math.max(1, p - 1))}
                             disabled={currentPage === 1}
-                            className="px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 text-sm disabled:opacity-50"
+                            className="flex items-center gap-1 px-4 py-2 rounded-lg bg-card shadow-card text-foreground text-sm disabled:opacity-40 hover:bg-accent/50 transition"
                         >
+                            <ChevronLeft className="size-4" />
                             {t.grammar.previous}
                         </button>
-                        <span className="text-sm text-gray-600 dark:text-gray-300">
+                        <span className="text-sm text-foreground/60">
                             {t.grammar.pageOf(currentPage, totalPages)}
                         </span>
                         <button
                             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                             disabled={currentPage === totalPages}
-                            className="px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 text-sm disabled:opacity-50"
+                            className="flex items-center gap-1 px-4 py-2 rounded-lg bg-card shadow-card text-foreground text-sm disabled:opacity-40 hover:bg-accent/50 transition"
                         >
                             {t.grammar.next}
+                            <ChevronRight className="size-4" />
                         </button>
                     </div>
                 )}

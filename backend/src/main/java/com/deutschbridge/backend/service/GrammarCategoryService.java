@@ -10,11 +10,13 @@ import com.deutschbridge.backend.model.dto.GrammarCategoryResponse;
 import com.deutschbridge.backend.model.entity.GrammarCategory;
 import com.deutschbridge.backend.model.entity.GrammarCategoryTestAttempt;
 import com.deutschbridge.backend.model.entity.GrammarLesson;
+import com.deutschbridge.backend.model.entity.LearningProgress;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.enums.GrammarLessonStatus;
 import com.deutschbridge.backend.repository.GrammarCategoryRepository;
 import com.deutschbridge.backend.repository.GrammarCategoryTestAttemptRepository;
 import com.deutschbridge.backend.repository.GrammarLessonRepository;
+import com.deutschbridge.backend.repository.LearningProgressRepository;
 import com.deutschbridge.backend.util.GrammarLessonMapper;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
@@ -33,17 +35,20 @@ public class GrammarCategoryService {
     private final GrammarCategoryRepository categoryRepository;
     private final GrammarLessonRepository lessonRepository;
     private final GrammarCategoryTestAttemptRepository attemptRepository;
+    private final LearningProgressRepository learningProgressRepository;
     private final UserService userService;
     private final RequestContext requestContext;
 
     public GrammarCategoryService(GrammarCategoryRepository categoryRepository,
                                    GrammarLessonRepository lessonRepository,
                                    GrammarCategoryTestAttemptRepository attemptRepository,
+                                   LearningProgressRepository learningProgressRepository,
                                    UserService userService,
                                    RequestContext requestContext) {
         this.categoryRepository = categoryRepository;
         this.lessonRepository = lessonRepository;
         this.attemptRepository = attemptRepository;
+        this.learningProgressRepository = learningProgressRepository;
         this.userService = userService;
         this.requestContext = requestContext;
     }
@@ -117,13 +122,23 @@ public class GrammarCategoryService {
         Map<String, GrammarCategoryTestAttempt> attemptByCategoryId = attempts.stream()
                 .collect(Collectors.toMap(a -> a.getCategory().getId(), a -> a));
 
+        Map<String, List<GrammarLesson>> publishedLessonsByCategoryId = categories.stream()
+                .collect(Collectors.toMap(GrammarCategory::getId, category -> lessonRepository.findByCategory(category).stream()
+                        .filter(l -> l.getStatus() == GrammarLessonStatus.PUBLISHED)
+                        .sorted(Comparator
+                                .comparing((GrammarLesson l) -> l.getSortOrder() != null ? l.getSortOrder() : 0)
+                                .thenComparing(GrammarLesson::getTitle))
+                        .toList()));
+
+        List<GrammarLesson> allPublishedLessons = publishedLessonsByCategoryId.values().stream()
+                .flatMap(List::stream)
+                .toList();
+        List<LearningProgress> progresses = learningProgressRepository.findByUserAndLessonIn(user, allPublishedLessons);
+        Map<String, LearningProgress> progressByLessonId = progresses.stream()
+                .collect(Collectors.toMap(p -> p.getLesson().getId(), p -> p, (first, second) -> first));
+
         return categories.stream().map(category -> {
-            List<GrammarLesson> publishedLessons = lessonRepository.findByCategory(category).stream()
-                    .filter(l -> l.getStatus() == GrammarLessonStatus.PUBLISHED)
-                    .sorted(Comparator
-                            .comparing((GrammarLesson l) -> l.getSortOrder() != null ? l.getSortOrder() : 0)
-                            .thenComparing(GrammarLesson::getTitle))
-                    .toList();
+            List<GrammarLesson> publishedLessons = publishedLessonsByCategoryId.get(category.getId());
 
             GrammarCategoryTestAttempt attempt = attemptByCategoryId.get(category.getId());
             CategoryTestStatusResponse status = attempt != null
@@ -138,7 +153,9 @@ public class GrammarCategoryService {
                     category.getLevel() != null ? category.getLevel().getValue() : null,
                     category.getSortOrder(),
                     category.getPassThreshold(),
-                    publishedLessons.stream().map(GrammarLessonMapper::mapToAdminResponse).toList(),
+                    publishedLessons.stream()
+                            .map(l -> GrammarLessonMapper.mapToResponse(l, progressByLessonId.get(l.getId())))
+                            .toList(),
                     status
             );
         }).toList();

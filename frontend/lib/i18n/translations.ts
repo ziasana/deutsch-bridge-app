@@ -231,6 +231,11 @@ export interface Dictionary {
         searchPlaceholder: string;
         level: string;
         allLevels: string;
+        lessonsCount: (count: number) => string;
+        lessonsUnit: string;
+        currentLevel: string;
+        practice: string;
+        review: string;
         notFound: string;
         previous: string;
         next: string;
@@ -527,10 +532,15 @@ const en: Dictionary = {
     },
     grammar: {
         title: "Grammar Lessons",
-        subtitle: "Structured grammar explanations with examples and exercises.",
-        searchPlaceholder: "Search by title...",
+        subtitle: "Learn German grammar step by step with explanations, examples and interactive practice.",
+        searchPlaceholder: "Search grammar lessons...",
         level: "Level:",
         allLevels: "All levels",
+        lessonsCount: (count: number) => `${count} lesson${count === 1 ? "" : "s"}`,
+        lessonsUnit: "lessons",
+        currentLevel: "Current level",
+        practice: "Practice",
+        review: "Review",
         notFound: "No grammar lessons found.",
         previous: "Previous",
         next: "Next",
@@ -832,10 +842,15 @@ const fa: Dictionary = {
     },
     grammar: {
         title: "دروس گرامر",
-        subtitle: "توضیحات ساختاریافته گرامر همراه با مثال و تمرین.",
-        searchPlaceholder: "جستجو بر اساس عنوان...",
+        subtitle: "گرامر آلمانی را قدم به قدم همراه با توضیحات، مثال و تمرین تعاملی بیاموزید.",
+        searchPlaceholder: "جستجوی دروس گرامر...",
         level: "سطح:",
         allLevels: "همه سطوح",
+        lessonsCount: (count: number) => `${count} درس`,
+        lessonsUnit: "درس",
+        currentLevel: "سطح فعلی",
+        practice: "تمرین",
+        review: "مرور",
         notFound: "درس گرامری یافت نشد.",
         previous: "قبلی",
         next: "بعدی",
