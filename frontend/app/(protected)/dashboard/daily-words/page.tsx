@@ -81,7 +81,7 @@ export default function DailyWordsPage() {
                     {words.map((word) => (
                         <div
                             key={word.id}
-                            className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+                            className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6"
                         >
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">

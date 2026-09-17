@@ -20,6 +20,9 @@ import RichTextEditor from "@/componenets/RichTextEditor";
 import { Badge } from "@/componenets/ui/badge";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
 import { extractGapNumbers } from "@/lib/examGap";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1"];
 const TFN_ANSWERS = ["RICHTIG", "FALSCH", "NICHT_IM_TEXT"];
@@ -102,7 +105,6 @@ const SECTION_FILTER_OPTIONS: { value: ExamSection | "ALL"; label: string }[] = 
 
 type PublishedFilter = "ALL" | "YES" | "NO";
 type SortOrder = "NEWEST" | "OLDEST";
-const EXERCISES_PAGE_SIZE = 10;
 
 const emptyForm = {
     title: "",
@@ -189,6 +191,8 @@ export default function AdminExamPrepPage() {
     const [filterPublished, setFilterPublished] = useState<PublishedFilter>("ALL");
     const [sortOrder, setSortOrder] = useState<SortOrder>("NEWEST");
     const [exercisesPage, setExercisesPage] = useState(1);
+    const [exercisesPageSize, setExercisesPageSize] = useState(10);
+    const [exerciseSearch, setExerciseSearch] = useState("");
 
     const fetchExercises = useCallback(() => {
         getExamExercisesForAdmin()
@@ -422,20 +426,28 @@ export default function AdminExamPrepPage() {
 
     const exerciseLevels = Array.from(new Set(exercises.map((e) => e.level).filter((lvl): lvl is string => lvl != null))).sort();
 
+    const exerciseSearchQuery = exerciseSearch.trim().toLowerCase();
+
     const filteredExercises = exercises
         .filter((e) => filterLevel === "ALL" || e.level === filterLevel)
         .filter((e) => filterSection === "ALL" || e.section === filterSection)
         .filter((e) => filterPublished === "ALL" || (filterPublished === "YES" ? e.published : !e.published))
+        .filter((e) => !exerciseSearchQuery || e.title.toLowerCase().includes(exerciseSearchQuery))
         .sort((a, b) => {
             const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
             return sortOrder === "NEWEST" ? -diff : diff;
         });
 
-    const exercisesTotalPages = Math.max(1, Math.ceil(filteredExercises.length / EXERCISES_PAGE_SIZE));
+    const exercisesTotalPages = Math.max(1, Math.ceil(filteredExercises.length / exercisesPageSize));
     const exercisesCurrentPage = Math.min(exercisesPage, exercisesTotalPages);
+    const exercisesStartIndex = filteredExercises.length === 0 ? 0 : (exercisesCurrentPage - 1) * exercisesPageSize + 1;
+    const exercisesEndIndex = Math.min(exercisesCurrentPage * exercisesPageSize, filteredExercises.length);
     const pagedExercises = filteredExercises.slice(
-        (exercisesCurrentPage - 1) * EXERCISES_PAGE_SIZE,
-        exercisesCurrentPage * EXERCISES_PAGE_SIZE
+        (exercisesCurrentPage - 1) * exercisesPageSize,
+        exercisesCurrentPage * exercisesPageSize
+    );
+    const exercisesPageNumbers = Array.from({ length: exercisesTotalPages }, (_, i) => i + 1).filter(
+        (p) => p === 1 || p === exercisesTotalPages || Math.abs(p - exercisesCurrentPage) <= 1
     );
 
     const removeExercise = (exercise: ExamExerciseResponse) => {
@@ -450,13 +462,13 @@ export default function AdminExamPrepPage() {
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
-            <div className="max-w-6xl mx-auto">
+            <div className="max-w-7xl mx-auto">
                 <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Prüfungsvorbereitung</h1>
                 <p className="text-gray-600 dark:text-gray-300 mt-2">
                     Create exam-style Leseverstehen, Sprachbausteine, Hörverstehen, and Testformat Information exercises.
                 </p>
 
-                <form onSubmit={submit} className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-6">
+                <form onSubmit={submit} className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-6">
                     {editingExercise && (
                         <p className="text-sm text-blue-600 dark:text-blue-400">
                             Editing &quot;{editingExercise.title}&quot; —{" "}
@@ -975,7 +987,7 @@ export default function AdminExamPrepPage() {
                     </Button>
                 </form>
 
-                <div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+                <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] overflow-hidden">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white px-6 pt-6">Existing exercises</h2>
 
                     <div className="px-6 pt-4 flex items-center gap-3 flex-wrap">
@@ -1024,6 +1036,35 @@ export default function AdminExamPrepPage() {
                             <option value="NEWEST">Newest first</option>
                             <option value="OLDEST">Oldest first</option>
                         </select>
+                    </div>
+
+                    <div className="px-6 pt-4 flex flex-wrap items-center justify-between gap-4">
+                        <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                            Show
+                            <select
+                                value={exercisesPageSize}
+                                onChange={(e) => changeExercisesFilter(() => setExercisesPageSize(Number(e.target.value)))}
+                                className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            >
+                                {PAGE_SIZE_OPTIONS.map((n) => (
+                                    <option key={n} value={n}>
+                                        {n}
+                                    </option>
+                                ))}
+                            </select>
+                            entries
+                        </label>
+
+                        <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                            Search:
+                            <input
+                                type="text"
+                                value={exerciseSearch}
+                                onChange={(e) => changeExercisesFilter(() => setExerciseSearch(e.target.value))}
+                                placeholder="Exercise title..."
+                                className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            />
+                        </label>
                     </div>
 
                     {isLoading ? (
@@ -1083,25 +1124,65 @@ export default function AdminExamPrepPage() {
                         </div>
                     )}
 
-                    {!isLoading && exercisesTotalPages > 1 && (
-                        <div className="flex items-center justify-center gap-2 py-4">
-                            <button
-                                onClick={() => setExercisesPage((p) => Math.max(1, p - 1))}
-                                disabled={exercisesCurrentPage === 1}
-                                className="px-3 py-2 rounded-lg text-sm font-medium bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 disabled:opacity-40"
-                            >
-                                ‹ Back
-                            </button>
-                            <span className="text-sm text-gray-600 dark:text-gray-300 px-2">
-                                Page {exercisesCurrentPage} of {exercisesTotalPages}
-                            </span>
-                            <button
-                                onClick={() => setExercisesPage((p) => Math.min(exercisesTotalPages, p + 1))}
-                                disabled={exercisesCurrentPage === exercisesTotalPages}
-                                className="px-3 py-2 rounded-lg text-sm font-medium bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 disabled:opacity-40"
-                            >
-                                Next ›
-                            </button>
+                    {!isLoading && filteredExercises.length > 0 && (
+                        <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4">
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                Showing {exercisesStartIndex} to {exercisesEndIndex} of {filteredExercises.length} entries
+                            </p>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    type="button"
+                                    disabled={exercisesCurrentPage === 1}
+                                    onClick={() => setExercisesPage(1)}
+                                    className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                >
+                                    <ChevronsLeft className="size-4" />
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={exercisesCurrentPage === 1}
+                                    onClick={() => setExercisesPage((p) => Math.max(1, p - 1))}
+                                    className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                >
+                                    <ChevronLeft className="size-4" />
+                                </button>
+                                {exercisesPageNumbers.map((p, idx) => {
+                                    const prev = exercisesPageNumbers[idx - 1];
+                                    const showEllipsis = prev !== undefined && p - prev > 1;
+                                    return (
+                                        <div key={p} className="flex items-center gap-1">
+                                            {showEllipsis && <span className="px-1 text-gray-400 dark:text-gray-500">…</span>}
+                                            <button
+                                                type="button"
+                                                onClick={() => setExercisesPage(p)}
+                                                className={`min-w-9 h-9 px-2 rounded-lg text-sm font-medium border ${
+                                                    p === exercisesCurrentPage
+                                                        ? "bg-blue-600 border-blue-600 text-white"
+                                                        : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                }`}
+                                            >
+                                                {p}
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                                <button
+                                    type="button"
+                                    disabled={exercisesCurrentPage === exercisesTotalPages}
+                                    onClick={() => setExercisesPage((p) => Math.min(exercisesTotalPages, p + 1))}
+                                    className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                >
+                                    <ChevronRight className="size-4" />
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={exercisesCurrentPage === exercisesTotalPages}
+                                    onClick={() => setExercisesPage(exercisesTotalPages)}
+                                    className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                >
+                                    <ChevronsRight className="size-4" />
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>

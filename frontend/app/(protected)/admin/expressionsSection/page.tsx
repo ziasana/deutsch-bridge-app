@@ -28,6 +28,7 @@ import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
+import { ArrowUp, ArrowDown, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const TYPES: ExpressionType[] = ["NOMEN_VERB_VERBINDUNG", "REDEWENDUNG"];
@@ -40,7 +41,10 @@ const QUESTION_TYPE_LABEL: Record<ExpressionQuestionType, string> = {
     COMPLETION: "Completion (fill-in-the-blank)",
     TRANSFORMATION: "Transformation (rewrite the sentence)",
 };
-const ITEMS_PER_PAGE = 10;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+
+type EntrySortKey = "expression" | "type" | "level" | "status";
+type SortDirection = "asc" | "desc";
 
 const emptyExample: ExpressionExampleInput = { sentence: "", translationEn: "", translationFa: "", context: "EVERYDAY" };
 const emptyPattern: ExpressionPatternInput = { pattern: "", grammarCase: "", preposition: "", example: "" };
@@ -80,6 +84,10 @@ export default function AdminExpressionsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [entrySearch, setEntrySearch] = useState("");
+    const [sortKey, setSortKey] = useState<EntrySortKey>("expression");
+    const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
     const [form, setForm] = useState<ExpressionManualRequest>(emptyForm);
     const [editingEntry, setEditingEntry] = useState<Expression | null>(null);
@@ -230,19 +238,65 @@ export default function AdminExpressionsPage() {
         }));
     };
 
-    const totalPages = Math.max(1, Math.ceil(entries.length / ITEMS_PER_PAGE));
+    const toggleEntrySort = (key: EntrySortKey) => {
+        if (sortKey === key) {
+            setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+        } else {
+            setSortKey(key);
+            setSortDirection("asc");
+        }
+        setPage(1);
+    };
+
+    const renderEntrySortIcon = (column: EntrySortKey) => {
+        if (sortKey !== column) return <ArrowUpDown className="size-3.5 opacity-40" />;
+        return sortDirection === "asc" ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />;
+    };
+
+    const entrySearchQuery = entrySearch.trim().toLowerCase();
+    const filteredEntries = entrySearchQuery
+        ? entries.filter((e) => e.expression.toLowerCase().includes(entrySearchQuery))
+        : entries;
+
+    const entryValueFor = (e: Expression) => {
+        switch (sortKey) {
+            case "expression":
+                return e.expression.toLowerCase();
+            case "type":
+                return e.type;
+            case "level":
+                return e.level;
+            case "status":
+                return e.status;
+        }
+    };
+    const sortedEntries = filteredEntries.slice().sort((a, b) => {
+        const dir = sortDirection === "asc" ? 1 : -1;
+        const va = entryValueFor(a);
+        const vb = entryValueFor(b);
+        if (va < vb) return -1 * dir;
+        if (va > vb) return 1 * dir;
+        return 0;
+    });
+
+    const totalPages = Math.max(1, Math.ceil(sortedEntries.length / pageSize));
     const currentPage = Math.min(page, totalPages);
-    const paginatedEntries = entries.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    const startIndex = sortedEntries.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    const endIndex = Math.min(currentPage * pageSize, sortedEntries.length);
+    const paginatedEntries = sortedEntries.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+    const entryPageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1).filter(
+        (p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1
+    );
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
-            <div className="max-w-6xl mx-auto">
+            <div className="max-w-7xl mx-auto">
                 <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Active Expressions</h1>
                 <p className="text-gray-600 dark:text-gray-300 mt-2">
                     Create and manage Nomen-Verb-Verbindungen and Redewendungen.
                 </p>
 
-                <div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+                <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
                     <form onSubmit={submitForm} className="space-y-6">
                         {editingEntry && (
                             <p className="text-sm text-blue-600 dark:text-blue-400">
@@ -659,20 +713,71 @@ export default function AdminExpressionsPage() {
                     </form>
                 </div>
 
-                <div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+                <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] overflow-hidden">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white px-6 pt-6">Existing entries</h2>
                     {isLoading ? (
                         <div className="p-10 text-center text-gray-500 dark:text-gray-400">Loading entries...</div>
                     ) : (
-                        <>
-                            <div className="overflow-x-auto mt-4">
+                        <div className="px-6 pb-6">
+                            <div className="flex flex-wrap items-center justify-between gap-4 mt-4 mb-3">
+                                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                    Show
+                                    <select
+                                        value={pageSize}
+                                        onChange={(e) => {
+                                            setPageSize(Number(e.target.value));
+                                            setPage(1);
+                                        }}
+                                        className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    >
+                                        {PAGE_SIZE_OPTIONS.map((n) => (
+                                            <option key={n} value={n}>
+                                                {n}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    entries
+                                </label>
+
+                                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                    Search:
+                                    <input
+                                        type="text"
+                                        value={entrySearch}
+                                        onChange={(e) => {
+                                            setEntrySearch(e.target.value);
+                                            setPage(1);
+                                        }}
+                                        placeholder="Expression..."
+                                        className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    />
+                                </label>
+                            </div>
+
+                            <div className="overflow-x-auto">
                                 <table className="w-full text-left">
                                     <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm">
                                         <tr>
-                                            <th className="px-6 py-3">Expression</th>
-                                            <th className="px-6 py-3">Type</th>
-                                            <th className="px-6 py-3">Level</th>
-                                            <th className="px-6 py-3">Status</th>
+                                            <th className="px-6 py-3">
+                                                <button type="button" onClick={() => toggleEntrySort("expression")} className="flex items-center gap-1.5 font-semibold hover:text-gray-900 dark:hover:text-white">
+                                                    Expression {renderEntrySortIcon("expression")}
+                                                </button>
+                                            </th>
+                                            <th className="px-6 py-3">
+                                                <button type="button" onClick={() => toggleEntrySort("type")} className="flex items-center gap-1.5 font-semibold hover:text-gray-900 dark:hover:text-white">
+                                                    Type {renderEntrySortIcon("type")}
+                                                </button>
+                                            </th>
+                                            <th className="px-6 py-3">
+                                                <button type="button" onClick={() => toggleEntrySort("level")} className="flex items-center gap-1.5 font-semibold hover:text-gray-900 dark:hover:text-white">
+                                                    Level {renderEntrySortIcon("level")}
+                                                </button>
+                                            </th>
+                                            <th className="px-6 py-3">
+                                                <button type="button" onClick={() => toggleEntrySort("status")} className="flex items-center gap-1.5 font-semibold hover:text-gray-900 dark:hover:text-white">
+                                                    Status {renderEntrySortIcon("status")}
+                                                </button>
+                                            </th>
                                             <th className="px-6 py-3">Actions</th>
                                         </tr>
                                     </thead>
@@ -702,7 +807,7 @@ export default function AdminExpressionsPage() {
                                                 </td>
                                             </tr>
                                         ))}
-                                        {entries.length === 0 && (
+                                        {sortedEntries.length === 0 && (
                                             <tr>
                                                 <td colSpan={5} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
                                                     No entries found.
@@ -713,30 +818,68 @@ export default function AdminExpressionsPage() {
                                 </table>
                             </div>
 
-                            {totalPages > 1 && (
-                                <div className="flex justify-center items-center gap-3 py-6">
-                                    <Button
-                                        variant="secondary"
-                                        className="px-4 py-2 text-sm"
-                                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                        disabled={currentPage === 1}
-                                    >
-                                        Zurück
-                                    </Button>
-                                    <span className="text-gray-700 dark:text-gray-300 text-sm">
-                                        Seite {currentPage} / {totalPages}
-                                    </span>
-                                    <Button
-                                        variant="secondary"
-                                        className="px-4 py-2 text-sm"
-                                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                                        disabled={currentPage === totalPages}
-                                    >
-                                        Weiter
-                                    </Button>
+                            {sortedEntries.length > 0 && (
+                                <div className="flex flex-wrap items-center justify-between gap-4 mt-4">
+                                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                                        Showing {startIndex} to {endIndex} of {sortedEntries.length} entries
+                                    </p>
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            type="button"
+                                            disabled={currentPage === 1}
+                                            onClick={() => setPage(1)}
+                                            className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                        >
+                                            <ChevronsLeft className="size-4" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={currentPage === 1}
+                                            onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                            className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                        >
+                                            <ChevronLeft className="size-4" />
+                                        </button>
+                                        {entryPageNumbers.map((p, idx) => {
+                                            const prev = entryPageNumbers[idx - 1];
+                                            const showEllipsis = prev !== undefined && p - prev > 1;
+                                            return (
+                                                <div key={p} className="flex items-center gap-1">
+                                                    {showEllipsis && <span className="px-1 text-gray-400 dark:text-gray-500">…</span>}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPage(p)}
+                                                        className={`min-w-9 h-9 px-2 rounded-lg text-sm font-medium border ${
+                                                            p === currentPage
+                                                                ? "bg-blue-600 border-blue-600 text-white"
+                                                                : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                        }`}
+                                                    >
+                                                        {p}
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                        <button
+                                            type="button"
+                                            disabled={currentPage === totalPages}
+                                            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                            className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                        >
+                                            <ChevronRight className="size-4" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={currentPage === totalPages}
+                                            onClick={() => setPage(totalPages)}
+                                            className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                        >
+                                            <ChevronsRight className="size-4" />
+                                        </button>
+                                    </div>
                                 </div>
                             )}
-                        </>
+                        </div>
                     )}
                 </div>
             </div>

@@ -169,7 +169,7 @@ export default function VocabularyPage() {
                         paginatedData.map((vocab) => (
                             <div
                                 key={vocab.id}
-                                className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow flex flex-col md:flex-row justify-between items-start md:items-center"
+                                className="bg-white dark:bg-gray-800 rounded-[10px] p-4 shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] flex flex-col md:flex-row justify-between items-start md:items-center"
                             >
                                 <div className="space-y-1">
                                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white">

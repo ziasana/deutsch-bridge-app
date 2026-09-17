@@ -40,7 +40,7 @@ function ExpressionDetailContent() {
     if (!expression) {
         return (
             <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6 flex items-center justify-center">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-10 text-center max-w-md">
+                <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-10 text-center max-w-md">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Nicht gefunden</h2>
                     <Button variant="primary" onClick={() => router.push("/dashboard/expressions")}>
                         Zurück zur Übersicht
@@ -59,7 +59,7 @@ function ExpressionDetailContent() {
                     ← Zurück zur Übersicht
                 </Link>
 
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-8 mt-4">
+                <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-8 mt-4">
                     <div className="flex items-center gap-2 mb-3">
                         <Badge variant="secondary">{expression.level}</Badge>
                         <Badge variant="secondary">

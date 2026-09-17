@@ -22,6 +22,12 @@ import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
 import { getArticleImageSrc } from "@/lib/readingImages";
+import { ArrowUp, ArrowDown, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+
+type SortKey = "title" | "level" | "vocabulary" | "annotations";
+type SortDirection = "asc" | "desc";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const ANNOTATION_TYPES: AnnotationType[] = ["WORD", "NOMEN_VERB_VERBINDUNG", "REDEWENDUNG"];
@@ -79,6 +85,12 @@ export default function AdminReadingPage() {
     const [articles, setArticles] = useState<ReadingArticle[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+
+    const [tableSearch, setTableSearch] = useState("");
+    const [tablePageSize, setTablePageSize] = useState(10);
+    const [tablePage, setTablePage] = useState(1);
+    const [sortKey, setSortKey] = useState<SortKey>("title");
+    const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
     const [mode, setMode] = useState<Mode>("generate");
 
@@ -297,15 +309,69 @@ export default function AdminReadingPage() {
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to delete article."));
     };
 
+    const toggleSort = (key: SortKey) => {
+        if (sortKey === key) {
+            setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+        } else {
+            setSortKey(key);
+            setSortDirection("asc");
+        }
+        setTablePage(1);
+    };
+
+    const tableQuery = tableSearch.trim().toLowerCase();
+    const filteredArticles = tableQuery
+        ? articles.filter(
+              (a) => a.title.toLowerCase().includes(tableQuery) || a.topic.toLowerCase().includes(tableQuery)
+          )
+        : articles;
+
+    const sortValueFor = (article: ReadingArticle) => {
+        switch (sortKey) {
+            case "title":
+                return article.title.toLowerCase();
+            case "level":
+                return article.level;
+            case "vocabulary":
+                return article.keyVocabulary.length;
+            case "annotations":
+                return article.annotations?.length ?? 0;
+        }
+    };
+
+    const sortedArticles = filteredArticles.slice().sort((a, b) => {
+        const dir = sortDirection === "asc" ? 1 : -1;
+        const va = sortValueFor(a);
+        const vb = sortValueFor(b);
+        if (va < vb) return -1 * dir;
+        if (va > vb) return 1 * dir;
+        return 0;
+    });
+
+    const tableTotalPages = Math.max(1, Math.ceil(sortedArticles.length / tablePageSize));
+    const tableCurrentPage = Math.min(tablePage, tableTotalPages);
+    const tableStartIndex = sortedArticles.length === 0 ? 0 : (tableCurrentPage - 1) * tablePageSize + 1;
+    const tableEndIndex = Math.min(tableCurrentPage * tablePageSize, sortedArticles.length);
+    const paginatedArticles = sortedArticles.slice((tableCurrentPage - 1) * tablePageSize, tableCurrentPage * tablePageSize);
+
+    const tablePageNumbers = Array.from({ length: tableTotalPages }, (_, i) => i + 1).filter(
+        (p) => p === 1 || p === tableTotalPages || Math.abs(p - tableCurrentPage) <= 1
+    );
+
+    const renderSortIcon = (column: SortKey) => {
+        if (sortKey !== column) return <ArrowUpDown className="size-3.5 opacity-40" />;
+        return sortDirection === "asc" ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />;
+    };
+
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-7xl mx-auto">
                 <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Reading Articles</h1>
                 <p className="text-gray-600 dark:text-gray-300 mt-2">
                     Generate an article with AI, or paste in one you already have.
                 </p>
 
-                <div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+                <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
                     <div className="flex gap-2 mb-6">
                         <Button
                             type="button"
@@ -736,74 +802,209 @@ export default function AdminReadingPage() {
                     )}
                 </div>
 
-                <div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+                <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] overflow-hidden">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white px-6 pt-6">
                         Existing articles
                     </h2>
                     {isLoading ? (
                         <div className="p-10 text-center text-gray-500 dark:text-gray-400">Loading articles...</div>
                     ) : (
-                        <div className="overflow-x-auto mt-4">
-                            <table className="w-full text-left">
-                                <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm">
-                                    <tr>
-                                        <th className="px-6 py-3">Image</th>
-                                        <th className="px-6 py-3">Title</th>
-                                        <th className="px-6 py-3">Level</th>
-                                        <th className="px-6 py-3">Vocabulary</th>
-                                        <th className="px-6 py-3">Annotations</th>
-                                        <th className="px-6 py-3">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                    {articles.map((article) => (
-                                        <tr key={article.id}>
-                                            <td className="px-6 py-4">
-                                                <img
-                                                    src={getArticleImageSrc(article.imageUrl, article.level)}
-                                                    alt=""
-                                                    className="w-14 h-10 object-cover rounded-md border border-gray-200 dark:border-gray-700"
-                                                />
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-900 dark:text-white">
-                                                {article.title}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <Badge variant="secondary">{article.level}</Badge>
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                                                {article.keyVocabulary.length} words
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                                                {article.annotations?.length ?? 0}
-                                            </td>
-                                            <td className="px-6 py-4 space-x-2 whitespace-nowrap">
-                                                <Button
-                                                    variant="secondary"
-                                                    className="px-3 py-1 text-sm"
-                                                    onClick={() => startEdit(article)}
-                                                >
-                                                    Edit
-                                                </Button>
-                                                <Button
-                                                    variant="secondary"
-                                                    className="px-3 py-1 text-sm"
-                                                    onClick={() => removeArticle(article)}
-                                                >
-                                                    Delete
-                                                </Button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {articles.length === 0 && (
+                        <div className="px-6 pb-6">
+                            {/* Table controls */}
+                            <div className="flex flex-wrap items-center justify-between gap-4 mt-4 mb-3">
+                                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                    Show
+                                    <select
+                                        value={tablePageSize}
+                                        onChange={(e) => {
+                                            setTablePageSize(Number(e.target.value));
+                                            setTablePage(1);
+                                        }}
+                                        className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    >
+                                        {PAGE_SIZE_OPTIONS.map((n) => (
+                                            <option key={n} value={n}>
+                                                {n}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    entries
+                                </label>
+
+                                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                    Search:
+                                    <input
+                                        type="text"
+                                        value={tableSearch}
+                                        onChange={(e) => {
+                                            setTableSearch(e.target.value);
+                                            setTablePage(1);
+                                        }}
+                                        placeholder="Title or topic..."
+                                        className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    />
+                                </label>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm">
                                         <tr>
-                                            <td colSpan={6} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
-                                                No reading articles found.
-                                            </td>
+                                            <th className="px-6 py-3">Image</th>
+                                            <th className="px-6 py-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleSort("title")}
+                                                    className="flex items-center gap-1.5 font-semibold hover:text-gray-900 dark:hover:text-white"
+                                                >
+                                                    Title {renderSortIcon("title")}
+                                                </button>
+                                            </th>
+                                            <th className="px-6 py-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleSort("level")}
+                                                    className="flex items-center gap-1.5 font-semibold hover:text-gray-900 dark:hover:text-white"
+                                                >
+                                                    Level {renderSortIcon("level")}
+                                                </button>
+                                            </th>
+                                            <th className="px-6 py-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleSort("vocabulary")}
+                                                    className="flex items-center gap-1.5 font-semibold hover:text-gray-900 dark:hover:text-white"
+                                                >
+                                                    Vocabulary {renderSortIcon("vocabulary")}
+                                                </button>
+                                            </th>
+                                            <th className="px-6 py-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleSort("annotations")}
+                                                    className="flex items-center gap-1.5 font-semibold hover:text-gray-900 dark:hover:text-white"
+                                                >
+                                                    Annotations {renderSortIcon("annotations")}
+                                                </button>
+                                            </th>
+                                            <th className="px-6 py-3">Actions</th>
                                         </tr>
-                                    )}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                        {paginatedArticles.map((article) => (
+                                            <tr key={article.id}>
+                                                <td className="px-6 py-4">
+                                                    <img
+                                                        src={getArticleImageSrc(article.imageUrl, article.level)}
+                                                        alt=""
+                                                        className="w-14 h-10 object-cover rounded-md border border-gray-200 dark:border-gray-700"
+                                                    />
+                                                </td>
+                                                <td className="px-6 py-4 text-gray-900 dark:text-white">
+                                                    {article.title}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <Badge variant="secondary">{article.level}</Badge>
+                                                </td>
+                                                <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
+                                                    {article.keyVocabulary.length} words
+                                                </td>
+                                                <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
+                                                    {article.annotations?.length ?? 0}
+                                                </td>
+                                                <td className="px-6 py-4 space-x-2 whitespace-nowrap">
+                                                    <Button
+                                                        variant="secondary"
+                                                        className="px-3 py-1 text-sm"
+                                                        onClick={() => startEdit(article)}
+                                                    >
+                                                        Edit
+                                                    </Button>
+                                                    <Button
+                                                        variant="secondary"
+                                                        className="px-3 py-1 text-sm"
+                                                        onClick={() => removeArticle(article)}
+                                                    >
+                                                        Delete
+                                                    </Button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {sortedArticles.length === 0 && (
+                                            <tr>
+                                                <td colSpan={6} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                                                    No reading articles found.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Table footer: info + pagination */}
+                            {sortedArticles.length > 0 && (
+                                <div className="flex flex-wrap items-center justify-between gap-4 mt-4">
+                                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                                        Showing {tableStartIndex} to {tableEndIndex} of {sortedArticles.length} entries
+                                    </p>
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            type="button"
+                                            disabled={tableCurrentPage === 1}
+                                            onClick={() => setTablePage(1)}
+                                            className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                        >
+                                            <ChevronsLeft className="size-4" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={tableCurrentPage === 1}
+                                            onClick={() => setTablePage((p) => Math.max(1, p - 1))}
+                                            className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                        >
+                                            <ChevronLeft className="size-4" />
+                                        </button>
+                                        {tablePageNumbers.map((p, idx) => {
+                                            const prev = tablePageNumbers[idx - 1];
+                                            const showEllipsis = prev !== undefined && p - prev > 1;
+                                            return (
+                                                <div key={p} className="flex items-center gap-1">
+                                                    {showEllipsis && (
+                                                        <span className="px-1 text-gray-400 dark:text-gray-500">…</span>
+                                                    )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setTablePage(p)}
+                                                        className={`min-w-9 h-9 px-2 rounded-lg text-sm font-medium border ${
+                                                            p === tableCurrentPage
+                                                                ? "bg-blue-600 border-blue-600 text-white"
+                                                                : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                        }`}
+                                                    >
+                                                        {p}
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                        <button
+                                            type="button"
+                                            disabled={tableCurrentPage === tableTotalPages}
+                                            onClick={() => setTablePage((p) => Math.min(tableTotalPages, p + 1))}
+                                            className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                        >
+                                            <ChevronRight className="size-4" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={tableCurrentPage === tableTotalPages}
+                                            onClick={() => setTablePage(tableTotalPages)}
+                                            className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                        >
+                                            <ChevronsRight className="size-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

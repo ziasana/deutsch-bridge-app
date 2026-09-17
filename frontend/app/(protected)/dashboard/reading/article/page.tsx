@@ -253,7 +253,7 @@ function GlossarySection({
     if (glossary.length === 0) return null;
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{t.readingArticle.keyVocabulary}</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                 {t.readingArticle.keyVocabularySubtitle}
@@ -391,7 +391,7 @@ function QuizSection({
     };
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{t.readingArticle.quiz.title}</h2>
 
             {phase === "idle" && (
@@ -632,7 +632,7 @@ function ReadingArticleDetailContent() {
                     {t.readingArticle.back}
                 </Link>
 
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+                <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] overflow-hidden">
                     <img
                         src={getArticleImageSrc(article.imageUrl, article.level)}
                         alt=""

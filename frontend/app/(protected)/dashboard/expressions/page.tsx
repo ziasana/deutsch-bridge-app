@@ -106,7 +106,7 @@ export default function ExpressionsPage() {
                                             router.push(`/dashboard/expressions/detail?id=${e.id}`);
                                         }
                                     }}
-                                    className="text-left bg-white dark:bg-gray-800 rounded-2xl shadow p-5 flex flex-col gap-3 hover:shadow-md hover:-translate-y-0.5 transition cursor-pointer"
+                                    className="text-left bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-5 flex flex-col gap-3 hover:shadow-md hover:-translate-y-0.5 transition cursor-pointer"
                                 >
                                     <div className="flex items-center justify-between">
                                         <Badge variant="secondary">{e.level}</Badge>

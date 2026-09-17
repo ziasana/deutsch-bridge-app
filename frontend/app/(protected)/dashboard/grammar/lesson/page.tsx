@@ -96,7 +96,7 @@ function GrammarLessonDetailContent() {
                     <p className="text-xs text-gray-500 dark:text-gray-400">{t.grammar.notTranslatable}</p>
                 )}
 
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-4" dir={localized.dir}>
+                <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-4" dir={localized.dir}>
                     <div className="flex items-center gap-2 flex-wrap">
                         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{localized.title}</h1>
                         <Badge variant="secondary">{lesson.level}</Badge>

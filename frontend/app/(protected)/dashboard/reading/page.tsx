@@ -75,7 +75,7 @@ export default function ReadingPage() {
                             <button
                                 key={article.id}
                                 onClick={() => router.push(`/dashboard/reading/article?id=${article.id}`)}
-                                className="w-full flex items-center gap-4 bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden p-3 text-left hover:shadow-xl transition"
+                                className="w-full flex items-center gap-4 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] overflow-hidden p-3 text-left hover:shadow-xl transition"
                             >
                                 <img
                                     src={getArticleImageSrc(article.imageUrl, article.level)}

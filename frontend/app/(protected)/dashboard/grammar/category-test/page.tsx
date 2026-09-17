@@ -82,7 +82,7 @@ function CategoryTestContent() {
                     Covers {category.lessons.length} topic{category.lessons.length === 1 ? "" : "s"} in this block.
                 </p>
 
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
                     <CategoryTestSection
                         categoryId={category.id}
                         lessons={category.lessons}

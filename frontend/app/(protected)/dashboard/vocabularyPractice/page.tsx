@@ -70,7 +70,7 @@ export default function PracticePage() {
     if (vocabularies.length === 0) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-gray-50">
-                <div className="flex flex-col items-center rounded-2xl bg-white px-10 py-8 shadow-lg text-center">
+                <div className="flex flex-col items-center rounded-[10px] bg-white px-10 py-8 shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] text-center">
                     <span className="text-5xl">📚</span>
                     <h1 className="mt-4 text-2xl font-semibold text-gray-800">
                         {t.vocabulary.practice.noWords}
@@ -93,7 +93,7 @@ export default function PracticePage() {
         const successRate = Math.round((knownCount * 100) / vocabularies.length);
         return (
             <div className="flex min-h-screen items-center justify-center bg-gray-50">
-                <div className="flex flex-col items-center rounded-2xl bg-white px-10 py-8 shadow-lg">
+                <div className="flex flex-col items-center rounded-[10px] bg-white px-10 py-8 shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)]">
                     <span className="text-5xl">🎉</span>
                    {t.vocabulary.practice.successRate(successRate)}
                     <h1 className="mt-4 text-2xl font-semibold text-gray-800">

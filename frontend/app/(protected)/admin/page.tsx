@@ -7,9 +7,30 @@ import useAuthStore from "@/store/useAuthStore";
 import { getAllUsers, updateUser, changeUserPassword } from "@/services/adminService";
 import { AdminUser } from "@/types/admin";
 import { Badge } from "@/componenets/ui/badge";
+import { Card, CardContent } from "@/componenets/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/componenets/ui/table";
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
+import {
+    ArrowDown,
+    ArrowUp,
+    ArrowUpDown,
+    BadgeCheck,
+    ChevronLeft,
+    ChevronRight,
+    ChevronsLeft,
+    ChevronsRight,
+    ShieldCheck,
+    Users,
+} from "lucide-react";
+
+const CARD_HOVER = "transition-all duration-300 hover:-translate-y-1 hover:shadow-lg";
+const BUTTON_HOVER = "transition-transform duration-200 hover:-translate-y-0.5";
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+
+type UserSortKey = "name" | "email" | "role" | "verified";
+type SortDirection = "asc" | "desc";
 
 export default function AdminPage() {
     const router = useRouter();
@@ -23,6 +44,12 @@ export default function AdminPage() {
     const [editForm, setEditForm] = useState({ displayName: "", role: "STUDENT", verified: false });
     const [newPassword, setNewPassword] = useState("");
     const [isSaving, setIsSaving] = useState(false);
+
+    const [userSearch, setUserSearch] = useState("");
+    const [userPageSize, setUserPageSize] = useState(10);
+    const [userPage, setUserPage] = useState(1);
+    const [userSortKey, setUserSortKey] = useState<UserSortKey>("name");
+    const [userSortDirection, setUserSortDirection] = useState<SortDirection>("asc");
 
     const fetchUsers = useCallback(() => {
         getAllUsers()
@@ -83,108 +110,324 @@ export default function AdminPage() {
 
     if (!hasHydrated || userProfile?.role !== "ADMIN") return null;
 
+    const totalUsers = users.length;
+    const totalAdmins = users.filter((u) => u.role === "ADMIN").length;
+    const totalVerified = users.filter((u) => u.verified).length;
+
+    const toggleUserSort = (key: UserSortKey) => {
+        if (userSortKey === key) {
+            setUserSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+        } else {
+            setUserSortKey(key);
+            setUserSortDirection("asc");
+        }
+        setUserPage(1);
+    };
+
+    const renderUserSortIcon = (column: UserSortKey) => {
+        if (userSortKey !== column) return <ArrowUpDown className="size-3.5 opacity-40" />;
+        return userSortDirection === "asc" ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />;
+    };
+
+    const userSearchQuery = userSearch.trim().toLowerCase();
+    const filteredUsers = userSearchQuery
+        ? users.filter(
+              (u) =>
+                  (u.displayName ?? "").toLowerCase().includes(userSearchQuery) ||
+                  u.email.toLowerCase().includes(userSearchQuery)
+          )
+        : users;
+
+    const userValueFor = (u: AdminUser) => {
+        switch (userSortKey) {
+            case "name":
+                return (u.displayName ?? "").toLowerCase();
+            case "email":
+                return u.email.toLowerCase();
+            case "role":
+                return u.role;
+            case "verified":
+                return u.verified ? 1 : 0;
+        }
+    };
+    const sortedUsers = filteredUsers.slice().sort((a, b) => {
+        const dir = userSortDirection === "asc" ? 1 : -1;
+        const va = userValueFor(a);
+        const vb = userValueFor(b);
+        if (va < vb) return -1 * dir;
+        if (va > vb) return 1 * dir;
+        return 0;
+    });
+
+    const userTotalPages = Math.max(1, Math.ceil(sortedUsers.length / userPageSize));
+    const userCurrentPage = Math.min(userPage, userTotalPages);
+    const userStartIndex = sortedUsers.length === 0 ? 0 : (userCurrentPage - 1) * userPageSize + 1;
+    const userEndIndex = Math.min(userCurrentPage * userPageSize, sortedUsers.length);
+    const paginatedUsers = sortedUsers.slice((userCurrentPage - 1) * userPageSize, userCurrentPage * userPageSize);
+    const userPageNumbers = Array.from({ length: userTotalPages }, (_, i) => i + 1).filter(
+        (p) => p === 1 || p === userTotalPages || Math.abs(p - userCurrentPage) <= 1
+    );
+
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
-            <div className="max-w-6xl mx-auto">
-                <div className="flex items-center justify-between">
+        <div className="px-6 py-10">
+            <div className="max-w-7xl mx-auto">
+                <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
-                        <p className="text-gray-600 dark:text-gray-300 mt-2">
+                        <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+                        <p className="text-foreground/60 mt-2">
                             Manage users, roles, and account access.
                         </p>
                     </div>
-                    <div className="flex gap-3">
-                        <Button variant="secondary" onClick={() => router.push("/admin/reading")}>
+                    <div className="flex flex-wrap gap-3">
+                        <Button variant="secondary" className={BUTTON_HOVER} onClick={() => router.push("/admin/reading")}>
                             Manage Reading Articles
                         </Button>
-                        <Button variant="secondary" onClick={() => router.push("/admin/exam-prep")}>
+                        <Button variant="secondary" className={BUTTON_HOVER} onClick={() => router.push("/admin/exam-prep")}>
                             Manage Exam Prep
                         </Button>
-                        <Button variant="secondary" onClick={() => router.push("/admin/grammar")}>
+                        <Button variant="secondary" className={BUTTON_HOVER} onClick={() => router.push("/admin/grammar")}>
                             Manage Grammar
                         </Button>
-                        <Button variant="secondary" onClick={() => router.push("/admin/expressionsSection")}>
+                        <Button variant="secondary" className={BUTTON_HOVER} onClick={() => router.push("/admin/expressionsSection")}>
                             Manage Expressions
                         </Button>
                     </div>
                 </div>
 
-                <div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+                <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <Card className={CARD_HOVER}>
+                        <CardContent className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-accent">
+                                    <Users className="size-6 text-accent-foreground" />
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-bold text-foreground">{totalUsers}</p>
+                                    <span className="text-sm text-foreground/60">Total Users</span>
+                                </div>
+                            </div>
+                            <ChevronRight className="size-5 text-foreground/30" />
+                        </CardContent>
+                    </Card>
+
+                    <Card className={CARD_HOVER}>
+                        <CardContent className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-accent">
+                                    <ShieldCheck className="size-6 text-accent-foreground" />
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-bold text-foreground">{totalAdmins}</p>
+                                    <span className="text-sm text-foreground/60">Admins</span>
+                                </div>
+                            </div>
+                            <ChevronRight className="size-5 text-foreground/30" />
+                        </CardContent>
+                    </Card>
+
+                    <Card className={CARD_HOVER}>
+                        <CardContent className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-accent">
+                                    <BadgeCheck className="size-6 text-accent-foreground" />
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-bold text-foreground">{totalVerified}</p>
+                                    <span className="text-sm text-foreground/60">Verified</span>
+                                </div>
+                            </div>
+                            <ChevronRight className="size-5 text-foreground/30" />
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <Card className="mt-8 py-0 overflow-hidden">
                     {isLoading ? (
-                        <div className="p-10 text-center text-gray-500 dark:text-gray-400">Loading users...</div>
+                        <div className="p-10 text-center text-foreground/50">Loading users...</div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm">
-                                    <tr>
-                                        <th className="px-6 py-3">Name</th>
-                                        <th className="px-6 py-3">Email</th>
-                                        <th className="px-6 py-3">Role</th>
-                                        <th className="px-6 py-3">Verified</th>
-                                        <th className="px-6 py-3">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                    {users.map((user) => (
-                                        <tr key={user.id}>
-                                            <td className="px-6 py-4 text-gray-900 dark:text-white">
+                        <div className="p-6">
+                            <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                                <label className="flex items-center gap-2 text-sm text-foreground/70">
+                                    Show
+                                    <select
+                                        value={userPageSize}
+                                        onChange={(e) => {
+                                            setUserPageSize(Number(e.target.value));
+                                            setUserPage(1);
+                                        }}
+                                        className="rounded-lg border border-border bg-muted text-foreground px-2 py-1 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
+                                    >
+                                        {PAGE_SIZE_OPTIONS.map((n) => (
+                                            <option key={n} value={n}>
+                                                {n}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    entries
+                                </label>
+
+                                <label className="flex items-center gap-2 text-sm text-foreground/70">
+                                    Search:
+                                    <input
+                                        type="text"
+                                        value={userSearch}
+                                        onChange={(e) => {
+                                            setUserSearch(e.target.value);
+                                            setUserPage(1);
+                                        }}
+                                        placeholder="Name or email..."
+                                        className="rounded-lg border border-border bg-muted text-foreground px-3 py-1.5 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
+                                    />
+                                </label>
+                            </div>
+
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>
+                                            <button type="button" onClick={() => toggleUserSort("name")} className="flex items-center gap-1.5 font-medium hover:text-foreground">
+                                                Name {renderUserSortIcon("name")}
+                                            </button>
+                                        </TableHead>
+                                        <TableHead>
+                                            <button type="button" onClick={() => toggleUserSort("email")} className="flex items-center gap-1.5 font-medium hover:text-foreground">
+                                                Email {renderUserSortIcon("email")}
+                                            </button>
+                                        </TableHead>
+                                        <TableHead>
+                                            <button type="button" onClick={() => toggleUserSort("role")} className="flex items-center gap-1.5 font-medium hover:text-foreground">
+                                                Role {renderUserSortIcon("role")}
+                                            </button>
+                                        </TableHead>
+                                        <TableHead>
+                                            <button type="button" onClick={() => toggleUserSort("verified")} className="flex items-center gap-1.5 font-medium hover:text-foreground">
+                                                Verified {renderUserSortIcon("verified")}
+                                            </button>
+                                        </TableHead>
+                                        <TableHead>Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {paginatedUsers.map((user) => (
+                                        <TableRow key={user.id}>
+                                            <TableCell className="font-medium text-foreground">
                                                 {user.displayName || "—"}
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                                                {user.email}
-                                            </td>
-                                            <td className="px-6 py-4">
+                                            </TableCell>
+                                            <TableCell className="text-foreground/70">{user.email}</TableCell>
+                                            <TableCell>
                                                 <Badge variant={user.role === "ADMIN" ? "default" : "secondary"}>
                                                     {user.role}
                                                 </Badge>
-                                            </td>
-                                            <td className="px-6 py-4">
+                                            </TableCell>
+                                            <TableCell>
                                                 <Badge variant={user.verified ? "default" : "outline"}>
                                                     {user.verified ? "Verified" : "Unverified"}
                                                 </Badge>
-                                            </td>
-                                            <td className="px-6 py-4 space-x-2 whitespace-nowrap">
+                                            </TableCell>
+                                            <TableCell className="space-x-2">
                                                 <Button
                                                     variant="secondary"
-                                                    className="px-3 py-1 text-sm"
+                                                    className={`px-3 py-1 text-sm ${BUTTON_HOVER}`}
                                                     onClick={() => openEdit(user)}
                                                 >
                                                     Edit
                                                 </Button>
                                                 <Button
                                                     variant="secondary"
-                                                    className="px-3 py-1 text-sm"
+                                                    className={`px-3 py-1 text-sm ${BUTTON_HOVER}`}
                                                     onClick={() => setPasswordUser(user)}
                                                 >
                                                     Change Password
                                                 </Button>
-                                            </td>
-                                        </tr>
+                                            </TableCell>
+                                        </TableRow>
                                     ))}
-                                    {users.length === 0 && (
-                                        <tr>
-                                            <td colSpan={5} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                                    {sortedUsers.length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="text-center text-foreground/50 py-10">
                                                 No users found.
-                                            </td>
-                                        </tr>
+                                            </TableCell>
+                                        </TableRow>
                                     )}
-                                </tbody>
-                            </table>
+                                </TableBody>
+                            </Table>
+
+                            {sortedUsers.length > 0 && (
+                                <div className="flex flex-wrap items-center justify-between gap-4 mt-4">
+                                    <p className="text-sm text-foreground/60">
+                                        Showing {userStartIndex} to {userEndIndex} of {sortedUsers.length} entries
+                                    </p>
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            type="button"
+                                            disabled={userCurrentPage === 1}
+                                            onClick={() => setUserPage(1)}
+                                            className="p-2 rounded-lg border border-border text-foreground/70 disabled:opacity-40 hover:bg-accent hover:text-accent-foreground"
+                                        >
+                                            <ChevronsLeft className="size-4" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={userCurrentPage === 1}
+                                            onClick={() => setUserPage((p) => Math.max(1, p - 1))}
+                                            className="p-2 rounded-lg border border-border text-foreground/70 disabled:opacity-40 hover:bg-accent hover:text-accent-foreground"
+                                        >
+                                            <ChevronLeft className="size-4" />
+                                        </button>
+                                        {userPageNumbers.map((p, idx) => {
+                                            const prev = userPageNumbers[idx - 1];
+                                            const showEllipsis = prev !== undefined && p - prev > 1;
+                                            return (
+                                                <div key={p} className="flex items-center gap-1">
+                                                    {showEllipsis && <span className="px-1 text-foreground/40">…</span>}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setUserPage(p)}
+                                                        className={`min-w-9 h-9 px-2 rounded-lg text-sm font-medium border ${
+                                                            p === userCurrentPage
+                                                                ? "bg-primary border-primary text-primary-foreground"
+                                                                : "border-border text-foreground/70 hover:bg-accent hover:text-accent-foreground"
+                                                        }`}
+                                                    >
+                                                        {p}
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                        <button
+                                            type="button"
+                                            disabled={userCurrentPage === userTotalPages}
+                                            onClick={() => setUserPage((p) => Math.min(userTotalPages, p + 1))}
+                                            className="p-2 rounded-lg border border-border text-foreground/70 disabled:opacity-40 hover:bg-accent hover:text-accent-foreground"
+                                        >
+                                            <ChevronRight className="size-4" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={userCurrentPage === userTotalPages}
+                                            onClick={() => setUserPage(userTotalPages)}
+                                            className="p-2 rounded-lg border border-border text-foreground/70 disabled:opacity-40 hover:bg-accent hover:text-accent-foreground"
+                                        >
+                                            <ChevronsRight className="size-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
-                </div>
+                </Card>
             </div>
 
             {/* Edit user modal */}
             {editingUser && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40 px-4">
-                    <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                    <div className="w-full max-w-md bg-card rounded-2xl shadow-xl p-8 border border-border">
+                        <h2 className="text-2xl font-bold text-foreground mb-6">
                             Edit {editingUser.email}
                         </h2>
                         <form onSubmit={submitEdit} className="space-y-5">
                             <div>
-                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                                <label className="block text-foreground/70 mb-2 text-sm">
                                     Display Name
                                 </label>
                                 <Input
@@ -196,13 +439,13 @@ export default function AdminPage() {
                             </div>
 
                             <div>
-                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                                <label className="block text-foreground/70 mb-2 text-sm">
                                     Role
                                 </label>
                                 <select
                                     value={editForm.role}
                                     onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
-                                    className="w-full mt-2 px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    className="w-full mt-2 px-4 py-3 rounded-lg border border-border bg-muted text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
                                 >
                                     <option value="STUDENT">Student</option>
                                     <option value="ADMIN">Admin</option>
@@ -215,9 +458,9 @@ export default function AdminPage() {
                                     type="checkbox"
                                     checked={editForm.verified}
                                     onChange={(e) => setEditForm({ ...editForm, verified: e.target.checked })}
-                                    className="h-4 w-4"
+                                    className="h-4 w-4 accent-primary"
                                 />
-                                <label htmlFor="verified" className="text-gray-700 dark:text-gray-300 text-sm">
+                                <label htmlFor="verified" className="text-foreground/70 text-sm">
                                     Verified
                                 </label>
                             </div>
@@ -243,13 +486,13 @@ export default function AdminPage() {
             {/* Change password modal */}
             {passwordUser && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40 px-4">
-                    <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                    <div className="w-full max-w-md bg-card rounded-2xl shadow-xl p-8 border border-border">
+                        <h2 className="text-2xl font-bold text-foreground mb-6">
                             Change password for {passwordUser.email}
                         </h2>
                         <form onSubmit={submitPassword} className="space-y-5">
                             <div>
-                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                                <label className="block text-foreground/70 mb-2 text-sm">
                                     New Password
                                 </label>
                                 <Input

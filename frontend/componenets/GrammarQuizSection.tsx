@@ -151,7 +151,7 @@ export default function GrammarQuizSection({
     };
 
     return (
-        <div ref={sectionRef} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+        <div ref={sectionRef} className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{t.grammar.exercises}</h2>
 
             {phase === "idle" && (

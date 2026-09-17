@@ -6,7 +6,7 @@ import {
     CardDescription,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card"
+} from "@/componenets/ui/card"
 import { cn } from "@/lib/utils"
 
 const weekData = [
@@ -27,7 +27,7 @@ export function StreakCalendar({ currentStreak }: StreakCalendarProps) {
     const activeDays = weekData.filter((d) => d.active).length
 
     return (
-        <Card className="border-border/50">
+        <Card>
             <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                     <span>This Week</span>

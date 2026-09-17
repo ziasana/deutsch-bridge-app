@@ -44,7 +44,7 @@ const chartConfig = {
 
 export function ActivityChart() {
     return (
-        <Card className="border-border/50">
+        <Card>
             <CardHeader>
                 <CardTitle>Weekly Activity</CardTitle>
                 <CardDescription>

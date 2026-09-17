@@ -38,7 +38,7 @@ function AnswerOptionsPoolView({
 }: Readonly<{ answerOptions: string[]; taskType: string }>) {
     if (answerOptions.length === 0) return null;
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
                 {taskType === "WORD_BANK_CLOZE"
                     ? "Wörter — nicht jedes passt in eine Lücke:"
@@ -75,7 +75,7 @@ function PassagesView({ passages, taskType }: Readonly<{ passages: ExamPassagePu
 
     if (taskType === "MULTIPLE_CHOICE" || taskType === "WORD_BANK_CLOZE") {
         return (
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-2">
+            <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-2">
                 {passages.map((p) => (
                     <PassageBody key={p.id} passage={p} />
                 ))}
@@ -86,7 +86,7 @@ function PassagesView({ passages, taskType }: Readonly<{ passages: ExamPassagePu
     return (
         <div className="grid gap-4 sm:grid-cols-2">
             {passages.map((p) => (
-                <div key={p.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4">
+                <div key={p.id} className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-4">
                     <p className="font-semibold text-gray-900 dark:text-white mb-1">{p.label}</p>
                     <PassageBody passage={p} />
                 </div>
@@ -154,7 +154,7 @@ function ResultsView({
 }>) {
     const correctCount = results.items.filter((item) => item.feedback.correct).length;
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-4">
+        <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-4">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Ergebnis</h2>
             <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{Math.round(results.score)}%</p>
             <p className="text-sm text-gray-600 dark:text-gray-300">
@@ -202,13 +202,13 @@ function SchriftlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExerci
 
     return (
         <div className="space-y-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-2">
+            <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-2">
                 {exercise.passages.map((p) => (
                     <PassageBody key={p.id} passage={p} />
                 ))}
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-4">
+            <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-4">
                 {showSolution && exercise.modelSolution ? (
                     <LessonMarkdown
                         content={exercise.modelSolution}
@@ -246,7 +246,7 @@ function TestformatInformationView({ exercise }: Readonly<{ exercise: ExamExerci
 
     return (
         <div className="space-y-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-2">
+            <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-2">
                 {exercise.passages.map((p) => (
                     <PassageBody key={p.id} passage={p} />
                 ))}
@@ -263,7 +263,7 @@ function TestformatInformationView({ exercise }: Readonly<{ exercise: ExamExerci
 
 function StartCard({ starting, onStart }: Readonly<{ starting: boolean; onStart: () => void }>) {
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-3">
+        <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-3">
             <p className="text-sm text-gray-600 dark:text-gray-300">
                 Bereit? Starte die Übung und bearbeite die Aufgaben der Reihe nach.
             </p>
@@ -414,7 +414,7 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
     const allAnswered = quiz.questions.every((q) => quiz.answers[q.id]);
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-4">
+        <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-4">
             <p className="text-sm text-gray-600 dark:text-gray-300">
                 Beantworte alle {quiz.questions.length} Aufgaben und klicke dann auf &quot;Antworten abgeben&quot;.
             </p>
@@ -624,7 +624,7 @@ function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse 
         exercise.taskType === "MATCHING" && question.sectionIndex != null ? quiz.passages[question.sectionIndex] : null;
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-3">
+        <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-3">
             <p className="text-xs text-gray-500 dark:text-gray-400">
                 Aufgabe {question.questionNumber ?? quiz.currentIndex + 1} von {quiz.questions.length}
                 {currentPassage && ` — ${currentPassage.label}`}
@@ -757,7 +757,7 @@ function HoerenListQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRes
 
     return (
         <div className="space-y-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-3">
+            <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-3">
                 <p className="text-sm text-gray-600 dark:text-gray-300">
                     Höre jeden Text an und markiere, ob die Aussage richtig ({quiz.answerOptions[0] ?? "+"}) oder falsch (
                     {quiz.answerOptions[1] ?? "-"}) ist. Dein Ergebnis siehst du, sobald du alle Antworten abgegeben hast.
@@ -773,7 +773,7 @@ function HoerenListQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRes
                 ))}
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-4">
+            <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-4">
                 <ol className="space-y-3">
                     {quiz.questions.map((question, idx) => {
                         const passage = question.sectionIndex != null ? quiz.passages[question.sectionIndex] : null;

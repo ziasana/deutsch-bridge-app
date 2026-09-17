@@ -28,6 +28,12 @@ export interface Dictionary {
         logout: string;
         darkMode: string;
         lightMode: string;
+        manageReading: string;
+        manageExamPrep: string;
+        manageGrammar: string;
+        manageExpressions: string;
+        collapseSidebar: string;
+        expandSidebar: string;
     };
     profile: {
         title: string;
@@ -297,6 +303,12 @@ const en: Dictionary = {
         logout: "Logout",
         darkMode: "Dark Mode 🌙",
         lightMode: "Light Mode ☀️",
+        manageReading: "Manage Reading",
+        manageExamPrep: "Manage Exam Prep",
+        manageGrammar: "Manage Grammar",
+        manageExpressions: "Manage Expressions",
+        collapseSidebar: "Collapse sidebar",
+        expandSidebar: "Expand sidebar",
     },
     profile: {
         title: "Profile",
@@ -596,6 +608,12 @@ const fa: Dictionary = {
         logout: "خروج",
         darkMode: "حالت تاریک 🌙",
         lightMode: "حالت روشن ☀️",
+        manageReading: "مدیریت مطالب خواندن",
+        manageExamPrep: "مدیریت آمادگی آزمون",
+        manageGrammar: "مدیریت دستور زبان",
+        manageExpressions: "مدیریت عبارات",
+        collapseSidebar: "جمع کردن نوار کناری",
+        expandSidebar: "باز کردن نوار کناری",
     },
     profile: {
         title: "پروفایل",

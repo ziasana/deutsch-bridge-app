@@ -80,7 +80,7 @@ export default function GrammarLessonsPage() {
                     }
                 }}
                 dir={localized.dir}
-                className={`w-full flex items-center gap-4 bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden p-4 hover:shadow-xl transition cursor-pointer ${
+                className={`w-full flex items-center gap-4 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] overflow-hidden p-4 hover:shadow-xl transition cursor-pointer ${
                     localized.dir === "rtl" ? "text-right" : "text-left"
                 }`}
             >
@@ -153,7 +153,7 @@ export default function GrammarLessonsPage() {
                         return (
                             <div
                                 key={category.id}
-                                className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden"
+                                className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] overflow-hidden"
                             >
                                 <button
                                     type="button"

@@ -54,7 +54,7 @@ export default function UserProfile() {
                 {isLoading && <Loading />}
                 <ToastContainer/>
                 {/* ================= PROFILE ================= */}
-                <Card className="rounded-2xl shadow-lg">
+                <Card>
                     <CardContent className="p-6 space-y-6">
                         <div className="flex items-center justify-between">
                             <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">

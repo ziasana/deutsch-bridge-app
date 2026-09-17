@@ -66,7 +66,7 @@ export default function ReadingReviewPage() {
     if (queue.length === 0) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
-                <div className="flex flex-col items-center rounded-2xl bg-white dark:bg-gray-800 px-10 py-8 shadow-lg text-center max-w-sm">
+                <div className="flex flex-col items-center rounded-[10px] bg-white dark:bg-gray-800 px-10 py-8 shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] text-center max-w-sm">
                     <span className="text-5xl">🎉</span>
                     <h1 className="mt-4 text-2xl font-semibold text-gray-900 dark:text-white">
                         {t.readingReview.nothingDue}
@@ -88,7 +88,7 @@ export default function ReadingReviewPage() {
         const successRate = Math.round((correctCount * 100) / queue.length);
         return (
             <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
-                <div className="flex flex-col items-center rounded-2xl bg-white dark:bg-gray-800 px-10 py-8 shadow-lg text-center">
+                <div className="flex flex-col items-center rounded-[10px] bg-white dark:bg-gray-800 px-10 py-8 shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] text-center">
                     <span className="text-5xl">✅</span>
                     <h1 className="mt-4 text-2xl font-semibold text-gray-900 dark:text-white">
                         {t.readingReview.sessionFinished}
@@ -122,7 +122,7 @@ export default function ReadingReviewPage() {
                 {t.readingReview.cardOf(index + 1, queue.length)}
             </p>
 
-            <div className="w-full max-w-md rounded-2xl bg-white dark:bg-gray-800 p-6 shadow-lg">
+            <div className="w-full max-w-md rounded-[10px] bg-white dark:bg-gray-800 p-6 shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)]">
                 <div className="flex items-center justify-between mb-4">
                     <Badge variant="secondary">{TYPE_LABELS[current.type]}</Badge>
                     <span className="text-xs text-gray-400 dark:text-gray-500">

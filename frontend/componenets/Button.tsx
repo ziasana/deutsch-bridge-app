@@ -11,7 +11,7 @@ export default function Button({
   const base = "px-4 py-2 rounded-lg font-semibold transition";
   const styles =
     variant === "primary"
-      ? "bg-blue-600 hover:bg-blue-700 text-white"
-      : "bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white";
+      ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+      : "bg-card border border-border text-foreground hover:bg-accent hover:text-accent-foreground";
   return <button className={`${base} ${styles} ${className}`} {...props} />;
 }

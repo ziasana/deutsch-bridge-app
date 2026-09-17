@@ -9,7 +9,7 @@ import {
     CardDescription,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card"
+} from "@/componenets/ui/card"
 import { getRecentVocabularies } from "../services/userProgressService"
 import { RecentVocabularyType } from "@/types/userProgress"
 
@@ -36,7 +36,7 @@ export function RecentWords() {
     const learningCount = recentWords.filter((w) => w.status === "LEARNING").length
 
     return (
-        <Card className="border-border/50">
+        <Card>
             <CardHeader>
                 <CardTitle>Recent Vocabulary</CardTitle>
                 <CardDescription>

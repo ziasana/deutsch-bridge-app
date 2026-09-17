@@ -14,7 +14,7 @@ export default function Flashcard({ word, example,synonyms, meaning}: Readonly<P
     const [showMeaning, setShowMeaning] = useState(false)
 
     return (
-        <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg">
+        <div className="w-full max-w-md rounded-[10px] bg-white p-6 shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)]">
             <h2 className="text-2xl font-bold text-center text-gray-900">
                 {word}
             </h2>

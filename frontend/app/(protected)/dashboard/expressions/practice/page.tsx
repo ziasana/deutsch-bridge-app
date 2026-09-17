@@ -106,7 +106,7 @@ function ExpressionPracticeContent() {
     if (!session || session.items.length === 0) {
         return (
             <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6 flex items-center justify-center">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-10 text-center max-w-md">
+                <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-10 text-center max-w-md">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Alles erledigt!</h2>
                     <p className="text-gray-600 dark:text-gray-300 mb-6">
                         Keine Wendungen sind gerade fällig. Schau später wieder vorbei.
@@ -129,7 +129,7 @@ function ExpressionPracticeContent() {
 
         return (
             <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6 flex items-center justify-center">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-8 max-w-lg w-full">
+                <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-8 max-w-lg w-full">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Session complete 🎉</h2>
                     <p className="text-gray-600 dark:text-gray-300 mb-6">Wendungen geübt: {results.length}</p>
 
@@ -259,7 +259,7 @@ function ExpressionPracticeContent() {
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6 flex items-center justify-center">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-8 max-w-xl w-full">
+            <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-8 max-w-xl w-full">
                 <div className="flex items-center justify-between mb-6">
                     <span className="text-sm text-gray-500 dark:text-gray-400">
                         {index + 1} / {session.items.length}

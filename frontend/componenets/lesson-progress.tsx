@@ -28,7 +28,7 @@ export function LessonProgress() {
     const notCompletedLessons = lessons.length - completedLessons
 
     return (
-        <Card className="border-border/50">
+        <Card>
             <CardHeader>
                 <CardTitle>Lesson Progress</CardTitle>
                 <CardDescription>

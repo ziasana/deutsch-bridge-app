@@ -43,10 +43,10 @@ export default function ResetPasswordPage() {
 
   return (
       <Suspense fallback={<Loading />}>
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
-      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-background px-4 py-12">
+      <div className="w-full max-w-md bg-card rounded-[10px] shadow-card p-8">
         {/* Title */}
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white text-center mb-12">
+        <h1 className="text-3xl font-bold text-foreground text-center mb-12">
           Reset Password
         </h1>
         {isLoading && <Loading message="Please wait..." />}
@@ -54,7 +54,7 @@ export default function ResetPasswordPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Email */}
           <div>
-            <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+            <label className="block text-foreground/70 mb-2 text-sm">
               Email <Input
               type="email"
               name="email"

@@ -11,7 +11,7 @@ export function Card({
     return (
         <div
             className={clsx(
-                'rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 transition dark:bg-gray-900 dark:ring-gray-800',
+                'rounded-[10px] bg-white shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] transition dark:bg-gray-900 dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)]',
                 className
             )}
         >
