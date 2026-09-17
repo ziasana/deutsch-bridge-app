@@ -16,8 +16,7 @@ interface LearningLevelSelectorProps {
     selectedLevel: string | null;
     onLevelChange: (level: string) => void;
     unitLabel: string;
-    currentLevel?: string | null;
-    currentLevelLabel?: string;
+    activeLabel?: string;
     ariaLabel?: string;
     className?: string;
 }
@@ -27,8 +26,7 @@ export default function LearningLevelSelector({
     selectedLevel,
     onLevelChange,
     unitLabel,
-    currentLevel,
-    currentLevelLabel,
+    activeLabel,
     ariaLabel = "Filter by level",
     className,
 }: LearningLevelSelectorProps) {
@@ -47,8 +45,7 @@ export default function LearningLevelSelector({
                     unitLabel={unitLabel}
                     icon={opt.icon}
                     active={selectedLevel === opt.level}
-                    isCurrentLevel={currentLevel === opt.level}
-                    currentLevelLabel={currentLevelLabel}
+                    activeLabel={activeLabel}
                     onClick={() => onLevelChange(opt.level)}
                 />
             ))}

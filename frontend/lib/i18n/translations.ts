@@ -72,6 +72,11 @@ export interface Dictionary {
         subtitle: string;
         level: string;
         allLevels: string;
+        textsUnit: string;
+        searchPlaceholder: string;
+        currentLevel: string;
+        quiz: string;
+        review: string;
         learned: string;
         newForYou: (count: number) => string;
         views: (count: number) => string;
@@ -376,6 +381,11 @@ const en: Dictionary = {
         subtitle: "Read articles at your level and tap highlighted words to learn new vocabulary in context.",
         level: "Level:",
         allLevels: "All levels",
+        textsUnit: "texts",
+        searchPlaceholder: "Search reading texts...",
+        currentLevel: "Current level",
+        quiz: "Quiz",
+        review: "Review",
         learned: "Learned",
         newForYou: (count: number) => `${count} new for you`,
         views: (count: number) => `👁 ${count} views`,
@@ -686,6 +696,11 @@ const fa: Dictionary = {
         subtitle: "مقالاتی متناسب با سطح خود را بخوانید و برای یادگیری واژگان جدید در بافت جمله، روی کلمات هایلایت‌شده ضربه بزنید.",
         level: "سطح:",
         allLevels: "همه سطوح",
+        textsUnit: "متن",
+        searchPlaceholder: "جستجوی متن‌های مطالعه...",
+        currentLevel: "سطح فعلی",
+        quiz: "آزمون",
+        review: "مرور",
         learned: "آموخته شده",
         newForYou: (count: number) => `${count} کلمه جدید برای شما`,
         views: (count: number) => `👁 ${count} بازدید`,

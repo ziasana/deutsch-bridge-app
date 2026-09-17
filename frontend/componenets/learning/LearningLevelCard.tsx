@@ -11,8 +11,7 @@ export interface LearningLevelCardProps {
     total: number;
     unitLabel: string;
     active: boolean;
-    isCurrentLevel?: boolean;
-    currentLevelLabel?: string;
+    activeLabel?: string;
     icon?: LucideIcon;
     onClick: () => void;
     className?: string;
@@ -24,8 +23,7 @@ export default function LearningLevelCard({
     total,
     unitLabel,
     active,
-    isCurrentLevel,
-    currentLevelLabel,
+    activeLabel,
     icon,
     onClick,
     className,
@@ -34,7 +32,6 @@ export default function LearningLevelCard({
     const meta = getLevelMeta(level);
     const Icon = icon ?? meta.icon;
     const color = meta.color;
-    const showBadge = active || isCurrentLevel;
 
     return (
         <button
@@ -42,7 +39,7 @@ export default function LearningLevelCard({
             role="tab"
             onClick={onClick}
             aria-selected={active}
-            aria-label={`${level}: ${completed} of ${total} ${unitLabel} completed, ${pct}%${showBadge ? `, ${currentLevelLabel ?? "current level"}` : ""}`}
+            aria-label={`${level}: ${completed} of ${total} ${unitLabel} completed, ${pct}%${active ? `, ${activeLabel ?? "current level"}` : ""}`}
             className={cn(
                 "group relative flex shrink-0 flex-col gap-3 rounded-2xl border bg-card p-4 text-left transition-all duration-200 min-w-[176px] sm:min-w-0 sm:flex-1",
                 active
@@ -51,9 +48,9 @@ export default function LearningLevelCard({
                 className,
             )}
         >
-            {showBadge && (
+            {active && (
                 <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary px-3 py-1 text-[10px] font-semibold text-primary-foreground shadow-sm">
-                    {currentLevelLabel ?? "Current level"}
+                    {activeLabel ?? "Current level"}
                 </span>
             )}
 

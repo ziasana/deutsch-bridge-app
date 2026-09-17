@@ -118,15 +118,17 @@ export function ContentItemRow({
             dir={dir}
             className={cn(
                 "w-full flex items-center gap-3 rounded-lg p-3.5 transition-colors cursor-pointer group",
-                learned
-                    ? "bg-emerald-50/70 hover:bg-emerald-50 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/15"
-                    : "bg-background/60 dark:bg-white/5 hover:bg-accent/50",
+                !learned && "bg-background/60 dark:bg-white/5 hover:bg-accent/50",
                 dir === "rtl" ? "text-right" : "text-left",
                 className,
             )}
+            style={learned ? { backgroundColor: `${levelColor}14` } : undefined}
         >
             {learned === undefined ? null : learned ? (
-                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-500">
+                <span
+                    className="flex size-6 shrink-0 items-center justify-center rounded-full"
+                    style={{ backgroundColor: levelColor }}
+                >
                     <CheckCircle2 className="size-4 text-white" strokeWidth={2.5} />
                 </span>
             ) : (

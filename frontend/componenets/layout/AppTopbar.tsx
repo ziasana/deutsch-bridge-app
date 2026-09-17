@@ -1,32 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import { GraduationCap, Menu as MenuIcon, Moon, Search, Sun } from "lucide-react";
 import { useDarkMode } from "@/componenets/DarkModeProvider";
 import { useI18n } from "@/componenets/I18nProvider";
 import useAuthStore from "@/store/useAuthStore";
-import type { NavItem } from "@/componenets/layout/navConfig";
 
 interface AppTopbarProps {
-    items: NavItem[];
     collapsed: boolean;
     onToggleCollapsed: () => void;
     onOpenMobileSidebar: () => void;
 }
 
-export default function AppTopbar({ items, collapsed, onToggleCollapsed, onOpenMobileSidebar }: Readonly<AppTopbarProps>) {
-    const pathname = usePathname();
+export default function AppTopbar({ collapsed, onToggleCollapsed, onOpenMobileSidebar }: Readonly<AppTopbarProps>) {
     const { darkMode, toggle } = useDarkMode();
     const { t } = useI18n();
     const { userProfile, logout } = useAuthStore();
-
-    const activeItem = items.find((item) =>
-        item.href === "/dashboard" || item.href === "/admin"
-            ? pathname === item.href
-            : pathname === item.href || pathname.startsWith(`${item.href}/`),
-    );
 
     const initials = (userProfile?.displayName ?? userProfile?.email ?? "?")
         .trim()
@@ -63,10 +53,6 @@ export default function AppTopbar({ items, collapsed, onToggleCollapsed, onOpenM
                 <MenuIcon className="size-5" />
                 <span className="sr-only">{collapsed ? t.nav.expandSidebar : t.nav.collapseSidebar}</span>
             </button>
-
-            <h1 className="hidden sm:block text-xl font-bold truncate">
-                {activeItem?.label ?? "DeutschBridge"}
-            </h1>
 
             <div className="flex-1" />
 

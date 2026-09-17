@@ -29,6 +29,10 @@ export const updateProfile = async (data: UserProfileType) => {
     return await api.put("/user/update-profile", data);
 }
 
+export const getUserProfile = async () => {
+    return await api.get("/user/profile");
+}
+
 export const updatePassword = async (data: UserType) => {
     return await api.put("/user/update-password", data);
 }

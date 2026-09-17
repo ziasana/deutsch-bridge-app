@@ -20,7 +20,6 @@ export default function AppShell({ children }: Readonly<{ children: React.ReactN
     return (
         <div className="flex h-screen flex-col overflow-hidden bg-background">
             <AppTopbar
-                items={items}
                 collapsed={collapsed}
                 onToggleCollapsed={toggleCollapsed}
                 onOpenMobileSidebar={() => setMobileOpen(true)}

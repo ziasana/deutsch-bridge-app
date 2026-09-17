@@ -23,7 +23,7 @@ export default function GrammarLessonsPage() {
     const [lessons, setLessons] = useState<GrammarLesson[]>([]);
     const [categories, setCategories] = useState<GrammarCategoryWithLessons[]>([]);
     const [loading, setLoading] = useState(true);
-    const [levelFilter, setLevelFilter] = useState("ALL");
+    const [levelFilter, setLevelFilter] = useState<string | null>(null);
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
     const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -39,6 +39,9 @@ export default function GrammarLessonsPage() {
     }, []);
 
     if (loading) return <Loading />;
+
+    // Defaults to the learner's own CEFR level until they explicitly pick a filter.
+    const effectiveLevelFilter = levelFilter ?? userProfile?.learningLevel ?? "ALL";
 
     const isLearned = (lesson: GrammarLesson) =>
         lesson.learningProgresses?.some((lp) => lp.learned === true) ?? false;
@@ -61,14 +64,14 @@ export default function GrammarLessonsPage() {
     const categorizedLessonIds = new Set(categories.flatMap((c) => c.lessons.map((l) => l.id)));
 
     const visibleCategories = categories
-        .filter((c) => levelFilter === "ALL" || c.level === levelFilter)
+        .filter((c) => effectiveLevelFilter === "ALL" || c.level === effectiveLevelFilter)
         .map((c) => ({ ...c, lessons: c.lessons.filter(matchesSearch) }))
         .filter((c) => c.lessons.length > 0 || searchTerm === "");
 
     const uncategorized = lessons.filter((l) => {
         return (
             !categorizedLessonIds.has(l.id) &&
-            (levelFilter === "ALL" || l.level === levelFilter) &&
+            (effectiveLevelFilter === "ALL" || l.level === effectiveLevelFilter) &&
             matchesSearch(l)
         );
     });
@@ -135,14 +138,13 @@ export default function GrammarLessonsPage() {
                 <LearningLevelSelector
                     className="mt-6"
                     levels={levelOptions}
-                    selectedLevel={levelFilter === "ALL" ? null : levelFilter}
+                    selectedLevel={effectiveLevelFilter === "ALL" ? null : effectiveLevelFilter}
                     onLevelChange={(level) => {
-                        setLevelFilter((prev) => (prev !== level ? level : "ALL"));
+                        setLevelFilter(effectiveLevelFilter !== level ? level : "ALL");
                         setPage(1);
                     }}
                     unitLabel={t.grammar.lessonsUnit}
-                    currentLevel={userProfile?.learningLevel}
-                    currentLevelLabel={t.grammar.currentLevel}
+                    activeLabel={t.grammar.currentLevel}
                     ariaLabel={t.grammar.level}
                 />
 
