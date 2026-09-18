@@ -76,12 +76,13 @@ class ExamExerciseServiceTest {
     }
 
     @Test
-    @DisplayName("findAllPublic -> should mark exercises the user already completed")
+    @DisplayName("findAllPublic -> should mark exercises the user already completed, with their last score")
     void findAllPublic_shouldMarkCompletedExercises() {
         ExamExercise exercise = hoerverstehenExercise();
         ExamExerciseCompletion completion = new ExamExerciseCompletion();
         completion.setUserId("u1");
         completion.setExerciseId("ex1");
+        completion.setLastScore(75.0);
 
         when(examExerciseRepository.findBySection(ExamSection.HOERVERSTEHEN)).thenReturn(List.of(exercise));
         when(requestContext.getUserId()).thenReturn("u1");
@@ -90,6 +91,7 @@ class ExamExerciseServiceTest {
         List<ExamExercisePublicResponse> result = service.findAllPublic(ExamSection.HOERVERSTEHEN, null, null);
 
         assertTrue(result.get(0).completed());
+        assertEquals(75.0, result.get(0).lastScore());
     }
 
     @Test
@@ -115,6 +117,25 @@ class ExamExerciseServiceTest {
     }
 
     @Test
+    @DisplayName("findByIdPublic -> should include the current user's completion status and last score")
+    void findByIdPublic_shouldIncludeCompletionData() throws DataNotFoundException {
+        ExamExercise exercise = hoerverstehenExercise();
+        ExamExerciseCompletion completion = new ExamExerciseCompletion();
+        completion.setUserId("u1");
+        completion.setExerciseId("ex1");
+        completion.setLastScore(60.0);
+
+        when(examExerciseRepository.findById("ex1")).thenReturn(java.util.Optional.of(exercise));
+        when(requestContext.getUserId()).thenReturn("u1");
+        when(examExerciseCompletionRepository.findByUserIdAndExerciseId("u1", "ex1")).thenReturn(java.util.Optional.of(completion));
+
+        ExamExercisePublicResponse response = service.findByIdPublic("ex1");
+
+        assertTrue(response.completed());
+        assertEquals(60.0, response.lastScore());
+    }
+
+    @Test
     @DisplayName("markCompleted -> should create a completion record for the current user")
     void markCompleted_shouldCreateCompletion() throws DataNotFoundException {
         ExamExercise exercise = hoerverstehenExercise();
@@ -125,5 +146,33 @@ class ExamExerciseServiceTest {
         service.markCompleted("ex1");
 
         verify(examExerciseCompletionRepository).save(argThat(c -> c.getUserId().equals("u1") && c.getExerciseId().equals("ex1")));
+    }
+
+    @Test
+    @DisplayName("saveLastScore -> should create a completion record with the score when none exists yet")
+    void saveLastScore_shouldCreateCompletionWithScore() {
+        when(requestContext.getUserId()).thenReturn("u1");
+        when(examExerciseCompletionRepository.findByUserIdAndExerciseId("u1", "ex1")).thenReturn(java.util.Optional.empty());
+
+        service.saveLastScore("ex1", 42.0);
+
+        verify(examExerciseCompletionRepository).save(argThat(c ->
+                c.getUserId().equals("u1") && c.getExerciseId().equals("ex1") && c.getLastScore().equals(42.0)));
+    }
+
+    @Test
+    @DisplayName("saveLastScore -> should update the score on an existing completion record")
+    void saveLastScore_shouldUpdateExistingCompletion() {
+        ExamExerciseCompletion existing = new ExamExerciseCompletion();
+        existing.setUserId("u1");
+        existing.setExerciseId("ex1");
+        existing.setLastScore(10.0);
+
+        when(requestContext.getUserId()).thenReturn("u1");
+        when(examExerciseCompletionRepository.findByUserIdAndExerciseId("u1", "ex1")).thenReturn(java.util.Optional.of(existing));
+
+        service.saveLastScore("ex1", 90.0);
+
+        verify(examExerciseCompletionRepository).save(argThat(c -> c.getLastScore().equals(90.0)));
     }
 }

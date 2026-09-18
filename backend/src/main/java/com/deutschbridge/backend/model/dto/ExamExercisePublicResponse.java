@@ -20,6 +20,8 @@ public record ExamExercisePublicResponse(
         /** General tip/mistake-avoidance guidance for this whole Teil - shown once on the results screen, not per question. */
         String defaultExplanation,
         String defaultCommonMistake,
-        boolean completed
+        boolean completed,
+        /** Percentage (0-100) from the most recent completed attempt, or null if never attempted. */
+        Double lastScore
 ) {
 }

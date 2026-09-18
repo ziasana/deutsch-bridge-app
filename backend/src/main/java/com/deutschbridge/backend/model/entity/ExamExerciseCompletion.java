@@ -29,6 +29,8 @@ public class ExamExerciseCompletion {
     private String userId;
     private String exerciseId;
     private LocalDateTime completedAt;
+    /** Percentage (0-100) from the most recent attempt completed for this exercise, if any. */
+    private Double lastScore;
 
     @PrePersist
     public void prePersist() {

@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -64,18 +64,22 @@ public class ExamExerciseService {
             exercises = examExerciseRepository.findBySection(section);
         }
 
-        Set<String> completedExerciseIds = examExerciseCompletionRepository.findByUserId(requestContext.getUserId()).stream()
-                .map(ExamExerciseCompletion::getExerciseId)
-                .collect(Collectors.toSet());
+        Map<String, ExamExerciseCompletion> completionsByExerciseId = examExerciseCompletionRepository.findByUserId(requestContext.getUserId()).stream()
+                .collect(Collectors.toMap(ExamExerciseCompletion::getExerciseId, completion -> completion));
 
         return exercises.stream()
                 .filter(ExamExercise::isPublished)
-                .map(exercise -> ExamExerciseMapper.mapToPublicResponse(exercise, completedExerciseIds))
+                .map(exercise -> ExamExerciseMapper.mapToPublicResponse(exercise, completionsByExerciseId))
                 .toList();
     }
 
     public ExamExercisePublicResponse findByIdPublic(String id) throws DataNotFoundException {
-        return ExamExerciseMapper.mapToPublicResponse(findById(id));
+        ExamExercise exercise = findById(id);
+        Map<String, ExamExerciseCompletion> completions = examExerciseCompletionRepository
+                .findByUserIdAndExerciseId(requestContext.getUserId(), id)
+                .map(completion -> Map.of(id, completion))
+                .orElseGet(Map::of);
+        return ExamExerciseMapper.mapToPublicResponse(exercise, completions);
     }
 
     public void markCompleted(String exerciseId) throws DataNotFoundException {
@@ -90,6 +94,21 @@ public class ExamExerciseService {
                     return c;
                 });
         completion.setCompletedAt(LocalDateTime.now());
+        examExerciseCompletionRepository.save(completion);
+    }
+
+    /** Upserts the most recent attempt's score onto the exercise's completion record. */
+    public void saveLastScore(String exerciseId, double score) {
+        String userId = requestContext.getUserId();
+        ExamExerciseCompletion completion = examExerciseCompletionRepository
+                .findByUserIdAndExerciseId(userId, exerciseId)
+                .orElseGet(() -> {
+                    ExamExerciseCompletion c = new ExamExerciseCompletion();
+                    c.setUserId(userId);
+                    c.setExerciseId(exerciseId);
+                    return c;
+                });
+        completion.setLastScore(score);
         examExerciseCompletionRepository.save(completion);
     }
 

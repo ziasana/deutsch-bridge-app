@@ -9,6 +9,8 @@ export interface LearningLevelOption {
     completed: number;
     total: number;
     icon?: LucideIcon;
+    /** Overrides the derived completed/total percentage (e.g. an average-score metric instead of a count). */
+    percentOverride?: number;
 }
 
 interface LearningLevelSelectorProps {
@@ -47,6 +49,7 @@ export default function LearningLevelSelector({
                     active={selectedLevel === opt.level}
                     activeLabel={activeLabel}
                     onClick={() => onLevelChange(opt.level)}
+                    percentOverride={opt.percentOverride}
                 />
             ))}
         </div>

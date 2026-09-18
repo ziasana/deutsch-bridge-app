@@ -115,6 +115,7 @@ public class ExamAttemptService {
         attempt.setScore(score);
         attempt.setCompletedAt(LocalDateTime.now());
         attemptRepository.save(attempt);
+        examExerciseService.saveLastScore(attempt.getExercise().getId(), score);
 
         return new ExamAttemptResultResponse(attempt.getId(), score, answers);
     }

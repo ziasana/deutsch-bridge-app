@@ -153,6 +153,15 @@ function ResultsView({
     onMarkCompleted: () => void;
 }>) {
     const correctCount = results.items.filter((item) => item.feedback.correct).length;
+
+    // Finishing the attempt counts as completing the exercise, regardless of score.
+    useEffect(() => {
+        if (!completed && !markingCompleted) {
+            onMarkCompleted();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     return (
         <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-4">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Ergebnis</h2>
@@ -177,14 +186,6 @@ function ResultsView({
             <div className="flex justify-end gap-2 pt-2 flex-wrap">
                 <Button variant="secondary" className="text-sm px-4 py-2" onClick={onPracticeAgain}>
                     Erneut üben
-                </Button>
-                <Button
-                    variant="primary"
-                    className="text-sm px-4 py-2"
-                    disabled={completed || markingCompleted}
-                    onClick={onMarkCompleted}
-                >
-                    {completed ? "Als erledigt markiert ✓" : markingCompleted ? "Wird markiert..." : "Als erledigt markieren"}
                 </Button>
             </div>
         </div>

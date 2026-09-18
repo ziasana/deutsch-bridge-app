@@ -97,6 +97,8 @@ export interface ExamExercisePublicResponse {
     defaultExplanation: string | null;
     defaultCommonMistake: string | null;
     completed: boolean;
+    /** Percentage (0-100) from the most recent completed attempt, or null if never attempted. */
+    lastScore: number | null;
 }
 
 export interface ExamExerciseManualRequest {

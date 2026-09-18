@@ -1,45 +1,45 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ToastContainer, toast } from "react-toastify";
+import { BarChart3, ChevronRight } from "lucide-react";
 import { getExamExercises } from "@/services/examService";
-import { ExamExercisePublicResponse, ExamSection, ExamTaskType } from "@/types/exam";
+import { ExamExercisePublicResponse, ExamSection } from "@/types/exam";
 import Loading from "@/componenets/Loading";
-import { Badge } from "@/componenets/ui/badge";
+import { LearningLevelSelector, LearningSearch } from "@/componenets/learning";
+import {
+    ContinueLearningCard,
+    EXAM_TYPE_META,
+    EXAM_TYPE_ORDER,
+    ExamPartCard,
+    ExamTypeSelector,
+    averageScore,
+    buildLevelOptions,
+    exercisesForSectionAndLevel,
+    findContinueTarget,
+    groupIntoParts,
+    masteredCount,
+} from "@/componenets/exam";
+import { ContentItemRow } from "@/componenets/CategoryAccordion";
+import useAuthStore from "@/store/useAuthStore";
 
-const TASK_TYPE_LABELS: Record<ExamTaskType, string> = {
-    MATCHING: "Überschriften zuordnen",
-    MULTIPLE_CHOICE: "Multiple Choice",
-    TRUE_FALSE_NOT_GIVEN: "Richtig / Falsch / Nicht im Text",
-    WORD_BANK_CLOZE: "Lückentext",
-    WRITING_TASK: "Schriftlicher Ausdruck",
-};
+const VALID_SECTIONS = new Set<string>(EXAM_TYPE_ORDER);
 
-const SPRACHBAUSTEINE_TASK_TYPE_LABELS: Partial<Record<ExamTaskType, string>> = {
-    MULTIPLE_CHOICE: "Sprachbausteine Teil 1",
-    WORD_BANK_CLOZE: "Sprachbausteine Teil 2",
-};
-
-const SECTION_TABS: { value: ExamSection; label: string }[] = [
-    { value: "LESEVERSTEHEN", label: "Leseverstehen" },
-    { value: "SPRACHBAUSTEINE", label: "Sprachbausteine" },
-    { value: "HOERVERSTEHEN", label: "Hörverstehen" },
-    { value: "SCHRIFTLICHER_AUSDRUCK", label: "Schriftlicher Ausdruck" },
-    { value: "TESTFORMAT_INFORMATION", label: "Testformat Information" },
-];
-
-type CompletedFilter = "ALL" | "COMPLETED" | "OPEN";
-const PAGE_SIZE = 6;
-
-export default function ExamPrepPage() {
+function ExamPrepContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const { userProfile } = useAuthStore();
     const [exercises, setExercises] = useState<ExamExercisePublicResponse[]>([]);
     const [loading, setLoading] = useState(true);
-    const [levelFilter, setLevelFilter] = useState("ALL");
-    const [sectionFilter, setSectionFilter] = useState<ExamSection>("LESEVERSTEHEN");
-    const [completedFilter, setCompletedFilter] = useState<CompletedFilter>("ALL");
-    const [page, setPage] = useState(1);
+
+    const initialSection = searchParams.get("section");
+    const initialLevel = searchParams.get("level");
+    const [selectedLevel, setSelectedLevel] = useState<string | null>(initialLevel);
+    const [selectedSection, setSelectedSection] = useState<ExamSection>(
+        initialSection && VALID_SECTIONS.has(initialSection) ? (initialSection as ExamSection) : "LESEVERSTEHEN",
+    );
+    const [search, setSearch] = useState("");
 
     useEffect(() => {
         getExamExercises()
@@ -50,185 +50,210 @@ export default function ExamPrepPage() {
 
     if (loading) return <Loading />;
 
-    const inSection = exercises.filter((e) => e.section === sectionFilter);
-    const levels = Array.from(new Set(inSection.map((e) => e.level).filter((lvl): lvl is string => lvl != null))).sort();
-    const filtered = inSection.filter(
-        (e) =>
-            (levelFilter === "ALL" || e.level === levelFilter || e.level == null) &&
-            (completedFilter === "ALL" ||
-                (completedFilter === "COMPLETED" ? e.completed : !e.completed))
-    );
+    const levelOptions = buildLevelOptions(exercises);
+    // The backend can send the literal string "null" for an unset profile level.
+    const profileLevel = userProfile?.learningLevel && userProfile.learningLevel !== "null" ? userProfile.learningLevel : null;
+    const effectiveLevel = selectedLevel ?? profileLevel ?? levelOptions[0]?.level ?? "B1";
 
-    const isLeseverstehen = sectionFilter === "LESEVERSTEHEN";
-    const isHoerverstehen = sectionFilter === "HOERVERSTEHEN";
-    const isTestformatInfo = sectionFilter === "TESTFORMAT_INFORMATION";
-    const groupsByPart = isLeseverstehen || isHoerverstehen;
-
-    const groupKeyOf = (e: ExamExercisePublicResponse) =>
-        groupsByPart ? String(e.partNumber ?? 1) : isTestformatInfo ? "INFO" : (e.taskType as string);
-    const groupOrder = groupsByPart ? ["1", "2", "3"] : isTestformatInfo ? ["INFO"] : ["MULTIPLE_CHOICE", "WORD_BANK_CLOZE"];
-    const groupLabel = (key: string) => {
-        if (isLeseverstehen) return `Leseverstehen Teil ${key}`;
-        if (isHoerverstehen) return `Hörverstehen Teil ${key}`;
-        if (isTestformatInfo) return "Testformat Information";
-        return SPRACHBAUSTEINE_TASK_TYPE_LABELS[key as ExamTaskType] ?? TASK_TYPE_LABELS[key as ExamTaskType] ?? key;
-    };
-
-    const sortedFiltered = [...filtered].sort((a, b) => {
-        const ai = groupOrder.indexOf(groupKeyOf(a));
-        const bi = groupOrder.indexOf(groupKeyOf(b));
-        return (ai === -1 ? groupOrder.length : ai) - (bi === -1 ? groupOrder.length : bi);
+    const examTypeOptions = EXAM_TYPE_ORDER.map((section) => {
+        const meta = EXAM_TYPE_META[section];
+        if (meta.informational) {
+            return { section, partsCount: 0, mastered: 0, total: 0, avgScore: 0 };
+        }
+        const items = exercisesForSectionAndLevel(exercises, section, effectiveLevel);
+        const groups = groupIntoParts(items, section);
+        return { section, partsCount: groups.length, mastered: masteredCount(items), total: items.length, avgScore: averageScore(items) };
     });
 
-    const totalPages = Math.max(1, Math.ceil(sortedFiltered.length / PAGE_SIZE));
-    const currentPage = Math.min(page, totalPages);
-    const pageItems = sortedFiltered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+    const continueTarget = findContinueTarget(exercises, effectiveLevel, selectedSection);
 
-    const byGroup = pageItems.reduce<Record<string, ExamExercisePublicResponse[]>>((acc, e) => {
-        const key = groupKeyOf(e);
-        (acc[key] ??= []).push(e);
-        return acc;
-    }, {});
-    const orderedGroupKeys = [
-        ...groupOrder.filter((key) => byGroup[key]),
-        ...Object.keys(byGroup).filter((key) => !groupOrder.includes(key)),
-    ];
+    const selectedMeta = EXAM_TYPE_META[selectedSection];
+    const selectedItems = exercisesForSectionAndLevel(exercises, selectedSection, effectiveLevel);
+    const searchTerm = search.trim().toLowerCase();
 
-    const changeFilter = (fn: () => void) => {
-        fn();
-        setPage(1);
+    const selectedGroups = groupIntoParts(selectedItems, selectedSection).filter(
+        (g) => searchTerm === "" || g.label.toLowerCase().includes(searchTerm) || g.items.some((i) => i.title.toLowerCase().includes(searchTerm)),
+    );
+    const infoItems = selectedMeta.informational
+        ? selectedItems.filter((i) => searchTerm === "" || i.title.toLowerCase().includes(searchTerm))
+        : [];
+
+    const selectedFilteredItems = selectedGroups.flatMap((g) => g.items);
+    const selectedMastered = masteredCount(selectedFilteredItems);
+    const selectedTotal = selectedFilteredItems.length;
+    const selectedAvgScore = averageScore(selectedFilteredItems);
+
+    const openPart = (section: ExamSection, level: string, partKey: string, exerciseId: string, onlyExercise: boolean) => {
+        if (onlyExercise) {
+            router.push(`/dashboard/exam-prep/exercise?id=${exerciseId}`);
+        } else {
+            router.push(`/dashboard/exam-prep/teil?section=${section}&level=${encodeURIComponent(level)}&part=${encodeURIComponent(partKey)}`);
+        }
     };
 
     return (
-        <div dir="ltr" className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
+        <div className="min-h-screen bg-background px-6 py-10">
             <div className="max-w-4xl mx-auto">
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Prüfungsvorbereitung</h1>
-                <p className="text-gray-600 dark:text-gray-300 mt-2">
-                    Übe im echten Telc-Prüfungsformat. Nach jeder Aufgabe erhältst du eine Bewertung sowie
-                    Tipps zur Lösung und häufige Fehlerquellen.
-                </p>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex items-start gap-4">
+                        <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-accent">
+                            <selectedMeta.icon className="size-6 text-primary" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-bold text-foreground">Prüfungsvorbereitung</h1>
+                            <p className="text-foreground/60 mt-1 text-sm max-w-md">
+                                Bereite dich Schritt für Schritt auf die Deutschprüfung vor. Übe gezielt mit echten
+                                Prüfungsformaten und verbessere deine Fertigkeiten.
+                            </p>
+                        </div>
+                    </div>
 
-                <div className="mt-6 flex gap-2">
-                    {SECTION_TABS.map((tab) => (
+                    {profileLevel && (
                         <button
-                            key={tab.value}
-                            onClick={() =>
-                                changeFilter(() => {
-                                    setSectionFilter(tab.value);
-                                    setLevelFilter("ALL");
-                                })
-                            }
-                            className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                                sectionFilter === tab.value
-                                    ? "bg-blue-600 text-white"
-                                    : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-700"
-                            }`}
+                            type="button"
+                            onClick={() => setSelectedLevel(profileLevel)}
+                            className="flex items-center gap-3 rounded-2xl bg-card shadow-card px-4 py-3 text-left shrink-0 hover:bg-accent/40 transition"
                         >
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
-
-                <div className="mt-4 flex items-center gap-3 flex-wrap">
-                    <label className="text-sm text-gray-600 dark:text-gray-300">Niveau:</label>
-                    <select
-                        value={levelFilter}
-                        onChange={(e) => changeFilter(() => setLevelFilter(e.target.value))}
-                        className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-                    >
-                        <option value="ALL">Alle Niveaus</option>
-                        {levels.map((lvl) => (
-                            <option key={lvl} value={lvl}>
-                                {lvl}
-                            </option>
-                        ))}
-                    </select>
-
-                    <label className="text-sm text-gray-600 dark:text-gray-300">Status:</label>
-                    <select
-                        value={completedFilter}
-                        onChange={(e) => changeFilter(() => setCompletedFilter(e.target.value as CompletedFilter))}
-                        className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-                    >
-                        <option value="ALL">Alle</option>
-                        <option value="OPEN">Noch offen</option>
-                        <option value="COMPLETED">Erledigt</option>
-                    </select>
-                </div>
-
-                <div className="mt-8 space-y-8">
-                    {orderedGroupKeys.map((key) => {
-                        const items = byGroup[key];
-                        return (
-                        <div key={key}>
-                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
-                                {groupLabel(key)}
-                            </h2>
-                            <div className="space-y-3">
-                                {items.map((exercise) => (
-                                    <button
-                                        key={exercise.id}
-                                        onClick={() => router.push(`/dashboard/exam-prep/exercise?id=${exercise.id}`)}
-                                        className="w-full flex items-center justify-between gap-4 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-4 text-left hover:shadow-xl transition"
-                                    >
-                                        <div className="min-w-0">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <span className="text-lg font-semibold text-gray-900 dark:text-white truncate">
-                                                    {exercise.title}
-                                                </span>
-                                                <Badge variant="secondary">{exercise.level ?? "Alle Niveaus"}</Badge>
-                                                {exercise.completed && (
-                                                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
-                                                        Erledigt ✓
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                                {exercise.section === "SCHRIFTLICHER_AUSDRUCK"
-                                                    ? "Schreibaufgabe"
-                                                    : exercise.section === "TESTFORMAT_INFORMATION"
-                                                        ? "Informationen"
-                                                        : `${exercise.questions.length} Aufgaben`}
-                                            </p>
-                                        </div>
-                                        <span className="text-gray-400 text-xl shrink-0">›</span>
-                                    </button>
-                                ))}
+                            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent">
+                                <BarChart3 className="size-4.5 text-primary" />
+                            </span>
+                            <div className="min-w-0">
+                                <div className="text-xs text-foreground/50">Dein aktuelles Niveau</div>
+                                <div className="font-semibold text-foreground">{profileLevel}</div>
                             </div>
-                        </div>
-                        );
-                    })}
-
-                    {sortedFiltered.length === 0 && (
-                        <div className="text-center text-gray-500 dark:text-gray-400 py-10">
-                            Keine Übungen für diesen Filter gefunden.
-                        </div>
+                            <ChevronRight className="size-4 text-foreground/30 shrink-0" />
+                        </button>
                     )}
                 </div>
 
-                {totalPages > 1 && (
-                    <div className="mt-8 flex items-center justify-center gap-2">
-                        <button
-                            onClick={() => setPage((p) => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                            className="px-3 py-2 rounded-lg text-sm font-medium bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-700 disabled:opacity-40"
-                        >
-                            ‹ Zurück
-                        </button>
-                        <span className="text-sm text-gray-600 dark:text-gray-300 px-2">
-                            Seite {currentPage} von {totalPages}
-                        </span>
-                        <button
-                            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                            disabled={currentPage === totalPages}
-                            className="px-3 py-2 rounded-lg text-sm font-medium bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-700 disabled:opacity-40"
-                        >
-                            Weiter ›
-                        </button>
+                <ExamTypeSelector
+                    className="mt-6"
+                    types={examTypeOptions}
+                    selected={selectedSection}
+                    onSelect={setSelectedSection}
+                />
+
+                <h2 className="mt-8 text-sm font-semibold text-foreground/70">Prüfungsniveau</h2>
+                <LearningLevelSelector
+                    className="mt-3"
+                    levels={levelOptions}
+                    selectedLevel={effectiveLevel}
+                    onLevelChange={(level) => setSelectedLevel(level)}
+                    unitLabel="Aufgaben"
+                    activeLabel="Aktuelles Niveau"
+                    ariaLabel="Prüfungsniveau"
+                />
+
+                <LearningSearch
+                    className="mt-6"
+                    value={search}
+                    onChange={setSearch}
+                    placeholder="Suche nach Prüfungsteil oder Aufgabe..."
+                />
+
+                {continueTarget && (
+                    <div className="mt-6">
+                        <ContinueLearningCard
+                            typeLabel={EXAM_TYPE_META[continueTarget.section].label}
+                            typeIcon={EXAM_TYPE_META[continueTarget.section].icon}
+                            partLabel={continueTarget.partLabel}
+                            mastered={continueTarget.mastered}
+                            total={continueTarget.total}
+                            avgScore={continueTarget.avgScore}
+                            state={continueTarget.state}
+                            onNavigate={() => router.push(`/dashboard/exam-prep/exercise?id=${continueTarget.exerciseId}`)}
+                        />
                     </div>
                 )}
+
+                <div className="mt-8 rounded-[10px] bg-card shadow-card overflow-hidden">
+                    <div className="p-4 sm:p-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border/60">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <span
+                                className="flex size-10 shrink-0 items-center justify-center rounded-full"
+                                style={{ backgroundColor: `${selectedMeta.color}1a` }}
+                            >
+                                <selectedMeta.icon className="size-5" style={{ color: selectedMeta.color }} />
+                            </span>
+                            <div className="min-w-0">
+                                <div className="font-semibold text-foreground">{selectedMeta.label}</div>
+                                <p className="text-sm text-foreground/55">{selectedMeta.description}</p>
+                            </div>
+                        </div>
+                        {!selectedMeta.informational && (
+                            <div className="flex items-center gap-3 sm:w-48 sm:shrink-0">
+                                <div className="flex-1 space-y-1">
+                                    <div className="flex items-baseline justify-between text-xs">
+                                        <span className="text-foreground/55">
+                                            {selectedMastered} / {selectedTotal} Aufgaben
+                                        </span>
+                                        <span className="font-medium text-foreground/70">{selectedAvgScore}%</span>
+                                    </div>
+                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-foreground/10">
+                                        <div
+                                            className="h-full rounded-full transition-all duration-300"
+                                            style={{ width: `${selectedAvgScore}%`, backgroundColor: selectedMeta.color }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="p-4 sm:p-5 space-y-3">
+                        {selectedMeta.informational ? (
+                            <>
+                                {infoItems.map((item) => (
+                                    <ContentItemRow
+                                        key={item.id}
+                                        title={item.title}
+                                        description={item.teilDescription ?? undefined}
+                                        onClick={() => router.push(`/dashboard/exam-prep/exercise?id=${item.id}`)}
+                                    />
+                                ))}
+                                {infoItems.length === 0 && (
+                                    <div className="text-center text-foreground/50 py-6 text-sm">
+                                        Noch keine Informationen verfügbar.
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                {selectedGroups.map((group, i) => (
+                                    <ExamPartCard
+                                        key={group.key}
+                                        index={i + 1}
+                                        title={group.label}
+                                        exerciseCount={group.total}
+                                        mastered={group.mastered}
+                                        total={group.total}
+                                        avgScore={group.avgScore}
+                                        state={group.state}
+                                        color={selectedMeta.color}
+                                        onClick={() =>
+                                            openPart(selectedSection, effectiveLevel, group.key, group.items[0].id, group.items.length === 1)
+                                        }
+                                    />
+                                ))}
+                                {selectedGroups.length === 0 && (
+                                    <div className="text-center text-foreground/50 py-6 text-sm">
+                                        Keine Übungen für diesen Filter gefunden.
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </div>
             </div>
             <ToastContainer />
         </div>
+    );
+}
+
+export default function ExamPrepPage() {
+    return (
+        <Suspense fallback={<Loading />}>
+            <ExamPrepContent />
+        </Suspense>
     );
 }

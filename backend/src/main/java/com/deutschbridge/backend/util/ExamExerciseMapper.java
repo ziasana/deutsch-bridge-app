@@ -5,12 +5,13 @@ import com.deutschbridge.backend.model.dto.ExamExerciseResponse;
 import com.deutschbridge.backend.model.dto.ExamPassagePublic;
 import com.deutschbridge.backend.model.dto.ExamQuestionPublic;
 import com.deutschbridge.backend.model.entity.ExamExercise;
+import com.deutschbridge.backend.model.entity.ExamExerciseCompletion;
 import com.deutschbridge.backend.model.entity.ExamPassage;
 import com.deutschbridge.backend.model.entity.ExamQuestion;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 public class ExamExerciseMapper {
     private ExamExerciseMapper() {
@@ -42,12 +43,13 @@ public class ExamExerciseMapper {
      * start-attempt flow) is fetched directly, so passages/questions must never leak answers here.
      */
     public static ExamExercisePublicResponse mapToPublicResponse(ExamExercise exercise) {
-        return mapToPublicResponse(exercise, Set.of());
+        return mapToPublicResponse(exercise, Map.of());
     }
 
-    public static ExamExercisePublicResponse mapToPublicResponse(ExamExercise exercise, Set<String> completedExerciseIds) {
+    public static ExamExercisePublicResponse mapToPublicResponse(ExamExercise exercise, Map<String, ExamExerciseCompletion> completionsByExerciseId) {
         List<ExamPassage> passages = exercise.getPassages() != null ? exercise.getPassages() : List.of();
         List<ExamQuestion> questions = exercise.getQuestions() != null ? exercise.getQuestions() : List.of();
+        ExamExerciseCompletion completion = completionsByExerciseId.get(exercise.getId());
 
         return new ExamExercisePublicResponse(
                 exercise.getId(),
@@ -63,7 +65,8 @@ public class ExamExerciseMapper {
                 exercise.getModelSolution(),
                 exercise.getDefaultExplanation(),
                 exercise.getDefaultCommonMistake(),
-                completedExerciseIds.contains(exercise.getId())
+                completion != null,
+                completion != null ? completion.getLastScore() : null
         );
     }
 

@@ -15,6 +15,8 @@ export interface LearningLevelCardProps {
     icon?: LucideIcon;
     onClick: () => void;
     className?: string;
+    /** Overrides the derived completed/total percentage (e.g. an average-score metric instead of a count). */
+    percentOverride?: number;
 }
 
 export default function LearningLevelCard({
@@ -27,8 +29,9 @@ export default function LearningLevelCard({
     icon,
     onClick,
     className,
+    percentOverride,
 }: LearningLevelCardProps) {
-    const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const pct = percentOverride ?? (total > 0 ? Math.round((completed / total) * 100) : 0);
     const meta = getLevelMeta(level);
     const Icon = icon ?? meta.icon;
     const color = meta.color;

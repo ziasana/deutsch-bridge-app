@@ -245,6 +245,7 @@ class ExamAttemptServiceTest {
         assertEquals(50.0, result.score());
         assertNotNull(attempt.getCompletedAt());
         assertEquals(2, result.answerBreakdown().size());
+        verify(examExerciseService).saveLastScore("ex1", 50.0);
     }
 
     @Test
@@ -263,5 +264,6 @@ class ExamAttemptServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> service.complete("attempt1", new CompleteExamAttemptRequest()));
         verify(attemptRepository, never()).save(any());
+        verify(examExerciseService, never()).saveLastScore(any(), anyDouble());
     }
 }
