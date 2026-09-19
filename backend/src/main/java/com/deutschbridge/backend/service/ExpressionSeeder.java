@@ -154,6 +154,53 @@ public class ExpressionSeeder {
         };
     }
 
+    /**
+     * Runs on every boot (unlike seedExpressions, which only fires once against an empty table)
+     * so additional expressions can be introduced later without wiping existing data/progress.
+     * Checked idempotently by expression text.
+     */
+    @Bean
+    public CommandLineRunner seedAdditionalExpressions(ExpressionRepository repository) {
+        return args -> {
+            boolean alreadySeeded = repository.findAll().stream()
+                    .anyMatch(e -> "den Kopf in den Sand stecken".equals(e.getExpression()));
+            if (alreadySeeded) return;
+
+            Expression headInSand = redewendung(
+                    "den Kopf in den Sand stecken",
+                    LearningLevel.B1,
+                    "ein Problem ignorieren",
+                    "to bury one's head in the sand",
+                    "از مشکل چشم‌پوشی کردن",
+                    "den Kopf in den Sand stecken (wie ein Vogel Strauß)",
+                    "ein Problem oder eine unangenehme Situation bewusst ignorieren, anstatt sich damit auseinanderzusetzen",
+                    "Wird oft im Zusammenhang mit Verantwortung oder unangenehmen Wahrheiten verwendet.",
+                    ExpressionRegister.UMGANGSSPRACHLICH,
+                    "Nicht wörtlich übersetzen - es geht nicht um echten Sand, sondern um das Vermeiden eines Problems.",
+                    List.of(
+                            example("Statt das Problem zu lösen, steckt er einfach den Kopf in den Sand.", "Instead of solving the problem, he just buries his head in the sand.", "او به‌جای حل مشکل، فقط از آن چشم‌پوشی می‌کند.", ExpressionExampleContext.EVERYDAY),
+                            example("Die Firma kann die sinkenden Umsätze nicht ewig ignorieren und den Kopf in den Sand stecken.", "The company can't ignore the falling sales and bury its head in the sand forever.", "شرکت نمی‌تواند برای همیشه کاهش فروش را نادیده بگیرد.", ExpressionExampleContext.WORK),
+                            example("Man sollte bei gesundheitlichen Problemen nicht den Kopf in den Sand stecken.", "You shouldn't bury your head in the sand when it comes to health problems.", "در مورد مشکلات سلامتی نباید چشم‌پوشی کرد.", ExpressionExampleContext.EVERYDAY)
+                    ),
+                    List.of(),
+                    List.of(
+                            contextQuestion(
+                                    "Ein Kollege weiß, dass sein Projekt scheitern wird, spricht aber mit niemandem darüber und macht einfach weiter wie bisher. Welche Redewendung passt?",
+                                    "Er ignoriert das Problem bewusst, anstatt sich damit auseinanderzusetzen - genau das beschreibt \"den Kopf in den Sand stecken\".",
+                                    List.of(
+                                            option("den Kopf in den Sand stecken", true),
+                                            option("ins kalte Wasser springen", false),
+                                            option("eine Entscheidung treffen", false)
+                                    )
+                            )
+                    )
+            );
+
+            repository.save(headInSand);
+            log.info("Seeded additional expression: {}", headInSand.getExpression());
+        };
+    }
+
     private static Expression nomenVerbVerbindung(String expressionText, LearningLevel level, String meaningDe, String meaningEn,
                                                     String meaningFa, String grammarNote, String usageNote, ExpressionRegister register,
                                                     String commonMistakes, List<ExpressionExample> examples, List<ExpressionPattern> patterns,

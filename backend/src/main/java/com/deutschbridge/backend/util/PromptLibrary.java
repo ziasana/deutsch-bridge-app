@@ -73,7 +73,7 @@ public class PromptLibrary {
 
     public static String generateWordExamples(String word, String level) {
         return String.format("""
-        Erstelle Beispielsätze für das folgende deutsche Wort,
+        Erstelle GENAU EINEN Beispielsatz für das folgende deutsche Wort,
         angepasst an das Sprachniveau %s:
 
         Wort: "%s"
@@ -82,13 +82,13 @@ public class PromptLibrary {
         - Korrigiere das Wort bei Bedarf, falls es falsch geschrieben wurde
         - Verwende das Wort korrekt im Kontext
         - Erkläre das Wort NICHT
-        - Schreibe natürliche, alltagsnahe Sätze
+        - Schreibe einen natürlichen, alltagsnahen Satz
         - Halte die Grammatik auf dem Niveau %s
-        - JEDER Beispielsatz MUSS in einer eigenen Zeile stehen
+        - Gib NUR den einen Satz aus, ohne Aufzählungszeichen, Anführungszeichen, Nummerierung
+          oder zusätzlichen Text davor oder danach
 
-        Ausgabeformat (genau einhalten):
-        - Satz 1
-        - Satz 2
+        Ausgabeformat (genau einhalten - nur der Satz, sonst nichts):
+        Satz
 
         """, level, word, level);
     }

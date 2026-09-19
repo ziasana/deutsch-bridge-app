@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useDictionaryLookup } from "@/hooks/useDictionaryLookup";
-import { saveVocab, removeVocab } from "@/services/vocabService";
+import { addFromDictionary, deleteVocabulary, getVocabulary } from "@/services/vocabularyService";
 import { reportMissingWord } from "@/services/dictionaryService";
 import { useI18n } from "@/componenets/I18nProvider";
 
@@ -54,7 +54,14 @@ export default function DictionaryPanel({
         if (!entry) return;
         setSaving(true);
         const wasSaved = entry.savedByCurrentUser;
-        const action = wasSaved ? removeVocab(entry.id) : saveVocab(entry.id);
+        // There's no "remove by dictionaryEntryId" endpoint - unsaving looks up the VocabularyItem
+        // created for this entry (source=DICTIONARY) and deletes it by its own id.
+        const action = wasSaved
+            ? getVocabulary({ source: "DICTIONARY" }).then((res) => {
+                  const match = res.data.find((item) => item.dictionaryEntryId === entry.id);
+                  if (match) return deleteVocabulary(match.id);
+              })
+            : addFromDictionary(entry.id);
         action
             .then(() => {
                 updateCachedEntry({ ...entry, savedByCurrentUser: !wasSaved });

@@ -27,3 +27,8 @@ export const updateSessionTitle= async(sessionId: string, title: string ) => {
 export const deleteSession= async(sessionId: string ) => {
     return await api.delete(`/ollama/session/${sessionId}`)
 }
+
+export const generateAiExample = async (word: string): Promise<string> => {
+    const response = await api.post("/ollama/generate-example", { word });
+    return response.data.word;
+}

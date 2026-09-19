@@ -1,6 +1,8 @@
 package com.deutschbridge.backend.service;
 
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,6 +21,8 @@ import java.util.Set;
  */
 @Service
 public class FileStorageService {
+
+    private static final Logger log = LoggerFactory.getLogger(FileStorageService.class);
 
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
     private static final Map<String, String> EXTENSION_BY_CONTENT_TYPE = Map.of(
@@ -70,6 +74,10 @@ public class FileStorageService {
         return storeImage(file, "grammar-lessons");
     }
 
+    public String storeExpressionImage(MultipartFile file) {
+        return storeImage(file, "expressions");
+    }
+
     public String storeExamPassageAudio(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("No file was uploaded.");
@@ -102,6 +110,28 @@ public class FileStorageService {
         }
 
         return store(file, subdirName, EXTENSION_BY_CONTENT_TYPE.get(contentType), "Failed to store uploaded image.");
+    }
+
+    /**
+     * Deletes a previously stored file given its "/uploads/&lt;subdir&gt;/&lt;name&gt;" URL (as returned by
+     * store()), e.g. when an admin replaces or removes an illustration. Silently no-ops for URLs
+     * that aren't ours (null/blank, or an external link an admin pasted some other way) instead of
+     * throwing, since a missing/foreign file is not itself an error for the caller.
+     */
+    public void deleteFile(String relativeUrl) {
+        if (relativeUrl == null || relativeUrl.isBlank() || !relativeUrl.startsWith("/uploads/")) return;
+
+        Path path = uploadRoot.resolve(relativeUrl.substring("/uploads/".length())).normalize();
+        if (!path.startsWith(uploadRoot)) {
+            log.warn("Refusing to delete file outside the upload root: {}", relativeUrl);
+            return;
+        }
+
+        try {
+            Files.deleteIfExists(path);
+        } catch (IOException e) {
+            log.warn("Failed to delete old file {}", relativeUrl, e);
+        }
     }
 
     private String store(MultipartFile file, String subdirName, String extension, String errorMessage) {

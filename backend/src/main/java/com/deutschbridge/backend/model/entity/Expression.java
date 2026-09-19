@@ -51,6 +51,11 @@ public class Expression {
     @Column(columnDefinition = "TEXT")
     private String figurativeMeaning;
 
+    /** Relative URL under /uploads (see FileStorageService/WebMvcConfig), null until an admin
+     *  uploads one. Only rendered for REDEWENDUNG cards - falls back to a plain text card. */
+    @Column(columnDefinition = "TEXT")
+    private String imageUrl;
+
     @Column(columnDefinition = "TEXT")
     private String grammarNote;
 

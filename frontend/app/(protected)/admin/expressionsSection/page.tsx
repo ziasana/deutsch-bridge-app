@@ -9,9 +9,13 @@ import {
     createExpression,
     updateExpression,
     deleteExpression,
+    uploadExpressionImage,
+    bulkImportExpressions,
 } from "@/services/expressionAdminService";
+import { getExpressionImageSrc } from "@/lib/expressionImages";
 import {
     Expression,
+    ExpressionBulkImportResult,
     ExpressionManualRequest,
     ExpressionType,
     ExpressionStatus,
@@ -28,7 +32,19 @@ import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
-import { ArrowUp, ArrowDown, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
+import {
+    ArrowUp,
+    ArrowDown,
+    ArrowUpDown,
+    ChevronLeft,
+    ChevronRight,
+    ChevronsLeft,
+    ChevronsRight,
+    Upload,
+    CheckCircle2,
+    XCircle,
+} from "lucide-react";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const TYPES: ExpressionType[] = ["NOMEN_VERB_VERBINDUNG", "REDEWENDUNG"];
@@ -66,6 +82,7 @@ const emptyForm: ExpressionManualRequest = {
     meaningFa: "",
     literalMeaning: "",
     figurativeMeaning: "",
+    imageUrl: null,
     grammarNote: "",
     usageNote: "",
     register: "NEUTRAL_FORMAL",
@@ -83,6 +100,7 @@ export default function AdminExpressionsPage() {
     const [entries, setEntries] = useState<Expression[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [entryToDelete, setEntryToDelete] = useState<Expression | null>(null);
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [entrySearch, setEntrySearch] = useState("");
@@ -91,6 +109,12 @@ export default function AdminExpressionsPage() {
 
     const [form, setForm] = useState<ExpressionManualRequest>(emptyForm);
     const [editingEntry, setEditingEntry] = useState<Expression | null>(null);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+    const [showBulkImport, setShowBulkImport] = useState(false);
+    const [bulkText, setBulkText] = useState("");
+    const [isBulkImporting, setIsBulkImporting] = useState(false);
+    const [bulkResult, setBulkResult] = useState<ExpressionBulkImportResult | null>(null);
 
     const fetchEntries = useCallback(() => {
         getExpressionsAdmin()
@@ -126,6 +150,7 @@ export default function AdminExpressionsPage() {
             meaningFa: entry.meaningFa ?? "",
             literalMeaning: entry.literalMeaning ?? "",
             figurativeMeaning: entry.figurativeMeaning ?? "",
+            imageUrl: entry.imageUrl,
             grammarNote: entry.grammarNote ?? "",
             usageNote: entry.usageNote ?? "",
             register: entry.register ?? "NEUTRAL_FORMAL",
@@ -178,8 +203,73 @@ export default function AdminExpressionsPage() {
             .finally(() => setIsSaving(false));
     };
 
-    const removeEntry = (entry: Expression) => {
-        if (!confirm(`Delete "${entry.expression}"?`)) return;
+    const handleImageSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (!file) return;
+
+        setIsUploadingImage(true);
+        uploadExpressionImage(file)
+            .then((res) => {
+                setForm((prev) => ({ ...prev, imageUrl: res.data.url }));
+                toast.success("Image uploaded.");
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to upload image."))
+            .finally(() => setIsUploadingImage(false));
+    };
+
+    const removeImage = () => setForm((prev) => ({ ...prev, imageUrl: "" }));
+
+    const handleBulkFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (!file) return;
+        file.text()
+            .then((text) => setBulkText(text))
+            .catch(() => toast.error("Failed to read the file."));
+    };
+
+    const runBulkImport = () => {
+        let parsed: unknown;
+        try {
+            parsed = JSON.parse(bulkText);
+        } catch {
+            toast.error("Invalid JSON - check the syntax and try again.");
+            return;
+        }
+        if (!Array.isArray(parsed) || parsed.length === 0) {
+            toast.error("Expected a non-empty JSON array of expressions.");
+            return;
+        }
+
+        setIsBulkImporting(true);
+        setBulkResult(null);
+        bulkImportExpressions(parsed)
+            .then((res) => {
+                setBulkResult(res.data);
+                if (res.data.successCount > 0) fetchEntries();
+                if (res.data.failureCount === 0) {
+                    toast.success(`Imported ${res.data.successCount} expressions.`);
+                } else {
+                    toast.error(`${res.data.successCount} imported, ${res.data.failureCount} failed - see details below.`);
+                }
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Bulk import failed."))
+            .finally(() => setIsBulkImporting(false));
+    };
+
+    const closeBulkImport = () => {
+        setShowBulkImport(false);
+        setBulkText("");
+        setBulkResult(null);
+    };
+
+    const removeEntry = (entry: Expression) => setEntryToDelete(entry);
+
+    const confirmRemoveEntry = () => {
+        const entry = entryToDelete;
+        if (!entry) return;
+        setEntryToDelete(null);
         deleteExpression(entry.id)
             .then(() => {
                 toast.success("Entry deleted.");
@@ -291,10 +381,139 @@ export default function AdminExpressionsPage() {
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
             <div className="max-w-7xl mx-auto">
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Active Expressions</h1>
-                <p className="text-gray-600 dark:text-gray-300 mt-2">
-                    Create and manage Nomen-Verb-Verbindungen and Redewendungen.
-                </p>
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div>
+                        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Active Expressions</h1>
+                        <p className="text-gray-600 dark:text-gray-300 mt-2">
+                            Create and manage Nomen-Verb-Verbindungen and Redewendungen.
+                        </p>
+                    </div>
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        className="flex items-center gap-2"
+                        onClick={() => setShowBulkImport((prev) => !prev)}
+                    >
+                        <Upload className="size-4" />
+                        Bulk upload
+                    </Button>
+                </div>
+
+                {showBulkImport && (
+                    <div className="mt-6 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Bulk upload</h2>
+                            <button
+                                type="button"
+                                className="text-sm text-gray-500 dark:text-gray-400 underline"
+                                onClick={closeBulkImport}
+                            >
+                                Close
+                            </button>
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                            Paste or upload a JSON array of expressions, in the same shape as the form below.
+                            Each row is imported independently - a mistake in one row won&apos;t block the rest.
+                            Required fields per row: <code>expression</code>, <code>type</code>{" "}
+                            (<code>NOMEN_VERB_VERBINDUNG</code> or <code>REDEWENDUNG</code>), <code>level</code>{" "}
+                            (<code>A1</code>-<code>C2</code>), <code>meaningDe</code>.
+                        </p>
+                        <p className="text-sm">
+                            <a
+                                href="/templates/expression-bulk-import-template.json"
+                                download
+                                className="text-blue-600 dark:text-blue-400 underline"
+                            >
+                                Download template JSON
+                            </a>
+                            {" · "}
+                            <a
+                                href="/templates/expression-bulk-import-guide.md"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 dark:text-blue-400 underline"
+                            >
+                                Field reference guide
+                            </a>
+                        </p>
+                        <details className="text-sm text-gray-600 dark:text-gray-300">
+                            <summary className="cursor-pointer select-none">Show example row</summary>
+                            <pre className="mt-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-900 overflow-x-auto text-xs">
+{`[
+  {
+    "expression": "den Faden verlieren",
+    "type": "REDEWENDUNG",
+    "level": "B2",
+    "meaningDe": "den Überblick verlieren",
+    "meaningEn": "to lose one's train of thought",
+    "meaningFa": "",
+    "status": "DRAFT",
+    "examples": [
+      { "sentence": "Ich habe beim Reden den Faden verloren.", "translationEn": "", "translationFa": "", "context": "EVERYDAY" }
+    ]
+  }
+]`}
+                            </pre>
+                        </details>
+
+                        <div className="flex flex-col gap-2">
+                            <input
+                                type="file"
+                                accept="application/json,.json"
+                                onChange={handleBulkFileSelected}
+                                className="text-sm text-gray-600 dark:text-gray-300"
+                            />
+                            <textarea
+                                value={bulkText}
+                                onChange={(e) => setBulkText(e.target.value)}
+                                placeholder="Paste a JSON array of expressions here, or upload a .json file above."
+                                rows={10}
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            />
+                        </div>
+
+                        <Button
+                            type="button"
+                            variant="primary"
+                            onClick={runBulkImport}
+                            disabled={isBulkImporting || !bulkText.trim()}
+                        >
+                            {isBulkImporting ? "Importing..." : "Import"}
+                        </Button>
+
+                        {bulkResult && (
+                            <div className="space-y-3">
+                                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                    {bulkResult.successCount} of {bulkResult.totalCount} imported
+                                    {bulkResult.failureCount > 0 ? `, ${bulkResult.failureCount} failed` : ""}.
+                                </p>
+                                <div className="max-h-64 overflow-y-auto space-y-1">
+                                    {bulkResult.rows.map((row) => (
+                                        <div
+                                            key={row.index}
+                                            className={`flex items-start gap-2 text-sm px-3 py-2 rounded-lg ${
+                                                row.success
+                                                    ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
+                                                    : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300"
+                                            }`}
+                                        >
+                                            {row.success ? (
+                                                <CheckCircle2 className="size-4 shrink-0 mt-0.5" />
+                                            ) : (
+                                                <XCircle className="size-4 shrink-0 mt-0.5" />
+                                            )}
+                                            <span>
+                                                Row {row.index + 1}
+                                                {row.expression ? ` (${row.expression})` : ""}:{" "}
+                                                {row.success ? "imported" : row.errorMessage}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
                     <form onSubmit={submitForm} className="space-y-6">
@@ -423,6 +642,52 @@ export default function AdminExpressionsPage() {
                                         placeholder="eine schwierige oder neue Situation direkt angehen"
                                         required={false}
                                     />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                                        Illustration (optional)
+                                    </label>
+                                    <div className="flex items-center gap-4">
+                                        {getExpressionImageSrc(form.imageUrl) ? (
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            <img
+                                                src={getExpressionImageSrc(form.imageUrl) as string}
+                                                alt="Illustration preview"
+                                                className="w-24 h-16 object-cover rounded-lg border border-gray-300 dark:border-gray-700"
+                                            />
+                                        ) : (
+                                            <div className="w-24 h-16 rounded-lg border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-[10px] text-gray-400 text-center px-1">
+                                                No image
+                                            </div>
+                                        )}
+                                        <div className="flex flex-col gap-2">
+                                            <input
+                                                type="file"
+                                                accept="image/jpeg,image/png,image/webp"
+                                                onChange={handleImageSelected}
+                                                disabled={isUploadingImage}
+                                                className="text-sm text-gray-600 dark:text-gray-300"
+                                            />
+                                            {form.imageUrl && (
+                                                <button
+                                                    type="button"
+                                                    className="text-xs text-left underline text-gray-500 dark:text-gray-400 w-fit"
+                                                    onClick={removeImage}
+                                                >
+                                                    Remove image
+                                                </button>
+                                            )}
+                                            {isUploadingImage && (
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">Uploading...</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        JPEG, PNG, or WEBP. Shown as a featured banner on the expression card; if you
+                                        don&apos;t upload one, the card falls back to a plain text layout. Recommended
+                                        size: at least 1200×520px (2.3:1 ratio) so it isn&apos;t awkwardly cropped -
+                                        the image is auto-cropped to fit that ratio either way.
+                                    </p>
                                 </div>
                             </div>
                         )}
@@ -885,6 +1150,15 @@ export default function AdminExpressionsPage() {
             </div>
 
             {isSaving && <Loading message="Please wait..." />}
+            <ConfirmDialog
+                isOpen={Boolean(entryToDelete)}
+                title="Delete this entry?"
+                message={`Delete "${entryToDelete?.expression}"? This cannot be undone.`}
+                confirmLabel="Delete"
+                cancelLabel="Cancel"
+                onConfirm={confirmRemoveEntry}
+                onCancel={() => setEntryToDelete(null)}
+            />
             <ToastContainer />
         </div>
     );

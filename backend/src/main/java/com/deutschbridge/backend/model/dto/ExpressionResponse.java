@@ -12,6 +12,7 @@ public record ExpressionResponse(
         String meaningFa,
         String literalMeaning,
         String figurativeMeaning,
+        String imageUrl,
         String grammarNote,
         String usageNote,
         String register,
@@ -23,6 +24,9 @@ public record ExpressionResponse(
          *  (see ExpressionMapper.mapToResponse / ExpressionService). Practice sessions get
          *  questions through a separate, answer-free PracticeQuestionDto instead. */
         List<ExpressionQuestionAdminDto> questions,
-        ExpressionProgressResponse progress
+        ExpressionProgressResponse progress,
+        /** Whether the current authenticated user has bookmarked this expression. Always false
+         *  on admin responses, which aren't scoped to a single user. */
+        boolean bookmarked
 ) {
 }

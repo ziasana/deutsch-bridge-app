@@ -16,6 +16,7 @@ public record ExpressionManualRequest(
         String meaningFa,
         String literalMeaning,
         String figurativeMeaning,
+        String imageUrl,
         String grammarNote,
         String usageNote,
         ExpressionRegister register,

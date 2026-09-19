@@ -26,7 +26,11 @@ public class ExpressionMapper {
         return mapToResponse(e, userProgress, false);
     }
 
-    public static ExpressionResponse mapToResponse(Expression e, ExpressionProgress userProgress, boolean includeQuestions) {
+    public static ExpressionResponse mapToResponse(Expression e, ExpressionProgress userProgress, boolean bookmarked) {
+        return mapToResponse(e, userProgress, false, bookmarked);
+    }
+
+    public static ExpressionResponse mapToResponse(Expression e, ExpressionProgress userProgress, boolean includeQuestions, boolean bookmarked) {
         return new ExpressionResponse(
                 e.getId(),
                 e.getType() != null ? e.getType().name() : null,
@@ -37,6 +41,7 @@ public class ExpressionMapper {
                 e.getMeaningFa(),
                 e.getLiteralMeaning(),
                 e.getFigurativeMeaning(),
+                e.getImageUrl(),
                 e.getGrammarNote(),
                 e.getUsageNote(),
                 e.getRegister() != null ? e.getRegister().name() : null,
@@ -45,12 +50,13 @@ public class ExpressionMapper {
                 e.getExamples().stream().map(ExpressionMapper::mapExample).toList(),
                 e.getPatterns().stream().map(ExpressionMapper::mapPattern).toList(),
                 includeQuestions ? e.getQuestions().stream().map(ExpressionMapper::mapQuestionAdmin).toList() : null,
-                userProgress != null ? mapProgress(userProgress) : null
+                userProgress != null ? mapProgress(userProgress) : null,
+                bookmarked
         );
     }
 
     public static ExpressionResponse mapToAdminResponse(Expression e) {
-        return mapToResponse(e, null, true);
+        return mapToResponse(e, null, true, false);
     }
 
     public static ExpressionQuestionAdminDto mapQuestionAdmin(ExpressionQuestion q) {

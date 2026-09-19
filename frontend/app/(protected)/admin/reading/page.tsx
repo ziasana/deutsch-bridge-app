@@ -21,6 +21,7 @@ import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
+import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
 import { getArticleImageSrc } from "@/lib/readingImages";
 import { ArrowUp, ArrowDown, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
@@ -85,6 +86,7 @@ export default function AdminReadingPage() {
     const [articles, setArticles] = useState<ReadingArticle[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [articleToDelete, setArticleToDelete] = useState<ReadingArticle | null>(null);
 
     const [tableSearch, setTableSearch] = useState("");
     const [tablePageSize, setTablePageSize] = useState(10);
@@ -299,8 +301,12 @@ export default function AdminReadingPage() {
             .finally(() => setIsSaving(false));
     };
 
-    const removeArticle = (article: ReadingArticle) => {
-        if (!confirm(`Delete "${article.title}"?`)) return;
+    const removeArticle = (article: ReadingArticle) => setArticleToDelete(article);
+
+    const confirmRemoveArticle = () => {
+        const article = articleToDelete;
+        if (!article) return;
+        setArticleToDelete(null);
         deleteReadingArticle(article.id)
             .then(() => {
                 toast.success("Article deleted.");
@@ -1011,6 +1017,15 @@ export default function AdminReadingPage() {
             </div>
 
             {isSaving && <Loading message="Please wait..." />}
+            <ConfirmDialog
+                isOpen={Boolean(articleToDelete)}
+                title="Delete this article?"
+                message={`Delete "${articleToDelete?.title}"? This cannot be undone.`}
+                confirmLabel="Delete"
+                cancelLabel="Cancel"
+                onConfirm={confirmRemoveArticle}
+                onCancel={() => setArticleToDelete(null)}
+            />
             <ToastContainer />
         </div>
     );

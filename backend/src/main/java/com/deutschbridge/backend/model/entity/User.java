@@ -39,10 +39,6 @@ public class User {
     @ToString.Exclude
     private static List<DailyPracticeLog> dailyPracticeLog;
 
-    @OneToMany(mappedBy = "userId", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @ToString.Exclude
-    private static List<Vocabulary> vocabulary;
-
     @PrePersist
     public void ensureId() {
         if (this.id == null) {

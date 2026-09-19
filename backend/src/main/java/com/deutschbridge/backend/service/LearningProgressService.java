@@ -6,19 +6,19 @@ import com.deutschbridge.backend.model.dto.CategoryProgress;
 import com.deutschbridge.backend.model.dto.LearningProgressRequest;
 import com.deutschbridge.backend.model.dto.OverviewResponse;
 import com.deutschbridge.backend.model.dto.RecentVocabularyResponse;
-import com.deutschbridge.backend.model.dto.RecentVocabularyWithStatsResponse;
 import com.deutschbridge.backend.model.dto.StreakResponse;
 import com.deutschbridge.backend.model.entity.*;
 import com.deutschbridge.backend.model.enums.ExpressionMasteryLevel;
 import com.deutschbridge.backend.model.enums.ExpressionStatus;
+import com.deutschbridge.backend.model.enums.VocabularyMasteryLevel;
 import com.deutschbridge.backend.repository.DailyWordRepository;
 import com.deutschbridge.backend.repository.ExpressionProgressRepository;
 import com.deutschbridge.backend.repository.ExpressionRepository;
 import com.deutschbridge.backend.repository.GrammarLessonRepository;
 import com.deutschbridge.backend.repository.LearningProgressRepository;
 import com.deutschbridge.backend.repository.ReadingArticleRepository;
-import com.deutschbridge.backend.repository.VocabularyRepository;
-import com.deutschbridge.backend.util.VocabularyMapper;
+import com.deutschbridge.backend.repository.VocabularyItemRepository;
+import com.deutschbridge.backend.repository.VocabularyProgressRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -39,8 +39,8 @@ public class LearningProgressService {
     private final RequestContext requestContext;
     private final UserService userService;
     private final GrammarService grammarService;
-    private final VocabularyService vocabularyService;
-    private final VocabularyRepository vocabularyRepository;
+    private final VocabularyItemRepository vocabularyItemRepository;
+    private final VocabularyProgressRepository vocabularyProgressRepository;
     private final DailyWordService dailyWordService;
     private final GrammarLessonRepository grammarLessonRepository;
     private final ExpressionRepository expressionRepository;
@@ -49,13 +49,13 @@ public class LearningProgressService {
     private final ReadingArticleService readingArticleService;
     private final ReadingArticleRepository readingArticleRepository;
 
-    public LearningProgressService(LearningProgressRepository repository, RequestContext requestContext, UserService userService, GrammarService grammarService, VocabularyService vocabularyService, VocabularyRepository vocabularyRepository, DailyWordService dailyWordService, GrammarLessonRepository grammarLessonRepository, ExpressionRepository expressionRepository, ExpressionProgressRepository expressionProgressRepository, DailyWordRepository dailyWordRepository, ReadingArticleService readingArticleService, ReadingArticleRepository readingArticleRepository) {
+    public LearningProgressService(LearningProgressRepository repository, RequestContext requestContext, UserService userService, GrammarService grammarService, VocabularyItemRepository vocabularyItemRepository, VocabularyProgressRepository vocabularyProgressRepository, DailyWordService dailyWordService, GrammarLessonRepository grammarLessonRepository, ExpressionRepository expressionRepository, ExpressionProgressRepository expressionProgressRepository, DailyWordRepository dailyWordRepository, ReadingArticleService readingArticleService, ReadingArticleRepository readingArticleRepository) {
         this.repository = repository;
         this.requestContext = requestContext;
         this.userService = userService;
         this.grammarService = grammarService;
-        this.vocabularyService = vocabularyService;
-        this.vocabularyRepository = vocabularyRepository;
+        this.vocabularyItemRepository = vocabularyItemRepository;
+        this.vocabularyProgressRepository = vocabularyProgressRepository;
         this.dailyWordService = dailyWordService;
         this.grammarLessonRepository = grammarLessonRepository;
         this.expressionRepository = expressionRepository;
@@ -139,26 +139,24 @@ public class LearningProgressService {
     }
 
    public List<RecentVocabularyResponse> getRecentVocabularyWithPractice() {
-        userService.findByEmail(requestContext.getUserEmail());
-        List<Vocabulary> vocabularies = vocabularyService.getTop10VocabularyByUserAndLanguage(
-                requestContext.getUserId(), requestContext.getLanguage()
-        );
-       return vocabularies.stream()
-                .map(v -> {
-                    String status;
+        User user = userService.findByEmail(requestContext.getUserEmail());
+        List<VocabularyItem> items = vocabularyItemRepository.findTop10ByUserOrderByCreatedAtDesc(user);
+        List<VocabularyProgress> progresses = vocabularyProgressRepository.findByUserAndVocabularyItemIn(user, items);
+        java.util.Map<String, VocabularyProgress> progressByItemId = progresses.stream()
+                .collect(java.util.stream.Collectors.toMap(p -> p.getVocabularyItem().getId(), p -> p, (first, second) -> first));
 
-                    if (v.getPractices() == null || v.getPractices().isEmpty()) {
+        return items.stream()
+                .map(item -> {
+                    VocabularyProgress progress = progressByItemId.get(item.getId());
+                    String status;
+                    if (progress == null) {
                         status = "NEW";
-                    } else if (
-                            v.getPractices().stream()
-                                    .anyMatch(p -> p.getSuccessRate() == 100)
-                    ) {
+                    } else if (progress.getMasteryLevel() == VocabularyMasteryLevel.MASTERED) {
                         status = "MASTER";
                     } else {
                         status = "LEARNING";
                     }
-
-                    return VocabularyMapper.mapVocabularyRecentPracticeResponse(v, status);
+                    return new RecentVocabularyResponse(item.getId(), item.getWord(), Optional.ofNullable(item.getMeaning()), status);
                 }).toList();
     }
 
@@ -243,49 +241,5 @@ public class LearningProgressService {
 
         return new StreakResponse(currentStreak, longestStreak, lastActiveDate);
     }
-
-    /*public List<RecentVocabularyResponse> getRecentVocabularyWithStats() {
-        userService.findByEmail(requestContext.getUserEmail());
-
-        // 1️⃣ Fetch recent vocabularies (top N)
-        List<RecentVocabularyResponse> recentVocabularies = vocabularyService.getTop10VocabularyByUserAndLanguage(
-                        requestContext.getUserId(),
-                        requestContext.getLanguage()
-                )
-                .stream()
-                .map(v -> {
-                    String status;
-                    if (v.getPractices() == null || v.getPractices().isEmpty()) {
-                        status = "NEW";
-                    } else if (v.getPractices().stream().anyMatch(p -> p.getSuccessRate() == 100)) {
-                        status = "MASTER";
-                    } else {
-                        status = "LEARNING";
-                    }
-                    return VocabularyMapper.mapVocabularyRecentPracticeResponse(v, status);
-                })
-                .toList();
-
-        // 2️⃣ Fetch totals (counts only)
-        List<Vocabulary> allVocabularies = (List<Vocabulary>) vocabularyRepository.getVocabularyByUserAndLanguage(
-                requestContext.getUserId(),
-                requestContext.getLanguage()
-        ).stream()
-                .map(v -> {
-                    int countNew = 0;
-                    int countMaster = 0;
-                    int countLearning = 0;
-                    if (v.getPractices() == null || v.getPractices().isEmpty()) {
-                        countNew++;
-                    } else if (v.getPractices().stream().anyMatch(p -> p.getSuccessRate() == 100)) {
-                        countMaster++;
-                    } else {
-                        countLearning++;
-                    }
-                }).count();
-
-        // 3️⃣ Return combined response
-        return new RecentVocabularyWithStatsResponse(recentVocabularies, totalCounts).recentVocabularyResponse();
-    }*/
 
 }

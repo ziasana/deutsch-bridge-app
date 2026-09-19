@@ -128,53 +128,86 @@ export interface Dictionary {
     };
     vocabulary: {
         title: string;
-        searchPlaceholder: string;
+        subtitle: string;
+        practiceCta: string;
         addNew: string;
-        startPracticeTooltip: string;
-        meaning: string;
-        example: string;
-        synonyms: string;
-        fromReading: string;
-        editAria: string;
-        deleteAria: string;
+        searchPlaceholder: string;
+        sourceTabs: { myWords: string; fromReading: string };
+        filters: { level: string; all: string; mastery: string; bookmarked: string; bookmarkedOnly: string };
+        mastery: { NEW: string; LEARNING: string; FAMILIAR: string; MASTERED: string };
+        continueLearning: {
+            title: string;
+            subtitleReady: (count: number) => string;
+            subtitleCaughtUp: string;
+            seeAll: string;
+        };
+        allWords: { title: string; count: (n: number) => string };
+        empty: { title: string; subtitle: string };
+        card: {
+            recall: string;
+            context: string;
+            practice: string;
+            bookmarkAdd: string;
+            bookmarkRemove: string;
+            editAria: string;
+            deleteAria: string;
+            playAudioAria: string;
+        };
+        confirmDeleteTitle: string;
         confirmDelete: string;
+        deleteAction: string;
+        cancelAction: string;
         deleted: string;
-        notFound: string;
+        deleteFailed: string;
         previous: string;
         next: string;
         pageOf: (page: number, total: number) => string;
-        editModal: {
-            title: string;
+        modal: {
+            addTitle: string;
+            editTitle: string;
             word: string;
+            article: string;
+            articleNone: string;
             meaning: string;
             example: string;
+            generateExample: string;
+            generatingExample: string;
+            generateExampleFailed: string;
             cancel: string;
             save: string;
             saving: string;
-            saved: string;
+            added: string;
+            addFailed: string;
+            updated: string;
             updateFailed: string;
         };
-        addModal: {
-            title: string;
-            wordRequired: string;
-            generate: string;
-            generating: string;
-            saved: string;
-            saveFailed: string;
-        };
-        flashcard: {
+        detail: {
+            back: string;
+            notFound: string;
+            overallLabel: string;
             meaning: string;
+            example: string;
             synonyms: string;
-            showMeaning: string;
+            practiceThis: string;
         };
         practice: {
             noWords: string;
             noWordsSubtitle: string;
             goToVocabulary: string;
-            successRate: (rate: number) => string;
-            sessionFinished: string;
-            readyForAnother: string;
-            startAgain: string;
+            stepOf: (current: number, total: number) => string;
+            itemOf: (current: number, total: number) => string;
+            flipPrompt: string;
+            knewIt: string;
+            didntKnowIt: string;
+            contextPromptCloze: string;
+            contextPromptMeaning: string;
+            next: string;
+            sessionComplete: string;
+            wordsPracticed: string;
+            recallAccuracy: string;
+            contextAccuracy: string;
+            practiceAgain: string;
+            backToVocabulary: string;
         };
     };
     chat: {
@@ -437,53 +470,86 @@ const en: Dictionary = {
     },
     vocabulary: {
         title: "My Vocabulary",
-        searchPlaceholder: "Search vocabulary...",
-        addNew: "Add New",
-        startPracticeTooltip: "Start vocabulary practice",
-        meaning: "Meaning:",
-        example: "Example:",
-        synonyms: "Synonyms:",
-        fromReading: "From reading",
-        editAria: "Edit",
-        deleteAria: "Delete",
+        subtitle: "Build your word bank, track mastery, and practice recall and context together.",
+        practiceCta: "Continue practicing",
+        addNew: "Add word",
+        searchPlaceholder: "Search by word, meaning or example...",
+        sourceTabs: { myWords: "My words", fromReading: "From reading" },
+        filters: { level: "Level", all: "All", mastery: "Progress", bookmarked: "Bookmarked", bookmarkedOnly: "Bookmarked" },
+        mastery: { NEW: "New", LEARNING: "Learning", FAMILIAR: "Familiar", MASTERED: "Mastered" },
+        continueLearning: {
+            title: "Continue learning",
+            subtitleReady: (count: number) => `You have ${count} words ready to practice.`,
+            subtitleCaughtUp: "You're all caught up!",
+            seeAll: "See all",
+        },
+        allWords: { title: "All vocabulary", count: (n: number) => `${n} words` },
+        empty: { title: "No vocabulary found", subtitle: "Try changing your search or filters." },
+        card: {
+            recall: "Erkennen",
+            context: "Kontext",
+            practice: "Practice",
+            bookmarkAdd: "Bookmark this word",
+            bookmarkRemove: "Remove bookmark",
+            editAria: "Edit",
+            deleteAria: "Delete",
+            playAudioAria: "Play pronunciation",
+        },
+        confirmDeleteTitle: "Delete this word?",
         confirmDelete: "Are you sure you want to delete this word?",
+        deleteAction: "Delete",
+        cancelAction: "Cancel",
         deleted: "Vocabulary deleted!",
-        notFound: "No vocabulary found.",
+        deleteFailed: "Failed to delete vocabulary.",
         previous: "Previous",
         next: "Next",
         pageOf: (page: number, total: number) => `Page ${page} of ${total}`,
-        editModal: {
-            title: "Edit Vocabulary",
+        modal: {
+            addTitle: "Add new word",
+            editTitle: "Edit word",
             word: "Word",
+            article: "Article",
+            articleNone: "None",
             meaning: "Meaning",
             example: "Example",
+            generateExample: "Generate with AI",
+            generatingExample: "Generating...",
+            generateExampleFailed: "Failed to generate an example.",
             cancel: "Cancel",
             save: "Save",
             saving: "Saving...",
-            saved: "Vocabulary edited!",
-            updateFailed: "Failed to update vocabulary.",
+            added: "Word added!",
+            addFailed: "Failed to add word.",
+            updated: "Word updated!",
+            updateFailed: "Failed to update word.",
         },
-        addModal: {
-            title: "Add New Vocabulary",
-            wordRequired: "Word is required",
-            generate: "Generate",
-            generating: "Generating...",
-            saved: "Vocabulary saved!",
-            saveFailed: "Failed to save vocabulary.",
-        },
-        flashcard: {
-            meaning: "Meaning:",
-            synonyms: "Synonyms:",
-            showMeaning: "Show meaning",
+        detail: {
+            back: "Back to vocabulary",
+            notFound: "Word not found",
+            overallLabel: "Overall progress",
+            meaning: "Meaning",
+            example: "Example",
+            synonyms: "Synonyms",
+            practiceThis: "Practice this word",
         },
         practice: {
             noWords: "No words to practice right now",
             noWordsSubtitle: "Add new words to your vocabulary, or come back once you have more to review.",
             goToVocabulary: "Go to My Vocabulary",
-            successRate: (rate: number) => `Success Rate: ${rate}%`,
-            sessionFinished: "Session finished",
-            readyForAnother: "Great job! Ready for another round?",
-            startAgain: "Start again",
+            stepOf: (current: number, total: number) => `Step ${current} of ${total}`,
+            itemOf: (current: number, total: number) => `${current} / ${total}`,
+            flipPrompt: "Tap the card to reveal the meaning",
+            knewIt: "I knew it",
+            didntKnowIt: "I didn't know it",
+            contextPromptCloze: "Fill in the missing word",
+            contextPromptMeaning: "Which meaning is correct?",
+            next: "Next",
+            sessionComplete: "Session complete",
+            wordsPracticed: "Words practiced",
+            recallAccuracy: "Recall accuracy",
+            contextAccuracy: "Context accuracy",
+            practiceAgain: "Practice again",
+            backToVocabulary: "Back to vocabulary",
         },
     },
     chat: {
@@ -752,53 +818,86 @@ const fa: Dictionary = {
     },
     vocabulary: {
         title: "واژگان من",
-        searchPlaceholder: "جستجوی واژگان...",
-        addNew: "افزودن جدید",
-        startPracticeTooltip: "شروع تمرین واژگان",
-        meaning: "معنی:",
-        example: "مثال:",
-        synonyms: "مترادف‌ها:",
-        fromReading: "از بخش مطالعه",
-        editAria: "ویرایش",
-        deleteAria: "حذف",
+        subtitle: "دایره واژگان خود را بسازید، تسلط را پیگیری کنید و یادآوری و کاربرد را با هم تمرین کنید.",
+        practiceCta: "ادامه تمرین",
+        addNew: "افزودن واژه",
+        searchPlaceholder: "جستجو بر اساس واژه، معنی یا مثال...",
+        sourceTabs: { myWords: "واژه‌های من", fromReading: "از بخش مطالعه" },
+        filters: { level: "سطح", all: "همه", mastery: "پیشرفت", bookmarked: "نشان‌شده", bookmarkedOnly: "نشان‌شده" },
+        mastery: { NEW: "جدید", LEARNING: "در حال یادگیری", FAMILIAR: "آشنا", MASTERED: "مسلط" },
+        continueLearning: {
+            title: "ادامه یادگیری",
+            subtitleReady: (count: number) => `شما ${count} واژه آماده تمرین دارید.`,
+            subtitleCaughtUp: "همه چیز به‌روز است!",
+            seeAll: "مشاهده همه",
+        },
+        allWords: { title: "همه واژگان", count: (n: number) => `${n} واژه` },
+        empty: { title: "واژه‌ای یافت نشد", subtitle: "جستجو یا فیلترهای خود را تغییر دهید." },
+        card: {
+            recall: "شناخت",
+            context: "کاربرد",
+            practice: "تمرین",
+            bookmarkAdd: "نشان کردن این واژه",
+            bookmarkRemove: "حذف نشان",
+            editAria: "ویرایش",
+            deleteAria: "حذف",
+            playAudioAria: "پخش تلفظ",
+        },
+        confirmDeleteTitle: "این واژه حذف شود؟",
         confirmDelete: "آیا مطمئن هستید که می‌خواهید این کلمه را حذف کنید؟",
+        deleteAction: "حذف",
+        cancelAction: "لغو",
         deleted: "واژه حذف شد!",
-        notFound: "واژه‌ای یافت نشد.",
+        deleteFailed: "حذف واژه ناموفق بود.",
         previous: "قبلی",
         next: "بعدی",
         pageOf: (page: number, total: number) => `صفحه ${page} از ${total}`,
-        editModal: {
-            title: "ویرایش واژه",
+        modal: {
+            addTitle: "افزودن واژه جدید",
+            editTitle: "ویرایش واژه",
             word: "کلمه",
+            article: "حرف تعریف",
+            articleNone: "هیچ‌کدام",
             meaning: "معنی",
             example: "مثال",
+            generateExample: "تولید با هوش مصنوعی",
+            generatingExample: "در حال تولید...",
+            generateExampleFailed: "تولید مثال ناموفق بود.",
             cancel: "انصراف",
             save: "ذخیره",
             saving: "در حال ذخیره...",
-            saved: "واژه ویرایش شد!",
+            added: "واژه اضافه شد!",
+            addFailed: "افزودن واژه ناموفق بود.",
+            updated: "واژه ویرایش شد!",
             updateFailed: "ویرایش واژه ناموفق بود.",
         },
-        addModal: {
-            title: "افزودن واژه جدید",
-            wordRequired: "کلمه الزامی است",
-            generate: "تولید",
-            generating: "در حال تولید...",
-            saved: "واژه ذخیره شد!",
-            saveFailed: "ذخیره واژه ناموفق بود.",
-        },
-        flashcard: {
-            meaning: "معنی:",
-            synonyms: "مترادف‌ها:",
-            showMeaning: "نمایش معنی",
+        detail: {
+            back: "بازگشت به واژگان",
+            notFound: "واژه یافت نشد",
+            overallLabel: "پیشرفت کلی",
+            meaning: "معنی",
+            example: "مثال",
+            synonyms: "مترادف‌ها",
+            practiceThis: "تمرین این واژه",
         },
         practice: {
             noWords: "در حال حاضر واژه‌ای برای تمرین نیست",
             noWordsSubtitle: "واژه جدیدی به فهرست خود اضافه کنید یا بعداً که واژه بیشتری برای مرور دارید برگردید.",
             goToVocabulary: "رفتن به واژگان من",
-            successRate: (rate: number) => `نرخ موفقیت: ${rate}%`,
-            sessionFinished: "جلسه به پایان رسید",
-            readyForAnother: "آفرین! آماده یک دور دیگر هستید؟",
-            startAgain: "شروع دوباره",
+            stepOf: (current: number, total: number) => `مرحله ${current} از ${total}`,
+            itemOf: (current: number, total: number) => `${current} / ${total}`,
+            flipPrompt: "برای نمایش معنی روی کارت ضربه بزنید",
+            knewIt: "می‌دانستم",
+            didntKnowIt: "نمی‌دانستم",
+            contextPromptCloze: "کلمه جا افتاده را پر کنید",
+            contextPromptMeaning: "کدام معنی درست است؟",
+            next: "بعدی",
+            sessionComplete: "جلسه به پایان رسید",
+            wordsPracticed: "واژه‌های تمرین‌شده",
+            recallAccuracy: "دقت شناخت",
+            contextAccuracy: "دقت کاربرد",
+            practiceAgain: "تمرین دوباره",
+            backToVocabulary: "بازگشت به واژگان",
         },
     },
     chat: {

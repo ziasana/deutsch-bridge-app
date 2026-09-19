@@ -16,3 +16,11 @@ export const getExpressionById = async (id: string) => {
 export const markExpressionViewed = async (id: string) => {
   return await api.post<Expression>(`/expressions/${id}/view`);
 };
+
+export const addExpressionBookmark = async (id: string) => {
+  return await api.post<Expression>(`/expressions/${id}/bookmark`);
+};
+
+export const removeExpressionBookmark = async (id: string) => {
+  return await api.delete<Expression>(`/expressions/${id}/bookmark`);
+};

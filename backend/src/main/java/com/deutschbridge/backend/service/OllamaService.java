@@ -76,8 +76,15 @@ public class OllamaService {
     }
 
     public OllamaGenerateExampleDto generateAiExample(OllamaGenerateExampleDto requestDto) {
-        String aiAnswer = chatWithOllama(PromptType.EXAMPLE,requestDto.word());
-        return new OllamaGenerateExampleDto(aiAnswer);
+        String aiAnswer = chatWithOllama(PromptType.EXAMPLE, requestDto.word());
+        return new OllamaGenerateExampleDto(cleanUpExampleSentence(aiAnswer));
+    }
+
+    /** Strips a leading bullet/number/quote and collapses to a single line, in case the model
+     * still returns more than the one requested sentence despite the prompt. */
+    private String cleanUpExampleSentence(String raw) {
+        String firstLine = raw.strip().split("\\r?\\n", 2)[0];
+        return firstLine.replaceAll("^[-*\\d.)\\s\"'„“]+|[\"'„“]+$", "").strip();
     }
 
     public String generateAiSynonyms(String word) {

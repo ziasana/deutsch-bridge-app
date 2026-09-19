@@ -1,42 +1,45 @@
 import api from "./api";
 import {
-    AddVocabularyType,
-    DeleteVocabularyType, GenerateAiWordType, SaveVocabularyPracticeType,
-    UpdateVocabularyType, VocabularyForPracticeType,
-    VocabularyPracticeType,
-    VocabularyType
+    VocabularyCreateRequest,
+    VocabularyItem,
+    VocabularySource,
+    VocabularyUpdateRequest,
 } from "@/types/vocabulary";
 
-export const getUserVocabularies = async () => {
-    return await api.get<VocabularyType[]>("/vocabulary/get-user");
+export interface GetVocabularyParams {
+    source?: VocabularySource;
+    level?: string;
+    bookmarked?: boolean;
 }
 
-export const getUserVocabularyWithPractice = async () => {
-    return await api.get<VocabularyPracticeType[]>("/vocabulary-practice");
-}
+export const getVocabulary = async (params: GetVocabularyParams = {}) => {
+    return await api.get<VocabularyItem[]>("/vocabulary", { params });
+};
 
-export const getUserVocabularyForPractice = async () => {
-    return await api.get<VocabularyForPracticeType[]>("/vocabulary-practice/for-practice");
-}
+export const getVocabularyById = async (id: string) => {
+    return await api.get<VocabularyItem>(`/vocabulary/${id}`);
+};
 
-export const addUserVocabularyPractice = async (data:SaveVocabularyPracticeType) => {
-    return await api.post("/vocabulary-practice", data);
-}
+export const createVocabulary = async (data: VocabularyCreateRequest) => {
+    return await api.post<VocabularyItem>("/vocabulary", data);
+};
 
-export const addVocabulary = async (data: AddVocabularyType) => {
-    return await api.post<VocabularyType[]>("/vocabulary", data);
-}
+export const addFromDictionary = async (dictionaryEntryId: string) => {
+    return await api.post<VocabularyItem>(`/vocabulary/from-dictionary/${dictionaryEntryId}`);
+};
 
-export const generateAiExample = async (data: GenerateAiWordType) => {
-    return await api.post<GenerateAiWordType>("/ollama/generate-example", data);
-}
+export const updateVocabulary = async (id: string, data: VocabularyUpdateRequest) => {
+    return await api.put<VocabularyItem>(`/vocabulary/${id}`, data);
+};
 
-export const deleteVocabulary= async(data: DeleteVocabularyType) => {
-    return await api.delete("/vocabulary", { data: data });
+export const deleteVocabulary = async (id: string) => {
+    return await api.delete<void>(`/vocabulary/${id}`);
+};
 
-}
+export const addVocabularyBookmark = async (id: string) => {
+    return await api.post<VocabularyItem>(`/vocabulary/${id}/bookmark`);
+};
 
-export const updateVocabulary= async(data: UpdateVocabularyType ) => {
-    return await api.put("/vocabulary", data )
-
-}
+export const removeVocabularyBookmark = async (id: string) => {
+    return await api.delete<VocabularyItem>(`/vocabulary/${id}/bookmark`);
+};

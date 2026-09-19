@@ -1,17 +1,14 @@
 package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.context.RequestContext;
-import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.DictionaryEntryResponse;
-import com.deutschbridge.backend.model.dto.UserVocabResponse;
 import com.deutschbridge.backend.model.entity.DictionaryEntry;
 import com.deutschbridge.backend.model.entity.Example;
 import com.deutschbridge.backend.model.entity.Sense;
 import com.deutschbridge.backend.model.entity.User;
-import com.deutschbridge.backend.model.entity.UserVocab;
 import com.deutschbridge.backend.repository.DictionaryEntryRepository;
 import com.deutschbridge.backend.repository.DictionaryMissingReportRepository;
-import com.deutschbridge.backend.repository.UserVocabRepository;
+import com.deutschbridge.backend.repository.VocabularyItemRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +21,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -35,7 +31,7 @@ class DictionaryServiceTest {
     private DictionaryEntryRepository dictionaryEntryRepository;
 
     @Mock
-    private UserVocabRepository userVocabRepository;
+    private VocabularyItemRepository vocabularyItemRepository;
 
     @Mock
     private DictionaryMissingReportRepository missingReportRepository;
@@ -90,7 +86,7 @@ class DictionaryServiceTest {
         when(requestContext.getUserEmail()).thenReturn(user.getEmail());
         when(userService.findByEmail(user.getEmail())).thenReturn(user);
         when(dictionaryEntryRepository.findByLemmaIgnoreCase("Haus")).thenReturn(Optional.of(entry));
-        when(userVocabRepository.findByUserAndEntry(user, entry)).thenReturn(Optional.empty());
+        when(vocabularyItemRepository.existsByUserAndDictionaryEntry(user, entry)).thenReturn(false);
 
         Optional<DictionaryEntryResponse> result = service.lookup("  Haus  ");
 
@@ -105,15 +101,15 @@ class DictionaryServiceTest {
     }
 
     @Test
-    @DisplayName("lookup -> should mark savedByCurrentUser true when the user already has it in their vocab")
-    void lookup_shouldMarkSavedWhenInUserVocab() {
+    @DisplayName("lookup -> should mark savedByCurrentUser true when the user already has it in their vocabulary")
+    void lookup_shouldMarkSavedWhenInVocabulary() {
         User user = createUser();
         DictionaryEntry entry = createEntry();
 
         when(requestContext.getUserEmail()).thenReturn(user.getEmail());
         when(userService.findByEmail(user.getEmail())).thenReturn(user);
         when(dictionaryEntryRepository.findByLemmaIgnoreCase("Haus")).thenReturn(Optional.of(entry));
-        when(userVocabRepository.findByUserAndEntry(user, entry)).thenReturn(Optional.of(new UserVocab()));
+        when(vocabularyItemRepository.existsByUserAndDictionaryEntry(user, entry)).thenReturn(true);
 
         Optional<DictionaryEntryResponse> result = service.lookup("Haus");
 
@@ -149,73 +145,5 @@ class DictionaryServiceTest {
         verify(missingReportRepository).save(captor.capture());
         assertEquals("Schadenfreude", captor.getValue().getLemma());
         assertEquals(user, captor.getValue().getReportedBy());
-    }
-
-    // ---------------------------------------------------------------
-    // saveToVocab / removeFromVocab
-    // ---------------------------------------------------------------
-    @Test
-    @DisplayName("saveToVocab -> should create a new UserVocab row when none exists")
-    void saveToVocab_shouldCreateNewRow() throws DataNotFoundException {
-        User user = createUser();
-        DictionaryEntry entry = createEntry();
-
-        when(requestContext.getUserEmail()).thenReturn(user.getEmail());
-        when(userService.findByEmail(user.getEmail())).thenReturn(user);
-        when(dictionaryEntryRepository.findById("entry1")).thenReturn(Optional.of(entry));
-        when(userVocabRepository.findByUserAndEntry(user, entry)).thenReturn(Optional.empty());
-        when(userVocabRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-        UserVocabResponse response = service.saveToVocab("entry1");
-
-        assertEquals("entry1", response.entryId());
-        assertEquals("haus", response.lemma());
-        assertEquals("new", response.status());
-    }
-
-    @Test
-    @DisplayName("saveToVocab -> should not duplicate an existing UserVocab row")
-    void saveToVocab_shouldReuseExistingRow() throws DataNotFoundException {
-        User user = createUser();
-        DictionaryEntry entry = createEntry();
-        UserVocab existing = new UserVocab();
-        existing.setId("vocab1");
-        existing.setUser(user);
-        existing.setEntry(entry);
-        existing.setStatus("learning");
-
-        when(requestContext.getUserEmail()).thenReturn(user.getEmail());
-        when(userService.findByEmail(user.getEmail())).thenReturn(user);
-        when(dictionaryEntryRepository.findById("entry1")).thenReturn(Optional.of(entry));
-        when(userVocabRepository.findByUserAndEntry(user, entry)).thenReturn(Optional.of(existing));
-        when(userVocabRepository.save(existing)).thenReturn(existing);
-
-        UserVocabResponse response = service.saveToVocab("entry1");
-
-        assertEquals("vocab1", response.id());
-        assertEquals("learning", response.status());
-    }
-
-    @Test
-    @DisplayName("saveToVocab -> should throw when the dictionary entry doesn't exist")
-    void saveToVocab_shouldThrowWhenEntryMissing() {
-        User user = createUser();
-        when(requestContext.getUserEmail()).thenReturn(user.getEmail());
-        when(userService.findByEmail(user.getEmail())).thenReturn(user);
-        when(dictionaryEntryRepository.findById("missing")).thenReturn(Optional.empty());
-
-        assertThrows(DataNotFoundException.class, () -> service.saveToVocab("missing"));
-    }
-
-    @Test
-    @DisplayName("removeFromVocab -> should delete the current user's vocab row for the entry")
-    void removeFromVocab_shouldDelete() {
-        User user = createUser();
-        when(requestContext.getUserEmail()).thenReturn(user.getEmail());
-        when(userService.findByEmail(user.getEmail())).thenReturn(user);
-
-        service.removeFromVocab("entry1");
-
-        verify(userVocabRepository).deleteByUserAndEntry_Id(user, "entry1");
     }
 }

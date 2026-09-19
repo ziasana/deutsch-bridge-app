@@ -89,6 +89,8 @@ export interface Expression {
   meaningFa: string;
   literalMeaning: string;
   figurativeMeaning: string;
+  /** Relative URL under /uploads, or null until an admin uploads one. Only rendered for REDEWENDUNG cards. */
+  imageUrl: string | null;
   grammarNote: string;
   usageNote: string;
   register: ExpressionRegister | null;
@@ -99,6 +101,7 @@ export interface Expression {
   /** Admin-only - always null for students, even on their own detail-page fetch (see backend ExpressionMapper). */
   questions: ExpressionQuestion[] | null;
   progress: ExpressionProgress | null;
+  bookmarked: boolean;
 }
 
 export interface ExpressionManualRequest {
@@ -110,6 +113,7 @@ export interface ExpressionManualRequest {
   meaningFa: string;
   literalMeaning: string;
   figurativeMeaning: string;
+  imageUrl: string | null;
   grammarNote: string;
   usageNote: string;
   register: ExpressionRegister | null;
@@ -118,6 +122,21 @@ export interface ExpressionManualRequest {
   examples: ExpressionExampleInput[];
   patterns: ExpressionPatternInput[];
   questions: ExpressionQuestionInput[];
+}
+
+export interface ExpressionBulkImportRowResult {
+  index: number;
+  expression: string | null;
+  success: boolean;
+  errorMessage: string | null;
+  id: string | null;
+}
+
+export interface ExpressionBulkImportResult {
+  totalCount: number;
+  successCount: number;
+  failureCount: number;
+  rows: ExpressionBulkImportRowResult[];
 }
 
 export interface PracticeQuestionOption {

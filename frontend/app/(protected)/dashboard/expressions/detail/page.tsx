@@ -8,6 +8,8 @@ import { Expression } from "@/types/expression";
 import Loading from "@/componenets/Loading";
 import Button from "@/componenets/Button";
 import { Badge } from "@/componenets/ui/badge";
+import { getExpressionImageSrc } from "@/lib/expressionImages";
+import { getIllustrationFor } from "@/componenets/expressions/illustrations";
 
 const CONTEXT_LABEL: Record<string, string> = {
     EVERYDAY: "Alltag",
@@ -52,6 +54,11 @@ function ExpressionDetailContent() {
 
     const overall = Math.round(expression.progress?.overallScore ?? 0);
 
+    const uploadedImageSrc = expression.type === "REDEWENDUNG" ? getExpressionImageSrc(expression.imageUrl) : null;
+    const illustration = expression.type === "REDEWENDUNG" && !uploadedImageSrc ? getIllustrationFor(expression.expression) : null;
+    const illustrationNode = illustration ? illustration({ className: "h-full w-full rounded-t-2xl object-cover" }) : null;
+    const hasVisual = Boolean(uploadedImageSrc || illustrationNode);
+
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6">
             <div className="max-w-3xl mx-auto">
@@ -59,8 +66,19 @@ function ExpressionDetailContent() {
                     ← Zurück zur Übersicht
                 </Link>
 
-                <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-8 mt-4">
-                    <div className="flex items-center gap-2 mb-3">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] mt-4 overflow-hidden">
+                    {hasVisual && (
+                        <div className="relative aspect-[2.3/1] w-full overflow-hidden rounded-t-2xl">
+                            {uploadedImageSrc ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={uploadedImageSrc} alt="" className="h-full w-full rounded-t-2xl object-cover" />
+                            ) : (
+                                illustrationNode
+                            )}
+                        </div>
+                    )}
+                    <div className="p-8">
+                    <div className="flex items-center flex-wrap gap-2 mb-3">
                         <Badge variant="secondary">{expression.level}</Badge>
                         <Badge variant="secondary">
                             {expression.type === "NOMEN_VERB_VERBINDUNG" ? "Nomen-Verb-Verbindung" : "Redewendung"}
@@ -195,6 +213,7 @@ function ExpressionDetailContent() {
                     >
                         Practice this expression
                     </Button>
+                    </div>
                 </div>
             </div>
         </div>

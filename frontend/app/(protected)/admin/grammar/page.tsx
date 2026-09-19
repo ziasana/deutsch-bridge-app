@@ -28,6 +28,7 @@ import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
+import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
 import RichTextEditor from "@/componenets/RichTextEditor";
 import { isTranslatableLevel } from "@/lib/grammarLocalization";
 import { ArrowUp, ArrowDown, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
@@ -85,6 +86,8 @@ export default function AdminGrammarPage() {
     const [categories, setCategories] = useState<GrammarCategory[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [categoryToDelete, setCategoryToDelete] = useState<GrammarCategory | null>(null);
+    const [lessonToDelete, setLessonToDelete] = useState<GrammarLesson | null>(null);
 
     const [form, setForm] = useState(emptyForm);
     const [exercises, setExercises] = useState<QuizQuestion[]>([]);
@@ -185,8 +188,12 @@ export default function AdminGrammarPage() {
             .finally(() => setIsSavingCategory(false));
     };
 
-    const removeCategory = (category: GrammarCategory) => {
-        if (!confirm(`Delete category "${category.title}"? Its lessons will become uncategorized.`)) return;
+    const removeCategory = (category: GrammarCategory) => setCategoryToDelete(category);
+
+    const confirmRemoveCategory = () => {
+        const category = categoryToDelete;
+        if (!category) return;
+        setCategoryToDelete(null);
         deleteGrammarCategory(category.id)
             .then(() => {
                 toast.success("Category deleted.");
@@ -347,8 +354,12 @@ export default function AdminGrammarPage() {
             .finally(() => setIsImporting(false));
     };
 
-    const removeLesson = (lesson: GrammarLesson) => {
-        if (!confirm(`Delete "${lesson.title}"?`)) return;
+    const removeLesson = (lesson: GrammarLesson) => setLessonToDelete(lesson);
+
+    const confirmRemoveLesson = () => {
+        const lesson = lessonToDelete;
+        if (!lesson) return;
+        setLessonToDelete(null);
         deleteGrammarLesson(lesson.id)
             .then(() => {
                 toast.success("Lesson deleted.");
@@ -1272,6 +1283,24 @@ export default function AdminGrammarPage() {
             </div>
 
             {isSaving && <Loading message="Please wait..." />}
+            <ConfirmDialog
+                isOpen={Boolean(categoryToDelete)}
+                title="Delete this category?"
+                message={`Delete category "${categoryToDelete?.title}"? Its lessons will become uncategorized.`}
+                confirmLabel="Delete"
+                cancelLabel="Cancel"
+                onConfirm={confirmRemoveCategory}
+                onCancel={() => setCategoryToDelete(null)}
+            />
+            <ConfirmDialog
+                isOpen={Boolean(lessonToDelete)}
+                title="Delete this lesson?"
+                message={`Delete "${lessonToDelete?.title}"? This cannot be undone.`}
+                confirmLabel="Delete"
+                cancelLabel="Cancel"
+                onConfirm={confirmRemoveLesson}
+                onCancel={() => setLessonToDelete(null)}
+            />
             <ToastContainer />
         </div>
     );

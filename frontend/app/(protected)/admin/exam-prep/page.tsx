@@ -18,6 +18,7 @@ import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
 import RichTextEditor from "@/componenets/RichTextEditor";
 import { Badge } from "@/componenets/ui/badge";
+import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
 import { extractGapNumbers } from "@/lib/examGap";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
@@ -177,6 +178,7 @@ export default function AdminExamPrepPage() {
     const [exercises, setExercises] = useState<ExamExerciseResponse[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [exerciseToDelete, setExerciseToDelete] = useState<ExamExerciseResponse | null>(null);
 
     const [form, setForm] = useState(emptyForm);
     const [passages, setPassages] = useState<ExamPassage[]>([]);
@@ -450,8 +452,12 @@ export default function AdminExamPrepPage() {
         (p) => p === 1 || p === exercisesTotalPages || Math.abs(p - exercisesCurrentPage) <= 1
     );
 
-    const removeExercise = (exercise: ExamExerciseResponse) => {
-        if (!confirm(`Delete "${exercise.title}"?`)) return;
+    const removeExercise = (exercise: ExamExerciseResponse) => setExerciseToDelete(exercise);
+
+    const confirmRemoveExercise = () => {
+        const exercise = exerciseToDelete;
+        if (!exercise) return;
+        setExerciseToDelete(null);
         deleteExamExercise(exercise.id)
             .then(() => {
                 toast.success("Exercise deleted.");
@@ -1189,6 +1195,15 @@ export default function AdminExamPrepPage() {
             </div>
 
             {isSaving && <Loading message="Please wait..." />}
+            <ConfirmDialog
+                isOpen={Boolean(exerciseToDelete)}
+                title="Delete this exercise?"
+                message={`Delete "${exerciseToDelete?.title}"? This cannot be undone.`}
+                confirmLabel="Delete"
+                cancelLabel="Cancel"
+                onConfirm={confirmRemoveExercise}
+                onCancel={() => setExerciseToDelete(null)}
+            />
             <ToastContainer />
         </div>
     );

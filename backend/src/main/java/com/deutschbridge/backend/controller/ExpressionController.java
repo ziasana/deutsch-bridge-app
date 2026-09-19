@@ -42,4 +42,14 @@ public class ExpressionController {
     public ResponseEntity<ExpressionResponse> markViewed(@PathVariable String id) throws DataNotFoundException {
         return ResponseEntity.ok(expressionService.markViewed(id));
     }
+
+    @PostMapping("/{id}/bookmark")
+    public ResponseEntity<ExpressionResponse> addBookmark(@PathVariable String id) throws DataNotFoundException {
+        return ResponseEntity.ok(expressionService.addBookmark(id));
+    }
+
+    @DeleteMapping("/{id}/bookmark")
+    public ResponseEntity<ExpressionResponse> removeBookmark(@PathVariable String id) throws DataNotFoundException {
+        return ResponseEntity.ok(expressionService.removeBookmark(id));
+    }
 }

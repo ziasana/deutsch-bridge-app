@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import { getDailyWords } from "@/services/dailyWordService";
 import { setLearningProgress } from "@/services/grammarService";
-import { addVocabulary, getUserVocabularies } from "@/services/vocabularyService";
+import { createVocabulary, getVocabulary } from "@/services/vocabularyService";
 import { DailyWord } from "@/types/dailyWord";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
@@ -20,7 +20,7 @@ export default function DailyWordsPage() {
     const [savingId, setSavingId] = useState<string | null>(null);
 
     useEffect(() => {
-        Promise.all([getDailyWords(), getUserVocabularies()])
+        Promise.all([getDailyWords(), getVocabulary()])
             .then(([wordsRes, vocabRes]) => {
                 setWords(wordsRes.data);
                 setSavedWords(new Set(vocabRes.data.map((v) => normalize(v.word))));
@@ -47,7 +47,14 @@ export default function DailyWordsPage() {
 
     const saveToVocabulary = (word: DailyWord) => {
         setSavingId(word.id);
-        addVocabulary({ word: word.word, example: word.example, meaning: word.meaning })
+        createVocabulary({
+            word: word.word,
+            article: null,
+            example: word.example,
+            meaning: word.meaning,
+            language: "EN",
+            level: null,
+        })
             .then(() => {
                 setSavedWords((prev) => new Set(prev).add(normalize(word.word)));
                 toast.success(`"${word.word}" added to your Vocabulary!`);
