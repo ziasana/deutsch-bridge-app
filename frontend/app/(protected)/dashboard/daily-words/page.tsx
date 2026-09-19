@@ -6,46 +6,109 @@ import { getDailyWords } from "@/services/dailyWordService";
 import { setLearningProgress } from "@/services/grammarService";
 import { createVocabulary, getVocabulary } from "@/services/vocabularyService";
 import { DailyWord } from "@/types/dailyWord";
-import Loading from "@/componenets/Loading";
-import { Badge } from "@/componenets/ui/badge";
 import Button from "@/componenets/Button";
+import {
+    DailyWordsHeader,
+    DailyWordLearningCard,
+    DailyWordsOverview,
+    DailyWordsQuickPractice,
+    DailyWordsCompletion,
+    DailyWordsSkeleton,
+} from "@/componenets/daily-words";
 
 const normalize = (word: string) => word.trim().toLowerCase();
+
+type Stage = "learning" | "practice" | "complete";
 
 export default function DailyWordsPage() {
     const [words, setWords] = useState<DailyWord[]>([]);
     const [loading, setLoading] = useState(true);
-    const [updatingId, setUpdatingId] = useState<string | null>(null);
+    const [error, setError] = useState(false);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [markingId, setMarkingId] = useState<string | null>(null);
     const [savedWords, setSavedWords] = useState<Set<string>>(new Set());
     const [savingId, setSavingId] = useState<string | null>(null);
+    const [stage, setStage] = useState<Stage>("learning");
+    const [reloadKey, setReloadKey] = useState(0);
 
     useEffect(() => {
         Promise.all([getDailyWords(), getVocabulary()])
             .then(([wordsRes, vocabRes]) => {
                 setWords(wordsRes.data);
                 setSavedWords(new Set(vocabRes.data.map((v) => normalize(v.word))));
+                const allLearned = wordsRes.data.length > 0 && wordsRes.data.every((w) => w.learned);
+                setStage(allLearned ? "practice" : "learning");
             })
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load today's words."))
+            .catch(() => setError(true))
             .finally(() => setLoading(false));
-    }, []);
+    }, [reloadKey]);
 
-    if (loading) return <Loading />;
+    const retry = () => {
+        setLoading(true);
+        setError(false);
+        setReloadKey((key) => key + 1);
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-background px-6 py-10">
+                <DailyWordsSkeleton />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen bg-background px-6 py-10 flex items-center justify-center">
+                <div className="text-center max-w-sm">
+                    <p className="text-foreground/70">We couldn&apos;t load today&apos;s words.</p>
+                    <p className="text-sm text-foreground/50 mt-1">Please try again.</p>
+                    <Button variant="secondary" className="mt-4 text-sm" onClick={retry}>
+                        Retry
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    if (words.length === 0) {
+        return (
+            <div className="min-h-screen bg-background px-6 py-10 flex items-center justify-center">
+                <div className="text-center max-w-sm">
+                    <h1 className="text-2xl font-bold text-foreground">Daily Words</h1>
+                    <p className="text-foreground/60 mt-2">No new words for today.</p>
+                    <p className="text-sm text-foreground/45 mt-1">Check back tomorrow for your next 5 words.</p>
+                </div>
+            </div>
+        );
+    }
 
     const learnedCount = words.filter((w) => w.learned).length;
+    const currentWord = words[currentIndex];
 
-    const toggleLearned = (word: DailyWord) => {
-        setUpdatingId(word.id);
-        setLearningProgress({ dailyWordId: word.id, learned: !word.learned })
+    const markLearned = (word: DailyWord) => {
+        if (word.learned || markingId) return;
+        setMarkingId(word.id);
+        setLearningProgress({ dailyWordId: word.id, learned: true })
             .then(() => {
-                setWords((prev) =>
-                    prev.map((w) => (w.id === word.id ? { ...w, learned: !w.learned } : w))
-                );
+                const updated = words.map((w) => (w.id === word.id ? { ...w, learned: true } : w));
+                setWords(updated);
+
+                const allLearned = updated.every((w) => w.learned);
+                if (allLearned) {
+                    setStage("practice");
+                } else {
+                    const nextUnlearned = updated.findIndex((w, i) => i > currentIndex && !w.learned);
+                    if (nextUnlearned !== -1) setCurrentIndex(nextUnlearned);
+                    else if (currentIndex < updated.length - 1) setCurrentIndex(currentIndex + 1);
+                }
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to update progress."))
-            .finally(() => setUpdatingId(null));
+            .finally(() => setMarkingId(null));
     };
 
     const saveToVocabulary = (word: DailyWord) => {
+        if (savingId || savedWords.has(normalize(word.word))) return;
         setSavingId(word.id);
         createVocabulary({
             word: word.word,
@@ -71,93 +134,49 @@ export default function DailyWordsPage() {
     };
 
     return (
-        <div dir="ltr" className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10 text-left">
-            <div className="max-w-3xl mx-auto">
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Daily Words</h1>
-                <p className="text-gray-600 dark:text-gray-300 mt-2">
-                    5 new words to learn today, with examples and synonyms. Come back tomorrow for a fresh set.
-                </p>
+        <div className="min-h-screen bg-background px-6 py-10 text-left">
+            <div className="max-w-2xl mx-auto">
+                <DailyWordsHeader learnedCount={learnedCount} total={words.length} />
 
-                {words.length > 0 && (
-                    <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
-                        {learnedCount} / {words.length} learned today
-                    </p>
+                {stage === "learning" && (
+                    <>
+                        <div className="mt-8">
+                            <DailyWordLearningCard
+                                word={currentWord}
+                                index={currentIndex}
+                                total={words.length}
+                                isSaved={savedWords.has(normalize(currentWord.word))}
+                                isSaving={savingId === currentWord.id}
+                                isMarking={markingId === currentWord.id}
+                                canGoPrevious={currentIndex > 0}
+                                canGoNext={currentIndex < words.length - 1}
+                                onSave={() => saveToVocabulary(currentWord)}
+                                onMarkLearned={() => markLearned(currentWord)}
+                                onPrevious={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+                                onNext={() => setCurrentIndex((i) => Math.min(words.length - 1, i + 1))}
+                            />
+                        </div>
+                        <DailyWordsOverview words={words} currentIndex={currentIndex} onSelect={setCurrentIndex} />
+                    </>
                 )}
 
-                <div className="mt-6 space-y-4">
-                    {words.map((word) => (
-                        <div
-                            key={word.id}
-                            className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6"
-                        >
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                                        {word.word}
-                                    </h2>
-                                    <Badge variant="secondary">{word.level}</Badge>
-                                    {word.learned && <Badge variant="default">Learned</Badge>}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        variant="secondary"
-                                        className="text-sm px-4 py-2"
-                                        disabled={savingId === word.id || savedWords.has(normalize(word.word))}
-                                        onClick={() => saveToVocabulary(word)}
-                                    >
-                                        {savingId === word.id
-                                            ? "Saving..."
-                                            : savedWords.has(normalize(word.word))
-                                                ? "✓ In Vocabulary"
-                                                : "+ Save to Vocabulary"}
-                                    </Button>
-                                    <Button
-                                        variant={word.learned ? "secondary" : "primary"}
-                                        className="text-sm px-4 py-2"
-                                        disabled={updatingId === word.id}
-                                        onClick={() => toggleLearned(word)}
-                                    >
-                                        {updatingId === word.id
-                                            ? "Saving..."
-                                            : word.learned
-                                                ? "Mark as not learned"
-                                                : "Mark as learned"}
-                                    </Button>
-                                </div>
-                            </div>
+                {stage === "practice" && (
+                    <div className="mt-8">
+                        <DailyWordsQuickPractice words={words} onComplete={() => setStage("complete")} />
+                    </div>
+                )}
 
-                            <p className="text-gray-600 dark:text-gray-300 mt-2">
-                                <span className="font-medium">Meaning:</span> {word.meaning}
-                            </p>
-                            {word.example && (
-                                <p className="text-gray-600 dark:text-gray-300 mt-1">
-                                    <span className="font-medium">Example:</span> {word.example}
-                                </p>
-                            )}
-                            {word.synonyms && (
-                                <p className="text-gray-500 dark:text-gray-400 mt-1 italic">
-                                    Synonyms: {word.synonyms}
-                                </p>
-                            )}
-                            {(word.meaningFa || word.exampleFa) && (
-                                <div dir="rtl" className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 text-right">
-                                    {word.meaningFa && (
-                                        <p className="text-gray-600 dark:text-gray-300">🇮🇷 {word.meaningFa}</p>
-                                    )}
-                                    {word.exampleFa && (
-                                        <p className="text-gray-600 dark:text-gray-300 mt-1">{word.exampleFa}</p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    ))}
-
-                    {words.length === 0 && (
-                        <div className="text-center text-gray-500 dark:text-gray-400 py-10">
-                            No daily words available yet.
-                        </div>
-                    )}
-                </div>
+                {stage === "complete" && (
+                    <div className="mt-8">
+                        <DailyWordsCompletion
+                            total={words.length}
+                            onReview={() => {
+                                setCurrentIndex(0);
+                                setStage("learning");
+                            }}
+                        />
+                    </div>
+                )}
             </div>
             <ToastContainer />
         </div>

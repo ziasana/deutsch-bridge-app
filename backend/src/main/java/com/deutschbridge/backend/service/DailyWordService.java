@@ -76,6 +76,10 @@ public class DailyWordService {
         List<DailyWord> words = dailyWordRepository.findByAssignedToAndAssignedDate(user, today);
         if (words.isEmpty()) {
             words = generateForUser(user, level, includePersian, today);
+        } else if (words.size() > WORDS_PER_DAY) {
+            // Defends against rows persisted under a previous, larger WORDS_PER_DAY or a duplicate-generation race;
+            // trims the response without touching the extra rows already stored for today.
+            words = words.subList(0, WORDS_PER_DAY);
         }
 
         return mapWithProgress(user, words, includePersian);
