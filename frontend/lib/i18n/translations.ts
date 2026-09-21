@@ -51,6 +51,11 @@ export interface Dictionary {
         preferredLanguage: string;
         saveProfile: string;
         updated: string;
+        joined: string;
+        changePhoto: string;
+        avatarUpdated: string;
+        avatarUploadFailed: string;
+        accountInfo: string;
     };
     dashboard: {
         welcome: string;
@@ -65,6 +70,82 @@ export interface Dictionary {
             wordReview: { title: string; description: string };
             vocabularyTrainer: { title: string; description: string };
             aiChat: { title: string; description: string };
+        };
+        greeting: {
+            morning: (name: string) => string;
+            afternoon: (name: string) => string;
+            evening: (name: string) => string;
+            subtitle: string;
+            streakDays: (count: number) => string;
+        };
+        continueLearning: {
+            label: string;
+            cta: string;
+            startTitle: string;
+            startDescription: string;
+            startCta: string;
+            progressOf: (completed: number, total: number) => string;
+            dailyWordsTitle: string;
+            dailyWordsDescription: string;
+            vocabReviewTitle: string;
+            vocabReviewDescription: (count: number) => string;
+            grammarTitle: string;
+            grammarDescription: string;
+            readingTitle: string;
+            readingDescription: string;
+            expressionsTitle: string;
+            expressionsDescription: string;
+        };
+        todaysPlan: {
+            title: string;
+            completedOf: (completed: number, total: number) => string;
+            dailyWords: string;
+            vocabReview: string;
+            grammar: string;
+            reading: string;
+        };
+        review: {
+            title: string;
+            wordsReady: (count: number) => string;
+            expressionsReady: (count: number) => string;
+            cta: string;
+            allCaughtUpTitle: string;
+            allCaughtUpSubtitle: string;
+        };
+        focus: {
+            title: string;
+            vocabularyTitle: string;
+            vocabularyDescription: string;
+            grammarTitle: string;
+            grammarDescription: string;
+            readingTitle: string;
+            readingDescription: string;
+            expressionsTitle: string;
+            expressionsDescription: string;
+            neutralDescription: string;
+            cta: string;
+        };
+        week: {
+            title: string;
+            learningDaysOf: (days: number, total: number) => string;
+            viewProgress: string;
+            emptyTitle: string;
+            emptySubtitle: string;
+        };
+        milestone: {
+            title: string;
+            reached: (count: number) => string;
+            next: (count: number) => string;
+        };
+        error: {
+            message: string;
+            retry: string;
+        };
+        newContent: {
+            summary: (total: number) => string;
+            grammarLessons: (count: number) => string;
+            readingArticles: (count: number) => string;
+            expressions: (count: number) => string;
         };
     };
     reading: {
@@ -85,6 +166,54 @@ export interface Dictionary {
         previous: string;
         next: string;
         pageOf: (page: number, total: number) => string;
+    };
+    dailyWords: {
+        title: string;
+        subtitle: (total: number) => string;
+        loadError: string;
+        loadErrorSubtitle: string;
+        retry: string;
+        emptyTitle: string;
+        emptySubtitle: string;
+        savedToast: (word: string) => string;
+        saveFailedToast: string;
+        progressFailedToast: string;
+        header: {
+            learnedOf: (learned: number, total: number) => string;
+            remaining: (count: number) => string;
+            progressAria: (learned: number, total: number) => string;
+        };
+        card: {
+            wordOf: (index: number, total: number) => string;
+            playAria: (word: string) => string;
+            saving: string;
+            saved: string;
+            save: string;
+            learned: string;
+            markLearned: string;
+            previous: string;
+            next: string;
+            previousAria: string;
+            nextAria: string;
+        };
+        overview: {
+            title: (count: number) => string;
+        };
+        practice: {
+            title: string;
+            questionOf: (index: number, total: number) => string;
+            prompt: (meaning: string) => string;
+            correct: string;
+            incorrect: (word: string) => string;
+            finish: string;
+            next: string;
+            answerOptionsAria: string;
+        };
+        completion: {
+            title: string;
+            subtitle: (total: number) => string;
+            review: string;
+        };
     };
     readingArticle: {
         back: string;
@@ -132,7 +261,7 @@ export interface Dictionary {
         practiceCta: string;
         addNew: string;
         searchPlaceholder: string;
-        sourceTabs: { myWords: string; fromReading: string };
+        sourceTabs: { myWords: string; fromReading: string; fromAiTutor: string };
         filters: { level: string; all: string; mastery: string; bookmarked: string; bookmarkedOnly: string };
         mastery: { NEW: string; LEARNING: string; FAMILIAR: string; MASTERED: string };
         continueLearning: {
@@ -214,7 +343,7 @@ export interface Dictionary {
         newChat: string;
         newChatToast: string;
         chatHistory: string;
-        edit: string;
+        rename: string;
         delete: string;
         confirmDelete: string;
         deleted: string;
@@ -222,10 +351,30 @@ export interface Dictionary {
         subtitle: string;
         setTitlePlaceholder: string;
         save: string;
+        cancel: string;
         typePlaceholder: string;
         send: string;
         thinking: string;
-        greeting: string;
+        groups: { today: string; yesterday: string; earlier: string };
+        emptyState: {
+            greeting: string;
+            intro: string;
+            starters: {
+                speaking: { title: string; description: string; prompt: string };
+                writing: { title: string; description: string; prompt: string };
+                grammar: { title: string; description: string; prompt: string };
+                question: { title: string; description: string; prompt: string };
+            };
+            orWriteFirst: string;
+        };
+        selection: {
+            saveWord: string;
+            saveExpression: string;
+            alreadySaved: string;
+            saving: string;
+            savedToVocabulary: string;
+            saveFailed: string;
+        };
     };
     readingReview: {
         typeLabels: {
@@ -369,6 +518,11 @@ const en: Dictionary = {
         preferredLanguage: "Preferred Language",
         saveProfile: "Save Profile",
         updated: "Profile updated!",
+        joined: "Joined",
+        changePhoto: "Change photo",
+        avatarUpdated: "Avatar updated!",
+        avatarUploadFailed: "Couldn't upload avatar",
+        accountInfo: "Account Information",
     },
     dashboard: {
         welcome: "Welcome to your Dashboard",
@@ -404,9 +558,85 @@ const en: Dictionary = {
                 description: "Add, save, and memorize your own vocabulary list.",
             },
             aiChat: {
-                title: "AI Chat",
+                title: "AI Tutor",
                 description: "Chat with an intelligent German tutor to practice freely.",
             },
+        },
+        greeting: {
+            morning: (name) => `Good morning, ${name}`,
+            afternoon: (name) => `Good afternoon, ${name}`,
+            evening: (name) => `Good evening, ${name}`,
+            subtitle: "Ready for your next German lesson?",
+            streakDays: (count) => `${count} day streak`,
+        },
+        continueLearning: {
+            label: "Continue Learning",
+            cta: "Continue →",
+            startTitle: "Start Learning",
+            startDescription: "Begin today's first learning activity.",
+            startCta: "Start Learning →",
+            progressOf: (completed, total) => `${completed} of ${total} completed`,
+            dailyWordsTitle: "Today's Words",
+            dailyWordsDescription: "Finish learning today's new words.",
+            vocabReviewTitle: "Vocabulary Review",
+            vocabReviewDescription: (count) => `${count} word${count === 1 ? "" : "s"} ready for review`,
+            grammarTitle: "Grammar Lesson",
+            grammarDescription: "Continue with your next grammar lesson.",
+            readingTitle: "Reading",
+            readingDescription: "Continue with your next reading text.",
+            expressionsTitle: "Active Expressions",
+            expressionsDescription: "Practice your active expressions.",
+        },
+        todaysPlan: {
+            title: "Today's plan",
+            completedOf: (completed, total) => `${completed} / ${total} completed`,
+            dailyWords: "Daily Words",
+            vocabReview: "Word Review",
+            grammar: "Grammar",
+            reading: "Reading",
+        },
+        review: {
+            title: "Review needed",
+            wordsReady: (count) => `${count} word${count === 1 ? "" : "s"} ready for review.`,
+            expressionsReady: (count) => `${count} expression${count === 1 ? "" : "s"} could use another review.`,
+            cta: "Review now →",
+            allCaughtUpTitle: "You're all caught up 🎉",
+            allCaughtUpSubtitle: "No reviews are waiting right now.",
+        },
+        focus: {
+            title: "Your current focus",
+            vocabularyTitle: "Vocabulary",
+            vocabularyDescription: "A little more vocabulary practice can help strengthen your recent learning.",
+            grammarTitle: "Grammar",
+            grammarDescription: "Spending a bit more time on grammar can help round out your progress.",
+            readingTitle: "Reading",
+            readingDescription: "More reading practice can help build on what you've already learned.",
+            expressionsTitle: "Active Expressions",
+            expressionsDescription: "Practicing expressions a little more can help make them stick.",
+            neutralDescription: "Keep building your German vocabulary.",
+            cta: "Practice now →",
+        },
+        week: {
+            title: "This week",
+            learningDaysOf: (days, total) => `${days} / ${total} learning days`,
+            viewProgress: "View full progress →",
+            emptyTitle: "Your week starts here.",
+            emptySubtitle: "Complete your first learning activity today.",
+        },
+        milestone: {
+            title: "Milestone",
+            reached: (count) => `You've learned ${count} German words.`,
+            next: (count) => `Next milestone: ${count} words.`,
+        },
+        error: {
+            message: "We couldn't load your dashboard.",
+            retry: "Try again",
+        },
+        newContent: {
+            summary: (total) => `${total} new item${total === 1 ? "" : "s"} since your last visit`,
+            grammarLessons: (count) => `${count} grammar lesson${count === 1 ? "" : "s"}`,
+            readingArticles: (count) => `${count} reading text${count === 1 ? "" : "s"}`,
+            expressions: (count) => `${count} expression${count === 1 ? "" : "s"}`,
         },
     },
     reading: {
@@ -427,6 +657,54 @@ const en: Dictionary = {
         previous: "Previous",
         next: "Next",
         pageOf: (page: number, total: number) => `Page ${page} of ${total}`,
+    },
+    dailyWords: {
+        title: "Daily Words",
+        subtitle: (total: number) => `Your ${total} words for today`,
+        loadError: "We couldn't load today's words.",
+        loadErrorSubtitle: "Please try again.",
+        retry: "Retry",
+        emptyTitle: "No new words for today.",
+        emptySubtitle: "Check back tomorrow for your next 5 words.",
+        savedToast: (word: string) => `"${word}" added to your Vocabulary!`,
+        saveFailedToast: "Failed to save word to your Vocabulary.",
+        progressFailedToast: "Failed to update progress.",
+        header: {
+            learnedOf: (learned: number, total: number) => `${learned} / ${total} learned`,
+            remaining: (count: number) => `${count} word${count === 1 ? "" : "s"} remaining`,
+            progressAria: (learned: number, total: number) => `${learned} of ${total} daily words learned`,
+        },
+        card: {
+            wordOf: (index: number, total: number) => `Word ${index} of ${total}`,
+            playAria: (word: string) => `Play pronunciation of ${word}`,
+            saving: "Saving...",
+            saved: "✓ Saved to Vocabulary",
+            save: "+ Save to Vocabulary",
+            learned: "Learned",
+            markLearned: "✓ I know this",
+            previous: "Previous",
+            next: "Next",
+            previousAria: "Previous word",
+            nextAria: "Next word",
+        },
+        overview: {
+            title: (count: number) => `Today's ${count} Words`,
+        },
+        practice: {
+            title: "Quick Practice",
+            questionOf: (index: number, total: number) => `${index} / ${total}`,
+            prompt: (meaning: string) => `Which word means "${meaning}"?`,
+            correct: "✓ Correct",
+            incorrect: (word: string) => `✗ It was "${word}"`,
+            finish: "Finish",
+            next: "Next",
+            answerOptionsAria: "Answer options",
+        },
+        completion: {
+            title: "Daily Words complete!",
+            subtitle: (total: number) => `You've learned ${total} words today.`,
+            review: "Review today's words",
+        },
     },
     readingArticle: {
         back: "← Back to Reading",
@@ -474,7 +752,7 @@ const en: Dictionary = {
         practiceCta: "Continue practicing",
         addNew: "Add word",
         searchPlaceholder: "Search by word, meaning or example...",
-        sourceTabs: { myWords: "My words", fromReading: "From reading" },
+        sourceTabs: { myWords: "My words", fromReading: "From reading", fromAiTutor: "From AI Tutor" },
         filters: { level: "Level", all: "All", mastery: "Progress", bookmarked: "Bookmarked", bookmarkedOnly: "Bookmarked" },
         mastery: { NEW: "New", LEARNING: "Learning", FAMILIAR: "Familiar", MASTERED: "Mastered" },
         continueLearning: {
@@ -555,19 +833,55 @@ const en: Dictionary = {
     chat: {
         newChat: "New Chat",
         newChatToast: "New chat is initiated!",
-        chatHistory: "Chat History",
-        edit: "Edit",
+        chatHistory: "Conversations",
+        rename: "Rename",
         delete: "Delete",
         confirmDelete: "Are you sure to delete all chat in this session!",
         deleted: "Session deleted!",
-        yourAiTutor: "Your AI Tutor!",
+        yourAiTutor: "AI Tutor",
         subtitle: "Practice conversational German with an AI tutor.",
         setTitlePlaceholder: "Set title...",
         save: "Save",
-        typePlaceholder: "Type a message...",
+        cancel: "Cancel",
+        typePlaceholder: "Write something in German...",
         send: "Send",
         thinking: "AI is thinking…",
-        greeting: "Hello! I'm DeutschBridge Assistant. Ask me anything in German or English.",
+        groups: { today: "Today", yesterday: "Yesterday", earlier: "Earlier" },
+        emptyState: {
+            greeting: "Guten Tag! 👋",
+            intro: "Ich bin dein Deutsch-Tutor. Übe Deutsch, stelle Fragen oder schreibe einfach mit mir.",
+            starters: {
+                speaking: {
+                    title: "Sprechen",
+                    description: "Führe ein Gespräch auf Deutsch.",
+                    prompt: "Lass uns auf Deutsch über meinen Alltag sprechen. Stell mir Fragen dazu.",
+                },
+                writing: {
+                    title: "Schreiben",
+                    description: "Verbessere deine deutschen Texte.",
+                    prompt: "Ich möchte meine deutschen Schreibfähigkeiten üben. Gib mir ein Thema zum Schreiben.",
+                },
+                grammar: {
+                    title: "Grammatik",
+                    description: "Übe Grammatik mit mir.",
+                    prompt: "Kannst du mir helfen, deutsche Grammatik zu üben? Erkläre mir etwas und teste mich.",
+                },
+                question: {
+                    title: "Frage stellen",
+                    description: "Frag mich alles zum Deutschlernen.",
+                    prompt: "Ich habe eine Frage zum Deutschlernen.",
+                },
+            },
+            orWriteFirst: "Oder schreibe einfach deine erste Nachricht ...",
+        },
+        selection: {
+            saveWord: "Save word",
+            saveExpression: "Save expression",
+            alreadySaved: "Already in Vocabulary",
+            saving: "Saving...",
+            savedToVocabulary: "Saved to Vocabulary",
+            saveFailed: "Couldn't save this item. Please try again.",
+        },
     },
     readingReview: {
         typeLabels: {
@@ -717,6 +1031,11 @@ const fa: Dictionary = {
         preferredLanguage: "زبان مورد نظر",
         saveProfile: "ذخیره پروفایل",
         updated: "پروفایل به‌روزرسانی شد!",
+        joined: "تاریخ عضویت",
+        changePhoto: "تغییر عکس",
+        avatarUpdated: "عکس پروفایل به‌روزرسانی شد!",
+        avatarUploadFailed: "بارگذاری عکس ناموفق بود",
+        accountInfo: "اطلاعات حساب کاربری",
     },
     dashboard: {
         welcome: "به داشبورد خود خوش آمدید",
@@ -752,9 +1071,85 @@ const fa: Dictionary = {
                 description: "فهرست واژگان شخصی خود را اضافه، ذخیره و حفظ کنید.",
             },
             aiChat: {
-                title: "چت هوش مصنوعی",
+                title: "مربی هوش مصنوعی",
                 description: "برای تمرین آزادانه با یک مربی هوشمند آلمانی گفتگو کنید.",
             },
+        },
+        greeting: {
+            morning: (name) => `صبح بخیر، ${name}`,
+            afternoon: (name) => `ظهر بخیر، ${name}`,
+            evening: (name) => `عصر بخیر، ${name}`,
+            subtitle: "برای درس بعدی زبان آلمانی خود آماده‌اید؟",
+            streakDays: (count) => `${count} روز پیاپی`,
+        },
+        continueLearning: {
+            label: "ادامه یادگیری",
+            cta: "← ادامه",
+            startTitle: "شروع یادگیری",
+            startDescription: "اولین فعالیت یادگیری امروز خود را شروع کنید.",
+            startCta: "← شروع یادگیری",
+            progressOf: (completed, total) => `${completed} از ${total} انجام شد`,
+            dailyWordsTitle: "کلمات امروز",
+            dailyWordsDescription: "یادگیری کلمات جدید امروز را به پایان برسانید.",
+            vocabReviewTitle: "مرور واژگان",
+            vocabReviewDescription: (count) => `${count} کلمه آماده مرور است`,
+            grammarTitle: "درس گرامر",
+            grammarDescription: "درس گرامر بعدی خود را ادامه دهید.",
+            readingTitle: "مطالعه",
+            readingDescription: "متن مطالعه بعدی خود را ادامه دهید.",
+            expressionsTitle: "عبارات کاربردی",
+            expressionsDescription: "عبارات کاربردی خود را تمرین کنید.",
+        },
+        todaysPlan: {
+            title: "برنامه امروز",
+            completedOf: (completed, total) => `${completed} / ${total} انجام شد`,
+            dailyWords: "کلمات روزانه",
+            vocabReview: "مرور کلمات",
+            grammar: "گرامر",
+            reading: "مطالعه",
+        },
+        review: {
+            title: "نیاز به مرور",
+            wordsReady: (count) => `${count} کلمه آماده مرور است.`,
+            expressionsReady: (count) => `${count} عبارت نیاز به مرور دوباره دارد.`,
+            cta: "← اکنون مرور کنید",
+            allCaughtUpTitle: "همه چیز به‌روز است 🎉",
+            allCaughtUpSubtitle: "در حال حاضر موردی برای مرور وجود ندارد.",
+        },
+        focus: {
+            title: "تمرکز فعلی شما",
+            vocabularyTitle: "واژگان",
+            vocabularyDescription: "کمی تمرین بیشتر واژگان می‌تواند یادگیری اخیر شما را تقویت کند.",
+            grammarTitle: "گرامر",
+            grammarDescription: "کمی زمان بیشتر برای گرامر می‌تواند پیشرفت شما را کامل‌تر کند.",
+            readingTitle: "مطالعه",
+            readingDescription: "تمرین بیشتر مطالعه می‌تواند به آنچه قبلاً یاد گرفته‌اید کمک کند.",
+            expressionsTitle: "عبارات کاربردی",
+            expressionsDescription: "تمرین بیشتر عبارات کاربردی می‌تواند به ماندگاری آن‌ها کمک کند.",
+            neutralDescription: "به ساختن واژگان آلمانی خود ادامه دهید.",
+            cta: "← اکنون تمرین کنید",
+        },
+        week: {
+            title: "این هفته",
+            learningDaysOf: (days, total) => `${days} / ${total} روز یادگیری`,
+            viewProgress: "← مشاهده پیشرفت کامل",
+            emptyTitle: "هفته شما از اینجا شروع می‌شود.",
+            emptySubtitle: "اولین فعالیت یادگیری امروز خود را انجام دهید.",
+        },
+        milestone: {
+            title: "نقطه عطف",
+            reached: (count) => `شما ${count} کلمه آلمانی یاد گرفته‌اید.`,
+            next: (count) => `نقطه عطف بعدی: ${count} کلمه.`,
+        },
+        error: {
+            message: "بارگذاری داشبورد شما ممکن نشد.",
+            retry: "تلاش مجدد",
+        },
+        newContent: {
+            summary: (total) => `${total} مورد جدید از آخرین بازدید شما`,
+            grammarLessons: (count) => `${count} درس گرامر`,
+            readingArticles: (count) => `${count} متن مطالعه`,
+            expressions: (count) => `${count} عبارت`,
         },
     },
     reading: {
@@ -775,6 +1170,54 @@ const fa: Dictionary = {
         previous: "قبلی",
         next: "بعدی",
         pageOf: (page: number, total: number) => `صفحه ${page} از ${total}`,
+    },
+    dailyWords: {
+        title: "واژه‌های روزانه",
+        subtitle: (total: number) => `${total} واژه امروز شما`,
+        loadError: "واژه‌های امروز بارگذاری نشد.",
+        loadErrorSubtitle: "لطفاً دوباره تلاش کنید.",
+        retry: "تلاش مجدد",
+        emptyTitle: "واژه جدیدی برای امروز نیست.",
+        emptySubtitle: "فردا برای ۵ واژه بعدی خود سر بزنید.",
+        savedToast: (word: string) => `«${word}» به واژگان شما افزوده شد!`,
+        saveFailedToast: "ذخیره واژه در واژگان شما ممکن نشد.",
+        progressFailedToast: "به‌روزرسانی پیشرفت ممکن نشد.",
+        header: {
+            learnedOf: (learned: number, total: number) => `${learned} / ${total} آموخته شده`,
+            remaining: (count: number) => `${count} واژه باقی مانده`,
+            progressAria: (learned: number, total: number) => `${learned} از ${total} واژه روزانه آموخته شده`,
+        },
+        card: {
+            wordOf: (index: number, total: number) => `واژه ${index} از ${total}`,
+            playAria: (word: string) => `پخش تلفظ ${word}`,
+            saving: "در حال ذخیره...",
+            saved: "✓ در واژگان ذخیره شد",
+            save: "+ ذخیره در واژگان",
+            learned: "آموخته شده",
+            markLearned: "✓ این را می‌دانم",
+            previous: "قبلی",
+            next: "بعدی",
+            previousAria: "واژه قبلی",
+            nextAria: "واژه بعدی",
+        },
+        overview: {
+            title: (count: number) => `${count} واژه امروز`,
+        },
+        practice: {
+            title: "تمرین سریع",
+            questionOf: (index: number, total: number) => `${index} / ${total}`,
+            prompt: (meaning: string) => `کدام واژه به معنی «${meaning}» است؟`,
+            correct: "✓ درست",
+            incorrect: (word: string) => `✗ جواب درست «${word}» بود`,
+            finish: "پایان",
+            next: "بعدی",
+            answerOptionsAria: "گزینه‌های پاسخ",
+        },
+        completion: {
+            title: "واژه‌های روزانه کامل شد!",
+            subtitle: (total: number) => `شما امروز ${total} واژه یاد گرفتید.`,
+            review: "مرور واژه‌های امروز",
+        },
     },
     readingArticle: {
         back: "→ بازگشت به مطالعه",
@@ -822,7 +1265,7 @@ const fa: Dictionary = {
         practiceCta: "ادامه تمرین",
         addNew: "افزودن واژه",
         searchPlaceholder: "جستجو بر اساس واژه، معنی یا مثال...",
-        sourceTabs: { myWords: "واژه‌های من", fromReading: "از بخش مطالعه" },
+        sourceTabs: { myWords: "واژه‌های من", fromReading: "از بخش مطالعه", fromAiTutor: "از مربی هوش مصنوعی" },
         filters: { level: "سطح", all: "همه", mastery: "پیشرفت", bookmarked: "نشان‌شده", bookmarkedOnly: "نشان‌شده" },
         mastery: { NEW: "جدید", LEARNING: "در حال یادگیری", FAMILIAR: "آشنا", MASTERED: "مسلط" },
         continueLearning: {
@@ -903,19 +1346,55 @@ const fa: Dictionary = {
     chat: {
         newChat: "گفتگوی جدید",
         newChatToast: "گفتگوی جدید آغاز شد!",
-        chatHistory: "تاریخچه گفتگو",
-        edit: "ویرایش",
+        chatHistory: "گفتگوها",
+        rename: "تغییر نام",
         delete: "حذف",
         confirmDelete: "آیا مطمئن هستید که می‌خواهید تمام گفتگوهای این جلسه را حذف کنید؟",
         deleted: "جلسه حذف شد!",
-        yourAiTutor: "مربی هوش مصنوعی شما!",
+        yourAiTutor: "مربی هوش مصنوعی",
         subtitle: "مکالمه آلمانی را با یک مربی هوش مصنوعی تمرین کنید.",
         setTitlePlaceholder: "تعیین عنوان...",
         save: "ذخیره",
-        typePlaceholder: "پیامی بنویسید...",
+        cancel: "لغو",
+        typePlaceholder: "چیزی به آلمانی بنویسید...",
         send: "ارسال",
         thinking: "هوش مصنوعی در حال فکر کردن است…",
-        greeting: "سلام! من دستیار DeutschBridge هستم. هر چیزی به آلمانی یا انگلیسی از من بپرسید.",
+        groups: { today: "امروز", yesterday: "دیروز", earlier: "پیش‌تر" },
+        emptyState: {
+            greeting: "سلام! 👋",
+            intro: "من مربی آلمانی تو هستم. آلمانی تمرین کن، سؤال بپرس یا فقط با من بنویس.",
+            starters: {
+                speaking: {
+                    title: "صحبت کردن",
+                    description: "یک گفتگو به آلمانی داشته باش.",
+                    prompt: "بیا درباره روز روزمره‌ام به آلمانی صحبت کنیم. درباره‌اش از من سؤال بپرس.",
+                },
+                writing: {
+                    title: "نوشتن",
+                    description: "متن‌های آلمانی خودت را بهتر کن.",
+                    prompt: "می‌خواهم مهارت نوشتاری آلمانی‌ام را تمرین کنم. یک موضوع برای نوشتن به من بده.",
+                },
+                grammar: {
+                    title: "گرامر",
+                    description: "گرامر را با من تمرین کن.",
+                    prompt: "می‌توانی به من در تمرین گرامر آلمانی کمک کنی؟ چیزی را توضیح بده و من را امتحان کن.",
+                },
+                question: {
+                    title: "سؤال بپرس",
+                    description: "هر چیزی درباره یادگیری آلمانی از من بپرس.",
+                    prompt: "یک سؤال درباره یادگیری آلمانی دارم.",
+                },
+            },
+            orWriteFirst: "یا فقط اولین پیامت را بنویس ...",
+        },
+        selection: {
+            saveWord: "ذخیره واژه",
+            saveExpression: "ذخیره عبارت",
+            alreadySaved: "قبلاً در واژگان ذخیره شده",
+            saving: "در حال ذخیره...",
+            savedToVocabulary: "در واژگان ذخیره شد",
+            saveFailed: "ذخیره این مورد ممکن نشد. دوباره تلاش کنید.",
+        },
     },
     readingReview: {
         typeLabels: {

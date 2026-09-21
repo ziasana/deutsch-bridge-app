@@ -3,6 +3,7 @@ package com.deutschbridge.backend.repository;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.entity.VocabularyItem;
 import com.deutschbridge.backend.model.entity.VocabularyProgress;
+import com.deutschbridge.backend.model.enums.VocabularyMasteryLevel;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -17,4 +18,6 @@ public interface VocabularyProgressRepository extends JpaRepository<VocabularyPr
     List<VocabularyProgress> findByUser(User user);
 
     List<VocabularyProgress> findByUserAndVocabularyItemIn(User user, List<VocabularyItem> vocabularyItems);
+
+    long countByUserAndMasteryLevel(User user, VocabularyMasteryLevel masteryLevel);
 }

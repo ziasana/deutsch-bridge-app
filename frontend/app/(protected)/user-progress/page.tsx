@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { BookOpen, GraduationCap, Link2, Target } from "lucide-react"
+import { Award, BookOpen, GraduationCap, Link2, Newspaper, Target } from "lucide-react"
 import { StatsCard } from "@/componenets/stats-card"
 import { ActivityChart } from "@/componenets/activity-chart"
 import { LessonProgress } from "@/componenets/lesson-progress"
@@ -40,7 +40,13 @@ export default function ProgressPage() {
                     </p>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+                    <StatsCard
+                        title="Words Mastered"
+                        value={overview?.totalLearned ?? "-"}
+                        subtitle={overview ? `Out of ${overview.totalAvailable} total` : undefined}
+                        icon={<Award className="h-4 w-4" />}
+                    />
                     <StatsCard
                         title="Daily Words Learned"
                         value={overview?.dailyWords.learned ?? "-"}
@@ -58,6 +64,12 @@ export default function ProgressPage() {
                         value={overview?.expressions.learned ?? "-"}
                         subtitle={overview ? `Out of ${overview.expressions.total} total` : undefined}
                         icon={<Link2 className="h-4 w-4" />}
+                    />
+                    <StatsCard
+                        title="Reading Completed"
+                        value={overview?.reading.learned ?? "-"}
+                        subtitle={overview ? `Out of ${overview.reading.total} total` : undefined}
+                        icon={<Newspaper className="h-4 w-4" />}
                     />
                     <StatsCard
                         title="Daily Goal"

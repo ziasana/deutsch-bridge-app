@@ -1,118 +1,90 @@
 "use client";
-import * as React from 'react'
-import { useEffect } from "react";
+import * as React from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-    BookOpen,
-    MessageSquare,
-    Layers,
-    SpellCheck,
-    Sparkles,
-    Newspaper,
-    Brain,
-    GraduationCap,
-} from "lucide-react";
-import Link from "next/link";
 import useAuthStore from "@/store/useAuthStore";
 import { useI18n } from "@/componenets/I18nProvider";
+import { getDashboard } from "@/services/dashboardService";
+import { DashboardResponse } from "@/types/dashboard";
+import DashboardHeader from "@/componenets/dashboard/DashboardHeader";
+import NewContentBanner from "@/componenets/dashboard/NewContentBanner";
+import ContinueLearningCard from "@/componenets/dashboard/ContinueLearningCard";
+import TodaysLearningPlan from "@/componenets/dashboard/TodaysLearningPlan";
+import ReviewNeededCard from "@/componenets/dashboard/ReviewNeededCard";
+import CurrentFocusCard from "@/componenets/dashboard/CurrentFocusCard";
+import WeeklyLearningSummary from "@/componenets/dashboard/WeeklyLearningSummary";
+import LearningMilestone from "@/componenets/dashboard/LearningMilestone";
+import DashboardSkeleton from "@/componenets/dashboard/DashboardSkeleton";
+import { Button } from "@/componenets/ui/button";
+
 const DashboardPage = () => {
     const router = useRouter();
     const { userProfile, hasHydrated } = useAuthStore();
     const { t } = useI18n();
 
+    const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
+    const [error, setError] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    const load = useCallback(() => {
+        setLoading(true);
+        setError(false);
+        getDashboard()
+            .then((res) => setDashboard(res.data))
+            .catch(() => setError(true))
+            .finally(() => setLoading(false));
+    }, []);
+
     useEffect(() => {
         if (hasHydrated && userProfile?.role === "ADMIN") {
             router.push("/admin");
+            return;
         }
-    }, [hasHydrated, userProfile, router]);
+        if (hasHydrated && userProfile?.role !== "ADMIN") {
+            load();
+        }
+    }, [hasHydrated, userProfile, router, load]);
 
     if (hasHydrated && userProfile?.role === "ADMIN") return null;
 
-    const modules = [
-        {
-            ...t.dashboard.modules.dailyWords,
-            icon: SpellCheck,
-            link: "/dashboard/daily-words",
-        },
-        {
-            ...t.dashboard.modules.grammarLessons,
-            icon: BookOpen,
-            link: "/dashboard/grammar",
-        },
-        {
-            ...t.dashboard.modules.expressions,
-            icon: Sparkles,
-            link: "/dashboard/expressions",
-        },
-        {
-            ...t.dashboard.modules.reading,
-            icon: Newspaper,
-            link: "/dashboard/reading",
-        },
-        {
-            ...t.dashboard.modules.examPrep,
-            icon: GraduationCap,
-            link: "/dashboard/exam-prep",
-        },
-        {
-            ...t.dashboard.modules.wordReview,
-            icon: Brain,
-            link: "/dashboard/reading/review",
-        },
-        {
-            ...t.dashboard.modules.vocabularyTrainer,
-            icon: Layers,
-            link: "/dashboard/vocabulary",
-        },
-        {
-            ...t.dashboard.modules.aiChat,
-            icon: MessageSquare,
-            link: "/dashboard/chat",
-        },
-    ];
-
     return (
-        <div className="px-6 py-10">
-            {/* Header */}
-            <div className="max-w-4xl mx-auto">
-                <h1 className="text-3xl font-bold text-foreground">
-                    {t.dashboard.welcome}
-                </h1>
-                <p className="text-foreground/60 mt-2">
-                    {t.dashboard.subtitle}
-                </p>
-            </div>
+        <div className="px-4 py-8 sm:px-6 sm:py-10">
+            {loading && <DashboardSkeleton />}
 
-            {/* Modules Grid */}
-            <div className="max-w-6xl mt-7 mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {modules.map((module) => {
-                    const Icon = module.icon;
-                    return (
-                        <Link
-                            key={module.title}
-                            href={module.link}
-                            className="group bg-card rounded-[10px] shadow-card p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer"
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 rounded-xl bg-accent">
-                                    <Icon className="w-6 h-6 text-accent-foreground" />
-                                </div>
-                                <h2 className="text-lg font-semibold text-foreground group-hover:text-primary transition">
-                                    {module.title}
-                                </h2>
-                            </div>
+            {!loading && error && (
+                <div className="max-w-6xl mx-auto text-center py-16">
+                    <p className="text-foreground/60">{t.dashboard.error.message}</p>
+                    <Button onClick={load} className="mt-4">
+                        {t.dashboard.error.retry}
+                    </Button>
+                </div>
+            )}
 
-                            <p className="text-foreground/60 mt-4">
-                                {module.description}
-                            </p>
+            {!loading && !error && dashboard && (
+                <div className="max-w-6xl mx-auto space-y-6">
+                    <DashboardHeader
+                        displayName={dashboard.user.displayName || userProfile?.displayName || ""}
+                        level={dashboard.user.learningLevel}
+                        streak={dashboard.currentStreak}
+                    />
 
-                            <div className="mt-4 text-primary font-medium group-hover:underline">
-                                {t.dashboard.start}
-                            </div>
-                        </Link>
-                    );
-                })}
-            </div>
+                    {dashboard.newContent && <NewContentBanner data={dashboard.newContent} />}
+
+                    <ContinueLearningCard data={dashboard.continueLearning} />
+
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <TodaysLearningPlan data={dashboard.today} />
+                        <ReviewNeededCard data={dashboard.review} />
+                    </div>
+
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <CurrentFocusCard data={dashboard.focus} />
+                        <WeeklyLearningSummary data={dashboard.week} />
+                    </div>
+
+                    {dashboard.milestone && <LearningMilestone data={dashboard.milestone} />}
+                </div>
+            )}
         </div>
     );
 };

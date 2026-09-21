@@ -2,11 +2,13 @@ package com.deutschbridge.backend.repository;
 
 import com.deutschbridge.backend.model.entity.GrammarCategory;
 import com.deutschbridge.backend.model.entity.GrammarLesson;
+import com.deutschbridge.backend.model.enums.GrammarLessonStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -18,6 +20,8 @@ public interface GrammarLessonRepository extends JpaRepository<GrammarLesson, St
     boolean existsByTitleIgnoreCase(String title);
 
     List<GrammarLesson> findByCategory(GrammarCategory category);
+
+    long countByStatusAndCreatedAtAfter(GrammarLessonStatus status, LocalDateTime after);
 
     @Modifying
     @Query("UPDATE grammarLessons g SET g.category = null WHERE g.category = :category")
