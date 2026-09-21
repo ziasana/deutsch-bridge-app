@@ -134,8 +134,9 @@ export default function SignupOnboardingPage() {
             // instead of silently treating a half-finished setup as done.
             updateUserProfile(res.data.data);
             setCompleted(true);
-        } catch (err: any) {
-            toast.error(err?.response?.data?.message ?? "Couldn't save your learning plan. Please try again.");
+        } catch (err) {
+            const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+            toast.error(message ?? "Couldn't save your learning plan. Please try again.");
         } finally {
             setSubmitting(false);
         }

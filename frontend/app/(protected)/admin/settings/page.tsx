@@ -59,7 +59,6 @@ export default function AdminSettingsPage() {
     const [auditLog, setAuditLog] = useState<AdminAuditLogEntry[]>([]);
 
     const fetchAll = useCallback(() => {
-        setIsLoading(true);
         Promise.all([getPremiumSetting(), getFeatureLimits(), getAuditLog()])
             .then(([premiumRes, limitsRes, auditRes]) => {
                 setPremiumEnabled(premiumRes.data.enabled);
