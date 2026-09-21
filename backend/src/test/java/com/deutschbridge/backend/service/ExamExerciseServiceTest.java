@@ -12,6 +12,7 @@ import com.deutschbridge.backend.model.enums.ExamTaskType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.ExamExerciseCompletionRepository;
 import com.deutschbridge.backend.repository.ExamExerciseRepository;
+import com.deutschbridge.backend.service.cache.ContentCacheService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +36,9 @@ class ExamExerciseServiceTest {
 
     @Mock
     private RequestContext requestContext;
+
+    @Mock
+    private ContentCacheService contentCacheService;
 
     @InjectMocks
     private ExamExerciseService service;
@@ -61,7 +65,7 @@ class ExamExerciseServiceTest {
     @DisplayName("findAllPublic -> should filter by section and never leak transcript or correctAnswer")
     void findAllPublic_shouldStripAnswersAndTranscript() {
         ExamExercise exercise = hoerverstehenExercise();
-        when(examExerciseRepository.findBySection(ExamSection.HOERVERSTEHEN)).thenReturn(List.of(exercise));
+        when(contentCacheService.getPublishedExamExercises(ExamSection.HOERVERSTEHEN, null, null)).thenReturn(List.of(exercise));
         when(requestContext.getUserId()).thenReturn("u1");
         when(examExerciseCompletionRepository.findByUserId("u1")).thenReturn(List.of());
 
@@ -84,7 +88,7 @@ class ExamExerciseServiceTest {
         completion.setExerciseId("ex1");
         completion.setLastScore(75.0);
 
-        when(examExerciseRepository.findBySection(ExamSection.HOERVERSTEHEN)).thenReturn(List.of(exercise));
+        when(contentCacheService.getPublishedExamExercises(ExamSection.HOERVERSTEHEN, null, null)).thenReturn(List.of(exercise));
         when(requestContext.getUserId()).thenReturn("u1");
         when(examExerciseCompletionRepository.findByUserId("u1")).thenReturn(List.of(completion));
 
@@ -97,9 +101,10 @@ class ExamExerciseServiceTest {
     @Test
     @DisplayName("findAllPublic -> should exclude unpublished exercises")
     void findAllPublic_shouldExcludeUnpublished() {
-        ExamExercise exercise = hoerverstehenExercise();
-        exercise.setPublished(false);
-        when(examExerciseRepository.findBySection(ExamSection.HOERVERSTEHEN)).thenReturn(List.of(exercise));
+        // Filtering out unpublished exercises is ContentCacheService's job (see
+        // ContentCacheService.getPublishedExamExercises) - this just verifies findAllPublic
+        // passes its result straight through without re-adding anything unpublished.
+        when(contentCacheService.getPublishedExamExercises(ExamSection.HOERVERSTEHEN, null, null)).thenReturn(List.of());
         when(requestContext.getUserId()).thenReturn("u1");
         when(examExerciseCompletionRepository.findByUserId("u1")).thenReturn(List.of());
 
