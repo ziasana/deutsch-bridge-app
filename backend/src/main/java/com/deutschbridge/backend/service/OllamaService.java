@@ -3,6 +3,7 @@ package com.deutschbridge.backend.service;
 import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.exception.AiGenerationException;
 import com.deutschbridge.backend.model.dto.*;
+import com.deutschbridge.backend.model.enums.FeatureType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.model.enums.PromptType;
 import com.deutschbridge.backend.util.PromptLibrary;
@@ -26,12 +27,14 @@ public class OllamaService {
     private final ChatSessionService chatSessionService;
     private final RequestContext requestContext;
     private final UserService userService;
+    private final EntitlementService entitlementService;
 
     public OllamaService(
             @Value("${ollama.api.key}") String apiKey,
             ChatMessageService chatMessageService,
             ChatSessionService chatSessionService,
-            RequestContext requestContext, UserService userService) {
+            RequestContext requestContext, UserService userService,
+            EntitlementService entitlementService) {
         this.restTemplate = new RestTemplate();
         this.chatMessageService = chatMessageService;
         this.chatSessionService = chatSessionService;
@@ -40,10 +43,12 @@ public class OllamaService {
         headers.setBearerAuth(apiKey);
         this.requestContext = requestContext;
         this.userService = userService;
+        this.entitlementService = entitlementService;
     }
 
     public ResponseMessageDto chatWithUser(OllamaChatRequestDto requestDto) {
         String userId = requestContext.getUserId();
+        entitlementService.consume(userId, FeatureType.AI_CHAT);
 
         boolean isNewSession = requestDto.sessionId() == null
                 || chatSessionService.getBySessionId(requestDto.sessionId()) == null;
@@ -76,6 +81,7 @@ public class OllamaService {
     }
 
     public OllamaGenerateExampleDto generateAiExample(OllamaGenerateExampleDto requestDto) {
+        entitlementService.consume(requestContext.getUserId(), FeatureType.AI_EXAMPLE);
         String aiAnswer = chatWithOllama(PromptType.EXAMPLE, requestDto.word());
         return new OllamaGenerateExampleDto(cleanUpExampleSentence(aiAnswer));
     }
@@ -88,6 +94,7 @@ public class OllamaService {
     }
 
     public String generateAiSynonyms(String word) {
+        entitlementService.consume(requestContext.getUserId(), FeatureType.AI_SYNONYM);
         return chatWithOllama(PromptType.SYNONYM,word);
     }
 
@@ -136,6 +143,7 @@ public class OllamaService {
     }
 
     public String evaluateExpressionProduction(String expression, String meaningDe, LearningLevel level, String userSentence) {
+        entitlementService.consume(requestContext.getUserId(), FeatureType.AI_CORRECTION);
         List<OllamaMessage> messages = List.of(
                 new OllamaMessage("system", PromptLibrary.evaluateExpressionProduction(expression, meaningDe, level.name(), userSentence)),
                 new OllamaMessage("user", userSentence)
@@ -144,6 +152,7 @@ public class OllamaService {
     }
 
     public String evaluateTransformation(String sourceSentence, String expression, String meaningDe, LearningLevel level, String userSentence) {
+        entitlementService.consume(requestContext.getUserId(), FeatureType.AI_CORRECTION);
         List<OllamaMessage> messages = List.of(
                 new OllamaMessage("system", PromptLibrary.evaluateTransformation(sourceSentence, expression, meaningDe, level.name(), userSentence)),
                 new OllamaMessage("user", userSentence)

@@ -4,8 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ToastContainer, toast } from "react-toastify";
 import useAuthStore from "@/store/useAuthStore";
-import { getAllUsers, updateUser, changeUserPassword } from "@/services/adminService";
-import { AdminUser } from "@/types/admin";
+import { getAllUsers, updateUser, changeUserPassword, changeAccountType } from "@/services/adminService";
+import { AccountType, AdminUser } from "@/types/admin";
 import { Badge } from "@/componenets/ui/badge";
 import { Card, CardContent } from "@/componenets/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/componenets/ui/table";
@@ -40,6 +40,8 @@ export default function AdminPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
     const [passwordUser, setPasswordUser] = useState<AdminUser | null>(null);
+    const [accountTypeUser, setAccountTypeUser] = useState<AdminUser | null>(null);
+    const [selectedAccountType, setSelectedAccountType] = useState<AccountType>("BASIC");
 
     const [editForm, setEditForm] = useState({ displayName: "", role: "STUDENT", verified: false });
     const [newPassword, setNewPassword] = useState("");
@@ -105,6 +107,25 @@ export default function AdminPage() {
                 setNewPassword("");
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to update password."))
+            .finally(() => setIsSaving(false));
+    };
+
+    const openAccountType = (user: AdminUser) => {
+        setAccountTypeUser(user);
+        setSelectedAccountType(user.accountType ?? "BASIC");
+    };
+
+    const submitAccountType = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!accountTypeUser) return;
+        setIsSaving(true);
+        changeAccountType(accountTypeUser.id, selectedAccountType)
+            .then(() => {
+                toast.success(`${accountTypeUser.email} is now ${selectedAccountType}.`);
+                setAccountTypeUser(null);
+                fetchUsers();
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to update account type."))
             .finally(() => setIsSaving(false));
     };
 
@@ -190,6 +211,9 @@ export default function AdminPage() {
                         </Button>
                         <Button variant="secondary" className={BUTTON_HOVER} onClick={() => router.push("/admin/expressionsSection")}>
                             Manage Expressions
+                        </Button>
+                        <Button variant="secondary" className={BUTTON_HOVER} onClick={() => router.push("/admin/settings")}>
+                            Monetization &amp; Limits
                         </Button>
                     </div>
                 </div>
@@ -304,6 +328,7 @@ export default function AdminPage() {
                                                 Verified {renderUserSortIcon("verified")}
                                             </button>
                                         </TableHead>
+                                        <TableHead>Plan</TableHead>
                                         <TableHead>Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -324,6 +349,11 @@ export default function AdminPage() {
                                                     {user.verified ? "Verified" : "Unverified"}
                                                 </Badge>
                                             </TableCell>
+                                            <TableCell>
+                                                <Badge variant={user.accountType === "PREMIUM" ? "default" : "secondary"}>
+                                                    {user.accountType ?? "BASIC"}
+                                                </Badge>
+                                            </TableCell>
                                             <TableCell className="space-x-2">
                                                 <Button
                                                     variant="secondary"
@@ -339,12 +369,19 @@ export default function AdminPage() {
                                                 >
                                                     Change Password
                                                 </Button>
+                                                <Button
+                                                    variant="secondary"
+                                                    className={`px-3 py-1 text-sm ${BUTTON_HOVER}`}
+                                                    onClick={() => openAccountType(user)}
+                                                >
+                                                    Change Plan
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
                                     ))}
                                     {sortedUsers.length === 0 && (
                                         <TableRow>
-                                            <TableCell colSpan={5} className="text-center text-foreground/50 py-10">
+                                            <TableCell colSpan={6} className="text-center text-foreground/50 py-10">
                                                 No users found.
                                             </TableCell>
                                         </TableRow>
@@ -515,6 +552,48 @@ export default function AdminPage() {
                                         setPasswordUser(null);
                                         setNewPassword("");
                                     }}
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Change account type modal */}
+            {accountTypeUser && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40 px-4">
+                    <div className="w-full max-w-md bg-card rounded-2xl shadow-xl p-8 border border-border">
+                        <h2 className="text-2xl font-bold text-foreground mb-2">
+                            Change plan for {accountTypeUser.email}
+                        </h2>
+                        <p className="text-sm text-foreground/60 mb-6">
+                            This user will {selectedAccountType === "PREMIUM" ? "receive" : "lose"} Premium features
+                            {selectedAccountType === "PREMIUM" ? " once Premium is enabled." : " immediately."}
+                        </p>
+                        <form onSubmit={submitAccountType} className="space-y-5">
+                            <div>
+                                <label className="block text-foreground/70 mb-2 text-sm">Account Type</label>
+                                <select
+                                    value={selectedAccountType}
+                                    onChange={(e) => setSelectedAccountType(e.target.value as AccountType)}
+                                    className="w-full mt-2 px-4 py-3 rounded-lg border border-border bg-muted text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
+                                >
+                                    <option value="BASIC">Basic</option>
+                                    <option value="PREMIUM">Premium</option>
+                                </select>
+                            </div>
+
+                            <div className="flex gap-3 pt-2">
+                                <Button variant="primary" type="submit" className="flex-1" disabled={isSaving}>
+                                    {isSaving ? "Saving..." : "Save changes"}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    className="flex-1"
+                                    onClick={() => setAccountTypeUser(null)}
                                 >
                                     Cancel
                                 </Button>

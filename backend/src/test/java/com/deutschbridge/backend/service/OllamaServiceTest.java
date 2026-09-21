@@ -27,6 +27,7 @@ class OllamaServiceTest {
     @Mock private RequestContext requestContext;
     @Mock private UserService userService;
     @Mock private RestTemplate restTemplate;
+    @Mock private EntitlementService entitlementService;
 
     private OllamaService ollamaService;
 
@@ -38,7 +39,8 @@ class OllamaServiceTest {
                 chatMessageService,
                 chatSessionService,
                 requestContext,
-                userService
+                userService,
+                entitlementService
         );
 
         // Replace internal RestTemplate with mock

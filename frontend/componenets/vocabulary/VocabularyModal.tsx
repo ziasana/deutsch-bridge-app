@@ -67,7 +67,9 @@ function VocabularyModalForm({
             .then((example) => setForm((f) => ({ ...f, example })))
             .catch((err) => {
                 console.error(err);
-                toast.error(err?.response?.data?.message ?? t.vocabulary.modal.generateExampleFailed);
+                if (!err?.isFeatureLimitError) {
+                    toast.error(err?.response?.data?.message ?? t.vocabulary.modal.generateExampleFailed);
+                }
             })
             .finally(() => setGeneratingExample(false));
     };

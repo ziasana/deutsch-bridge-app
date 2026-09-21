@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 import {DarkModeProvider} from "@/componenets/DarkModeProvider";
 import {I18nProvider} from "@/componenets/I18nProvider";
 import AppChrome from "@/componenets/layout/AppChrome";
+import PremiumUpsellModal from "@/componenets/PremiumUpsellModal";
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
@@ -44,6 +45,7 @@ export default function RootLayout({
         <DarkModeProvider>
             <AppChrome>{children}</AppChrome>
             <Toaster richColors position="top-right" />
+            <PremiumUpsellModal />
         </DarkModeProvider>
       </I18nProvider>
       </body>

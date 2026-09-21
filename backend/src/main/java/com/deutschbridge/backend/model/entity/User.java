@@ -1,6 +1,7 @@
 package com.deutschbridge.backend.model.entity;
 
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
+import com.deutschbridge.backend.model.enums.AccountType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
@@ -24,6 +25,11 @@ public class User {
     private String displayName;
 
     private String role="STUDENT";
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "account_type", nullable = false)
+    private AccountType accountType = AccountType.BASIC;
+
     private int accessTokenFlag = 0;
     private String resetToken;
     private String refreshToken;

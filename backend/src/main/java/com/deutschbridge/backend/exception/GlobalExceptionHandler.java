@@ -69,6 +69,16 @@ public class GlobalExceptionHandler  {
         );
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(responseException);
     }
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    @ExceptionHandler(FeatureLimitExceededException.class)
+    public ResponseEntity<ResponseException> handleFeatureLimitExceededException(FeatureLimitExceededException e) {
+        ResponseException responseException = new ResponseException(
+                e.getMessage(),
+                HttpStatus.TOO_MANY_REQUESTS.value()
+        );
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(responseException);
+    }
+
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
     @ExceptionHandler(AiGenerationException.class)
     public ResponseEntity<ResponseException> handleAiGenerationException(AiGenerationException e) {
