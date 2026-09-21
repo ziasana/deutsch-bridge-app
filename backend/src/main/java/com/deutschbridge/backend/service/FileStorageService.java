@@ -78,6 +78,10 @@ public class FileStorageService {
         return storeImage(file, "expressions");
     }
 
+    public String storeUserAvatar(MultipartFile file) {
+        return storeImage(file, "avatars");
+    }
+
     public String storeExamPassageAudio(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("No file was uploaded.");

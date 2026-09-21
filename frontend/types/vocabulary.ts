@@ -1,4 +1,4 @@
-export type VocabularySource = "CUSTOM" | "DICTIONARY";
+export type VocabularySource = "CUSTOM" | "DICTIONARY" | "AI_TUTOR";
 export type VocabularyMasteryLevel = "NEW" | "LEARNING" | "FAMILIAR" | "MASTERED";
 export type LearningLevelCode = "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
 
@@ -27,6 +27,9 @@ export interface VocabularyItem {
     audioUrl: string | null;
     /** Only set for source=DICTIONARY. */
     dictionaryEntryId: string | null;
+    /** Only set for source=AI_TUTOR. */
+    sourceChatId: string | null;
+    sourceMessageId: string | null;
     createdAt: string;
     /** Null when the current user hasn't practiced this item yet. */
     progress: VocabularyProgress | null;
@@ -51,6 +54,30 @@ export interface VocabularyUpdateRequest {
     language?: string | null;
     example?: string | null;
     level?: LearningLevelCode | null;
+}
+
+/** Creates a source=AI_TUTOR vocabulary item from an AI Tutor chat selection. */
+export interface VocabularyFromChatCreateRequest {
+    word: string;
+    meaning: string;
+    example: string | null;
+    sourceChatId: string | null;
+    sourceMessageId: string | null;
+    level: LearningLevelCode | null;
+}
+
+export type SelectionType = "WORD" | "EXPRESSION";
+
+export interface SelectionClassifyResult {
+    type: SelectionType;
+    normalizedText: string;
+    meaning: string;
+    example: string;
+}
+
+export interface VocabularyExistsResult {
+    exists: boolean;
+    vocabularyItemId: string | null;
 }
 
 export interface PracticeContextOption {

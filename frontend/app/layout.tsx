@@ -1,12 +1,14 @@
 
 import type { Metadata } from "next";
 import { Poppins, Geist_Mono } from "next/font/google";
+import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
-import { Toaster } from "sonner";
+import { ToastContainer } from "react-toastify";
 import {DarkModeProvider} from "@/componenets/DarkModeProvider";
 import {I18nProvider} from "@/componenets/I18nProvider";
 import AppChrome from "@/componenets/layout/AppChrome";
 import PremiumUpsellModal from "@/componenets/PremiumUpsellModal";
+import Providers from "./providers";
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
@@ -41,13 +43,15 @@ export default function RootLayout({
       <body
         className={`${poppins.variable} ${geistMono.variable} antialiased`}
       >
-      <I18nProvider>
-        <DarkModeProvider>
-            <AppChrome>{children}</AppChrome>
-            <Toaster richColors position="top-right" />
-            <PremiumUpsellModal />
-        </DarkModeProvider>
-      </I18nProvider>
+      <Providers>
+        <I18nProvider>
+          <DarkModeProvider>
+              <AppChrome>{children}</AppChrome>
+              <ToastContainer position="top-right" hideProgressBar closeOnClick pauseOnHover newestOnTop />
+              <PremiumUpsellModal />
+          </DarkModeProvider>
+        </I18nProvider>
+      </Providers>
       </body>
     </html>
   );

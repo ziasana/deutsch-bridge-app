@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import { getDailyWords } from "@/services/dailyWordService";
 import { setLearningProgress } from "@/services/grammarService";
 import { createVocabulary, getVocabulary } from "@/services/vocabularyService";
 import { DailyWord } from "@/types/dailyWord";
 import Button from "@/componenets/Button";
+import { useI18n } from "@/componenets/I18nProvider";
 import {
     DailyWordsHeader,
     DailyWordLearningCard,
@@ -21,6 +22,7 @@ const normalize = (word: string) => word.trim().toLowerCase();
 type Stage = "learning" | "practice" | "complete";
 
 export default function DailyWordsPage() {
+    const { t } = useI18n();
     const [words, setWords] = useState<DailyWord[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -61,10 +63,10 @@ export default function DailyWordsPage() {
         return (
             <div className="min-h-screen bg-background px-6 py-10 flex items-center justify-center">
                 <div className="text-center max-w-sm">
-                    <p className="text-foreground/70">We couldn&apos;t load today&apos;s words.</p>
-                    <p className="text-sm text-foreground/50 mt-1">Please try again.</p>
+                    <p className="text-foreground/70">{t.dailyWords.loadError}</p>
+                    <p className="text-sm text-foreground/50 mt-1">{t.dailyWords.loadErrorSubtitle}</p>
                     <Button variant="secondary" className="mt-4 text-sm" onClick={retry}>
-                        Retry
+                        {t.dailyWords.retry}
                     </Button>
                 </div>
             </div>
@@ -75,9 +77,9 @@ export default function DailyWordsPage() {
         return (
             <div className="min-h-screen bg-background px-6 py-10 flex items-center justify-center">
                 <div className="text-center max-w-sm">
-                    <h1 className="text-2xl font-bold text-foreground">Daily Words</h1>
-                    <p className="text-foreground/60 mt-2">No new words for today.</p>
-                    <p className="text-sm text-foreground/45 mt-1">Check back tomorrow for your next 5 words.</p>
+                    <h1 className="text-2xl font-bold text-foreground">{t.dailyWords.title}</h1>
+                    <p className="text-foreground/60 mt-2">{t.dailyWords.emptyTitle}</p>
+                    <p className="text-sm text-foreground/45 mt-1">{t.dailyWords.emptySubtitle}</p>
                 </div>
             </div>
         );
@@ -103,7 +105,7 @@ export default function DailyWordsPage() {
                     else if (currentIndex < updated.length - 1) setCurrentIndex(currentIndex + 1);
                 }
             })
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to update progress."))
+            .catch((err) => toast.error(err?.response?.data?.message ?? t.dailyWords.progressFailedToast))
             .finally(() => setMarkingId(null));
     };
 
@@ -120,21 +122,21 @@ export default function DailyWordsPage() {
         })
             .then(() => {
                 setSavedWords((prev) => new Set(prev).add(normalize(word.word)));
-                toast.success(`"${word.word}" added to your Vocabulary!`);
+                toast.success(t.dailyWords.savedToast(word.word));
             })
             .catch((err) => {
                 const message: string | undefined = err?.response?.data?.message;
                 if (message?.toLowerCase().includes("already exists")) {
                     setSavedWords((prev) => new Set(prev).add(normalize(word.word)));
                 } else {
-                    toast.error(message ?? "Failed to save word to your Vocabulary.");
+                    toast.error(message ?? t.dailyWords.saveFailedToast);
                 }
             })
             .finally(() => setSavingId(null));
     };
 
     return (
-        <div className="min-h-screen bg-background px-6 py-10 text-left">
+        <div className="min-h-screen bg-background px-6 py-10">
             <div className="max-w-2xl mx-auto">
                 <DailyWordsHeader learnedCount={learnedCount} total={words.length} />
 
@@ -178,7 +180,6 @@ export default function DailyWordsPage() {
                     </div>
                 )}
             </div>
-            <ToastContainer />
         </div>
     );
 }

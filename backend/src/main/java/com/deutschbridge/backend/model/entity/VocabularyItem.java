@@ -60,6 +60,10 @@ public class VocabularyItem {
     @ManyToOne(fetch = FetchType.LAZY)
     private DictionaryEntry dictionaryEntry;
 
+    /** Only set for source=AI_TUTOR - the chat session/message this item was saved from. */
+    private String sourceChatId;
+    private String sourceMessageId;
+
     private LocalDateTime createdAt;
 
     @PrePersist

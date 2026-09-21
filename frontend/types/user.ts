@@ -18,4 +18,14 @@ export interface UserProfileType{
     notificationsEnabled?: boolean
     preferredLanguage?: string
     role?: string
+    avatarUrl?: string | null
+    createdAt?: string | null
+    onboardingCompleted?: boolean
+    learningReasons?: string[]
+    currentLevelUnknown?: boolean
+    targetLevel?: string | null
+    focusAreas?: string[]
+    examType?: string | null
+    examLevel?: string | null
+    examDate?: string | null
 }

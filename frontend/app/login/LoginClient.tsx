@@ -4,7 +4,7 @@ import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import Loading from "@/componenets/Loading";
 import { useRouter, useSearchParams } from "next/navigation";
 import useAuthStore from "@/store/useAuthStore";
@@ -45,7 +45,13 @@ export default function LoginClient() {
                 if (res?.status === 200) {
                     const profile = res.data.data;
                     login(profile);
-                    router.push(profile?.role === "ADMIN" ? "/admin" : "/dashboard");
+                    if (profile?.role === "ADMIN") {
+                        router.push("/admin");
+                    } else if (!profile?.onboardingCompleted) {
+                        router.push("/signup/onboarding");
+                    } else {
+                        router.push("/dashboard");
+                    }
                 }
             })
             .catch((err) => {
@@ -115,7 +121,6 @@ export default function LoginClient() {
                     >
                         Sign up
                     </Link>
-                    <ToastContainer />
                 </div>
             </div>
         </div>

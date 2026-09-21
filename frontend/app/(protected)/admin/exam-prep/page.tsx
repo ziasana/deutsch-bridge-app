@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import useAuthStore from "@/store/useAuthStore";
 import {
     getExamExercisesForAdmin,
@@ -174,9 +175,15 @@ function syncGapQuestions(passagesList: ExamPassage[], existingQuestions: ExamQu
 export default function AdminExamPrepPage() {
     const router = useRouter();
     const { userProfile, hasHydrated } = useAuthStore();
+    const queryClient = useQueryClient();
 
-    const [exercises, setExercises] = useState<ExamExerciseResponse[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const EXERCISES_KEY = ["admin", "exam", "exercises"];
+
+    const { data: exercises = [], isLoading, error: exercisesError } = useQuery({
+        queryKey: EXERCISES_KEY,
+        queryFn: () => getExamExercisesForAdmin().then((res) => res.data),
+        enabled: hasHydrated && userProfile?.role === "ADMIN",
+    });
     const [isSaving, setIsSaving] = useState(false);
     const [exerciseToDelete, setExerciseToDelete] = useState<ExamExerciseResponse | null>(null);
 
@@ -196,21 +203,21 @@ export default function AdminExamPrepPage() {
     const [exercisesPageSize, setExercisesPageSize] = useState(10);
     const [exerciseSearch, setExerciseSearch] = useState("");
 
-    const fetchExercises = useCallback(() => {
-        getExamExercisesForAdmin()
-            .then((res) => setExercises(res.data))
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load exercises."))
-            .finally(() => setIsLoading(false));
-    }, []);
+    const invalidateExercises = () => queryClient.invalidateQueries({ queryKey: EXERCISES_KEY });
 
     useEffect(() => {
         if (!hasHydrated) return;
         if (userProfile?.role !== "ADMIN") {
             router.push("/dashboard");
-            return;
         }
-        fetchExercises();
-    }, [hasHydrated, userProfile, router, fetchExercises]);
+    }, [hasHydrated, userProfile, router]);
+
+    useEffect(() => {
+        if (exercisesError) {
+            const err = exercisesError as { response?: { data?: { message?: string } } };
+            toast.error(err?.response?.data?.message ?? "Failed to load exercises.");
+        }
+    }, [exercisesError]);
 
     if (!hasHydrated || userProfile?.role !== "ADMIN") return null;
 
@@ -415,7 +422,7 @@ export default function AdminExamPrepPage() {
             .then(() => {
                 toast.success(editingExercise ? "Exercise updated." : "Exercise saved.");
                 resetForm();
-                fetchExercises();
+                invalidateExercises();
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to save exercise."))
             .finally(() => setIsSaving(false));
@@ -461,7 +468,7 @@ export default function AdminExamPrepPage() {
         deleteExamExercise(exercise.id)
             .then(() => {
                 toast.success("Exercise deleted.");
-                fetchExercises();
+                invalidateExercises();
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to delete exercise."));
     };
@@ -1204,7 +1211,6 @@ export default function AdminExamPrepPage() {
                 onConfirm={confirmRemoveExercise}
                 onCancel={() => setExerciseToDelete(null)}
             />
-            <ToastContainer />
         </div>
     );
 }

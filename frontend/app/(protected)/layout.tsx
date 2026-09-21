@@ -1,7 +1,7 @@
 'use client';
 
 import {ReactNode, useEffect, useRef} from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import useAuthStore from '@/store/useAuthStore';
 import { getUserProfile } from '@/services/userService';
 interface ProtectedLayoutProps {
@@ -16,6 +16,7 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
         updateUserProfile,
     } = useAuthStore();
     const router = useRouter();
+    const pathname = usePathname();
     const hasRefreshedProfile = useRef(false);
 
     useEffect(() => {
@@ -25,6 +26,14 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
             router.push('/login')
         }
     }, [hasHydrated, isLoggedIn, router, userProfile]);
+
+    useEffect(() => {
+        if (!hasHydrated || !isLoggedIn || !userProfile) return;
+        if (userProfile.role === 'ADMIN') return;
+        if (!userProfile.onboardingCompleted) {
+            router.push('/signup/onboarding');
+        }
+    }, [hasHydrated, isLoggedIn, userProfile, pathname, router]);
 
     useEffect(() => {
         if (!hasHydrated || !isLoggedIn || hasRefreshedProfile.current) return;

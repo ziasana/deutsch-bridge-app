@@ -17,6 +17,8 @@ public interface GrammarCategoryTestAttemptRepository extends JpaRepository<Gram
 
     List<GrammarCategoryTestAttempt> findByUserAndCategoryIn(User user, List<GrammarCategory> categories);
 
+    List<GrammarCategoryTestAttempt> findByUser(User user);
+
     @Modifying
     void deleteByCategory(GrammarCategory category);
 }

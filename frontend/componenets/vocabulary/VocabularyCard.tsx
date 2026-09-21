@@ -52,7 +52,11 @@ export default function VocabularyCard({
                 <div className="flex items-center gap-2">
                     {item.level && <Badge variant="secondary">{item.level}</Badge>}
                     <Badge variant="outline">
-                        {item.source === "DICTIONARY" ? t.vocabulary.sourceTabs.fromReading : t.vocabulary.sourceTabs.myWords}
+                        {item.source === "DICTIONARY"
+                            ? t.vocabulary.sourceTabs.fromReading
+                            : item.source === "AI_TUTOR"
+                              ? t.vocabulary.sourceTabs.fromAiTutor
+                              : t.vocabulary.sourceTabs.myWords}
                     </Badge>
                 </div>
                 <button
@@ -123,7 +127,7 @@ export default function VocabularyCard({
                 >
                     {item.bookmarked ? <BookmarkCheck className="size-4" /> : <Bookmark className="size-4" />}
                 </button>
-                {item.source === "CUSTOM" && onEdit && (
+                {item.source !== "DICTIONARY" && onEdit && (
                     <button
                         type="button"
                         onClick={(e) => {
@@ -136,7 +140,7 @@ export default function VocabularyCard({
                         <Pencil className="size-4" />
                     </button>
                 )}
-                {item.source === "CUSTOM" && onDelete && (
+                {item.source !== "DICTIONARY" && onDelete && (
                     <button
                         type="button"
                         onClick={(e) => {

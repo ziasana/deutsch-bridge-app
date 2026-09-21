@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import useAuthStore from "@/store/useAuthStore";
 import {
     getExpressionsAdmin,
@@ -96,9 +97,15 @@ const emptyForm: ExpressionManualRequest = {
 export default function AdminExpressionsPage() {
     const router = useRouter();
     const { userProfile, hasHydrated } = useAuthStore();
+    const queryClient = useQueryClient();
 
-    const [entries, setEntries] = useState<Expression[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const ENTRIES_KEY = ["admin", "expressions"];
+
+    const { data: entries = [], isLoading, error: entriesError } = useQuery({
+        queryKey: ENTRIES_KEY,
+        queryFn: () => getExpressionsAdmin().then((res) => res.data),
+        enabled: hasHydrated && userProfile?.role === "ADMIN",
+    });
     const [isSaving, setIsSaving] = useState(false);
     const [entryToDelete, setEntryToDelete] = useState<Expression | null>(null);
     const [page, setPage] = useState(1);
@@ -116,21 +123,21 @@ export default function AdminExpressionsPage() {
     const [isBulkImporting, setIsBulkImporting] = useState(false);
     const [bulkResult, setBulkResult] = useState<ExpressionBulkImportResult | null>(null);
 
-    const fetchEntries = useCallback(() => {
-        getExpressionsAdmin()
-            .then((res) => setEntries(res.data))
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load entries."))
-            .finally(() => setIsLoading(false));
-    }, []);
+    const invalidateEntries = () => queryClient.invalidateQueries({ queryKey: ENTRIES_KEY });
 
     useEffect(() => {
         if (!hasHydrated) return;
         if (userProfile?.role !== "ADMIN") {
             router.push("/dashboard");
-            return;
         }
-        fetchEntries();
-    }, [hasHydrated, userProfile, router, fetchEntries]);
+    }, [hasHydrated, userProfile, router]);
+
+    useEffect(() => {
+        if (entriesError) {
+            const err = entriesError as { response?: { data?: { message?: string } } };
+            toast.error(err?.response?.data?.message ?? "Failed to load entries.");
+        }
+    }, [entriesError]);
 
     if (!hasHydrated || userProfile?.role !== "ADMIN") return null;
 
@@ -197,7 +204,7 @@ export default function AdminExpressionsPage() {
             .then(() => {
                 toast.success(editingEntry ? "Entry updated." : "Entry saved.");
                 resetForm();
-                fetchEntries();
+                invalidateEntries();
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to save entry."))
             .finally(() => setIsSaving(false));
@@ -247,7 +254,7 @@ export default function AdminExpressionsPage() {
         bulkImportExpressions(parsed)
             .then((res) => {
                 setBulkResult(res.data);
-                if (res.data.successCount > 0) fetchEntries();
+                if (res.data.successCount > 0) invalidateEntries();
                 if (res.data.failureCount === 0) {
                     toast.success(`Imported ${res.data.successCount} expressions.`);
                 } else {
@@ -273,7 +280,7 @@ export default function AdminExpressionsPage() {
         deleteExpression(entry.id)
             .then(() => {
                 toast.success("Entry deleted.");
-                fetchEntries();
+                invalidateEntries();
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to delete entry."));
     };
@@ -283,7 +290,7 @@ export default function AdminExpressionsPage() {
         updateExpression(entry.id, { status: nextStatus })
             .then(() => {
                 toast.success(nextStatus === "PUBLISHED" ? "Entry shown to students." : "Entry hidden from students.");
-                fetchEntries();
+                invalidateEntries();
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to update entry."));
     };
@@ -1159,7 +1166,6 @@ export default function AdminExpressionsPage() {
                 onConfirm={confirmRemoveEntry}
                 onCancel={() => setEntryToDelete(null)}
             />
-            <ToastContainer />
         </div>
     );
 }

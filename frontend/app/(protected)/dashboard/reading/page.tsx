@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import { Newspaper, CheckCircle2, Circle, ChevronRight, RotateCw, ArrowRight } from "lucide-react";
 import { getReadingArticles } from "@/services/readingService";
 import { ReadingArticle } from "@/types/reading";
@@ -220,7 +220,6 @@ export default function ReadingPage() {
                     </div>
                 )}
             </div>
-            <ToastContainer />
         </div>
     );
 }

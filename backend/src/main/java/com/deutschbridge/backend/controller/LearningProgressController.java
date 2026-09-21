@@ -4,6 +4,7 @@ import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.ApiResponse;
 import com.deutschbridge.backend.model.dto.LearningProgressRequest;
 import com.deutschbridge.backend.model.dto.OverviewResponse;
+import com.deutschbridge.backend.model.dto.ProgressStatsResponse;
 import com.deutschbridge.backend.model.dto.RecentVocabularyResponse;
 import com.deutschbridge.backend.model.dto.StreakResponse;
 import com.deutschbridge.backend.model.entity.LearningProgress;
@@ -50,6 +51,11 @@ public class LearningProgressController {
     @GetMapping("/streak")
     public ResponseEntity<StreakResponse> getStreak() {
         return new ResponseEntity<>(learningProgressService.getStreak(), HttpStatus.OK);
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ProgressStatsResponse> getStats() {
+        return new ResponseEntity<>(learningProgressService.getStats(), HttpStatus.OK);
     }
 
 }

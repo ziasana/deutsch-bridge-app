@@ -298,4 +298,39 @@ public class PromptLibrary {
                 Geben Sie NUR einfachen Text, kein JSON, an Markdown zurück, keine Formatierung.
                 """.formatted(languageInstruction);
     }
+
+    /** Classifies a text selection from an AI Tutor chat message as a single word or a multi-word
+     *  expression/idiom/Nomen-Verb-Verbindung, and normalizes it to its canonical dictionary form. */
+    public static String classifySelection(String selectedText, String contextText, String explanationLanguage) {
+        String meaningLanguageInstruction = switch (explanationLanguage == null ? "" : explanationLanguage.toUpperCase()) {
+            case "PR", "FA" -> "Schreibe \"meaning\" auf Persisch (Farsi).";
+            default -> "Schreibe \"meaning\" auf Englisch.";
+        };
+
+        return String.format("""
+        Ein Deutschlernender hat den folgenden Text in einer Chat-Nachricht seines Deutschlehrers markiert,
+        um ihn zu seinem persönlichen Vokabular hinzuzufügen.
+
+        Markierter Text:
+        "%s"
+
+        Kontext (die ganze Nachricht, aus der der Text stammt):
+        "%s"
+
+        Deine Aufgabe:
+        1. Entscheide, ob es sich um ein einzelnes WORD (ein Wort, ggf. mit Artikel) oder eine
+           EXPRESSION (Wendung, Redewendung, Nomen-Verb-Verbindung, Kollokation, mehrere Wörter) handelt.
+        2. Normalisiere den Text in seine Wörterbuch-Grundform:
+           - WORD: Grundform/Infinitiv (Nomen mit Artikel falls sinnvoll, Verben im Infinitiv,
+             Adjektive in der Grundform).
+           - EXPRESSION: die kanonische, verallgemeinerte Form, NICHT der wörtliche Ausschnitt aus dem
+             Satz. Beispiel: "für einen neuen Deutschkurs entschieden" -> "sich für etwas entscheiden".
+        3. Gib eine kurze, klare Bedeutung an. %s
+        4. Gib einen natürlichen deutschen Beispielsatz mit der normalisierten Form an.
+
+        Antworte AUSSCHLIESSLICH mit einem einzeiligen, gültigen JSON-Objekt, ohne Codeblock, ohne
+        Erklärung, in genau diesem Format:
+        {"type":"WORD oder EXPRESSION","normalizedText":"...","meaning":"...","example":"..."}
+        """, selectedText, contextText, meaningLanguageInstruction);
+    }
 }

@@ -18,7 +18,9 @@ import com.deutschbridge.backend.model.enums.ReadingQuizQuestionType;
 import com.deutschbridge.backend.repository.LearningProgressRepository;
 import com.deutschbridge.backend.repository.ReadingArticleRepository;
 import com.deutschbridge.backend.repository.UserWordProgressRepository;
+import com.deutschbridge.backend.service.cache.ContentCacheService;
 import com.deutschbridge.backend.util.ReadingArticleMapper;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -45,6 +47,7 @@ public class ReadingArticleService {
     private final RequestContext requestContext;
     private final OllamaService ollamaService;
     private final TokenizationService tokenizationService;
+    private final ContentCacheService contentCacheService;
 
     public ReadingArticleService(ReadingArticleRepository readingArticleRepository,
                                   LearningProgressRepository learningProgressRepository,
@@ -52,7 +55,8 @@ public class ReadingArticleService {
                                   UserService userService,
                                   RequestContext requestContext,
                                   OllamaService ollamaService,
-                                  TokenizationService tokenizationService) {
+                                  TokenizationService tokenizationService,
+                                  ContentCacheService contentCacheService) {
         this.readingArticleRepository = readingArticleRepository;
         this.learningProgressRepository = learningProgressRepository;
         this.userWordProgressRepository = userWordProgressRepository;
@@ -60,6 +64,7 @@ public class ReadingArticleService {
         this.requestContext = requestContext;
         this.ollamaService = ollamaService;
         this.tokenizationService = tokenizationService;
+        this.contentCacheService = contentCacheService;
     }
 
     public ReadingArticle findById(String id) throws DataNotFoundException {
@@ -68,11 +73,11 @@ public class ReadingArticleService {
     }
 
     public List<ReadingArticleResponse> findAllWithLearningProgress() {
-        return mapWithCurrentUserProgress(readingArticleRepository.findAll());
+        return mapWithCurrentUserProgress(contentCacheService.getAllReadingArticles());
     }
 
     public List<ReadingArticleResponse> findByLevelWithLearningProgress(LearningLevel level) {
-        return mapWithCurrentUserProgress(readingArticleRepository.findByLevel(level));
+        return mapWithCurrentUserProgress(contentCacheService.getReadingArticlesByLevel(level));
     }
 
     public ReadingArticleResponse findByIdWithLearningProgress(String id) throws DataNotFoundException {
@@ -108,6 +113,7 @@ public class ReadingArticleService {
                 .toList();
     }
 
+    @CacheEvict(cacheNames = "readingArticles", allEntries = true)
     public ReadingArticleResponse generate(String topic, LearningLevel level) {
         String raw = ollamaService.generateReadingArticle(topic, level);
         ParsedArticle parsed = parseGeneratedArticle(raw);
@@ -148,6 +154,7 @@ public class ReadingArticleService {
         return article.getQuiz() != null ? article.getQuiz() : new ArrayList<>();
     }
 
+    @CacheEvict(cacheNames = "readingArticles", allEntries = true)
     public ReadingArticleResponse createManual(ReadingArticleManualRequest request) {
         ReadingArticle article = new ReadingArticle();
         article.setTitle(request.title());
@@ -164,6 +171,7 @@ public class ReadingArticleService {
         return ReadingArticleMapper.mapToResponse(readingArticleRepository.save(article), null, Set.of());
     }
 
+    @CacheEvict(cacheNames = "readingArticles", allEntries = true)
     public ReadingArticleResponse update(String id, ReadingArticleManualRequest request) throws DataNotFoundException {
         ReadingArticle existing = findById(id);
 
@@ -185,6 +193,7 @@ public class ReadingArticleService {
         return ReadingArticleMapper.mapToResponse(readingArticleRepository.save(existing), null, Set.of());
     }
 
+    @CacheEvict(cacheNames = "readingArticles", allEntries = true)
     public void delete(String id) throws DataNotFoundException {
         findById(id);
         readingArticleRepository.deleteById(id);

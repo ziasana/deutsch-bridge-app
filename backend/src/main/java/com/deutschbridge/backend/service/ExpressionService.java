@@ -23,10 +23,12 @@ import com.deutschbridge.backend.model.enums.ExpressionType;
 import com.deutschbridge.backend.repository.ExpressionBookmarkRepository;
 import com.deutschbridge.backend.repository.ExpressionProgressRepository;
 import com.deutschbridge.backend.repository.ExpressionRepository;
+import com.deutschbridge.backend.service.cache.ContentCacheService;
 import com.deutschbridge.backend.util.ExpressionMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -47,6 +49,7 @@ public class ExpressionService {
     private final RequestContext requestContext;
     private final FileStorageService fileStorageService;
     private final ObjectMapper objectMapper;
+    private final ContentCacheService contentCacheService;
 
     public ExpressionService(ExpressionRepository expressionRepository,
                               ExpressionProgressRepository expressionProgressRepository,
@@ -54,7 +57,8 @@ public class ExpressionService {
                               UserService userService,
                               RequestContext requestContext,
                               FileStorageService fileStorageService,
-                              ObjectMapper objectMapper) {
+                              ObjectMapper objectMapper,
+                              ContentCacheService contentCacheService) {
         this.expressionRepository = expressionRepository;
         this.expressionProgressRepository = expressionProgressRepository;
         this.expressionBookmarkRepository = expressionBookmarkRepository;
@@ -62,14 +66,13 @@ public class ExpressionService {
         this.requestContext = requestContext;
         this.fileStorageService = fileStorageService;
         this.objectMapper = objectMapper;
+        this.contentCacheService = contentCacheService;
     }
 
-    // Not cached: the response is scoped to the current user's learning progress, so a shared
-    // 'all' cache key would leak one user's progress to every other user reading it.
+    // The per-user progress merge below is never cached (see mapWithCurrentUserProgress) - only
+    // the shared published-expressions fetch is, via ContentCacheService.
     public List<ExpressionResponse> findAllPublished(ExpressionType type) {
-        List<Expression> expressions = publishedOnly(expressionRepository.findAll()).stream()
-                .filter(e -> type == null || e.getType() == type)
-                .toList();
+        List<Expression> expressions = contentCacheService.getPublishedExpressions(type);
         return mapWithCurrentUserProgress(expressions);
     }
 
@@ -149,6 +152,7 @@ public class ExpressionService {
         return ExpressionMapper.mapToAdminResponse(findEntityById(id));
     }
 
+    @CacheEvict(cacheNames = "expressions", allEntries = true)
     public ExpressionResponse createManual(ExpressionManualRequest request) {
         Expression expression = new Expression();
         applyRequest(expression, request);
@@ -162,6 +166,7 @@ public class ExpressionService {
      * single unparseable row surfaces as one failed row instead of rejecting the whole request at
      * the HTTP deserialization layer.
      */
+    @CacheEvict(cacheNames = "expressions", allEntries = true)
     public ExpressionBulkImportResult bulkImport(List<JsonNode> rows) {
         List<ExpressionBulkImportRowResult> results = new ArrayList<>();
         int successCount = 0;
@@ -211,6 +216,7 @@ public class ExpressionService {
         return "Could not import this row: " + e.getMessage();
     }
 
+    @CacheEvict(cacheNames = "expressions", allEntries = true)
     public ExpressionResponse updateManual(String id, ExpressionManualRequest request) throws DataNotFoundException {
         Expression existing = findEntityById(id);
         String previousImageUrl = existing.getImageUrl();
@@ -226,6 +232,7 @@ public class ExpressionService {
         return response;
     }
 
+    @CacheEvict(cacheNames = "expressions", allEntries = true)
     public void deleteById(String id) throws DataNotFoundException {
         Expression existing = findEntityById(id);
         fileStorageService.deleteFile(existing.getImageUrl());
@@ -307,10 +314,6 @@ public class ExpressionService {
             throw new DataNotFoundException(NOT_FOUND_MSG);
         }
         return expression;
-    }
-
-    private List<Expression> publishedOnly(List<Expression> expressions) {
-        return expressions.stream().filter(e -> e.getStatus() != ExpressionStatus.DRAFT).toList();
     }
 
     private Set<String> bookmarkedExpressionIds(User user, List<Expression> expressions) {

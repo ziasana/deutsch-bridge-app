@@ -1,11 +1,11 @@
 "use client";
 import * as React from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import useAuthStore from "@/store/useAuthStore";
 import { useI18n } from "@/componenets/I18nProvider";
 import { getDashboard } from "@/services/dashboardService";
-import { DashboardResponse } from "@/types/dashboard";
 import DashboardHeader from "@/componenets/dashboard/DashboardHeader";
 import NewContentBanner from "@/componenets/dashboard/NewContentBanner";
 import ContinueLearningCard from "@/componenets/dashboard/ContinueLearningCard";
@@ -17,50 +17,55 @@ import LearningMilestone from "@/componenets/dashboard/LearningMilestone";
 import DashboardSkeleton from "@/componenets/dashboard/DashboardSkeleton";
 import { Button } from "@/componenets/ui/button";
 
+// Cached for a minute so hopping between Dashboard and Your Progress (both read
+// the same "dashboard" query) reuses the last fetch instead of re-hitting the
+// API - a short staleTime keeps the streak/review numbers close to real-time
+// without refetching on every visit.
+const DASHBOARD_STALE_TIME_MS = 60 * 1000;
+
 const DashboardPage = () => {
     const router = useRouter();
     const { userProfile, hasHydrated } = useAuthStore();
     const { t } = useI18n();
 
-    const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
-    const [error, setError] = useState(false);
-    const [loading, setLoading] = useState(true);
+    const isAdmin = hasHydrated && userProfile?.role === "ADMIN";
 
-    const load = useCallback(() => {
-        setLoading(true);
-        setError(false);
-        getDashboard()
-            .then((res) => setDashboard(res.data))
-            .catch(() => setError(true))
-            .finally(() => setLoading(false));
-    }, []);
+    const {
+        data: dashboard,
+        isLoading,
+        isError,
+        refetch,
+    } = useQuery({
+        queryKey: ["dashboard"],
+        queryFn: () => getDashboard().then((res) => res.data),
+        enabled: hasHydrated && !isAdmin,
+        staleTime: DASHBOARD_STALE_TIME_MS,
+    });
 
     useEffect(() => {
-        if (hasHydrated && userProfile?.role === "ADMIN") {
+        if (isAdmin) {
             router.push("/admin");
-            return;
         }
-        if (hasHydrated && userProfile?.role !== "ADMIN") {
-            load();
-        }
-    }, [hasHydrated, userProfile, router, load]);
+    }, [isAdmin, router]);
 
-    if (hasHydrated && userProfile?.role === "ADMIN") return null;
+    if (isAdmin) return null;
+
+    const loading = !hasHydrated || isLoading;
 
     return (
         <div className="px-4 py-8 sm:px-6 sm:py-10">
             {loading && <DashboardSkeleton />}
 
-            {!loading && error && (
+            {!loading && isError && (
                 <div className="max-w-6xl mx-auto text-center py-16">
                     <p className="text-foreground/60">{t.dashboard.error.message}</p>
-                    <Button onClick={load} className="mt-4">
+                    <Button onClick={() => refetch()} className="mt-4">
                         {t.dashboard.error.retry}
                     </Button>
                 </div>
             )}
 
-            {!loading && !error && dashboard && (
+            {!loading && !isError && dashboard && (
                 <div className="max-w-6xl mx-auto space-y-6">
                     <DashboardHeader
                         displayName={dashboard.user.displayName || userProfile?.displayName || ""}

@@ -1,12 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import { submitCategoryTest, markCategoryComplete } from "@/services/grammarService";
 import { CategoryTestStatus, GrammarLesson, QuizQuestion } from "@/types/grammar";
 import Button from "@/componenets/Button";
 import { localizedQuestionText } from "@/lib/grammarLocalization";
 import { AppLanguage } from "@/lib/i18n/translations";
+import { useI18n } from "@/componenets/I18nProvider";
+import { InlineMarkdown } from "@/componenets/LessonMarkdown";
 
 const MAX_QUESTIONS = 15;
 
@@ -65,12 +67,11 @@ export default function CategoryTestSection({
     const [status, setStatus] = useState<CategoryTestStatus>(initialStatus);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isCompleting, setIsCompleting] = useState(false);
+    const { t } = useI18n();
 
     if (pool.length === 0) {
         return (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-                No exercises available yet in this category&apos;s lessons.
-            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t.grammar.categoryTest.noExercises}</p>
         );
     }
 
@@ -104,7 +105,7 @@ export default function CategoryTestSection({
                 setStatus(res.data);
                 onStatusChange?.(res.data);
             })
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to save your test result."))
+            .catch((err) => toast.error(err?.response?.data?.message ?? t.grammar.categoryTest.failedSaveResult))
             .finally(() => setIsSubmitting(false));
     };
 
@@ -124,9 +125,9 @@ export default function CategoryTestSection({
             .then((res) => {
                 setStatus(res.data);
                 onStatusChange?.(res.data);
-                toast.success("Category marked as complete!");
+                toast.success(t.grammar.categoryTest.markedComplete);
             })
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to mark this category complete."))
+            .catch((err) => toast.error(err?.response?.data?.message ?? t.grammar.categoryTest.failedMarkComplete))
             .finally(() => setIsCompleting(false));
     };
 
@@ -136,18 +137,16 @@ export default function CategoryTestSection({
                 <div className="space-y-2">
                     {status.attempted && (
                         <p className="text-sm text-gray-600 dark:text-gray-300">
-                            Last attempt: {status.score} / {status.total} —{" "}
-                            {status.passed ? "Passed" : "Not passed"}
-                            {status.completed ? " · Completed" : ""}
+                            {t.grammar.categoryTest.lastAttempt(status.score, status.total)}{" "}
+                            {status.passed ? t.grammar.categoryTest.passedLabel : t.grammar.categoryTest.notPassedLabel}
+                            {status.completed ? t.grammar.categoryTest.completedSuffix : ""}
                         </p>
                     )}
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {Math.min(MAX_QUESTIONS, pool.length)} random question
-                        {Math.min(MAX_QUESTIONS, pool.length) > 1 ? "s" : ""} from this category&apos;s lessons. Needs{" "}
-                        {passThreshold}% to pass.
+                        {t.grammar.categoryTest.questionsFromLessons(Math.min(MAX_QUESTIONS, pool.length), passThreshold)}
                     </p>
                     <Button variant="primary" className="text-sm px-4 py-2" onClick={beginTest}>
-                        {status.attempted ? "Retake category test" : "Start category test"}
+                        {status.attempted ? t.grammar.categoryTest.retakeTestPrompt : t.grammar.categoryTest.startTest}
                     </Button>
                 </div>
             )}
@@ -155,12 +154,16 @@ export default function CategoryTestSection({
             {phase === "active" && question && (
                 <div className="space-y-3" dir={localized?.dir}>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Question {currentIndex + 1} of {questions.length}
+                        {t.grammar.questionOf(currentIndex + 1, questions.length)}
                     </p>
                     {localized?.title && (
-                        <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">{localized.title}</p>
+                        <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+                            <InlineMarkdown content={localized.title} autoDir />
+                        </p>
                     )}
-                    <p className="font-medium text-gray-900 dark:text-white">{localized?.question}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                        <InlineMarkdown content={localized?.question ?? ""} autoDir />
+                    </p>
 
                     {question.type === "mcq" && (
                         <div className="space-y-2">
@@ -176,7 +179,7 @@ export default function CategoryTestSection({
                                             : "border-gray-300 dark:border-gray-600"
                                     }`}
                                 >
-                                    {option}
+                                    <InlineMarkdown content={option} autoDir />
                                 </button>
                             ))}
                         </div>
@@ -185,8 +188,8 @@ export default function CategoryTestSection({
                     {question.type === "truefalse" && (
                         <div className="flex gap-2">
                             {[
-                                { value: "True", label: "True" },
-                                { value: "False", label: "False" },
+                                { value: "True", label: t.grammar.true },
+                                { value: "False", label: t.grammar.false },
                             ].map((option) => (
                                 <button
                                     key={option.value}
@@ -211,7 +214,7 @@ export default function CategoryTestSection({
                             value={selectedAnswer}
                             disabled={submitted}
                             onChange={(e) => setSelectedAnswer(e.target.value)}
-                            placeholder="Type your answer"
+                            placeholder={t.grammar.typeAnswer}
                             className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                         />
                     )}
@@ -224,16 +227,20 @@ export default function CategoryTestSection({
                                     : "bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200"
                             }`}
                         >
-                            <p className="font-semibold">{correct ? "Correct!" : "Not quite."}</p>
+                            <p className="font-semibold">{correct ? t.grammar.correct : t.grammar.incorrect}</p>
                             {!correct && (
                                 <p>
-                                    Correct answer:{" "}
+                                    {t.grammar.correctAnswer}
                                     <span className="font-medium">
-                                        {typeof question.answer === "boolean"
-                                            ? question.answer
-                                                ? "True"
-                                                : "False"
-                                            : question.answer}
+                                        {typeof question.answer === "boolean" ? (
+                                            question.answer ? (
+                                                t.grammar.true
+                                            ) : (
+                                                t.grammar.false
+                                            )
+                                        ) : (
+                                            <InlineMarkdown content={question.answer} autoDir />
+                                        )}
                                     </span>
                                 </p>
                             )}
@@ -243,7 +250,7 @@ export default function CategoryTestSection({
                     <div className="flex justify-end pt-2">
                         {submitted ? (
                             <Button variant="primary" className="text-sm px-4 py-2" onClick={nextQuestion}>
-                                {currentIndex + 1 >= questions.length ? "See results" : "Next question"}
+                                {currentIndex + 1 >= questions.length ? t.grammar.seeResults : t.grammar.nextQuestion}
                             </Button>
                         ) : (
                             <Button
@@ -252,7 +259,7 @@ export default function CategoryTestSection({
                                 disabled={!selectedAnswer}
                                 onClick={submitAnswer}
                             >
-                                Submit answer
+                                {t.grammar.submitAnswer}
                             </Button>
                         )}
                     </div>
@@ -262,7 +269,7 @@ export default function CategoryTestSection({
             {phase === "results" && (
                 <div className="space-y-3">
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {correctCount} / {questions.length} correct
+                        {t.grammar.resultsScore(correctCount, questions.length)}
                     </p>
                     {!isSubmitting && (
                         <p
@@ -273,13 +280,13 @@ export default function CategoryTestSection({
                             }`}
                         >
                             {status.passed
-                                ? `Passed! (needs ${passThreshold}%)`
-                                : `Not passed yet — needs ${passThreshold}% to pass.`}
+                                ? t.grammar.categoryTest.passedNeeds(passThreshold)
+                                : t.grammar.categoryTest.notPassedNeeds(passThreshold)}
                         </p>
                     )}
                     <div className="flex gap-2 flex-wrap">
                         <Button variant="secondary" className="text-sm px-4 py-2" onClick={beginTest}>
-                            Retake test
+                            {t.grammar.categoryTest.retakeTest}
                         </Button>
                         {status.passed && !status.completed && (
                             <Button
@@ -288,12 +295,12 @@ export default function CategoryTestSection({
                                 disabled={isCompleting || isSubmitting}
                                 onClick={handleMarkComplete}
                             >
-                                {isCompleting ? "Saving..." : "Mark as complete"}
+                                {isCompleting ? t.grammar.saving : t.grammar.categoryTest.markAsComplete}
                             </Button>
                         )}
                         {status.completed && (
                             <span className="text-sm px-3 py-2 rounded-lg bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200 font-medium">
-                                ✓ Completed
+                                {t.grammar.categoryTest.completedBadge}
                             </span>
                         )}
                     </div>

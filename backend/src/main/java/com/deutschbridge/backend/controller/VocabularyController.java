@@ -1,7 +1,11 @@
 package com.deutschbridge.backend.controller;
 
 import com.deutschbridge.backend.exception.DataNotFoundException;
+import com.deutschbridge.backend.model.dto.SelectionClassifyRequest;
+import com.deutschbridge.backend.model.dto.SelectionClassifyResponse;
 import com.deutschbridge.backend.model.dto.VocabularyCreateRequest;
+import com.deutschbridge.backend.model.dto.VocabularyExistsResponse;
+import com.deutschbridge.backend.model.dto.VocabularyFromChatCreateRequest;
 import com.deutschbridge.backend.model.dto.VocabularyItemResponse;
 import com.deutschbridge.backend.model.dto.VocabularyPracticeSessionResponse;
 import com.deutschbridge.backend.model.dto.VocabularyRoundRequest;
@@ -55,6 +59,21 @@ public class VocabularyController {
     @PostMapping("/from-dictionary/{dictionaryEntryId}")
     public ResponseEntity<VocabularyItemResponse> addFromDictionary(@PathVariable String dictionaryEntryId) throws DataNotFoundException {
         return ResponseEntity.ok(vocabularyService.addFromDictionary(dictionaryEntryId));
+    }
+
+    @PostMapping("/from-chat")
+    public ResponseEntity<VocabularyItemResponse> createFromChat(@RequestBody VocabularyFromChatCreateRequest request) {
+        return ResponseEntity.ok(vocabularyService.createFromChat(request));
+    }
+
+    @PostMapping("/classify-selection")
+    public ResponseEntity<SelectionClassifyResponse> classifySelection(@RequestBody SelectionClassifyRequest request) {
+        return ResponseEntity.ok(vocabularyService.classifySelection(request.selectedText(), request.contextText()));
+    }
+
+    @GetMapping("/exists")
+    public ResponseEntity<VocabularyExistsResponse> exists(@RequestParam String word) {
+        return ResponseEntity.ok(vocabularyService.checkExists(word));
     }
 
     @PutMapping("/{id}")

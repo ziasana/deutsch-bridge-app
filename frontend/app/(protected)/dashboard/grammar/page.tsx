@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import { BookOpen, ChevronLeft, ChevronRight, RotateCw, ArrowRight } from "lucide-react";
 import { getGrammarLessons, getGrammarCategories } from "@/services/grammarService";
 import { GrammarCategoryWithLessons, GrammarLesson } from "@/types/grammar";
@@ -20,23 +21,31 @@ export default function GrammarLessonsPage() {
     const router = useRouter();
     const { language, t } = useI18n();
     const { userProfile } = useAuthStore();
-    const [lessons, setLessons] = useState<GrammarLesson[]>([]);
-    const [categories, setCategories] = useState<GrammarCategoryWithLessons[]>([]);
-    const [loading, setLoading] = useState(true);
     const [levelFilter, setLevelFilter] = useState<string | null>(null);
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
     const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
+    const { data: lessonsData, isLoading: lessonsLoading, error: lessonsError } = useQuery({
+        queryKey: ["grammar", "lessons"],
+        queryFn: () => getGrammarLessons().then((res) => res.data),
+    });
+    const { data: categoriesData, isLoading: categoriesLoading, error: categoriesError } = useQuery<GrammarCategoryWithLessons[]>({
+        queryKey: ["grammar", "categories"],
+        queryFn: () => getGrammarCategories().then((res) => res.data),
+    });
+
+    const lessons = lessonsData ?? [];
+    const categories = categoriesData ?? [];
+    const loading = lessonsLoading || categoriesLoading;
+    const queryError = lessonsError ?? categoriesError;
+
     useEffect(() => {
-        Promise.all([getGrammarLessons(), getGrammarCategories()])
-            .then(([lessonsRes, categoriesRes]) => {
-                setLessons(lessonsRes.data);
-                setCategories(categoriesRes.data);
-            })
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load grammar lessons."))
-            .finally(() => setLoading(false));
-    }, []);
+        if (queryError) {
+            const err = queryError as { response?: { data?: { message?: string } } };
+            toast.error(err?.response?.data?.message ?? "Failed to load grammar lessons.");
+        }
+    }, [queryError]);
 
     if (loading) return <Loading />;
 
@@ -177,12 +186,12 @@ export default function GrammarLessonsPage() {
                                     <>
                                         {testStatus.completed && (
                                             <Badge variant="default" className="rounded-full">
-                                                ✓ Completed
+                                                ✓ {t.grammar.categoryTestCompleted}
                                             </Badge>
                                         )}
                                         {!testStatus.completed && testStatus.attempted && (
                                             <span className="text-xs text-foreground/50">
-                                                Last score: {testStatus.score}/{testStatus.total}
+                                                {t.grammar.lastScore(testStatus.score, testStatus.total)}
                                             </span>
                                         )}
                                     </>
@@ -195,7 +204,7 @@ export default function GrammarLessonsPage() {
                                         }}
                                         className="text-sm px-3 py-2 rounded-lg bg-primary/10 text-primary font-medium hover:bg-primary/20 transition"
                                     >
-                                        {testStatus.attempted ? "Retake category test →" : "Take category test →"}
+                                        {testStatus.attempted ? t.grammar.retakeCategoryTest : t.grammar.takeCategoryTest}
                                     </button>
                                 }
                             >
@@ -205,7 +214,7 @@ export default function GrammarLessonsPage() {
                     })}
 
                     {uncategorized.length > 0 && visibleCategories.length > 0 && (
-                        <p className="text-sm font-semibold text-foreground/50 pt-2">Other lessons</p>
+                        <p className="text-sm font-semibold text-foreground/50 pt-2">{t.grammar.otherLessons}</p>
                     )}
 
                     {paginated.map((lesson) => renderLessonRow(lesson))}
@@ -239,7 +248,6 @@ export default function GrammarLessonsPage() {
                     </div>
                 )}
             </div>
-            <ToastContainer />
         </div>
     );
 }

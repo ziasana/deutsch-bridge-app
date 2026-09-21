@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import { ThumbsUp, MessageSquare, Play, ArrowRight, ChevronLeft, ChevronRight, Sparkles, Flame, Layers } from "lucide-react";
 import { getExpressions, addExpressionBookmark, removeExpressionBookmark } from "@/services/expressionService";
 import { Expression, ExpressionMasteryLevel, ExpressionType } from "@/types/expression";
@@ -48,8 +49,11 @@ const CONTINUE_LEARNING_COUNT = 3;
 
 export default function ExpressionsPage() {
     const router = useRouter();
-    const [expressions, setExpressions] = useState<Expression[]>([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
+    const { data: expressions = [], isLoading: loading } = useQuery({
+        queryKey: ["expressions"],
+        queryFn: () => getExpressions().then((res) => res.data),
+    });
     const [collection, setCollection] = useState<ExpressionType>("NOMEN_VERB_VERBINDUNG");
     const [search, setSearch] = useState("");
     const [levelFilter, setLevelFilter] = useState("ALL");
@@ -58,12 +62,9 @@ export default function ExpressionsPage() {
     const [sort, setSort] = useState<SortOption>("recommended");
     const [page, setPage] = useState(1);
 
-    useEffect(() => {
-        getExpressions()
-            .then((res) => setExpressions(res.data))
-            .catch((err) => console.error(err))
-            .finally(() => setLoading(false));
-    }, []);
+    const setExpressions = (updater: (prev: Expression[]) => Expression[]) => {
+        queryClient.setQueryData<Expression[]>(["expressions"], (prev) => updater(prev ?? []));
+    };
 
     const toggleBookmark = (expression: Expression) => {
         const wasBookmarked = expression.bookmarked;
@@ -150,7 +151,7 @@ export default function ExpressionsPage() {
         router.push(`/dashboard/expressions/practice?expressionId=${expression.id}`);
 
     return (
-        <div className="min-h-screen bg-background px-6 py-10">
+        <div className="min-h-screen bg-background px-6 py-10" dir="ltr">
             <div className="max-w-4xl mx-auto">
                 <header className="flex items-start justify-between flex-wrap gap-4">
                     <div className="flex items-start gap-4">
@@ -357,7 +358,6 @@ export default function ExpressionsPage() {
                     </>
                 )}
             </div>
-            <ToastContainer />
         </div>
     );
 }

@@ -4,14 +4,16 @@ import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import com.deutschbridge.backend.model.enums.AccountType;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import java.time.Instant;
 import java.util.List;
 
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@EnableJpaAuditing
 @Data
+@EntityListeners(AuditingEntityListener.class)
 @Table(name="users")
 public class User {
     @Id
@@ -23,6 +25,11 @@ public class User {
     private String username;
     private String password;
     private String displayName;
+    private String avatarUrl;
+
+    @CreatedDate
+    @Column(updatable = false)
+    private Instant createdAt;
 
     private String role="STUDENT";
 

@@ -4,7 +4,7 @@ import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.AuthUser;
 import com.deutschbridge.backend.model.dto.*;
 import com.deutschbridge.backend.model.entity.User;
-import com.deutschbridge.backend.model.entity.UserProfile;
+import com.deutschbridge.backend.service.FileStorageService;
 import com.deutschbridge.backend.service.UserProfileService;
 import com.deutschbridge.backend.service.UserService;
 import com.deutschbridge.backend.util.SecurityUtils;
@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -23,10 +24,12 @@ public class UserController {
 
     private final UserService userService;
     private final UserProfileService userProfileService;
+    private final FileStorageService fileStorageService;
 
-    public UserController(UserService userService, UserProfileService userProfileService) {
+    public UserController(UserService userService, UserProfileService userProfileService, FileStorageService fileStorageService) {
         this.userService = userService;
         this.userProfileService = userProfileService;
+        this.fileStorageService = fileStorageService;
     }
 
     @GetMapping
@@ -58,18 +61,32 @@ public class UserController {
     @GetMapping("/profile")
     public ResponseEntity<ApiResponse<UserProfileResponse>> getProfile(@AuthenticationPrincipal AuthUser authUser) {
         User user = userService.findByEmail(authUser.getEmail());
-        UserProfile profile = user.getProfile(); // This is loaded eagerly
-        UserProfileResponse response= new UserProfileResponse(
-                user.getDisplayName(),
-                user.getEmail(),
-                profile.getLearningLevel().getValue(),
-                profile.getDailyGoalWords(),
-                profile.isNotificationsEnabled(),
-                profile.getPreferredLanguage(),
-                user.getRole()
-        );
+        UserProfileResponse response = userProfileService.getUserProfileResponse(user);
         return new ResponseEntity<>(
                 new ApiResponse<>("Profile loaded", response), HttpStatus.OK);
+    }
+
+    @PutMapping("/onboarding")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> completeOnboarding(@RequestBody OnboardingRequest request) throws DataNotFoundException {
+        String authId = SecurityUtils.getCurrentUser().getId();
+        UserProfileResponse response = userProfileService.completeOnboarding(authId, request);
+        return new ResponseEntity<>(
+                new ApiResponse<>("Learning plan saved", response), HttpStatus.OK);
+    }
+
+    @PostMapping(value = "/avatar", consumes = "multipart/form-data")
+    public ResponseEntity<ApiResponse<String>> uploadAvatar(@RequestParam("file") MultipartFile file) throws DataNotFoundException {
+        String authId = SecurityUtils.getCurrentUser().getId();
+        User user = userService.findById(authId);
+
+        String oldAvatarUrl = user.getAvatarUrl();
+        String avatarUrl = fileStorageService.storeUserAvatar(file);
+        user.setAvatarUrl(avatarUrl);
+        userService.save(user);
+        fileStorageService.deleteFile(oldAvatarUrl);
+
+        return new ResponseEntity<>(
+                new ApiResponse<>("Avatar updated", avatarUrl), HttpStatus.OK);
     }
 
     @PutMapping("/update-profile")

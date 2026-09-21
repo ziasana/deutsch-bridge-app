@@ -4,9 +4,14 @@ import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.exception.GlobalExceptionHandler;
 import com.deutschbridge.backend.exception.UserVerificationException;
 import com.deutschbridge.backend.model.AuthUser;
+import com.deutschbridge.backend.model.dto.UserProfileResponse;
 import com.deutschbridge.backend.model.dto.UserRegistrationRequest;
 import com.deutschbridge.backend.model.entity.User;
+import com.deutschbridge.backend.service.CookieService;
+import com.deutschbridge.backend.service.UserProfileService;
 import com.deutschbridge.backend.service.UserService;
+import com.deutschbridge.backend.util.JWTUtil;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,6 +50,12 @@ class AuthControllerTest {
     private AuthController authController;
     @Mock
     private UserService userService;
+    @Mock
+    private JWTUtil jwtUtil;
+    @Mock
+    private CookieService cookieService;
+    @Mock
+    private UserProfileService userProfileService;
     UserRegistrationRequest userRegistrationRequest;
 
     private User user() {
@@ -81,10 +92,18 @@ class AuthControllerTest {
     // POST /api/user/register
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("POST /api/auth/register -> should register user")
+    @DisplayName("POST /api/auth/register -> should register and auto-authenticate the user")
     void testRegisterUser() throws Exception {
 
         when(userService.registerUser(any(UserRegistrationRequest.class))).thenReturn(user());
+        when(jwtUtil.generateAccessToken("john@example.com")).thenReturn("access-token");
+        when(jwtUtil.generateRefreshToken("john@example.com")).thenReturn("refresh-token");
+        when(cookieService.createAccessToken("access-token")).thenReturn(new Cookie("access_token", "access-token"));
+        when(cookieService.createRefreshToken("refresh-token")).thenReturn(new Cookie("refresh_token", "refresh-token"));
+        when(userProfileService.getUserProfileResponse(any(User.class))).thenReturn(new UserProfileResponse(
+                "John", "john@example.com", null, null, false, null, "STUDENT", null, null,
+                false, java.util.List.of(), false, null, java.util.List.of(), null, null, null
+        ));
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -98,8 +117,12 @@ class AuthControllerTest {
 
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.email").value("john@example.com"))
-                .andExpect(jsonPath("$.data.password").isNotEmpty())
-                .andExpect(jsonPath("$.data.displayName").value("John"));
+                .andExpect(jsonPath("$.data.displayName").value("John"))
+                .andExpect(jsonPath("$.data.onboardingCompleted").value(false))
+                .andExpect(cookie().exists("access_token"))
+                .andExpect(cookie().exists("refresh_token"));
+
+        verify(userService).saveRefreshToken("john@example.com", "refresh-token");
     }
 
 

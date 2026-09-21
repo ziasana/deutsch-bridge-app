@@ -7,6 +7,7 @@ import com.deutschbridge.backend.model.dto.UpdatePasswordRequest;
 import com.deutschbridge.backend.model.dto.UserDto;
 import com.deutschbridge.backend.model.dto.UserProfileRequest;
 import com.deutschbridge.backend.model.entity.User;
+import com.deutschbridge.backend.service.FileStorageService;
 import com.deutschbridge.backend.service.UserProfileService;
 import com.deutschbridge.backend.service.UserService;
 import org.junit.jupiter.api.*;
@@ -50,6 +51,8 @@ class UserControllerTest {
     private UserService userService;
     @Mock
     private UserProfileService userProfileService;
+    @Mock
+    private FileStorageService fileStorageService;
 
     private User user() {
         return new User("john", "john@example.com", "hashed" );

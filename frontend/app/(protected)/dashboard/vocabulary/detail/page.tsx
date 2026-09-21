@@ -64,12 +64,18 @@ function VocabularyDetailContent() {
                     <div className="flex items-center flex-wrap gap-2 mb-3">
                         {item.level && <Badge variant="secondary">{item.level}</Badge>}
                         <Badge variant="outline">
-                            {item.source === "DICTIONARY" ? t.vocabulary.sourceTabs.fromReading : t.vocabulary.sourceTabs.myWords}
+                            {item.source === "DICTIONARY"
+                                ? t.vocabulary.sourceTabs.fromReading
+                                : item.source === "AI_TUTOR"
+                                  ? t.vocabulary.sourceTabs.fromAiTutor
+                                  : t.vocabulary.sourceTabs.myWords}
                         </Badge>
                     </div>
 
                     <div className="flex items-center gap-3 mb-4">
-                        <h1 className="text-3xl font-bold text-foreground">{wordLabel}</h1>
+                        <h1 className="text-3xl font-bold text-foreground" dir="ltr">
+                            {wordLabel}
+                        </h1>
                         <button
                             type="button"
                             onClick={() => playVocabularyAudio(item.audioUrl, item.word)}
@@ -99,7 +105,9 @@ function VocabularyDetailContent() {
                             <h2 className="text-sm font-semibold text-foreground/50 uppercase tracking-wide mb-2">
                                 {t.vocabulary.detail.example}
                             </h2>
-                            <div className="rounded-lg bg-accent/50 px-4 py-3 text-foreground/80 italic">„{item.example}“</div>
+                            <div className="rounded-lg bg-accent/50 px-4 py-3 text-foreground/80 italic" dir="ltr">
+                                „{item.example}“
+                            </div>
                         </section>
                     )}
 
@@ -108,7 +116,9 @@ function VocabularyDetailContent() {
                             <h2 className="text-sm font-semibold text-foreground/50 uppercase tracking-wide mb-2">
                                 {t.vocabulary.detail.synonyms}
                             </h2>
-                            <p className="text-foreground/75 text-sm italic">{item.synonyms}</p>
+                            <p className="text-foreground/75 text-sm italic" dir="ltr">
+                                {item.synonyms}
+                            </p>
                         </section>
                     )}
 

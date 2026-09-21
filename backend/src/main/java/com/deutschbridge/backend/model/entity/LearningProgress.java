@@ -4,11 +4,9 @@ import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 import java.time.LocalDateTime;
 
-@EnableJpaAuditing
 @NoArgsConstructor
 @AllArgsConstructor
 @Setter

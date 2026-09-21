@@ -1,8 +1,12 @@
 package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.context.RequestContext;
+import com.deutschbridge.backend.exception.AiGenerationException;
 import com.deutschbridge.backend.exception.DataNotFoundException;
+import com.deutschbridge.backend.model.dto.SelectionClassifyResponse;
 import com.deutschbridge.backend.model.dto.VocabularyCreateRequest;
+import com.deutschbridge.backend.model.dto.VocabularyExistsResponse;
+import com.deutschbridge.backend.model.dto.VocabularyFromChatCreateRequest;
 import com.deutschbridge.backend.model.dto.VocabularyItemResponse;
 import com.deutschbridge.backend.model.dto.VocabularyUpdateRequest;
 import com.deutschbridge.backend.model.entity.DictionaryEntry;
@@ -17,6 +21,9 @@ import com.deutschbridge.backend.repository.VocabularyBookmarkRepository;
 import com.deutschbridge.backend.repository.VocabularyItemRepository;
 import com.deutschbridge.backend.repository.VocabularyProgressRepository;
 import com.deutschbridge.backend.util.VocabularyMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +49,7 @@ public class VocabularyService {
     private final UserService userService;
     private final RequestContext requestContext;
     private final OllamaService ollamaService;
+    private final ObjectMapper objectMapper;
 
     public VocabularyService(VocabularyItemRepository vocabularyItemRepository,
                               VocabularyProgressRepository vocabularyProgressRepository,
@@ -49,7 +57,8 @@ public class VocabularyService {
                               DictionaryEntryRepository dictionaryEntryRepository,
                               UserService userService,
                               RequestContext requestContext,
-                              OllamaService ollamaService) {
+                              OllamaService ollamaService,
+                              ObjectMapper objectMapper) {
         this.vocabularyItemRepository = vocabularyItemRepository;
         this.vocabularyProgressRepository = vocabularyProgressRepository;
         this.vocabularyBookmarkRepository = vocabularyBookmarkRepository;
@@ -57,6 +66,7 @@ public class VocabularyService {
         this.userService = userService;
         this.requestContext = requestContext;
         this.ollamaService = ollamaService;
+        this.objectMapper = objectMapper;
     }
 
     // Not cached: scoped to the current user's own words/progress, so a shared cache key would
@@ -107,6 +117,79 @@ public class VocabularyService {
         item = vocabularyItemRepository.save(item);
 
         return VocabularyMapper.mapToResponse(item, null, false);
+    }
+
+    /** Same shape as createCustom, but source=AI_TUTOR and carries provenance back to the chat message
+     *  it was selected from. */
+    @Transactional
+    public VocabularyItemResponse createFromChat(VocabularyFromChatCreateRequest request) {
+        User user = userService.findByEmail(requestContext.getUserEmail());
+        String word = normalize(request.word());
+        String language = requestContext.getLanguage();
+
+        vocabularyItemRepository.findByUserAndWordIgnoreCaseAndLanguage(user, word, language)
+                .ifPresent(existing -> {
+                    throw new IllegalArgumentException("Vocabulary already exists for this word/language.");
+                });
+
+        String synonyms = ollamaService.generateAiSynonyms(word);
+
+        VocabularyItem item = new VocabularyItem();
+        item.setUser(user);
+        item.setSource(VocabularySource.AI_TUTOR);
+        item.setWord(word);
+        item.setMeaning(request.meaning());
+        item.setLanguage(language);
+        item.setExample(request.example());
+        item.setSynonyms(synonyms);
+        item.setLevel(request.level());
+        item.setSourceChatId(request.sourceChatId());
+        item.setSourceMessageId(request.sourceMessageId());
+        item = vocabularyItemRepository.save(item);
+
+        return VocabularyMapper.mapToResponse(item, null, false);
+    }
+
+    /** Classifies+normalizes a chat text selection via AI, falling back to a simple heuristic if the
+     *  AI call fails or returns unparseable output - the confirmation modal lets the user fix it either way. */
+    public SelectionClassifyResponse classifySelection(String selectedText, String contextText) {
+        try {
+            String raw = ollamaService.classifySelection(selectedText, contextText);
+            JsonNode json = objectMapper.readTree(extractJson(raw));
+            String type = json.path("type").asText("WORD");
+            String normalizedText = json.path("normalizedText").asText(selectedText.trim());
+            String meaning = json.path("meaning").asText("");
+            String example = json.path("example").asText("");
+            if (normalizedText.isBlank()) normalizedText = selectedText.trim();
+            return new SelectionClassifyResponse("EXPRESSION".equalsIgnoreCase(type) ? "EXPRESSION" : "WORD",
+                    normalizedText, meaning, example);
+        } catch (RuntimeException | JsonProcessingException e) {
+            return heuristicClassify(selectedText);
+        }
+    }
+
+    /** The model is asked for a single-line JSON object but may still wrap it in prose/code fences. */
+    private String extractJson(String raw) {
+        int start = raw.indexOf('{');
+        int end = raw.lastIndexOf('}');
+        if (start == -1 || end == -1 || end < start) {
+            throw new AiGenerationException("Classification response was not JSON.");
+        }
+        return raw.substring(start, end + 1);
+    }
+
+    private SelectionClassifyResponse heuristicClassify(String selectedText) {
+        String trimmed = selectedText.trim();
+        boolean isWord = trimmed.split("\\s+").length <= 1;
+        return new SelectionClassifyResponse(isWord ? "WORD" : "EXPRESSION", trimmed, "", "");
+    }
+
+    public VocabularyExistsResponse checkExists(String word) {
+        User user = userService.findByEmail(requestContext.getUserEmail());
+        String language = requestContext.getLanguage();
+        return vocabularyItemRepository.findByUserAndWordIgnoreCaseAndLanguage(user, normalize(word), language)
+                .map(item -> new VocabularyExistsResponse(true, item.getId()))
+                .orElseGet(() -> new VocabularyExistsResponse(false, null));
     }
 
     /** Replaces DictionaryService#saveToVocab - idempotent, re-adding an already-saved entry is a no-op. */

@@ -32,7 +32,7 @@ public class DailyWord {
     @Enumerated(EnumType.STRING)
     private LearningLevel level;
 
-    /** Persian translation of {@link #meaning} - only populated for A1-B1 words, and only ever
+    /** Persian translation of {@link #meaning} - only populated for A1-A2 words, and only ever
      *  exposed to a user whose profile preferredLanguage is PR (see DailyWordService). */
     @Column(columnDefinition = "TEXT")
     private String meaningFa;

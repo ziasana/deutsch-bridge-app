@@ -12,16 +12,16 @@ import com.deutschbridge.backend.model.entity.GrammarCategoryTestAttempt;
 import com.deutschbridge.backend.model.entity.GrammarLesson;
 import com.deutschbridge.backend.model.entity.LearningProgress;
 import com.deutschbridge.backend.model.entity.User;
-import com.deutschbridge.backend.model.enums.GrammarLessonStatus;
 import com.deutschbridge.backend.repository.GrammarCategoryRepository;
 import com.deutschbridge.backend.repository.GrammarCategoryTestAttemptRepository;
 import com.deutschbridge.backend.repository.GrammarLessonRepository;
 import com.deutschbridge.backend.repository.LearningProgressRepository;
+import com.deutschbridge.backend.service.cache.ContentCacheService;
 import com.deutschbridge.backend.util.GrammarLessonMapper;
 import jakarta.transaction.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -38,19 +38,22 @@ public class GrammarCategoryService {
     private final LearningProgressRepository learningProgressRepository;
     private final UserService userService;
     private final RequestContext requestContext;
+    private final ContentCacheService contentCacheService;
 
     public GrammarCategoryService(GrammarCategoryRepository categoryRepository,
                                    GrammarLessonRepository lessonRepository,
                                    GrammarCategoryTestAttemptRepository attemptRepository,
                                    LearningProgressRepository learningProgressRepository,
                                    UserService userService,
-                                   RequestContext requestContext) {
+                                   RequestContext requestContext,
+                                   ContentCacheService contentCacheService) {
         this.categoryRepository = categoryRepository;
         this.lessonRepository = lessonRepository;
         this.attemptRepository = attemptRepository;
         this.learningProgressRepository = learningProgressRepository;
         this.userService = userService;
         this.requestContext = requestContext;
+        this.contentCacheService = contentCacheService;
     }
 
     public List<GrammarCategoryAdminResponse> findAllForAdmin() {
@@ -67,6 +70,7 @@ public class GrammarCategoryService {
                 .toList();
     }
 
+    @CacheEvict(cacheNames = "grammarCategories", allEntries = true)
     public GrammarCategoryAdminResponse createCategory(GrammarCategoryManualRequest request) {
         if (request.title() == null || request.title().isBlank()) {
             throw new IllegalArgumentException("Title is required");
@@ -81,6 +85,7 @@ public class GrammarCategoryService {
                 category.getLevel().getValue(), category.getSortOrder(), category.getPassThreshold(), 0);
     }
 
+    @CacheEvict(cacheNames = "grammarCategories", allEntries = true)
     public GrammarCategoryAdminResponse updateCategory(String id, GrammarCategoryManualRequest request) throws DataNotFoundException {
         GrammarCategory category = categoryRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException(NOT_FOUND_MSG));
@@ -105,6 +110,7 @@ public class GrammarCategoryService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = {"grammarCategories", "grammarLessons"}, allEntries = true)
     public boolean deleteCategory(String id) throws DataNotFoundException {
         GrammarCategory category = categoryRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException(NOT_FOUND_MSG));
@@ -117,18 +123,17 @@ public class GrammarCategoryService {
     /** Learner view: published lessons only, grouped under their category, with the user's test status. */
     public List<GrammarCategoryResponse> findAllForLearner() throws DataNotFoundException {
         User user = userService.findByEmail(requestContext.getUserEmail());
-        List<GrammarCategory> categories = categoryRepository.findAllByOrderByLevelAscSortOrderAsc();
+        List<ContentCacheService.CategoryWithPublishedLessons> categoriesWithLessons =
+                contentCacheService.getGrammarCategoriesWithPublishedLessons();
+        List<GrammarCategory> categories = categoriesWithLessons.stream()
+                .map(ContentCacheService.CategoryWithPublishedLessons::category)
+                .toList();
         List<GrammarCategoryTestAttempt> attempts = attemptRepository.findByUserAndCategoryIn(user, categories);
         Map<String, GrammarCategoryTestAttempt> attemptByCategoryId = attempts.stream()
                 .collect(Collectors.toMap(a -> a.getCategory().getId(), a -> a));
 
-        Map<String, List<GrammarLesson>> publishedLessonsByCategoryId = categories.stream()
-                .collect(Collectors.toMap(GrammarCategory::getId, category -> lessonRepository.findByCategory(category).stream()
-                        .filter(l -> l.getStatus() == GrammarLessonStatus.PUBLISHED)
-                        .sorted(Comparator
-                                .comparing((GrammarLesson l) -> l.getSortOrder() != null ? l.getSortOrder() : 0)
-                                .thenComparing(GrammarLesson::getTitle))
-                        .toList()));
+        Map<String, List<GrammarLesson>> publishedLessonsByCategoryId = categoriesWithLessons.stream()
+                .collect(Collectors.toMap(c -> c.category().getId(), ContentCacheService.CategoryWithPublishedLessons::publishedLessons));
 
         List<GrammarLesson> allPublishedLessons = publishedLessonsByCategoryId.values().stream()
                 .flatMap(List::stream)

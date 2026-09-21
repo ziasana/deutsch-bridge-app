@@ -455,6 +455,34 @@ export interface Dictionary {
         notTranslatable: string;
         noLesson: string;
         notFoundLesson: string;
+        topicsCount: (count: number) => string;
+        completedOf: (learned: number, total: number) => string;
+        categoryTestCompleted: string;
+        lastScore: (score: number, total: number) => string;
+        retakeCategoryTest: string;
+        takeCategoryTest: string;
+        otherLessons: string;
+        categoryNotFound: string;
+        topicsInBlock: (count: number) => string;
+        categoryTest: {
+            noExercises: string;
+            questionsFromLessons: (count: number, threshold: number) => string;
+            startTest: string;
+            retakeTestPrompt: string;
+            lastAttempt: (score: number, total: number) => string;
+            passedLabel: string;
+            notPassedLabel: string;
+            completedSuffix: string;
+            retakeTest: string;
+            markAsComplete: string;
+            completedBadge: string;
+            passedNeeds: (threshold: number) => string;
+            notPassedNeeds: (threshold: number) => string;
+            markedComplete: string;
+            failedLoadCategory: string;
+            failedSaveResult: string;
+            failedMarkComplete: string;
+        };
     };
     home: {
         heroTitle: string;
@@ -469,6 +497,63 @@ export interface Dictionary {
         trackDescription: string;
         ctaTitle: string;
         exploreFeatures: string;
+    };
+    progress: {
+        title: string;
+        subtitle: string;
+        dayStreak: (count: number) => string;
+        stats: {
+            wordsMastered: string;
+            outOfTotal: (total: number) => string;
+            dailyWordsLearned: string;
+            lessonsCompleted: string;
+            activeExpressions: string;
+            readingCompleted: string;
+            dailyGoal: string;
+            dailyGoalNotSet: string;
+            dailyGoalSubtitle: (learned: number, goal: number) => string;
+        };
+        vocabularyMastery: string;
+        vocabularyEmpty: string;
+        practiceVocabulary: string;
+        expressionMastery: string;
+        expressionsEmpty: string;
+        practiceExpressions: string;
+        segments: {
+            new: string;
+            learning: string;
+            familiar: string;
+            active: string;
+            mastered: string;
+        };
+        total: (count: number) => string;
+        grammar: {
+            title: string;
+            lessonsLearned: string;
+            categoryTestsPassed: string;
+            attempted: (count: number) => string;
+            notAttempted: string;
+            practice: string;
+        };
+        reading: {
+            title: string;
+            articlesCompleted: string;
+            readArticle: string;
+        };
+        exam: {
+            title: string;
+            averageScore: string;
+            acrossCompleted: (count: number) => string;
+            empty: string;
+            practiceMore: string;
+            startExamPrep: string;
+        };
+        milestones: {
+            title: string;
+            wordsMastered: (count: number) => string;
+            toGoUntil: (remaining: number, threshold: number) => string;
+            allReached: string;
+        };
     };
 }
 
@@ -964,6 +1049,35 @@ const en: Dictionary = {
         notTranslatable: "A Persian translation is not available at this level; showing the original content.",
         noLesson: "No lesson selected.",
         notFoundLesson: "Lesson not found.",
+        topicsCount: (count) => `${count} topic${count === 1 ? "" : "s"}`,
+        completedOf: (learned, total) => `${learned}/${total} completed`,
+        categoryTestCompleted: "Completed",
+        lastScore: (score, total) => `Last score: ${score}/${total}`,
+        retakeCategoryTest: "Retake category test →",
+        takeCategoryTest: "Take category test →",
+        otherLessons: "Other lessons",
+        categoryNotFound: "Category not found.",
+        topicsInBlock: (count) => `Covers ${count} topic${count === 1 ? "" : "s"} in this block.`,
+        categoryTest: {
+            noExercises: "No exercises available yet in this category's lessons.",
+            questionsFromLessons: (count, threshold) =>
+                `${count} random question${count === 1 ? "" : "s"} from this category's lessons. Needs ${threshold}% to pass.`,
+            startTest: "Start category test",
+            retakeTestPrompt: "Retake category test",
+            lastAttempt: (score, total) => `Last attempt: ${score} / ${total} —`,
+            passedLabel: "Passed",
+            notPassedLabel: "Not passed",
+            completedSuffix: " · Completed",
+            retakeTest: "Retake test",
+            markAsComplete: "Mark as complete",
+            completedBadge: "✓ Completed",
+            passedNeeds: (threshold) => `Passed! (needs ${threshold}%)`,
+            notPassedNeeds: (threshold) => `Not passed yet — needs ${threshold}% to pass.`,
+            markedComplete: "Category marked as complete!",
+            failedLoadCategory: "Failed to load this category.",
+            failedSaveResult: "Failed to save your test result.",
+            failedMarkComplete: "Failed to mark this category complete.",
+        },
     },
     home: {
         heroTitle: "Learn German the Smart Way",
@@ -982,6 +1096,63 @@ const en: Dictionary = {
             "Monitor your learning progress easily and stay motivated to reach your German goals.",
         ctaTitle: "Ready to Start Learning German?",
         exploreFeatures: "Explore Features",
+    },
+    progress: {
+        title: "Your Progress",
+        subtitle: "Track your German learning journey",
+        dayStreak: (count) => `${count} day streak`,
+        stats: {
+            wordsMastered: "Words Mastered",
+            outOfTotal: (total) => `Out of ${total} total`,
+            dailyWordsLearned: "Daily Words Learned",
+            lessonsCompleted: "Lessons Completed",
+            activeExpressions: "Active Expressions",
+            readingCompleted: "Reading Completed",
+            dailyGoal: "Daily Goal",
+            dailyGoalNotSet: "Not set",
+            dailyGoalSubtitle: (learned, goal) => `${learned}/${goal} words today`,
+        },
+        vocabularyMastery: "Vocabulary mastery",
+        vocabularyEmpty: "Add words to your vocabulary to start tracking mastery.",
+        practiceVocabulary: "Practice vocabulary",
+        expressionMastery: "Expression mastery",
+        expressionsEmpty: "No expressions published yet.",
+        practiceExpressions: "Practice expressions",
+        segments: {
+            new: "New",
+            learning: "Learning",
+            familiar: "Familiar",
+            active: "Active",
+            mastered: "Mastered",
+        },
+        total: (count) => `${count} total`,
+        grammar: {
+            title: "Grammar",
+            lessonsLearned: "Lessons learned",
+            categoryTestsPassed: "Category tests passed",
+            attempted: (count) => `${count} attempted so far`,
+            notAttempted: "No category test attempted yet",
+            practice: "Practice grammar",
+        },
+        reading: {
+            title: "Reading",
+            articlesCompleted: "Articles completed",
+            readArticle: "Read an article",
+        },
+        exam: {
+            title: "Exam readiness",
+            averageScore: "average score",
+            acrossCompleted: (count) => `Across ${count} completed exercise${count === 1 ? "" : "s"}`,
+            empty: "No exam exercises completed yet. Try one to see how ready you are.",
+            practiceMore: "Practice more",
+            startExamPrep: "Start exam prep",
+        },
+        milestones: {
+            title: "Words mastered milestones",
+            wordsMastered: (count) => `${count} words mastered`,
+            toGoUntil: (remaining, threshold) => `${remaining} to go until ${threshold}`,
+            allReached: "every milestone reached!",
+        },
     },
 };
 
@@ -1476,6 +1647,35 @@ const fa: Dictionary = {
         notTranslatable: "ترجمه فارسی برای این سطح موجود نیست؛ محتوا به زبان اصلی نمایش داده می‌شود.",
         noLesson: "درسی انتخاب نشده است.",
         notFoundLesson: "درس یافت نشد.",
+        topicsCount: (count) => `${count} موضوع`,
+        completedOf: (learned, total) => `${learned}/${total} تکمیل‌شده`,
+        categoryTestCompleted: "تکمیل‌شده",
+        lastScore: (score, total) => `آخرین نمره: ${score}/${total}`,
+        retakeCategoryTest: "← تکرار آزمون دسته",
+        takeCategoryTest: "← شرکت در آزمون دسته",
+        otherLessons: "سایر درس‌ها",
+        categoryNotFound: "این دسته یافت نشد.",
+        topicsInBlock: (count) => `این بخش شامل ${count} موضوع است.`,
+        categoryTest: {
+            noExercises: "هنوز تمرینی در درس‌های این دسته موجود نیست.",
+            questionsFromLessons: (count, threshold) =>
+                `${count} سوال تصادفی از درس‌های این دسته. برای قبولی به ${threshold}% نیاز دارید.`,
+            startTest: "شروع آزمون دسته",
+            retakeTestPrompt: "تکرار آزمون دسته",
+            lastAttempt: (score, total) => `آخرین تلاش: ${score} از ${total} —`,
+            passedLabel: "قبول شدید",
+            notPassedLabel: "قبول نشدید",
+            completedSuffix: " · تکمیل‌شده",
+            retakeTest: "تکرار آزمون",
+            markAsComplete: "علامت‌گذاری به‌عنوان تکمیل‌شده",
+            completedBadge: "✓ تکمیل‌شده",
+            passedNeeds: (threshold) => `قبول شدید! (نیاز به ${threshold}%)`,
+            notPassedNeeds: (threshold) => `هنوز قبول نشده‌اید — برای قبولی به ${threshold}% نیاز دارید.`,
+            markedComplete: "این دسته به‌عنوان تکمیل‌شده علامت‌گذاری شد!",
+            failedLoadCategory: "بارگذاری این دسته با خطا مواجه شد.",
+            failedSaveResult: "ذخیره نتیجه آزمون با خطا مواجه شد.",
+            failedMarkComplete: "علامت‌گذاری این دسته به‌عنوان تکمیل‌شده با خطا مواجه شد.",
+        },
     },
     home: {
         heroTitle: "زبان آلمانی را هوشمندانه یاد بگیرید",
@@ -1494,6 +1694,63 @@ const fa: Dictionary = {
             "پیشرفت یادگیری خود را به‌راحتی دنبال کنید و برای رسیدن به اهداف زبان آلمانی خود انگیزه داشته باشید.",
         ctaTitle: "آماده‌اید یادگیری زبان آلمانی را شروع کنید؟",
         exploreFeatures: "مشاهده امکانات",
+    },
+    progress: {
+        title: "پیشرفت شما",
+        subtitle: "سفر یادگیری زبان آلمانی خود را دنبال کنید",
+        dayStreak: (count) => `${count} روز متوالی`,
+        stats: {
+            wordsMastered: "واژه‌های تسلط‌یافته",
+            outOfTotal: (total) => `از مجموع ${total}`,
+            dailyWordsLearned: "واژه‌های روزانه آموخته‌شده",
+            lessonsCompleted: "درس‌های تکمیل‌شده",
+            activeExpressions: "عبارات فعال",
+            readingCompleted: "مطالعه تکمیل‌شده",
+            dailyGoal: "هدف روزانه",
+            dailyGoalNotSet: "تنظیم نشده",
+            dailyGoalSubtitle: (learned, goal) => `${learned}/${goal} واژه امروز`,
+        },
+        vocabularyMastery: "تسلط بر واژگان",
+        vocabularyEmpty: "برای پیگیری میزان تسلط، واژه‌ای به واژگان خود اضافه کنید.",
+        practiceVocabulary: "تمرین واژگان",
+        expressionMastery: "تسلط بر عبارات",
+        expressionsEmpty: "هنوز عبارتی منتشر نشده است.",
+        practiceExpressions: "تمرین عبارات",
+        segments: {
+            new: "جدید",
+            learning: "در حال یادگیری",
+            familiar: "آشنا",
+            active: "فعال",
+            mastered: "مسلط",
+        },
+        total: (count) => `مجموع ${count}`,
+        grammar: {
+            title: "گرامر",
+            lessonsLearned: "درس‌های آموخته‌شده",
+            categoryTestsPassed: "آزمون‌های دسته قبول‌شده",
+            attempted: (count) => `تاکنون ${count} بار تلاش شده`,
+            notAttempted: "هنوز آزمون دسته‌ای انجام نشده است",
+            practice: "تمرین گرامر",
+        },
+        reading: {
+            title: "مطالعه",
+            articlesCompleted: "مقالات تکمیل‌شده",
+            readArticle: "خواندن یک مقاله",
+        },
+        exam: {
+            title: "آمادگی آزمون",
+            averageScore: "میانگین نمره",
+            acrossCompleted: (count) => `در ${count} تمرین تکمیل‌شده`,
+            empty: "هنوز هیچ تمرین آزمونی انجام نشده است. یکی را امتحان کنید تا میزان آمادگی خود را ببینید.",
+            practiceMore: "تمرین بیشتر",
+            startExamPrep: "شروع آمادگی آزمون",
+        },
+        milestones: {
+            title: "نقاط عطف واژه‌های تسلط‌یافته",
+            wordsMastered: (count) => `${count} واژه تسلط‌یافته`,
+            toGoUntil: (remaining, threshold) => `${remaining} واژه تا رسیدن به ${threshold}`,
+            allReached: "به همه نقاط عطف رسیدید!",
+        },
     },
 };
 

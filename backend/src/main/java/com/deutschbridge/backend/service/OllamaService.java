@@ -168,6 +168,14 @@ public class OllamaService {
         return callOllama(messages);
     }
 
+    public String classifySelection(String selectedText, String contextText) {
+        List<OllamaMessage> messages = List.of(
+                new OllamaMessage("system", PromptLibrary.classifySelection(selectedText, contextText, requestContext.getLanguage())),
+                new OllamaMessage("user", selectedText)
+        );
+        return callOllama(messages);
+    }
+
     public String lemmatizeWords(List<String> words) {
         List<OllamaMessage> messages = List.of(
                 new OllamaMessage("system", PromptLibrary.lemmatizeWords(words)),

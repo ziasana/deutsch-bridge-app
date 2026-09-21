@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import { getReviewQueue, reviewWord } from "@/services/lexiconService";
 import ActionButtons from "@/componenets/ActionButtons";
 import Loading from "@/componenets/Loading";
@@ -79,7 +79,6 @@ export default function ReadingReviewPage() {
                         {t.readingReview.goToReading}
                     </Link>
                 </div>
-                <ToastContainer />
             </div>
         );
     }
@@ -111,7 +110,6 @@ export default function ReadingReviewPage() {
                         </button>
                     </div>
                 </div>
-                <ToastContainer />
             </div>
         );
     }
@@ -163,7 +161,6 @@ export default function ReadingReviewPage() {
                     <ActionButtons onKnow={() => submitReview(true)} onDontKnow={() => submitReview(false)} />
                 </div>
             )}
-            <ToastContainer />
         </div>
     );
 }

@@ -1,9 +1,10 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import { getExamExerciseById } from "@/services/examService";
 import {
     completeExamAttempt,
@@ -839,16 +840,22 @@ function HoerenListQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRes
 function ExamExerciseContent() {
     const searchParams = useSearchParams();
     const exerciseId = searchParams.get("id") ?? "";
-    const [exercise, setExercise] = useState<ExamExercisePublicResponse | null>(null);
-    const [loading, setLoading] = useState(true);
+    const {
+        data: exercise = null,
+        isLoading: loading,
+        error,
+    } = useQuery({
+        queryKey: ["exam", "exercise", exerciseId],
+        queryFn: () => getExamExerciseById(exerciseId).then((res) => res.data),
+        enabled: !!exerciseId,
+    });
 
     useEffect(() => {
-        if (!exerciseId) return;
-        getExamExerciseById(exerciseId)
-            .then((res) => setExercise(res.data))
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Übung konnte nicht geladen werden."))
-            .finally(() => setLoading(false));
-    }, [exerciseId]);
+        if (error) {
+            const err = error as { response?: { data?: { message?: string } } };
+            toast.error(err?.response?.data?.message ?? "Übung konnte nicht geladen werden.");
+        }
+    }, [error]);
 
     if (!exerciseId) {
         return (
@@ -922,7 +929,6 @@ function ExamExerciseContent() {
                     <StepQuiz exercise={exercise} />
                 )}
             </div>
-            <ToastContainer />
         </div>
     );
 }

@@ -4,6 +4,7 @@ import { ReactNode } from "react";
 import { CheckCircle2, Circle, ChevronDown, ChevronRight, Layers } from "lucide-react";
 import LearningProgressBar from "@/componenets/learning/LearningProgressBar";
 import { getLevelMeta } from "@/componenets/learning/levelMeta";
+import { useI18n } from "@/componenets/I18nProvider";
 import { cn } from "@/lib/utils";
 
 interface CategoryAccordionCardProps {
@@ -31,6 +32,7 @@ export function CategoryAccordionCard({
     children,
     className,
 }: CategoryAccordionCardProps) {
+    const { t } = useI18n();
     const hasProgress = typeof learnedCount === "number" && itemCount > 0;
     const progressPct = hasProgress ? Math.round((learnedCount! / itemCount) * 100) : 0;
     const levelColor = level ? getLevelMeta(level).color : undefined;
@@ -41,7 +43,7 @@ export function CategoryAccordionCard({
                 type="button"
                 onClick={onToggle}
                 aria-expanded={!collapsed}
-                className="w-full flex items-center gap-4 flex-wrap sm:flex-nowrap p-4 text-left hover:bg-accent/40 transition-colors"
+                className="w-full flex items-center gap-4 flex-wrap sm:flex-nowrap p-4 text-start hover:bg-accent/40 transition-colors"
             >
                 <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-accent">
                     <Layers className="size-5 text-primary" />
@@ -51,16 +53,16 @@ export function CategoryAccordionCard({
                     <span className="text-lg font-semibold text-foreground truncate block">{title}</span>
                     <div className="mt-0.5 flex items-center gap-2 flex-wrap">
                         <span className="text-xs text-foreground/50">
-                            {itemCount} topic{itemCount === 1 ? "" : "s"}
+                            {t.grammar.topicsCount(itemCount)}
                         </span>
                         {headerExtra}
                     </div>
                 </div>
 
                 {hasProgress && (
-                    <div className="w-full sm:w-44 shrink-0 text-right space-y-1.5 pl-[60px] sm:pl-0">
+                    <div className="w-full sm:w-44 shrink-0 text-end space-y-1.5 ps-[60px] sm:ps-0">
                         <span className="text-xs font-medium text-foreground/60">
-                            {learnedCount}/{itemCount} completed
+                            {t.grammar.completedOf(learnedCount!, itemCount)}
                         </span>
                         <LearningProgressBar value={progressPct} color={levelColor} ariaLabel={`${title} progress`} />
                     </div>

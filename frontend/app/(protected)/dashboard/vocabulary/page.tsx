@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ToastContainer, toast } from "react-toastify";
-import { PenLine, BookOpen, Play, ArrowRight, ChevronLeft, ChevronRight, Flame, Layers, Library, Plus } from "lucide-react";
+import { toast } from "@/lib/toast";
+import { PenLine, BookOpen, Play, ArrowRight, ChevronLeft, ChevronRight, Flame, Layers, Library, Plus, Sparkles } from "lucide-react";
 import { getVocabulary, addVocabularyBookmark, removeVocabularyBookmark, deleteVocabulary } from "@/services/vocabularyService";
 import { VocabularyItem, VocabularyMasteryLevel, VocabularySource } from "@/types/vocabulary";
 import { LearningSearch } from "@/componenets/learning";
@@ -82,6 +82,7 @@ export default function VocabularyPage() {
     const sourceOptions: VocabularySourceOption[] = [
         { source: "CUSTOM", label: t.vocabulary.sourceTabs.myWords, count: items.filter((i) => i.source === "CUSTOM").length, icon: PenLine },
         { source: "DICTIONARY", label: t.vocabulary.sourceTabs.fromReading, count: items.filter((i) => i.source === "DICTIONARY").length, icon: BookOpen },
+        { source: "AI_TUTOR", label: t.vocabulary.sourceTabs.fromAiTutor, count: items.filter((i) => i.source === "AI_TUTOR").length, icon: Sparkles },
     ];
 
     const continueLearning = useMemo(() => {
@@ -335,7 +336,6 @@ export default function VocabularyPage() {
                 onCancel={() => setDeleteItem(null)}
             />
 
-            <ToastContainer />
         </div>
     );
 }

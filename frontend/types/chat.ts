@@ -23,5 +23,6 @@ export type ChatMessage ={
 export type ChatSessionDto = {
   id: string,
   userId: string,
-  title: string
+  title: string,
+  createdAt?: string
 }

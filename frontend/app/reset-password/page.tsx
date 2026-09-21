@@ -4,7 +4,7 @@ import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import {Suspense, useState} from "react";
 import {UserType} from "@/types/user";
-import {ToastContainer, toast} from "react-toastify";
+import { toast } from "@/lib/toast";
 import {forgotPassword} from "@/services/userService";
 import Loading from "@/componenets/Loading";
 
@@ -30,7 +30,7 @@ export default function ResetPasswordPage() {
     forgotPassword(form)
         .then((data) => {
           if (data?.status == 200) {
-            toast("Please check your email! A password reset link has been sent.");
+            toast.success("Please check your email! A password reset link has been sent.");
             setForm(initialFormState);
           }
         })
@@ -71,7 +71,6 @@ export default function ResetPasswordPage() {
           </Button>
         </form>
 
-        <ToastContainer />
         {/* Divider */}
 
       </div>

@@ -1,6 +1,9 @@
 import api from "./api";
 import {
+    SelectionClassifyResult,
     VocabularyCreateRequest,
+    VocabularyExistsResult,
+    VocabularyFromChatCreateRequest,
     VocabularyItem,
     VocabularySource,
     VocabularyUpdateRequest,
@@ -42,4 +45,16 @@ export const addVocabularyBookmark = async (id: string) => {
 
 export const removeVocabularyBookmark = async (id: string) => {
     return await api.delete<VocabularyItem>(`/vocabulary/${id}/bookmark`);
+};
+
+export const createVocabularyFromChat = async (data: VocabularyFromChatCreateRequest) => {
+    return await api.post<VocabularyItem>("/vocabulary/from-chat", data);
+};
+
+export const classifySelection = async (selectedText: string, contextText: string) => {
+    return await api.post<SelectionClassifyResult>("/vocabulary/classify-selection", { selectedText, contextText });
+};
+
+export const checkVocabularyExists = async (word: string) => {
+    return await api.get<VocabularyExistsResult>("/vocabulary/exists", { params: { word } });
 };

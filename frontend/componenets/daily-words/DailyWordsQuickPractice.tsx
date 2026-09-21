@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { DailyWord } from "@/types/dailyWord";
+import { useI18n } from "@/componenets/I18nProvider";
 import { cn } from "@/lib/utils";
 
 interface PracticeQuestion {
@@ -27,6 +28,7 @@ interface DailyWordsQuickPracticeProps {
 }
 
 export default function DailyWordsQuickPractice({ words, onComplete }: DailyWordsQuickPracticeProps) {
+    const { t, language } = useI18n();
     const questions = useMemo(() => buildQuestions(words), [words]);
     const [questionIndex, setQuestionIndex] = useState(0);
     const [selected, setSelected] = useState<string | null>(null);
@@ -37,6 +39,10 @@ export default function DailyWordsQuickPractice({ words, onComplete }: DailyWord
 
     const question = questions[questionIndex];
     const isLast = questionIndex === questions.length - 1;
+    // Persian-explanation learners only get an AI-generated meaningFa for A1-B1 words (see
+    // DailyWordService), so fall back to the English meaning when it's missing rather than
+    // showing a blank prompt.
+    const promptMeaning = language === "fa" && question.word.meaningFa ? question.word.meaningFa : question.word.meaning;
 
     const handleSelect = (option: string) => {
         if (selected) return;
@@ -55,17 +61,15 @@ export default function DailyWordsQuickPractice({ words, onComplete }: DailyWord
     return (
         <div className="rounded-2xl border border-border/60 bg-card p-6 sm:p-8 shadow-card">
             <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-foreground">Quick Practice</h2>
+                <h2 className="text-lg font-semibold text-foreground">{t.dailyWords.practice.title}</h2>
                 <span className="text-xs text-foreground/50">
-                    {questionIndex + 1} / {questions.length}
+                    {t.dailyWords.practice.questionOf(questionIndex + 1, questions.length)}
                 </span>
             </div>
 
-            <p className="mt-4 text-foreground/80">
-                Which word means <span className="font-semibold">&ldquo;{question.word.meaning}&rdquo;</span>?
-            </p>
+            <p className="mt-4 text-foreground/80">{t.dailyWords.practice.prompt(promptMeaning)}</p>
 
-            <div className="mt-4 space-y-2" role="radiogroup" aria-label="Answer options">
+            <div className="mt-4 space-y-2" role="radiogroup" aria-label={t.dailyWords.practice.answerOptionsAria}>
                 {question.options.map((option) => {
                     const isCorrect = option === question.word.word;
                     const isSelected = option === selected;
@@ -96,14 +100,14 @@ export default function DailyWordsQuickPractice({ words, onComplete }: DailyWord
             {selected && (
                 <div className="mt-4 flex items-center justify-between">
                     <p className={cn("text-sm font-medium", selected === question.word.word ? "text-primary" : "text-destructive")}>
-                        {selected === question.word.word ? "✓ Correct" : `✗ It was "${question.word.word}"`}
+                        {selected === question.word.word ? t.dailyWords.practice.correct : t.dailyWords.practice.incorrect(question.word.word)}
                     </p>
                     <button
                         type="button"
                         onClick={handleContinue}
                         className="text-sm font-semibold text-primary hover:underline"
                     >
-                        {isLast ? "Finish" : "Next"} →
+                        {isLast ? t.dailyWords.practice.finish : t.dailyWords.practice.next} →
                     </button>
                 </div>
             )}

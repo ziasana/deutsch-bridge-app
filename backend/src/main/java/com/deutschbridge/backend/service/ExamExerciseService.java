@@ -15,8 +15,10 @@ import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.ExamAttemptRepository;
 import com.deutschbridge.backend.repository.ExamExerciseCompletionRepository;
 import com.deutschbridge.backend.repository.ExamExerciseRepository;
+import com.deutschbridge.backend.service.cache.ContentCacheService;
 import com.deutschbridge.backend.util.ExamExerciseMapper;
 import jakarta.transaction.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -34,15 +36,18 @@ public class ExamExerciseService {
     private final ExamExerciseCompletionRepository examExerciseCompletionRepository;
     private final ExamAttemptRepository examAttemptRepository;
     private final RequestContext requestContext;
+    private final ContentCacheService contentCacheService;
 
     public ExamExerciseService(ExamExerciseRepository examExerciseRepository,
                                 ExamExerciseCompletionRepository examExerciseCompletionRepository,
                                 ExamAttemptRepository examAttemptRepository,
-                                RequestContext requestContext) {
+                                RequestContext requestContext,
+                                ContentCacheService contentCacheService) {
         this.examExerciseRepository = examExerciseRepository;
         this.examExerciseCompletionRepository = examExerciseCompletionRepository;
         this.examAttemptRepository = examAttemptRepository;
         this.requestContext = requestContext;
+        this.contentCacheService = contentCacheService;
     }
 
     public ExamExercise findById(String id) throws DataNotFoundException {
@@ -51,24 +56,12 @@ public class ExamExerciseService {
     }
 
     public List<ExamExercisePublicResponse> findAllPublic(ExamSection section, LearningLevel level, ExamTaskType taskType) {
-        List<ExamExercise> exercises;
-        if (section == null) {
-            exercises = examExerciseRepository.findAll();
-        } else if (level != null && taskType != null) {
-            exercises = examExerciseRepository.findBySectionAndLevelAndTaskType(section, level, taskType);
-        } else if (level != null) {
-            exercises = examExerciseRepository.findBySectionAndLevel(section, level);
-        } else if (taskType != null) {
-            exercises = examExerciseRepository.findBySectionAndTaskType(section, taskType);
-        } else {
-            exercises = examExerciseRepository.findBySection(section);
-        }
+        List<ExamExercise> exercises = contentCacheService.getPublishedExamExercises(section, level, taskType);
 
         Map<String, ExamExerciseCompletion> completionsByExerciseId = examExerciseCompletionRepository.findByUserId(requestContext.getUserId()).stream()
                 .collect(Collectors.toMap(ExamExerciseCompletion::getExerciseId, completion -> completion));
 
         return exercises.stream()
-                .filter(ExamExercise::isPublished)
                 .map(exercise -> ExamExerciseMapper.mapToPublicResponse(exercise, completionsByExerciseId))
                 .toList();
     }
@@ -125,12 +118,14 @@ public class ExamExerciseService {
         return ExamExerciseMapper.mapToResponse(findById(id));
     }
 
+    @CacheEvict(cacheNames = "examExercises", allEntries = true)
     public ExamExerciseResponse createManual(ExamExerciseManualRequest request) {
         ExamExercise exercise = new ExamExercise();
         applyRequest(exercise, request);
         return ExamExerciseMapper.mapToResponse(examExerciseRepository.save(exercise));
     }
 
+    @CacheEvict(cacheNames = "examExercises", allEntries = true)
     public ExamExerciseResponse update(String id, ExamExerciseManualRequest request) throws DataNotFoundException {
         ExamExercise existing = findById(id);
         applyRequest(existing, request);
@@ -141,6 +136,7 @@ public class ExamExerciseService {
      * non-nullable FK to it, so deleting without this fails with a foreign-key violation for any
      * exercise a student has already attempted. */
     @Transactional
+    @CacheEvict(cacheNames = "examExercises", allEntries = true)
     public void delete(String id) throws DataNotFoundException {
         ExamExercise exercise = findById(id);
         examAttemptRepository.deleteByExercise(exercise);

@@ -4,18 +4,20 @@ import Button from "@/componenets/Button";
 import Link from "next/link";
 import {useEffect, useState} from "react";
 import {registerUser} from "@/services/userService";
-import {toast, ToastContainer} from "react-toastify";
+import { toast } from "@/lib/toast";
 import Loading from "@/componenets/Loading";
 import {useRouter, useSearchParams} from "next/navigation";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {signupSchema, SignupSchemaFormData} from "@/schema/signupSchema"
 import {useFormErrorToast} from "@/hook/useFormErrorToast";
+import useAuthStore from "@/store/useAuthStore";
 
 export default function SignupPage() {
     const [isLoading, setIsLoading] = useState(false);
     const searchParams = useSearchParams();
     const router = useRouter();
+    const { login } = useAuthStore();
 
     useEffect(() => {
         if(searchParams.get("error"))
@@ -34,17 +36,20 @@ export default function SignupPage() {
 
 
     const onSubmit = async (data: SignupSchemaFormData) => {
+        setIsLoading(true);
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { password_confirmation, ...newUser } = data; // remove confirmPassword
         registerUser(newUser)
-            .then((data) => {
-                if (data?.status == 201) {
-                    toast.success("You have successfully registered! check your email for verification!");
+            .then((res) => {
+                if (res?.status === 201) {
+                    const profile = res.data.data;
+                    login(profile);
                     reset();
+                    router.push(profile?.onboardingCompleted ? "/dashboard" : "/signup/onboarding");
                 }
             })
             .catch((err) => {
-                toast.error(err?.response.data.message)
+                toast.error(err?.response?.data?.message ?? "Registration failed. Please try again.")
                 console.error(err)
             })
             .finally(() => setIsLoading(false));
@@ -128,7 +133,6 @@ export default function SignupPage() {
                         {isLoading ? "Saving..." : "Sign Up"}
 
                     </Button>
-                    <ToastContainer />
                 </form>
 
                 {/* Divider */}

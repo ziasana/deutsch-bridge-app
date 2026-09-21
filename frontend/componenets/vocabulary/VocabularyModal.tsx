@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import { Sparkles, X } from "lucide-react";
 import { createVocabulary, updateVocabulary } from "@/services/vocabularyService";
 import { generateAiExample } from "@/services/chatAi";

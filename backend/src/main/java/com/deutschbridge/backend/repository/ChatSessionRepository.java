@@ -9,5 +9,5 @@ import java.util.List;
 
 @Repository
 public interface ChatSessionRepository extends JpaRepository<ChatSession, String> {
-    List<ChatSessionDto> findByUserId(String userId);
+    List<ChatSessionDto> findByUserIdOrderByCreatedAtDesc(String userId);
 }

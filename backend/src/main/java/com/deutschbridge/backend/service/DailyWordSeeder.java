@@ -41,7 +41,7 @@ public class DailyWordSeeder {
                     word("einleuchten", "to make sense", "Seine Argumentation leuchtet mir ein.", "verständlich sein, überzeugen", LearningLevel.B2),
                     word("die Bewandtnis", "the reason / circumstance", "Damit hat es eine besondere Bewandtnis.", "Hintergrund, Grund", LearningLevel.C2),
 
-                    // A1-B1: fallback pool used when AI generation is unavailable for lower-level
+                    // A1-A2: fallback pool used when AI generation is unavailable for lower-level
                     // learners, with Persian translations for learners whose profile language is PR.
                     wordFa("das Haus", "house", "Mein Haus ist sehr groß.", "die Wohnung, das Gebäude", LearningLevel.A1, "خانه", "خانه من خیلی بزرگ است."),
                     wordFa("essen", "to eat", "Ich esse jeden Morgen ein Brot.", "speisen", LearningLevel.A1, "خوردن", "من هر صبح یک نان می‌خورم."),
@@ -51,10 +51,12 @@ public class DailyWordSeeder {
                     wordFa("das Wetter", "weather", "Das Wetter ist heute schön.", "die Witterung", LearningLevel.A2, "هوا", "امروز هوا خوب است."),
                     wordFa("einkaufen", "to go shopping", "Wir gehen am Samstag einkaufen.", "shoppen", LearningLevel.A2, "خرید کردن", "ما شنبه به خرید می‌رویم."),
                     wordFa("die Reise", "trip / journey", "Die Reise nach Italien war wunderschön.", "die Fahrt, der Ausflug", LearningLevel.A2, "سفر", "سفر به ایتالیا فوق‌العاده بود."),
-                    wordFa("sich erinnern", "to remember", "Ich kann mich gut an meine Kindheit erinnern.", "im Gedächtnis behalten", LearningLevel.B1, "به یاد آوردن", "من می‌توانم دوران کودکی‌ام را خوب به یاد بیاورم."),
-                    wordFa("die Erfahrung", "experience", "Er hat viel Erfahrung in diesem Bereich.", "die Praxis, das Wissen", LearningLevel.B1, "تجربه", "او در این زمینه تجربه زیادی دارد."),
-                    wordFa("sich entspannen", "to relax", "Am Wochenende entspanne ich mich zu Hause.", "sich erholen", LearningLevel.B1, "استراحت کردن", "آخر هفته در خانه استراحت می‌کنم."),
-                    wordFa("die Verantwortung", "responsibility", "Sie übernimmt die Verantwortung für das Projekt.", "die Pflicht", LearningLevel.B1, "مسئولیت", "او مسئولیت این پروژه را بر عهده می‌گیرد.")
+
+                    // B1: fallback pool only - no Persian, matching PERSIAN_ELIGIBLE_LEVELS in DailyWordService.
+                    word("sich erinnern", "to remember", "Ich kann mich gut an meine Kindheit erinnern.", "im Gedächtnis behalten", LearningLevel.B1),
+                    word("die Erfahrung", "experience", "Er hat viel Erfahrung in diesem Bereich.", "die Praxis, das Wissen", LearningLevel.B1),
+                    word("sich entspannen", "to relax", "Am Wochenende entspanne ich mich zu Hause.", "sich erholen", LearningLevel.B1),
+                    word("die Verantwortung", "responsibility", "Sie übernimmt die Verantwortung für das Projekt.", "die Pflicht", LearningLevel.B1)
             );
 
             repository.saveAll(words);

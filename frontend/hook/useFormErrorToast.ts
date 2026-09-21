@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 interface FormError {
     message?: string;
 }

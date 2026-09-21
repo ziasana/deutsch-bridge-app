@@ -1,6 +1,7 @@
 import { CheckCircle2, Circle } from "lucide-react";
 import { DailyWord } from "@/types/dailyWord";
 import { getLevelMeta } from "@/componenets/learning/levelMeta";
+import { useI18n } from "@/componenets/I18nProvider";
 import { cn } from "@/lib/utils";
 
 interface DailyWordsOverviewProps {
@@ -10,9 +11,10 @@ interface DailyWordsOverviewProps {
 }
 
 export default function DailyWordsOverview({ words, currentIndex, onSelect }: DailyWordsOverviewProps) {
+    const { t } = useI18n();
     return (
         <div className="mt-6">
-            <h2 className="text-sm font-semibold text-foreground/70 mb-2">Today&apos;s {words.length} Words</h2>
+            <h2 className="text-sm font-semibold text-foreground/70 mb-2">{t.dailyWords.overview.title(words.length)}</h2>
             <div className="rounded-2xl border border-border/60 bg-card shadow-card overflow-hidden">
                 {words.map((word, index) => {
                     const isCurrent = index === currentIndex;

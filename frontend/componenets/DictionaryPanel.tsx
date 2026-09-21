@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import { useDictionaryLookup } from "@/hooks/useDictionaryLookup";
 import { addFromDictionary, deleteVocabulary, getVocabulary } from "@/services/vocabularyService";
 import { reportMissingWord } from "@/services/dictionaryService";

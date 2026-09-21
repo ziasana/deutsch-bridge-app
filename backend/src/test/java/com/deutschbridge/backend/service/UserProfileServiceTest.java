@@ -98,7 +98,17 @@ class UserProfileServiceTest {
                 profile.getDailyGoalWords(),
                 profile.isNotificationsEnabled(),
                 profile.getPreferredLanguage(),
-                user.getRole()
+                user.getRole(),
+                user.getAvatarUrl(),
+                user.getCreatedAt(),
+                true,
+                java.util.List.of(),
+                false,
+                null,
+                java.util.List.of(),
+                null,
+                null,
+                null
 
         );
 

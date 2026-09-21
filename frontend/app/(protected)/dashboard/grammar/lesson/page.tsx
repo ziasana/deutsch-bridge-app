@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import { getGrammarLessonById, setLearningProgress } from "@/services/grammarService";
 import { GrammarLesson } from "@/types/grammar";
 import Loading from "@/componenets/Loading";
@@ -161,7 +161,6 @@ function GrammarLessonDetailContent() {
                     language={language}
                 />
             </div>
-            <ToastContainer />
         </div>
     );
 }

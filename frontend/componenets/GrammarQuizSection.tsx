@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import { QuizQuestion } from "@/types/grammar";
 import { getExerciseProgress, saveExerciseAnswer, resetExerciseProgress } from "@/services/exerciseProgressService";
 import { setLearningProgress } from "@/services/grammarService";

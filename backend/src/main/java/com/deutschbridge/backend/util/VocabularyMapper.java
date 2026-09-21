@@ -24,6 +24,8 @@ public class VocabularyMapper {
                 item.getLevel() != null ? item.getLevel().getValue() : null,
                 item.getAudioUrl(),
                 item.getDictionaryEntry() != null ? item.getDictionaryEntry().getId() : null,
+                item.getSourceChatId(),
+                item.getSourceMessageId(),
                 item.getCreatedAt(),
                 progress != null ? mapProgress(progress) : null,
                 bookmarked

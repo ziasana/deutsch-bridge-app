@@ -84,8 +84,21 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity <ApiResponse<User>> registerUser(@RequestBody @Valid UserRegistrationRequest user) throws UserVerificationException {
-        return new ResponseEntity<>(new ApiResponse<>(null, userService.registerUser(user)), HttpStatus.CREATED);
+    public ResponseEntity<ApiResponse<UserProfileResponse>> registerUser(@RequestBody @Valid UserRegistrationRequest request, HttpServletResponse response) throws UserVerificationException {
+        User user = userService.registerUser(request);
+
+        // Auto-authenticate the new account so the learner lands straight in the learning-profile
+        // setup instead of being bounced back to a login screen right after signing up.
+        String email = user.getEmail();
+        String token = jwtUtil.generateAccessToken(email);
+        String refreshToken = jwtUtil.generateRefreshToken(email);
+        userService.saveRefreshToken(email, refreshToken);
+
+        response.addCookie(cookieService.createAccessToken(token));
+        response.addCookie(cookieService.createRefreshToken(refreshToken));
+
+        UserProfileResponse userResponse = userProfileService.getUserProfileResponse(user);
+        return new ResponseEntity<>(new ApiResponse<>("Account created", userResponse), HttpStatus.CREATED);
     }
 
     @PostMapping("/forgot-password")

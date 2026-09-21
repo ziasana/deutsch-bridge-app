@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import useAuthStore from "@/store/useAuthStore";
 import { getReadingArticles } from "@/services/readingService";
 import {
@@ -82,9 +83,15 @@ const emptyQuizQuestion = (): ReadingQuizQuestion => ({
 export default function AdminReadingPage() {
     const router = useRouter();
     const { userProfile, hasHydrated } = useAuthStore();
+    const queryClient = useQueryClient();
 
-    const [articles, setArticles] = useState<ReadingArticle[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const ARTICLES_KEY = ["admin", "reading", "articles"];
+
+    const { data: articles = [], isLoading, error: articlesError } = useQuery({
+        queryKey: ARTICLES_KEY,
+        queryFn: () => getReadingArticles().then((res) => res.data),
+        enabled: hasHydrated && userProfile?.role === "ADMIN",
+    });
     const [isSaving, setIsSaving] = useState(false);
     const [articleToDelete, setArticleToDelete] = useState<ReadingArticle | null>(null);
 
@@ -110,21 +117,21 @@ export default function AdminReadingPage() {
 
     const [editingArticle, setEditingArticle] = useState<ReadingArticle | null>(null);
 
-    const fetchArticles = useCallback(() => {
-        getReadingArticles()
-            .then((res) => setArticles(res.data))
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load reading articles."))
-            .finally(() => setIsLoading(false));
-    }, []);
+    const invalidateArticles = () => queryClient.invalidateQueries({ queryKey: ARTICLES_KEY });
 
     useEffect(() => {
         if (!hasHydrated) return;
         if (userProfile?.role !== "ADMIN") {
             router.push("/dashboard");
-            return;
         }
-        fetchArticles();
-    }, [hasHydrated, userProfile, router, fetchArticles]);
+    }, [hasHydrated, userProfile, router]);
+
+    useEffect(() => {
+        if (articlesError) {
+            const err = articlesError as { response?: { data?: { message?: string } } };
+            toast.error(err?.response?.data?.message ?? "Failed to load reading articles.");
+        }
+    }, [articlesError]);
 
     if (!hasHydrated || userProfile?.role !== "ADMIN") return null;
 
@@ -147,7 +154,7 @@ export default function AdminReadingPage() {
             .then(() => {
                 toast.success("Article generated. Edit it to add annotations and a quiz.");
                 setGenTopic("");
-                fetchArticles();
+                invalidateArticles();
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to generate article."))
             .finally(() => setIsSaving(false));
@@ -295,7 +302,7 @@ export default function AdminReadingPage() {
             .then(() => {
                 toast.success(editingArticle ? "Article updated." : "Article saved.");
                 resetManualForm();
-                fetchArticles();
+                invalidateArticles();
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to save article."))
             .finally(() => setIsSaving(false));
@@ -310,7 +317,7 @@ export default function AdminReadingPage() {
         deleteReadingArticle(article.id)
             .then(() => {
                 toast.success("Article deleted.");
-                fetchArticles();
+                invalidateArticles();
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to delete article."));
     };
@@ -1026,7 +1033,6 @@ export default function AdminReadingPage() {
                 onConfirm={confirmRemoveArticle}
                 onCancel={() => setArticleToDelete(null)}
             />
-            <ToastContainer />
         </div>
     );
 }

@@ -1,8 +1,9 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import { BarChart3, ChevronRight } from "lucide-react";
 import { getExamExercises } from "@/services/examService";
 import { ExamExercisePublicResponse, ExamSection } from "@/types/exam";
@@ -30,8 +31,10 @@ function ExamPrepContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { userProfile } = useAuthStore();
-    const [exercises, setExercises] = useState<ExamExercisePublicResponse[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data: exercises = [], isLoading: loading, error } = useQuery<ExamExercisePublicResponse[]>({
+        queryKey: ["exam", "exercises"],
+        queryFn: () => getExamExercises().then((res) => res.data),
+    });
 
     const initialSection = searchParams.get("section");
     const initialLevel = searchParams.get("level");
@@ -42,11 +45,11 @@ function ExamPrepContent() {
     const [search, setSearch] = useState("");
 
     useEffect(() => {
-        getExamExercises()
-            .then((res) => setExercises(res.data))
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load exercises."))
-            .finally(() => setLoading(false));
-    }, []);
+        if (error) {
+            const err = error as { response?: { data?: { message?: string } } };
+            toast.error(err?.response?.data?.message ?? "Failed to load exercises.");
+        }
+    }, [error]);
 
     if (loading) return <Loading />;
 
@@ -92,7 +95,7 @@ function ExamPrepContent() {
     };
 
     return (
-        <div className="min-h-screen bg-background px-6 py-10">
+        <div className="min-h-screen bg-background px-6 py-10" dir="ltr">
             <div className="max-w-4xl mx-auto">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex items-start gap-4">
@@ -245,7 +248,6 @@ function ExamPrepContent() {
                     </div>
                 </div>
             </div>
-            <ToastContainer />
         </div>
     );
 }

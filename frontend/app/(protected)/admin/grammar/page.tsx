@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import useAuthStore from "@/store/useAuthStore";
 import {
     getGrammarLessonsAdmin,
@@ -81,10 +82,21 @@ const emptyExercise = (): QuizQuestion => ({
 export default function AdminGrammarPage() {
     const router = useRouter();
     const { userProfile, hasHydrated } = useAuthStore();
+    const queryClient = useQueryClient();
 
-    const [lessons, setLessons] = useState<GrammarLesson[]>([]);
-    const [categories, setCategories] = useState<GrammarCategory[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const LESSONS_KEY = ["admin", "grammar", "lessons"];
+    const CATEGORIES_KEY = ["admin", "grammar", "categories"];
+
+    const { data: lessons = [], isLoading, error: lessonsError } = useQuery({
+        queryKey: LESSONS_KEY,
+        queryFn: () => getGrammarLessonsAdmin().then((res) => res.data),
+        enabled: hasHydrated && userProfile?.role === "ADMIN",
+    });
+    const { data: categories = [], error: categoriesError } = useQuery({
+        queryKey: CATEGORIES_KEY,
+        queryFn: () => getGrammarCategoriesAdmin().then((res) => res.data),
+        enabled: hasHydrated && userProfile?.role === "ADMIN",
+    });
     const [isSaving, setIsSaving] = useState(false);
     const [categoryToDelete, setCategoryToDelete] = useState<GrammarCategory | null>(null);
     const [lessonToDelete, setLessonToDelete] = useState<GrammarLesson | null>(null);
@@ -111,28 +123,29 @@ export default function AdminGrammarPage() {
     const [categorySortKey, setCategorySortKey] = useState<CategorySortKey>("title");
     const [categorySortDirection, setCategorySortDirection] = useState<SortDirection>("asc");
 
-    const fetchLessons = useCallback(() => {
-        getGrammarLessonsAdmin()
-            .then((res) => setLessons(res.data))
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load grammar lessons."))
-            .finally(() => setIsLoading(false));
-    }, []);
-
-    const fetchCategories = useCallback(() => {
-        getGrammarCategoriesAdmin()
-            .then((res) => setCategories(res.data))
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load categories."));
-    }, []);
+    const invalidateLessons = () => queryClient.invalidateQueries({ queryKey: LESSONS_KEY });
+    const invalidateCategories = () => queryClient.invalidateQueries({ queryKey: CATEGORIES_KEY });
 
     useEffect(() => {
         if (!hasHydrated) return;
         if (userProfile?.role !== "ADMIN") {
             router.push("/dashboard");
-            return;
         }
-        fetchLessons();
-        fetchCategories();
-    }, [hasHydrated, userProfile, router, fetchLessons, fetchCategories]);
+    }, [hasHydrated, userProfile, router]);
+
+    useEffect(() => {
+        if (lessonsError) {
+            const err = lessonsError as { response?: { data?: { message?: string } } };
+            toast.error(err?.response?.data?.message ?? "Failed to load grammar lessons.");
+        }
+    }, [lessonsError]);
+
+    useEffect(() => {
+        if (categoriesError) {
+            const err = categoriesError as { response?: { data?: { message?: string } } };
+            toast.error(err?.response?.data?.message ?? "Failed to load categories.");
+        }
+    }, [categoriesError]);
 
     if (!hasHydrated || userProfile?.role !== "ADMIN") return null;
 
@@ -182,7 +195,7 @@ export default function AdminGrammarPage() {
             .then(() => {
                 toast.success(editingCategory ? "Category updated." : "Category created.");
                 resetCategoryForm();
-                fetchCategories();
+                invalidateCategories();
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to save category."))
             .finally(() => setIsSavingCategory(false));
@@ -197,8 +210,8 @@ export default function AdminGrammarPage() {
         deleteGrammarCategory(category.id)
             .then(() => {
                 toast.success("Category deleted.");
-                fetchCategories();
-                fetchLessons();
+                invalidateCategories();
+                invalidateLessons();
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to delete category."));
     };
@@ -321,7 +334,7 @@ export default function AdminGrammarPage() {
             .then(() => {
                 toast.success(editingLesson ? "Lesson updated." : "Lesson saved.");
                 resetForm();
-                fetchLessons();
+                invalidateLessons();
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to save lesson."))
             .finally(() => setIsSaving(false));
@@ -345,7 +358,7 @@ export default function AdminGrammarPage() {
         bulkImportGrammarLessons(requests)
             .then((res) => {
                 toast.success(`Imported ${res.data.length} lesson(s) as drafts.`);
-                fetchLessons();
+                invalidateLessons();
             })
             .catch((err) => {
                 const message: string = err?.response?.data?.message ?? "Failed to import lessons.";
@@ -363,7 +376,7 @@ export default function AdminGrammarPage() {
         deleteGrammarLesson(lesson.id)
             .then(() => {
                 toast.success("Lesson deleted.");
-                fetchLessons();
+                invalidateLessons();
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to delete lesson."));
     };
@@ -1301,7 +1314,6 @@ export default function AdminGrammarPage() {
                 onConfirm={confirmRemoveLesson}
                 onCancel={() => setLessonToDelete(null)}
             />
-            <ToastContainer />
         </div>
     );
 }

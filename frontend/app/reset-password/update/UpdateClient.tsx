@@ -4,7 +4,7 @@ import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Link from "next/link";
 import {useState} from "react";
-import {ToastContainer, toast} from "react-toastify";
+import { toast } from "@/lib/toast";
 import {resetPassword} from "@/services/userService";
 import Loading from "@/componenets/Loading";
 import {useSearchParams} from "next/navigation";
@@ -37,7 +37,7 @@ export default function UpdateClient() {
         resetPassword(updatedPassword)
             .then((data) => {
                 if (data?.status == 200) {
-                    toast("Your password successfully reset!");
+                    toast.success("Your password successfully reset!");
                     reset()
                 }
             })
@@ -95,7 +95,6 @@ export default function UpdateClient() {
                     >
                         Login
                     </Link>
-                    <ToastContainer />
                 </div>
             </div>
         </div>

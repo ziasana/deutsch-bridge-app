@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Circle, Play, RotateCw } from "lucide-react";
 import { getExamExercises } from "@/services/examService";
 import { ExamExercisePublicResponse, ExamSection } from "@/types/exam";
@@ -24,7 +24,7 @@ const STATUS_TABS: { value: StatusFilter; label: string }[] = [
 
 function NotFound() {
     return (
-        <div className="min-h-screen bg-background px-6 py-10">
+        <div className="min-h-screen bg-background px-6 py-10" dir="ltr">
             <div className="max-w-4xl mx-auto text-center text-foreground/50 py-20">
                 Dieser Prüfungsteil konnte nicht gefunden werden.
                 <div className="mt-4">
@@ -86,7 +86,7 @@ function TeilContent() {
     const backHref = `/dashboard/exam-prep?section=${typedSection}&level=${encodeURIComponent(level)}`;
 
     return (
-        <div className="min-h-screen bg-background px-6 py-10">
+        <div className="min-h-screen bg-background px-6 py-10" dir="ltr">
             <div className="max-w-4xl mx-auto">
                 <Link href={backHref} className="inline-flex items-center gap-1.5 text-sm text-foreground/60 hover:text-foreground transition">
                     <ArrowLeft className="size-4" />
@@ -215,7 +215,6 @@ function TeilContent() {
                     </div>
                 )}
             </div>
-            <ToastContainer />
         </div>
     );
 }

@@ -87,6 +87,25 @@
   --topbar-foreground: hsl(0 0% 100%);
   --topbar-accent: hsl(216 90% 70%);
   --card-shadow: 0 5px 5px 0 rgba(82, 63, 105, 0.05);
+
+  /* react-toastify theming - keep in sync with the tokens above (see lib/toast.ts) */
+  --toastify-color-light: var(--card);
+  --toastify-color-dark: var(--card);
+  --toastify-color-info: var(--primary);
+  --toastify-color-success: hsl(158 64% 38%);
+  --toastify-color-warning: hsl(36 92% 50%);
+  --toastify-color-error: var(--destructive);
+  --toastify-icon-color-info: var(--toastify-color-info);
+  --toastify-icon-color-success: var(--toastify-color-success);
+  --toastify-icon-color-warning: var(--toastify-color-warning);
+  --toastify-icon-color-error: var(--toastify-color-error);
+  --toastify-toast-bd-radius: var(--radius-lg);
+  --toastify-toast-shadow: 0 10px 30px -5px rgba(31, 41, 55, 0.18);
+  --toastify-font-family: var(--font-sans);
+  --toastify-text-color-light: var(--card-foreground);
+  --toastify-text-color-dark: var(--card-foreground);
+  --toastify-color-progress-light: var(--primary);
+  --toastify-color-progress-dark: var(--primary);
 }
 
 .dark {
@@ -175,6 +194,11 @@
 /* Sprachbausteine gap marker - shared between the admin rich-text editor and the student view */
 .exam-gap-marker {
   @apply inline-flex items-center justify-center min-w-[1.5em] px-1 mx-0.5 rounded bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-bold align-middle;
+}
+
+/* Toast cards get the same subtle border every other card surface uses (badges/modals/etc). */
+.Toastify__toast {
+  border: 1px solid var(--border);
 }
 
 /* Persian UI language - applied to <html> by I18nProvider when the account's preferred language is Persian */

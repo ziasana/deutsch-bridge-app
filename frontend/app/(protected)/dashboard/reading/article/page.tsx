@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import { getReadingArticleById } from "@/services/readingService";
 import { setLearningProgress } from "@/services/grammarService";
 import { saveToLexicon } from "@/services/lexiconService";
@@ -699,7 +699,6 @@ function ReadingArticleDetailContent() {
                 />
             </div>
             <DictionaryPanel activeLemma={activeDictionaryLemma} onClose={() => setActiveDictionaryLemma(null)} />
-            <ToastContainer />
         </div>
     );
 }

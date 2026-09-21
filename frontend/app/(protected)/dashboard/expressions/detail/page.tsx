@@ -41,7 +41,7 @@ function ExpressionDetailContent() {
 
     if (!expression) {
         return (
-            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6 flex items-center justify-center" dir="ltr">
                 <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-10 text-center max-w-md">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Nicht gefunden</h2>
                     <Button variant="primary" onClick={() => router.push("/dashboard/expressions")}>
@@ -60,7 +60,7 @@ function ExpressionDetailContent() {
     const hasVisual = Boolean(uploadedImageSrc || illustrationNode);
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6">
+        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6" dir="ltr">
             <div className="max-w-3xl mx-auto">
                 <Link href="/dashboard/expressions" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
                     ← Zurück zur Übersicht

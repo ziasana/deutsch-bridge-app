@@ -6,6 +6,7 @@ import { DailyWord } from "@/types/dailyWord";
 import { getLevelMeta } from "@/componenets/learning/levelMeta";
 import { playVocabularyAudio } from "@/lib/vocabularyAudio";
 import Button from "@/componenets/Button";
+import { useI18n } from "@/componenets/I18nProvider";
 import { cn } from "@/lib/utils";
 
 interface DailyWordLearningCardProps {
@@ -37,6 +38,7 @@ export default function DailyWordLearningCard({
     onPrevious,
     onNext,
 }: DailyWordLearningCardProps) {
+    const { t } = useI18n();
     const [isPlaying, setIsPlaying] = useState(false);
     const levelColor = getLevelMeta(word.level).color;
 
@@ -52,7 +54,7 @@ export default function DailyWordLearningCard({
         <div className="rounded-2xl border border-border/60 bg-card p-6 sm:p-8 shadow-card">
             <div className="flex flex-col items-center text-center">
                 <span className="text-xs font-semibold uppercase tracking-wide text-foreground/45">
-                    Word {index + 1} of {total}
+                    {t.dailyWords.card.wordOf(index + 1, total)}
                 </span>
 
                 <div className="mt-3 flex items-center gap-2">
@@ -60,7 +62,7 @@ export default function DailyWordLearningCard({
                     <button
                         type="button"
                         onClick={handlePlayAudio}
-                        aria-label={`Play pronunciation of ${word.word}`}
+                        aria-label={t.dailyWords.card.playAria(word.word)}
                         className={cn(
                             "flex size-9 shrink-0 items-center justify-center rounded-full text-foreground/60 transition-colors hover:bg-accent hover:text-primary",
                             isPlaying && "text-primary bg-accent",
@@ -101,7 +103,7 @@ export default function DailyWordLearningCard({
                         disabled={isSaving || isSaved}
                         onClick={onSave}
                     >
-                        {isSaving ? "Saving..." : isSaved ? "✓ Saved to Vocabulary" : "+ Save to Vocabulary"}
+                        {isSaving ? t.dailyWords.card.saving : isSaved ? t.dailyWords.card.saved : t.dailyWords.card.save}
                     </Button>
                     <Button
                         variant={word.learned ? "secondary" : "primary"}
@@ -111,12 +113,12 @@ export default function DailyWordLearningCard({
                     >
                         {word.learned ? (
                             <span className="inline-flex items-center gap-1.5">
-                                <CheckCircle2 className="size-4" /> Learned
+                                <CheckCircle2 className="size-4" /> {t.dailyWords.card.learned}
                             </span>
                         ) : isMarking ? (
-                            "Saving..."
+                            t.dailyWords.card.saving
                         ) : (
-                            "✓ I know this"
+                            t.dailyWords.card.markLearned
                         )}
                     </Button>
                 </div>
@@ -126,19 +128,19 @@ export default function DailyWordLearningCard({
                         type="button"
                         onClick={onPrevious}
                         disabled={!canGoPrevious}
-                        aria-label="Previous word"
+                        aria-label={t.dailyWords.card.previousAria}
                         className="inline-flex items-center gap-1 text-sm font-medium text-foreground/60 disabled:opacity-30 hover:text-primary transition-colors"
                     >
-                        <ChevronLeft className="size-4" /> Previous
+                        <ChevronLeft className="size-4" /> {t.dailyWords.card.previous}
                     </button>
                     <button
                         type="button"
                         onClick={onNext}
                         disabled={!canGoNext}
-                        aria-label="Next word"
+                        aria-label={t.dailyWords.card.nextAria}
                         className="inline-flex items-center gap-1 text-sm font-medium text-foreground/60 disabled:opacity-30 hover:text-primary transition-colors"
                     >
-                        Next <ChevronRight className="size-4" />
+                        {t.dailyWords.card.next} <ChevronRight className="size-4" />
                     </button>
                 </div>
             </div>

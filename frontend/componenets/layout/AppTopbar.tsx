@@ -82,7 +82,7 @@ export default function AppTopbar({ collapsed, onToggleCollapsed, onOpenMobileSi
 
                 <MenuItems
                     transition
-                    className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-xl bg-popover text-popover-foreground py-1 shadow-lg ring-1 ring-border outline-none focus:outline-none transition data-closed:scale-95 data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
+                    className="absolute end-0 z-10 mt-2 w-48 origin-top-right rtl:origin-top-left overflow-hidden rounded-xl bg-popover text-popover-foreground py-1 shadow-lg ring-1 ring-border outline-none focus:outline-none transition data-closed:scale-95 data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
                 >
                     <MenuItem>
                         <Link href="/profile" className="block px-4 py-2 text-sm text-foreground/80 data-focus:bg-accent data-focus:text-accent-foreground outline-none">

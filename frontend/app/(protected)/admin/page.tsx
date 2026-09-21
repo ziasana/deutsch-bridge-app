@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import useAuthStore from "@/store/useAuthStore";
 import { getAllUsers, updateUser, changeUserPassword, changeAccountType } from "@/services/adminService";
 import { AccountType, AdminUser } from "@/types/admin";
@@ -604,7 +604,6 @@ export default function AdminPage() {
             )}
 
             {isSaving && <Loading message="Please wait..." />}
-            <ToastContainer />
         </div>
     );
 }
