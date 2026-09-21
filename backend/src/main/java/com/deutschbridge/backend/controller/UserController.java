@@ -57,7 +57,7 @@ public class UserController {
 
     @GetMapping("/profile")
     public ResponseEntity<ApiResponse<UserProfileResponse>> getProfile(@AuthenticationPrincipal AuthUser authUser) {
-        User user = userService.findByEmail(authUser.getId());
+        User user = userService.findByEmail(authUser.getEmail());
         UserProfile profile = user.getProfile(); // This is loaded eagerly
         UserProfileResponse response= new UserProfileResponse(
                 user.getDisplayName(),

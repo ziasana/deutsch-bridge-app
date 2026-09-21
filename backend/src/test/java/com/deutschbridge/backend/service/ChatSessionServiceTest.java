@@ -72,13 +72,13 @@ class ChatSessionServiceTest {
     @DisplayName("find -> should return a chat session by user")
     void testGetByUserId_ShouldReturnChatSession() {
 
-        ChatSessionDto chatSessionDto = new ChatSessionDto("123", "user1", "new chat");
+        ChatSessionDto chatSessionDto = new ChatSessionDto("123", "user1", "new chat", java.time.LocalDateTime.now());
         when(requestContext.getUserId()).thenReturn("user1");
-        when(chatSessionRepository.findByUserId("user1")).thenReturn(List.of(chatSessionDto));
+        when(chatSessionRepository.findByUserIdOrderByCreatedAtDesc("user1")).thenReturn(List.of(chatSessionDto));
 
         List<ChatSessionDto> result = chatSessionService.getByUserId();
         assertEquals("user1", result.getFirst().userId());
-        verify(chatSessionRepository, times(1)).findByUserId(any());
+        verify(chatSessionRepository, times(1)).findByUserIdOrderByCreatedAtDesc(any());
 
     }
 

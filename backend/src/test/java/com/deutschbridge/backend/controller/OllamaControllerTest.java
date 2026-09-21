@@ -155,7 +155,7 @@ class OllamaControllerTest {
     @Test
     void testGetSessions_ShouldReturnUsersSessions() throws Exception {
 
-        ChatSessionDto chatSessionDto = new ChatSessionDto("12", "user1", "new chat");
+        ChatSessionDto chatSessionDto = new ChatSessionDto("12", "user1", "new chat", java.time.LocalDateTime.now());
         when(chatSessionService.getByUserId())
                 .thenReturn(List.of(chatSessionDto));
 
@@ -205,7 +205,7 @@ class OllamaControllerTest {
         String sessionId = "session1";
         String userId = "user1";
         ChatSessionDto responseDto =
-                new ChatSessionDto(sessionId, userId, "new title");
+                new ChatSessionDto(sessionId, userId, "new title", java.time.LocalDateTime.now());
 
         when(chatSessionService.updateTitle((sessionId), ("new title")))
                 .thenReturn(responseDto);
