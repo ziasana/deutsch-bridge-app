@@ -3,10 +3,10 @@ package com.deutschbridge.backend.repository;
 import com.deutschbridge.backend.model.entity.DailyWord;
 import com.deutschbridge.backend.model.entity.GrammarLesson;
 import com.deutschbridge.backend.model.entity.LearningProgress;
-import com.deutschbridge.backend.model.entity.NomenVerbConnection;
 import com.deutschbridge.backend.model.entity.ReadingArticle;
 import com.deutschbridge.backend.model.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -22,15 +22,11 @@ public interface LearningProgressRepository extends JpaRepository<LearningProgre
 
     Optional<LearningProgress> findByUserAndLesson(User user, GrammarLesson lesson);
 
-    Optional<LearningProgress> findByUserAndNomenVerb(User user, NomenVerbConnection nomenVerb);
-
     Optional<LearningProgress> findByUserAndDailyWord(User user, DailyWord dailyWord);
 
     Optional<LearningProgress> findByUserAndReading(User user, ReadingArticle reading);
 
     List<LearningProgress> findByUserAndDailyWordIn(User user, List<DailyWord> dailyWords);
-
-    List<LearningProgress> findByUserAndNomenVerbIn(User user, List<NomenVerbConnection> nomenVerbs);
 
     List<LearningProgress> findByUserAndLessonIn(User user, List<GrammarLesson> lessons);
 
@@ -39,8 +35,6 @@ public interface LearningProgressRepository extends JpaRepository<LearningProgre
     long countByUserAndIsLearnedTrue(User user);
 
     long countByUserAndLessonIsNotNullAndIsLearnedTrue(User user);
-
-    long countByUserAndNomenVerbIsNotNullAndIsLearnedTrue(User user);
 
     long countByUserAndDailyWordIsNotNullAndIsLearnedTrue(User user);
 
@@ -51,4 +45,7 @@ public interface LearningProgressRepository extends JpaRepository<LearningProgre
     @Query("SELECT DISTINCT CAST(lp.learnedAt AS localdate) FROM learning_progress lp " +
             "WHERE lp.user = :user AND lp.isLearned = true ORDER BY 1 DESC")
     List<LocalDate> findDistinctLearnedDatesByUser(@Param("user") User user);
+
+    @Modifying
+    void deleteByLesson(GrammarLesson lesson);
 }

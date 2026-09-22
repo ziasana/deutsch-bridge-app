@@ -8,7 +8,8 @@ public record AdminUserResponse(
         String displayName,
         String username,
         String role,
-        boolean verified
+        boolean verified,
+        String accountType
 ) {
     public static AdminUserResponse fromEntity(User user) {
         return new AdminUserResponse(
@@ -17,7 +18,8 @@ public record AdminUserResponse(
                 user.getDisplayName(),
                 user.getUsername(),
                 user.getRole(),
-                user.isVerified()
+                user.isVerified(),
+                user.getAccountType() != null ? user.getAccountType().name() : "BASIC"
         );
     }
 }

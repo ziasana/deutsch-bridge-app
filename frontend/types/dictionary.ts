@@ -25,16 +25,3 @@ export interface DictionaryEntry {
 export interface ReportMissingWordRequest {
     note: string | null;
 }
-
-export interface UserVocab {
-    id: string;
-    entryId: string;
-    lemma: string;
-    article: string | null;
-    meaning: string | null;
-    status: "new" | "learning" | "known";
-}
-
-export interface SaveVocabRequest {
-    entryId: string;
-}

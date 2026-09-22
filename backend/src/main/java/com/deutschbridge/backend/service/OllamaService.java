@@ -3,6 +3,7 @@ package com.deutschbridge.backend.service;
 import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.exception.AiGenerationException;
 import com.deutschbridge.backend.model.dto.*;
+import com.deutschbridge.backend.model.enums.FeatureType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.model.enums.PromptType;
 import com.deutschbridge.backend.util.PromptLibrary;
@@ -26,12 +27,14 @@ public class OllamaService {
     private final ChatSessionService chatSessionService;
     private final RequestContext requestContext;
     private final UserService userService;
+    private final EntitlementService entitlementService;
 
     public OllamaService(
             @Value("${ollama.api.key}") String apiKey,
             ChatMessageService chatMessageService,
             ChatSessionService chatSessionService,
-            RequestContext requestContext, UserService userService) {
+            RequestContext requestContext, UserService userService,
+            EntitlementService entitlementService) {
         this.restTemplate = new RestTemplate();
         this.chatMessageService = chatMessageService;
         this.chatSessionService = chatSessionService;
@@ -40,26 +43,58 @@ public class OllamaService {
         headers.setBearerAuth(apiKey);
         this.requestContext = requestContext;
         this.userService = userService;
+        this.entitlementService = entitlementService;
     }
 
     public ResponseMessageDto chatWithUser(OllamaChatRequestDto requestDto) {
         String userId = requestContext.getUserId();
+        entitlementService.consume(userId, FeatureType.AI_CHAT);
 
+        boolean isNewSession = requestDto.sessionId() == null
+                || chatSessionService.getBySessionId(requestDto.sessionId()) == null;
         String sessionId = resolveSessionId(requestDto.sessionId(), userId);
 
         String aiAnswer = chatWithOllama(PromptType.CHAT, requestDto.question());
 
         chatMessageService.save(sessionId, requestDto.question(), aiAnswer);
 
-        return new ResponseMessageDto(sessionId, userId, aiAnswer, "");
+        String sessionTitle = null;
+        if (isNewSession) {
+            sessionTitle = generateSessionTitle(requestDto.question());
+            if (sessionTitle != null) {
+                chatSessionService.updateTitle(sessionId, sessionTitle);
+            }
+        }
+
+        return new ResponseMessageDto(sessionId, userId, aiAnswer, "", sessionTitle);
+    }
+
+    /** Best-effort - a title-generation failure shouldn't break the chat response itself. */
+    private String generateSessionTitle(String question) {
+        try {
+            String rawTitle = chatWithOllama(PromptType.SESSION_TITLE, question);
+            String title = rawTitle.strip().replaceAll("^[\"'\\s]+|[\"'\\s.!?]+$", "");
+            return title.isBlank() ? null : title;
+        } catch (AiGenerationException e) {
+            return null;
+        }
     }
 
     public OllamaGenerateExampleDto generateAiExample(OllamaGenerateExampleDto requestDto) {
-        String aiAnswer = chatWithOllama(PromptType.EXAMPLE,requestDto.word());
-        return new OllamaGenerateExampleDto(aiAnswer);
+        entitlementService.consume(requestContext.getUserId(), FeatureType.AI_EXAMPLE);
+        String aiAnswer = chatWithOllama(PromptType.EXAMPLE, requestDto.word());
+        return new OllamaGenerateExampleDto(cleanUpExampleSentence(aiAnswer));
+    }
+
+    /** Strips a leading bullet/number/quote and collapses to a single line, in case the model
+     * still returns more than the one requested sentence despite the prompt. */
+    private String cleanUpExampleSentence(String raw) {
+        String firstLine = raw.strip().split("\\r?\\n", 2)[0];
+        return firstLine.replaceAll("^[-*\\d.)\\s\"'„“]+|[\"'„“]+$", "").strip();
     }
 
     public String generateAiSynonyms(String word) {
+        entitlementService.consume(requestContext.getUserId(), FeatureType.AI_SYNONYM);
         return chatWithOllama(PromptType.SYNONYM,word);
     }
 
@@ -107,6 +142,40 @@ public class OllamaService {
         return callOllama(messages);
     }
 
+    public String evaluateExpressionProduction(String expression, String meaningDe, LearningLevel level, String userSentence) {
+        entitlementService.consume(requestContext.getUserId(), FeatureType.AI_CORRECTION);
+        List<OllamaMessage> messages = List.of(
+                new OllamaMessage("system", PromptLibrary.evaluateExpressionProduction(expression, meaningDe, level.name(), userSentence)),
+                new OllamaMessage("user", userSentence)
+        );
+        return callOllama(messages);
+    }
+
+    public String evaluateTransformation(String sourceSentence, String expression, String meaningDe, LearningLevel level, String userSentence) {
+        entitlementService.consume(requestContext.getUserId(), FeatureType.AI_CORRECTION);
+        List<OllamaMessage> messages = List.of(
+                new OllamaMessage("system", PromptLibrary.evaluateTransformation(sourceSentence, expression, meaningDe, level.name(), userSentence)),
+                new OllamaMessage("user", userSentence)
+        );
+        return callOllama(messages);
+    }
+
+    public String generateDailyWords(LearningLevel level, int count, boolean includePersian) {
+        List<OllamaMessage> messages = List.of(
+                new OllamaMessage("system", PromptLibrary.generateDailyWords(level.name(), count, includePersian)),
+                new OllamaMessage("user", "Erstelle " + count + " Vokabeln für Niveau " + level.name() + ".")
+        );
+        return callOllama(messages);
+    }
+
+    public String classifySelection(String selectedText, String contextText) {
+        List<OllamaMessage> messages = List.of(
+                new OllamaMessage("system", PromptLibrary.classifySelection(selectedText, contextText, requestContext.getLanguage())),
+                new OllamaMessage("user", selectedText)
+        );
+        return callOllama(messages);
+    }
+
     public String lemmatizeWords(List<String> words) {
         List<OllamaMessage> messages = List.of(
                 new OllamaMessage("system", PromptLibrary.lemmatizeWords(words)),
@@ -139,13 +208,16 @@ public class OllamaService {
        String learningLevel = String.valueOf(userService.getLearningLevel(requestContext.getUserEmail()));
        String userPrompt= "";
         if(promptType == (PromptType.CHAT)) {
-            userPrompt = PromptLibrary.systemPrompt();
+            userPrompt = PromptLibrary.systemPrompt(requestContext.getLanguage());
         }
         if (promptType == PromptType.EXAMPLE) {
             userPrompt = PromptLibrary.generateWordExamples(question, learningLevel);
         }
         if (promptType == PromptType.SYNONYM) {
             userPrompt = PromptLibrary.generateWordSynonyms(question, learningLevel);
+        }
+        if (promptType == PromptType.SESSION_TITLE) {
+            userPrompt = PromptLibrary.generateSessionTitle(requestContext.getLanguage());
         }
 
         return List.of(

@@ -7,6 +7,47 @@ public class PromptLibrary {
         throw new IllegalStateException("Prompt library class");
     }
 
+    public static String generateSessionTitle(String explanationLanguage) {
+        String languageInstruction = switch (explanationLanguage == null ? "" : explanationLanguage.toUpperCase()) {
+            case "PR", "FA" -> "Schreibe den Titel auf Persisch (Farsi).";
+            default -> "Schreibe den Titel auf Deutsch oder Englisch, je nachdem, welche Sprache der Lernende benutzt.";
+        };
+
+        return """
+                Du liest die erste Nachricht eines Lernenden an einen Deutschlehrer-Chatbot.
+                Erzeuge einen sehr kurzen, aussagekräftigen Titel (2-5 Wörter) für diesen Chat, der das Thema zusammenfasst.
+                %s
+                Gib NUR den Titel zurück - keine Anführungszeichen, keine Erklärung, kein Satzzeichen am Ende.
+                """.formatted(languageInstruction);
+    }
+
+    public static String generateDailyWords(String level, int count, boolean includePersian) {
+        String persianInstruction = includePersian
+                ? "- Gib zusätzlich MEANING_FA (persische Übersetzung der Bedeutung) und EXAMPLE_FA " +
+                  "(persische Übersetzung des Beispielsatzes) an - beides auf Farsi, in persischer Schrift."
+                : "- Lasse MEANING_FA und EXAMPLE_FA leer (schreibe genau \"-\") - sie werden nicht benötigt.";
+
+        return String.format("""
+        Erstelle %d neue, unterschiedliche deutsche Vokabeln für das Sprachniveau %s, passend zum
+        Wortschatz, der auf diesem Niveau erwartet wird.
+
+        Wichtige Regeln:
+        - Wähle Wörter, die für Niveau %s neu und lehrreich sind, keine trivialen Grundwörter
+        - MEANING_EN ist die englische Übersetzung/Bedeutung des Wortes
+        - EXAMPLE_DE ist ein natürlicher Beispielsatz auf Deutsch, der das Wort im Kontext zeigt,
+          mit Grammatik passend zu Niveau %s
+        - SYNONYME sind 1-3 deutsche Synonyme oder verwandte Wörter, getrennt durch Kommas
+        %s
+        - Jede Zeile steht für genau ein Wort, Felder getrennt durch "|"
+        - Keine zusätzlichen Zeilen, keine Erklärungen, keine leeren Zeilen
+
+        Antworte GENAU in diesem Format, ohne zusätzlichen Text davor oder danach:
+
+        WOERTER:
+        WORT|MEANING_EN|EXAMPLE_DE|SYNONYME|MEANING_FA|EXAMPLE_FA
+        """, count, level, level, level, persianInstruction);
+    }
+
     public static String lemmatizeWords(List<String> words) {
         return String.format("""
         Für jedes der folgenden deutschen Wörter (wie sie in einem Lesetext vorkommen), gib die
@@ -32,7 +73,7 @@ public class PromptLibrary {
 
     public static String generateWordExamples(String word, String level) {
         return String.format("""
-        Erstelle Beispielsätze für das folgende deutsche Wort,
+        Erstelle GENAU EINEN Beispielsatz für das folgende deutsche Wort,
         angepasst an das Sprachniveau %s:
 
         Wort: "%s"
@@ -41,13 +82,13 @@ public class PromptLibrary {
         - Korrigiere das Wort bei Bedarf, falls es falsch geschrieben wurde
         - Verwende das Wort korrekt im Kontext
         - Erkläre das Wort NICHT
-        - Schreibe natürliche, alltagsnahe Sätze
+        - Schreibe einen natürlichen, alltagsnahen Satz
         - Halte die Grammatik auf dem Niveau %s
-        - JEDER Beispielsatz MUSS in einer eigenen Zeile stehen
+        - Gib NUR den einen Satz aus, ohne Aufzählungszeichen, Anführungszeichen, Nummerierung
+          oder zusätzlichen Text davor oder danach
 
-        Ausgabeformat (genau einhalten):
-        - Satz 1
-        - Satz 2
+        Ausgabeformat (genau einhalten - nur der Satz, sonst nichts):
+        Satz
 
         """, level, word, level);
     }
@@ -175,21 +216,121 @@ public class PromptLibrary {
         %s""", level, content, inferenceLine.isEmpty() ? "" : ", INFERENCE", inferenceLine);
     }
 
+    public static String evaluateExpressionProduction(String expression, String meaningDe, String level, String userSentence) {
+        return String.format("""
+        Ein Deutschlernender auf Niveau %s soll die Wendung "%s" (Bedeutung: %s) aktiv in einem
+        eigenen Satz verwenden. Bewerte den folgenden Satz.
+
+        Satz des Lernenden:
+        "%s"
+
+        Wichtige Regeln:
+        - USED_CORRECTLY: wurde "%s" (auch leicht flektiert/umgestellt) korrekt in der richtigen Bedeutung verwendet?
+        - GRAMMAR_CORRECT: ist der Satz grammatisch korrekt (Kasus, Wortstellung, Kongruenz)?
+        - NATURAL: klingt der Satz wie von einem Muttersprachler, nicht konstruiert?
+        - FEEDBACK: 1-2 kurze, konkrete und ermutigende Sätze auf Deutsch, die erklären was gut war
+          und was verbessert werden kann. Schreibe NICHT den ganzen Satz neu.
+        - C1_SUGGESTION: falls der Satz auf C1-Niveau verbessert werden kann, gib EINE bessere
+          Umformulierung an; falls der Satz bereits sehr gut ist, schreibe genau "-"
+
+        Antworte GENAU in diesem Format, ohne zusätzlichen Text davor oder danach:
+
+        USED_CORRECTLY|true oder false
+        GRAMMAR_CORRECT|true oder false
+        NATURAL|true oder false
+        FEEDBACK|<Feedback-Text>
+        C1_SUGGESTION|<Vorschlag oder ->
+        """, level, expression, meaningDe, userSentence, expression);
+    }
+
+    public static String evaluateTransformation(String sourceSentence, String expression, String meaningDe, String level, String userSentence) {
+        return String.format("""
+        Ein Deutschlernender auf Niveau %s soll den folgenden Satz umformulieren und dabei die
+        Wendung "%s" (Bedeutung: %s) verwenden.
+
+        Ausgangssatz:
+        "%s"
+
+        Umformulierung des Lernenden:
+        "%s"
+
+        Wichtige Regeln:
+        - USED_EXPRESSION: wurde "%s" (auch leicht flektiert/umgestellt) korrekt verwendet?
+        - GRAMMAR_CORRECT: ist der Satz grammatisch korrekt (Kasus, Wortstellung, Kongruenz)?
+        - MEANING_PRESERVED: hat der umformulierte Satz noch dieselbe Bedeutung wie der Ausgangssatz?
+        - FEEDBACK: 1-2 kurze, konkrete und ermutigende Sätze auf Deutsch, die erklären was gut war
+          und was verbessert werden kann. Schreibe NICHT den ganzen Satz neu.
+        - C1_SUGGESTION: falls der Satz auf C1-Niveau verbessert werden kann, gib EINE bessere
+          Umformulierung an; falls der Satz bereits sehr gut ist, schreibe genau "-"
+
+        Antworte GENAU in diesem Format, ohne zusätzlichen Text davor oder danach:
+
+        USED_EXPRESSION|true oder false
+        GRAMMAR_CORRECT|true oder false
+        MEANING_PRESERVED|true oder false
+        FEEDBACK|<Feedback-Text>
+        C1_SUGGESTION|<Vorschlag oder ->
+        """, level, expression, meaningDe, sourceSentence, userSentence, expression);
+    }
+
     // System Prompt für den KI-Lehrer
-    public static String systemPrompt() {
+    public static String systemPrompt(String explanationLanguage) {
+        String languageInstruction = switch (explanationLanguage == null ? "" : explanationLanguage.toUpperCase()) {
+            case "PR", "FA" -> "Der Lernende bevorzugt Persisch (Farsi) als Erklärungssprache. " +
+                    "Gib deine Erklärungen, Übersetzungen und Kommentare auf Persisch. " +
+                    "Deutsche Beispielsätze, Vokabeln und Zitate aus der Übung bleiben weiterhin auf Deutsch, " +
+                    "da diese gelernt werden sollen.";
+            default -> "Antworte immer in klarem, korrektem Deutsch (oder auf Englisch, wenn ausdrücklich verlangt).";
+        };
+
         return """
                 Du bist ein freundlicher und geduldiger Deutschlehrer.
                 Deine einzige Aufgabe ist es, dem Lernenden beim Verbessern seiner Deutschkenntnisse zu helfen – Grammatik, Wortschatz, Aussprache, Schreiben und Konversation.
-                Antworte immer in klarem, korrektem Deutsch (oder auf Englisch, wenn ausdrücklich verlangt).
+                %s
                 Korrigiere Fehler höflich und erkläre kurz warum. Gib ein oder zwei Beispiele. Bleibe motivierend.
                 Wenn der Lernende Fehler macht, korrigierst du sie sanft und erklärst warum.
                 Wenn der Lernende einen neuen Satz oder ein neues Wort will, gibst du Beispiele
                 Beantworte ausschließlich Fragen zur deutschen Sprache.
                 Wenn etwas nicht mit Sprache/Deutschlernen zu tun hat, lenke sanft zurück zum Thema.
-                Der Nutzer kann die bestehende Unterhaltung fortführen oder eine neue Frage stellen.          
+                Der Nutzer kann die bestehende Unterhaltung fortführen oder eine neue Frage stellen.
                 Du beantwortest NUR Fragen zum Deutschlernen (Grammatik, Schreiben, Aussprache).
                 Alles andere ignorierst du höflich.
                 Geben Sie NUR einfachen Text, kein JSON, an Markdown zurück, keine Formatierung.
-                """;
+                """.formatted(languageInstruction);
+    }
+
+    /** Classifies a text selection from an AI Tutor chat message as a single word or a multi-word
+     *  expression/idiom/Nomen-Verb-Verbindung, and normalizes it to its canonical dictionary form. */
+    public static String classifySelection(String selectedText, String contextText, String explanationLanguage) {
+        String meaningLanguageInstruction = switch (explanationLanguage == null ? "" : explanationLanguage.toUpperCase()) {
+            case "PR", "FA" -> "Schreibe \"meaning\" auf Persisch (Farsi).";
+            default -> "Schreibe \"meaning\" auf Englisch.";
+        };
+
+        return String.format("""
+        Ein Deutschlernender hat den folgenden Text in einer Chat-Nachricht seines Deutschlehrers markiert,
+        um ihn zu seinem persönlichen Vokabular hinzuzufügen.
+
+        Markierter Text:
+        "%s"
+
+        Kontext (die ganze Nachricht, aus der der Text stammt):
+        "%s"
+
+        Deine Aufgabe:
+        1. Entscheide, ob es sich um ein einzelnes WORD (ein Wort, ggf. mit Artikel) oder eine
+           EXPRESSION (Wendung, Redewendung, Nomen-Verb-Verbindung, Kollokation, mehrere Wörter) handelt.
+        2. Normalisiere den Text in seine Wörterbuch-Grundform:
+           - WORD: Grundform/Infinitiv (Nomen mit Artikel falls sinnvoll, Verben im Infinitiv,
+             Adjektive in der Grundform).
+           - EXPRESSION: die kanonische, verallgemeinerte Form, NICHT der wörtliche Ausschnitt aus dem
+             Satz. Beispiel: "für einen neuen Deutschkurs entschieden" -> "sich für etwas entscheiden".
+        3. Gib eine kurze, klare Bedeutung an. %s
+        4. Gib einen natürlichen deutschen Beispielsatz mit der normalisierten Form an.
+
+        Antworte AUSSCHLIESSLICH mit einem einzeiligen, gültigen JSON-Objekt, ohne Codeblock, ohne
+        Erklärung, in genau diesem Format:
+        {"type":"WORD oder EXPRESSION","normalizedText":"...","meaning":"...","example":"..."}
+        """, selectedText, contextText, meaningLanguageInstruction);
     }
 }

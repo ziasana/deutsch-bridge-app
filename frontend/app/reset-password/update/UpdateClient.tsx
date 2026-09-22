@@ -4,7 +4,7 @@ import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Link from "next/link";
 import {useState} from "react";
-import {ToastContainer, toast} from "react-toastify";
+import { toast } from "@/lib/toast";
 import {resetPassword} from "@/services/userService";
 import Loading from "@/componenets/Loading";
 import {useSearchParams} from "next/navigation";
@@ -37,7 +37,7 @@ export default function UpdateClient() {
         resetPassword(updatedPassword)
             .then((data) => {
                 if (data?.status == 200) {
-                    toast("Your password successfully reset!");
+                    toast.success("Your password successfully reset!");
                     reset()
                 }
             })
@@ -50,10 +50,10 @@ export default function UpdateClient() {
     useFormErrorToast(errors, isSubmitted);
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
-            <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+        <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-background px-4 py-12">
+            <div className="w-full max-w-md bg-card rounded-[10px] shadow-card p-8">
                 {/* Title */}
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white text-center mb-12">
+                <h1 className="text-3xl font-bold text-foreground text-center mb-12">
                     Rest Password
                 </h1>
                 {isLoading && <Loading message="Please wait..." />}
@@ -61,7 +61,7 @@ export default function UpdateClient() {
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                     {/* Email */}
                     <div>
-                        <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                        <label className="block text-foreground/70 mb-2 text-sm">
                             Password <Input
                             type="password"
                             {...register("password")}
@@ -72,7 +72,7 @@ export default function UpdateClient() {
                     {/* Confirm Password */}
 
                     <div>
-                        <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                        <label className="block text-foreground/70 mb-2 text-sm">
                             Confirm Password <Input
                             type="password"
                             {...register("password_confirmation")}
@@ -87,15 +87,14 @@ export default function UpdateClient() {
                 </form>
 
                 {/* Divider */}
-                <div className="mt-6 text-center text-gray-600 dark:text-gray-400">
+                <div className="mt-6 text-center text-foreground/60">
                     Click here to go to the login page?
                     <Link
                         href="/login"
-                        className="text-blue-600 dark:text-blue-400 hover:underline ml-1"
+                        className="text-primary hover:underline ml-1"
                     >
                         Login
                     </Link>
-                    <ToastContainer />
                 </div>
             </div>
         </div>

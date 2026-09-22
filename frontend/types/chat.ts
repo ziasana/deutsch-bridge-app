@@ -3,6 +3,8 @@ export interface ChatResponse {
     userId: string
     content: string
     role: string
+    /** Set only when this response created a new session - the AI-generated title for it. */
+    sessionTitle?: string | null
 }
 
 export type ChatRequest= {
@@ -21,5 +23,6 @@ export type ChatMessage ={
 export type ChatSessionDto = {
   id: string,
   userId: string,
-  title: string
+  title: string,
+  createdAt?: string
 }

@@ -1,13 +1,18 @@
 
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Poppins, Geist_Mono } from "next/font/google";
+import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
-import { Toaster } from "sonner";
+import { ToastContainer } from "react-toastify";
 import {DarkModeProvider} from "@/componenets/DarkModeProvider";
-import Navbar from "@/componenets/Navbar";
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+import {I18nProvider} from "@/componenets/I18nProvider";
+import AppChrome from "@/componenets/layout/AppChrome";
+import PremiumUpsellModal from "@/componenets/PremiumUpsellModal";
+import Providers from "./providers";
+const poppins = Poppins({
+  variable: "--font-poppins",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -27,14 +32,26 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${poppins.variable} ${geistMono.variable} antialiased`}
       >
-      <DarkModeProvider>
-          <Navbar />
-          <main>{children}</main>
-          <Toaster richColors position="top-right" />
-      </DarkModeProvider>
+      <Providers>
+        <I18nProvider>
+          <DarkModeProvider>
+              <AppChrome>{children}</AppChrome>
+              <ToastContainer position="top-right" hideProgressBar closeOnClick pauseOnHover newestOnTop />
+              <PremiumUpsellModal />
+          </DarkModeProvider>
+        </I18nProvider>
+      </Providers>
       </body>
     </html>
   );

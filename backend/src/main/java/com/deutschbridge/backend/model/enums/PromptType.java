@@ -7,5 +7,7 @@ public enum PromptType
 {
     EXAMPLE,
     CHAT,
-    SYNONYM
+    SYNONYM,
+    SESSION_TITLE,
+    CLASSIFY_SELECTION
 }

@@ -12,4 +12,6 @@ public class ResponseMessageDto {
     private String userId;
     private String content;
     private String role;
+    /** Set only when this response created a new session - the AI-generated title for it. */
+    private String sessionTitle;
 }

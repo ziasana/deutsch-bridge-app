@@ -30,7 +30,7 @@ public class ChatSessionService {
     }
 
     public List<ChatSessionDto> getByUserId() {
-        return chatSessionRepository.findByUserId(requestContext.getUserId());
+        return chatSessionRepository.findByUserIdOrderByCreatedAtDesc(requestContext.getUserId());
     }
 
     public ChatSession getBySessionId(String sessionId) {
@@ -41,7 +41,7 @@ public class ChatSessionService {
         ChatSession chatSession = getBySessionId(sessionId);
         chatSession.setTitle(title);
         ChatSession updatedSession= chatSessionRepository.save(chatSession);
-        return new ChatSessionDto(updatedSession.getId(), updatedSession.getUserId(), updatedSession.getTitle());
+        return new ChatSessionDto(updatedSession.getId(), updatedSession.getUserId(), updatedSession.getTitle(), updatedSession.getCreatedAt());
     }
 
     public Optional<ChatSession> findById(String sessionId) {

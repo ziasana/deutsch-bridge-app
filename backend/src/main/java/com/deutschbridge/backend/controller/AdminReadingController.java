@@ -2,6 +2,7 @@ package com.deutschbridge.backend.controller;
 
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.GenerateQuizRequest;
+import com.deutschbridge.backend.model.dto.ImageUploadResponse;
 import com.deutschbridge.backend.model.dto.ReadingArticleGenerateRequest;
 import com.deutschbridge.backend.model.dto.ReadingArticleManualRequest;
 import com.deutschbridge.backend.model.dto.ReadingArticleResponse;
@@ -10,10 +11,12 @@ import com.deutschbridge.backend.model.dto.SuggestVocabularyRequest;
 import com.deutschbridge.backend.model.entity.Annotation;
 import com.deutschbridge.backend.model.entity.KeyVocabularyItem;
 import com.deutschbridge.backend.model.entity.ReadingQuizQuestion;
+import com.deutschbridge.backend.service.FileStorageService;
 import com.deutschbridge.backend.service.ReadingArticleService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -23,9 +26,16 @@ import java.util.List;
 public class AdminReadingController {
 
     private final ReadingArticleService readingArticleService;
+    private final FileStorageService fileStorageService;
 
-    public AdminReadingController(ReadingArticleService readingArticleService) {
+    public AdminReadingController(ReadingArticleService readingArticleService, FileStorageService fileStorageService) {
         this.readingArticleService = readingArticleService;
+        this.fileStorageService = fileStorageService;
+    }
+
+    @PostMapping(value = "/upload-image", consumes = "multipart/form-data")
+    public ResponseEntity<ImageUploadResponse> uploadImage(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(new ImageUploadResponse(fileStorageService.storeReadingArticleImage(file)));
     }
 
     @PostMapping("/generate")

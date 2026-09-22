@@ -1,6 +1,7 @@
 // services/api.js
 import axios from "axios";
 import useAuthStore from "@/store/useAuthStore";
+import usePremiumUpsellStore from "@/store/usePremiumUpsellStore";
 const API_URL = "http://localhost:8080";
 
 const api = axios.create({
@@ -44,6 +45,13 @@ api.interceptors.response.use(
     response => response,
     async error => {
         const originalRequest = error.config;
+
+        if (error.response?.status === 429) {
+            // A gated AI feature (chat/correction/example/synonym) hit its daily limit - surface the
+            // upsell modal globally instead of every call site handling this status itself.
+            usePremiumUpsellStore.getState().open(error.response?.data?.message);
+            error.isFeatureLimitError = true;
+        }
 
         if (error.response?.status === 401 && !originalRequest._retry) {
             if (isRefreshing) {

@@ -12,7 +12,19 @@ public record GrammarLessonResponse(
         String level,
         String example,
         String usageTips,
+        String titleFa,
+        String summaryFa,
+        String contentFa,
+        String exampleFa,
+        String usageTipsFa,
+        String videoLink,
+        String status,
         List<QuizQuestion> quiz,
-        List<LearningProgressResponse> learningProgresses
+        List<LearningProgressResponse> learningProgresses,
+        java.time.LocalDateTime createdAt,
+        java.time.LocalDateTime updatedAt,
+        String categoryId,
+        String categoryTitle,
+        Integer sortOrder
 ) {
 }

@@ -7,6 +7,9 @@ public record DailyWordResponse(
         String example,
         String synonyms,
         String level,
-        boolean learned
+        boolean learned,
+        /** Null unless the requesting user is A1-A2 with preferredLanguage=PR (see DailyWordService). */
+        String meaningFa,
+        String exampleFa
 ) {
 }

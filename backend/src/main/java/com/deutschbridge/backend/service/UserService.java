@@ -7,6 +7,7 @@ import com.deutschbridge.backend.model.dto.UserDto;
 import com.deutschbridge.backend.model.dto.UserRegistrationRequest;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.entity.UserProfile;
+import com.deutschbridge.backend.model.enums.AccountType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.UserProfileRepository;
 import com.deutschbridge.backend.repository.UserRepository;
@@ -187,12 +188,25 @@ public class UserService {
     }
 
     @Transactional
+    public User save(User user) {
+        return userRepository.save(user);
+    }
+
+    @Transactional
     public User adminUpdateUser(String id, AdminUpdateUserRequest request) throws DataNotFoundException {
         User existing = userRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException(NOT_FOUND));
         if (request.displayName() != null) existing.setDisplayName(request.displayName());
         if (request.role() != null) existing.setRole(request.role());
         if (request.verified() != null) existing.setVerified(request.verified());
+        return userRepository.save(existing);
+    }
+
+    @Transactional
+    public User adminChangeAccountType(String id, AccountType accountType) throws DataNotFoundException {
+        User existing = userRepository.findById(id)
+                .orElseThrow(() -> new DataNotFoundException(NOT_FOUND));
+        existing.setAccountType(accountType);
         return userRepository.save(existing);
     }
 

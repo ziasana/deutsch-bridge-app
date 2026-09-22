@@ -1,129 +1,95 @@
 "use client";
-import * as React from 'react'
+import * as React from "react";
 import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import {
-    BookOpen,
-    MessageSquare,
-    ClipboardList,
-    Layers,
-    SpellCheck,
-    Newspaper,
-    Brain,
-} from "lucide-react";
-import Link from "next/link";
 import useAuthStore from "@/store/useAuthStore";
+import { useI18n } from "@/componenets/I18nProvider";
+import { getDashboard } from "@/services/dashboardService";
+import DashboardHeader from "@/componenets/dashboard/DashboardHeader";
+import NewContentBanner from "@/componenets/dashboard/NewContentBanner";
+import ContinueLearningCard from "@/componenets/dashboard/ContinueLearningCard";
+import TodaysLearningPlan from "@/componenets/dashboard/TodaysLearningPlan";
+import ReviewNeededCard from "@/componenets/dashboard/ReviewNeededCard";
+import CurrentFocusCard from "@/componenets/dashboard/CurrentFocusCard";
+import WeeklyLearningSummary from "@/componenets/dashboard/WeeklyLearningSummary";
+import LearningMilestone from "@/componenets/dashboard/LearningMilestone";
+import DashboardSkeleton from "@/componenets/dashboard/DashboardSkeleton";
+import { Button } from "@/componenets/ui/button";
+
+// Cached for a minute so hopping between Dashboard and Your Progress (both read
+// the same "dashboard" query) reuses the last fetch instead of re-hitting the
+// API - a short staleTime keeps the streak/review numbers close to real-time
+// without refetching on every visit.
+const DASHBOARD_STALE_TIME_MS = 60 * 1000;
+
 const DashboardPage = () => {
     const router = useRouter();
     const { userProfile, hasHydrated } = useAuthStore();
+    const { t } = useI18n();
+
+    const isAdmin = hasHydrated && userProfile?.role === "ADMIN";
+
+    const {
+        data: dashboard,
+        isLoading,
+        isError,
+        refetch,
+    } = useQuery({
+        queryKey: ["dashboard"],
+        queryFn: () => getDashboard().then((res) => res.data),
+        enabled: hasHydrated && !isAdmin,
+        staleTime: DASHBOARD_STALE_TIME_MS,
+    });
 
     useEffect(() => {
-        if (hasHydrated && userProfile?.role === "ADMIN") {
+        if (isAdmin) {
             router.push("/admin");
         }
-    }, [hasHydrated, userProfile, router]);
+    }, [isAdmin, router]);
 
-    if (hasHydrated && userProfile?.role === "ADMIN") return null;
+    if (isAdmin) return null;
 
-    const modules = [
-        {
-            title: "Daily Words",
-            description:
-                "Learn 5 new C1-level words every day with examples and synonyms.",
-            icon: SpellCheck,
-            link: "/dashboard/daily-words",
-        },
-        {
-            title: "Grammar Lessons",
-            description:
-                "Structured grammar explanations with examples and exercises.",
-            icon: BookOpen,
-            link: "/dashboard/grammar",
-        },
-        {
-            title: "Nomen-Verb Verbindungen",
-            description:
-                "Learn Nomen-Verb Verbindungen with example and explanation.",
-            icon: BookOpen,
-            link: "/dashboard/nomenVerbSection",
-        },
-        {
-            title: "Reading",
-            description:
-                "Read articles at your level and learn new words in context.",
-            icon: Newspaper,
-            link: "/dashboard/reading",
-        },
-        {
-            title: "Word Review",
-            description:
-                "Review the words and phrases you saved while reading, spaced out over time.",
-            icon: Brain,
-            link: "/dashboard/reading/review",
-        },
-        {
-            title: "Exercises",
-            description: "Practice tasks to reinforce your grammar and vocabulary.",
-            icon: ClipboardList,
-            link: "/dashboard/exercises",
-        },
-        {
-            title: "Vocabulary Trainer",
-            description: "Add, save, and memorize your own vocabulary list.",
-            icon: Layers,
-            link: "/dashboard/vocabulary",
-        },
-        {
-            title: "AI Chat",
-            description: "Chat with an intelligent German tutor to practice freely.",
-            icon: MessageSquare,
-            link: "/dashboard/chat",
-        },
-    ];
+    const loading = !hasHydrated || isLoading;
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
-            {/* Header */}
+        <div className="px-4 py-8 sm:px-6 sm:py-10">
+            {loading && <DashboardSkeleton />}
 
-            <div className="max-w-4xl mx-auto">
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-                    Welcome to your Dashboard
-                </h1>
-                <p className="text-gray-600 dark:text-gray-300 mt-2">
-                    Continue your journey to mastering German — step by step.
-                </p>
-            </div>
+            {!loading && isError && (
+                <div className="max-w-6xl mx-auto text-center py-16">
+                    <p className="text-foreground/60">{t.dashboard.error.message}</p>
+                    <Button onClick={() => refetch()} className="mt-4">
+                        {t.dashboard.error.retry}
+                    </Button>
+                </div>
+            )}
 
-            {/* Modules Grid */}
-            <div className="max-w-6xl mt-7 mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                {modules.map((module) => {
-                    const Icon = module.icon;
-                    return (
-                        <Link
-                            key={module.title}
-                            href={module.link}
-                            className="group bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-shadow cursor-pointer"
-                        >
-                            <div className="flex items-center space-x-4">
-                                <div className="p-3 rounded-xl bg-blue-100 dark:bg-blue-900">
-                                    <Icon className="w-6 h-6 text-blue-600 dark:text-blue-300" />
-                                </div>
-                                <h2 className="text-xl font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
-                                    {module.title}
-                                </h2>
-                            </div>
+            {!loading && !isError && dashboard && (
+                <div className="max-w-6xl mx-auto space-y-6">
+                    <DashboardHeader
+                        displayName={dashboard.user.displayName || userProfile?.displayName || ""}
+                        level={dashboard.user.learningLevel}
+                        streak={dashboard.currentStreak}
+                    />
 
-                            <p className="text-gray-600 dark:text-gray-300 mt-4">
-                                {module.description}
-                            </p>
+                    {dashboard.newContent && <NewContentBanner data={dashboard.newContent} />}
 
-                            <div className="mt-4 text-blue-600 dark:text-blue-400 font-medium group-hover:underline">
-                                Start →
-                            </div>
-                        </Link>
-                    );
-                })}
-            </div>
+                    <ContinueLearningCard data={dashboard.continueLearning} />
+
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <TodaysLearningPlan data={dashboard.today} />
+                        <ReviewNeededCard data={dashboard.review} />
+                    </div>
+
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <CurrentFocusCard data={dashboard.focus} />
+                        <WeeklyLearningSummary data={dashboard.week} />
+                    </div>
+
+                    {dashboard.milestone && <LearningMilestone data={dashboard.milestone} />}
+                </div>
+            )}
         </div>
     );
 };

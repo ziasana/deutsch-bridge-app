@@ -4,11 +4,9 @@ import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 import java.time.LocalDateTime;
 
-@EnableJpaAuditing
 @NoArgsConstructor
 @AllArgsConstructor
 @Setter
@@ -17,10 +15,6 @@ import java.time.LocalDateTime;
 public class LearningProgress {
     @Id
     private String id;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JsonBackReference("nomenVerb-progress")
-    private NomenVerbConnection nomenVerb;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonBackReference("lesson-progress")
     private GrammarLesson lesson;

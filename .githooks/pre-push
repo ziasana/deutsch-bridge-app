@@ -1,0 +1,21 @@
+#!/bin/sh
+# Pre-push hook: runs the same checks as the GitHub Actions workflows
+# (.github/workflows/frontend.yml and .github/workflows/maven.yml) locally,
+# so a broken push never has to wait for CI to find out.
+#
+# Skip this for a specific push with: git push --no-verify
+
+set -e
+
+repo_root="$(git rev-parse --show-toplevel)"
+
+echo "== pre-push: Frontend CI (lint) =="
+(cd "$repo_root/frontend" && npm run lint)
+
+echo "== pre-push: Frontend CI (build) =="
+(cd "$repo_root/frontend" && npm run build)
+
+echo "== pre-push: Java CI with Maven (mvn package, runs full test suite) =="
+(cd "$repo_root/backend" && ./mvnw -B package)
+
+echo "== pre-push: all checks passed =="

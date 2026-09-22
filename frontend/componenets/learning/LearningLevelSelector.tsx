@@ -1,0 +1,57 @@
+"use client";
+
+import { LucideIcon } from "lucide-react";
+import LearningLevelCard from "./LearningLevelCard";
+import { cn } from "@/lib/utils";
+
+export interface LearningLevelOption {
+    level: string;
+    completed: number;
+    total: number;
+    icon?: LucideIcon;
+    /** Overrides the derived completed/total percentage (e.g. an average-score metric instead of a count). */
+    percentOverride?: number;
+}
+
+interface LearningLevelSelectorProps {
+    levels: LearningLevelOption[];
+    selectedLevel: string | null;
+    onLevelChange: (level: string) => void;
+    unitLabel: string;
+    activeLabel?: string;
+    ariaLabel?: string;
+    className?: string;
+}
+
+export default function LearningLevelSelector({
+    levels,
+    selectedLevel,
+    onLevelChange,
+    unitLabel,
+    activeLabel,
+    ariaLabel = "Filter by level",
+    className,
+}: LearningLevelSelectorProps) {
+    return (
+        <div
+            role="tablist"
+            aria-label={ariaLabel}
+            className={cn("-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 sm:overflow-visible", className)}
+        >
+            {levels.map((opt) => (
+                <LearningLevelCard
+                    key={opt.level}
+                    level={opt.level}
+                    completed={opt.completed}
+                    total={opt.total}
+                    unitLabel={unitLabel}
+                    icon={opt.icon}
+                    active={selectedLevel === opt.level}
+                    activeLabel={activeLabel}
+                    onClick={() => onLevelChange(opt.level)}
+                    percentOverride={opt.percentOverride}
+                />
+            ))}
+        </div>
+    );
+}

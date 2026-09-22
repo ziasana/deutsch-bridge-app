@@ -1,22 +1,26 @@
+"use client";
 import Image from "next/image";
-export default async function HomePage() {
+import { useI18n } from "@/componenets/I18nProvider";
+
+export default function HomePage() {
+  const { t } = useI18n();
+
   return (
-      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+      <main className="bg-background transition-colors duration-300">
         {/* Hero Section */}
-        <section className="relative bg-gradient-to-r from-indigo-500 to-purple-600 text-white dark:from-gray-800 dark:to-gray-700 dark:text-gray-100">
+        <section className="relative bg-gradient-to-r from-primary to-primary/70 text-primary-foreground">
           <div className="container mx-auto px-6 py-24 flex flex-col-reverse md:flex-row items-center gap-10">
             {/* Text Content */}
             <div className="md:w-1/2 flex flex-col gap-6">
               <h1 className="text-4xl md:text-5xl font-bold leading-tight">
-                Learn German the Smart Way
+                {t.home.heroTitle}
               </h1>
-              <p className="text-lg md:text-xl text-white/90 dark:text-gray-300">
-                DeutschBridge makes mastering German simple, fun, and effective.
-                Start your learning journey today!
+              <p className="text-lg md:text-xl text-primary-foreground/90">
+                {t.home.heroSubtitle}
               </p>
 
-              <button className="bg-white dark:bg-gray-900 dark:border dark:border-gray-700 text-indigo-600 dark:text-indigo-400 font-semibold px-6 py-3 rounded-lg shadow-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-                Get Started
+              <button className="w-fit bg-card text-primary font-semibold px-6 py-3 rounded-xl shadow-lg hover:bg-card/90 transition">
+                {t.home.getStarted}
               </button>
             </div>
 
@@ -27,7 +31,7 @@ export default async function HomePage() {
                   alt="German learning illustration"
                   width={500}
                   height={400}
-                  className="w-90 h-auto drop-shadow-xl dark:opacity-90"
+                  className="w-90 h-auto drop-shadow-xl"
               />
             </div>
           </div>
@@ -35,51 +39,48 @@ export default async function HomePage() {
 
         {/* Features Section */}
         <section className="container mx-auto px-6 py-20">
-          <h2 className="text-3xl font-bold text-center mb-12 text-gray-900 dark:text-gray-100">
-            Why Choose DeutschBridge?
+          <h2 className="text-3xl font-bold text-center mb-12 text-foreground">
+            {t.home.featuresTitle}
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Feature Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 hover:shadow-xl dark:hover:shadow-gray-700 transition transform hover:-translate-y-1">
-              <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
-                Learn
+            <div className="bg-card rounded-[10px] shadow-card p-8 hover:shadow-lg transition transform hover:-translate-y-1">
+              <h3 className="text-xl font-semibold mb-4 text-foreground">
+                {t.home.learnTitle}
               </h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Interactive lessons for all levels, from beginner to advanced, to
-                master German at your pace.
+              <p className="text-foreground/60">
+                {t.home.learnDescription}
               </p>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 hover:shadow-xl dark:hover:shadow-gray-700 transition transform hover:-translate-y-1">
-              <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
-                Practice
+            <div className="bg-card rounded-[10px] shadow-card p-8 hover:shadow-lg transition transform hover:-translate-y-1">
+              <h3 className="text-xl font-semibold mb-4 text-foreground">
+                {t.home.practiceTitle}
               </h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Exercises designed to improve reading, writing, and speaking
-                skills with real-world examples.
+              <p className="text-foreground/60">
+                {t.home.practiceDescription}
               </p>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 hover:shadow-xl dark:hover:shadow-gray-700 transition transform hover:-translate-y-1">
-              <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
-                Track
+            <div className="bg-card rounded-[10px] shadow-card p-8 hover:shadow-lg transition transform hover:-translate-y-1">
+              <h3 className="text-xl font-semibold mb-4 text-foreground">
+                {t.home.trackTitle}
               </h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Monitor your learning progress easily and stay motivated to reach
-                your German goals.
+              <p className="text-foreground/60">
+                {t.home.trackDescription}
               </p>
             </div>
           </div>
         </section>
 
         {/* Footer CTA */}
-        <section className="bg-indigo-600 dark:bg-gray-800 text-white dark:text-gray-100 py-16 text-center transition">
+        <section className="bg-primary text-primary-foreground py-16 text-center transition">
           <h3 className="text-2xl md:text-3xl font-bold mb-4">
-            Ready to Start Learning German?
+            {t.home.ctaTitle}
           </h3>
-          <button className="bg-white dark:bg-gray-900 dark:border dark:border-gray-700 text-indigo-600 dark:text-indigo-400 font-semibold px-6 py-3 rounded-lg shadow-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-            Explore Features
+          <button className="bg-card text-primary font-semibold px-6 py-3 rounded-xl shadow-lg hover:bg-card/90 transition">
+            {t.home.exploreFeatures}
           </button>
         </section>
       </main>

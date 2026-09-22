@@ -1,0 +1,79 @@
+[
+  {
+    "expression": "Verantwortung übernehmen",
+    "type": "NOMEN_VERB_VERBINDUNG",
+    "level": "B2",
+    "meaningDe": "für etwas die Verantwortung tragen",
+    "meaningEn": "to take responsibility",
+    "meaningFa": "مسئولیت پذیرفتن",
+    "literalMeaning": "",
+    "figurativeMeaning": "",
+    "imageUrl": null,
+    "grammarNote": "Akkusativ",
+    "usageNote": "Formal and neutral, common in professional and written contexts.",
+    "register": "NEUTRAL_FORMAL",
+    "commonMistakes": "Learners often say \"Verantwortung nehmen\" instead of \"übernehmen\".",
+    "status": "DRAFT",
+    "examples": [
+      {
+        "sentence": "Als Teamleiter muss ich Verantwortung für die Ergebnisse übernehmen.",
+        "translationEn": "As team lead I have to take responsibility for the results.",
+        "translationFa": "به‌عنوان سرپرست تیم باید مسئولیت نتایج را بپذیرم.",
+        "context": "WORK"
+      },
+      {
+        "sentence": "Die Regierung sollte mehr Verantwortung für den Klimaschutz übernehmen.",
+        "translationEn": "The government should take more responsibility for climate protection.",
+        "translationFa": "دولت باید مسئولیت بیشتری برای حفاظت از محیط زیست بپذیرد.",
+        "context": "SOCIETY"
+      }
+    ],
+    "patterns": [
+      {
+        "pattern": "Verantwortung für + Akkusativ übernehmen",
+        "grammarCase": "Akkusativ",
+        "preposition": "für",
+        "example": "Er übernimmt Verantwortung für das Projekt."
+      }
+    ],
+    "questions": []
+  },
+  {
+    "expression": "zwei Fliegen mit einer Klappe schlagen",
+    "type": "REDEWENDUNG",
+    "level": "B2",
+    "meaningDe": "zwei Ziele mit einer Handlung erreichen",
+    "meaningEn": "to kill two birds with one stone",
+    "meaningFa": "با یک تیر دو نشان زدن",
+    "literalMeaning": "zwei Fliegen mit einer Fliegenklappe schlagen",
+    "figurativeMeaning": "zwei Probleme gleichzeitig mit einer einzigen Handlung lösen",
+    "imageUrl": null,
+    "grammarNote": "",
+    "usageNote": "Umgangssprachlich, häufig im Alltag und in der Arbeit verwendet.",
+    "register": "UMGANGSSPRACHLICH",
+    "commonMistakes": "Nicht wörtlich übersetzen - es geht nicht um echte Fliegen.",
+    "status": "DRAFT",
+    "examples": [
+      {
+        "sentence": "Wenn ich mit dem Fahrrad zur Arbeit fahre, schlage ich zwei Fliegen mit einer Klappe: Sport und Umweltschutz.",
+        "translationEn": "When I cycle to work, I kill two birds with one stone: exercise and environmental protection.",
+        "translationFa": "وقتی با دوچرخه سر کار می‌روم، با یک تیر دو نشان می‌زنم: ورزش و حفاظت از محیط زیست.",
+        "context": "EVERYDAY"
+      }
+    ],
+    "patterns": [],
+    "questions": [
+      {
+        "type": "CONTEXT",
+        "format": "MULTIPLE_CHOICE",
+        "prompt": "Maria erledigt auf dem Weg zur Arbeit gleichzeitig ihre Einkäufe. Welche Redewendung passt?",
+        "explanation": "Sie erreicht zwei Ziele mit einer Handlung - genau das beschreibt die Redewendung.",
+        "options": [
+          { "text": "zwei Fliegen mit einer Klappe schlagen", "correct": true },
+          { "text": "den Kopf in den Sand stecken", "correct": false },
+          { "text": "ins kalte Wasser springen", "correct": false }
+        ]
+      }
+    ]
+  }
+]

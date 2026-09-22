@@ -147,7 +147,7 @@ class ReadingArticleServiceTest {
         question.setPrompt("Frage");
 
         ReadingArticleManualRequest request = new ReadingArticleManualRequest(
-                "Titel", "Thema", LearningLevel.A1, "Inhalt", List.of(), List.of(annotation), List.of(question), null
+                "Titel", "Thema", LearningLevel.A1, "Inhalt", null, List.of(), List.of(annotation), List.of(question), null
         );
 
         when(readingArticleRepository.save(org.mockito.ArgumentMatchers.any(ReadingArticle.class)))

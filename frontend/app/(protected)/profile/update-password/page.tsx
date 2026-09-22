@@ -6,7 +6,7 @@ import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import { Label } from "@/componenets/Label";
 import {updatePassword} from "@/services/userService";
-import {toast, ToastContainer} from "react-toastify";
+import { toast } from "@/lib/toast";
 import Loading from "@/componenets/Loading";
 import {UserType} from "@/types/user";
 import {useForm} from "react-hook-form";
@@ -52,9 +52,8 @@ export default function UserProfile() {
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
             <div className="mx-auto max-w-3xl space-y-8">
                 {isLoading && <Loading />}
-                <ToastContainer/>
                 {/* ================= PROFILE ================= */}
-                <Card className="rounded-2xl shadow-lg">
+                <Card>
                     <CardContent className="p-6 space-y-6">
                         <div className="flex items-center justify-between">
                             <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">

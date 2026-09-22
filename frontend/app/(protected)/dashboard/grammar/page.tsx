@@ -1,161 +1,253 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ToastContainer, toast } from "react-toastify";
-import { getGrammarLessons, setLearningProgress } from "@/services/grammarService";
-import { GrammarLesson } from "@/types/grammar";
+import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { toast } from "@/lib/toast";
+import { BookOpen, ChevronLeft, ChevronRight, RotateCw, ArrowRight } from "lucide-react";
+import { getGrammarLessons, getGrammarCategories } from "@/services/grammarService";
+import { GrammarCategoryWithLessons, GrammarLesson } from "@/types/grammar";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
-import Button from "@/componenets/Button";
+import { LearningLevelSelector, LearningSearch } from "@/componenets/learning";
+import { CategoryAccordionCard, ContentItemRow } from "@/componenets/CategoryAccordion";
+import { useI18n } from "@/componenets/I18nProvider";
+import { localizedLessonText } from "@/lib/grammarLocalization";
+import useAuthStore from "@/store/useAuthStore";
+
+const ITEMS_PER_PAGE = 10;
 
 export default function GrammarLessonsPage() {
-    const [lessons, setLessons] = useState<GrammarLesson[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [openId, setOpenId] = useState<string | null>(null);
-    const [levelFilter, setLevelFilter] = useState("ALL");
-    const [updatingId, setUpdatingId] = useState<string | null>(null);
+    const router = useRouter();
+    const { language, t } = useI18n();
+    const { userProfile } = useAuthStore();
+    const [levelFilter, setLevelFilter] = useState<string | null>(null);
+    const [search, setSearch] = useState("");
+    const [page, setPage] = useState(1);
+    const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+
+    const { data: lessonsData, isLoading: lessonsLoading, error: lessonsError } = useQuery({
+        queryKey: ["grammar", "lessons"],
+        queryFn: () => getGrammarLessons().then((res) => res.data),
+    });
+    const { data: categoriesData, isLoading: categoriesLoading, error: categoriesError } = useQuery<GrammarCategoryWithLessons[]>({
+        queryKey: ["grammar", "categories"],
+        queryFn: () => getGrammarCategories().then((res) => res.data),
+    });
+
+    const lessons = lessonsData ?? [];
+    const categories = categoriesData ?? [];
+    const loading = lessonsLoading || categoriesLoading;
+    const queryError = lessonsError ?? categoriesError;
 
     useEffect(() => {
-        getGrammarLessons()
-            .then((res) => setLessons(res.data))
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load grammar lessons."))
-            .finally(() => setLoading(false));
-    }, []);
+        if (queryError) {
+            const err = queryError as { response?: { data?: { message?: string } } };
+            toast.error(err?.response?.data?.message ?? "Failed to load grammar lessons.");
+        }
+    }, [queryError]);
 
     if (loading) return <Loading />;
 
-    const levels = Array.from(new Set(lessons.map((l) => l.level))).filter(Boolean);
-
-    const filtered = lessons.filter((l) => levelFilter === "ALL" || l.level === levelFilter);
+    // Defaults to the learner's own CEFR level until they explicitly pick a filter.
+    const effectiveLevelFilter = levelFilter ?? userProfile?.learningLevel ?? "ALL";
 
     const isLearned = (lesson: GrammarLesson) =>
         lesson.learningProgresses?.some((lp) => lp.learned === true) ?? false;
 
-    const toggleLearned = (lesson: GrammarLesson) => {
-        setUpdatingId(lesson.id);
-        setLearningProgress({ lessonId: lesson.id, learned: !isLearned(lesson) })
-            .then(() => {
-                setLessons((prev) =>
-                    prev.map((l) =>
-                        l.id === lesson.id
-                            ? { ...l, learningProgresses: [{ id: "local", learned: !isLearned(lesson) }] }
-                            : l
+    const levels = Array.from(new Set(lessons.map((l) => l.level))).filter(Boolean);
+    const levelOptions = levels
+        .map((level) => {
+            const levelLessons = lessons.filter((l) => l.level === level);
+            return {
+                level,
+                total: levelLessons.length,
+                completed: levelLessons.filter(isLearned).length,
+            };
+        })
+        .sort((a, b) => a.level.localeCompare(b.level));
+    const searchTerm = search.trim().toLowerCase();
+    const matchesSearch = (lesson: GrammarLesson) =>
+        localizedLessonText(lesson, language).title.toLowerCase().includes(searchTerm);
+
+    const categorizedLessonIds = new Set(categories.flatMap((c) => c.lessons.map((l) => l.id)));
+
+    const visibleCategories = categories
+        .filter((c) => effectiveLevelFilter === "ALL" || c.level === effectiveLevelFilter)
+        .map((c) => ({ ...c, lessons: c.lessons.filter(matchesSearch) }))
+        .filter((c) => c.lessons.length > 0 || searchTerm === "");
+
+    const uncategorized = lessons.filter((l) => {
+        return (
+            !categorizedLessonIds.has(l.id) &&
+            (effectiveLevelFilter === "ALL" || l.level === effectiveLevelFilter) &&
+            matchesSearch(l)
+        );
+    });
+
+    const totalPages = Math.max(1, Math.ceil(uncategorized.length / ITEMS_PER_PAGE));
+    const currentPage = Math.min(page, totalPages);
+    const paginated = uncategorized.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+    const toggleCollapsed = (id: string) => setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }));
+
+    const renderLessonRow = (lesson: GrammarLesson) => {
+        const localized = localizedLessonText(lesson, language);
+        const hasQuiz = (lesson.quiz?.length ?? 0) > 0;
+        const learned = isLearned(lesson);
+        return (
+            <ContentItemRow
+                key={lesson.id}
+                title={localized.title}
+                description={localized.summary}
+                level={lesson.level}
+                learned={learned}
+                dir={localized.dir}
+                onClick={() => router.push(`/dashboard/grammar/lesson?id=${lesson.id}`)}
+                actions={
+                    hasQuiz && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/dashboard/grammar/practice?id=${lesson.id}`);
+                            }}
+                            className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full bg-primary/10 text-primary font-medium hover:bg-primary/20 transition shrink-0"
+                        >
+                            {learned ? (
+                                <>
+                                    <RotateCw className="size-3.5" />
+                                    {t.grammar.review}
+                                </>
+                            ) : (
+                                <>
+                                    {t.grammar.practice}
+                                    <ArrowRight className="size-3.5" />
+                                </>
+                            )}
+                        </button>
                     )
-                );
-                toast.success(!isLearned(lesson) ? "Marked as learned!" : "Marked as not learned.");
-            })
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to update progress."))
-            .finally(() => setUpdatingId(null));
+                }
+            />
+        );
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
+        <div className="min-h-screen bg-background px-6 py-10">
             <div className="max-w-4xl mx-auto">
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Grammar Lessons</h1>
-                <p className="text-gray-600 dark:text-gray-300 mt-2">
-                    Structured grammar explanations with examples and exercises.
-                </p>
-
-                <div className="mt-6 flex items-center gap-3">
-                    <label className="text-sm text-gray-600 dark:text-gray-300">Level:</label>
-                    <select
-                        value={levelFilter}
-                        onChange={(e) => setLevelFilter(e.target.value)}
-                        className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-                    >
-                        <option value="ALL">All levels</option>
-                        {levels.map((lvl) => (
-                            <option key={lvl} value={lvl}>
-                                {lvl}
-                            </option>
-                        ))}
-                    </select>
+                <div className="flex items-start gap-4">
+                    <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-accent">
+                        <BookOpen className="size-6 text-primary" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-foreground">{t.grammar.title}</h1>
+                        <p className="text-foreground/60 mt-1 text-sm">{t.grammar.subtitle}</p>
+                    </div>
                 </div>
 
+                <LearningLevelSelector
+                    className="mt-6"
+                    levels={levelOptions}
+                    selectedLevel={effectiveLevelFilter === "ALL" ? null : effectiveLevelFilter}
+                    onLevelChange={(level) => {
+                        setLevelFilter(effectiveLevelFilter !== level ? level : "ALL");
+                        setPage(1);
+                    }}
+                    unitLabel={t.grammar.lessonsUnit}
+                    activeLabel={t.grammar.currentLevel}
+                    ariaLabel={t.grammar.level}
+                />
+
+                <LearningSearch
+                    className="mt-4"
+                    value={search}
+                    onChange={(value) => {
+                        setSearch(value);
+                        setPage(1);
+                    }}
+                    placeholder={t.grammar.searchPlaceholder}
+                />
+
                 <div className="mt-6 space-y-4">
-                    {filtered.map((lesson) => {
-                        const open = openId === lesson.id;
-                        const learned = isLearned(lesson);
+                    {visibleCategories.map((category) => {
+                        const isCollapsed = collapsed[category.id] ?? false;
+                        const title = (language === "fa" && category.titleFa) || category.title;
+                        const { testStatus } = category;
+                        const learnedCount = category.lessons.filter(isLearned).length;
                         return (
-                            <div
-                                key={lesson.id}
-                                className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden"
+                            <CategoryAccordionCard
+                                key={category.id}
+                                title={title}
+                                level={category.level}
+                                itemCount={category.lessons.length}
+                                learnedCount={learnedCount}
+                                collapsed={isCollapsed}
+                                onToggle={() => toggleCollapsed(category.id)}
+                                headerExtra={
+                                    <>
+                                        {testStatus.completed && (
+                                            <Badge variant="default" className="rounded-full">
+                                                ✓ {t.grammar.categoryTestCompleted}
+                                            </Badge>
+                                        )}
+                                        {!testStatus.completed && testStatus.attempted && (
+                                            <span className="text-xs text-foreground/50">
+                                                {t.grammar.lastScore(testStatus.score, testStatus.total)}
+                                            </span>
+                                        )}
+                                    </>
+                                }
+                                footer={
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            router.push(`/dashboard/grammar/category-test?id=${category.id}`);
+                                        }}
+                                        className="text-sm px-3 py-2 rounded-lg bg-primary/10 text-primary font-medium hover:bg-primary/20 transition"
+                                    >
+                                        {testStatus.attempted ? t.grammar.retakeCategoryTest : t.grammar.takeCategoryTest}
+                                    </button>
+                                }
                             >
-                                <button
-                                    className="w-full flex items-center justify-between px-6 py-4 text-left"
-                                    onClick={() => setOpenId(open ? null : lesson.id)}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                                            {lesson.title}
-                                        </span>
-                                        <Badge variant="secondary">{lesson.level}</Badge>
-                                        {learned && <Badge variant="default">Learned</Badge>}
-                                    </div>
-                                    <span className="text-gray-400">{open ? "−" : "+"}</span>
-                                </button>
-
-                                {open && (
-                                    <div className="px-6 pb-6 space-y-4">
-                                        <p className="text-gray-600 dark:text-gray-300">{lesson.summary}</p>
-                                        <p className="text-gray-800 dark:text-gray-200 whitespace-pre-line">
-                                            {lesson.content}
-                                        </p>
-                                        {lesson.example && (
-                                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                                                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                                    Example:{" "}
-                                                </span>
-                                                <span className="text-gray-700 dark:text-gray-300">
-                                                    {lesson.example}
-                                                </span>
-                                            </div>
-                                        )}
-                                        {lesson.usageTips && (
-                                            <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4">
-                                                <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-                                                    Usage tip:{" "}
-                                                </span>
-                                                <span className="text-blue-700 dark:text-blue-300">
-                                                    {lesson.usageTips}
-                                                </span>
-                                            </div>
-                                        )}
-
-                                        <div className="flex items-center justify-between pt-2">
-                                            <a
-                                                href="/dashboard/exercises"
-                                                className="text-blue-600 dark:text-blue-400 font-medium hover:underline"
-                                            >
-                                                Practice this lesson →
-                                            </a>
-                                            <Button
-                                                variant={learned ? "secondary" : "primary"}
-                                                className="text-sm px-4 py-2"
-                                                disabled={updatingId === lesson.id}
-                                                onClick={() => toggleLearned(lesson)}
-                                            >
-                                                {updatingId === lesson.id
-                                                    ? "Saving..."
-                                                    : learned
-                                                        ? "Mark as not learned"
-                                                        : "Mark as learned"}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                                {category.lessons.map((lesson) => renderLessonRow(lesson))}
+                            </CategoryAccordionCard>
                         );
                     })}
 
-                    {filtered.length === 0 && (
-                        <div className="text-center text-gray-500 dark:text-gray-400 py-10">
-                            No grammar lessons found.
-                        </div>
+                    {uncategorized.length > 0 && visibleCategories.length > 0 && (
+                        <p className="text-sm font-semibold text-foreground/50 pt-2">{t.grammar.otherLessons}</p>
+                    )}
+
+                    {paginated.map((lesson) => renderLessonRow(lesson))}
+
+                    {visibleCategories.length === 0 && uncategorized.length === 0 && (
+                        <div className="text-center text-foreground/50 py-10">{t.grammar.notFound}</div>
                     )}
                 </div>
+
+                {totalPages > 1 && (
+                    <div className="flex justify-center items-center gap-3 pt-6">
+                        <button
+                            onClick={() => setPage((p) => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="flex items-center gap-1 px-4 py-2 rounded-lg bg-card shadow-card text-foreground text-sm disabled:opacity-40 hover:bg-accent/50 transition"
+                        >
+                            <ChevronLeft className="size-4" />
+                            {t.grammar.previous}
+                        </button>
+                        <span className="text-sm text-foreground/60">
+                            {t.grammar.pageOf(currentPage, totalPages)}
+                        </span>
+                        <button
+                            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="flex items-center gap-1 px-4 py-2 rounded-lg bg-card shadow-card text-foreground text-sm disabled:opacity-40 hover:bg-accent/50 transition"
+                        >
+                            {t.grammar.next}
+                            <ChevronRight className="size-4" />
+                        </button>
+                    </div>
+                )}
             </div>
-            <ToastContainer />
         </div>
     );
 }

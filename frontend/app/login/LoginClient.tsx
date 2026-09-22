@@ -4,7 +4,7 @@ import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import Loading from "@/componenets/Loading";
 import { useRouter, useSearchParams } from "next/navigation";
 import useAuthStore from "@/store/useAuthStore";
@@ -45,7 +45,13 @@ export default function LoginClient() {
                 if (res?.status === 200) {
                     const profile = res.data.data;
                     login(profile);
-                    router.push(profile?.role === "ADMIN" ? "/admin" : "/dashboard");
+                    if (profile?.role === "ADMIN") {
+                        router.push("/admin");
+                    } else if (!profile?.onboardingCompleted) {
+                        router.push("/signup/onboarding");
+                    } else {
+                        router.push("/dashboard");
+                    }
                 }
             })
             .catch((err) => {
@@ -58,9 +64,9 @@ export default function LoginClient() {
     useFormErrorToast(errors, isSubmitted);
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
-            <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white text-center mb-8">
+        <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-background px-4 py-12">
+            <div className="w-full max-w-md bg-card rounded-[10px] shadow-card p-8">
+                <h1 className="text-3xl font-bold text-foreground text-center mb-8">
                     Login
                 </h1>
 
@@ -68,7 +74,7 @@ export default function LoginClient() {
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                     <div>
-                        <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                        <label className="block text-foreground/70 mb-2 text-sm">
                             Email
                         </label>
                         <Input
@@ -79,7 +85,7 @@ export default function LoginClient() {
                     </div>
 
                     <div>
-                        <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                        <label className="block text-foreground/70 mb-2 text-sm">
                             Password
                         </label>
                         <Input
@@ -98,24 +104,23 @@ export default function LoginClient() {
                     </Button>
                 </form>
 
-                <div className="mt-6 text-center text-gray-600 dark:text-gray-400">
+                <div className="mt-6 text-center text-foreground/60">
                     <Link
                         href="/reset-password"
-                        className="text-blue-600 dark:text-blue-400 hover:underline"
+                        className="text-primary hover:underline"
                     >
                         Forgot password?
                     </Link>
                 </div>
 
-                <div className="mt-6 text-center text-gray-600 dark:text-gray-400">
+                <div className="mt-6 text-center text-foreground/60">
                     Don&#39;t have an account?
                     <Link
                         href="/signup"
-                        className="text-blue-600 dark:text-blue-400 hover:underline ml-1"
+                        className="text-primary hover:underline ml-1"
                     >
                         Sign up
                     </Link>
-                    <ToastContainer />
                 </div>
             </div>
         </div>

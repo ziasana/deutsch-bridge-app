@@ -5,7 +5,6 @@ import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.LearningProgressRequest;
 import com.deutschbridge.backend.model.entity.GrammarLesson;
 import com.deutschbridge.backend.model.entity.LearningProgress;
-import com.deutschbridge.backend.model.entity.NomenVerbConnection;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.repository.LearningProgressRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -34,9 +33,6 @@ class LearningProgressServiceTest {
 
     @Mock
     private UserService userService;
-
-    @Mock
-    private NomenVerbConnectionService nomenVerbConnectionService;
 
     @Mock
     private GrammarService grammarService;
@@ -92,7 +88,7 @@ class LearningProgressServiceTest {
         GrammarLesson lesson = new GrammarLesson();
 
         LearningProgressRequest request =
-                new LearningProgressRequest("lesson1", null, null, null, true);
+                new LearningProgressRequest("lesson1", null, null, true);
 
         when(requestContext.getUserEmail()).thenReturn(user.getEmail());
         when(userService.findByEmail(user.getEmail())).thenReturn(user);
@@ -117,7 +113,7 @@ class LearningProgressServiceTest {
         LearningProgress existing = new LearningProgress();
 
         LearningProgressRequest request =
-                new LearningProgressRequest("lesson1", null, null, null, false);
+                new LearningProgressRequest("lesson1", null, null, false);
 
         when(requestContext.getUserEmail()).thenReturn(user.getEmail());
         when(userService.findByEmail(user.getEmail())).thenReturn(user);
@@ -131,52 +127,4 @@ class LearningProgressServiceTest {
         assertFalse(existing.getIsLearned());
     }
 
-    // ---------------------------------------------------------------
-    // save
-    // ---------------------------------------------------------------
-    @Test
-    @DisplayName("save -> should create new progress for nomen verb")
-    void save_shouldCreateNomenVerbProgress() throws DataNotFoundException {
-        User user = createUser();
-        NomenVerbConnection nv = new NomenVerbConnection();
-
-        LearningProgressRequest request =
-                new LearningProgressRequest(null, "nv1", null, null, true);
-
-        when(requestContext.getUserEmail()).thenReturn(user.getEmail());
-        when(userService.findByEmail(user.getEmail())).thenReturn(user);
-        when(nomenVerbConnectionService.findById("nv1")).thenReturn(nv);
-        when(repository.findByUserAndNomenVerb(user, nv))
-                .thenReturn(Optional.empty());
-
-        service.save(request);
-
-        verify(repository).save(argThat(progress ->
-                progress.getUser().equals(user) &&
-                        progress.getNomenVerb().equals(nv) &&
-                        progress.getIsLearned()
-        ));
-    }
-
-    @Test
-    @DisplayName("save -> should update existing progress for nomen verb")
-    void save_shouldUpdateNomenVerbProgress() throws DataNotFoundException {
-        User user = createUser();
-        NomenVerbConnection nv = new NomenVerbConnection();
-        LearningProgress existing = new LearningProgress();
-
-        LearningProgressRequest request =
-                new LearningProgressRequest(null, "nv1", null, null, false);
-
-        when(requestContext.getUserEmail()).thenReturn(user.getEmail());
-        when(userService.findByEmail(user.getEmail())).thenReturn(user);
-        when(nomenVerbConnectionService.findById("nv1")).thenReturn(nv);
-        when(repository.findByUserAndNomenVerb(user, nv))
-                .thenReturn(Optional.of(existing));
-
-        service.save(request);
-
-        verify(repository).save(existing);
-        assertFalse(existing.getIsLearned());
-    }
 }

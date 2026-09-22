@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import useAuthStore from "@/store/useAuthStore";
 import { getReadingArticles } from "@/services/readingService";
 import {
@@ -14,12 +15,21 @@ import {
     suggestAnnotations,
     generateQuiz,
     getArticleQuizForAdmin,
+    uploadReadingArticleImage,
 } from "@/services/adminReadingService";
 import { Annotation, AnnotationType, KeyVocabularyItem, ReadingArticle, ReadingQuizQuestion, ReadingQuizQuestionType } from "@/types/reading";
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
+import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
+import { getArticleImageSrc } from "@/lib/readingImages";
+import { ArrowUp, ArrowDown, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+
+type SortKey = "title" | "level" | "vocabulary" | "annotations";
+type SortDirection = "asc" | "desc";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const ANNOTATION_TYPES: AnnotationType[] = ["WORD", "NOMEN_VERB_VERBINDUNG", "REDEWENDUNG"];
@@ -33,7 +43,14 @@ const QUIZ_TYPES: ReadingQuizQuestionType[] = [
 
 type Mode = "generate" | "paste";
 
-const emptyManualForm = { title: "", topic: "", level: "A2", content: "", linkedGroupId: "" };
+const emptyManualForm = {
+    title: "",
+    topic: "",
+    level: "A2",
+    content: "",
+    linkedGroupId: "",
+    imageUrl: null as string | null,
+};
 
 const emptyAnnotation = (): Annotation => ({
     id: crypto.randomUUID(),
@@ -66,10 +83,23 @@ const emptyQuizQuestion = (): ReadingQuizQuestion => ({
 export default function AdminReadingPage() {
     const router = useRouter();
     const { userProfile, hasHydrated } = useAuthStore();
+    const queryClient = useQueryClient();
 
-    const [articles, setArticles] = useState<ReadingArticle[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const ARTICLES_KEY = ["admin", "reading", "articles"];
+
+    const { data: articles = [], isLoading, error: articlesError } = useQuery({
+        queryKey: ARTICLES_KEY,
+        queryFn: () => getReadingArticles().then((res) => res.data),
+        enabled: hasHydrated && userProfile?.role === "ADMIN",
+    });
     const [isSaving, setIsSaving] = useState(false);
+    const [articleToDelete, setArticleToDelete] = useState<ReadingArticle | null>(null);
+
+    const [tableSearch, setTableSearch] = useState("");
+    const [tablePageSize, setTablePageSize] = useState(10);
+    const [tablePage, setTablePage] = useState(1);
+    const [sortKey, setSortKey] = useState<SortKey>("title");
+    const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
     const [mode, setMode] = useState<Mode>("generate");
 
@@ -81,26 +111,27 @@ export default function AdminReadingPage() {
     const [manualAnnotations, setManualAnnotations] = useState<Annotation[]>([]);
     const [manualQuiz, setManualQuiz] = useState<ReadingQuizQuestion[]>([]);
     const [isSuggesting, setIsSuggesting] = useState(false);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [isSuggestingAnnotations, setIsSuggestingAnnotations] = useState(false);
     const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
 
     const [editingArticle, setEditingArticle] = useState<ReadingArticle | null>(null);
 
-    const fetchArticles = useCallback(() => {
-        getReadingArticles()
-            .then((res) => setArticles(res.data))
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load reading articles."))
-            .finally(() => setIsLoading(false));
-    }, []);
+    const invalidateArticles = () => queryClient.invalidateQueries({ queryKey: ARTICLES_KEY });
 
     useEffect(() => {
         if (!hasHydrated) return;
         if (userProfile?.role !== "ADMIN") {
             router.push("/dashboard");
-            return;
         }
-        fetchArticles();
-    }, [hasHydrated, userProfile, router, fetchArticles]);
+    }, [hasHydrated, userProfile, router]);
+
+    useEffect(() => {
+        if (articlesError) {
+            const err = articlesError as { response?: { data?: { message?: string } } };
+            toast.error(err?.response?.data?.message ?? "Failed to load reading articles.");
+        }
+    }, [articlesError]);
 
     if (!hasHydrated || userProfile?.role !== "ADMIN") return null;
 
@@ -123,11 +154,28 @@ export default function AdminReadingPage() {
             .then(() => {
                 toast.success("Article generated. Edit it to add annotations and a quiz.");
                 setGenTopic("");
-                fetchArticles();
+                invalidateArticles();
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to generate article."))
             .finally(() => setIsSaving(false));
     };
+
+    const handleImageSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (!file) return;
+
+        setIsUploadingImage(true);
+        uploadReadingArticleImage(file)
+            .then((res) => {
+                setManualForm((prev) => ({ ...prev, imageUrl: res.data.url }));
+                toast.success("Image uploaded.");
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to upload image."))
+            .finally(() => setIsUploadingImage(false));
+    };
+
+    const removeImage = () => setManualForm((prev) => ({ ...prev, imageUrl: "" }));
 
     const runSuggestVocabulary = () => {
         if (!manualForm.content.trim()) {
@@ -212,6 +260,7 @@ export default function AdminReadingPage() {
             level: article.level,
             content: article.content,
             linkedGroupId: article.linkedGroupId ?? "",
+            imageUrl: article.imageUrl,
         });
         setManualVocab(article.keyVocabulary);
         setManualAnnotations(article.annotations ?? []);
@@ -235,6 +284,7 @@ export default function AdminReadingPage() {
             topic: manualForm.topic,
             level: manualForm.level,
             content: manualForm.content,
+            imageUrl: manualForm.imageUrl,
             keyVocabulary: manualVocab.filter((v) => v.word.trim() && v.meaning.trim()),
             annotations: manualAnnotations.filter((a) => a.surfaceText.trim() && a.lemma.trim()),
             quiz: manualQuiz
@@ -252,31 +302,89 @@ export default function AdminReadingPage() {
             .then(() => {
                 toast.success(editingArticle ? "Article updated." : "Article saved.");
                 resetManualForm();
-                fetchArticles();
+                invalidateArticles();
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to save article."))
             .finally(() => setIsSaving(false));
     };
 
-    const removeArticle = (article: ReadingArticle) => {
-        if (!confirm(`Delete "${article.title}"?`)) return;
+    const removeArticle = (article: ReadingArticle) => setArticleToDelete(article);
+
+    const confirmRemoveArticle = () => {
+        const article = articleToDelete;
+        if (!article) return;
+        setArticleToDelete(null);
         deleteReadingArticle(article.id)
             .then(() => {
                 toast.success("Article deleted.");
-                fetchArticles();
+                invalidateArticles();
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to delete article."));
     };
 
+    const toggleSort = (key: SortKey) => {
+        if (sortKey === key) {
+            setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+        } else {
+            setSortKey(key);
+            setSortDirection("asc");
+        }
+        setTablePage(1);
+    };
+
+    const tableQuery = tableSearch.trim().toLowerCase();
+    const filteredArticles = tableQuery
+        ? articles.filter(
+              (a) => a.title.toLowerCase().includes(tableQuery) || a.topic.toLowerCase().includes(tableQuery)
+          )
+        : articles;
+
+    const sortValueFor = (article: ReadingArticle) => {
+        switch (sortKey) {
+            case "title":
+                return article.title.toLowerCase();
+            case "level":
+                return article.level;
+            case "vocabulary":
+                return article.keyVocabulary.length;
+            case "annotations":
+                return article.annotations?.length ?? 0;
+        }
+    };
+
+    const sortedArticles = filteredArticles.slice().sort((a, b) => {
+        const dir = sortDirection === "asc" ? 1 : -1;
+        const va = sortValueFor(a);
+        const vb = sortValueFor(b);
+        if (va < vb) return -1 * dir;
+        if (va > vb) return 1 * dir;
+        return 0;
+    });
+
+    const tableTotalPages = Math.max(1, Math.ceil(sortedArticles.length / tablePageSize));
+    const tableCurrentPage = Math.min(tablePage, tableTotalPages);
+    const tableStartIndex = sortedArticles.length === 0 ? 0 : (tableCurrentPage - 1) * tablePageSize + 1;
+    const tableEndIndex = Math.min(tableCurrentPage * tablePageSize, sortedArticles.length);
+    const paginatedArticles = sortedArticles.slice((tableCurrentPage - 1) * tablePageSize, tableCurrentPage * tablePageSize);
+
+    const tablePageNumbers = Array.from({ length: tableTotalPages }, (_, i) => i + 1).filter(
+        (p) => p === 1 || p === tableTotalPages || Math.abs(p - tableCurrentPage) <= 1
+    );
+
+    const renderSortIcon = (column: SortKey) => {
+        if (sortKey !== column) return <ArrowUpDown className="size-3.5 opacity-40" />;
+        return sortDirection === "asc" ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />;
+    };
+
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-7xl mx-auto">
                 <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Reading Articles</h1>
                 <p className="text-gray-600 dark:text-gray-300 mt-2">
                     Generate an article with AI, or paste in one you already have.
                 </p>
 
-                <div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+                <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
                     <div className="flex gap-2 mb-6">
                         <Button
                             type="button"
@@ -368,6 +476,43 @@ export default function AdminReadingPage() {
                                         </option>
                                     ))}
                                 </select>
+                            </div>
+                            <div>
+                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                                    Article image (optional)
+                                </label>
+                                <div className="flex items-center gap-4">
+                                    <img
+                                        src={getArticleImageSrc(manualForm.imageUrl, manualForm.level)}
+                                        alt="Article cover preview"
+                                        className="w-24 h-16 object-cover rounded-lg border border-gray-300 dark:border-gray-700"
+                                    />
+                                    <div className="flex flex-col gap-2">
+                                        <input
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp"
+                                            onChange={handleImageSelected}
+                                            disabled={isUploadingImage}
+                                            className="text-sm text-gray-600 dark:text-gray-300"
+                                        />
+                                        {manualForm.imageUrl && (
+                                            <button
+                                                type="button"
+                                                className="text-xs text-left underline text-gray-500 dark:text-gray-400 w-fit"
+                                                onClick={removeImage}
+                                            >
+                                                Remove image (use default)
+                                            </button>
+                                        )}
+                                        {isUploadingImage && (
+                                            <span className="text-xs text-gray-500 dark:text-gray-400">Uploading...</span>
+                                        )}
+                                    </div>
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    JPEG, PNG, or WEBP, up to 5MB. If you don&apos;t upload one, a default image for
+                                    the selected level is shown instead.
+                                </p>
                             </div>
                             <div>
                                 <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
@@ -670,73 +815,224 @@ export default function AdminReadingPage() {
                     )}
                 </div>
 
-                <div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+                <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] overflow-hidden">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white px-6 pt-6">
                         Existing articles
                     </h2>
                     {isLoading ? (
                         <div className="p-10 text-center text-gray-500 dark:text-gray-400">Loading articles...</div>
                     ) : (
-                        <div className="overflow-x-auto mt-4">
-                            <table className="w-full text-left">
-                                <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm">
-                                    <tr>
-                                        <th className="px-6 py-3">Title</th>
-                                        <th className="px-6 py-3">Level</th>
-                                        <th className="px-6 py-3">Vocabulary</th>
-                                        <th className="px-6 py-3">Annotations</th>
-                                        <th className="px-6 py-3">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                    {articles.map((article) => (
-                                        <tr key={article.id}>
-                                            <td className="px-6 py-4 text-gray-900 dark:text-white">
-                                                {article.title}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <Badge variant="secondary">{article.level}</Badge>
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                                                {article.keyVocabulary.length} words
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                                                {article.annotations?.length ?? 0}
-                                            </td>
-                                            <td className="px-6 py-4 space-x-2 whitespace-nowrap">
-                                                <Button
-                                                    variant="secondary"
-                                                    className="px-3 py-1 text-sm"
-                                                    onClick={() => startEdit(article)}
-                                                >
-                                                    Edit
-                                                </Button>
-                                                <Button
-                                                    variant="secondary"
-                                                    className="px-3 py-1 text-sm"
-                                                    onClick={() => removeArticle(article)}
-                                                >
-                                                    Delete
-                                                </Button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {articles.length === 0 && (
+                        <div className="px-6 pb-6">
+                            {/* Table controls */}
+                            <div className="flex flex-wrap items-center justify-between gap-4 mt-4 mb-3">
+                                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                    Show
+                                    <select
+                                        value={tablePageSize}
+                                        onChange={(e) => {
+                                            setTablePageSize(Number(e.target.value));
+                                            setTablePage(1);
+                                        }}
+                                        className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    >
+                                        {PAGE_SIZE_OPTIONS.map((n) => (
+                                            <option key={n} value={n}>
+                                                {n}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    entries
+                                </label>
+
+                                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                    Search:
+                                    <input
+                                        type="text"
+                                        value={tableSearch}
+                                        onChange={(e) => {
+                                            setTableSearch(e.target.value);
+                                            setTablePage(1);
+                                        }}
+                                        placeholder="Title or topic..."
+                                        className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    />
+                                </label>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm">
                                         <tr>
-                                            <td colSpan={5} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
-                                                No reading articles found.
-                                            </td>
+                                            <th className="px-6 py-3">Image</th>
+                                            <th className="px-6 py-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleSort("title")}
+                                                    className="flex items-center gap-1.5 font-semibold hover:text-gray-900 dark:hover:text-white"
+                                                >
+                                                    Title {renderSortIcon("title")}
+                                                </button>
+                                            </th>
+                                            <th className="px-6 py-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleSort("level")}
+                                                    className="flex items-center gap-1.5 font-semibold hover:text-gray-900 dark:hover:text-white"
+                                                >
+                                                    Level {renderSortIcon("level")}
+                                                </button>
+                                            </th>
+                                            <th className="px-6 py-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleSort("vocabulary")}
+                                                    className="flex items-center gap-1.5 font-semibold hover:text-gray-900 dark:hover:text-white"
+                                                >
+                                                    Vocabulary {renderSortIcon("vocabulary")}
+                                                </button>
+                                            </th>
+                                            <th className="px-6 py-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleSort("annotations")}
+                                                    className="flex items-center gap-1.5 font-semibold hover:text-gray-900 dark:hover:text-white"
+                                                >
+                                                    Annotations {renderSortIcon("annotations")}
+                                                </button>
+                                            </th>
+                                            <th className="px-6 py-3">Actions</th>
                                         </tr>
-                                    )}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                        {paginatedArticles.map((article) => (
+                                            <tr key={article.id}>
+                                                <td className="px-6 py-4">
+                                                    <img
+                                                        src={getArticleImageSrc(article.imageUrl, article.level)}
+                                                        alt=""
+                                                        className="w-14 h-10 object-cover rounded-md border border-gray-200 dark:border-gray-700"
+                                                    />
+                                                </td>
+                                                <td className="px-6 py-4 text-gray-900 dark:text-white">
+                                                    {article.title}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <Badge variant="secondary">{article.level}</Badge>
+                                                </td>
+                                                <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
+                                                    {article.keyVocabulary.length} words
+                                                </td>
+                                                <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
+                                                    {article.annotations?.length ?? 0}
+                                                </td>
+                                                <td className="px-6 py-4 space-x-2 whitespace-nowrap">
+                                                    <Button
+                                                        variant="secondary"
+                                                        className="px-3 py-1 text-sm"
+                                                        onClick={() => startEdit(article)}
+                                                    >
+                                                        Edit
+                                                    </Button>
+                                                    <Button
+                                                        variant="secondary"
+                                                        className="px-3 py-1 text-sm"
+                                                        onClick={() => removeArticle(article)}
+                                                    >
+                                                        Delete
+                                                    </Button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {sortedArticles.length === 0 && (
+                                            <tr>
+                                                <td colSpan={6} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                                                    No reading articles found.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Table footer: info + pagination */}
+                            {sortedArticles.length > 0 && (
+                                <div className="flex flex-wrap items-center justify-between gap-4 mt-4">
+                                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                                        Showing {tableStartIndex} to {tableEndIndex} of {sortedArticles.length} entries
+                                    </p>
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            type="button"
+                                            disabled={tableCurrentPage === 1}
+                                            onClick={() => setTablePage(1)}
+                                            className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                        >
+                                            <ChevronsLeft className="size-4" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={tableCurrentPage === 1}
+                                            onClick={() => setTablePage((p) => Math.max(1, p - 1))}
+                                            className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                        >
+                                            <ChevronLeft className="size-4" />
+                                        </button>
+                                        {tablePageNumbers.map((p, idx) => {
+                                            const prev = tablePageNumbers[idx - 1];
+                                            const showEllipsis = prev !== undefined && p - prev > 1;
+                                            return (
+                                                <div key={p} className="flex items-center gap-1">
+                                                    {showEllipsis && (
+                                                        <span className="px-1 text-gray-400 dark:text-gray-500">…</span>
+                                                    )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setTablePage(p)}
+                                                        className={`min-w-9 h-9 px-2 rounded-lg text-sm font-medium border ${
+                                                            p === tableCurrentPage
+                                                                ? "bg-blue-600 border-blue-600 text-white"
+                                                                : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                        }`}
+                                                    >
+                                                        {p}
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                        <button
+                                            type="button"
+                                            disabled={tableCurrentPage === tableTotalPages}
+                                            onClick={() => setTablePage((p) => Math.min(tableTotalPages, p + 1))}
+                                            className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                        >
+                                            <ChevronRight className="size-4" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={tableCurrentPage === tableTotalPages}
+                                            onClick={() => setTablePage(tableTotalPages)}
+                                            className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                        >
+                                            <ChevronsRight className="size-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
             </div>
 
             {isSaving && <Loading message="Please wait..." />}
-            <ToastContainer />
+            <ConfirmDialog
+                isOpen={Boolean(articleToDelete)}
+                title="Delete this article?"
+                message={`Delete "${articleToDelete?.title}"? This cannot be undone.`}
+                confirmLabel="Delete"
+                cancelLabel="Cancel"
+                onConfirm={confirmRemoveArticle}
+                onCancel={() => setArticleToDelete(null)}
+            />
         </div>
     );
 }

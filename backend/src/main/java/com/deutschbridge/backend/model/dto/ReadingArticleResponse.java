@@ -3,6 +3,7 @@ package com.deutschbridge.backend.model.dto;
 import com.deutschbridge.backend.model.entity.ArticleTokenItem;
 import com.deutschbridge.backend.model.entity.KeyVocabularyItem;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public record ReadingArticleResponse(
@@ -11,6 +12,9 @@ public record ReadingArticleResponse(
         String topic,
         String level,
         String content,
+        String imageUrl,
+        long viewCount,
+        LocalDateTime createdAt,
         List<KeyVocabularyItem> keyVocabulary,
         List<AnnotationResponse> annotations,
         int newWordCount,

@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import { useDictionaryLookup } from "@/hooks/useDictionaryLookup";
-import { saveVocab, removeVocab } from "@/services/vocabService";
+import { addFromDictionary, deleteVocabulary, getVocabulary } from "@/services/vocabularyService";
 import { reportMissingWord } from "@/services/dictionaryService";
+import { useI18n } from "@/componenets/I18nProvider";
 
 const GENDER_COLORS: Record<string, string> = {
     der: "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200",
@@ -23,6 +24,7 @@ export default function DictionaryPanel({
     activeLemma,
     onClose,
 }: Readonly<{ activeLemma: string | null; onClose: () => void }>) {
+    const { t } = useI18n();
     const { entry, lemma, loading, notFound, lookup, updateCachedEntry, reset } = useDictionaryLookup();
     const [searchValue, setSearchValue] = useState("");
     const [saving, setSaving] = useState(false);
@@ -52,11 +54,18 @@ export default function DictionaryPanel({
         if (!entry) return;
         setSaving(true);
         const wasSaved = entry.savedByCurrentUser;
-        const action = wasSaved ? removeVocab(entry.id) : saveVocab(entry.id);
+        // There's no "remove by dictionaryEntryId" endpoint - unsaving looks up the VocabularyItem
+        // created for this entry (source=DICTIONARY) and deletes it by its own id.
+        const action = wasSaved
+            ? getVocabulary({ source: "DICTIONARY" }).then((res) => {
+                  const match = res.data.find((item) => item.dictionaryEntryId === entry.id);
+                  if (match) return deleteVocabulary(match.id);
+              })
+            : addFromDictionary(entry.id);
         action
             .then(() => {
                 updateCachedEntry({ ...entry, savedByCurrentUser: !wasSaved });
-                toast.success(wasSaved ? "Removed from vocab." : "Added to vocab.");
+                toast.success(wasSaved ? t.dictionaryPanel.removedFromVocab : t.dictionaryPanel.addedToVocab);
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to update vocab."))
             .finally(() => setSaving(false));
@@ -67,15 +76,15 @@ export default function DictionaryPanel({
         reportMissingWord(lemma)
             .then(() => {
                 setReported(true);
-                toast.success("Thanks — we'll look into it.");
+                toast.success(t.dictionaryPanel.reportThanks);
             })
-            .catch(() => toast.error("Failed to report this word."));
+            .catch(() => toast.error(t.dictionaryPanel.reportFailed));
     };
 
     return (
         <>
             <button
-                aria-label="Close dictionary panel"
+                aria-label={t.dictionaryPanel.closePanelAria}
                 onClick={onClose}
                 className="fixed inset-0 bg-black/20 z-40 md:hidden"
             />
@@ -90,19 +99,19 @@ export default function DictionaryPanel({
                         <input
                             value={searchValue}
                             onChange={(e) => setSearchValue(e.target.value)}
-                            placeholder="Search a word..."
+                            placeholder={t.dictionaryPanel.searchPlaceholder}
                             className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                         />
                         <button
                             type="submit"
                             className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shrink-0"
                         >
-                            Go
+                            {t.dictionaryPanel.go}
                         </button>
                     </form>
                     <button
                         onClick={onClose}
-                        aria-label="Close"
+                        aria-label={t.dictionaryPanel.closeAria}
                         className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xl leading-none px-2 shrink-0"
                     >
                         ✕
@@ -110,19 +119,17 @@ export default function DictionaryPanel({
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    {loading && <p className="text-sm text-gray-500 dark:text-gray-400">Loading...</p>}
+                    {loading && <p className="text-sm text-gray-500 dark:text-gray-400">{t.dictionaryPanel.loading}</p>}
 
                     {!loading && notFound && (
                         <div className="text-center py-8 space-y-3">
-                            <p className="text-gray-500 dark:text-gray-400">
-                                No dictionary entry found for &quot;{lemma}&quot;.
-                            </p>
+                            <p className="text-gray-500 dark:text-gray-400">{t.dictionaryPanel.notFound(lemma ?? "")}</p>
                             <button
                                 onClick={flagMissing}
                                 disabled={reported}
                                 className="text-sm px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 disabled:opacity-60"
                             >
-                                {reported ? "Reported ✓" : "Flag as missing"}
+                                {reported ? t.dictionaryPanel.reported : t.dictionaryPanel.flagMissing}
                             </button>
                         </div>
                     )}
@@ -144,7 +151,7 @@ export default function DictionaryPanel({
                                     {entry.audioUrl && (
                                         <button
                                             onClick={() => playAudio(entry.audioUrl)}
-                                            aria-label="Play pronunciation"
+                                            aria-label={t.dictionaryPanel.playPronunciationAria}
                                             className="text-blue-600 dark:text-blue-400"
                                         >
                                             🔊
@@ -176,7 +183,7 @@ export default function DictionaryPanel({
                                                             {ex.audioUrl && (
                                                                 <button
                                                                     onClick={() => playAudio(ex.audioUrl)}
-                                                                    aria-label="Play example audio"
+                                                                    aria-label={t.dictionaryPanel.playExampleAudioAria}
                                                                     className="text-blue-600 dark:text-blue-400 shrink-0"
                                                                 >
                                                                     🔊
@@ -201,7 +208,7 @@ export default function DictionaryPanel({
                                         : "bg-blue-600 hover:bg-blue-700 text-white"
                                 }`}
                             >
-                                {entry.savedByCurrentUser ? "✓ Saved to vocab" : "+ Add to vocab"}
+                                {entry.savedByCurrentUser ? t.dictionaryPanel.savedToVocab : t.dictionaryPanel.addToVocab}
                             </button>
                         </>
                     )}

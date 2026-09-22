@@ -5,6 +5,7 @@ import com.deutschbridge.backend.model.enums.LearningLevel;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,6 +13,8 @@ import java.util.Optional;
 public interface ReadingArticleRepository extends JpaRepository<ReadingArticle, String> {
 
     List<ReadingArticle> findByLevel(LearningLevel level);
+
+    long countByCreatedAtAfter(LocalDateTime after);
 
     List<ReadingArticle> findByLinkedGroupId(String linkedGroupId);
 

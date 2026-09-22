@@ -1,5 +1,6 @@
 import api from "./api"
 import {ResetPasswordType, UserProfileType, UserType} from "@/types/user";
+import {OnboardingRequest} from "@/types/onboarding";
 
 
 export const registerUser = async (user: UserType) => {
@@ -27,6 +28,22 @@ export const resetPassword = async (data: ResetPasswordType) => {
 
 export const updateProfile = async (data: UserProfileType) => {
     return await api.put("/user/update-profile", data);
+}
+
+export const completeOnboarding = async (data: OnboardingRequest) => {
+    return await api.put("/user/onboarding", data);
+}
+
+export const uploadAvatar = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return await api.post<{ message: string; data: string }>("/user/avatar", formData, {
+        headers: { "Content-Type": undefined },
+    });
+}
+
+export const getUserProfile = async () => {
+    return await api.get("/user/profile");
 }
 
 export const updatePassword = async (data: UserType) => {
