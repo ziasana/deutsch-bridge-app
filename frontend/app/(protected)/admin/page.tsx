@@ -6,6 +6,7 @@ import { toast } from "@/lib/toast";
 import useAuthStore from "@/store/useAuthStore";
 import { getAllUsers, updateUser, changeUserPassword, changeAccountType } from "@/services/adminService";
 import { AccountType, AdminUser } from "@/types/admin";
+import { resolveUploadUrl } from "@/lib/backendOrigin";
 import { Badge } from "@/componenets/ui/badge";
 import { Card, CardContent } from "@/componenets/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/componenets/ui/table";
@@ -28,6 +29,16 @@ import {
 const CARD_HOVER = "transition-all duration-300 hover:-translate-y-1 hover:shadow-lg";
 const BUTTON_HOVER = "transition-transform duration-200 hover:-translate-y-0.5";
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+
+function getInitials(name?: string | null, email?: string | null): string {
+    return (name ?? email ?? "?")
+        .trim()
+        .split(/\s+/)
+        .map((part) => part[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase();
+}
 
 type UserSortKey = "name" | "email" | "role" | "verified";
 type SortDirection = "asc" | "desc";
@@ -339,7 +350,21 @@ export default function AdminPage() {
                                     {paginatedUsers.map((user) => (
                                         <TableRow key={user.id}>
                                             <TableCell className="font-medium text-foreground">
-                                                {user.displayName || "—"}
+                                                <div className="flex items-center gap-3">
+                                                    {resolveUploadUrl(user.avatarUrl) ? (
+                                                        // eslint-disable-next-line @next/next/no-img-element
+                                                        <img
+                                                            src={resolveUploadUrl(user.avatarUrl)!}
+                                                            alt={user.displayName || "avatar"}
+                                                            className="size-8 shrink-0 rounded-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-accent-foreground">
+                                                            {getInitials(user.displayName, user.email)}
+                                                        </div>
+                                                    )}
+                                                    <span>{user.displayName || "—"}</span>
+                                                </div>
                                             </TableCell>
                                             <TableCell className="text-foreground/70">{user.email}</TableCell>
                                             <TableCell>

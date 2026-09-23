@@ -8,6 +8,7 @@ export interface AdminUser {
     role: string;
     verified: boolean;
     accountType: AccountType;
+    avatarUrl?: string | null;
 }
 
 export interface AdminUpdateUserPayload {
