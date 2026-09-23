@@ -13,7 +13,8 @@ import Loading from "@/componenets/Loading";
 import {UserProfileType} from "@/types/user";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
 import { useI18n } from "@/componenets/I18nProvider";
-import { Bell, Calendar, Camera, ChevronDown, GraduationCap, Target, Pencil, Sparkles, UserRound } from "lucide-react";
+import NotificationSettingsCard from "@/componenets/notifications/NotificationSettingsCard";
+import { Calendar, Camera, ChevronDown, GraduationCap, Target, Pencil, Sparkles, UserRound } from "lucide-react";
 
 const CARD_HOVER = "transition-all duration-300 hover:-translate-y-1 hover:shadow-lg";
 
@@ -57,13 +58,10 @@ export default function UserProfile() {
         email: userProfile?.email,
         learningLevel: userProfile?.learningLevel,
         dailyGoalWords: userProfile?.dailyGoalWords,
-        notificationsEnabled:userProfile?.notificationsEnabled,
         preferredLanguage:userProfile?.preferredLanguage,
         avatarUrl: userProfile?.avatarUrl,
         createdAt: userProfile?.createdAt,
     });
-
-    const [enabled, setEnabled] = useState(profile.notificationsEnabled);
 
     const joinedLabel = profile.createdAt
         ? new Date(profile.createdAt).toLocaleDateString(language === "fa" ? "fa-IR" : "en-US", {
@@ -75,12 +73,6 @@ export default function UserProfile() {
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setProfile({ ...profile, [e.target.name]: e.target.value });
     };
-    const handleChangeNotification = (e: ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.checked; // boolean
-        setEnabled(value);
-        setProfile({ ...profile, notificationsEnabled: !enabled });
-    };
-
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
@@ -340,39 +332,6 @@ export default function UserProfile() {
                                     </p>
                                 </div>
 
-                                {/* Reminder */}
-                                <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card px-4 py-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent">
-                                            <Bell className="size-4.5 text-accent-foreground" />
-                                        </div>
-                                        <span className="text-sm font-medium text-foreground/80">{t.profile.enableNotification}</span>
-                                    </div>
-                                    <label className="inline-flex cursor-pointer items-center">
-                                        <input
-                                            type="checkbox"
-                                            disabled={!editing}
-                                            name="notificationsEnabled"
-                                            checked={enabled}
-                                            onChange={handleChangeNotification}
-                                            className="sr-only"
-                                        />
-
-                                        {/* Toggle UI */}
-                                        <div
-                                            className={`h-6 w-11 shrink-0 rounded-full transition ${
-                                                enabled ? "bg-primary" : "bg-muted"
-                                            } ${!editing ? "opacity-60" : ""}`}
-                                        >
-                                            <div
-                                                className={`mt-0.5 size-5 rounded-full bg-white shadow-sm transition transform ${
-                                                    enabled ? "translate-x-5.5" : "translate-x-0.5"
-                                                }`}
-                                            />
-                                        </div>
-                                    </label>
-                                </div>
-
                                 {/* Preferred language */}
                                 <div>
                                     <Label className={FIELD_LABEL_CLASS}>{t.profile.preferredLanguage}</Label>
@@ -404,6 +363,8 @@ export default function UserProfile() {
                                 )}
                             </CardContent>
                         </Card>
+
+                        <NotificationSettingsCard />
                     </div>
                 </div>
             </div>

@@ -230,24 +230,19 @@ public class GrammarService {
         }
 
         List<String> errors = new ArrayList<>();
-        Set<String> seenTitles = new java.util.HashSet<>();
+        // Same title is allowed in a different level or category; only title + level + category is a duplicate.
+        Set<String> seenKeys = new java.util.HashSet<>();
 
         for (int i = 0; i < requests.size(); i++) {
             GrammarLessonManualRequest request = requests.get(i);
             String label = "Lesson " + (i + 1)
                     + (request.title() != null && !request.title().isBlank() ? " (\"" + request.title() + "\")" : "");
+            boolean hasTitle = request.title() != null && !request.title().isBlank();
+            String categoryId = request.categoryId() != null && !request.categoryId().isBlank() ? request.categoryId().trim() : null;
 
-            if (request.title() == null || request.title().isBlank()) {
+            if (!hasTitle) {
                 errors.add(label + ": title is required");
-            } else {
-                String normalizedTitle = request.title().trim().toLowerCase();
-                if (!seenTitles.add(normalizedTitle)) {
-                    errors.add(label + ": duplicate title within the uploaded batch");
-                } else if (grammarRepository.existsByTitleIgnoreCase(request.title().trim())) {
-                    errors.add(label + ": a lesson with this title already exists");
-                }
             }
-
             if (request.level() == null) {
                 errors.add(label + ": level is required");
             }
@@ -255,13 +250,30 @@ public class GrammarService {
                 errors.add(label + ": content is required");
             }
 
-            if (request.categoryId() != null && !request.categoryId().isBlank()) {
-                GrammarCategory category = grammarCategoryRepository.findById(request.categoryId()).orElse(null);
+            GrammarCategory category = null;
+            if (categoryId != null) {
+                category = grammarCategoryRepository.findById(categoryId).orElse(null);
                 if (category == null) {
-                    errors.add(label + ": category not found: " + request.categoryId());
+                    errors.add(label + ": category not found: " + categoryId);
                 } else if (request.level() != null && category.getLevel() != request.level()) {
                     errors.add(label + ": category \"" + category.getTitle() + "\" is for level "
                             + category.getLevel() + ", not " + request.level());
+                }
+            }
+
+            if (hasTitle && request.level() != null) {
+                String title = request.title().trim();
+                String where = "level " + request.level() + " and "
+                        + (category != null ? "category \"" + category.getTitle() + "\"" : "no category");
+                String key = title.toLowerCase() + "|" + request.level() + "|" + (categoryId != null ? categoryId : "");
+                boolean existsInDb = categoryId != null
+                        ? grammarRepository.existsByTitleIgnoreCaseAndLevelAndCategory_Id(title, request.level(), categoryId)
+                        : grammarRepository.existsByTitleIgnoreCaseAndLevelAndCategoryIsNull(title, request.level());
+
+                if (!seenKeys.add(key)) {
+                    errors.add(label + ": duplicate lesson within the uploaded batch (same title, " + where + ")");
+                } else if (existsInDb) {
+                    errors.add(label + ": a lesson with this title already exists in " + where);
                 }
             }
 

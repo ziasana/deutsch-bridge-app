@@ -34,6 +34,7 @@ export interface Dictionary {
         manageExpressions: string;
         collapseSidebar: string;
         expandSidebar: string;
+        manageNotifications: string;
     };
     profile: {
         title: string;
@@ -47,7 +48,6 @@ export interface Dictionary {
         dailyWordGoal: string;
         words: string;
         recommendedGoal: string;
-        enableNotification: string;
         preferredLanguage: string;
         saveProfile: string;
         updated: string;
@@ -95,6 +95,8 @@ export interface Dictionary {
             readingDescription: string;
             expressionsTitle: string;
             expressionsDescription: string;
+            examTitle: string;
+            examDescription: string;
         };
         todaysPlan: {
             title: string;
@@ -555,6 +557,45 @@ export interface Dictionary {
             allReached: string;
         };
     };
+    notifications: {
+        title: string;
+        bellLabel: (count: number) => string;
+        markAllRead: string;
+        viewAll: string;
+        emptyTitle: string;
+        emptyBody: string;
+        tabs: { all: string; learning: string; progress: string; system: string };
+        today: string;
+        yesterday: string;
+        earlier: string;
+        loadMore: string;
+        loadError: string;
+        retry: string;
+        settings: {
+            title: string;
+            subtitle: string;
+            learningSection: string;
+            dailyReminders: string;
+            dailyRemindersHint: string;
+            reviewReminders: string;
+            dailyPlan: string;
+            examReminders: string;
+            progressSection: string;
+            milestones: string;
+            weeklyProgress: string;
+            scheduleSection: string;
+            preferredTime: string;
+            preferredTimeHint: string;
+            quietHours: string;
+            quietHoursHint: string;
+            quietFrom: string;
+            quietTo: string;
+            timezone: (zone: string) => string;
+            useDeviceTimezone: (zone: string) => string;
+            saved: string;
+            saveFailed: string;
+        };
+    };
 }
 
 const en: Dictionary = {
@@ -586,6 +627,7 @@ const en: Dictionary = {
         manageExpressions: "Manage Expressions",
         collapseSidebar: "Collapse sidebar",
         expandSidebar: "Expand sidebar",
+        manageNotifications: "Manage Notifications",
     },
     profile: {
         title: "Profile",
@@ -599,7 +641,6 @@ const en: Dictionary = {
         dailyWordGoal: "Daily word goal",
         words: "words",
         recommendedGoal: "Recommended: 10–15 words per day",
-        enableNotification: "Enable Notification",
         preferredLanguage: "Preferred Language",
         saveProfile: "Save Profile",
         updated: "Profile updated!",
@@ -671,6 +712,8 @@ const en: Dictionary = {
             readingDescription: "Continue with your next reading text.",
             expressionsTitle: "Active Expressions",
             expressionsDescription: "Practice your active expressions.",
+            examTitle: "Exam Preparation",
+            examDescription: "Practice an exam-style task to stay on track for your exam.",
         },
         todaysPlan: {
             title: "Today's plan",
@@ -1154,6 +1197,45 @@ const en: Dictionary = {
             allReached: "every milestone reached!",
         },
     },
+    notifications: {
+        title: "Notifications",
+        bellLabel: (count) => (count > 0 ? `Notifications, ${count} unread` : "Notifications"),
+        markAllRead: "Mark all read",
+        viewAll: "View all",
+        emptyTitle: "You're all caught up 🎉",
+        emptyBody: "We'll let you know when something useful is ready for you.",
+        tabs: { all: "All", learning: "Learning", progress: "Progress", system: "System" },
+        today: "Today",
+        yesterday: "Yesterday",
+        earlier: "Earlier",
+        loadMore: "Load more",
+        loadError: "Couldn't load notifications.",
+        retry: "Try again",
+        settings: {
+            title: "Notifications",
+            subtitle: "Choose which reminders help you learn — we'll never send more than a couple a day.",
+            learningSection: "Learning",
+            dailyReminders: "Daily learning reminders",
+            dailyRemindersHint: "Turn off to pause all learning reminders.",
+            reviewReminders: "Vocabulary review",
+            dailyPlan: "Daily learning plan",
+            examReminders: "Exam preparation",
+            progressSection: "Progress",
+            milestones: "Milestones",
+            weeklyProgress: "Weekly progress",
+            scheduleSection: "Schedule",
+            preferredTime: "Preferred learning time",
+            preferredTimeHint: "We'll remind you about an unfinished plan around this time.",
+            quietHours: "Quiet hours",
+            quietHoursHint: "No notifications during this time.",
+            quietFrom: "From",
+            quietTo: "To",
+            timezone: (zone) => `Times are in your time zone: ${zone}`,
+            useDeviceTimezone: (zone) => `Use this device's time zone (${zone})`,
+            saved: "Notification settings saved.",
+            saveFailed: "Couldn't save notification settings.",
+        },
+    },
 };
 
 const fa: Dictionary = {
@@ -1185,6 +1267,7 @@ const fa: Dictionary = {
         manageExpressions: "مدیریت عبارات",
         collapseSidebar: "جمع کردن نوار کناری",
         expandSidebar: "باز کردن نوار کناری",
+        manageNotifications: "مدیریت اعلان‌ها",
     },
     profile: {
         title: "پروفایل",
@@ -1198,7 +1281,6 @@ const fa: Dictionary = {
         dailyWordGoal: "هدف روزانه کلمات",
         words: "کلمه",
         recommendedGoal: "پیشنهادی: ۱۰ تا ۱۵ کلمه در روز",
-        enableNotification: "فعال‌سازی اعلان‌ها",
         preferredLanguage: "زبان مورد نظر",
         saveProfile: "ذخیره پروفایل",
         updated: "پروفایل به‌روزرسانی شد!",
@@ -1270,6 +1352,8 @@ const fa: Dictionary = {
             readingDescription: "متن مطالعه بعدی خود را ادامه دهید.",
             expressionsTitle: "عبارات کاربردی",
             expressionsDescription: "عبارات کاربردی خود را تمرین کنید.",
+            examTitle: "آمادگی آزمون",
+            examDescription: "یک تمرین به سبک آزمون انجام دهید تا برای آزمونتان آماده بمانید.",
         },
         todaysPlan: {
             title: "برنامه امروز",
@@ -1750,6 +1834,45 @@ const fa: Dictionary = {
             wordsMastered: (count) => `${count} واژه تسلط‌یافته`,
             toGoUntil: (remaining, threshold) => `${remaining} واژه تا رسیدن به ${threshold}`,
             allReached: "به همه نقاط عطف رسیدید!",
+        },
+    },
+    notifications: {
+        title: "اعلان‌ها",
+        bellLabel: (count) => (count > 0 ? `اعلان‌ها، ${count} خوانده‌نشده` : "اعلان‌ها"),
+        markAllRead: "علامت‌گذاری همه به‌عنوان خوانده‌شده",
+        viewAll: "مشاهدهٔ همه",
+        emptyTitle: "همه چیز را دیده‌اید 🎉",
+        emptyBody: "هر وقت چیز مفیدی برایتان آماده شد، خبرتان می‌کنیم.",
+        tabs: { all: "همه", learning: "یادگیری", progress: "پیشرفت", system: "سیستم" },
+        today: "امروز",
+        yesterday: "دیروز",
+        earlier: "قبل‌تر",
+        loadMore: "نمایش بیشتر",
+        loadError: "بارگذاری اعلان‌ها ممکن نشد.",
+        retry: "تلاش دوباره",
+        settings: {
+            title: "اعلان‌ها",
+            subtitle: "یادآورهایی را انتخاب کنید که به یادگیری شما کمک می‌کنند — هرگز بیش از چند مورد در روز ارسال نمی‌کنیم.",
+            learningSection: "یادگیری",
+            dailyReminders: "یادآورهای روزانهٔ یادگیری",
+            dailyRemindersHint: "با خاموش کردن، همهٔ یادآورهای یادگیری متوقف می‌شوند.",
+            reviewReminders: "مرور واژگان",
+            dailyPlan: "برنامهٔ روزانهٔ یادگیری",
+            examReminders: "آمادگی آزمون",
+            progressSection: "پیشرفت",
+            milestones: "نقاط عطف",
+            weeklyProgress: "پیشرفت هفتگی",
+            scheduleSection: "زمان‌بندی",
+            preferredTime: "زمان دلخواه یادگیری",
+            preferredTimeHint: "حدود این ساعت دربارهٔ برنامهٔ ناتمام به شما یادآوری می‌کنیم.",
+            quietHours: "ساعات سکوت",
+            quietHoursHint: "در این بازه هیچ اعلانی ارسال نمی‌شود.",
+            quietFrom: "از",
+            quietTo: "تا",
+            timezone: (zone) => `ساعت‌ها بر اساس منطقهٔ زمانی شما هستند: ${zone}`,
+            useDeviceTimezone: (zone) => `استفاده از منطقهٔ زمانی این دستگاه (${zone})`,
+            saved: "تنظیمات اعلان ذخیره شد.",
+            saveFailed: "ذخیرهٔ تنظیمات اعلان ممکن نشد.",
         },
     },
 };

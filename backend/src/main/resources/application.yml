@@ -84,6 +84,13 @@ jwt:
 
 frontend_url: ${FRONTEND_URI}
 
+notifications:
+  scheduler:
+    enabled: true
+    sweep-interval-ms: 900000              # evaluate learners every 15 minutes
+    reminder-cron: "0 */5 * * * *"          # check for reached preferred reminder times
+    reminder-window-seconds: 300
+
 app:
   upload:
     dir: ${UPLOAD_DIR:uploads}

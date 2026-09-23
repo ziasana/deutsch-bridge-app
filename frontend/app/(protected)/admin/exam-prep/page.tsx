@@ -18,6 +18,7 @@ import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
 import RichTextEditor from "@/componenets/RichTextEditor";
+import { isEmptyTranscript } from "@/lib/transcriptFormat";
 import { Badge } from "@/componenets/ui/badge";
 import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
@@ -715,13 +716,17 @@ export default function AdminExamPrepPage() {
                                                     )}
                                                 </div>
                                             </div>
-                                            <textarea
-                                                value={p.transcript ?? ""}
-                                                onChange={(e) => updatePassage(idx, "transcript", e.target.value)}
-                                                placeholder="Transcript (shown to students only after they answer the related question)"
-                                                rows={3}
-                                                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                                            />
+                                            <div>
+                                                <p className="mb-1 text-xs font-medium text-gray-600 dark:text-gray-400">
+                                                    Transcript — shown to students on the result page after they finish
+                                                </p>
+                                                <RichTextEditor
+                                                    value={p.transcript ?? ""}
+                                                    onChange={(html) => updatePassage(idx, "transcript", isEmptyTranscript(html) ? "" : html)}
+                                                    placeholder="Transcript of the audio. Use paragraphs, bold speaker names, etc."
+                                                    onUploadImage={uploadInlineImage}
+                                                />
+                                            </div>
                                         </div>
                                     )}
                                 </div>
