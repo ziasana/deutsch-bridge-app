@@ -215,6 +215,9 @@ export default function AdminPage() {
                         <Button variant="secondary" className={BUTTON_HOVER} onClick={() => router.push("/admin/settings")}>
                             Monetization &amp; Limits
                         </Button>
+                        <Button variant="secondary" className={BUTTON_HOVER} onClick={() => router.push("/admin/notifications")}>
+                            Notifications
+                        </Button>
                     </div>
                 </div>
 

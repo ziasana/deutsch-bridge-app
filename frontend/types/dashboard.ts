@@ -4,6 +4,7 @@ export type ContinueLearningType =
     | "GRAMMAR"
     | "READING"
     | "EXPRESSIONS"
+    | "EXAM"
     | "START";
 
 export interface ContinueLearningDto {

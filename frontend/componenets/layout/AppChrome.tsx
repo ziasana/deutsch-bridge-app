@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import AppShell from "@/componenets/layout/AppShell";
 import Navbar from "@/componenets/Navbar";
 
-const SHELL_PREFIXES = ["/dashboard", "/admin", "/profile", "/user-progress"];
+const SHELL_PREFIXES = ["/dashboard", "/admin", "/profile", "/user-progress", "/notifications"];
 
 export default function AppChrome({ children }: Readonly<{ children: React.ReactNode }>) {
     const pathname = usePathname();

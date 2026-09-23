@@ -6,6 +6,7 @@ import { GraduationCap, Menu as MenuIcon, Moon, Search, Sun } from "lucide-react
 import { useDarkMode } from "@/componenets/DarkModeProvider";
 import { useI18n } from "@/componenets/I18nProvider";
 import useAuthStore from "@/store/useAuthStore";
+import NotificationBell from "@/componenets/notifications/NotificationBell";
 
 interface AppTopbarProps {
     collapsed: boolean;
@@ -73,6 +74,9 @@ export default function AppTopbar({ collapsed, onToggleCollapsed, onOpenMobileSi
             >
                 {darkMode ? <Sun className="size-5" /> : <Moon className="size-5" />}
             </button>
+
+            {/* Learner-only: admins don't receive learning notifications. */}
+            {userProfile && userProfile.role !== "ADMIN" && <NotificationBell />}
 
             <Menu as="div" className="relative">
                 <MenuButton className="flex size-9 items-center justify-center rounded-full bg-topbar-foreground/15 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2">

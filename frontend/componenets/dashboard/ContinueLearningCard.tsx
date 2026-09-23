@@ -18,6 +18,7 @@ const ICONS = {
     GRAMMAR: BookOpen,
     READING: Newspaper,
     EXPRESSIONS: Sparkles,
+    EXAM: GraduationCap,
     START: GraduationCap,
 } as const;
 
@@ -51,6 +52,7 @@ export default function ContinueLearningCard({ data }: ContinueLearningCardProps
         GRAMMAR: data.title ?? c.grammarTitle,
         READING: data.title ?? c.readingTitle,
         EXPRESSIONS: c.expressionsTitle,
+        EXAM: data.title ?? c.examTitle,
     };
 
     const descriptionByType: Record<string, string> = {
@@ -59,6 +61,7 @@ export default function ContinueLearningCard({ data }: ContinueLearningCardProps
         GRAMMAR: c.grammarDescription,
         READING: c.readingDescription,
         EXPRESSIONS: c.expressionsDescription,
+        EXAM: c.examDescription,
     };
 
     const showProgress = data.progressPercent !== null;

@@ -4,6 +4,7 @@ import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.ExamAnswerFeedbackResponse;
 import com.deutschbridge.backend.model.dto.ExamAttemptResultResponse;
+import com.deutschbridge.backend.model.dto.ExamTranscriptDto;
 import com.deutschbridge.backend.model.dto.CompleteExamAttemptRequest;
 import com.deutschbridge.backend.model.dto.ExamPassagePublic;
 import com.deutschbridge.backend.model.dto.ExamQuestionPublic;
@@ -99,7 +100,14 @@ public class ExamAttemptService {
     private String referencedTranscript(ExamExercise exercise, ExamQuestion question) {
         if (question.getSectionIndex() == null || exercise.getPassages() == null) return null;
         if (question.getSectionIndex() < 0 || question.getSectionIndex() >= exercise.getPassages().size()) return null;
-        return exercise.getPassages().get(question.getSectionIndex()).getTranscript();
+        String transcript = exercise.getPassages().get(question.getSectionIndex()).getTranscript();
+        return hasText(transcript) ? transcript : null;
+    }
+
+    /** Transcripts are rich text now; an empty editor saves "<p></p>", which isn't a transcript. */
+    static boolean hasText(String transcript) {
+        if (transcript == null) return false;
+        return transcript.contains("<img") || !transcript.replaceAll("<[^>]*>", "").replace("&nbsp;", " ").isBlank();
     }
 
     public ExamAttemptResultResponse complete(String attemptId, CompleteExamAttemptRequest request) throws DataNotFoundException {
@@ -117,7 +125,19 @@ public class ExamAttemptService {
         attemptRepository.save(attempt);
         examExerciseService.saveLastScore(attempt.getExercise().getId(), score);
 
-        return new ExamAttemptResultResponse(attempt.getId(), score, answers);
+        return new ExamAttemptResultResponse(attempt.getId(), score, answers, transcriptsOf(attempt.getExercise()));
+    }
+
+    /**
+     * All passage transcripts, independent of whether each question links to its passage via
+     * sectionIndex - admin-authored questions often don't, and the result page should still show them.
+     */
+    private List<ExamTranscriptDto> transcriptsOf(ExamExercise exercise) {
+        if (exercise.getPassages() == null) return List.of();
+        return exercise.getPassages().stream()
+                .filter(p -> hasText(p.getTranscript()))
+                .map(p -> new ExamTranscriptDto(p.getLabel(), p.getTranscript().strip()))
+                .toList();
     }
 
     private boolean isCorrect(ExamQuestion question, String answer) {
