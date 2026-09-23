@@ -108,10 +108,17 @@ export default function ReadingPage() {
                         const learned = isLearned(article);
                         const levelColor = getLevelMeta(article.level).color;
                         return (
-                            <button
+                            <div
                                 key={article.id}
+                                role="button"
+                                tabIndex={0}
                                 onClick={() => router.push(`/dashboard/reading/article?id=${article.id}`)}
-                                className={`w-full flex items-center gap-4 rounded-[10px] overflow-hidden p-3 text-left transition ${
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                        router.push(`/dashboard/reading/article?id=${article.id}`);
+                                    }
+                                }}
+                                className={`w-full flex items-center gap-4 rounded-[10px] overflow-hidden p-3 text-left transition cursor-pointer ${
                                     learned ? "" : "bg-card shadow-card hover:shadow-lg"
                                 }`}
                                 style={learned ? { backgroundColor: `${levelColor}14` } : undefined}
@@ -187,7 +194,7 @@ export default function ReadingPage() {
                                     </button>
                                     <ChevronRight className="size-4 text-foreground/30" />
                                 </div>
-                            </button>
+                            </div>
                         );
                     })}
 
