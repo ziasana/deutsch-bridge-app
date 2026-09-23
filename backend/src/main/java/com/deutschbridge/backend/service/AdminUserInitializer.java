@@ -26,6 +26,8 @@ public class AdminUserInitializer {
                 user.setEmail("admin@example.com");
                 user.setPassword(passwordEncoder.encode("admin12345"));
                 user.setRole("ADMIN");
+                // Verified so the admin can use "Forgot password?", which rejects unverified accounts.
+                user.setVerified(true);
                 userRepository.save(user);
                 log.info("Default user admin created!");
             }

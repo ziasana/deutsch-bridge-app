@@ -89,7 +89,7 @@ public class DailyWordService {
     }
 
     /** The user's own daily word goal, defaulting/clamping to a sane range for users who never set one. */
-    private int resolveWordGoal(UserProfile profile) {
+    public static int resolveWordGoal(UserProfile profile) {
         Integer goal = profile != null ? profile.getDailyGoalWords() : null;
         if (goal == null || goal <= 0) return DEFAULT_WORDS_PER_DAY;
         return Math.min(goal, MAX_WORDS_PER_DAY);

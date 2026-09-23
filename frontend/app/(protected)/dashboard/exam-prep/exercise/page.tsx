@@ -17,6 +17,7 @@ import {
     ExamExercisePublicResponse,
     ExamPassagePublic,
     ExamQuestionPublic,
+    ExamTranscript,
 } from "@/types/exam";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
@@ -24,6 +25,10 @@ import Button from "@/componenets/Button";
 import AudioPlayer from "@/componenets/AudioPlayer";
 import LessonMarkdown from "@/componenets/LessonMarkdown";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
+import TranscriptModal from "@/componenets/exam/TranscriptModal";
+import TranscriptContent from "@/componenets/exam/TranscriptContent";
+import { isEmptyTranscript } from "@/lib/transcriptFormat";
+import { FileText } from "lucide-react";
 
 const TFN_OPTIONS = [
     { value: "RICHTIG", label: "Richtig" },
@@ -104,9 +109,10 @@ interface ResultItem {
 interface ResultsState {
     score: number;
     items: ResultItem[];
+    transcripts: ExamTranscript[];
 }
 
-function ResultCard({ index, item }: Readonly<{ index: number; item: ResultItem }>) {
+function ResultCard({ index, item, hideTranscript }: Readonly<{ index: number; item: ResultItem; hideTranscript?: boolean }>) {
     const { question, feedback } = item;
     return (
         <div
@@ -126,10 +132,10 @@ function ResultCard({ index, item }: Readonly<{ index: number; item: ResultItem 
             )}
             {feedback.explanation && <p className="mt-1">💡 {feedback.explanation}</p>}
             {feedback.commonMistake && <p className="mt-1 italic">⚠️ Häufiger Fehler: {feedback.commonMistake}</p>}
-            {feedback.transcript && (
+            {!isEmptyTranscript(feedback.transcript) && !hideTranscript && (
                 <div className="mt-2 pt-2 border-t border-current/20">
                     <p className="font-semibold text-xs uppercase tracking-wide mb-1">Transkript</p>
-                    <p className="whitespace-pre-line font-normal">{feedback.transcript}</p>
+                    <TranscriptContent transcript={feedback.transcript ?? ""} variant="compact" />
                 </div>
             )}
         </div>
@@ -154,6 +160,7 @@ function ResultsView({
     onMarkCompleted: () => void;
 }>) {
     const correctCount = results.items.filter((item) => item.feedback.correct).length;
+    const [transcriptOpen, setTranscriptOpen] = useState(false);
 
     // Finishing the attempt counts as completing the exercise, regardless of score.
     useEffect(() => {
@@ -171,6 +178,24 @@ function ResultsView({
                 {correctCount} von {results.items.length} Aufgaben richtig
             </p>
 
+            {results.transcripts.length > 0 && (
+                <>
+                    <button
+                        type="button"
+                        onClick={() => setTranscriptOpen(true)}
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+                    >
+                        <FileText className="size-4" />
+                        Transkript anzeigen
+                    </button>
+                    <TranscriptModal
+                        open={transcriptOpen}
+                        onClose={() => setTranscriptOpen(false)}
+                        transcripts={results.transcripts}
+                    />
+                </>
+            )}
+
             {(defaultExplanation || defaultCommonMistake) && (
                 <div className="rounded-lg p-3 text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-200 space-y-1">
                     {defaultExplanation && <p>💡 {defaultExplanation}</p>}
@@ -180,7 +205,8 @@ function ResultsView({
 
             <div className="space-y-3 pt-2">
                 {results.items.map((item, idx) => (
-                    <ResultCard key={item.question.id} index={idx} item={item} />
+                    // The transcript link above covers every transcript; don't repeat it under each question.
+                    <ResultCard key={item.question.id} index={idx} item={item} hideTranscript={results.transcripts.length > 0} />
                 ))}
             </div>
 
@@ -387,7 +413,7 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
                 items.push({ question, feedback: res.data });
             }
             const completeRes = await completeExamAttempt(quiz.attemptId);
-            setResults({ score: completeRes.data.score, items });
+            setResults({ score: completeRes.data.score, items, transcripts: completeRes.data.transcripts ?? [] });
         } catch (err) {
             const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
             toast.error(message ?? "Übung konnte nicht abgeschlossen werden.");
@@ -514,10 +540,10 @@ function FeedbackCard({ feedback }: Readonly<{ feedback: ExamAnswerFeedbackRespo
             )}
             {feedback.explanation && <p className="mt-1">💡 {feedback.explanation}</p>}
             {feedback.commonMistake && <p className="mt-1 italic">⚠️ Häufiger Fehler: {feedback.commonMistake}</p>}
-            {feedback.transcript && (
+            {!isEmptyTranscript(feedback.transcript) && (
                 <div className="mt-2 pt-2 border-t border-current/20">
                     <p className="font-semibold text-xs uppercase tracking-wide mb-1">Transkript</p>
-                    <p className="whitespace-pre-line font-normal">{feedback.transcript}</p>
+                    <TranscriptContent transcript={feedback.transcript ?? ""} variant="compact" />
                 </div>
             )}
         </div>
@@ -594,7 +620,7 @@ function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse 
         if (quiz.currentIndex + 1 >= quiz.questions.length) {
             completeExamAttempt(quiz.attemptId)
                 .then((res) => {
-                    setResults({ score: res.data.score, items: quiz.items });
+                    setResults({ score: res.data.score, items: quiz.items, transcripts: res.data.transcripts ?? [] });
                 })
                 .catch((err) => toast.error(err?.response?.data?.message ?? "Übung konnte nicht abgeschlossen werden."));
             return;
@@ -728,7 +754,7 @@ function HoerenListQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRes
                 items.push({ question, feedback: res.data });
             }
             const completeRes = await completeExamAttempt(quiz.attemptId);
-            setResults({ score: completeRes.data.score, items });
+            setResults({ score: completeRes.data.score, items, transcripts: completeRes.data.transcripts ?? [] });
         } catch (err) {
             const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
             toast.error(message ?? "Übung konnte nicht abgeschlossen werden.");

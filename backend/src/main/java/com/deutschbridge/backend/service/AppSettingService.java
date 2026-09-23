@@ -42,6 +42,32 @@ public class AppSettingService {
                 .orElse(defaultValue);
     }
 
+    public int getInt(String key, int defaultValue) {
+        return appSettingRepository.findById(key)
+                .map(AppSetting::getValue)
+                .map(v -> {
+                    try {
+                        return Integer.parseInt(v.trim());
+                    } catch (NumberFormatException e) {
+                        return defaultValue;
+                    }
+                })
+                .orElse(defaultValue);
+    }
+
+    public String getString(String key, String defaultValue) {
+        return appSettingRepository.findById(key)
+                .map(AppSetting::getValue)
+                .orElse(defaultValue);
+    }
+
+    /** Creates the setting with its default value only if it doesn't exist yet (never overwrites admin changes). */
+    public void seedIfMissing(String key, String value, String description) {
+        if (!appSettingRepository.existsById(key)) {
+            appSettingRepository.save(new AppSetting(key, value, description));
+        }
+    }
+
     public void setValue(String key, String value) {
         AppSetting setting = appSettingRepository.findById(key)
                 .orElseGet(() -> new AppSetting(key, value, null));

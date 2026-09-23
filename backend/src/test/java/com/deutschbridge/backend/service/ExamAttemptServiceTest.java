@@ -249,6 +249,32 @@ class ExamAttemptServiceTest {
     }
 
     @Test
+    @DisplayName("complete -> returns every audio transcript, even when no question links to its passage")
+    void complete_shouldRevealTranscriptsForUnlinkedQuestions() throws DataNotFoundException {
+        ExamPassage audio = audioPassage("  Der Zug hat fünfzehn Minuten Verspätung.  ");
+        ExamPassage noTranscript = new ExamPassage("p2", "Durchsage 2", null, null, "/uploads/exam-audio/clip2.m4a", " ");
+        ExamPassage emptyEditor = new ExamPassage("p3", "Durchsage 3", null, null, "/uploads/exam-audio/clip3.m4a", "<p></p><p>&nbsp;</p>");
+        ExamPassage richText = new ExamPassage("p4", "Durchsage 4", null, null, "/uploads/exam-audio/clip4.m4a",
+                "<p><strong>Moderator:</strong> Guten Tag.</p>");
+        ExamExercise exercise = hoerverstehenExercise(audio, mcQuestion(null, "B")); // sectionIndex null = unlinked
+        exercise.setPassages(List.of(audio, noTranscript, emptyEditor, richText));
+
+        ExamAttempt attempt = new ExamAttempt();
+        attempt.setId("attempt1");
+        attempt.setExercise(exercise);
+        attempt.setAnswers(List.of(new ExamAnswerRecord("q1", "B", true, null, null, null)));
+        when(attemptRepository.findById("attempt1")).thenReturn(Optional.of(attempt));
+        when(attemptRepository.save(attempt)).thenReturn(attempt);
+
+        ExamAttemptResultResponse result = service.complete("attempt1", new CompleteExamAttemptRequest());
+
+        assertEquals(2, result.transcripts().size());
+        assertEquals("Durchsage 1", result.transcripts().get(0).label());
+        assertEquals("<p><strong>Moderator:</strong> Guten Tag.</p>", result.transcripts().get(1).transcript());
+        assertEquals("Der Zug hat fünfzehn Minuten Verspätung.", result.transcripts().get(0).transcript());
+    }
+
+    @Test
     @DisplayName("complete -> should reject completing an already-completed attempt")
     void complete_shouldRejectOnCompletedAttempt() {
         ExamPassage passage = audioPassage("x");

@@ -150,8 +150,15 @@ export interface ExamAnswerRecord {
 
 export type CompleteExamAttemptRequest = Record<string, never>;
 
+export interface ExamTranscript {
+    label: string | null;
+    transcript: string;
+}
+
 export interface ExamAttemptResultResponse {
     attemptId: string;
     score: number;
     answerBreakdown: ExamAnswerRecord[];
+    /** Every audio transcript of the exercise, revealed once the attempt is complete. */
+    transcripts: ExamTranscript[];
 }

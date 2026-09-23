@@ -1,4 +1,5 @@
 import {
+    Bell,
     BookOpen,
     Brain,
     GraduationCap,
@@ -42,6 +43,7 @@ export function getAdminNavItems(t: Dictionary): NavItem[] {
         { href: "/admin/exam-prep", label: t.nav.manageExamPrep, icon: GraduationCap },
         { href: "/admin/grammar", label: t.nav.manageGrammar, icon: BookOpen },
         { href: "/admin/expressionsSection", label: t.nav.manageExpressions, icon: Sparkles },
+        { href: "/admin/notifications", label: t.nav.manageNotifications, icon: Bell },
         { href: "/profile", label: t.nav.profile, icon: User },
     ];
 }

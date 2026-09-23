@@ -15,6 +15,8 @@ public interface VocabularyItemRepository extends JpaRepository<VocabularyItem, 
 
     List<VocabularyItem> findByUser(User user);
 
+    long countByUser(User user);
+
     List<VocabularyItem> findByUserOrderByCreatedAtDesc(User user);
 
     List<VocabularyItem> findTop10ByUserOrderByCreatedAtDesc(User user);
