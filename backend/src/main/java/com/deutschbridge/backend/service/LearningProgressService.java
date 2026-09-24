@@ -30,6 +30,7 @@ import com.deutschbridge.backend.repository.VocabularyItemRepository;
 import com.deutschbridge.backend.repository.VocabularyProgressRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -92,6 +93,7 @@ public class LearningProgressService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "readingLevelSummary", key = "@requestContext.getUserId()", condition = "#request.readingId() != null")
     public void save(LearningProgressRequest request) throws DataNotFoundException {
 
         User user = userService.findByEmail(requestContext.getUserEmail());

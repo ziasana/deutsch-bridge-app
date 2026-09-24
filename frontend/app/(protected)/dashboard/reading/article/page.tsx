@@ -1,10 +1,11 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
-import { getReadingArticleById } from "@/services/readingService";
+import { getReadingArticleById, recordReadingArticleView } from "@/services/readingService";
 import { setLearningProgress } from "@/services/grammarService";
 import { saveToLexicon } from "@/services/lexiconService";
 import { startAttempt, submitAnswer, completeAttempt } from "@/services/readingAttemptService";
@@ -543,20 +544,41 @@ function ReadingArticleDetailContent() {
     const searchParams = useSearchParams();
     const articleId = searchParams.get("id") ?? "";
     const { t, language } = useI18n();
-    const [article, setArticle] = useState<ReadingArticle | null>(null);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
+    const [viewCount, setViewCount] = useState<number | null>(null);
+    const countedViewFor = useRef<string | null>(null);
     const [updatingLearned, setUpdatingLearned] = useState(false);
     const [activeAnnotation, setActiveAnnotation] = useState<Annotation | null>(null);
     const [tappedLemmas, setTappedLemmas] = useState<Set<string>>(new Set());
     const [savedLemmas, setSavedLemmas] = useState<Set<string>>(new Set());
     const [activeDictionaryLemma, setActiveDictionaryLemma] = useState<string | null>(null);
 
+    // Full content (text, tokens, annotations, vocabulary) is only fetched here, once per article, and
+    // then served from the cache on later opens. Quiz questions are fetched separately on "Start quiz".
+    const articleQueryKey = ["reading", "article", articleId];
+    const { data: article, isLoading: loading, error: articleError } = useQuery({
+        queryKey: articleQueryKey,
+        queryFn: () => getReadingArticleById(articleId).then((res) => res.data),
+        enabled: !!articleId,
+    });
+
     useEffect(() => {
-        if (!articleId) return;
-        getReadingArticleById(articleId)
-            .then((res) => setArticle(res.data))
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load this article."))
-            .finally(() => setLoading(false));
+        if (articleError) {
+            const err = articleError as { response?: { data?: { message?: string } } };
+            toast.error(err?.response?.data?.message ?? "Failed to load this article.");
+        }
+    }, [articleError]);
+
+    // Views are counted on every open, even when the content above came from the cache. The ref
+    // keeps React's dev-mode double effect from counting one open twice.
+    useEffect(() => {
+        if (!articleId || countedViewFor.current === articleId) return;
+        countedViewFor.current = articleId;
+        recordReadingArticleView(articleId)
+            .then((res) => setViewCount(res.data.viewCount))
+            .catch(() => {
+                // Cosmetic counter - never block reading on it.
+            });
     }, [articleId]);
 
     if (!articleId) {
@@ -593,9 +615,12 @@ function ReadingArticleDetailContent() {
         setUpdatingLearned(true);
         setLearningProgress({ readingId: article.id, learned: !learned })
             .then(() => {
-                setArticle((prev) =>
+                queryClient.setQueryData<ReadingArticle>(articleQueryKey, (prev) =>
                     prev ? { ...prev, learningProgresses: [{ id: "local", learned: !learned }] } : prev
                 );
+                // Learned counts/flags changed - refresh the level cards and list pages next time they're shown.
+                queryClient.invalidateQueries({ queryKey: ["reading", "level-summary"] });
+                queryClient.invalidateQueries({ queryKey: ["reading", "list"] });
                 toast.success(!learned ? t.readingArticle.markedLearned : t.readingArticle.markedNotLearned);
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to update progress."))
@@ -645,7 +670,7 @@ function ReadingArticleDetailContent() {
                             {learned && <Badge variant="default">{t.readingArticle.learned}</Badge>}
                         </div>
                         <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                            <span>{t.readingArticle.views(article.viewCount)}</span>
+                            <span>{t.readingArticle.views(viewCount ?? article.viewCount)}</span>
                             <span>
                                 {t.readingArticle.posted(
                                     formatPostedDate(article.createdAt, language === "fa" ? "fa-IR-u-ca-gregory" : "en-US")

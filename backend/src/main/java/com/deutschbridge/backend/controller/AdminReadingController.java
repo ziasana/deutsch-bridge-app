@@ -35,6 +35,11 @@ public class AdminReadingController {
         this.fileStorageService = fileStorageService;
     }
 
+    @GetMapping
+    public ResponseEntity<List<ReadingArticleResponse>> getAll() {
+        return ResponseEntity.ok(readingArticleService.findAllForAdmin());
+    }
+
     @PostMapping(value = "/upload-image", consumes = "multipart/form-data")
     public ResponseEntity<ImageUploadResponse> uploadImage(@RequestParam("file") MultipartFile file) {
         return ResponseEntity.ok(new ImageUploadResponse(fileStorageService.storeReadingArticleImage(file)));

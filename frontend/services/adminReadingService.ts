@@ -12,6 +12,10 @@ import {
     SuggestVocabularyRequest,
 } from "@/types/reading";
 
+export const getAdminReadingArticles = async () => {
+    return await api.get<ReadingArticle[]>("/admin/reading");
+};
+
 export const uploadReadingArticleImage = async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);

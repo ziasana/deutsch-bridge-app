@@ -5,7 +5,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import useAuthStore from "@/store/useAuthStore";
-import { getReadingArticles } from "@/services/readingService";
 import {
     generateReadingArticle,
     createReadingArticle,
@@ -17,6 +16,7 @@ import {
     getArticleQuizForAdmin,
     uploadReadingArticleImage,
     bulkImportReadingArticles,
+    getAdminReadingArticles,
 } from "@/services/adminReadingService";
 import {
     Annotation,
@@ -109,7 +109,7 @@ export default function AdminReadingPage() {
 
     const { data: articles = [], isLoading, error: articlesError } = useQuery({
         queryKey: ARTICLES_KEY,
-        queryFn: () => getReadingArticles().then((res) => res.data),
+        queryFn: () => getAdminReadingArticles().then((res) => res.data),
         enabled: hasHydrated && userProfile?.role === "ADMIN",
     });
     const [isSaving, setIsSaving] = useState(false);
@@ -142,7 +142,11 @@ export default function AdminReadingPage() {
 
     const [editingArticle, setEditingArticle] = useState<ReadingArticle | null>(null);
 
-    const invalidateArticles = () => queryClient.invalidateQueries({ queryKey: ARTICLES_KEY });
+    // Also drop the learner-side reading caches (list pages, level summary, opened articles) in this browser.
+    const invalidateArticles = () => {
+        queryClient.invalidateQueries({ queryKey: ARTICLES_KEY });
+        queryClient.invalidateQueries({ queryKey: ["reading"] });
+    };
 
     useEffect(() => {
         if (!hasHydrated) return;

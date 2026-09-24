@@ -72,6 +72,34 @@ export interface ReadingArticle {
     learningProgresses: LearningProgress[];
 }
 
+/** Lightweight list shape - no content/tokens/annotations/vocabulary; fetch the article by id for those. */
+export interface ReadingArticleSummary {
+    id: string;
+    title: string;
+    topic: string;
+    level: string;
+    imageUrl: string | null;
+    viewCount: number;
+    createdAt: string;
+    newWordCount: number;
+    learned: boolean;
+}
+
+/** One server-side page of a level's list. page is zero-based. */
+export interface ReadingArticlePage {
+    items: ReadingArticleSummary[];
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+}
+
+export interface ReadingLevelSummary {
+    level: string;
+    total: number;
+    learned: number;
+}
+
 export interface ReadingArticleGenerateRequest {
     topic: string;
     level: string;

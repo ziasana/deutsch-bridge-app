@@ -13,6 +13,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,6 +32,8 @@ public interface LearningProgressRepository extends JpaRepository<LearningProgre
     List<LearningProgress> findByUserAndLessonIn(User user, List<GrammarLesson> lessons);
 
     List<LearningProgress> findByUserAndReadingIn(User user, List<ReadingArticle> readings);
+
+    List<LearningProgress> findByUserAndReadingIdIn(User user, Collection<String> readingIds);
 
     long countByUserAndIsLearnedTrue(User user);
 

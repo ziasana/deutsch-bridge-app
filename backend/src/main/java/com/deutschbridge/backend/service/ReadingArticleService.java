@@ -5,7 +5,11 @@ import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.ReadingArticleBulkImportResult;
 import com.deutschbridge.backend.model.dto.ReadingArticleBulkImportRowResult;
 import com.deutschbridge.backend.model.dto.ReadingArticleManualRequest;
+import com.deutschbridge.backend.model.dto.ReadingArticlePageResponse;
 import com.deutschbridge.backend.model.dto.ReadingArticleResponse;
+import com.deutschbridge.backend.model.dto.ReadingArticleSummaryResponse;
+import com.deutschbridge.backend.model.dto.ReadingLevelSummaryResponse;
+import com.deutschbridge.backend.model.dto.ReadingViewCountResponse;
 import com.deutschbridge.backend.model.entity.Annotation;
 import com.deutschbridge.backend.model.entity.KeyVocabularyItem;
 import com.deutschbridge.backend.model.entity.LearningProgress;
@@ -21,12 +25,15 @@ import com.deutschbridge.backend.repository.LearningProgressRepository;
 import com.deutschbridge.backend.repository.ReadingArticleRepository;
 import com.deutschbridge.backend.repository.UserWordProgressRepository;
 import com.deutschbridge.backend.service.cache.ContentCacheService;
+import com.deutschbridge.backend.service.cache.ReadingProgressCacheService;
 import com.deutschbridge.backend.util.ReadingArticleMapper;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import jakarta.transaction.Transactional;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -45,6 +52,7 @@ public class ReadingArticleService {
     private static final String VOCAB_MARKER = "VOKABELN:";
     private static final String ANNOTATIONS_MARKER = "ANNOTATIONS:";
     private static final String QUIZ_MARKER = "QUIZ:";
+    private static final int MAX_PAGE_SIZE = 50;
 
     private final ReadingArticleRepository readingArticleRepository;
     private final LearningProgressRepository learningProgressRepository;
@@ -54,6 +62,7 @@ public class ReadingArticleService {
     private final OllamaService ollamaService;
     private final TokenizationService tokenizationService;
     private final ContentCacheService contentCacheService;
+    private final ReadingProgressCacheService readingProgressCacheService;
     private final ObjectMapper objectMapper;
 
     public ReadingArticleService(ReadingArticleRepository readingArticleRepository,
@@ -64,6 +73,7 @@ public class ReadingArticleService {
                                   OllamaService ollamaService,
                                   TokenizationService tokenizationService,
                                   ContentCacheService contentCacheService,
+                                  ReadingProgressCacheService readingProgressCacheService,
                                   ObjectMapper objectMapper) {
         this.readingArticleRepository = readingArticleRepository;
         this.learningProgressRepository = learningProgressRepository;
@@ -73,6 +83,7 @@ public class ReadingArticleService {
         this.ollamaService = ollamaService;
         this.tokenizationService = tokenizationService;
         this.contentCacheService = contentCacheService;
+        this.readingProgressCacheService = readingProgressCacheService;
         this.objectMapper = objectMapper;
     }
 
@@ -81,19 +92,71 @@ public class ReadingArticleService {
                 .orElseThrow(() -> new DataNotFoundException(NOT_FOUND_MSG));
     }
 
-    public List<ReadingArticleResponse> findAllWithLearningProgress() {
-        return mapWithCurrentUserProgress(contentCacheService.getAllReadingArticles());
+    /** Admin table: every article's full content, without any per-user progress. */
+    public List<ReadingArticleResponse> findAllForAdmin() {
+        return contentCacheService.getAllReadingArticles().stream()
+                .map(a -> ReadingArticleMapper.mapToResponse(a, null, Set.of()))
+                .toList();
     }
 
-    public List<ReadingArticleResponse> findByLevelWithLearningProgress(LearningLevel level) {
-        return mapWithCurrentUserProgress(contentCacheService.getReadingArticlesByLevel(level));
+    /** One page of a level's list: cached shared columns + the current user's live learned/new-word state. */
+    public ReadingArticlePageResponse findPageWithLearningProgress(LearningLevel level, String search, int page, int size) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.clamp(size, 1, MAX_PAGE_SIZE);
+        String normalizedSearch = search != null ? search.trim().toLowerCase() : "";
+
+        ContentCacheService.ReadingArticleListPage cached =
+                contentCacheService.getReadingArticleListPage(level, normalizedSearch, safePage, safeSize);
+        List<ContentCacheService.ReadingArticleListEntry> entries = cached.entries();
+        if (entries.isEmpty()) {
+            return new ReadingArticlePageResponse(List.of(), safePage, safeSize, cached.totalElements(), cached.totalPages());
+        }
+
+        User user = userService.findByEmail(requestContext.getUserEmail());
+        Set<String> learnedIds = learningProgressRepository
+                .findByUserAndReadingIdIn(user, entries.stream().map(ContentCacheService.ReadingArticleListEntry::id).toList())
+                .stream()
+                .filter(p -> Boolean.TRUE.equals(p.getIsLearned()))
+                .map(p -> p.getReading().getId())
+                .collect(Collectors.toSet());
+        Set<String> knownLemmas = findKnownLemmas(user, entries.stream()
+                .flatMap(e -> e.annotationLemmas().stream())
+                .distinct()
+                .toList());
+
+        List<ReadingArticleSummaryResponse> items = entries.stream()
+                .map(e -> new ReadingArticleSummaryResponse(
+                        e.id(),
+                        e.title(),
+                        e.topic(),
+                        e.level() != null ? e.level().getValue() : null,
+                        e.imageUrl(),
+                        e.viewCount(),
+                        e.createdAt(),
+                        (int) e.annotationLemmas().stream().filter(l -> !knownLemmas.contains(l)).count(),
+                        learnedIds.contains(e.id())))
+                .toList();
+        return new ReadingArticlePageResponse(items, safePage, safeSize, cached.totalElements(), cached.totalPages());
     }
 
+    public List<ReadingLevelSummaryResponse> getLevelSummary() {
+        return readingProgressCacheService.getLevelSummary(requestContext.getUserId());
+    }
+
+    /** Full article content comes from the shared cache; views are counted separately via {@link #recordView}. */
     public ReadingArticleResponse findByIdWithLearningProgress(String id) throws DataNotFoundException {
-        ReadingArticle article = findById(id);
-        article.setViewCount(article.getViewCount() + 1);
-        readingArticleRepository.save(article);
+        ReadingArticle article = contentCacheService.getReadingArticle(id)
+                .orElseThrow(() -> new DataNotFoundException(NOT_FOUND_MSG));
         return mapWithCurrentUserProgress(List.of(article)).get(0);
+    }
+
+    /** Counted on every open, even when the client serves the article from its own cache. */
+    @Transactional
+    public ReadingViewCountResponse recordView(String id) throws DataNotFoundException {
+        if (readingArticleRepository.incrementViewCount(id) == 0) {
+            throw new DataNotFoundException(NOT_FOUND_MSG);
+        }
+        return new ReadingViewCountResponse(readingArticleRepository.findViewCountById(id).orElse(0L));
     }
 
     private List<ReadingArticleResponse> mapWithCurrentUserProgress(List<ReadingArticle> articles) {
@@ -110,19 +173,27 @@ public class ReadingArticleService {
                 .filter(java.util.Objects::nonNull)
                 .distinct()
                 .toList();
-        Set<String> knownLemmas = lemmas.isEmpty()
-                ? Set.of()
-                : userWordProgressRepository.findByUserAndLemmaIn(user, lemmas).stream()
-                .filter(p -> p.getStatus() == com.deutschbridge.backend.model.enums.WordProgressStatus.KNOWN)
-                .map(UserWordProgress::getLemma)
-                .collect(Collectors.toSet());
+        Set<String> knownLemmas = findKnownLemmas(user, lemmas);
 
         return articles.stream()
                 .map(a -> ReadingArticleMapper.mapToResponse(a, progressByArticleId.get(a.getId()), knownLemmas))
                 .toList();
     }
 
-    @CacheEvict(cacheNames = "readingArticles", allEntries = true)
+    private Set<String> findKnownLemmas(User user, List<String> lemmas) {
+        if (lemmas.isEmpty()) return Set.of();
+        return userWordProgressRepository.findByUserAndLemmaIn(user, lemmas).stream()
+                .filter(p -> p.getStatus() == com.deutschbridge.backend.model.enums.WordProgressStatus.KNOWN)
+                .map(UserWordProgress::getLemma)
+                .collect(Collectors.toSet());
+    }
+
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "readingArticles", allEntries = true),
+            @CacheEvict(cacheNames = "readingArticleList", allEntries = true),
+            @CacheEvict(cacheNames = "readingArticleDetail", allEntries = true),
+            @CacheEvict(cacheNames = "readingLevelSummary", allEntries = true)
+    })
     public ReadingArticleResponse generate(String topic, LearningLevel level) {
         String raw = ollamaService.generateReadingArticle(topic, level);
         ParsedArticle parsed = parseGeneratedArticle(raw);
@@ -163,7 +234,12 @@ public class ReadingArticleService {
         return article.getQuiz() != null ? article.getQuiz() : new ArrayList<>();
     }
 
-    @CacheEvict(cacheNames = "readingArticles", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "readingArticles", allEntries = true),
+            @CacheEvict(cacheNames = "readingArticleList", allEntries = true),
+            @CacheEvict(cacheNames = "readingArticleDetail", allEntries = true),
+            @CacheEvict(cacheNames = "readingLevelSummary", allEntries = true)
+    })
     public ReadingArticleResponse createManual(ReadingArticleManualRequest request) {
         ReadingArticle article = new ReadingArticle();
         article.setTitle(request.title());
@@ -180,7 +256,12 @@ public class ReadingArticleService {
         return ReadingArticleMapper.mapToResponse(readingArticleRepository.save(article), null, Set.of());
     }
 
-    @CacheEvict(cacheNames = "readingArticles", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "readingArticles", allEntries = true),
+            @CacheEvict(cacheNames = "readingArticleList", allEntries = true),
+            @CacheEvict(cacheNames = "readingArticleDetail", allEntries = true),
+            @CacheEvict(cacheNames = "readingLevelSummary", allEntries = true)
+    })
     public ReadingArticleResponse update(String id, ReadingArticleManualRequest request) throws DataNotFoundException {
         ReadingArticle existing = findById(id);
 
@@ -202,14 +283,24 @@ public class ReadingArticleService {
         return ReadingArticleMapper.mapToResponse(readingArticleRepository.save(existing), null, Set.of());
     }
 
-    @CacheEvict(cacheNames = "readingArticles", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "readingArticles", allEntries = true),
+            @CacheEvict(cacheNames = "readingArticleList", allEntries = true),
+            @CacheEvict(cacheNames = "readingArticleDetail", allEntries = true),
+            @CacheEvict(cacheNames = "readingLevelSummary", allEntries = true)
+    })
     public void delete(String id) throws DataNotFoundException {
         findById(id);
         readingArticleRepository.deleteById(id);
     }
 
     /** Best-effort bulk import: each row is validated and saved independently. */
-    @CacheEvict(cacheNames = "readingArticles", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "readingArticles", allEntries = true),
+            @CacheEvict(cacheNames = "readingArticleList", allEntries = true),
+            @CacheEvict(cacheNames = "readingArticleDetail", allEntries = true),
+            @CacheEvict(cacheNames = "readingLevelSummary", allEntries = true)
+    })
     public ReadingArticleBulkImportResult bulkImport(List<JsonNode> rows) {
         List<ReadingArticleBulkImportRowResult> results = new ArrayList<>();
         int successCount = 0;

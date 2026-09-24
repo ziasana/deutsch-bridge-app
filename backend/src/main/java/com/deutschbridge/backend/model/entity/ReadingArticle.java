@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 @Entity(name = "readingArticles")
+@Table(indexes = @Index(name = "idx_reading_articles_level", columnList = "level"))
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

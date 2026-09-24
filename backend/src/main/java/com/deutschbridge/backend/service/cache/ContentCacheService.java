@@ -15,14 +15,22 @@ import com.deutschbridge.backend.repository.ExamExerciseRepository;
 import com.deutschbridge.backend.repository.ExpressionRepository;
 import com.deutschbridge.backend.repository.GrammarCategoryRepository;
 import com.deutschbridge.backend.repository.GrammarLessonRepository;
+import com.deutschbridge.backend.repository.ReadingArticleLemmaProjection;
+import com.deutschbridge.backend.repository.ReadingArticleListProjection;
 import com.deutschbridge.backend.repository.ReadingArticleRepository;
 import jakarta.transaction.Transactional;
 import org.hibernate.Hibernate;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Caches only the expensive, shared "static content" fetches (published lessons/exercises/
@@ -130,12 +138,13 @@ public class ContentCacheService {
     }
 
     /**
-     * NOTE: ReadingArticle.viewCount is incremented and persisted on every single-article GET
-     * (ReadingArticleService.findByIdWithLearningProgress) and is exposed in the response via
-     * ReadingArticleMapper. That means the viewCount on articles returned from this cached list
-     * can go stale between cache refreshes/evictions. This is an accepted, intentional tradeoff -
-     * view count is a cosmetic counter, not worth invalidating the whole list cache on every
-     * single article view.
+     * Admin-only full list (the student list uses the paged {@link #getReadingArticleListPage} instead).
+     *
+     * NOTE: ReadingArticle.viewCount is incremented on every article open (ReadingArticleService.recordView)
+     * and is exposed in the responses built from these cached entries, so the viewCount on anything
+     * served from the reading caches can go stale between cache refreshes/evictions. This is an
+     * accepted, intentional tradeoff - view count is a cosmetic counter, not worth invalidating the
+     * caches on every single article view.
      */
     @Cacheable("readingArticles")
     @Transactional
@@ -145,13 +154,46 @@ public class ContentCacheService {
         return articles;
     }
 
-    /** See the viewCount staleness note on {@link #getAllReadingArticles()} - it applies here too. */
-    @Cacheable("readingArticles")
+    /**
+     * One page of a level's list columns plus each article's annotation lemmas (so the service can
+     * compute the per-user new-word count without the annotations themselves). search must already be
+     * trimmed and lower-cased so equivalent searches share a cache entry. See the viewCount note on
+     * {@link #getAllReadingArticles()}.
+     */
+    @Cacheable("readingArticleList")
     @Transactional
-    public List<ReadingArticle> getReadingArticlesByLevel(LearningLevel level) {
-        List<ReadingArticle> articles = readingArticleRepository.findByLevel(level);
-        initializeReadingArticles(articles);
-        return articles;
+    public ReadingArticleListPage getReadingArticleListPage(LearningLevel level, String search, int page, int size) {
+        Page<ReadingArticleListProjection> rows = readingArticleRepository.findListPage(level, search, PageRequest.of(page, size));
+
+        Map<String, List<String>> lemmasByArticleId = rows.isEmpty()
+                ? Map.of()
+                : readingArticleRepository.findAnnotationLemmas(rows.map(ReadingArticleListProjection::getId).toList())
+                .stream()
+                .filter(row -> row.getLemma() != null)
+                .collect(Collectors.groupingBy(ReadingArticleLemmaProjection::getArticleId,
+                        Collectors.mapping(ReadingArticleLemmaProjection::getLemma, Collectors.toList())));
+
+        List<ReadingArticleListEntry> entries = rows.stream()
+                .map(row -> new ReadingArticleListEntry(
+                        row.getId(),
+                        row.getTitle(),
+                        row.getTopic(),
+                        row.getLevel(),
+                        row.getImageUrl(),
+                        row.getViewCount(),
+                        row.getCreatedAt(),
+                        lemmasByArticleId.getOrDefault(row.getId(), List.of())))
+                .toList();
+        return new ReadingArticleListPage(entries, rows.getTotalElements(), rows.getTotalPages());
+    }
+
+    /** A single article's full content (quiz included - the mapper strips it for students). See the viewCount note above. */
+    @Cacheable(cacheNames = "readingArticleDetail", unless = "#result == null")
+    @Transactional
+    public Optional<ReadingArticle> getReadingArticle(String id) {
+        Optional<ReadingArticle> article = readingArticleRepository.findById(id);
+        article.ifPresent(a -> initializeReadingArticles(List.of(a)));
+        return article;
     }
 
     private void initializeReadingArticles(List<ReadingArticle> articles) {
@@ -161,6 +203,13 @@ public class ContentCacheService {
             Hibernate.initialize(article.getQuiz());
             Hibernate.initialize(article.getTokens());
         });
+    }
+
+    public record ReadingArticleListEntry(String id, String title, String topic, LearningLevel level, String imageUrl,
+                                          long viewCount, LocalDateTime createdAt, List<String> annotationLemmas) {
+    }
+
+    public record ReadingArticleListPage(List<ReadingArticleListEntry> entries, long totalElements, int totalPages) {
     }
 
     public record CategoryWithPublishedLessons(GrammarCategory category, List<GrammarLesson> publishedLessons) {

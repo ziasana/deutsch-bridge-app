@@ -3,6 +3,9 @@ package com.deutschbridge.backend.service;
 import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.ReadingArticleManualRequest;
+import com.deutschbridge.backend.model.dto.ReadingArticlePageResponse;
+import com.deutschbridge.backend.model.dto.ReadingArticleSummaryResponse;
+import com.deutschbridge.backend.model.entity.LearningProgress;
 import com.deutschbridge.backend.model.dto.ReadingArticleResponse;
 import com.deutschbridge.backend.model.entity.Annotation;
 import com.deutschbridge.backend.model.entity.ReadingArticle;
@@ -16,6 +19,8 @@ import com.deutschbridge.backend.model.enums.WordProgressStatus;
 import com.deutschbridge.backend.repository.LearningProgressRepository;
 import com.deutschbridge.backend.repository.ReadingArticleRepository;
 import com.deutschbridge.backend.repository.UserWordProgressRepository;
+import com.deutschbridge.backend.service.cache.ContentCacheService;
+import com.deutschbridge.backend.service.cache.ReadingProgressCacheService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +31,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,6 +59,12 @@ class ReadingArticleServiceTest {
 
     @Mock
     private TokenizationService tokenizationService;
+
+    @Mock
+    private ContentCacheService contentCacheService;
+
+    @Mock
+    private ReadingProgressCacheService readingProgressCacheService;
 
     @InjectMocks
     private ReadingArticleService service;
@@ -183,7 +197,7 @@ class ReadingArticleServiceTest {
         knownProgress.setLemma("Haus");
         knownProgress.setStatus(WordProgressStatus.KNOWN);
 
-        when(readingArticleRepository.findById("article1")).thenReturn(java.util.Optional.of(article));
+        when(contentCacheService.getReadingArticle("article1")).thenReturn(java.util.Optional.of(article));
         when(requestContext.getUserEmail()).thenReturn(user.getEmail());
         when(userService.findByEmail(user.getEmail())).thenReturn(user);
         when(learningProgressRepository.findByUserAndReadingIn(user, List.of(article))).thenReturn(List.of());
@@ -195,5 +209,104 @@ class ReadingArticleServiceTest {
         assertEquals(1, response.newWordCount());
         assertTrue(response.annotations().stream().anyMatch(a -> a.lemma().equals("Haus") && a.known()));
         assertTrue(response.annotations().stream().anyMatch(a -> a.lemma().equals("Garten") && !a.known()));
+    }
+
+    @Test
+    @DisplayName("findByIdWithLearningProgress -> should not touch the view count (counted via recordView)")
+    void findByIdWithLearningProgress_shouldNotIncrementViewCount() throws DataNotFoundException {
+        User user = createUser();
+        ReadingArticle article = new ReadingArticle();
+        article.setId("article1");
+
+        when(contentCacheService.getReadingArticle("article1")).thenReturn(java.util.Optional.of(article));
+        when(requestContext.getUserEmail()).thenReturn(user.getEmail());
+        when(userService.findByEmail(user.getEmail())).thenReturn(user);
+        when(learningProgressRepository.findByUserAndReadingIn(user, List.of(article))).thenReturn(List.of());
+
+        service.findByIdWithLearningProgress("article1");
+
+        verify(readingArticleRepository, never()).save(any());
+        verify(readingArticleRepository, never()).incrementViewCount(any());
+    }
+
+    @Test
+    @DisplayName("findByIdWithLearningProgress -> should throw when the article does not exist")
+    void findByIdWithLearningProgress_shouldThrowWhenMissing() {
+        when(contentCacheService.getReadingArticle("missing")).thenReturn(java.util.Optional.empty());
+
+        assertThrows(DataNotFoundException.class, () -> service.findByIdWithLearningProgress("missing"));
+    }
+
+    // ---------------------------------------------------------------
+    // findPageWithLearningProgress
+    // ---------------------------------------------------------------
+    @Test
+    @DisplayName("findPageWithLearningProgress -> should normalize search/paging and merge live learned + new-word state")
+    void findPageWithLearningProgress_shouldMergeUserState() {
+        User user = createUser();
+        ContentCacheService.ReadingArticleListEntry learnedEntry = new ContentCacheService.ReadingArticleListEntry(
+                "a1", "Haus", "Wohnen", LearningLevel.A1, null, 3, null, List.of("Haus", "Garten"));
+        ContentCacheService.ReadingArticleListEntry otherEntry = new ContentCacheService.ReadingArticleListEntry(
+                "a2", "Schule", "Bildung", LearningLevel.A1, null, 0, null, List.of());
+
+        when(contentCacheService.getReadingArticleListPage(LearningLevel.A1, "haus", 0, 50))
+                .thenReturn(new ContentCacheService.ReadingArticleListPage(List.of(learnedEntry, otherEntry), 2, 1));
+        when(requestContext.getUserEmail()).thenReturn(user.getEmail());
+        when(userService.findByEmail(user.getEmail())).thenReturn(user);
+
+        ReadingArticle a1 = new ReadingArticle();
+        a1.setId("a1");
+        LearningProgress progress = new LearningProgress();
+        progress.setReading(a1);
+        progress.setIsLearned(true);
+        when(learningProgressRepository.findByUserAndReadingIdIn(user, List.of("a1", "a2"))).thenReturn(List.of(progress));
+
+        UserWordProgress knownProgress = new UserWordProgress();
+        knownProgress.setLemma("Haus");
+        knownProgress.setStatus(WordProgressStatus.KNOWN);
+        when(userWordProgressRepository.findByUserAndLemmaIn(user, List.of("Haus", "Garten"))).thenReturn(List.of(knownProgress));
+
+        ReadingArticlePageResponse response = service.findPageWithLearningProgress(LearningLevel.A1, "  HAUS ", -3, 500);
+
+        assertEquals(0, response.page());
+        assertEquals(50, response.size());
+        assertEquals(2, response.totalElements());
+        ReadingArticleSummaryResponse first = response.items().get(0);
+        assertTrue(first.learned());
+        assertEquals(1, first.newWordCount());
+        assertEquals("A1", first.level());
+        assertFalse(response.items().get(1).learned());
+    }
+
+    @Test
+    @DisplayName("findPageWithLearningProgress -> should skip user lookups for an empty page")
+    void findPageWithLearningProgress_shouldSkipUserLookupsWhenEmpty() {
+        when(contentCacheService.getReadingArticleListPage(LearningLevel.B2, "", 0, 8))
+                .thenReturn(new ContentCacheService.ReadingArticleListPage(List.of(), 0, 0));
+
+        ReadingArticlePageResponse response = service.findPageWithLearningProgress(LearningLevel.B2, null, 0, 8);
+
+        assertTrue(response.items().isEmpty());
+        verify(userService, never()).findByEmail(any());
+    }
+
+    // ---------------------------------------------------------------
+    // recordView
+    // ---------------------------------------------------------------
+    @Test
+    @DisplayName("recordView -> should increment atomically and return the new count")
+    void recordView_shouldIncrementAndReturnCount() throws DataNotFoundException {
+        when(readingArticleRepository.incrementViewCount("article1")).thenReturn(1);
+        when(readingArticleRepository.findViewCountById("article1")).thenReturn(java.util.Optional.of(7L));
+
+        assertEquals(7L, service.recordView("article1").viewCount());
+    }
+
+    @Test
+    @DisplayName("recordView -> should throw when the article does not exist")
+    void recordView_shouldThrowWhenMissing() {
+        when(readingArticleRepository.incrementViewCount("missing")).thenReturn(0);
+
+        assertThrows(DataNotFoundException.class, () -> service.recordView("missing"));
     }
 }
