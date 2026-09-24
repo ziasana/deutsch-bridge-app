@@ -21,6 +21,10 @@ import java.util.List;
  * mainly used for REDEWENDUNG, grammarNote mainly for NOMEN_VERB_VERBINDUNG.
  */
 @Entity(name = "expressions")
+@Table(indexes = {
+        @Index(columnList = "type, status"),
+        @Index(columnList = "level, status")
+})
 @NoArgsConstructor
 @AllArgsConstructor
 @Data

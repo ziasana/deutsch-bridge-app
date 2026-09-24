@@ -1,8 +1,46 @@
 import api from "./api";
-import { Expression, ExpressionType } from "@/types/expression";
+import {
+  Expression,
+  ExpressionCollectionSummary,
+  ExpressionContinueLearning,
+  ExpressionPage,
+  ExpressionType,
+} from "@/types/expression";
 
-export const getExpressions = async (type?: ExpressionType) => {
-  return await api.get<Expression[]>("/expressions", { params: type ? { type } : {} });
+export interface ExpressionsPageParams {
+  level?: string;
+  search?: string;
+  progress?: string;
+  bookmarked?: boolean;
+  sort?: "recommended" | "progress" | "alphabetical";
+}
+
+export const getExpressionCollectionSummary = async () => {
+  return await api.get<ExpressionCollectionSummary[]>("/expressions/collection-summary");
+};
+
+export const getExpressionsPage = async (
+  type: ExpressionType,
+  page: number,
+  size: number,
+  params: ExpressionsPageParams = {},
+) => {
+  return await api.get<ExpressionPage>("/expressions", {
+    params: {
+      type,
+      page,
+      size,
+      level: params.level && params.level !== "ALL" ? params.level : undefined,
+      search: params.search || undefined,
+      progress: params.progress && params.progress !== "ALL" ? params.progress : undefined,
+      bookmarked: params.bookmarked || undefined,
+      sort: params.sort,
+    },
+  });
+};
+
+export const getContinueLearningExpressions = async (type: ExpressionType) => {
+  return await api.get<ExpressionContinueLearning>("/expressions/continue-learning", { params: { type } });
 };
 
 export const getDifficultExpressions = async () => {

@@ -1,12 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { ThumbsUp, MessageSquare, Play, ArrowRight, ChevronLeft, ChevronRight, Sparkles, Flame, Layers } from "lucide-react";
-import { getExpressions, addExpressionBookmark, removeExpressionBookmark } from "@/services/expressionService";
-import { Expression, ExpressionMasteryLevel, ExpressionType } from "@/types/expression";
+import {
+    getExpressionCollectionSummary,
+    getExpressionsPage,
+    getContinueLearningExpressions,
+    addExpressionBookmark,
+    removeExpressionBookmark,
+} from "@/services/expressionService";
+import { ExpressionListItem, ExpressionMasteryLevel, ExpressionType } from "@/types/expression";
 import { LearningSearch } from "@/componenets/learning";
 import ExpressionCollectionSelector, {
     ExpressionCollectionOption,
@@ -28,13 +34,7 @@ const PROGRESS_LABEL: Record<ExpressionMasteryLevel, string> = {
     MASTERED: "Mastered",
 };
 
-const MASTERY_PRIORITY: Record<ExpressionMasteryLevel, number> = {
-    LEARNING: 0,
-    FAMILIAR: 1,
-    ACTIVE: 2,
-    NEW: 3,
-    MASTERED: 4,
-};
+const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
 type SortOption = "recommended" | "progress" | "alphabetical";
 
@@ -45,110 +45,141 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 ];
 
 const ITEMS_PER_PAGE = 12;
-const CONTINUE_LEARNING_COUNT = 3;
+const SEARCH_DEBOUNCE_MS = 300;
+
+const listQueryKey = (
+    collection: ExpressionType,
+    level: string,
+    search: string,
+    progress: string,
+    bookmarked: boolean,
+    sort: SortOption,
+    page: number,
+) => ["expressions", "list", collection, level, search, progress, bookmarked, sort, page];
 
 export default function ExpressionsPage() {
     const router = useRouter();
     const queryClient = useQueryClient();
-    const { data: expressions = [], isLoading: loading } = useQuery({
-        queryKey: ["expressions"],
-        queryFn: () => getExpressions().then((res) => res.data),
-    });
+
     const [collection, setCollection] = useState<ExpressionType>("NOMEN_VERB_VERBINDUNG");
     const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [levelFilter, setLevelFilter] = useState("ALL");
     const [progressFilter, setProgressFilter] = useState("ALL");
     const [bookmarkFilter, setBookmarkFilter] = useState("ALL");
     const [sort, setSort] = useState<SortOption>("recommended");
-    const [page, setPage] = useState(1);
+    // Zero-based, matching the backend.
+    const [page, setPage] = useState(0);
 
-    const setExpressions = (updater: (prev: Expression[]) => Expression[]) => {
-        queryClient.setQueryData<Expression[]>(["expressions"], (prev) => updater(prev ?? []));
-    };
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search.trim());
+            setPage(0);
+        }, SEARCH_DEBOUNCE_MS);
+        return () => clearTimeout(timer);
+    }, [search]);
 
-    const toggleBookmark = (expression: Expression) => {
-        const wasBookmarked = expression.bookmarked;
-        setExpressions((prev) => prev.map((e) => (e.id === expression.id ? { ...e, bookmarked: !wasBookmarked } : e)));
+    // Two small rows (one per collection) - fills the collection cards without loading any expression.
+    const { data: summaries = [], error: summaryError } = useQuery({
+        queryKey: ["expressions", "collection-summary"],
+        queryFn: () => getExpressionCollectionSummary().then((res) => res.data),
+    });
 
-        const request = wasBookmarked ? removeExpressionBookmark(expression.id) : addExpressionBookmark(expression.id);
-        request.catch((err) => {
-            setExpressions((prev) => prev.map((e) => (e.id === expression.id ? { ...e, bookmarked: wasBookmarked } : e)));
-            toast.error(err?.response?.data?.message ?? "Failed to update bookmark.");
+    const { data: continueLearning, error: continueLearningError } = useQuery({
+        queryKey: ["expressions", "continue-learning", collection],
+        queryFn: () => getContinueLearningExpressions(collection).then((res) => res.data),
+    });
+
+    // Only the current collection's current page, list columns only. Cached server-side per
+    // (collection, level, search, page, size) whenever no personal filter/sort is active - see
+    // ExpressionService.findListPage. Any search term always queries the whole table, never just
+    // whatever page happened to already be loaded.
+    const {
+        data: expressionPage,
+        isLoading: listLoading,
+        isPlaceholderData,
+        error: listError,
+    } = useQuery({
+        queryKey: listQueryKey(collection, levelFilter, debouncedSearch, progressFilter, bookmarkFilter === "BOOKMARKED", sort, page),
+        queryFn: () =>
+            getExpressionsPage(collection, page, ITEMS_PER_PAGE, {
+                level: levelFilter,
+                search: debouncedSearch,
+                progress: progressFilter,
+                bookmarked: bookmarkFilter === "BOOKMARKED",
+                sort,
+            }).then((res) => res.data),
+        placeholderData: keepPreviousData,
+    });
+
+    const totalPages = Math.max(1, expressionPage?.totalPages ?? 1);
+
+    // Warm the next page so "Next" is instant.
+    useEffect(() => {
+        if (!expressionPage || isPlaceholderData || page + 1 >= totalPages) return;
+        queryClient.prefetchQuery({
+            queryKey: listQueryKey(collection, levelFilter, debouncedSearch, progressFilter, bookmarkFilter === "BOOKMARKED", sort, page + 1),
+            queryFn: () =>
+                getExpressionsPage(collection, page + 1, ITEMS_PER_PAGE, {
+                    level: levelFilter,
+                    search: debouncedSearch,
+                    progress: progressFilter,
+                    bookmarked: bookmarkFilter === "BOOKMARKED",
+                    sort,
+                }).then((res) => res.data),
         });
-    };
+    }, [expressionPage, isPlaceholderData, page, totalPages, collection, levelFilter, debouncedSearch, progressFilter, bookmarkFilter, sort, queryClient]);
 
-    const collectionExpressions = useMemo(
-        () => expressions.filter((e) => e.type === collection),
-        [expressions, collection],
-    );
+    useEffect(() => {
+        const failure = listError ?? summaryError ?? continueLearningError;
+        if (failure) {
+            const err = failure as { response?: { data?: { message?: string } } };
+            toast.error(err?.response?.data?.message ?? "Failed to load expressions.");
+        }
+    }, [listError, summaryError, continueLearningError]);
 
     const collectionOptions: ExpressionCollectionOption[] = [
         {
             type: "NOMEN_VERB_VERBINDUNG",
             label: COLLECTION_LABEL.NOMEN_VERB_VERBINDUNG,
-            count: expressions.filter((e) => e.type === "NOMEN_VERB_VERBINDUNG").length,
+            count: summaries.find((s) => s.type === "NOMEN_VERB_VERBINDUNG")?.total ?? 0,
             icon: ThumbsUp,
         },
         {
             type: "REDEWENDUNG",
             label: COLLECTION_LABEL.REDEWENDUNG,
-            count: expressions.filter((e) => e.type === "REDEWENDUNG").length,
+            count: summaries.find((s) => s.type === "REDEWENDUNG")?.total ?? 0,
             icon: MessageSquare,
         },
     ];
 
-    const levels = useMemo(
-        () => Array.from(new Set(collectionExpressions.map((e) => e.level))).filter(Boolean).sort(),
-        [collectionExpressions],
-    );
+    const setListCache = (updater: (prev: ExpressionListItem[]) => ExpressionListItem[]) => {
+        queryClient.setQueryData<{ items: ExpressionListItem[] }>(
+            listQueryKey(collection, levelFilter, debouncedSearch, progressFilter, bookmarkFilter === "BOOKMARKED", sort, page),
+            (prev) => (prev ? { ...prev, items: updater(prev.items) } : prev),
+        );
+    };
 
-    const continueLearning = useMemo(() => {
-        const candidates = collectionExpressions.filter((e) => (e.progress?.masteryLevel ?? "NEW") !== "MASTERED");
-        const sorted = [...candidates].sort((a, b) => {
-            const pa = MASTERY_PRIORITY[a.progress?.masteryLevel ?? "NEW"];
-            const pb = MASTERY_PRIORITY[b.progress?.masteryLevel ?? "NEW"];
-            if (pa !== pb) return pa - pb;
-            return (a.progress?.overallScore ?? 0) - (b.progress?.overallScore ?? 0);
+    const toggleBookmark = (expression: ExpressionListItem) => {
+        const wasBookmarked = expression.bookmarked;
+        setListCache((prev) => prev.map((e) => (e.id === expression.id ? { ...e, bookmarked: !wasBookmarked } : e)));
+
+        const request = wasBookmarked ? removeExpressionBookmark(expression.id) : addExpressionBookmark(expression.id);
+        request.catch((err) => {
+            setListCache((prev) => prev.map((e) => (e.id === expression.id ? { ...e, bookmarked: wasBookmarked } : e)));
+            toast.error(err?.response?.data?.message ?? "Failed to update bookmark.");
         });
-        return { items: sorted.slice(0, CONTINUE_LEARNING_COUNT), readyCount: candidates.length };
-    }, [collectionExpressions]);
+    };
 
-    const filtered = useMemo(() => {
-        const term = search.trim().toLowerCase();
-        return collectionExpressions.filter((e) => {
-            if (levelFilter !== "ALL" && e.level !== levelFilter) return false;
-            const mastery = e.progress?.masteryLevel ?? "NEW";
-            if (progressFilter !== "ALL" && mastery !== progressFilter) return false;
-            if (bookmarkFilter === "BOOKMARKED" && !e.bookmarked) return false;
-            if (!term) return true;
-            return (
-                e.expression.toLowerCase().includes(term) ||
-                e.meaningDe.toLowerCase().includes(term) ||
-                e.meaningEn.toLowerCase().includes(term) ||
-                e.examples.some((ex) => ex.sentence.toLowerCase().includes(term))
-            );
-        });
-    }, [collectionExpressions, search, levelFilter, progressFilter, bookmarkFilter]);
+    const resetPage = () => setPage(0);
 
-    const sorted = useMemo(() => {
-        const list = [...filtered];
-        if (sort === "alphabetical") {
-            list.sort((a, b) => a.expression.localeCompare(b.expression));
-        } else if (sort === "progress") {
-            list.sort((a, b) => (b.progress?.overallScore ?? 0) - (a.progress?.overallScore ?? 0));
-        }
-        return list;
-    }, [filtered, sort]);
-
-    const totalPages = Math.max(1, Math.ceil(sorted.length / ITEMS_PER_PAGE));
-    const currentPage = Math.min(page, totalPages);
-    const paginated = sorted.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-
-    const resetPage = () => setPage(1);
-
-    const openExpression = (expression: Expression) => router.push(`/dashboard/expressions/detail?id=${expression.id}`);
-    const practiceExpression = (expression: Expression) =>
+    const openExpression = (expression: ExpressionListItem) => router.push(`/dashboard/expressions/detail?id=${expression.id}`);
+    const practiceExpression = (expression: ExpressionListItem) =>
         router.push(`/dashboard/expressions/practice?expressionId=${expression.id}`);
+
+    const items = expressionPage?.items ?? [];
+    const currentPage = page + 1;
+    const totalElements = expressionPage?.totalElements ?? 0;
 
     return (
         <div className="min-h-screen bg-background px-6 py-10" dir="ltr">
@@ -190,11 +221,8 @@ export default function ExpressionsPage() {
                     <LearningSearch
                         className="flex-1 min-w-[240px]"
                         value={search}
-                        onChange={(value) => {
-                            setSearch(value);
-                            resetPage();
-                        }}
-                        placeholder="Search by expression, meaning or example..."
+                        onChange={setSearch}
+                        placeholder="Search by expression or meaning..."
                     />
                     <ExpressionFilterSelect
                         label="Level"
@@ -203,7 +231,7 @@ export default function ExpressionsPage() {
                             setLevelFilter(v);
                             resetPage();
                         }}
-                        options={[{ value: "ALL", label: "All" }, ...levels.map((l) => ({ value: l, label: l }))]}
+                        options={[{ value: "ALL", label: "All" }, ...LEVELS.map((l) => ({ value: l, label: l }))]}
                     />
                     <ExpressionFilterSelect
                         label="Progress"
@@ -235,86 +263,91 @@ export default function ExpressionsPage() {
                     <ExpressionFilterSelect
                         label="Sort"
                         value={sort}
-                        onChange={(v) => setSort(v as SortOption)}
+                        onChange={(v) => {
+                            setSort(v as SortOption);
+                            resetPage();
+                        }}
                         options={SORT_OPTIONS}
                     />
                 </div>
 
-                {loading ? (
-                    <>
-                        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <section className="mt-10">
+                    <div className="flex items-end justify-between gap-4">
+                        <div className="flex items-start gap-3">
+                            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent">
+                                <Flame className="size-5 text-primary" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-semibold text-foreground">Continue learning</h2>
+                                <p className="mt-0.5 text-sm text-foreground/55">
+                                    {continueLearning && continueLearning.readyCount > 0
+                                        ? `You have ${continueLearning.readyCount} expressions ready to practice.`
+                                        : "You're all caught up!"}
+                                </p>
+                            </div>
+                        </div>
+                        {continueLearning && continueLearning.readyCount > continueLearning.items.length && (
+                            <a
+                                href="#all-expressions"
+                                className="shrink-0 text-sm font-medium text-primary hover:underline flex items-center gap-1"
+                            >
+                                See all
+                                <ArrowRight className="size-3.5" />
+                            </a>
+                        )}
+                    </div>
+
+                    {continueLearning && continueLearning.items.length > 0 ? (
+                        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            {continueLearning.items.map((e) => (
+                                <ExpressionCard
+                                    key={e.id}
+                                    expression={e}
+                                    collectionType={collection}
+                                    practiceVariant="primary"
+                                    onOpen={openExpression}
+                                    onPractice={practiceExpression}
+                                    onToggleBookmark={toggleBookmark}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        continueLearning && (
+                            <div className="mt-4 rounded-2xl border border-border/60 bg-card p-8 text-center shadow-card">
+                                <p className="text-foreground/60 text-sm">
+                                    Continue exploring expressions below to learn more.
+                                </p>
+                            </div>
+                        )
+                    )}
+                </section>
+
+                <section id="all-expressions" className="mt-10 scroll-mt-6">
+                    <div className="flex items-end justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent">
+                                <Layers className="size-5 text-primary" />
+                            </div>
+                            <h2 className="text-lg font-semibold text-foreground">All expressions</h2>
+                        </div>
+                        <span className="text-sm text-foreground/55">{totalElements} expressions</span>
+                    </div>
+
+                    {listLoading && !expressionPage ? (
+                        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                             {Array.from({ length: 3 }).map((_, i) => (
                                 <ExpressionCardSkeleton key={i} />
                             ))}
                         </div>
-                    </>
-                ) : (
-                    <>
-                        <section className="mt-10">
-                            <div className="flex items-end justify-between gap-4">
-                                <div className="flex items-start gap-3">
-                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent">
-                                        <Flame className="size-5 text-primary" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-lg font-semibold text-foreground">Continue learning</h2>
-                                        <p className="mt-0.5 text-sm text-foreground/55">
-                                            {continueLearning.readyCount > 0
-                                                ? `You have ${continueLearning.readyCount} expressions ready to practice.`
-                                                : "You're all caught up!"}
-                                        </p>
-                                    </div>
-                                </div>
-                                {continueLearning.readyCount > CONTINUE_LEARNING_COUNT && (
-                                    <a
-                                        href="#all-expressions"
-                                        className="shrink-0 text-sm font-medium text-primary hover:underline flex items-center gap-1"
-                                    >
-                                        See all
-                                        <ArrowRight className="size-3.5" />
-                                    </a>
-                                )}
-                            </div>
-
-                            {continueLearning.items.length > 0 ? (
-                                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                    {continueLearning.items.map((e) => (
+                    ) : (
+                        <div className={`mt-4 transition-opacity ${isPlaceholderData ? "opacity-60" : ""}`}>
+                            {items.length > 0 ? (
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                    {items.map((e) => (
                                         <ExpressionCard
                                             key={e.id}
                                             expression={e}
-                                            practiceVariant="primary"
-                                            onOpen={openExpression}
-                                            onPractice={practiceExpression}
-                                            onToggleBookmark={toggleBookmark}
-                                        />
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="mt-4 rounded-2xl border border-border/60 bg-card p-8 text-center shadow-card">
-                                    <p className="text-foreground/60 text-sm">
-                                        Continue exploring expressions below to learn more.
-                                    </p>
-                                </div>
-                            )}
-                        </section>
-
-                        <section id="all-expressions" className="mt-10 scroll-mt-6">
-                            <div className="flex items-end justify-between gap-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent">
-                                        <Layers className="size-5 text-primary" />
-                                    </div>
-                                    <h2 className="text-lg font-semibold text-foreground">All expressions</h2>
-                                </div>
-                                <span className="text-sm text-foreground/55">{sorted.length} expressions</span>
-                            </div>
-
-                            {paginated.length > 0 ? (
-                                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                    {paginated.map((e) => (
-                                        <ExpressionCard
-                                            key={e.id}
-                                            expression={e}
+                                            collectionType={collection}
                                             practiceVariant="outline"
                                             onOpen={openExpression}
                                             onPractice={practiceExpression}
@@ -323,40 +356,40 @@ export default function ExpressionsPage() {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="mt-4 rounded-2xl border border-border/60 bg-card p-10 text-center shadow-card">
+                                <div className="rounded-2xl border border-border/60 bg-card p-10 text-center shadow-card">
                                     <p className="font-semibold text-foreground">No expressions found</p>
                                     <p className="mt-1 text-sm text-foreground/55">
                                         Try changing your search or filters.
                                     </p>
                                 </div>
                             )}
+                        </div>
+                    )}
 
-                            {totalPages > 1 && (
-                                <div className="flex justify-center items-center gap-3 pt-8">
-                                    <button
-                                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                        disabled={currentPage === 1}
-                                        className="flex items-center gap-1 px-4 py-2 rounded-lg bg-card shadow-card text-foreground text-sm disabled:opacity-40 hover:bg-accent/50 transition"
-                                    >
-                                        <ChevronLeft className="size-4" />
-                                        Previous
-                                    </button>
-                                    <span className="text-sm text-foreground/60">
-                                        Page {currentPage} of {totalPages}
-                                    </span>
-                                    <button
-                                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                                        disabled={currentPage === totalPages}
-                                        className="flex items-center gap-1 px-4 py-2 rounded-lg bg-card shadow-card text-foreground text-sm disabled:opacity-40 hover:bg-accent/50 transition"
-                                    >
-                                        Next
-                                        <ChevronRight className="size-4" />
-                                    </button>
-                                </div>
-                            )}
-                        </section>
-                    </>
-                )}
+                    {totalPages > 1 && (
+                        <div className="flex justify-center items-center gap-3 pt-8">
+                            <button
+                                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                                disabled={page === 0}
+                                className="flex items-center gap-1 px-4 py-2 rounded-lg bg-card shadow-card text-foreground text-sm disabled:opacity-40 hover:bg-accent/50 transition"
+                            >
+                                <ChevronLeft className="size-4" />
+                                Previous
+                            </button>
+                            <span className="text-sm text-foreground/60">
+                                Page {currentPage} of {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                                disabled={currentPage >= totalPages || isPlaceholderData}
+                                className="flex items-center gap-1 px-4 py-2 rounded-lg bg-card shadow-card text-foreground text-sm disabled:opacity-40 hover:bg-accent/50 transition"
+                            >
+                                Next
+                                <ChevronRight className="size-4" />
+                            </button>
+                        </div>
+                    )}
+                </section>
             </div>
         </div>
     );

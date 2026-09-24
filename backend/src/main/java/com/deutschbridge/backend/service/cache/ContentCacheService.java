@@ -7,12 +7,14 @@ import com.deutschbridge.backend.model.entity.GrammarLesson;
 import com.deutschbridge.backend.model.entity.ReadingArticle;
 import com.deutschbridge.backend.model.enums.ExamSection;
 import com.deutschbridge.backend.model.enums.ExamTaskType;
-import com.deutschbridge.backend.model.enums.ExpressionStatus;
 import com.deutschbridge.backend.model.enums.ExpressionType;
 import com.deutschbridge.backend.model.enums.GrammarLessonStatus;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.ExamExerciseRepository;
+import com.deutschbridge.backend.repository.ExpressionExampleSentenceProjection;
+import com.deutschbridge.backend.repository.ExpressionListProjection;
 import com.deutschbridge.backend.repository.ExpressionRepository;
+import com.deutschbridge.backend.repository.ExpressionTypeCountProjection;
 import com.deutschbridge.backend.repository.GrammarCategoryRepository;
 import com.deutschbridge.backend.repository.GrammarLessonRepository;
 import com.deutschbridge.backend.repository.ReadingArticleLemmaProjection;
@@ -155,19 +157,53 @@ public class ContentCacheService {
         return published;
     }
 
-    @Cacheable("expressions")
+    /** Published count per type, for the collection-summary cards - no expression rows loaded. */
+    @Cacheable("expressionCollectionSummary")
+    public List<ExpressionTypeCountProjection> getExpressionCollectionSummary() {
+        return expressionRepository.countPublishedByType();
+    }
+
+    /**
+     * One page of a type's list columns plus each expression's first example sentence (for the
+     * card preview). search must already be trimmed and lower-cased so equivalent searches share
+     * a cache entry. Never includes per-user data (mastery/bookmark) - callers merge that live.
+     */
+    @Cacheable("expressionListPage")
     @Transactional
-    public List<Expression> getPublishedExpressions(ExpressionType type) {
-        List<Expression> expressions = expressionRepository.findAll().stream()
-                .filter(e -> e.getStatus() != ExpressionStatus.DRAFT)
-                .filter(e -> type == null || e.getType() == type)
+    public ExpressionListPage getExpressionListPage(ExpressionType type, LearningLevel level, String search, int page, int size) {
+        Page<ExpressionListProjection> rows = expressionRepository.findListPage(type, level, search, PageRequest.of(page, size));
+
+        Map<String, String> sentenceByExpressionId = rows.isEmpty()
+                ? Map.of()
+                : expressionRepository.findFirstExampleSentences(rows.map(ExpressionListProjection::getId).toList())
+                .stream()
+                .collect(Collectors.toMap(ExpressionExampleSentenceProjection::getExpressionId, ExpressionExampleSentenceProjection::getSentence));
+
+        List<ExpressionListEntry> entries = rows.stream()
+                .map(row -> new ExpressionListEntry(
+                        row.getId(),
+                        row.getExpression(),
+                        row.getLevel(),
+                        row.getMeaningDe(),
+                        row.getMeaningEn(),
+                        row.getRegister(),
+                        row.getImageUrl(),
+                        sentenceByExpressionId.get(row.getId())))
                 .toList();
-        expressions.forEach(expression -> {
-            Hibernate.initialize(expression.getExamples());
-            Hibernate.initialize(expression.getPatterns());
-            Hibernate.initialize(expression.getQuestions());
+        return new ExpressionListPage(entries, rows.getTotalElements(), rows.getTotalPages());
+    }
+
+    /** A single expression's full content (examples/patterns/questions included). */
+    @Cacheable(cacheNames = "expressionDetail", unless = "#result == null")
+    @Transactional
+    public Optional<Expression> getExpressionDetail(String id) {
+        Optional<Expression> expression = expressionRepository.findById(id);
+        expression.ifPresent(e -> {
+            Hibernate.initialize(e.getExamples());
+            Hibernate.initialize(e.getPatterns());
+            Hibernate.initialize(e.getQuestions());
         });
-        return expressions;
+        return expression;
     }
 
     /**
@@ -236,6 +272,14 @@ public class ContentCacheService {
             Hibernate.initialize(article.getQuiz());
             Hibernate.initialize(article.getTokens());
         });
+    }
+
+    public record ExpressionListEntry(String id, String expression, LearningLevel level, String meaningDe,
+                                      String meaningEn, com.deutschbridge.backend.model.enums.ExpressionRegister register,
+                                      String imageUrl, String exampleSentence) {
+    }
+
+    public record ExpressionListPage(List<ExpressionListEntry> entries, long totalElements, int totalPages) {
     }
 
     public record ReadingArticleListEntry(String id, String title, String topic, LearningLevel level, String imageUrl,

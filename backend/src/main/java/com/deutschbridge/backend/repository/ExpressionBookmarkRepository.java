@@ -18,4 +18,7 @@ public interface ExpressionBookmarkRepository extends JpaRepository<ExpressionBo
     void deleteByUserAndExpression(User user, Expression expression);
 
     List<ExpressionBookmark> findByUserAndExpressionIn(User user, List<Expression> expressions);
+
+    /** Same as {@link #findByUserAndExpressionIn} but by id, for callers that only have light list DTOs. */
+    List<ExpressionBookmark> findByUserAndExpression_IdIn(User user, java.util.Collection<String> expressionIds);
 }

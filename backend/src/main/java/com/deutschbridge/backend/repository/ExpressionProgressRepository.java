@@ -22,6 +22,9 @@ public interface ExpressionProgressRepository extends JpaRepository<ExpressionPr
 
     List<ExpressionProgress> findByUserAndExpressionIn(User user, List<Expression> expressions);
 
+    /** Same as {@link #findByUserAndExpressionIn} but by id, for callers that only have light list DTOs. */
+    List<ExpressionProgress> findByUserAndExpression_IdIn(User user, java.util.Collection<String> expressionIds);
+
     long countByUserAndMasteryLevelIn(User user, List<ExpressionMasteryLevel> masteryLevels);
 
     @Query("SELECT COUNT(p) FROM expression_progress p WHERE p.user = :user " +

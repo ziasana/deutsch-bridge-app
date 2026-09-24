@@ -26,8 +26,9 @@ public class CacheConfig {
     public CacheManager cacheManager() {
         CaffeineCacheManager cacheManager = new CaffeineCacheManager(
                 "grammarLessons", "grammarLevelContent", "grammarLessonDetail", "grammarCategoryDetail",
-                "grammarLevelSummary", "examExercises", "examLevelSummary", "expressions", "readingArticles",
-                "readingArticleList", "readingArticleDetail", "readingLevelSummary");
+                "grammarLevelSummary", "examExercises", "examLevelSummary", "readingArticles",
+                "readingArticleList", "readingArticleDetail", "readingLevelSummary",
+                "expressionCollectionSummary", "expressionListPage", "expressionDetail");
         cacheManager.setCaffeine(Caffeine.newBuilder()
                 .maximumSize(500)
                 .expireAfterWrite(30, TimeUnit.MINUTES));

@@ -3,12 +3,12 @@
 import { ArrowRight, Bookmark, BookmarkCheck } from "lucide-react";
 import { Badge } from "@/componenets/ui/badge";
 import LearningProgressBar from "@/componenets/learning/LearningProgressBar";
-import { Expression } from "@/types/expression";
+import { ExpressionListItem, ExpressionType } from "@/types/expression";
 import { cn } from "@/lib/utils";
 import { getExpressionImageSrc } from "@/lib/expressionImages";
 import { getIllustrationFor } from "@/componenets/expressions/illustrations";
 
-const TYPE_LABEL: Record<Expression["type"], string> = {
+const TYPE_LABEL: Record<ExpressionType, string> = {
     NOMEN_VERB_VERBINDUNG: "Nomen-Verb-Verbindung",
     REDEWENDUNG: "Redewendung",
 };
@@ -17,28 +17,30 @@ const UNDERSTAND_COLOR = "#22c55e";
 const USE_COLOR = "#3b82f6";
 
 interface ExpressionCardProps {
-    expression: Expression;
+    expression: ExpressionListItem;
+    collectionType: ExpressionType;
     practiceVariant?: "primary" | "outline";
-    onOpen: (expression: Expression) => void;
-    onPractice: (expression: Expression) => void;
-    onToggleBookmark: (expression: Expression) => void;
+    onOpen: (expression: ExpressionListItem) => void;
+    onPractice: (expression: ExpressionListItem) => void;
+    onToggleBookmark: (expression: ExpressionListItem) => void;
     className?: string;
 }
 
 export default function ExpressionCard({
     expression,
+    collectionType,
     practiceVariant = "outline",
     onOpen,
     onPractice,
     onToggleBookmark,
     className,
 }: ExpressionCardProps) {
-    const understand = Math.round(expression.progress?.overallScore ?? 0);
-    const use = Math.round(expression.progress?.productionScore ?? 0);
-    const example = expression.examples[0];
+    const understand = Math.round(expression.overallScore ?? 0);
+    const use = Math.round(expression.productionScore ?? 0);
+    const example = expression.exampleSentence;
 
-    const uploadedImageSrc = expression.type === "REDEWENDUNG" ? getExpressionImageSrc(expression.imageUrl) : null;
-    const illustration = expression.type === "REDEWENDUNG" && !uploadedImageSrc ? getIllustrationFor(expression.expression) : null;
+    const uploadedImageSrc = collectionType === "REDEWENDUNG" ? getExpressionImageSrc(expression.imageUrl) : null;
+    const illustration = collectionType === "REDEWENDUNG" && !uploadedImageSrc ? getIllustrationFor(expression.expression) : null;
     // Invoked as a plain function (not a JSX tag) since it's a stable reference picked from a
     // static lookup map, not a component being defined during this render.
     const illustrationNode = illustration ? illustration({ className: "h-full w-full rounded-t-2xl object-cover" }) : null;
@@ -56,7 +58,7 @@ export default function ExpressionCard({
                 variant="outline"
                 className={cn(hasVisual && "border-transparent bg-white/90 text-foreground shadow-sm backdrop-blur-sm")}
             >
-                {TYPE_LABEL[expression.type]}
+                {TYPE_LABEL[collectionType]}
             </Badge>
         </>
     );
@@ -96,7 +98,7 @@ export default function ExpressionCard({
 
             {example && (
                 <div className={cn("rounded-lg bg-accent/50 px-3 py-2.5 text-sm text-foreground/75 italic", hasVisual && "mx-5")}>
-                    „{example.sentence}“
+                    „{example}“
                 </div>
             )}
 

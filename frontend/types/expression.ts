@@ -104,6 +104,44 @@ export interface Expression {
   bookmarked: boolean;
 }
 
+/**
+ * Lightweight list/card shape - deliberately omits patterns/questions and the full example list,
+ * which are only fetched for a single expression via getExpressionById. masteryLevel/overallScore/
+ * bookmarked are scoped to the current user.
+ */
+export interface ExpressionListItem {
+  id: string;
+  expression: string;
+  level: string;
+  meaningDe: string;
+  meaningEn: string;
+  register: ExpressionRegister | null;
+  imageUrl: string | null;
+  exampleSentence: string | null;
+  masteryLevel: ExpressionMasteryLevel;
+  overallScore: number;
+  productionScore: number;
+  bookmarked: boolean;
+}
+
+export interface ExpressionPage {
+  items: ExpressionListItem[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface ExpressionCollectionSummary {
+  type: ExpressionType;
+  total: number;
+}
+
+export interface ExpressionContinueLearning {
+  items: ExpressionListItem[];
+  readyCount: number;
+}
+
 export interface ExpressionManualRequest {
   expression: string;
   type: ExpressionType;

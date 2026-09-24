@@ -4,8 +4,12 @@ import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.ExpressionBulkImportResult;
 import com.deutschbridge.backend.model.dto.ExpressionBulkImportRowResult;
+import com.deutschbridge.backend.model.dto.ExpressionCollectionSummaryResponse;
+import com.deutschbridge.backend.model.dto.ExpressionContinueLearningResponse;
 import com.deutschbridge.backend.model.dto.ExpressionExampleRequest;
+import com.deutschbridge.backend.model.dto.ExpressionListEntryResponse;
 import com.deutschbridge.backend.model.dto.ExpressionManualRequest;
+import com.deutschbridge.backend.model.dto.ExpressionPageResponse;
 import com.deutschbridge.backend.model.dto.ExpressionPatternRequest;
 import com.deutschbridge.backend.model.dto.ExpressionQuestionOptionRequest;
 import com.deutschbridge.backend.model.dto.ExpressionQuestionRequest;
@@ -18,11 +22,15 @@ import com.deutschbridge.backend.model.entity.ExpressionProgress;
 import com.deutschbridge.backend.model.entity.ExpressionQuestion;
 import com.deutschbridge.backend.model.entity.ExpressionQuestionOption;
 import com.deutschbridge.backend.model.entity.User;
+import com.deutschbridge.backend.model.enums.ExpressionMasteryLevel;
 import com.deutschbridge.backend.model.enums.ExpressionStatus;
 import com.deutschbridge.backend.model.enums.ExpressionType;
+import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.ExpressionBookmarkRepository;
+import com.deutschbridge.backend.repository.ExpressionListForUserProjection;
 import com.deutschbridge.backend.repository.ExpressionProgressRepository;
 import com.deutschbridge.backend.repository.ExpressionRepository;
+import com.deutschbridge.backend.repository.ExpressionTypeCountProjection;
 import com.deutschbridge.backend.service.cache.ContentCacheService;
 import com.deutschbridge.backend.util.ExpressionMapper;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -30,6 +38,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -42,6 +55,8 @@ import java.util.stream.Collectors;
 public class ExpressionService {
 
     private static final String NOT_FOUND_MSG = "Expression not found!";
+    private static final int MAX_PAGE_SIZE = 50;
+    private static final int CONTINUE_LEARNING_COUNT = 3;
 
     private final ExpressionRepository expressionRepository;
     private final ExpressionProgressRepository expressionProgressRepository;
@@ -70,15 +85,86 @@ public class ExpressionService {
         this.contentCacheService = contentCacheService;
     }
 
-    // The per-user progress merge below is never cached (see mapWithCurrentUserProgress) - only
-    // the shared published-expressions fetch is, via ContentCacheService.
-    public List<ExpressionResponse> findAllPublished(ExpressionType type) {
-        List<Expression> expressions = contentCacheService.getPublishedExpressions(type);
-        return mapWithCurrentUserProgress(expressions);
+    /** Published count per type, for the collection cards - no expression rows loaded. */
+    public List<ExpressionCollectionSummaryResponse> getCollectionSummary() {
+        return contentCacheService.getExpressionCollectionSummary().stream()
+                .map(row -> new ExpressionCollectionSummaryResponse(row.getType().name(), row.getTotal()))
+                .toList();
+    }
+
+    /**
+     * One page of a collection's list. The common case - default order, no progress/bookmark filter -
+     * uses the shared cached columns (keyed by type/level/search/page/size only) plus the current
+     * user's live mastery/bookmark merged onto just this page's items, exactly like reading's
+     * learned-state merge. Any deviation from that (alphabetical or progress sort, or a mastery/
+     * bookmark filter) needs the ORDER BY / WHERE to run in SQL before LIMIT/OFFSET - re-sorting an
+     * already-paginated cached page in memory would silently corrupt pagination (a globally-earlier
+     * alphabetical row could sit on a different cached page) - so those bypass the cache entirely
+     * and hit the live per-user-joined query instead. Still always a single paginated DB query at
+     * any page, never a filter over whatever happened to already be loaded.
+     */
+    public ExpressionPageResponse findListPage(ExpressionType type, LearningLevel level, String search,
+                                                ExpressionMasteryLevel masteryFilter, boolean bookmarkedOnly,
+                                                String sort, int page, int size) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.clamp(size, 1, MAX_PAGE_SIZE);
+        String normalizedSearch = search != null ? search.trim().toLowerCase() : "";
+        boolean personalizedFilterActive = masteryFilter != null || bookmarkedOnly;
+        boolean progressSort = "progress".equalsIgnoreCase(sort);
+        boolean alphabeticalSort = "alphabetical".equalsIgnoreCase(sort);
+
+        if (!personalizedFilterActive && !progressSort && !alphabeticalSort) {
+            ContentCacheService.ExpressionListPage cached =
+                    contentCacheService.getExpressionListPage(type, level, normalizedSearch, safePage, safeSize);
+            if (cached.entries().isEmpty()) {
+                return new ExpressionPageResponse(List.of(), safePage, safeSize, cached.totalElements(), cached.totalPages());
+            }
+            User user = userService.findByEmail(requestContext.getUserEmail());
+            List<ExpressionListEntryResponse> items = mapListEntriesWithCurrentUserProgress(user, cached.entries());
+            return new ExpressionPageResponse(items, safePage, safeSize, cached.totalElements(), cached.totalPages());
+        }
+
+        Sort order = alphabeticalSort
+                ? Sort.by(Sort.Direction.ASC, "expression").and(Sort.by(Sort.Direction.ASC, "id"))
+                : Sort.by(Sort.Direction.DESC, "createdAt").and(Sort.by(Sort.Direction.ASC, "id"));
+        Pageable pageable = progressSort ? PageRequest.of(safePage, safeSize) : PageRequest.of(safePage, safeSize, order);
+        String userId = requestContext.getUserId();
+        Page<ExpressionListForUserProjection> rows = progressSort
+                ? expressionRepository.findListPageForUserByProgress(type, level, normalizedSearch, masteryFilter, bookmarkedOnly, userId, pageable)
+                : expressionRepository.findListPageForUser(type, level, normalizedSearch, masteryFilter, bookmarkedOnly, userId, pageable);
+        Map<String, String> sentenceByExpressionId = rows.isEmpty()
+                ? Map.of()
+                : expressionRepository.findFirstExampleSentences(rows.map(ExpressionListForUserProjection::getId).toList())
+                .stream()
+                .collect(Collectors.toMap(row -> row.getExpressionId(), row -> row.getSentence()));
+        List<ExpressionListEntryResponse> items = rows.stream()
+                .map(row -> mapForUserProjection(row, sentenceByExpressionId.get(row.getId())))
+                .toList();
+        return new ExpressionPageResponse(items, safePage, safeSize, rows.getTotalElements(), rows.getTotalPages());
+    }
+
+    /** Expressions the current user is still learning, ordered weakest-first, for "Continue learning". */
+    public ExpressionContinueLearningResponse getContinueLearning(ExpressionType type) {
+        String userId = requestContext.getUserId();
+        List<ExpressionListForUserProjection> rows = expressionRepository.findContinueLearningForUser(
+                type, userId, PageRequest.of(0, CONTINUE_LEARNING_COUNT));
+        long readyCount = expressionRepository.countReadyForUser(type, userId);
+
+        Map<String, String> sentenceByExpressionId = rows.isEmpty()
+                ? Map.of()
+                : expressionRepository.findFirstExampleSentences(rows.stream().map(ExpressionListForUserProjection::getId).toList())
+                .stream()
+                .collect(Collectors.toMap(row -> row.getExpressionId(), row -> row.getSentence()));
+        List<ExpressionListEntryResponse> items = rows.stream()
+                .map(row -> mapForUserProjection(row, sentenceByExpressionId.get(row.getId())))
+                .toList();
+        return new ExpressionContinueLearningResponse(items, readyCount);
     }
 
     public ExpressionResponse findByIdForStudent(String id) throws DataNotFoundException {
-        Expression expression = studentVisibleEntityById(id);
+        Expression expression = contentCacheService.getExpressionDetail(id)
+                .filter(e -> e.getStatus() != ExpressionStatus.DRAFT)
+                .orElseThrow(() -> new DataNotFoundException(NOT_FOUND_MSG));
         List<ExpressionResponse> mapped = mapWithCurrentUserProgress(List.of(expression));
         return mapped.get(0);
     }
@@ -153,7 +239,11 @@ public class ExpressionService {
         return ExpressionMapper.mapToAdminResponse(findEntityById(id));
     }
 
-    @CacheEvict(cacheNames = "expressions", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "expressionCollectionSummary", allEntries = true),
+            @CacheEvict(cacheNames = "expressionListPage", allEntries = true),
+            @CacheEvict(cacheNames = "expressionDetail", allEntries = true)
+    })
     public ExpressionResponse createManual(ExpressionManualRequest request) {
         Expression expression = new Expression();
         applyRequest(expression, request);
@@ -167,7 +257,11 @@ public class ExpressionService {
      * single unparseable row surfaces as one failed row instead of rejecting the whole request at
      * the HTTP deserialization layer.
      */
-    @CacheEvict(cacheNames = "expressions", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "expressionCollectionSummary", allEntries = true),
+            @CacheEvict(cacheNames = "expressionListPage", allEntries = true),
+            @CacheEvict(cacheNames = "expressionDetail", allEntries = true)
+    })
     public ExpressionBulkImportResult bulkImport(List<JsonNode> rows) {
         List<ExpressionBulkImportRowResult> results = new ArrayList<>();
         int successCount = 0;
@@ -231,7 +325,11 @@ public class ExpressionService {
         return !sb.isEmpty() ? sb.toString() : "a field";
     }
 
-    @CacheEvict(cacheNames = "expressions", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "expressionCollectionSummary", allEntries = true),
+            @CacheEvict(cacheNames = "expressionListPage", allEntries = true),
+            @CacheEvict(cacheNames = "expressionDetail", allEntries = true)
+    })
     public ExpressionResponse updateManual(String id, ExpressionManualRequest request) throws DataNotFoundException {
         Expression existing = findEntityById(id);
         String previousImageUrl = existing.getImageUrl();
@@ -247,7 +345,11 @@ public class ExpressionService {
         return response;
     }
 
-    @CacheEvict(cacheNames = "expressions", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "expressionCollectionSummary", allEntries = true),
+            @CacheEvict(cacheNames = "expressionListPage", allEntries = true),
+            @CacheEvict(cacheNames = "expressionDetail", allEntries = true)
+    })
     public void deleteById(String id) throws DataNotFoundException {
         Expression existing = findEntityById(id);
         fileStorageService.deleteFile(existing.getImageUrl());
@@ -350,5 +452,43 @@ public class ExpressionService {
         return expressions.stream()
                 .map(e -> ExpressionMapper.mapToResponse(e, progressByExpressionId.get(e.getId()), bookmarkedIds.contains(e.getId())))
                 .toList();
+    }
+
+    /** Merges the current user's live mastery/bookmark state onto a cached, unpersonalized list page. */
+    private List<ExpressionListEntryResponse> mapListEntriesWithCurrentUserProgress(
+            User user, List<ContentCacheService.ExpressionListEntry> entries) {
+        List<String> ids = entries.stream().map(ContentCacheService.ExpressionListEntry::id).toList();
+
+        Map<String, ExpressionProgress> progressByExpressionId = expressionProgressRepository
+                .findByUserAndExpression_IdIn(user, ids).stream()
+                .collect(Collectors.toMap(p -> p.getExpression().getId(), p -> p, (first, second) -> first));
+        Set<String> bookmarkedIds = expressionBookmarkRepository.findByUserAndExpression_IdIn(user, ids).stream()
+                .map(b -> b.getExpression().getId())
+                .collect(Collectors.toSet());
+
+        return entries.stream()
+                .map(e -> {
+                    ExpressionProgress progress = progressByExpressionId.get(e.id());
+                    return new ExpressionListEntryResponse(
+                            e.id(), e.expression(), e.level() != null ? e.level().getValue() : null,
+                            e.meaningDe(), e.meaningEn(), e.register() != null ? e.register().name() : null,
+                            e.imageUrl(), e.exampleSentence(),
+                            (progress != null ? progress.getMasteryLevel() : ExpressionMasteryLevel.NEW).name(),
+                            progress != null ? ExpressionMapper.overallScore(progress) : 0,
+                            progress != null ? progress.getProductionScore() : 0,
+                            bookmarkedIds.contains(e.id()));
+                })
+                .toList();
+    }
+
+    private static ExpressionListEntryResponse mapForUserProjection(ExpressionListForUserProjection row, String exampleSentence) {
+        return new ExpressionListEntryResponse(
+                row.getId(), row.getExpression(), row.getLevel() != null ? row.getLevel().getValue() : null,
+                row.getMeaningDe(), row.getMeaningEn(), row.getRegister() != null ? row.getRegister().name() : null,
+                row.getImageUrl(), exampleSentence,
+                row.getMasteryLevel() != null ? row.getMasteryLevel().name() : ExpressionMasteryLevel.NEW.name(),
+                row.getOverallScore() != null ? row.getOverallScore() : 0,
+                row.getProductionScore() != null ? row.getProductionScore() : 0,
+                row.isBookmarked());
     }
 }
