@@ -1,12 +1,12 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { toast } from "@/lib/toast";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Circle, Play, RotateCw } from "lucide-react";
-import { getExamExercises } from "@/services/examService";
-import { ExamExercisePublicResponse, ExamSection } from "@/types/exam";
+import { getExamExercisesSummary } from "@/services/examService";
+import { ExamSection } from "@/types/exam";
 import Loading from "@/componenets/Loading";
 import LearningProgressBar from "@/componenets/learning/LearningProgressBar";
 import { EXAM_TYPE_META, EXAM_TYPE_ORDER, effectiveScore, findGroupByKey } from "@/componenets/exam";
@@ -44,27 +44,26 @@ function TeilContent() {
     const level = searchParams.get("level");
     const partKey = searchParams.get("part");
 
-    const [exercises, setExercises] = useState<ExamExercisePublicResponse[]>([]);
-    const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
     const [page, setPage] = useState(1);
 
-    useEffect(() => {
-        getExamExercises()
-            .then((res) => setExercises(res.data))
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load exercises."))
-            .finally(() => setLoading(false));
-    }, []);
+    const isValid = !!section && !!level && !!partKey && VALID_SECTIONS.has(section);
+    const typedSection = section as ExamSection;
+
+    const { data: exercises = [], isLoading } = useQuery({
+        queryKey: ["exam", "exercises", typedSection, level],
+        queryFn: () => getExamExercisesSummary(typedSection, level!).then((res) => res.data),
+        enabled: isValid,
+    });
 
     if (!section || !level || !partKey || !VALID_SECTIONS.has(section)) return <NotFound />;
-    if (loading) return <Loading />;
+    if (isLoading) return <Loading />;
 
-    const typedSection = section as ExamSection;
     const meta = EXAM_TYPE_META[typedSection];
     const group = findGroupByKey(exercises, typedSection, level, partKey);
     if (!group) return <NotFound />;
 
-    const totalQuestions = group.items.reduce((sum, item) => sum + item.questions.length, 0);
+    const totalQuestions = group.items.reduce((sum, item) => sum + item.questionsCount, 0);
     const firstUnmasteredIndex = group.items.findIndex((item) => effectiveScore(item) < 100);
     const continueIndex = firstUnmasteredIndex === -1 ? 0 : firstUnmasteredIndex;
     const continueItem = group.items[continueIndex];
@@ -156,7 +155,7 @@ function TeilContent() {
                             <div className="min-w-0 flex-1">
                                 <div className="font-semibold text-foreground">Übung {number}</div>
                                 <div className="text-xs text-foreground/50">
-                                    {item.questions.length} {item.questions.length === 1 ? "Frage" : "Fragen"}
+                                    {item.questionsCount} {item.questionsCount === 1 ? "Frage" : "Fragen"}
                                 </div>
                             </div>
                             {item.completed && (

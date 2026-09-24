@@ -2,6 +2,8 @@ package com.deutschbridge.backend.controller;
 
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.ExamExercisePublicResponse;
+import com.deutschbridge.backend.model.dto.ExamExerciseSummaryResponse;
+import com.deutschbridge.backend.model.dto.ExamLevelSummaryResponse;
 import com.deutschbridge.backend.model.enums.ExamSection;
 import com.deutschbridge.backend.model.enums.ExamTaskType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
@@ -22,13 +24,20 @@ public class ExamController {
         this.examExerciseService = examExerciseService;
     }
 
+    /** Lightweight navigation shape (no passages/questions) for lists - section tabs, level selector, Teil listings. */
     @GetMapping
-    public ResponseEntity<List<ExamExercisePublicResponse>> getAll(
+    public ResponseEntity<List<ExamExerciseSummaryResponse>> getAll(
             @RequestParam(required = false) ExamSection section,
             @RequestParam(required = false) LearningLevel level,
             @RequestParam(required = false) ExamTaskType taskType
     ) {
-        return new ResponseEntity<>(examExerciseService.findAllPublic(section, level, taskType), HttpStatus.OK);
+        return new ResponseEntity<>(examExerciseService.findSummary(section, level, taskType), HttpStatus.OK);
+    }
+
+    /** Per-level aggregate progress across every practicable section, for the level selector. */
+    @GetMapping("/level-summary")
+    public ResponseEntity<List<ExamLevelSummaryResponse>> getLevelSummary() {
+        return new ResponseEntity<>(examExerciseService.findLevelSummary(), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")

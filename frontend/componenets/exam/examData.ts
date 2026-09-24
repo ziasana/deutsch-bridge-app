@@ -1,5 +1,4 @@
-import { ExamExercisePublicResponse, ExamSection } from "@/types/exam";
-import { LearningLevelOption } from "@/componenets/learning";
+import { ExamExerciseSummaryResponse, ExamSection } from "@/types/exam";
 import { SPRACHBAUSTEINE_TASK_TYPE_LABELS, TASK_TYPE_LABELS } from "./examMeta";
 
 const SECTION_FALLBACK_LABEL: Partial<Record<ExamSection, string>> = {
@@ -14,20 +13,20 @@ export type PartState = "not_started" | "in_progress" | "completed";
  * exercise types with no quiz/score at all (Schriftlicher Ausdruck, Testformat) - full credit
  * once marked completed, matching how those types have always signalled "done".
  */
-export function effectiveScore(item: ExamExercisePublicResponse): number {
+export function effectiveScore(item: ExamExerciseSummaryResponse): number {
     if (item.lastScore != null) return item.lastScore;
     return item.completed ? 100 : 0;
 }
 
 /** Average effective score (0-100) across a set of exercises. */
-export function averageScore(items: ExamExercisePublicResponse[]): number {
+export function averageScore(items: ExamExerciseSummaryResponse[]): number {
     if (items.length === 0) return 0;
     const sum = items.reduce((acc, item) => acc + effectiveScore(item), 0);
     return Math.round(sum / items.length);
 }
 
 /** How many exercises have been fully mastered (effective score of 100). */
-export function masteredCount(items: ExamExercisePublicResponse[]): number {
+export function masteredCount(items: ExamExerciseSummaryResponse[]): number {
     return items.filter((item) => effectiveScore(item) === 100).length;
 }
 
@@ -45,7 +44,7 @@ export interface ExamPartGroup {
     heading: string;
     /** Task-type description shown under the heading, e.g. "Überschriften zuordnen". */
     subheading?: string;
-    items: ExamExercisePublicResponse[];
+    items: ExamExerciseSummaryResponse[];
     /** Count of exercises scored 100%. */
     mastered: number;
     total: number;
@@ -54,7 +53,7 @@ export interface ExamPartGroup {
     state: PartState;
 }
 
-function buildGroup(key: string, label: string, heading: string, subheading: string | undefined, groupItems: ExamExercisePublicResponse[]): ExamPartGroup {
+function buildGroup(key: string, label: string, heading: string, subheading: string | undefined, groupItems: ExamExerciseSummaryResponse[]): ExamPartGroup {
     const mastered = masteredCount(groupItems);
     const attempted = groupItems.filter((e) => e.completed).length;
     return {
@@ -72,18 +71,18 @@ function buildGroup(key: string, label: string, heading: string, subheading: str
 
 /** Exercises belonging to a section for a given level (null-level exercises apply to every level). */
 export function exercisesForSectionAndLevel(
-    exercises: ExamExercisePublicResponse[],
+    exercises: ExamExerciseSummaryResponse[],
     section: ExamSection,
     level: string,
-): ExamExercisePublicResponse[] {
+): ExamExerciseSummaryResponse[] {
     return exercises.filter((e) => e.section === section && (e.level === level || e.level == null));
 }
 
 /** Groups a section's exercises into ordered "Teil" cards. Mirrors the previous flat page's grouping rules. */
-export function groupIntoParts(items: ExamExercisePublicResponse[], section: ExamSection): ExamPartGroup[] {
+export function groupIntoParts(items: ExamExerciseSummaryResponse[], section: ExamSection): ExamPartGroup[] {
     if (section === "LESEVERSTEHEN" || section === "HOERVERSTEHEN") {
         const sectionLabel = SECTION_FALLBACK_LABEL[section]!;
-        const byPart = new Map<string, ExamExercisePublicResponse[]>();
+        const byPart = new Map<string, ExamExerciseSummaryResponse[]>();
         items.forEach((e) => {
             const key = String(e.partNumber ?? 1);
             (byPart.get(key) ?? byPart.set(key, []).get(key)!).push(e);
@@ -99,7 +98,7 @@ export function groupIntoParts(items: ExamExercisePublicResponse[], section: Exa
 
     if (section === "SPRACHBAUSTEINE") {
         const order = ["MULTIPLE_CHOICE", "WORD_BANK_CLOZE"] as const;
-        const byTask = new Map<string, ExamExercisePublicResponse[]>();
+        const byTask = new Map<string, ExamExerciseSummaryResponse[]>();
         items.forEach((e) => {
             const key = e.taskType ?? "OTHER";
             (byTask.get(key) ?? byTask.set(key, []).get(key)!).push(e);
@@ -125,7 +124,7 @@ export function groupIntoParts(items: ExamExercisePublicResponse[], section: Exa
 
 /** Looks up a single Teil group by its key, for the Teil-detail page's URL params. */
 export function findGroupByKey(
-    exercises: ExamExercisePublicResponse[],
+    exercises: ExamExerciseSummaryResponse[],
     section: ExamSection,
     level: string,
     key: string,
@@ -163,7 +162,7 @@ function pickGroupToContinue(groups: ExamPartGroup[]): ExamPartGroup | undefined
  * falling back to the preferred section's last part (fully mastered) for review.
  */
 export function findContinueTarget(
-    exercises: ExamExercisePublicResponse[],
+    exercises: ExamExerciseSummaryResponse[],
     level: string,
     preferredSection: ExamSection,
 ): ContinueTarget | null {
@@ -210,24 +209,3 @@ const EXAM_TYPE_ORDER_PRACTICABLE: ExamSection[] = [
     "HOERVERSTEHEN",
     "SCHRIFTLICHER_AUSDRUCK",
 ];
-
-/** Per-level aggregate progress across every practicable section, for the level selector. */
-export function buildLevelOptions(exercises: ExamExercisePublicResponse[]): LearningLevelOption[] {
-    const levels = Array.from(
-        new Set(
-            exercises
-                .filter((e) => e.section !== "TESTFORMAT_INFORMATION" && e.level != null)
-                .map((e) => e.level as string),
-        ),
-    ).sort();
-
-    return levels.map((level) => {
-        const inLevel = exercises.filter((e) => e.section !== "TESTFORMAT_INFORMATION" && e.level === level);
-        return {
-            level,
-            total: inLevel.length,
-            completed: masteredCount(inLevel),
-            percentOverride: averageScore(inLevel),
-        };
-    });
-}

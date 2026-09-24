@@ -3,6 +3,8 @@ package com.deutschbridge.backend.service;
 import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.ExamExercisePublicResponse;
+import com.deutschbridge.backend.model.dto.ExamExerciseSummaryResponse;
+import com.deutschbridge.backend.model.dto.ExamLevelSummaryResponse;
 import com.deutschbridge.backend.model.entity.ExamExercise;
 import com.deutschbridge.backend.model.entity.ExamExerciseCompletion;
 import com.deutschbridge.backend.model.entity.ExamPassage;
@@ -13,6 +15,7 @@ import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.ExamExerciseCompletionRepository;
 import com.deutschbridge.backend.repository.ExamExerciseRepository;
 import com.deutschbridge.backend.service.cache.ContentCacheService;
+import com.deutschbridge.backend.service.cache.ExamProgressCacheService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +43,9 @@ class ExamExerciseServiceTest {
     @Mock
     private ContentCacheService contentCacheService;
 
+    @Mock
+    private ExamProgressCacheService examProgressCacheService;
+
     @InjectMocks
     private ExamExerciseService service;
 
@@ -62,26 +68,27 @@ class ExamExerciseServiceTest {
     }
 
     @Test
-    @DisplayName("findAllPublic -> should filter by section and never leak transcript or correctAnswer")
-    void findAllPublic_shouldStripAnswersAndTranscript() {
+    @DisplayName("findSummary -> should filter by section and never leak passages/questions content")
+    void findSummary_shouldOmitContentFields() {
         ExamExercise exercise = hoerverstehenExercise();
         when(contentCacheService.getPublishedExamExercises(ExamSection.HOERVERSTEHEN, null, null)).thenReturn(List.of(exercise));
         when(requestContext.getUserId()).thenReturn("u1");
         when(examExerciseCompletionRepository.findByUserId("u1")).thenReturn(List.of());
 
-        List<ExamExercisePublicResponse> result = service.findAllPublic(ExamSection.HOERVERSTEHEN, null, null);
+        List<ExamExerciseSummaryResponse> result = service.findSummary(ExamSection.HOERVERSTEHEN, null, null);
 
         assertEquals(1, result.size());
-        ExamExercisePublicResponse response = result.get(0);
-        assertEquals("/uploads/exam-audio/clip1.m4a", response.passages().get(0).audioUrl());
+        ExamExerciseSummaryResponse response = result.get(0);
+        assertEquals("ex1", response.id());
+        assertEquals(1, response.questionsCount());
         assertFalse(response.completed());
-        // ExamPassagePublic/ExamQuestionPublic simply have no transcript/correctAnswer/explanation
-        // fields - the assertions above already prove only the safe DTO shape is returned.
+        // ExamExerciseSummaryResponse simply has no passages/questions/answerOptions fields - the
+        // assertions above already prove only the lightweight DTO shape is returned.
     }
 
     @Test
-    @DisplayName("findAllPublic -> should mark exercises the user already completed, with their last score")
-    void findAllPublic_shouldMarkCompletedExercises() {
+    @DisplayName("findSummary -> should mark exercises the user already completed, with their last score")
+    void findSummary_shouldMarkCompletedExercises() {
         ExamExercise exercise = hoerverstehenExercise();
         ExamExerciseCompletion completion = new ExamExerciseCompletion();
         completion.setUserId("u1");
@@ -92,25 +99,37 @@ class ExamExerciseServiceTest {
         when(requestContext.getUserId()).thenReturn("u1");
         when(examExerciseCompletionRepository.findByUserId("u1")).thenReturn(List.of(completion));
 
-        List<ExamExercisePublicResponse> result = service.findAllPublic(ExamSection.HOERVERSTEHEN, null, null);
+        List<ExamExerciseSummaryResponse> result = service.findSummary(ExamSection.HOERVERSTEHEN, null, null);
 
         assertTrue(result.get(0).completed());
         assertEquals(75.0, result.get(0).lastScore());
     }
 
     @Test
-    @DisplayName("findAllPublic -> should exclude unpublished exercises")
-    void findAllPublic_shouldExcludeUnpublished() {
+    @DisplayName("findSummary -> should exclude unpublished exercises")
+    void findSummary_shouldExcludeUnpublished() {
         // Filtering out unpublished exercises is ContentCacheService's job (see
-        // ContentCacheService.getPublishedExamExercises) - this just verifies findAllPublic
+        // ContentCacheService.getPublishedExamExercises) - this just verifies findSummary
         // passes its result straight through without re-adding anything unpublished.
         when(contentCacheService.getPublishedExamExercises(ExamSection.HOERVERSTEHEN, null, null)).thenReturn(List.of());
         when(requestContext.getUserId()).thenReturn("u1");
         when(examExerciseCompletionRepository.findByUserId("u1")).thenReturn(List.of());
 
-        List<ExamExercisePublicResponse> result = service.findAllPublic(ExamSection.HOERVERSTEHEN, null, null);
+        List<ExamExerciseSummaryResponse> result = service.findSummary(ExamSection.HOERVERSTEHEN, null, null);
 
         assertTrue(result.isEmpty());
+    }
+
+    @Test
+    @DisplayName("findLevelSummary -> should delegate to the per-user progress cache for the current user")
+    void findLevelSummary_shouldDelegateToProgressCache() {
+        List<ExamLevelSummaryResponse> summaries = List.of(new ExamLevelSummaryResponse("B1", 10, 4, 55));
+        when(requestContext.getUserId()).thenReturn("u1");
+        when(examProgressCacheService.getLevelSummary("u1")).thenReturn(summaries);
+
+        List<ExamLevelSummaryResponse> result = service.findLevelSummary();
+
+        assertEquals(summaries, result);
     }
 
     @Test

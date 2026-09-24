@@ -25,7 +25,7 @@ public class CacheConfig {
     @Bean
     public CacheManager cacheManager() {
         CaffeineCacheManager cacheManager = new CaffeineCacheManager(
-                "grammarLessons", "grammarCategories", "examExercises", "expressions", "readingArticles");
+                "grammarLessons", "grammarCategories", "examExercises", "examLevelSummary", "expressions", "readingArticles");
         cacheManager.setCaffeine(Caffeine.newBuilder()
                 .maximumSize(500)
                 .expireAfterWrite(30, TimeUnit.MINUTES));

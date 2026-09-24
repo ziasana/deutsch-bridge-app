@@ -101,6 +101,33 @@ export interface ExamExercisePublicResponse {
     lastScore: number | null;
 }
 
+/**
+ * Lightweight navigation/summary shape - no passages/questions/answerOptions - used for section
+ * tabs, the level selector, and Teil listings. Full content is only ever fetched per-exercise via
+ * getExamExerciseById.
+ */
+export interface ExamExerciseSummaryResponse {
+    id: string;
+    title: string;
+    section: ExamSection;
+    taskType: ExamTaskType | null;
+    level: string | null;
+    partNumber: number | null;
+    /** Shown inline for informational (level-agnostic) entries like Testformat Information. */
+    teilDescription: string | null;
+    questionsCount: number;
+    completed: boolean;
+    lastScore: number | null;
+}
+
+/** Per-level aggregate progress across every practicable section, for the level selector. */
+export interface ExamLevelSummaryResponse {
+    level: string;
+    total: number;
+    mastered: number;
+    avgScore: number;
+}
+
 export interface ExamExerciseManualRequest {
     title: string;
     section: ExamSection;

@@ -5,6 +5,8 @@ import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.ExamExerciseManualRequest;
 import com.deutschbridge.backend.model.dto.ExamExercisePublicResponse;
 import com.deutschbridge.backend.model.dto.ExamExerciseResponse;
+import com.deutschbridge.backend.model.dto.ExamExerciseSummaryResponse;
+import com.deutschbridge.backend.model.dto.ExamLevelSummaryResponse;
 import com.deutschbridge.backend.model.entity.ExamExercise;
 import com.deutschbridge.backend.model.entity.ExamExerciseCompletion;
 import com.deutschbridge.backend.model.entity.ExamPassage;
@@ -16,9 +18,11 @@ import com.deutschbridge.backend.repository.ExamAttemptRepository;
 import com.deutschbridge.backend.repository.ExamExerciseCompletionRepository;
 import com.deutschbridge.backend.repository.ExamExerciseRepository;
 import com.deutschbridge.backend.service.cache.ContentCacheService;
+import com.deutschbridge.backend.service.cache.ExamProgressCacheService;
 import com.deutschbridge.backend.util.ExamExerciseMapper;
 import jakarta.transaction.Transactional;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -37,17 +41,20 @@ public class ExamExerciseService {
     private final ExamAttemptRepository examAttemptRepository;
     private final RequestContext requestContext;
     private final ContentCacheService contentCacheService;
+    private final ExamProgressCacheService examProgressCacheService;
 
     public ExamExerciseService(ExamExerciseRepository examExerciseRepository,
                                 ExamExerciseCompletionRepository examExerciseCompletionRepository,
                                 ExamAttemptRepository examAttemptRepository,
                                 RequestContext requestContext,
-                                ContentCacheService contentCacheService) {
+                                ContentCacheService contentCacheService,
+                                ExamProgressCacheService examProgressCacheService) {
         this.examExerciseRepository = examExerciseRepository;
         this.examExerciseCompletionRepository = examExerciseCompletionRepository;
         this.examAttemptRepository = examAttemptRepository;
         this.requestContext = requestContext;
         this.contentCacheService = contentCacheService;
+        this.examProgressCacheService = examProgressCacheService;
     }
 
     public ExamExercise findById(String id) throws DataNotFoundException {
@@ -55,15 +62,21 @@ public class ExamExerciseService {
                 .orElseThrow(() -> new DataNotFoundException(NOT_FOUND_MSG));
     }
 
-    public List<ExamExercisePublicResponse> findAllPublic(ExamSection section, LearningLevel level, ExamTaskType taskType) {
+    /** Navigation/summary shape for lists (section tabs, level selector, Teil listings) - see ExamExerciseSummaryResponse. */
+    public List<ExamExerciseSummaryResponse> findSummary(ExamSection section, LearningLevel level, ExamTaskType taskType) {
         List<ExamExercise> exercises = contentCacheService.getPublishedExamExercises(section, level, taskType);
 
         Map<String, ExamExerciseCompletion> completionsByExerciseId = examExerciseCompletionRepository.findByUserId(requestContext.getUserId()).stream()
                 .collect(Collectors.toMap(ExamExerciseCompletion::getExerciseId, completion -> completion));
 
         return exercises.stream()
-                .map(exercise -> ExamExerciseMapper.mapToPublicResponse(exercise, completionsByExerciseId))
+                .map(exercise -> ExamExerciseMapper.mapToSummaryResponse(exercise, completionsByExerciseId))
                 .toList();
+    }
+
+    /** Per-level aggregate progress for the current user, for the level selector - see ExamLevelSummaryResponse. */
+    public List<ExamLevelSummaryResponse> findLevelSummary() {
+        return examProgressCacheService.getLevelSummary(requestContext.getUserId());
     }
 
     public ExamExercisePublicResponse findByIdPublic(String id) throws DataNotFoundException {
@@ -75,6 +88,7 @@ public class ExamExerciseService {
         return ExamExerciseMapper.mapToPublicResponse(exercise, completions);
     }
 
+    @CacheEvict(cacheNames = "examLevelSummary", key = "@requestContext.getUserId()")
     public void markCompleted(String exerciseId) throws DataNotFoundException {
         findById(exerciseId);
         String userId = requestContext.getUserId();
@@ -91,6 +105,7 @@ public class ExamExerciseService {
     }
 
     /** Upserts the most recent attempt's score onto the exercise's completion record. */
+    @CacheEvict(cacheNames = "examLevelSummary", key = "@requestContext.getUserId()")
     public void saveLastScore(String exerciseId, double score) {
         String userId = requestContext.getUserId();
         ExamExerciseCompletion completion = examExerciseCompletionRepository
@@ -105,6 +120,7 @@ public class ExamExerciseService {
         examExerciseCompletionRepository.save(completion);
     }
 
+    @CacheEvict(cacheNames = "examLevelSummary", key = "@requestContext.getUserId()")
     public void unmarkCompleted(String exerciseId) {
         examExerciseCompletionRepository.findByUserIdAndExerciseId(requestContext.getUserId(), exerciseId)
                 .ifPresent(examExerciseCompletionRepository::delete);
@@ -118,14 +134,20 @@ public class ExamExerciseService {
         return ExamExerciseMapper.mapToResponse(findById(id));
     }
 
-    @CacheEvict(cacheNames = "examExercises", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "examExercises", allEntries = true),
+            @CacheEvict(cacheNames = "examLevelSummary", allEntries = true)
+    })
     public ExamExerciseResponse createManual(ExamExerciseManualRequest request) {
         ExamExercise exercise = new ExamExercise();
         applyRequest(exercise, request);
         return ExamExerciseMapper.mapToResponse(examExerciseRepository.save(exercise));
     }
 
-    @CacheEvict(cacheNames = "examExercises", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "examExercises", allEntries = true),
+            @CacheEvict(cacheNames = "examLevelSummary", allEntries = true)
+    })
     public ExamExerciseResponse update(String id, ExamExerciseManualRequest request) throws DataNotFoundException {
         ExamExercise existing = findById(id);
         applyRequest(existing, request);
@@ -136,7 +158,10 @@ public class ExamExerciseService {
      * non-nullable FK to it, so deleting without this fails with a foreign-key violation for any
      * exercise a student has already attempted. */
     @Transactional
-    @CacheEvict(cacheNames = "examExercises", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "examExercises", allEntries = true),
+            @CacheEvict(cacheNames = "examLevelSummary", allEntries = true)
+    })
     public void delete(String id) throws DataNotFoundException {
         ExamExercise exercise = findById(id);
         examAttemptRepository.deleteByExercise(exercise);

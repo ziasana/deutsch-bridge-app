@@ -5,10 +5,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { BarChart3, ChevronRight } from "lucide-react";
-import { getExamExercises } from "@/services/examService";
-import { ExamExercisePublicResponse, ExamSection } from "@/types/exam";
+import { getExamExercisesSummary, getExamLevelSummary } from "@/services/examService";
+import { ExamSection } from "@/types/exam";
 import Loading from "@/componenets/Loading";
-import { LearningLevelSelector, LearningSearch } from "@/componenets/learning";
+import { LearningLevelOption, LearningLevelSelector, LearningSearch } from "@/componenets/learning";
 import {
     ContinueLearningCard,
     EXAM_TYPE_META,
@@ -16,7 +16,6 @@ import {
     ExamPartCard,
     ExamTypeSelector,
     averageScore,
-    buildLevelOptions,
     exercisesForSectionAndLevel,
     findContinueTarget,
     groupIntoParts,
@@ -31,9 +30,13 @@ function ExamPrepContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { userProfile } = useAuthStore();
-    const { data: exercises = [], isLoading: loading, error } = useQuery<ExamExercisePublicResponse[]>({
-        queryKey: ["exam", "exercises"],
-        queryFn: () => getExamExercises().then((res) => res.data),
+
+    // Small, ~one row per level, regardless of how many exercises exist - fetched once and reused
+    // both for the level selector and to pick a fallback level before the exercises query below
+    // even knows which level to scope to.
+    const { data: levelSummaries = [], isLoading: levelSummaryLoading, error: levelSummaryError } = useQuery({
+        queryKey: ["exam", "level-summary"],
+        queryFn: () => getExamLevelSummary().then((res) => res.data),
     });
 
     const initialSection = searchParams.get("section");
@@ -44,19 +47,34 @@ function ExamPrepContent() {
     );
     const [search, setSearch] = useState("");
 
-    useEffect(() => {
-        if (error) {
-            const err = error as { response?: { data?: { message?: string } } };
-            toast.error(err?.response?.data?.message ?? "Failed to load exercises.");
-        }
-    }, [error]);
-
-    if (loading) return <Loading />;
-
-    const levelOptions = buildLevelOptions(exercises);
     // The backend can send the literal string "null" for an unset profile level.
     const profileLevel = userProfile?.learningLevel && userProfile.learningLevel !== "null" ? userProfile.learningLevel : null;
-    const effectiveLevel = selectedLevel ?? profileLevel ?? levelOptions[0]?.level ?? "B1";
+    const effectiveLevel = selectedLevel ?? profileLevel ?? levelSummaries[0]?.level ?? "B1";
+
+    // Every section at the current level only - never the whole table. Refetches (and caches,
+    // per level) the first time a level is opened; switching section alone needs no new fetch.
+    const { data: exercises = [], isLoading: exercisesLoading, error } = useQuery({
+        queryKey: ["exam", "exercises", effectiveLevel],
+        queryFn: () => getExamExercisesSummary(undefined, effectiveLevel).then((res) => res.data),
+        enabled: !levelSummaryLoading,
+    });
+
+    useEffect(() => {
+        const failure = error ?? levelSummaryError;
+        if (failure) {
+            const err = failure as { response?: { data?: { message?: string } } };
+            toast.error(err?.response?.data?.message ?? "Failed to load exercises.");
+        }
+    }, [error, levelSummaryError]);
+
+    if (levelSummaryLoading || exercisesLoading) return <Loading />;
+
+    const levelOptions: LearningLevelOption[] = levelSummaries.map((s) => ({
+        level: s.level,
+        total: s.total,
+        completed: s.mastered,
+        percentOverride: s.avgScore,
+    }));
 
     const examTypeOptions = EXAM_TYPE_ORDER.map((section) => {
         const meta = EXAM_TYPE_META[section];

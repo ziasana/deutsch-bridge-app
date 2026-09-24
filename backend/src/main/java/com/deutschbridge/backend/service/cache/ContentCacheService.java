@@ -103,18 +103,7 @@ public class ContentCacheService {
     @Cacheable("examExercises")
     @Transactional
     public List<ExamExercise> getPublishedExamExercises(ExamSection section, LearningLevel level, ExamTaskType taskType) {
-        List<ExamExercise> exercises;
-        if (section == null) {
-            exercises = examExerciseRepository.findAll();
-        } else if (level != null && taskType != null) {
-            exercises = examExerciseRepository.findBySectionAndLevelAndTaskType(section, level, taskType);
-        } else if (level != null) {
-            exercises = examExerciseRepository.findBySectionAndLevel(section, level);
-        } else if (taskType != null) {
-            exercises = examExerciseRepository.findBySectionAndTaskType(section, taskType);
-        } else {
-            exercises = examExerciseRepository.findBySection(section);
-        }
+        List<ExamExercise> exercises = examExerciseRepository.findFiltered(section, level, taskType);
 
         List<ExamExercise> published = exercises.stream().filter(ExamExercise::isPublished).toList();
         published.forEach(exercise -> {

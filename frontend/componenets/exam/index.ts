@@ -9,7 +9,6 @@ export {
     groupIntoParts,
     findContinueTarget,
     findGroupByKey,
-    buildLevelOptions,
     partStateOf,
     effectiveScore,
     averageScore,

@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity(name = "examExercises")
+@Table(indexes = @Index(name = "idx_exam_exercises_section_level", columnList = "section, level"))
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,8 +23,14 @@ public class ExamExercise {
     @Id
     private String id;
     private String title;
+
+    @Enumerated(EnumType.STRING)
     private ExamSection section;
+
+    @Enumerated(EnumType.STRING)
     private ExamTaskType taskType;
+
+    @Enumerated(EnumType.STRING)
     private LearningLevel level;
 
     /** Optional Telc "Teil 1/2/3" grouping within a level + taskType. */
