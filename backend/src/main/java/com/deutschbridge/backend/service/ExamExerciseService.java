@@ -139,6 +139,7 @@ public class ExamExerciseService {
             @CacheEvict(cacheNames = "examLevelSummary", allEntries = true)
     })
     public ExamExerciseResponse createManual(ExamExerciseManualRequest request) {
+        validateNoDuplicateLevel(request, null);
         ExamExercise exercise = new ExamExercise();
         applyRequest(exercise, request);
         return ExamExerciseMapper.mapToResponse(examExerciseRepository.save(exercise));
@@ -150,8 +151,24 @@ public class ExamExerciseService {
     })
     public ExamExerciseResponse update(String id, ExamExerciseManualRequest request) throws DataNotFoundException {
         ExamExercise existing = findById(id);
+        validateNoDuplicateLevel(request, id);
         applyRequest(existing, request);
         return ExamExerciseMapper.mapToResponse(examExerciseRepository.save(existing));
+    }
+
+    /**
+     * Testformat Information is meant to hold exactly one entry per level (unlike the other exam
+     * sections, which intentionally allow many exercises to share a section+level). Enforced here
+     * rather than with a DB constraint since every other section relies on duplicates being allowed.
+     */
+    private void validateNoDuplicateLevel(ExamExerciseManualRequest request, String excludeId) {
+        if (request.section() != ExamSection.TESTFORMAT_INFORMATION || request.level() == null) return;
+        boolean duplicate = excludeId == null
+                ? examExerciseRepository.existsBySectionAndLevel(request.section(), request.level())
+                : examExerciseRepository.existsBySectionAndLevelAndIdNot(request.section(), request.level(), excludeId);
+        if (duplicate) {
+            throw new IllegalArgumentException("Testformat Information content already exists for level " + request.level().getValue());
+        }
     }
 
     /** Also clears attempts/completions referencing this exercise first - ExamAttempt has a

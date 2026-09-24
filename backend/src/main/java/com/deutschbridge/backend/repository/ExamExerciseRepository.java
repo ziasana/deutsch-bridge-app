@@ -28,6 +28,11 @@ public interface ExamExerciseRepository extends JpaRepository<ExamExercise, Stri
                                      @Param("level") LearningLevel level,
                                      @Param("taskType") ExamTaskType taskType);
 
+    /** Used to enforce one Testformat Information entry per level (see ExamExerciseService). */
+    boolean existsBySectionAndLevel(ExamSection section, LearningLevel level);
+
+    boolean existsBySectionAndLevelAndIdNot(ExamSection section, LearningLevel level, String id);
+
     /**
      * Per-level progress for one user, computed entirely in SQL (never loads exercise content)
      * so the level selector's payload stays a handful of rows no matter how large this table
