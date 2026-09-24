@@ -2,11 +2,13 @@ import {
     Bell,
     BookOpen,
     Brain,
+    CreditCard,
     GraduationCap,
     LayoutDashboard,
     Layers,
     MessageSquare,
     Newspaper,
+    Settings,
     Sparkles,
     SpellCheck,
     TrendingUp,
@@ -15,9 +17,12 @@ import {
 import type { Dictionary } from "@/lib/i18n/translations";
 
 export interface NavItem {
-    href: string;
+    /** Omitted on a parent item that only expands to reveal `children`. */
+    href?: string;
     label: string;
     icon: React.ComponentType<{ className?: string }>;
+    /** Sub-links shown when this item is expanded, instead of navigating anywhere itself. */
+    children?: NavItem[];
 }
 
 export function getUserNavItems(t: Dictionary): NavItem[] {
@@ -43,7 +48,14 @@ export function getAdminNavItems(t: Dictionary): NavItem[] {
         { href: "/admin/exam-prep", label: t.nav.manageExamPrep, icon: GraduationCap },
         { href: "/admin/grammar", label: t.nav.manageGrammar, icon: BookOpen },
         { href: "/admin/expressionsSection", label: t.nav.manageExpressions, icon: Sparkles },
-        { href: "/admin/notifications", label: t.nav.manageNotifications, icon: Bell },
+        {
+            label: t.nav.settings,
+            icon: Settings,
+            children: [
+                { href: "/admin/notifications", label: t.nav.manageNotifications, icon: Bell },
+                { href: "/admin/settings", label: t.nav.monetization, icon: CreditCard },
+            ],
+        },
         { href: "/profile", label: t.nav.profile, icon: User },
     ];
 }

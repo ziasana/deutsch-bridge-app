@@ -203,33 +203,11 @@ export default function AdminPage() {
     return (
         <div className="px-6 py-10">
             <div className="max-w-7xl mx-auto">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-                        <p className="text-foreground/60 mt-2">
-                            Manage users, roles, and account access.
-                        </p>
-                    </div>
-                    <div className="flex flex-wrap gap-3">
-                        <Button variant="secondary" className={BUTTON_HOVER} onClick={() => router.push("/admin/reading")}>
-                            Manage Reading Articles
-                        </Button>
-                        <Button variant="secondary" className={BUTTON_HOVER} onClick={() => router.push("/admin/exam-prep")}>
-                            Manage Exam Prep
-                        </Button>
-                        <Button variant="secondary" className={BUTTON_HOVER} onClick={() => router.push("/admin/grammar")}>
-                            Manage Grammar
-                        </Button>
-                        <Button variant="secondary" className={BUTTON_HOVER} onClick={() => router.push("/admin/expressionsSection")}>
-                            Manage Expressions
-                        </Button>
-                        <Button variant="secondary" className={BUTTON_HOVER} onClick={() => router.push("/admin/settings")}>
-                            Monetization &amp; Limits
-                        </Button>
-                        <Button variant="secondary" className={BUTTON_HOVER} onClick={() => router.push("/admin/notifications")}>
-                            Notifications
-                        </Button>
-                    </div>
+                <div>
+                    <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+                    <p className="text-foreground/60 mt-2">
+                        Manage users, roles, and account access.
+                    </p>
                 </div>
 
                 <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-6">

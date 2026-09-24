@@ -35,6 +35,8 @@ export interface Dictionary {
         collapseSidebar: string;
         expandSidebar: string;
         manageNotifications: string;
+        settings: string;
+        monetization: string;
     };
     profile: {
         title: string;
@@ -628,6 +630,8 @@ const en: Dictionary = {
         collapseSidebar: "Collapse sidebar",
         expandSidebar: "Expand sidebar",
         manageNotifications: "Manage Notifications",
+        settings: "Settings",
+        monetization: "Monetization & Limits",
     },
     profile: {
         title: "Profile",
@@ -1268,6 +1272,8 @@ const fa: Dictionary = {
         collapseSidebar: "جمع کردن نوار کناری",
         expandSidebar: "باز کردن نوار کناری",
         manageNotifications: "مدیریت اعلان‌ها",
+        settings: "تنظیمات",
+        monetization: "درآمدزایی و محدودیت‌ها",
     },
     profile: {
         title: "پروفایل",
