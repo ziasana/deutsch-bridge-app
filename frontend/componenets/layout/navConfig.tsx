@@ -1,13 +1,18 @@
 import {
     Bell,
+    Blocks,
     BookOpen,
+    BookOpenText,
     Brain,
     CreditCard,
     GraduationCap,
+    Headphones,
+    Info,
     LayoutDashboard,
     Layers,
     MessageSquare,
     Newspaper,
+    PenLine,
     Settings,
     Sparkles,
     SpellCheck,
@@ -45,7 +50,17 @@ export function getAdminNavItems(t: Dictionary): NavItem[] {
     return [
         { href: "/admin", label: t.nav.adminDashboard, icon: LayoutDashboard },
         { href: "/admin/reading", label: t.nav.manageReading, icon: Newspaper },
-        { href: "/admin/exam-prep", label: t.nav.manageExamPrep, icon: GraduationCap },
+        {
+            label: t.nav.manageExamPrep,
+            icon: GraduationCap,
+            children: [
+                { href: "/admin/exam-prep/leseverstehen", label: "Leseverstehen", icon: BookOpenText },
+                { href: "/admin/exam-prep/sprachbausteine", label: "Sprachbausteine", icon: Blocks },
+                { href: "/admin/exam-prep/hoerverstehen", label: "Hörverstehen", icon: Headphones },
+                { href: "/admin/exam-prep/schriftlicher-ausdruck", label: "Schriftlicher Ausdruck", icon: PenLine },
+                { href: "/admin/exam-prep/testformat-information", label: "Testformat Information", icon: Info },
+            ],
+        },
         { href: "/admin/grammar", label: t.nav.manageGrammar, icon: BookOpen },
         { href: "/admin/expressionsSection", label: t.nav.manageExpressions, icon: Sparkles },
         {
