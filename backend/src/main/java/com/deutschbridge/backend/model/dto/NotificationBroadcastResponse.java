@@ -19,6 +19,8 @@ public record NotificationBroadcastResponse(
         Instant scheduledAt,
         Instant sentAt,
         Integer recipientCount,
+        String lastDispatchError,
+        Instant lastDispatchAttemptAt,
         String createdByEmail,
         Instant createdAt
 ) {
@@ -37,6 +39,8 @@ public record NotificationBroadcastResponse(
                 b.getScheduledAt(),
                 b.getSentAt(),
                 b.getRecipientCount(),
+                b.getLastDispatchError(),
+                b.getLastDispatchAttemptAt(),
                 b.getCreatedByEmail(),
                 b.getCreatedAt()
         );

@@ -123,6 +123,7 @@ public class NotificationScheduler {
                 broadcastDispatchService.send(broadcast);
             } catch (Exception e) {
                 log.warn("Broadcast dispatch failed for {}: {}", broadcast.getId(), e.getMessage());
+                broadcastRepository.recordDispatchFailure(broadcast.getId(), e.getMessage(), Instant.now(clock));
             }
         }
     }

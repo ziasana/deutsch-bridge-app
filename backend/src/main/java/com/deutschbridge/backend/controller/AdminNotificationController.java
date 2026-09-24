@@ -159,8 +159,9 @@ public class AdminNotificationController {
     public ResponseEntity<ApiResponse<Long>> audienceCount(@RequestParam NotificationAudienceType audienceType,
                                                             @RequestParam(required = false) LearningLevel level,
                                                             @RequestParam(required = false) AccountType accountType,
-                                                            @RequestParam(required = false) PreferredLanguage language) {
-        return ResponseEntity.ok(new ApiResponse<>(null, broadcastService.audienceCount(audienceType, level, accountType, language)));
+                                                            @RequestParam(required = false) PreferredLanguage language,
+                                                            @RequestParam(required = false) List<String> userIds) {
+        return ResponseEntity.ok(new ApiResponse<>(null, broadcastService.audienceCount(audienceType, level, accountType, language, userIds)));
     }
 
     private static AdminNotificationSettingsDto toDto(NotificationSettingsService.GlobalSettings s) {

@@ -1,5 +1,7 @@
 "use client";
 
+import AdminSearchInput from "./AdminSearchInput";
+
 interface AdminTableControlsProps {
     pageSize: number;
     onPageSizeChange: (size: number) => void;
@@ -36,16 +38,7 @@ export default function AdminTableControls({
                 entries
             </label>
 
-            <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                Search:
-                <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => onSearchChange(e.target.value)}
-                    placeholder={searchPlaceholder}
-                    className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                />
-            </label>
+            <AdminSearchInput label="Search:" value={search} onChange={onSearchChange} placeholder={searchPlaceholder} />
         </div>
     );
 }

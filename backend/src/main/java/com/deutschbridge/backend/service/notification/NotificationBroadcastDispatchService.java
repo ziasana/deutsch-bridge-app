@@ -32,13 +32,24 @@ public class NotificationBroadcastDispatchService {
         this.clock = clock;
     }
 
+    /**
+     * Resolves the audience and creates one Notification per recipient, but only if this broadcast is
+     * still SCHEDULED at the moment of the atomic claim below. An admin's "edit and send now" and the
+     * scheduler's dispatchDueBroadcasts() can both reach this method for the same broadcast; the claim
+     * guarantees only the winner does the work, so the loser returns the broadcast unchanged instead of
+     * racing to insert duplicate Notification rows (which would previously surface as a confusing 409).
+     */
     @Transactional
     public NotificationBroadcast send(NotificationBroadcast broadcast) {
+        Instant now = Instant.now(clock);
+        if (broadcastRepository.claimForSending(broadcast.getId(), now) == 0) {
+            return broadcastRepository.findById(broadcast.getId()).orElse(broadcast);
+        }
+
         List<String> userIds = audienceResolverService.resolveUserIds(
                 broadcast.getAudienceType(), broadcast.getAudienceLevel(),
                 broadcast.getAudienceAccountType(), broadcast.getAudienceLanguage(), broadcast.getAudienceUserIds());
 
-        Instant now = Instant.now(clock);
         List<Notification> notifications = userIds.stream().map(userId -> {
             Notification n = new Notification();
             n.setUserId(userId);
@@ -57,6 +68,7 @@ public class NotificationBroadcastDispatchService {
         broadcast.setStatus(NotificationBroadcastStatus.SENT);
         broadcast.setSentAt(now);
         broadcast.setRecipientCount(userIds.size());
+        broadcast.setLastDispatchError(null);
         return broadcastRepository.save(broadcast);
     }
 }

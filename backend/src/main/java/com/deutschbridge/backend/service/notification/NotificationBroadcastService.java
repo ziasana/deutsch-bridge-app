@@ -83,8 +83,10 @@ public class NotificationBroadcastService {
         broadcastRepository.save(broadcast);
     }
 
-    public long audienceCount(NotificationAudienceType audienceType, LearningLevel level, AccountType accountType, PreferredLanguage language) {
-        return audienceResolverService.resolveUserIds(audienceType, level, accountType, language, List.of()).size();
+    public long audienceCount(NotificationAudienceType audienceType, LearningLevel level, AccountType accountType,
+                              PreferredLanguage language, List<String> specificUserIds) {
+        return audienceResolverService.resolveUserIds(audienceType, level, accountType, language,
+                specificUserIds != null ? specificUserIds : List.of()).size();
     }
 
     private NotificationBroadcast dispatchIfDue(NotificationBroadcast broadcast) {
@@ -108,6 +110,7 @@ public class NotificationBroadcastService {
         broadcast.setAudienceLanguage(request.audienceLanguage() != null ? PreferredLanguage.valueOf(request.audienceLanguage()) : null);
         broadcast.setAudienceUserIds(request.audienceUserIds() != null ? request.audienceUserIds() : List.of());
         broadcast.setScheduledAt(request.scheduledAt());
+        broadcast.setLastDispatchError(null);
 
         if (audienceType == NotificationAudienceType.LEVEL && broadcast.getAudienceLevel() == null) {
             throw new IllegalArgumentException("audienceLevel is required for audienceType LEVEL");

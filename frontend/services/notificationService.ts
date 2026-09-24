@@ -102,11 +102,13 @@ export const getAudienceCount = async (
     audienceType: NotificationAudienceType,
     level: string | null,
     accountType: string | null,
-    language: string | null
+    language: string | null,
+    userIds: string[] | null = null
 ) => {
     const params = new URLSearchParams({ audienceType });
     if (level) params.set("level", level);
     if (language) params.set("language", language);
     if (accountType) params.set("accountType", accountType);
+    userIds?.forEach((id) => params.append("userIds", id));
     return await api.get<{ message: string | null; data: number }>(`/admin/notifications/broadcasts/audience-count?${params.toString()}`);
 };

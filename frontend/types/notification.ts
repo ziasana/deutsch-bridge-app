@@ -103,6 +103,8 @@ export interface NotificationBroadcast {
     scheduledAt: string | null;
     sentAt: string | null;
     recipientCount: number | null;
+    lastDispatchError: string | null;
+    lastDispatchAttemptAt: string | null;
     createdByEmail: string;
     createdAt: string;
 }

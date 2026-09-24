@@ -9,6 +9,12 @@ spring:
     hibernate:
       ddl-auto: update
 
+  # Each test run gets a brand-new, empty Testcontainers database with no pre-existing schema for
+  # Flyway to baseline against (see V1__baseline.sql's comment) - ddl-auto=update above builds the
+  # whole schema fresh every run instead, same as it always has for tests.
+  flyway:
+    enabled: false
+
   testcontainers:
     reuse:
       enable: true

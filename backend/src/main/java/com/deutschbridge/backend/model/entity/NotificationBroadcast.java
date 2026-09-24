@@ -68,6 +68,12 @@ public class NotificationBroadcast {
     private Instant sentAt;
     private Integer recipientCount;
 
+    /** Set by NotificationScheduler.dispatchDueBroadcasts on a failed attempt so a SCHEDULED broadcast
+     * that's actually stuck retrying is visible to admins, not just in server logs. Cleared on success. */
+    @Column(columnDefinition = "TEXT")
+    private String lastDispatchError;
+    private Instant lastDispatchAttemptAt;
+
     @Column(name = "created_by", nullable = false)
     private String createdBy;
 

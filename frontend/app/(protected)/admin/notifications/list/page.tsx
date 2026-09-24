@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Bell, Send } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Bell, Send } from "lucide-react";
 import { toast } from "@/lib/toast";
 import useAuthStore from "@/store/useAuthStore";
 import { getAllUsers } from "@/services/adminService";
@@ -30,6 +30,7 @@ import Button from "@/componenets/Button";
 import Loading from "@/componenets/Loading";
 import NotificationsSubNav from "@/componenets/admin/NotificationsSubNav";
 import AdminTablePagination from "@/componenets/admin/table/AdminTablePagination";
+import AdminSearchInput from "@/componenets/admin/table/AdminSearchInput";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const ACCOUNT_TYPES = ["BASIC", "PREMIUM"];
@@ -67,6 +68,14 @@ const makeEmptyForm = () => ({
     scheduleMode: "now" as ScheduleMode,
     scheduledAt: "",
 });
+
+/** Backend scheduledAt is a UTC ISO string; datetime-local inputs read/write local wall-clock time with
+ * no timezone info, so the UTC instant must be shifted by the browser's own offset before slicing. */
+function toLocalDatetimeInputValue(isoUtc: string): string {
+    const date = new Date(isoUtc);
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+}
 
 function audienceSummary(b: NotificationBroadcast): string {
     if (b.audienceType === "ALL") return "All users";
@@ -107,22 +116,26 @@ export default function AdminNotificationsListPage() {
         if (userProfile?.role !== "ADMIN") router.push("/dashboard");
     }, [hasHydrated, userProfile, router]);
 
-    // Debounced recipient-count preview.
+    // Debounced recipient-count preview. Always asks the backend (even for SPECIFIC_USERS) so the count
+    // reflects the same deleted/disabled filtering AudienceResolverService applies at actual send time.
+    // No selection yet is a pure function of existing state, so it's derived below rather than synced
+    // through an effect-driven setState.
+    const noSelectionYet = form.audienceType === "SPECIFIC_USERS" && form.audienceUserIds.length === 0;
+    const previewRecipientCount = noSelectionYet ? 0 : recipientCount;
+
     useEffect(() => {
-        if (form.audienceType === "SPECIFIC_USERS") {
-            setRecipientCount(form.audienceUserIds.length);
-            return;
-        }
+        if (noSelectionYet) return;
         const level = form.audienceType === "LEVEL" ? form.audienceLevel : null;
         const accountType = form.audienceType === "ACCOUNT_TYPE" ? form.audienceAccountType : null;
         const language = form.audienceType === "LANGUAGE" ? form.audienceLanguage : null;
+        const userIds = form.audienceType === "SPECIFIC_USERS" ? form.audienceUserIds : null;
         const timer = setTimeout(() => {
-            getAudienceCount(form.audienceType, level, accountType, language)
+            getAudienceCount(form.audienceType, level, accountType, language, userIds)
                 .then((res) => setRecipientCount(res.data.data))
                 .catch(() => setRecipientCount(null));
         }, 300);
         return () => clearTimeout(timer);
-    }, [form.audienceType, form.audienceLevel, form.audienceAccountType, form.audienceLanguage, form.audienceUserIds.length]);
+    }, [form.audienceType, form.audienceLevel, form.audienceAccountType, form.audienceLanguage, form.audienceUserIds, noSelectionYet]);
 
     const filteredUsers = useMemo(() => {
         const q = userSearch.trim().toLowerCase();
@@ -152,7 +165,7 @@ export default function AdminNotificationsListPage() {
             audienceLanguage: (broadcast.audienceLanguage as NotificationAudienceLanguage) ?? LANGUAGES[0],
             audienceUserIds: broadcast.audienceUserIds,
             scheduleMode: broadcast.scheduledAt ? "schedule" : "now",
-            scheduledAt: broadcast.scheduledAt ? broadcast.scheduledAt.slice(0, 16) : "",
+            scheduledAt: broadcast.scheduledAt ? toLocalDatetimeInputValue(broadcast.scheduledAt) : "",
         });
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
@@ -238,7 +251,7 @@ export default function AdminNotificationsListPage() {
                 <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
                     <Bell className="size-7 text-primary" /> Notifications
                 </h1>
-                <p className="text-foreground/60 mt-2">Compose and schedule notifications, and review what's already gone out.</p>
+                <p className="text-foreground/60 mt-2">Compose and schedule notifications, and review what&apos;s already gone out.</p>
 
                 <NotificationsSubNav />
 
@@ -358,8 +371,8 @@ export default function AdminNotificationsListPage() {
                                     </label>
                                 )}
 
-                                {recipientCount !== null && form.audienceType !== "SPECIFIC_USERS" && (
-                                    <p className="sm:col-span-2 text-xs text-foreground/50">~{recipientCount} recipient(s)</p>
+                                {previewRecipientCount !== null && form.audienceType !== "SPECIFIC_USERS" && (
+                                    <p className="sm:col-span-2 text-xs text-foreground/50">~{previewRecipientCount} recipient(s)</p>
                                 )}
                             </div>
 
@@ -367,13 +380,13 @@ export default function AdminNotificationsListPage() {
                                 <div className="space-y-2">
                                     <span className="block text-sm font-medium text-foreground/80">
                                         Users ({form.audienceUserIds.length} selected)
+                                        {previewRecipientCount !== null && previewRecipientCount !== form.audienceUserIds.length && (
+                                            <span className="ml-2 font-normal text-foreground/50">
+                                                {previewRecipientCount} will actually receive it (some selected accounts are disabled or deleted)
+                                            </span>
+                                        )}
                                     </span>
-                                    <input
-                                        value={userSearch}
-                                        onChange={(e) => setUserSearch(e.target.value)}
-                                        placeholder="Search by name or email"
-                                        className={INPUT_CLASS}
-                                    />
+                                    <AdminSearchInput value={userSearch} onChange={setUserSearch} placeholder="Search by name or email" />
                                     <div className="max-h-48 overflow-y-auto rounded-lg border border-gray-300 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700">
                                         {filteredUsers.map((u) => (
                                             <label
@@ -405,7 +418,7 @@ export default function AdminNotificationsListPage() {
                                                 type="radio"
                                                 name="scheduleMode"
                                                 checked={form.scheduleMode === "now"}
-                                                onChange={() => setForm({ ...form, scheduleMode: "now" })}
+                                                onChange={() => setForm({ ...form, scheduleMode: "now", scheduledAt: "" })}
                                             />
                                             Now
                                         </label>
@@ -476,7 +489,16 @@ export default function AdminNotificationsListPage() {
                                                 <TableCell>{audienceSummary(b)}</TableCell>
                                                 <TableCell>{b.recipientCount ?? "—"}</TableCell>
                                                 <TableCell>
-                                                    <Badge variant={STATUS_VARIANT[b.status]}>{b.status}</Badge>
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Badge variant={STATUS_VARIANT[b.status]}>{b.status}</Badge>
+                                                        {b.status === "SCHEDULED" && b.lastDispatchError && (
+                                                            <span
+                                                                title={`Last attempt failed${b.lastDispatchAttemptAt ? " at " + new Date(b.lastDispatchAttemptAt).toLocaleString() : ""}: ${b.lastDispatchError}`}
+                                                            >
+                                                                <AlertTriangle className="size-4 text-amber-500" />
+                                                            </span>
+                                                        )}
+                                                    </span>
                                                 </TableCell>
                                                 <TableCell className="text-foreground/60">
                                                     {new Date(b.sentAt ?? b.scheduledAt ?? b.createdAt).toLocaleString()}
