@@ -3,6 +3,7 @@ package com.deutschbridge.backend.controller;
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.GenerateQuizRequest;
 import com.deutschbridge.backend.model.dto.ImageUploadResponse;
+import com.deutschbridge.backend.model.dto.ReadingArticleBulkImportResult;
 import com.deutschbridge.backend.model.dto.ReadingArticleGenerateRequest;
 import com.deutschbridge.backend.model.dto.ReadingArticleManualRequest;
 import com.deutschbridge.backend.model.dto.ReadingArticleResponse;
@@ -13,6 +14,7 @@ import com.deutschbridge.backend.model.entity.KeyVocabularyItem;
 import com.deutschbridge.backend.model.entity.ReadingQuizQuestion;
 import com.deutschbridge.backend.service.FileStorageService;
 import com.deutschbridge.backend.service.ReadingArticleService;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -66,6 +68,12 @@ public class AdminReadingController {
     @PostMapping
     public ResponseEntity<ReadingArticleResponse> create(@RequestBody ReadingArticleManualRequest request) {
         return ResponseEntity.ok(readingArticleService.createManual(request));
+    }
+
+    /** Best-effort bulk import - see ReadingArticleService.bulkImport for the per-row validation behavior. */
+    @PostMapping("/bulk")
+    public ResponseEntity<ReadingArticleBulkImportResult> bulkImport(@RequestBody List<JsonNode> rows) {
+        return ResponseEntity.ok(readingArticleService.bulkImport(rows));
     }
 
     @PutMapping("/{id}")

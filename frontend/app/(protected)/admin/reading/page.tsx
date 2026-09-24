@@ -16,15 +16,35 @@ import {
     generateQuiz,
     getArticleQuizForAdmin,
     uploadReadingArticleImage,
+    bulkImportReadingArticles,
 } from "@/services/adminReadingService";
-import { Annotation, AnnotationType, KeyVocabularyItem, ReadingArticle, ReadingQuizQuestion, ReadingQuizQuestionType } from "@/types/reading";
+import {
+    Annotation,
+    AnnotationType,
+    KeyVocabularyItem,
+    ReadingArticle,
+    ReadingArticleBulkImportResult,
+    ReadingQuizQuestion,
+    ReadingQuizQuestionType,
+} from "@/types/reading";
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
 import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
 import { getArticleImageSrc } from "@/lib/readingImages";
-import { ArrowUp, ArrowDown, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import {
+    ArrowUp,
+    ArrowDown,
+    ArrowUpDown,
+    ChevronLeft,
+    ChevronRight,
+    ChevronsLeft,
+    ChevronsRight,
+    Upload,
+    CheckCircle2,
+    XCircle,
+} from "lucide-react";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
@@ -102,6 +122,11 @@ export default function AdminReadingPage() {
     const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
     const [mode, setMode] = useState<Mode>("generate");
+
+    const [showBulkImport, setShowBulkImport] = useState(false);
+    const [bulkText, setBulkText] = useState("");
+    const [isBulkImporting, setIsBulkImporting] = useState(false);
+    const [bulkResult, setBulkResult] = useState<ReadingArticleBulkImportResult | null>(null);
 
     const [genTopic, setGenTopic] = useState("");
     const [genLevel, setGenLevel] = useState("A2");
@@ -272,6 +297,50 @@ export default function AdminReadingPage() {
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load existing quiz."));
     };
 
+    const handleBulkFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (!file) return;
+        file.text()
+            .then((text) => setBulkText(text))
+            .catch(() => toast.error("Failed to read the file."));
+    };
+
+    const runBulkImport = () => {
+        let parsed: unknown;
+        try {
+            parsed = JSON.parse(bulkText);
+        } catch {
+            toast.error("Invalid JSON - check the syntax and try again.");
+            return;
+        }
+        if (!Array.isArray(parsed) || parsed.length === 0) {
+            toast.error("Expected a non-empty JSON array of articles.");
+            return;
+        }
+
+        setIsBulkImporting(true);
+        setBulkResult(null);
+        bulkImportReadingArticles(parsed)
+            .then((res) => {
+                setBulkResult(res.data);
+                if (res.data.successCount > 0) invalidateArticles();
+                if (res.data.failureCount === 0) {
+                    toast.success(`Imported ${res.data.successCount} articles.`);
+                } else {
+                    toast.error(`${res.data.successCount} imported, ${res.data.failureCount} failed - see details below.`);
+                }
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Bulk import failed."))
+            .finally(() => setIsBulkImporting(false));
+    };
+
+    const closeBulkImport = () => {
+        setShowBulkImport(false);
+        setBulkText("");
+        setBulkResult(null);
+    };
+
     const submitManual = (e: React.FormEvent) => {
         e.preventDefault();
         if (!manualForm.title.trim() || !manualForm.content.trim()) {
@@ -379,10 +448,154 @@ export default function AdminReadingPage() {
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
             <div className="max-w-7xl mx-auto">
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Reading Articles</h1>
-                <p className="text-gray-600 dark:text-gray-300 mt-2">
-                    Generate an article with AI, or paste in one you already have.
-                </p>
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div>
+                        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Reading Articles</h1>
+                        <p className="text-gray-600 dark:text-gray-300 mt-2">
+                            Generate an article with AI, or paste in one you already have.
+                        </p>
+                    </div>
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        className="flex items-center gap-2"
+                        onClick={() => setShowBulkImport((prev) => !prev)}
+                    >
+                        <Upload className="size-4" />
+                        Bulk upload
+                    </Button>
+                </div>
+
+                {showBulkImport && (
+                    <div className="mt-6 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Bulk upload</h2>
+                            <button
+                                type="button"
+                                className="text-sm text-gray-500 dark:text-gray-400 underline"
+                                onClick={closeBulkImport}
+                            >
+                                Close
+                            </button>
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                            Paste or upload a JSON array of reading articles, in the same shape as the form below.
+                            Each row is imported independently - a mistake in one row won&apos;t block the rest.
+                            Required fields per row: <code>title</code>, <code>level</code>{" "}
+                            (<code>A1</code>-<code>C2</code>), <code>content</code>.
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                            <code>annotations[].type</code> must be one of:{" "}
+                            {ANNOTATION_TYPES.map((t, i) => (
+                                <span key={t}>
+                                    {i > 0 && ", "}
+                                    <code>{t}</code>
+                                </span>
+                            ))}
+                            . <code>quiz[].type</code> must be one of:{" "}
+                            {QUIZ_TYPES.map((t, i) => (
+                                <span key={t}>
+                                    {i > 0 && ", "}
+                                    <code>{t}</code>
+                                </span>
+                            ))}
+                            .
+                        </p>
+                        <p className="text-sm">
+                            <a
+                                href="/templates/reading-article-bulk-import-template.json"
+                                download
+                                className="text-blue-600 dark:text-blue-400 underline"
+                            >
+                                Download template JSON
+                            </a>
+                            {" · "}
+                            <a
+                                href="/templates/reading-article-bulk-import-guide.md"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 dark:text-blue-400 underline"
+                            >
+                                Field reference guide
+                            </a>
+                        </p>
+                        <details className="text-sm text-gray-600 dark:text-gray-300">
+                            <summary className="cursor-pointer select-none">Show example row</summary>
+                            <pre className="mt-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-900 overflow-x-auto text-xs">
+{`[
+  {
+    "title": "Ein Wochenende in Berlin",
+    "topic": "Reisen",
+    "level": "A2",
+    "content": "Am Samstag bin ich mit dem Zug nach Berlin gefahren...",
+    "keyVocabulary": [
+      { "word": "entdecken", "meaning": "to discover" }
+    ],
+    "annotations": [],
+    "quiz": []
+  }
+]`}
+                            </pre>
+                        </details>
+
+                        <div className="flex flex-col gap-2">
+                            <input
+                                type="file"
+                                accept="application/json,.json"
+                                onChange={handleBulkFileSelected}
+                                className="text-sm text-gray-600 dark:text-gray-300"
+                            />
+                            <textarea
+                                value={bulkText}
+                                onChange={(e) => setBulkText(e.target.value)}
+                                placeholder="Paste a JSON array of reading articles here, or upload a .json file above."
+                                rows={10}
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            />
+                        </div>
+
+                        <Button
+                            type="button"
+                            variant="primary"
+                            onClick={runBulkImport}
+                            disabled={isBulkImporting || !bulkText.trim()}
+                        >
+                            {isBulkImporting ? "Importing..." : "Import"}
+                        </Button>
+
+                        {bulkResult && (
+                            <div className="space-y-3">
+                                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                    {bulkResult.successCount} of {bulkResult.totalCount} imported
+                                    {bulkResult.failureCount > 0 ? `, ${bulkResult.failureCount} failed` : ""}.
+                                </p>
+                                <div className="max-h-64 overflow-y-auto space-y-1">
+                                    {bulkResult.rows.map((row) => (
+                                        <div
+                                            key={row.index}
+                                            className={`flex items-start gap-2 text-sm px-3 py-2 rounded-lg ${
+                                                row.success
+                                                    ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
+                                                    : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300"
+                                            }`}
+                                        >
+                                            {row.success ? (
+                                                <CheckCircle2 className="size-4 shrink-0 mt-0.5" />
+                                            ) : (
+                                                <XCircle className="size-4 shrink-0 mt-0.5" />
+                                            )}
+                                            <span>
+                                                Row {row.index + 1}
+                                                {row.title ? ` (${row.title})` : ""}:{" "}
+                                                {row.success ? "imported" : row.errorMessage}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
                     <div className="flex gap-2 mb-6">

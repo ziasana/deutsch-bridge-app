@@ -4,6 +4,7 @@ import {
     GenerateQuizRequest,
     KeyVocabularyItem,
     ReadingArticle,
+    ReadingArticleBulkImportResult,
     ReadingArticleGenerateRequest,
     ReadingArticleManualRequest,
     ReadingQuizQuestion,
@@ -49,4 +50,8 @@ export const updateReadingArticle = async (id: string, request: ReadingArticleMa
 
 export const deleteReadingArticle = async (id: string) => {
     return await api.delete(`/admin/reading/${id}`);
+};
+
+export const bulkImportReadingArticles = async (rows: unknown[]) => {
+    return await api.post<ReadingArticleBulkImportResult>("/admin/reading/bulk", rows);
 };

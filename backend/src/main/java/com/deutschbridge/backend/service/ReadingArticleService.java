@@ -2,6 +2,8 @@ package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.exception.DataNotFoundException;
+import com.deutschbridge.backend.model.dto.ReadingArticleBulkImportResult;
+import com.deutschbridge.backend.model.dto.ReadingArticleBulkImportRowResult;
 import com.deutschbridge.backend.model.dto.ReadingArticleManualRequest;
 import com.deutschbridge.backend.model.dto.ReadingArticleResponse;
 import com.deutschbridge.backend.model.entity.Annotation;
@@ -20,6 +22,10 @@ import com.deutschbridge.backend.repository.ReadingArticleRepository;
 import com.deutschbridge.backend.repository.UserWordProgressRepository;
 import com.deutschbridge.backend.service.cache.ContentCacheService;
 import com.deutschbridge.backend.util.ReadingArticleMapper;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
@@ -48,6 +54,7 @@ public class ReadingArticleService {
     private final OllamaService ollamaService;
     private final TokenizationService tokenizationService;
     private final ContentCacheService contentCacheService;
+    private final ObjectMapper objectMapper;
 
     public ReadingArticleService(ReadingArticleRepository readingArticleRepository,
                                   LearningProgressRepository learningProgressRepository,
@@ -56,7 +63,8 @@ public class ReadingArticleService {
                                   RequestContext requestContext,
                                   OllamaService ollamaService,
                                   TokenizationService tokenizationService,
-                                  ContentCacheService contentCacheService) {
+                                  ContentCacheService contentCacheService,
+                                  ObjectMapper objectMapper) {
         this.readingArticleRepository = readingArticleRepository;
         this.learningProgressRepository = learningProgressRepository;
         this.userWordProgressRepository = userWordProgressRepository;
@@ -65,6 +73,7 @@ public class ReadingArticleService {
         this.ollamaService = ollamaService;
         this.tokenizationService = tokenizationService;
         this.contentCacheService = contentCacheService;
+        this.objectMapper = objectMapper;
     }
 
     public ReadingArticle findById(String id) throws DataNotFoundException {
@@ -197,6 +206,66 @@ public class ReadingArticleService {
     public void delete(String id) throws DataNotFoundException {
         findById(id);
         readingArticleRepository.deleteById(id);
+    }
+
+    /** Best-effort bulk import: each row is validated and saved independently. */
+    @CacheEvict(cacheNames = "readingArticles", allEntries = true)
+    public ReadingArticleBulkImportResult bulkImport(List<JsonNode> rows) {
+        List<ReadingArticleBulkImportRowResult> results = new ArrayList<>();
+        int successCount = 0;
+
+        for (int i = 0; i < rows.size(); i++) {
+            JsonNode row = rows.get(i);
+            String title = row.hasNonNull("title") ? row.get("title").asText() : null;
+            try {
+                ReadingArticleManualRequest request = objectMapper.treeToValue(row, ReadingArticleManualRequest.class);
+                validateRequiredFields(request);
+                ReadingArticleResponse saved = createManual(request);
+                results.add(new ReadingArticleBulkImportRowResult(i, title, true, null, saved.id()));
+                successCount++;
+            } catch (Exception e) {
+                results.add(new ReadingArticleBulkImportRowResult(i, title, false, describeImportError(e), null));
+            }
+        }
+
+        return new ReadingArticleBulkImportResult(rows.size(), successCount, rows.size() - successCount, results);
+    }
+
+    private void validateRequiredFields(ReadingArticleManualRequest request) {
+        if (request.title() == null || request.title().isBlank()) {
+            throw new IllegalArgumentException("\"title\" is required.");
+        }
+        if (request.level() == null) {
+            throw new IllegalArgumentException("\"level\" is required (A1, A2, B1, B2, C1, or C2).");
+        }
+        if (request.content() == null || request.content().isBlank()) {
+            throw new IllegalArgumentException("\"content\" is required.");
+        }
+    }
+
+    private String describeImportError(Exception e) {
+        if (e instanceof InvalidFormatException invalidFormat) {
+            String field = describeFieldPath(invalidFormat.getPath());
+            return "Invalid value \"" + invalidFormat.getValue() + "\" for \"" + field + "\".";
+        }
+        if (e instanceof IllegalArgumentException) {
+            return e.getMessage();
+        }
+        return "Could not import this row: " + e.getMessage();
+    }
+
+    /** Full dotted/indexed path (e.g. "annotations[1].type") instead of just the outermost field. */
+    private static String describeFieldPath(List<JsonMappingException.Reference> path) {
+        StringBuilder sb = new StringBuilder();
+        for (JsonMappingException.Reference ref : path) {
+            if (ref.getFieldName() != null) {
+                if (!sb.isEmpty()) sb.append('.');
+                sb.append(ref.getFieldName());
+            } else if (ref.getIndex() >= 0) {
+                sb.append('[').append(ref.getIndex()).append(']');
+            }
+        }
+        return !sb.isEmpty() ? sb.toString() : "a field";
     }
 
     private List<Annotation> prepareAnnotations(List<Annotation> annotations, String content) {

@@ -89,6 +89,21 @@ export interface ReadingArticleManualRequest {
     linkedGroupId: string | null;
 }
 
+export interface ReadingArticleBulkImportRowResult {
+    index: number;
+    title: string | null;
+    success: boolean;
+    errorMessage: string | null;
+    id: string | null;
+}
+
+export interface ReadingArticleBulkImportResult {
+    totalCount: number;
+    successCount: number;
+    failureCount: number;
+    rows: ReadingArticleBulkImportRowResult[];
+}
+
 export interface SuggestVocabularyRequest {
     content: string;
     level: string;

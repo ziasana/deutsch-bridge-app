@@ -1,0 +1,65 @@
+[
+  {
+    "title": "Ein Wochenende in Berlin",
+    "topic": "Reisen",
+    "level": "A2",
+    "content": "Am Samstag bin ich mit dem Zug nach Berlin gefahren. Die Stadt war voller Leben und ich habe viele neue Orte entdeckt. Am Abend habe ich mit Freunden in einem kleinen Restaurant gegessen.",
+    "imageUrl": null,
+    "linkedGroupId": null,
+    "keyVocabulary": [
+      { "word": "entdecken", "meaning": "to discover" },
+      { "word": "voller Leben", "meaning": "full of life" }
+    ],
+    "annotations": [
+      {
+        "type": "WORD",
+        "surfaceText": "entdeckt",
+        "lemma": "entdecken",
+        "pos": "verb",
+        "gender": null,
+        "pluralForm": null,
+        "translationEn": "discovered",
+        "literalTranslation": null,
+        "cefrLevel": "A2",
+        "exampleSentence": "Ich habe viele neue Orte entdeckt."
+      }
+    ],
+    "quiz": [
+      {
+        "type": "DETAIL",
+        "prompt": "Wie ist die Person nach Berlin gefahren?",
+        "options": ["Mit dem Zug", "Mit dem Auto", "Mit dem Flugzeug"],
+        "correctAnswer": "Mit dem Zug",
+        "explanation": "Im Text steht: \"Am Samstag bin ich mit dem Zug nach Berlin gefahren.\"",
+        "supportingSentence": "Am Samstag bin ich mit dem Zug nach Berlin gefahren.",
+        "relatedAnnotationId": null,
+        "minLevel": "A1"
+      }
+    ]
+  },
+  {
+    "title": "Gesunde Ernährung im Alltag",
+    "topic": "Gesundheit",
+    "level": "B1",
+    "content": "Viele Menschen möchten sich gesünder ernähren, wissen aber nicht, wo sie anfangen sollen. Ein guter erster Schritt ist es, mehr Obst und Gemüse zu essen und weniger Fertiggerichte zu kaufen.",
+    "imageUrl": null,
+    "linkedGroupId": null,
+    "keyVocabulary": [
+      { "word": "sich ernähren", "meaning": "to eat, to nourish oneself" },
+      { "word": "das Fertiggericht", "meaning": "ready-made meal" }
+    ],
+    "annotations": [],
+    "quiz": [
+      {
+        "type": "HAUPTIDEE",
+        "prompt": "Worum geht es in diesem Text vor allem?",
+        "options": ["Um gesunde Ernährung", "Um Sport", "Um Reisen"],
+        "correctAnswer": "Um gesunde Ernährung",
+        "explanation": "Der Text erklärt, wie man sich im Alltag gesünder ernähren kann.",
+        "supportingSentence": "Viele Menschen möchten sich gesünder ernähren.",
+        "relatedAnnotationId": null,
+        "minLevel": "A1"
+      }
+    ]
+  }
+]
