@@ -28,7 +28,18 @@ import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
 import RichTextEditor from "@/componenets/RichTextEditor";
 import GrammarSubNav from "@/componenets/admin/GrammarSubNav";
 import { isTranslatableLevel } from "@/lib/grammarLocalization";
-import { ArrowUp, ArrowDown, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import {
+    ArrowUp,
+    ArrowDown,
+    ArrowUpDown,
+    ChevronLeft,
+    ChevronRight,
+    ChevronsLeft,
+    ChevronsRight,
+    Upload,
+    CheckCircle2,
+    XCircle,
+} from "lucide-react";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const STATUSES: GrammarLessonStatus[] = ["DRAFT", "PUBLISHED"];
@@ -114,7 +125,11 @@ export default function AdminGrammarPage() {
     const [exercises, setExercises] = useState<QuizQuestion[]>([]);
     const [editingLesson, setEditingLesson] = useState<GrammarLesson | null>(null);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+    const [showBulkImport, setShowBulkImport] = useState(false);
+    const [bulkText, setBulkText] = useState("");
     const [isImporting, setIsImporting] = useState(false);
+    const [bulkResult, setBulkResult] = useState<{ success: boolean; message: string } | null>(null);
 
     const [lessonsPage, setLessonsPage] = useState(1);
     const [lessonsPageSize, setLessonsPageSize] = useState(10);
@@ -277,34 +292,49 @@ export default function AdminGrammarPage() {
             .finally(() => setIsSaving(false));
     };
 
-    const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleBulkFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         e.target.value = "";
         if (!file) return;
+        file.text()
+            .then((text) => setBulkText(text))
+            .catch(() => toast.error("Failed to read the file."));
+    };
 
+    const runBulkImport = () => {
         let requests: GrammarLessonManualRequest[];
         try {
-            requests = toLessonRequests(JSON.parse(await file.text()));
+            requests = toLessonRequests(JSON.parse(bulkText));
         } catch {
-            toast.error("That file isn't valid JSON.");
+            toast.error("Invalid JSON - check the syntax and try again.");
             return;
         }
         if (requests.length === 0) {
-            toast.error("No lessons found in that file.");
+            toast.error("Expected a non-empty JSON array of lessons.");
             return;
         }
 
         setIsImporting(true);
+        setBulkResult(null);
         bulkImportGrammarLessons(requests)
             .then((res) => {
-                toast.success(`Imported ${res.data.length} lesson(s) as drafts.`);
+                const message = `Imported ${res.data.length} lesson(s) as drafts.`;
+                setBulkResult({ success: true, message });
+                toast.success(message);
                 invalidateLessons();
             })
             .catch((err) => {
                 const message: string = err?.response?.data?.message ?? "Failed to import lessons.";
-                toast.error(<div style={{ whiteSpace: "pre-line" }}>{message}</div>);
+                setBulkResult({ success: false, message });
+                toast.error("Bulk import failed - see details below.");
             })
             .finally(() => setIsImporting(false));
+    };
+
+    const closeBulkImport = () => {
+        setShowBulkImport(false);
+        setBulkText("");
+        setBulkResult(null);
     };
 
     const removeLesson = (lesson: GrammarLesson) => setLessonToDelete(lesson);
@@ -383,25 +413,144 @@ export default function AdminGrammarPage() {
                             Create and manage grammar lessons and their exercises.
                         </p>
                     </div>
-                    <label className="cursor-pointer">
-                        <span
-                            className={`inline-block px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                                isImporting ? "opacity-60 pointer-events-none" : ""
-                            }`}
-                        >
-                            {isImporting ? "Importing..." : "Import lessons (JSON)"}
-                        </span>
-                        <input
-                            type="file"
-                            accept="application/json"
-                            className="hidden"
-                            disabled={isImporting}
-                            onChange={handleImportFile}
-                        />
-                    </label>
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        className="flex items-center gap-2"
+                        onClick={() => setShowBulkImport((prev) => !prev)}
+                    >
+                        <Upload className="size-4" />
+                        Bulk upload
+                    </Button>
                 </div>
 
                 <GrammarSubNav />
+
+                {showBulkImport && (
+                    <div className="mb-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Bulk upload</h2>
+                            <button
+                                type="button"
+                                className="text-sm text-gray-500 dark:text-gray-400 underline"
+                                onClick={closeBulkImport}
+                            >
+                                Close
+                            </button>
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                            Paste or upload a JSON array of grammar lessons, in the same shape as the form below.
+                            Unlike Reading/Expressions bulk import, this one is all-or-nothing: every lesson is
+                            validated first, and if any of them fails, nothing is saved. Required fields per row:{" "}
+                            <code>title</code>, <code>level</code> (<code>A1</code>-<code>C2</code>),{" "}
+                            <code>content</code>.
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                            <code>status</code> must be one of:{" "}
+                            {STATUSES.map((s, i) => (
+                                <span key={s}>
+                                    {i > 0 && ", "}
+                                    <code>{s}</code>
+                                </span>
+                            ))}
+                            {" "}(defaults to <code>DRAFT</code> if omitted). <code>quiz[].type</code> must be one of:{" "}
+                            {EXERCISE_TYPES.map((t, i) => (
+                                <span key={t}>
+                                    {i > 0 && ", "}
+                                    <code>{t}</code>
+                                </span>
+                            ))}
+                            .
+                        </p>
+                        <p className="text-sm">
+                            <a
+                                href="/templates/grammar-lesson-bulk-import-template.json"
+                                download
+                                className="text-blue-600 dark:text-blue-400 underline"
+                            >
+                                Download template JSON
+                            </a>
+                            {" · "}
+                            <a
+                                href="/templates/grammar-lesson-bulk-import-guide.md"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 dark:text-blue-400 underline"
+                            >
+                                Field reference guide
+                            </a>
+                        </p>
+                        <details className="text-sm text-gray-600 dark:text-gray-300">
+                            <summary className="cursor-pointer select-none">Show example row</summary>
+                            <pre className="mt-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-900 overflow-x-auto text-xs">
+{`[
+  {
+    "title": "Perfekt mit haben und sein",
+    "level": "A2",
+    "content": "Das Perfekt wird mit einer Form von \\"haben\\" oder \\"sein\\" und dem Partizip II gebildet.",
+    "example": "Ich habe gegessen. / Ich bin gefahren.",
+    "status": "DRAFT",
+    "quiz": [
+      {
+        "type": "mcq",
+        "title": "Hilfsverb wählen",
+        "question": "Ich ___ gestern ins Kino gegangen.",
+        "options": ["bin", "habe", "war"],
+        "answer": "bin"
+      }
+    ]
+  }
+]`}
+                            </pre>
+                            <p className="mt-2">
+                                Lessons can also be grouped into category blocks (<code>{"{ title, level, categoryId, lessons: [...] }"}</code>)
+                                — see the field reference guide for that shape.
+                            </p>
+                        </details>
+
+                        <div className="flex flex-col gap-2">
+                            <input
+                                type="file"
+                                accept="application/json,.json"
+                                onChange={handleBulkFileSelected}
+                                className="text-sm text-gray-600 dark:text-gray-300"
+                            />
+                            <textarea
+                                value={bulkText}
+                                onChange={(e) => setBulkText(e.target.value)}
+                                placeholder="Paste a JSON array of grammar lessons here, or upload a .json file above."
+                                rows={10}
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            />
+                        </div>
+
+                        <Button
+                            type="button"
+                            variant="primary"
+                            onClick={runBulkImport}
+                            disabled={isImporting || !bulkText.trim()}
+                        >
+                            {isImporting ? "Importing..." : "Import"}
+                        </Button>
+
+                        {bulkResult && (
+                            <div
+                                className={`flex items-start gap-2 text-sm px-3 py-2 rounded-lg whitespace-pre-line ${
+                                    bulkResult.success
+                                        ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
+                                        : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300"
+                                }`}
+                            >
+                                {bulkResult.success ? (
+                                    <CheckCircle2 className="size-4 shrink-0 mt-0.5" />
+                                ) : (
+                                    <XCircle className="size-4 shrink-0 mt-0.5" />
+                                )}
+                                <span>{bulkResult.message}</span>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
                     <form onSubmit={submitForm} className="space-y-6">

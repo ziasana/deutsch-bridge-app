@@ -1,0 +1,64 @@
+[
+  {
+    "title": "Perfekt mit haben und sein",
+    "level": "A2",
+    "summary": "Wie man das Perfekt richtig bildet.",
+    "content": "Das Perfekt wird mit einer Form von \"haben\" oder \"sein\" und dem Partizip II gebildet.",
+    "example": "Ich habe gegessen. / Ich bin gefahren.",
+    "usageTips": "Bewegungsverben und Zustandsänderungen benutzen meistens \"sein\".",
+    "titleFa": "زمان کامل با haben و sein",
+    "summaryFa": "چگونگی ساخت درست زمان کامل.",
+    "contentFa": "زمان کامل با شکلی از «haben» یا «sein» و Partizip II ساخته می‌شود.",
+    "exampleFa": "من غذا خورده‌ام. / من رانندگی کرده‌ام.",
+    "usageTipsFa": "افعال حرکتی و تغییر حالت معمولاً از «sein» استفاده می‌کنند.",
+    "videoLink": null,
+    "status": "DRAFT",
+    "categoryId": null,
+    "sortOrder": 0,
+    "quiz": [
+      {
+        "type": "mcq",
+        "title": "Hilfsverb wählen",
+        "question": "Ich ___ gestern ins Kino gegangen.",
+        "options": ["bin", "habe", "war"],
+        "answer": "bin",
+        "titleFa": "فعل کمکی را انتخاب کنید",
+        "questionFa": "من دیروز به سینما ___."
+      },
+      {
+        "type": "truefalse",
+        "title": "Richtig oder falsch",
+        "question": "\"Ich habe geschlafen\" ist eine korrekte Perfektform.",
+        "answer": true,
+        "titleFa": "درست یا نادرست",
+        "questionFa": "«Ich habe geschlafen» یک شکل درست از زمان کامل است."
+      }
+    ]
+  },
+  {
+    "title": "Konjunktiv II - Höfliche Bitten",
+    "level": "B2",
+    "summary": "Höfliche Bitten und irreale Wünsche ausdrücken.",
+    "content": "Der Konjunktiv II wird verwendet, um höfliche Bitten, Wünsche oder irreale Situationen auszudrücken.",
+    "example": "Könnten Sie mir bitte helfen? Ich hätte gern einen Kaffee.",
+    "usageTips": "Bei den meisten Verben wird \"würde\" + Infinitiv statt der echten Konjunktiv-II-Form benutzt.",
+    "titleFa": "",
+    "summaryFa": "",
+    "contentFa": "",
+    "exampleFa": "",
+    "usageTipsFa": "",
+    "videoLink": null,
+    "status": "DRAFT",
+    "categoryId": null,
+    "sortOrder": 0,
+    "quiz": [
+      {
+        "type": "mcq",
+        "title": "Höfliche Form wählen",
+        "question": "___ Sie mir bitte das Salz geben?",
+        "options": ["Könnten", "Können", "Konnten"],
+        "answer": "Könnten"
+      }
+    ]
+  }
+]
