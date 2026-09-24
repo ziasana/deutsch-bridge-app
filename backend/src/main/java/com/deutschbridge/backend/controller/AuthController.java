@@ -70,6 +70,12 @@ public class AuthController {
         }
 
         String email= jwtUtil.extractEmail(token);
+
+        User user = userService.findByEmail(email);
+        if (!user.isEnabled() || user.isDeleted()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         String newAccessToken = jwtUtil.generateAccessToken(email);
         // create cookie
         response.addCookie(cookieService.createAccessToken(newAccessToken));

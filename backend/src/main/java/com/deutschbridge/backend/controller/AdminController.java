@@ -2,8 +2,12 @@ package com.deutschbridge.backend.controller;
 
 import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.exception.DataNotFoundException;
+import com.deutschbridge.backend.model.dto.AdminBulkDeleteUsersRequest;
+import com.deutschbridge.backend.model.dto.AdminBulkDeleteUsersResult;
 import com.deutschbridge.backend.model.dto.AdminChangeAccountTypeRequest;
 import com.deutschbridge.backend.model.dto.AdminChangePasswordRequest;
+import com.deutschbridge.backend.model.dto.AdminCreateUserRequest;
+import com.deutschbridge.backend.model.dto.AdminSetEnabledRequest;
 import com.deutschbridge.backend.model.dto.AdminUpdateUserRequest;
 import com.deutschbridge.backend.model.dto.AdminUserResponse;
 import com.deutschbridge.backend.model.dto.ApiResponse;
@@ -36,10 +40,21 @@ public class AdminController {
 
     @GetMapping("/users")
     public ResponseEntity<List<AdminUserResponse>> getAllUsers() {
-        List<AdminUserResponse> users = userService.findAll().stream()
+        List<AdminUserResponse> users = userService.findAllForAdmin().stream()
                 .map(AdminUserResponse::fromEntity)
                 .toList();
         return ResponseEntity.ok(users);
+    }
+
+    @PostMapping("/users")
+    public ResponseEntity<ApiResponse<AdminUserResponse>> createUser(@RequestBody @Valid AdminCreateUserRequest request) {
+        User created = userService.adminCreateUser(request);
+
+        adminAuditLogService.record(requestContext.getUserId(), requestContext.getUserEmail(),
+                "USER_CREATED", "Created user " + created.getEmail());
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>("User created successfully", AdminUserResponse.fromEntity(created)));
     }
 
     @GetMapping("/users/{id}")
@@ -83,5 +98,49 @@ public class AdminController {
         );
 
         return ResponseEntity.ok(new ApiResponse<>("Account type updated successfully", AdminUserResponse.fromEntity(updated)));
+    }
+
+    @PutMapping("/users/{id}/enabled")
+    public ResponseEntity<ApiResponse<AdminUserResponse>> setEnabled(
+            @PathVariable String id,
+            @RequestBody @Valid AdminSetEnabledRequest request
+    ) throws DataNotFoundException {
+        if (!request.enabled() && id.equals(requestContext.getUserId())) {
+            throw new IllegalArgumentException("You can't disable your own account.");
+        }
+
+        User updated = userService.adminSetEnabled(id, request.enabled());
+
+        adminAuditLogService.record(requestContext.getUserId(), requestContext.getUserEmail(),
+                request.enabled() ? "USER_ENABLED" : "USER_DISABLED", "User " + updated.getEmail());
+
+        return ResponseEntity.ok(new ApiResponse<>(
+                request.enabled() ? "User enabled" : "User disabled",
+                AdminUserResponse.fromEntity(updated)));
+    }
+
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable String id) throws DataNotFoundException {
+        if (id.equals(requestContext.getUserId())) {
+            throw new IllegalArgumentException("You can't delete your own account.");
+        }
+
+        User deleted = userService.adminSoftDelete(id);
+
+        adminAuditLogService.record(requestContext.getUserId(), requestContext.getUserEmail(),
+                "USER_DELETED", "User " + deleted.getEmail());
+
+        return ResponseEntity.ok(new ApiResponse<>("User deleted", null));
+    }
+
+    /** Best-effort bulk delete - see UserService.adminBulkSoftDelete for the per-row behavior. */
+    @PostMapping("/users/bulk-delete")
+    public ResponseEntity<AdminBulkDeleteUsersResult> bulkDeleteUsers(@RequestBody AdminBulkDeleteUsersRequest request) {
+        AdminBulkDeleteUsersResult result = userService.adminBulkSoftDelete(request.ids(), requestContext.getUserId());
+
+        adminAuditLogService.record(requestContext.getUserId(), requestContext.getUserEmail(),
+                "USERS_BULK_DELETED", result.successCount() + " of " + result.totalCount() + " users deleted");
+
+        return ResponseEntity.ok(result);
     }
 }

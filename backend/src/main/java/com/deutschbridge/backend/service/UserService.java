@@ -2,6 +2,9 @@ package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.exception.UserVerificationException;
+import com.deutschbridge.backend.model.dto.AdminBulkDeleteUsersResult;
+import com.deutschbridge.backend.model.dto.AdminBulkDeleteUsersRowResult;
+import com.deutschbridge.backend.model.dto.AdminCreateUserRequest;
 import com.deutschbridge.backend.model.dto.AdminUpdateUserRequest;
 import com.deutschbridge.backend.model.dto.UserDto;
 import com.deutschbridge.backend.model.dto.UserRegistrationRequest;
@@ -18,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -47,6 +51,11 @@ public class UserService {
     public List<User> findAll()
     {
         return userRepository.findAll();
+    }
+
+    /** For the admin user management list: soft-deleted accounts are hidden. */
+    public List<User> findAllForAdmin() {
+        return userRepository.findAllByDeletedFalse();
     }
 
     public User findByEmail(String email) {
@@ -208,6 +217,72 @@ public class UserService {
                 .orElseThrow(() -> new DataNotFoundException(NOT_FOUND));
         existing.setAccountType(accountType);
         return userRepository.save(existing);
+    }
+
+    /** Admin-created accounts skip email verification - the admin is vouching for the address. */
+    @Transactional
+    public User adminCreateUser(AdminCreateUserRequest request) {
+        if (userRepository.existsByEmail(request.email())) {
+            throw new IllegalArgumentException("A user with this email already exists.");
+        }
+
+        User user = new User(request.displayName(), request.email(), passwordEncoder.encode(request.password()));
+        user.setRole(request.role() != null ? request.role() : "STUDENT");
+        user.setVerified(true);
+
+        UserProfile profile = new UserProfile();
+        profile.setDisplayName(request.displayName());
+        profile.setUser(user);
+        user.setProfile(profile);
+
+        userRepository.save(user);
+        userProfileRepository.save(profile);
+        return user;
+    }
+
+    @Transactional
+    public User adminSetEnabled(String id, boolean enabled) throws DataNotFoundException {
+        User existing = userRepository.findById(id)
+                .orElseThrow(() -> new DataNotFoundException(NOT_FOUND));
+        existing.setEnabled(enabled);
+        return userRepository.save(existing);
+    }
+
+    /** Soft delete: hides the account and blocks login, but keeps all of their data intact. */
+    @Transactional
+    public User adminSoftDelete(String id) throws DataNotFoundException {
+        User existing = userRepository.findById(id)
+                .orElseThrow(() -> new DataNotFoundException(NOT_FOUND));
+        existing.setDeleted(true);
+        return userRepository.save(existing);
+    }
+
+    /**
+     * Best-effort bulk soft delete: each id is handled independently, so one bad id (not found, or
+     * the requesting admin's own account) never blocks the rest of the batch.
+     */
+    public AdminBulkDeleteUsersResult adminBulkSoftDelete(List<String> ids, String requestingAdminId) {
+        List<AdminBulkDeleteUsersRowResult> results = new ArrayList<>();
+        int successCount = 0;
+
+        for (String id : ids) {
+            Optional<User> existing = userRepository.findById(id);
+            String email = existing.map(User::getEmail).orElse(null);
+            try {
+                if (id.equals(requestingAdminId)) {
+                    throw new IllegalArgumentException("You can't delete your own account.");
+                }
+                User user = existing.orElseThrow(() -> new DataNotFoundException(NOT_FOUND));
+                user.setDeleted(true);
+                userRepository.save(user);
+                results.add(new AdminBulkDeleteUsersRowResult(id, email, true, null));
+                successCount++;
+            } catch (Exception e) {
+                results.add(new AdminBulkDeleteUsersRowResult(id, email, false, e.getMessage()));
+            }
+        }
+
+        return new AdminBulkDeleteUsersResult(ids.size(), successCount, ids.size() - successCount, results);
     }
 
     public String getLearningLevel(String email) {

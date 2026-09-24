@@ -23,6 +23,7 @@ public class AuthUser implements UserDetails {
     @Getter
     @Setter
     private String role = "STUDENT";
+    private final boolean enabled;
 
 
     public AuthUser(User user) {
@@ -30,6 +31,7 @@ public class AuthUser implements UserDetails {
         this.email = user.getEmail();
         this.password = user.getPassword();
         this.role = user.getRole() != null ? user.getRole() : "STUDENT";
+        this.enabled = user.isEnabled() && !user.isDeleted();
     }
 
     @Override
@@ -64,6 +66,6 @@ public class AuthUser implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return enabled;
     }
 }

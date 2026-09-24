@@ -9,6 +9,28 @@ export interface AdminUser {
     verified: boolean;
     accountType: AccountType;
     avatarUrl?: string | null;
+    enabled: boolean;
+}
+
+export interface AdminCreateUserPayload {
+    displayName: string;
+    email: string;
+    password: string;
+    role?: string;
+}
+
+export interface AdminBulkDeleteUsersRowResult {
+    id: string;
+    email: string | null;
+    success: boolean;
+    errorMessage: string | null;
+}
+
+export interface AdminBulkDeleteUsersResult {
+    totalCount: number;
+    successCount: number;
+    failureCount: number;
+    rows: AdminBulkDeleteUsersRowResult[];
 }
 
 export interface AdminUpdateUserPayload {

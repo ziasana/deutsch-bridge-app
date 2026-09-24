@@ -10,7 +10,8 @@ public record AdminUserResponse(
         String role,
         boolean verified,
         String accountType,
-        String avatarUrl
+        String avatarUrl,
+        boolean enabled
 ) {
     public static AdminUserResponse fromEntity(User user) {
         return new AdminUserResponse(
@@ -21,7 +22,8 @@ public record AdminUserResponse(
                 user.getRole(),
                 user.isVerified(),
                 user.getAccountType() != null ? user.getAccountType().name() : "BASIC",
-                user.getAvatarUrl()
+                user.getAvatarUrl(),
+                user.isEnabled()
         );
     }
 }

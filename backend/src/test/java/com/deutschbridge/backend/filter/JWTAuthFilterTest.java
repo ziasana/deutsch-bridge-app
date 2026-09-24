@@ -169,6 +169,7 @@ class JWTAuthFilterTest {
 
         UserDetails userDetails = mock(UserDetails.class);
         when(userDetails.getAuthorities()).thenReturn(null);
+        when(userDetails.isEnabled()).thenReturn(true);
         when(userDetailsService.loadUserByUsername("user@example.com")).thenReturn(userDetails);
         when(jwtUtil.validateToken("user@example.com", userDetails, "token")).thenReturn(true);
 
@@ -176,6 +177,27 @@ class JWTAuthFilterTest {
 
         verify(filterChain, times(1)).doFilter(request, response);
         assert(SecurityContextHolder.getContext().getAuthentication() != null);
+    }
+
+    // ---------------------------------------------------------------
+    // doFilterInternal
+    // ---------------------------------------------------------------
+    @DisplayName("doFilterInternal -> should return 403 if user is disabled")
+    @Test
+    void testDoFilterInternal_shouldReturn403IfUserDisabled() throws Exception {
+        when(request.getRequestURI()).thenReturn("/api/protected/resource");
+        when(cookieService.extractAccessToken(request)).thenReturn("token");
+        when(jwtUtil.extractEmail("token")).thenReturn("user@example.com");
+
+        UserDetails userDetails = mock(UserDetails.class);
+        when(userDetails.isEnabled()).thenReturn(false);
+        when(userDetailsService.loadUserByUsername("user@example.com")).thenReturn(userDetails);
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        verify(response).setStatus(HttpServletResponse.SC_FORBIDDEN);
+        verify(filterChain, never()).doFilter(request, response);
+        assert(SecurityContextHolder.getContext().getAuthentication() == null);
     }
 
 }

@@ -4,12 +4,22 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import useAuthStore from "@/store/useAuthStore";
-import { getAllUsers, updateUser, changeUserPassword, changeAccountType } from "@/services/adminService";
-import { AccountType, AdminUser } from "@/types/admin";
+import {
+    getAllUsers,
+    createUser,
+    updateUser,
+    changeUserPassword,
+    changeAccountType,
+    setUserEnabled,
+    deleteUser,
+    bulkDeleteUsers,
+} from "@/services/adminService";
+import { AccountType, AdminCreateUserPayload, AdminUser } from "@/types/admin";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
 import { Badge } from "@/componenets/ui/badge";
 import { Card, CardContent } from "@/componenets/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/componenets/ui/table";
+import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
@@ -23,6 +33,8 @@ import {
     ChevronsLeft,
     ChevronsRight,
     ShieldCheck,
+    Trash2,
+    UserPlus,
     Users,
 } from "lucide-react";
 
@@ -43,6 +55,8 @@ function getInitials(name?: string | null, email?: string | null): string {
 type UserSortKey = "name" | "email" | "role" | "verified";
 type SortDirection = "asc" | "desc";
 
+const emptyNewUserForm: AdminCreateUserPayload = { displayName: "", email: "", password: "", role: "STUDENT" };
+
 export default function AdminPage() {
     const router = useRouter();
     const { userProfile, hasHydrated } = useAuthStore();
@@ -53,9 +67,14 @@ export default function AdminPage() {
     const [passwordUser, setPasswordUser] = useState<AdminUser | null>(null);
     const [accountTypeUser, setAccountTypeUser] = useState<AdminUser | null>(null);
     const [selectedAccountType, setSelectedAccountType] = useState<AccountType>("BASIC");
+    const [showAddUser, setShowAddUser] = useState(false);
+    const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
+    const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+    const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
     const [editForm, setEditForm] = useState({ displayName: "", role: "STUDENT", verified: false });
     const [newPassword, setNewPassword] = useState("");
+    const [newUserForm, setNewUserForm] = useState<AdminCreateUserPayload>(emptyNewUserForm);
     const [isSaving, setIsSaving] = useState(false);
 
     const [userSearch, setUserSearch] = useState("");
@@ -140,6 +159,92 @@ export default function AdminPage() {
             .finally(() => setIsSaving(false));
     };
 
+    const openAddUser = () => {
+        setNewUserForm(emptyNewUserForm);
+        setShowAddUser(true);
+    };
+
+    const submitAddUser = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newUserForm.displayName.trim() || !newUserForm.email.trim()) {
+            toast.error("Display name and email are required.");
+            return;
+        }
+        if (newUserForm.password.length < 6) {
+            toast.error("Password must be at least 6 characters.");
+            return;
+        }
+        setIsSaving(true);
+        createUser(newUserForm)
+            .then(() => {
+                toast.success(`User ${newUserForm.email} created.`);
+                setShowAddUser(false);
+                fetchUsers();
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to create user."))
+            .finally(() => setIsSaving(false));
+    };
+
+    const toggleEnabled = (user: AdminUser) => {
+        setIsSaving(true);
+        setUserEnabled(user.id, !user.enabled)
+            .then(() => {
+                toast.success(user.enabled ? `${user.email} disabled.` : `${user.email} enabled.`);
+                fetchUsers();
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to update user status."))
+            .finally(() => setIsSaving(false));
+    };
+
+    const confirmRemoveUser = () => {
+        const user = userToDelete;
+        if (!user) return;
+        setUserToDelete(null);
+        setIsSaving(true);
+        deleteUser(user.id)
+            .then(() => {
+                toast.success(`${user.email} deleted.`);
+                fetchUsers();
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to delete user."))
+            .finally(() => setIsSaving(false));
+    };
+
+    const toggleSelectUser = (id: string) => {
+        setSelectedUserIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const runBulkDelete = () => {
+        setConfirmBulkDelete(false);
+        const ids = [...validSelectedIds];
+        if (ids.length === 0) return;
+        setIsSaving(true);
+        bulkDeleteUsers(ids)
+            .then((res) => {
+                const { successCount, failureCount, rows } = res.data;
+                if (failureCount === 0) {
+                    toast.success(`${successCount} user(s) deleted.`);
+                } else {
+                    const reasons = rows.filter((r) => !r.success).map((r) => `${r.email ?? r.id}: ${r.errorMessage}`);
+                    toast.error(
+                        <div style={{ whiteSpace: "pre-line" }}>
+                            {successCount} deleted, {failureCount} failed:{"\n"}
+                            {reasons.join("\n")}
+                        </div>
+                    );
+                }
+                setSelectedUserIds(new Set());
+                fetchUsers();
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Bulk delete failed."))
+            .finally(() => setIsSaving(false));
+    };
+
     if (!hasHydrated || userProfile?.role !== "ADMIN") return null;
 
     const totalUsers = users.length;
@@ -200,14 +305,51 @@ export default function AdminPage() {
         (p) => p === 1 || p === userTotalPages || Math.abs(p - userCurrentPage) <= 1
     );
 
+    // Drop selections that no longer exist in the list (deleted elsewhere, or by a refresh).
+    const validUserIds = new Set(users.map((u) => u.id));
+    const validSelectedIds = new Set([...selectedUserIds].filter((id) => validUserIds.has(id)));
+
+    const selectablePageUserIds = paginatedUsers.filter((u) => u.email !== userProfile?.email).map((u) => u.id);
+    const allOnPageSelected = selectablePageUserIds.length > 0 && selectablePageUserIds.every((id) => validSelectedIds.has(id));
+
+    const toggleSelectAllOnPage = () => {
+        setSelectedUserIds((prev) => {
+            const next = new Set(prev);
+            if (allOnPageSelected) {
+                selectablePageUserIds.forEach((id) => next.delete(id));
+            } else {
+                selectablePageUserIds.forEach((id) => next.add(id));
+            }
+            return next;
+        });
+    };
+
     return (
         <div className="px-6 py-10">
             <div className="max-w-7xl mx-auto">
-                <div>
-                    <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-                    <p className="text-foreground/60 mt-2">
-                        Manage users, roles, and account access.
-                    </p>
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+                        <p className="text-foreground/60 mt-2">
+                            Manage users, roles, and account access.
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        {validSelectedIds.size > 0 && (
+                            <Button
+                                variant="secondary"
+                                className={`flex items-center gap-2 text-destructive ${BUTTON_HOVER}`}
+                                onClick={() => setConfirmBulkDelete(true)}
+                            >
+                                <Trash2 className="size-4" />
+                                Delete Selected ({validSelectedIds.size})
+                            </Button>
+                        )}
+                        <Button variant="primary" className={`flex items-center gap-2 ${BUTTON_HOVER}`} onClick={openAddUser}>
+                            <UserPlus className="size-4" />
+                            Add User
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -300,6 +442,16 @@ export default function AdminPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
+                                        <TableHead className="w-10">
+                                            <input
+                                                type="checkbox"
+                                                checked={allOnPageSelected}
+                                                onChange={toggleSelectAllOnPage}
+                                                disabled={selectablePageUserIds.length === 0}
+                                                className="h-4 w-4 accent-primary"
+                                                aria-label="Select all users on this page"
+                                            />
+                                        </TableHead>
                                         <TableHead>
                                             <button type="button" onClick={() => toggleUserSort("name")} className="flex items-center gap-1.5 font-medium hover:text-foreground">
                                                 Name {renderUserSortIcon("name")}
@@ -321,12 +473,26 @@ export default function AdminPage() {
                                             </button>
                                         </TableHead>
                                         <TableHead>Plan</TableHead>
+                                        <TableHead>Status</TableHead>
                                         <TableHead>Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {paginatedUsers.map((user) => (
+                                    {paginatedUsers.map((user) => {
+                                        const isSelf = user.email === userProfile?.email;
+                                        return (
                                         <TableRow key={user.id}>
+                                            <TableCell>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={validSelectedIds.has(user.id)}
+                                                    onChange={() => toggleSelectUser(user.id)}
+                                                    disabled={isSelf}
+                                                    title={isSelf ? "You can't select your own account." : undefined}
+                                                    className="h-4 w-4 accent-primary"
+                                                    aria-label={`Select ${user.email}`}
+                                                />
+                                            </TableCell>
                                             <TableCell className="font-medium text-foreground">
                                                 <div className="flex items-center gap-3">
                                                     {resolveUploadUrl(user.avatarUrl) ? (
@@ -360,6 +526,11 @@ export default function AdminPage() {
                                                     {user.accountType ?? "BASIC"}
                                                 </Badge>
                                             </TableCell>
+                                            <TableCell>
+                                                <Badge variant={user.enabled ? "default" : "outline"}>
+                                                    {user.enabled ? "Enabled" : "Disabled"}
+                                                </Badge>
+                                            </TableCell>
                                             <TableCell className="space-x-2">
                                                 <Button
                                                     variant="secondary"
@@ -382,12 +553,31 @@ export default function AdminPage() {
                                                 >
                                                     Change Plan
                                                 </Button>
+                                                <Button
+                                                    variant="secondary"
+                                                    className={`px-3 py-1 text-sm ${BUTTON_HOVER}`}
+                                                    onClick={() => toggleEnabled(user)}
+                                                    disabled={isSelf}
+                                                    title={isSelf ? "You can't disable your own account." : undefined}
+                                                >
+                                                    {user.enabled ? "Disable" : "Enable"}
+                                                </Button>
+                                                <Button
+                                                    variant="secondary"
+                                                    className={`px-3 py-1 text-sm text-destructive ${BUTTON_HOVER}`}
+                                                    onClick={() => setUserToDelete(user)}
+                                                    disabled={isSelf}
+                                                    title={isSelf ? "You can't delete your own account." : undefined}
+                                                >
+                                                    <Trash2 className="size-3.5" />
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
-                                    ))}
+                                        );
+                                    })}
                                     {sortedUsers.length === 0 && (
                                         <TableRow>
-                                            <TableCell colSpan={6} className="text-center text-foreground/50 py-10">
+                                            <TableCell colSpan={8} className="text-center text-foreground/50 py-10">
                                                 No users found.
                                             </TableCell>
                                         </TableRow>
@@ -608,6 +798,96 @@ export default function AdminPage() {
                     </div>
                 </div>
             )}
+
+            {/* Add user modal */}
+            {showAddUser && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40 px-4">
+                    <div className="w-full max-w-md bg-card rounded-2xl shadow-xl p-8 border border-border">
+                        <h2 className="text-2xl font-bold text-foreground mb-6">Add User</h2>
+                        <form onSubmit={submitAddUser} className="space-y-5">
+                            <div>
+                                <label className="block text-foreground/70 mb-2 text-sm">Display Name</label>
+                                <Input
+                                    value={newUserForm.displayName}
+                                    onChange={(e) => setNewUserForm({ ...newUserForm, displayName: e.target.value })}
+                                    placeholder="Display name"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-foreground/70 mb-2 text-sm">Email</label>
+                                <Input
+                                    type="email"
+                                    value={newUserForm.email}
+                                    onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })}
+                                    placeholder="learner@example.com"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-foreground/70 mb-2 text-sm">Password</label>
+                                <Input
+                                    type="password"
+                                    value={newUserForm.password}
+                                    onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
+                                    placeholder="At least 6 characters"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-foreground/70 mb-2 text-sm">Role</label>
+                                <select
+                                    value={newUserForm.role}
+                                    onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })}
+                                    className="w-full mt-2 px-4 py-3 rounded-lg border border-border bg-muted text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
+                                >
+                                    <option value="STUDENT">Student</option>
+                                    <option value="ADMIN">Admin</option>
+                                </select>
+                            </div>
+
+                            <p className="text-xs text-foreground/50">
+                                The account is created verified and enabled - the learner can sign in with this
+                                password right away.
+                            </p>
+
+                            <div className="flex gap-3 pt-2">
+                                <Button variant="primary" type="submit" className="flex-1" disabled={isSaving}>
+                                    {isSaving ? "Creating..." : "Create user"}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    className="flex-1"
+                                    onClick={() => setShowAddUser(false)}
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            <ConfirmDialog
+                isOpen={Boolean(userToDelete)}
+                title="Delete this user?"
+                message={`Delete "${userToDelete?.email}"? Their account will be hidden and login blocked, but their data is kept.`}
+                confirmLabel="Delete"
+                cancelLabel="Cancel"
+                onConfirm={confirmRemoveUser}
+                onCancel={() => setUserToDelete(null)}
+            />
+
+            <ConfirmDialog
+                isOpen={confirmBulkDelete}
+                title={`Delete ${validSelectedIds.size} selected user(s)?`}
+                message="Their accounts will be hidden and login blocked, but their data is kept. This can't be undone from here."
+                confirmLabel="Delete Selected"
+                cancelLabel="Cancel"
+                onConfirm={runBulkDelete}
+                onCancel={() => setConfirmBulkDelete(false)}
+            />
 
             {isSaving && <Loading message="Please wait..." />}
         </div>

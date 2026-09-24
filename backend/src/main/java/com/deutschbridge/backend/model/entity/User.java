@@ -4,6 +4,7 @@ import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import com.deutschbridge.backend.model.enums.AccountType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.Instant;
@@ -42,6 +43,15 @@ public class User {
     private String refreshToken;
     private String verificationToken;
     private boolean isVerified;
+
+    @ColumnDefault("true")
+    @Column(nullable = false)
+    private boolean enabled = true;
+
+    /** Soft-deleted by an admin: hidden from the admin user list, login blocked, data retained. */
+    @ColumnDefault("false")
+    @Column(nullable = false)
+    private boolean deleted = false;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinColumn(name = "id")

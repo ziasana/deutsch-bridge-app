@@ -70,6 +70,12 @@ public class JWTAuthFilter extends OncePerRequestFilter {
             //check if user exist in DB and not expired
             UserDetails userDetails  = customUserDetailsService.loadUserByUsername(email);
 
+            // Disabled/deleted since the token was issued: block immediately rather than waiting for expiry.
+            if (!userDetails.isEnabled()) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                return;
+            }
+
             if (!jwtUtil.validateToken(email, userDetails, token)) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return;
