@@ -51,6 +51,10 @@ import java.util.stream.Collectors;
 @Service
 public class ContentCacheService {
 
+    private static final Comparator<GrammarLesson> LESSON_ORDER = Comparator
+            .comparing((GrammarLesson l) -> l.getSortOrder() != null ? l.getSortOrder() : 0)
+            .thenComparing(GrammarLesson::getTitle, Comparator.nullsLast(Comparator.naturalOrder()));
+
     private final GrammarLessonRepository grammarLessonRepository;
     private final GrammarCategoryRepository grammarCategoryRepository;
     private final ExamExerciseRepository examExerciseRepository;
@@ -83,29 +87,58 @@ public class ContentCacheService {
     }
 
     /**
-     * Static shape needed by GrammarCategoryService.findAllForLearner(): every category
-     * (ordered as the learner screen expects) paired with its published lessons only, sorted the
-     * same way the current (uncached) implementation sorts them.
+     * The learner list for one level: that level's categories (every one, even without published
+     * lessons yet) with their published lessons, plus the level's uncategorized published lessons -
+     * reduced to light list rows so no lesson content or quiz is kept in this cache.
      */
-    @Cacheable("grammarCategories")
+    @Cacheable("grammarLevelContent")
     @Transactional
-    public List<CategoryWithPublishedLessons> getGrammarCategoriesWithPublishedLessons() {
-        List<GrammarCategory> categories = grammarCategoryRepository.findAllByOrderByLevelAscSortOrderAsc();
-        return categories.stream()
-                .map(category -> {
-                    List<GrammarLesson> publishedLessons = grammarLessonRepository.findByCategory(category).stream()
-                            .filter(l -> l.getStatus() == GrammarLessonStatus.PUBLISHED)
-                            .sorted(Comparator
-                                    .comparing((GrammarLesson l) -> l.getSortOrder() != null ? l.getSortOrder() : 0)
-                                    .thenComparing(GrammarLesson::getTitle))
-                            .toList();
-                    publishedLessons.forEach(lesson -> {
-                        Hibernate.initialize(lesson.getCategory());
-                        Hibernate.initialize(lesson.getQuiz());
-                    });
-                    return new CategoryWithPublishedLessons(category, publishedLessons);
-                })
+    public GrammarLevelContent getGrammarLevelContent(LearningLevel level) {
+        List<GrammarLesson> lessons = grammarLessonRepository.findForLevelView(level, GrammarLessonStatus.PUBLISHED);
+        Map<String, List<GrammarLessonEntry>> lessonsByCategoryId = lessons.stream()
+                .filter(l -> l.getCategory() != null)
+                .sorted(LESSON_ORDER)
+                .collect(Collectors.groupingBy(l -> l.getCategory().getId(), Collectors.mapping(GrammarLessonEntry::of, Collectors.toList())));
+
+        List<GrammarCategoryEntry> categories = grammarCategoryRepository.findByLevelOrderBySortOrderAscTitleAsc(level).stream()
+                .map(c -> new GrammarCategoryEntry(c.getId(), c.getTitle(), c.getTitleFa(), c.getLevel(), c.getSortOrder(),
+                        c.getPassThreshold(), lessonsByCategoryId.getOrDefault(c.getId(), List.of())))
                 .toList();
+        List<GrammarLessonEntry> uncategorized = lessons.stream()
+                .filter(l -> l.getCategory() == null)
+                .sorted(LESSON_ORDER)
+                .map(GrammarLessonEntry::of)
+                .toList();
+        return new GrammarLevelContent(categories, uncategorized);
+    }
+
+    /** A single published lesson's full content (DRAFT lessons are never returned to learners). */
+    @Cacheable(cacheNames = "grammarLessonDetail", unless = "#result == null")
+    @Transactional
+    public Optional<GrammarLesson> getPublishedGrammarLesson(String id) {
+        Optional<GrammarLesson> lesson = grammarLessonRepository.findByIdAndStatus(id, GrammarLessonStatus.PUBLISHED);
+        lesson.ifPresent(l -> {
+            Hibernate.initialize(l.getCategory());
+            Hibernate.initialize(l.getQuiz());
+        });
+        return lesson;
+    }
+
+    /** One category with its published lessons (full, quizzes included) - for the category test. */
+    @Cacheable(cacheNames = "grammarCategoryDetail", unless = "#result == null")
+    @Transactional
+    public Optional<CategoryWithPublishedLessons> getGrammarCategoryWithPublishedLessons(String id) {
+        return grammarCategoryRepository.findById(id).map(category -> {
+            List<GrammarLesson> publishedLessons = grammarLessonRepository
+                    .findByCategoryAndStatus(category, GrammarLessonStatus.PUBLISHED).stream()
+                    .sorted(LESSON_ORDER)
+                    .toList();
+            publishedLessons.forEach(lesson -> {
+                Hibernate.initialize(lesson.getCategory());
+                Hibernate.initialize(lesson.getQuiz());
+            });
+            return new CategoryWithPublishedLessons(category, publishedLessons);
+        });
     }
 
     @Cacheable("examExercises")
@@ -210,6 +243,21 @@ public class ContentCacheService {
     }
 
     public record ReadingArticleListPage(List<ReadingArticleListEntry> entries, long totalElements, int totalPages) {
+    }
+
+    public record GrammarLessonEntry(String id, String title, String titleFa, String summary, String summaryFa,
+                                     LearningLevel level, int quizCount) {
+        static GrammarLessonEntry of(GrammarLesson lesson) {
+            return new GrammarLessonEntry(lesson.getId(), lesson.getTitle(), lesson.getTitleFa(), lesson.getSummary(),
+                    lesson.getSummaryFa(), lesson.getLevel(), lesson.getQuiz() != null ? lesson.getQuiz().size() : 0);
+        }
+    }
+
+    public record GrammarCategoryEntry(String id, String title, String titleFa, LearningLevel level, int sortOrder,
+                                       int passThreshold, List<GrammarLessonEntry> lessons) {
+    }
+
+    public record GrammarLevelContent(List<GrammarCategoryEntry> categories, List<GrammarLessonEntry> uncategorized) {
     }
 
     public record CategoryWithPublishedLessons(GrammarCategory category, List<GrammarLesson> publishedLessons) {

@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { QuizQuestion } from "@/types/grammar";
 import { getExerciseProgress, saveExerciseAnswer, resetExerciseProgress } from "@/services/exerciseProgressService";
+import { useQueryClient } from "@tanstack/react-query";
 import { setLearningProgress } from "@/services/grammarService";
+import { markLessonLearnedInCache } from "@/lib/grammarQueryCache";
 import Button from "@/componenets/Button";
 import { useI18n } from "@/componenets/I18nProvider";
 import { localizedQuestionText } from "@/lib/grammarLocalization";
@@ -40,6 +42,7 @@ export default function GrammarQuizSection({
     autoStart?: boolean;
 }>) {
     const { t } = useI18n();
+    const queryClient = useQueryClient();
     const [phase, setPhase] = useState<QuizPhase>("idle");
     const [currentIndex, setCurrentIndex] = useState(0);
     const [selectedAnswer, setSelectedAnswer] = useState("");
@@ -139,9 +142,11 @@ export default function GrammarQuizSection({
             // (and commits its setAnswered update) before the user can reach the "Finish" click.
             const allCorrect = quiz.every((_, i) => answered[questionKey(lessonId, i)]);
             if (allCorrect) {
-                setLearningProgress({ lessonId, learned: true }).catch(() => {
-                    /* best-effort */
-                });
+                setLearningProgress({ lessonId, learned: true })
+                    .then(() => markLessonLearnedInCache(queryClient, lessonId, true))
+                    .catch(() => {
+                        /* best-effort */
+                    });
             }
             return;
         }

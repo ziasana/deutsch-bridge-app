@@ -12,5 +12,7 @@ public interface GrammarCategoryRepository extends JpaRepository<GrammarCategory
 
     List<GrammarCategory> findAllByOrderByLevelAscSortOrderAsc();
 
+    List<GrammarCategory> findByLevelOrderBySortOrderAscTitleAsc(LearningLevel level);
+
     boolean existsByTitleIgnoreCaseAndLevel(String title, LearningLevel level);
 }

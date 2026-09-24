@@ -1,11 +1,12 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
 import { getGrammarLessonById } from "@/services/grammarService";
-import { GrammarLesson } from "@/types/grammar";
+import { grammarLessonQueryKey } from "@/lib/grammarQueryCache";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
 import GrammarQuizSection from "@/componenets/GrammarQuizSection";
@@ -24,16 +25,20 @@ function GrammarPracticeContent() {
     const searchParams = useSearchParams();
     const lessonId = searchParams.get("id") ?? "";
     const { language, t } = useI18n();
-    const [lesson, setLesson] = useState<GrammarLesson | null>(null);
-    const [loading, setLoading] = useState(true);
+    // Full lesson (content, examples, quiz) is only fetched here, once per lesson, and shared with
+    // the practice page through the same cache entry.
+    const { data: lesson, isLoading: loading, error: lessonError } = useQuery({
+        queryKey: grammarLessonQueryKey(lessonId),
+        queryFn: () => getGrammarLessonById(lessonId).then((res) => res.data),
+        enabled: !!lessonId,
+    });
 
     useEffect(() => {
-        if (!lessonId) return;
-        getGrammarLessonById(lessonId)
-            .then((res) => setLesson(res.data))
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load this lesson."))
-            .finally(() => setLoading(false));
-    }, [lessonId]);
+        if (lessonError) {
+            const err = lessonError as { response?: { data?: { message?: string } } };
+            toast.error(err?.response?.data?.message ?? "Failed to load this lesson.");
+        }
+    }, [lessonError]);
 
     if (!lessonId || loading) {
         return loading ? (

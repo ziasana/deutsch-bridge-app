@@ -4,6 +4,7 @@ import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.GrammarLessonManualRequest;
 import com.deutschbridge.backend.model.dto.GrammarLessonResponse;
+import com.deutschbridge.backend.model.dto.GrammarLevelSummaryResponse;
 import com.deutschbridge.backend.model.entity.GrammarCategory;
 import com.deutschbridge.backend.model.entity.GrammarLesson;
 import com.deutschbridge.backend.model.entity.LearningProgress;
@@ -15,9 +16,10 @@ import com.deutschbridge.backend.repository.GrammarCategoryRepository;
 import com.deutschbridge.backend.repository.GrammarLessonRepository;
 import com.deutschbridge.backend.repository.LearningProgressRepository;
 import com.deutschbridge.backend.service.cache.ContentCacheService;
+import com.deutschbridge.backend.service.cache.EvictGrammarCaches;
+import com.deutschbridge.backend.service.cache.GrammarProgressCacheService;
 import com.deutschbridge.backend.util.GrammarLessonMapper;
 import jakarta.transaction.Transactional;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -35,6 +37,7 @@ public class GrammarService {
     private final UserService userService;
     private final RequestContext requestContext;
     private final ContentCacheService contentCacheService;
+    private final GrammarProgressCacheService grammarProgressCacheService;
     private static final String NOT_FOUND_MSG= "Grammar lesson not found!";
 
     public GrammarService(GrammarLessonRepository grammarRepository,
@@ -42,13 +45,15 @@ public class GrammarService {
                            GrammarCategoryRepository grammarCategoryRepository,
                            UserService userService,
                            RequestContext requestContext,
-                           ContentCacheService contentCacheService) {
+                           ContentCacheService contentCacheService,
+                           GrammarProgressCacheService grammarProgressCacheService) {
         this.grammarRepository = grammarRepository;
         this.learningProgressRepository = learningProgressRepository;
         this.grammarCategoryRepository = grammarCategoryRepository;
         this.userService = userService;
         this.requestContext = requestContext;
         this.contentCacheService = contentCacheService;
+        this.grammarProgressCacheService = grammarProgressCacheService;
     }
 
     /** Resolves a category id from a lesson request, enforcing that its level matches the lesson's. */
@@ -67,11 +72,6 @@ public class GrammarService {
         return grammarRepository.findAll();
     }
 
-    public List<GrammarLessonResponse> findAllWithLearningProgress() {
-        List<GrammarLesson> published = contentCacheService.getPublishedGrammarLessons();
-        return mapWithCurrentUserProgress(published);
-    }
-
     /** Admin-only: every lesson regardless of status, for the admin management list. */
     public List<GrammarLessonResponse> findAllForAdmin() {
         return grammarRepository.findAll().stream()
@@ -88,9 +88,15 @@ public class GrammarService {
         return GrammarLessonMapper.mapToAdminResponse(findById(id));
     }
 
+    /** Published lessons only - a DRAFT lesson is "not found" for learners (admins use findByIdForAdmin). */
     public GrammarLessonResponse findByIdWithLearningProgress(String id) throws DataNotFoundException {
-        GrammarLesson lesson = findById(id);
+        GrammarLesson lesson = contentCacheService.getPublishedGrammarLesson(id)
+                .orElseThrow(() -> new DataNotFoundException(NOT_FOUND_MSG));
         return mapWithCurrentUserProgress(List.of(lesson)).get(0);
+    }
+
+    public List<GrammarLevelSummaryResponse> getLevelSummary() {
+        return grammarProgressCacheService.getLevelSummary(requestContext.getUserId());
     }
 
     private List<GrammarLessonResponse> mapWithCurrentUserProgress(List<GrammarLesson> lessons) {
@@ -107,14 +113,14 @@ public class GrammarService {
     }
 
     @Transactional
-    @CacheEvict(cacheNames = "grammarLessons", allEntries = true)
+    @EvictGrammarCaches
     public GrammarLesson saveLesson(GrammarLesson lesson) {
         if (lesson.getQuiz() == null) lesson.setQuiz(new ArrayList<>());
         return grammarRepository.save(lesson);
     }
 
     @Transactional
-    @CacheEvict(cacheNames = "grammarLessons", allEntries = true)
+    @EvictGrammarCaches
     public List<GrammarLesson> saveAll(List<GrammarLesson> lessons) {
         for (GrammarLesson lesson : lessons) {
             if (lesson.getQuiz() == null) {
@@ -129,7 +135,7 @@ public class GrammarService {
     }
 
     @Transactional
-    @CacheEvict(cacheNames = "grammarLessons", allEntries = true)
+    @EvictGrammarCaches
     public boolean deleteById(String  id) throws DataNotFoundException {
         GrammarLesson lesson = grammarRepository.findById(id)
                 .orElseThrow(()->new DataNotFoundException(NOT_FOUND_MSG));
@@ -141,7 +147,7 @@ public class GrammarService {
     /** Persian translations only make sense for beginner/intermediate lessons - from B2 up, everything stays single-language. */
     private static final Set<LearningLevel> TRANSLATABLE_LEVELS = Set.of(LearningLevel.A1, LearningLevel.A2, LearningLevel.B1);
 
-    @CacheEvict(cacheNames = "grammarLessons", allEntries = true)
+    @EvictGrammarCaches
     public GrammarLessonResponse createManual(GrammarLessonManualRequest request) {
         GrammarLesson lesson = new GrammarLesson();
         lesson.setTitle(request.title());
@@ -165,7 +171,7 @@ public class GrammarService {
         return GrammarLessonMapper.mapToAdminResponse(grammarRepository.save(lesson));
     }
 
-    @CacheEvict(cacheNames = "grammarLessons", allEntries = true)
+    @EvictGrammarCaches
     public GrammarLessonResponse updateManual(String id, GrammarLessonManualRequest request) throws DataNotFoundException {
         GrammarLesson existing = grammarRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException(NOT_FOUND_MSG));
@@ -223,7 +229,7 @@ public class GrammarService {
      * admin reviews and publishes them individually.
      */
     @Transactional
-    @CacheEvict(cacheNames = "grammarLessons", allEntries = true)
+    @EvictGrammarCaches
     public List<GrammarLessonResponse> bulkImport(List<GrammarLessonManualRequest> requests) {
         if (requests == null || requests.isEmpty()) {
             throw new IllegalArgumentException("No lessons to import");

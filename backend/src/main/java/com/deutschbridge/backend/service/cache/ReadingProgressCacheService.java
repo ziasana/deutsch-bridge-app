@@ -3,7 +3,7 @@ package com.deutschbridge.backend.service.cache;
 import com.deutschbridge.backend.model.dto.ReadingLevelSummaryResponse;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.ReadingArticleRepository;
-import com.deutschbridge.backend.repository.ReadingLevelCountProjection;
+import com.deutschbridge.backend.repository.LevelCountProjection;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +29,7 @@ public class ReadingProgressCacheService {
     @Cacheable(cacheNames = "readingLevelSummary", key = "#userId")
     public List<ReadingLevelSummaryResponse> getLevelSummary(String userId) {
         Map<LearningLevel, Long> learnedByLevel = readingArticleRepository.countLearnedByLevelForUser(userId).stream()
-                .collect(Collectors.toMap(ReadingLevelCountProjection::getLevel, ReadingLevelCountProjection::getTotal));
+                .collect(Collectors.toMap(LevelCountProjection::getLevel, LevelCountProjection::getTotal));
 
         return readingArticleRepository.countByLevel().stream()
                 .sorted(Comparator.comparing(row -> row.getLevel().ordinal()))

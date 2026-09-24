@@ -1,11 +1,12 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
-import { getGrammarCategories } from "@/services/grammarService";
-import { GrammarCategoryWithLessons } from "@/types/grammar";
+import { getGrammarCategoryById } from "@/services/grammarService";
+import { CategoryTestStatus, GrammarCategoryWithLessons } from "@/types/grammar";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
 import CategoryTestSection from "@/componenets/CategoryTestSection";
@@ -23,19 +24,30 @@ function CategoryTestContent() {
     const searchParams = useSearchParams();
     const categoryId = searchParams.get("id") ?? "";
     const { language, dir, t } = useI18n();
-    const [category, setCategory] = useState<GrammarCategoryWithLessons | null>(null);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
+    const categoryQueryKey = ["grammar", "category", categoryId];
+
+    // Only this category (its lessons' quizzes feed the test), cached per category.
+    const { data: category, isLoading: loading, error: categoryError } = useQuery({
+        queryKey: categoryQueryKey,
+        queryFn: () => getGrammarCategoryById(categoryId).then((res) => res.data),
+        enabled: !!categoryId,
+    });
 
     useEffect(() => {
-        if (!categoryId) return;
-        getGrammarCategories()
-            .then((res) => {
-                const found = res.data.find((c) => c.id === categoryId) ?? null;
-                setCategory(found);
-            })
-            .catch((err) => toast.error(err?.response?.data?.message ?? t.grammar.categoryTest.failedLoadCategory))
-            .finally(() => setLoading(false));
-    }, [categoryId, t]);
+        if (categoryError) {
+            const err = categoryError as { response?: { data?: { message?: string } } };
+            toast.error(err?.response?.data?.message ?? t.grammar.categoryTest.failedLoadCategory);
+        }
+    }, [categoryError, t]);
+
+    // Keep this page's cache and the level list's test badge in step with a new result.
+    const handleStatusChange = (status: CategoryTestStatus) => {
+        queryClient.setQueryData<GrammarCategoryWithLessons>(categoryQueryKey, (prev) =>
+            prev ? { ...prev, testStatus: status } : prev
+        );
+        queryClient.invalidateQueries({ queryKey: ["grammar", "level"] });
+    };
 
     if (!categoryId) {
         return (
@@ -90,6 +102,7 @@ function CategoryTestContent() {
                         passThreshold={category.passThreshold}
                         language={language}
                         initialStatus={category.testStatus}
+                        onStatusChange={handleStatusChange}
                     />
                 </div>
             </div>

@@ -107,6 +107,42 @@ export interface GrammarCategoryWithLessons {
     testStatus: CategoryTestStatus;
 }
 
+/** Lightweight list row - no content/examples/usage tips/quiz; fetch the lesson by id for those. */
+export interface GrammarLessonSummary {
+    id: string;
+    title: string;
+    titleFa: string | null;
+    summary: string;
+    summaryFa: string | null;
+    level: string;
+    quizCount: number;
+    learned: boolean;
+}
+
+export interface GrammarCategorySummary {
+    id: string;
+    title: string;
+    titleFa: string | null;
+    level: string;
+    sortOrder: number;
+    passThreshold: number;
+    lessons: GrammarLessonSummary[];
+    testStatus: CategoryTestStatus;
+}
+
+/** Everything the grammar list shows for one level. */
+export interface GrammarLevelView {
+    level: string;
+    categories: GrammarCategorySummary[];
+    uncategorized: GrammarLessonSummary[];
+}
+
+export interface GrammarLevelSummary {
+    level: string;
+    total: number;
+    learned: number;
+}
+
 export interface CategoryTestSubmitRequest {
     score: number;
     total: number;

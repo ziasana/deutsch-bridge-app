@@ -58,7 +58,11 @@ export default function AdminGrammarCategoriesPage() {
     const [categorySortKey, setCategorySortKey] = useState<CategorySortKey>("title");
     const [categorySortDirection, setCategorySortDirection] = useState<SortDirection>("asc");
 
-    const invalidateCategories = () => queryClient.invalidateQueries({ queryKey: CATEGORIES_KEY });
+    // Also drop the learner-side grammar caches in this browser - category edits change the level lists.
+    const invalidateCategories = () => {
+        queryClient.invalidateQueries({ queryKey: CATEGORIES_KEY });
+        queryClient.invalidateQueries({ queryKey: ["grammar"] });
+    };
 
     useEffect(() => {
         if (!hasHydrated) return;

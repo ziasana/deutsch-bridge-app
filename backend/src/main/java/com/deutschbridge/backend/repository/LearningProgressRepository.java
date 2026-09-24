@@ -35,6 +35,8 @@ public interface LearningProgressRepository extends JpaRepository<LearningProgre
 
     List<LearningProgress> findByUserAndReadingIdIn(User user, Collection<String> readingIds);
 
+    List<LearningProgress> findByUserAndLessonIdIn(User user, Collection<String> lessonIds);
+
     long countByUserAndIsLearnedTrue(User user);
 
     long countByUserAndLessonIsNotNullAndIsLearnedTrue(User user);

@@ -5,14 +5,14 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { BookOpen, ChevronLeft, ChevronRight, RotateCw, ArrowRight } from "lucide-react";
-import { getGrammarLessons, getGrammarCategories } from "@/services/grammarService";
-import { GrammarCategoryWithLessons, GrammarLesson } from "@/types/grammar";
+import { getGrammarLevelSummary, getGrammarLevelView } from "@/services/grammarService";
+import { GrammarLessonSummary } from "@/types/grammar";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
-import { LearningLevelSelector, LearningSearch } from "@/componenets/learning";
+import { LearningLevelOption, LearningLevelSelector, LearningSearch } from "@/componenets/learning";
 import { CategoryAccordionCard, ContentItemRow } from "@/componenets/CategoryAccordion";
 import { useI18n } from "@/componenets/I18nProvider";
-import { localizedLessonText } from "@/lib/grammarLocalization";
+import { localizedLessonHeading } from "@/lib/grammarLocalization";
 import useAuthStore from "@/store/useAuthStore";
 
 const ITEMS_PER_PAGE = 10;
@@ -21,24 +21,30 @@ export default function GrammarLessonsPage() {
     const router = useRouter();
     const { language, t } = useI18n();
     const { userProfile } = useAuthStore();
-    const [levelFilter, setLevelFilter] = useState<string | null>(null);
+    const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
     const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
-    const { data: lessonsData, isLoading: lessonsLoading, error: lessonsError } = useQuery({
-        queryKey: ["grammar", "lessons"],
-        queryFn: () => getGrammarLessons().then((res) => res.data),
-    });
-    const { data: categoriesData, isLoading: categoriesLoading, error: categoriesError } = useQuery<GrammarCategoryWithLessons[]>({
-        queryKey: ["grammar", "categories"],
-        queryFn: () => getGrammarCategories().then((res) => res.data),
+    // One small row per level - fills the level cards without loading any lesson.
+    const { data: levelSummaries = [], isLoading: summaryLoading, error: summaryError } = useQuery({
+        queryKey: ["grammar", "level-summary"],
+        queryFn: () => getGrammarLevelSummary().then((res) => res.data),
     });
 
-    const lessons = lessonsData ?? [];
-    const categories = categoriesData ?? [];
-    const loading = lessonsLoading || categoriesLoading;
-    const queryError = lessonsError ?? categoriesError;
+    // The backend can send the literal string "null" for an unset profile level.
+    const profileLevel = userProfile?.learningLevel && userProfile.learningLevel !== "null" ? userProfile.learningLevel : null;
+    const effectiveLevel = selectedLevel ?? profileLevel ?? levelSummaries[0]?.level ?? "A1";
+
+    // Only the current level's categories + lessons as light rows, cached per level. With a known
+    // profile level this runs in parallel with the summary instead of waiting on it.
+    const { data: levelView, isLoading: levelLoading, error: levelError } = useQuery({
+        queryKey: ["grammar", "level", effectiveLevel],
+        queryFn: () => getGrammarLevelView(effectiveLevel).then((res) => res.data),
+        enabled: profileLevel !== null || selectedLevel !== null || !summaryLoading,
+    });
+
+    const queryError = levelError ?? summaryError;
 
     useEffect(() => {
         if (queryError) {
@@ -47,43 +53,21 @@ export default function GrammarLessonsPage() {
         }
     }, [queryError]);
 
-    if (loading) return <Loading />;
+    const levelOptions: LearningLevelOption[] = levelSummaries.map((s) => ({
+        level: s.level,
+        total: s.total,
+        completed: s.learned,
+    }));
 
-    // Defaults to the learner's own CEFR level until they explicitly pick a filter.
-    const effectiveLevelFilter = levelFilter ?? userProfile?.learningLevel ?? "ALL";
-
-    const isLearned = (lesson: GrammarLesson) =>
-        lesson.learningProgresses?.some((lp) => lp.learned === true) ?? false;
-
-    const levels = Array.from(new Set(lessons.map((l) => l.level))).filter(Boolean);
-    const levelOptions = levels
-        .map((level) => {
-            const levelLessons = lessons.filter((l) => l.level === level);
-            return {
-                level,
-                total: levelLessons.length,
-                completed: levelLessons.filter(isLearned).length,
-            };
-        })
-        .sort((a, b) => a.level.localeCompare(b.level));
     const searchTerm = search.trim().toLowerCase();
-    const matchesSearch = (lesson: GrammarLesson) =>
-        localizedLessonText(lesson, language).title.toLowerCase().includes(searchTerm);
+    const matchesSearch = (lesson: GrammarLessonSummary) =>
+        localizedLessonHeading(lesson, language).title.toLowerCase().includes(searchTerm);
 
-    const categorizedLessonIds = new Set(categories.flatMap((c) => c.lessons.map((l) => l.id)));
-
-    const visibleCategories = categories
-        .filter((c) => effectiveLevelFilter === "ALL" || c.level === effectiveLevelFilter)
+    const visibleCategories = (levelView?.categories ?? [])
         .map((c) => ({ ...c, lessons: c.lessons.filter(matchesSearch) }))
         .filter((c) => c.lessons.length > 0 || searchTerm === "");
 
-    const uncategorized = lessons.filter((l) => {
-        return (
-            !categorizedLessonIds.has(l.id) &&
-            (effectiveLevelFilter === "ALL" || l.level === effectiveLevelFilter) &&
-            matchesSearch(l)
-        );
-    });
+    const uncategorized = (levelView?.uncategorized ?? []).filter(matchesSearch);
 
     const totalPages = Math.max(1, Math.ceil(uncategorized.length / ITEMS_PER_PAGE));
     const currentPage = Math.min(page, totalPages);
@@ -91,10 +75,10 @@ export default function GrammarLessonsPage() {
 
     const toggleCollapsed = (id: string) => setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }));
 
-    const renderLessonRow = (lesson: GrammarLesson) => {
-        const localized = localizedLessonText(lesson, language);
-        const hasQuiz = (lesson.quiz?.length ?? 0) > 0;
-        const learned = isLearned(lesson);
+    const renderLessonRow = (lesson: GrammarLessonSummary) => {
+        const localized = localizedLessonHeading(lesson, language);
+        const hasQuiz = lesson.quizCount > 0;
+        const learned = lesson.learned;
         return (
             <ContentItemRow
                 key={lesson.id}
@@ -144,12 +128,14 @@ export default function GrammarLessonsPage() {
                     </div>
                 </div>
 
+                {(summaryLoading || levelLoading) && <Loading />}
+
                 <LearningLevelSelector
                     className="mt-6"
                     levels={levelOptions}
-                    selectedLevel={effectiveLevelFilter === "ALL" ? null : effectiveLevelFilter}
+                    selectedLevel={effectiveLevel}
                     onLevelChange={(level) => {
-                        setLevelFilter(effectiveLevelFilter !== level ? level : "ALL");
+                        setSelectedLevel(level);
                         setPage(1);
                     }}
                     unitLabel={t.grammar.lessonsUnit}
@@ -172,7 +158,7 @@ export default function GrammarLessonsPage() {
                         const isCollapsed = collapsed[category.id] ?? false;
                         const title = (language === "fa" && category.titleFa) || category.title;
                         const { testStatus } = category;
-                        const learnedCount = category.lessons.filter(isLearned).length;
+                        const learnedCount = category.lessons.filter((l) => l.learned).length;
                         return (
                             <CategoryAccordionCard
                                 key={category.id}
@@ -219,7 +205,7 @@ export default function GrammarLessonsPage() {
 
                     {paginated.map((lesson) => renderLessonRow(lesson))}
 
-                    {visibleCategories.length === 0 && uncategorized.length === 0 && (
+                    {levelView && visibleCategories.length === 0 && uncategorized.length === 0 && (
                         <div className="text-center text-foreground/50 py-10">{t.grammar.notFound}</div>
                     )}
                 </div>

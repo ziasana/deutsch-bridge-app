@@ -8,8 +8,6 @@ import com.deutschbridge.backend.service.GrammarCategoryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/grammar/categories")
 public class GrammarCategoryController {
@@ -20,9 +18,10 @@ public class GrammarCategoryController {
         this.grammarCategoryService = grammarCategoryService;
     }
 
-    @GetMapping
-    public ResponseEntity<List<GrammarCategoryResponse>> getAll() throws DataNotFoundException {
-        return ResponseEntity.ok(grammarCategoryService.findAllForLearner());
+    /** One category with its published lessons (quizzes included), for the category test page. */
+    @GetMapping("/{id}")
+    public ResponseEntity<GrammarCategoryResponse> getById(@PathVariable String id) throws DataNotFoundException {
+        return ResponseEntity.ok(grammarCategoryService.findByIdForLearner(id));
     }
 
     @PostMapping("/{id}/test-result")

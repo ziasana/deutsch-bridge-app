@@ -66,7 +66,7 @@ public interface ReadingArticleRepository extends JpaRepository<ReadingArticle, 
             WHERE r.level IS NOT NULL
             GROUP BY r.level
             """)
-    List<ReadingLevelCountProjection> countByLevel();
+    List<LevelCountProjection> countByLevel();
 
     @Query("""
             SELECT r.level AS level, COUNT(DISTINCT r.id) AS total
@@ -74,7 +74,7 @@ public interface ReadingArticleRepository extends JpaRepository<ReadingArticle, 
             WHERE lp.user.id = :userId AND lp.isLearned = true AND r.level IS NOT NULL
             GROUP BY r.level
             """)
-    List<ReadingLevelCountProjection> countLearnedByLevelForUser(@Param("userId") String userId);
+    List<LevelCountProjection> countLearnedByLevelForUser(@Param("userId") String userId);
 
     /** Atomic counter bump - avoids loading and re-saving the whole article (and its jsonb columns) per view. */
     @Modifying

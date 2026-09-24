@@ -1,11 +1,12 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
 import { getGrammarLessonById, setLearningProgress } from "@/services/grammarService";
-import { GrammarLesson } from "@/types/grammar";
+import { grammarLessonQueryKey, markLessonLearnedInCache } from "@/lib/grammarQueryCache";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
 import Button from "@/componenets/Button";
@@ -26,17 +27,23 @@ function GrammarLessonDetailContent() {
     const searchParams = useSearchParams();
     const lessonId = searchParams.get("id") ?? "";
     const { language, t } = useI18n();
-    const [lesson, setLesson] = useState<GrammarLesson | null>(null);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [updatingLearned, setUpdatingLearned] = useState(false);
 
+    // Full lesson (content, examples, quiz) is only fetched here, once per lesson, and shared with
+    // the practice page through the same cache entry.
+    const { data: lesson, isLoading: loading, error: lessonError } = useQuery({
+        queryKey: grammarLessonQueryKey(lessonId),
+        queryFn: () => getGrammarLessonById(lessonId).then((res) => res.data),
+        enabled: !!lessonId,
+    });
+
     useEffect(() => {
-        if (!lessonId) return;
-        getGrammarLessonById(lessonId)
-            .then((res) => setLesson(res.data))
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load this lesson."))
-            .finally(() => setLoading(false));
-    }, [lessonId]);
+        if (lessonError) {
+            const err = lessonError as { response?: { data?: { message?: string } } };
+            toast.error(err?.response?.data?.message ?? "Failed to load this lesson.");
+        }
+    }, [lessonError]);
 
     if (!lessonId) {
         return (
@@ -74,9 +81,7 @@ function GrammarLessonDetailContent() {
         setUpdatingLearned(true);
         setLearningProgress({ lessonId: lesson.id, learned: !learned })
             .then(() => {
-                setLesson((prev) =>
-                    prev ? { ...prev, learningProgresses: [{ id: "local", learned: !learned }] } : prev
-                );
+                markLessonLearnedInCache(queryClient, lesson.id, !learned);
                 toast.success(!learned ? t.grammar.markedLearned : t.grammar.markedNotLearned);
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to update progress."))

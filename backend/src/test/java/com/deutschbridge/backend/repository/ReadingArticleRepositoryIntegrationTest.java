@@ -134,7 +134,7 @@ class ReadingArticleRepositoryIntegrationTest {
         learningProgressRepository.save(progress);
     }
 
-    private static Map<LearningLevel, Long> toMap(List<ReadingLevelCountProjection> rows) {
-        return rows.stream().collect(Collectors.toMap(ReadingLevelCountProjection::getLevel, ReadingLevelCountProjection::getTotal));
+    private static Map<LearningLevel, Long> toMap(List<LevelCountProjection> rows) {
+        return rows.stream().collect(Collectors.toMap(LevelCountProjection::getLevel, LevelCountProjection::getTotal));
     }
 }

@@ -137,7 +137,11 @@ export default function AdminGrammarPage() {
     const [lessonSortKey, setLessonSortKey] = useState<LessonSortKey>("title");
     const [lessonSortDirection, setLessonSortDirection] = useState<SortDirection>("asc");
 
-    const invalidateLessons = () => queryClient.invalidateQueries({ queryKey: LESSONS_KEY });
+    // Also drop the learner-side grammar caches (level lists, level summary, opened lessons) in this browser.
+    const invalidateLessons = () => {
+        queryClient.invalidateQueries({ queryKey: LESSONS_KEY });
+        queryClient.invalidateQueries({ queryKey: ["grammar"] });
+    };
 
     useEffect(() => {
         if (!hasHydrated) return;

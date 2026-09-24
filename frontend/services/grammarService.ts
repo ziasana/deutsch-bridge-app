@@ -4,11 +4,19 @@ import {
     CategoryTestSubmitRequest,
     GrammarCategoryWithLessons,
     GrammarLesson,
+    GrammarLevelSummary,
+    GrammarLevelView,
     LearningProgressRequest,
 } from "@/types/grammar";
 
-export const getGrammarLessons = async () => {
-    return await api.get<GrammarLesson[]>("/grammar");
+/** One level's categories and uncategorized lessons as light rows - never lesson content or quizzes. */
+export const getGrammarLevelView = async (level: string) => {
+    return await api.get<GrammarLevelView>("/grammar", { params: { level } });
+};
+
+/** Per-level published totals and the current user's learned counts, for the level selector. */
+export const getGrammarLevelSummary = async () => {
+    return await api.get<GrammarLevelSummary[]>("/grammar/level-summary");
 };
 
 export const getGrammarLessonById = async (id: string) => {
@@ -19,8 +27,9 @@ export const setLearningProgress = async (request: LearningProgressRequest) => {
     return await api.post("/learning-progress", request);
 };
 
-export const getGrammarCategories = async () => {
-    return await api.get<GrammarCategoryWithLessons[]>("/grammar/categories");
+/** One category with its published lessons (quizzes included), for the category test. */
+export const getGrammarCategoryById = async (id: string) => {
+    return await api.get<GrammarCategoryWithLessons>(`/grammar/categories/${id}`);
 };
 
 export const submitCategoryTest = async (categoryId: string, request: CategoryTestSubmitRequest) => {

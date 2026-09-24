@@ -10,15 +10,25 @@ function shouldUseFa(lesson: Pick<GrammarLesson, "level">, lang: AppLanguage): b
     return lang === "fa" && isTranslatableLevel(lesson.level);
 }
 
-export function localizedLessonText(lesson: GrammarLesson, lang: AppLanguage) {
+type LessonHeading = Pick<GrammarLesson, "level" | "title" | "titleFa" | "summary" | "summaryFa">;
+
+/** Title/summary only - works on both full lessons and the light list rows. */
+export function localizedLessonHeading(lesson: LessonHeading, lang: AppLanguage) {
     const fa = shouldUseFa(lesson, lang);
     return {
         title: (fa && lesson.titleFa) || lesson.title,
         summary: (fa && lesson.summaryFa) || lesson.summary,
+        dir: fa && lesson.titleFa ? ("rtl" as const) : ("ltr" as const),
+    };
+}
+
+export function localizedLessonText(lesson: GrammarLesson, lang: AppLanguage) {
+    const fa = shouldUseFa(lesson, lang);
+    return {
+        ...localizedLessonHeading(lesson, lang),
         content: (fa && lesson.contentFa) || lesson.content,
         example: (fa && lesson.exampleFa) || lesson.example,
         usageTips: (fa && lesson.usageTipsFa) || lesson.usageTips,
-        dir: fa && lesson.titleFa ? ("rtl" as const) : ("ltr" as const),
     };
 }
 
