@@ -32,19 +32,11 @@ import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
 import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
+import AdminTableControls from "@/componenets/admin/table/AdminTableControls";
+import AdminTablePagination from "@/componenets/admin/table/AdminTablePagination";
+import SortableTh from "@/componenets/admin/table/SortableTh";
 import { getArticleImageSrc } from "@/lib/readingImages";
-import {
-    ArrowUp,
-    ArrowDown,
-    ArrowUpDown,
-    ChevronLeft,
-    ChevronRight,
-    ChevronsLeft,
-    ChevronsRight,
-    Upload,
-    CheckCircle2,
-    XCircle,
-} from "lucide-react";
+import { Upload, CheckCircle2, XCircle } from "lucide-react";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
@@ -439,15 +431,6 @@ export default function AdminReadingPage() {
     const tableStartIndex = sortedArticles.length === 0 ? 0 : (tableCurrentPage - 1) * tablePageSize + 1;
     const tableEndIndex = Math.min(tableCurrentPage * tablePageSize, sortedArticles.length);
     const paginatedArticles = sortedArticles.slice((tableCurrentPage - 1) * tablePageSize, tableCurrentPage * tablePageSize);
-
-    const tablePageNumbers = Array.from({ length: tableTotalPages }, (_, i) => i + 1).filter(
-        (p) => p === 1 || p === tableTotalPages || Math.abs(p - tableCurrentPage) <= 1
-    );
-
-    const renderSortIcon = (column: SortKey) => {
-        if (sortKey !== column) return <ArrowUpDown className="size-3.5 opacity-40" />;
-        return sortDirection === "asc" ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />;
-    };
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
@@ -1041,39 +1024,21 @@ export default function AdminReadingPage() {
                     ) : (
                         <div className="px-6 pb-6">
                             {/* Table controls */}
-                            <div className="flex flex-wrap items-center justify-between gap-4 mt-4 mb-3">
-                                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                                    Show
-                                    <select
-                                        value={tablePageSize}
-                                        onChange={(e) => {
-                                            setTablePageSize(Number(e.target.value));
-                                            setTablePage(1);
-                                        }}
-                                        className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                    >
-                                        {PAGE_SIZE_OPTIONS.map((n) => (
-                                            <option key={n} value={n}>
-                                                {n}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    entries
-                                </label>
-
-                                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                                    Search:
-                                    <input
-                                        type="text"
-                                        value={tableSearch}
-                                        onChange={(e) => {
-                                            setTableSearch(e.target.value);
-                                            setTablePage(1);
-                                        }}
-                                        placeholder="Title or topic..."
-                                        className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                    />
-                                </label>
+                            <div className="mt-4 mb-3">
+                                <AdminTableControls
+                                    pageSize={tablePageSize}
+                                    onPageSizeChange={(size) => {
+                                        setTablePageSize(size);
+                                        setTablePage(1);
+                                    }}
+                                    pageSizeOptions={PAGE_SIZE_OPTIONS}
+                                    search={tableSearch}
+                                    onSearchChange={(value) => {
+                                        setTableSearch(value);
+                                        setTablePage(1);
+                                    }}
+                                    searchPlaceholder="Title or topic..."
+                                />
                             </div>
 
                             <div className="overflow-x-auto">
@@ -1081,42 +1046,30 @@ export default function AdminReadingPage() {
                                     <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm">
                                         <tr>
                                             <th className="px-6 py-3">Image</th>
-                                            <th className="px-6 py-3">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => toggleSort("title")}
-                                                    className="flex items-center gap-1.5 font-semibold hover:text-gray-900 dark:hover:text-white"
-                                                >
-                                                    Title {renderSortIcon("title")}
-                                                </button>
-                                            </th>
-                                            <th className="px-6 py-3">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => toggleSort("level")}
-                                                    className="flex items-center gap-1.5 font-semibold hover:text-gray-900 dark:hover:text-white"
-                                                >
-                                                    Level {renderSortIcon("level")}
-                                                </button>
-                                            </th>
-                                            <th className="px-6 py-3">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => toggleSort("vocabulary")}
-                                                    className="flex items-center gap-1.5 font-semibold hover:text-gray-900 dark:hover:text-white"
-                                                >
-                                                    Vocabulary {renderSortIcon("vocabulary")}
-                                                </button>
-                                            </th>
-                                            <th className="px-6 py-3">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => toggleSort("annotations")}
-                                                    className="flex items-center gap-1.5 font-semibold hover:text-gray-900 dark:hover:text-white"
-                                                >
-                                                    Annotations {renderSortIcon("annotations")}
-                                                </button>
-                                            </th>
+                                            <SortableTh
+                                                label="Title"
+                                                active={sortKey === "title"}
+                                                direction={sortDirection}
+                                                onClick={() => toggleSort("title")}
+                                            />
+                                            <SortableTh
+                                                label="Level"
+                                                active={sortKey === "level"}
+                                                direction={sortDirection}
+                                                onClick={() => toggleSort("level")}
+                                            />
+                                            <SortableTh
+                                                label="Vocabulary"
+                                                active={sortKey === "vocabulary"}
+                                                direction={sortDirection}
+                                                onClick={() => toggleSort("vocabulary")}
+                                            />
+                                            <SortableTh
+                                                label="Annotations"
+                                                active={sortKey === "annotations"}
+                                                direction={sortDirection}
+                                                onClick={() => toggleSort("annotations")}
+                                            />
                                             <th className="px-6 py-3">Actions</th>
                                         </tr>
                                     </thead>
@@ -1172,69 +1125,16 @@ export default function AdminReadingPage() {
                             </div>
 
                             {/* Table footer: info + pagination */}
-                            {sortedArticles.length > 0 && (
-                                <div className="flex flex-wrap items-center justify-between gap-4 mt-4">
-                                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                                        Showing {tableStartIndex} to {tableEndIndex} of {sortedArticles.length} entries
-                                    </p>
-                                    <div className="flex items-center gap-1">
-                                        <button
-                                            type="button"
-                                            disabled={tableCurrentPage === 1}
-                                            onClick={() => setTablePage(1)}
-                                            className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                        >
-                                            <ChevronsLeft className="size-4" />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            disabled={tableCurrentPage === 1}
-                                            onClick={() => setTablePage((p) => Math.max(1, p - 1))}
-                                            className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                        >
-                                            <ChevronLeft className="size-4" />
-                                        </button>
-                                        {tablePageNumbers.map((p, idx) => {
-                                            const prev = tablePageNumbers[idx - 1];
-                                            const showEllipsis = prev !== undefined && p - prev > 1;
-                                            return (
-                                                <div key={p} className="flex items-center gap-1">
-                                                    {showEllipsis && (
-                                                        <span className="px-1 text-gray-400 dark:text-gray-500">…</span>
-                                                    )}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setTablePage(p)}
-                                                        className={`min-w-9 h-9 px-2 rounded-lg text-sm font-medium border ${
-                                                            p === tableCurrentPage
-                                                                ? "bg-blue-600 border-blue-600 text-white"
-                                                                : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                                        }`}
-                                                    >
-                                                        {p}
-                                                    </button>
-                                                </div>
-                                            );
-                                        })}
-                                        <button
-                                            type="button"
-                                            disabled={tableCurrentPage === tableTotalPages}
-                                            onClick={() => setTablePage((p) => Math.min(tableTotalPages, p + 1))}
-                                            className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                        >
-                                            <ChevronRight className="size-4" />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            disabled={tableCurrentPage === tableTotalPages}
-                                            onClick={() => setTablePage(tableTotalPages)}
-                                            className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                        >
-                                            <ChevronsRight className="size-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
+                            <div className="mt-4">
+                                <AdminTablePagination
+                                    page={tableCurrentPage}
+                                    totalPages={tableTotalPages}
+                                    totalItems={sortedArticles.length}
+                                    startIndex={tableStartIndex}
+                                    endIndex={tableEndIndex}
+                                    onPageChange={setTablePage}
+                                />
+                            </div>
                         </div>
                     )}
                 </div>

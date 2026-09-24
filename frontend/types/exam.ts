@@ -7,6 +7,26 @@ export type ExamSection =
 
 export type ExamTaskType = "MATCHING" | "MULTIPLE_CHOICE" | "TRUE_FALSE_NOT_GIVEN" | "WORD_BANK_CLOZE" | "WRITING_TASK";
 
+export type ExamFieldPresetType = "TEIL_DESCRIPTION" | "DEFAULT_EXPLANATION" | "DEFAULT_COMMON_MISTAKE";
+
+/** A named, reusable snippet for one of the exercise form's repetitive fields, scoped to one section + level. */
+export interface ExamFieldPreset {
+    id: string;
+    section: ExamSection;
+    level: string;
+    fieldType: ExamFieldPresetType;
+    label: string;
+    value: string;
+}
+
+export interface ExamFieldPresetRequest {
+    section: ExamSection;
+    level: string;
+    fieldType: ExamFieldPresetType;
+    label: string;
+    value: string;
+}
+
 export interface ExamPassage {
     id: string;
     label: string;

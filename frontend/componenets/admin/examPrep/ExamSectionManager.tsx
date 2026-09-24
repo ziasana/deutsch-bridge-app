@@ -12,8 +12,9 @@ import {
     deleteExamExercise,
     uploadExamPassageImage,
     uploadExamPassageAudio,
+    getExamFieldPresets,
 } from "@/services/adminExamService";
-import { ExamExerciseResponse, ExamPassage, ExamQuestion, ExamSection, ExamTaskType } from "@/types/exam";
+import { ExamExerciseResponse, ExamFieldPresetType, ExamPassage, ExamQuestion, ExamSection, ExamTaskType } from "@/types/exam";
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
@@ -21,9 +22,12 @@ import RichTextEditor from "@/componenets/RichTextEditor";
 import { isEmptyTranscript } from "@/lib/transcriptFormat";
 import { Badge } from "@/componenets/ui/badge";
 import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
+import ExamFieldPresetManager, { examFieldPresetsQueryKey } from "@/componenets/admin/examPrep/ExamFieldPresetManager";
+import AdminTableControls from "@/componenets/admin/table/AdminTableControls";
+import AdminTablePagination from "@/componenets/admin/table/AdminTablePagination";
+import SortableTh from "@/componenets/admin/table/SortableTh";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
 import { extractGapNumbers } from "@/lib/examGap";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
@@ -106,10 +110,11 @@ const HOERVERSTEHEN_TEIL_OPTIONS = [
 ];
 
 type PublishedFilter = "ALL" | "YES" | "NO";
-type SortOrder = "NEWEST" | "OLDEST";
+type ExerciseSortKey = "title" | "teil" | "level" | "questions";
+type SortDirection = "asc" | "desc";
 
 const makeEmptyForm = (section: ExamSection) => ({
-    title: "",
+    title: "1. Übung",
     section,
     taskType: (TASK_TYPES_BY_SECTION[section][0] ?? null) as ExamTaskType | null,
     level: "B1",
@@ -127,9 +132,12 @@ const hasPassageContent = (p: ExamPassage) => {
     return hasText || hasEmbeddedImage || Boolean(p.imageUrl) || Boolean(p.audioUrl);
 };
 
-const emptyPassage = (index: number): ExamPassage => ({
+const passageLabelDefault = (index: number, section: ExamSection): string =>
+    section === "HOERVERSTEHEN" ? `Audiodatei ${index + 1}` : `Text ${index + 1}`;
+
+const emptyPassage = (index: number, section: ExamSection): ExamPassage => ({
     id: crypto.randomUUID(),
-    label: `Text ${index + 1}`,
+    label: passageLabelDefault(index, section),
     content: "",
     imageUrl: null,
     audioUrl: null,
@@ -205,10 +213,25 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
     const [editingExercise, setEditingExercise] = useState<ExamExerciseResponse | null>(null);
     const [uploadingPassageImage, setUploadingPassageImage] = useState<number | null>(null);
     const [uploadingPassageAudio, setUploadingPassageAudio] = useState<number | null>(null);
+    const [showPresetManager, setShowPresetManager] = useState(false);
+
+    // Presets for the exercise form's current level - each "Use a saved preset..." select below is
+    // filtered from this one list by fieldType. Saving/deleting in the manager panel shares this
+    // exact query key, so the dropdowns refresh immediately.
+    const { data: fieldPresets = [] } = useQuery({
+        queryKey: examFieldPresetsQueryKey(section, form.level),
+        queryFn: () => getExamFieldPresets(section, form.level).then((res) => res.data),
+    });
+    const presetsFor = (fieldType: ExamFieldPresetType) => fieldPresets.filter((p) => p.fieldType === fieldType);
+    const applyPreset = (field: "teilDescription" | "defaultExplanation" | "defaultCommonMistake", presetId: string) => {
+        const preset = fieldPresets.find((p) => p.id === presetId);
+        if (preset) setForm((prev) => ({ ...prev, [field]: preset.value }));
+    };
 
     const [filterLevel, setFilterLevel] = useState<string>("ALL");
     const [filterPublished, setFilterPublished] = useState<PublishedFilter>("ALL");
-    const [sortOrder, setSortOrder] = useState<SortOrder>("NEWEST");
+    const [sortKey, setSortKey] = useState<ExerciseSortKey>("title");
+    const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
     const [exercisesPage, setExercisesPage] = useState(1);
     const [exercisesPageSize, setExercisesPageSize] = useState(10);
     const [exerciseSearch, setExerciseSearch] = useState("");
@@ -259,7 +282,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
         });
     };
     const removePassage = (idx: number) => setPassages((prev) => prev.filter((_, i) => i !== idx));
-    const addPassage = () => setPassages((prev) => [...prev, emptyPassage(prev.length)]);
+    const addPassage = () => setPassages((prev) => [...prev, emptyPassage(prev.length, section)]);
 
     const uploadPassageImage = (idx: number, file: File) => {
         setUploadingPassageImage(idx);
@@ -362,7 +385,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
             .filter(({ p }) => hasPassageContent(p))
             .map(({ p, originalIdx }, newIdx) => {
                 passageIndexRemap.set(originalIdx, newIdx);
-                return { ...p, label: p.label.trim() || `Text ${newIdx + 1}` };
+                return { ...p, label: p.label.trim() || passageLabelDefault(newIdx, section) };
             });
 
         const payload = {
@@ -407,17 +430,45 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
         setExercisesPage(1);
     };
 
+    const toggleSort = (key: ExerciseSortKey) => {
+        if (sortKey === key) {
+            setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+        } else {
+            setSortKey(key);
+            setSortDirection("asc");
+        }
+        setExercisesPage(1);
+    };
+
     const exerciseLevels = Array.from(new Set(exercises.map((e) => e.level).filter((lvl): lvl is string => lvl != null))).sort();
 
     const exerciseSearchQuery = exerciseSearch.trim().toLowerCase();
+
+    const sortValueFor = (exercise: ExamExerciseResponse) => {
+        switch (sortKey) {
+            case "title":
+                return exercise.title.toLowerCase();
+            case "teil":
+                return exercise.partNumber ?? 1;
+            case "level":
+                return exercise.level ?? "";
+            case "questions":
+                return exercise.questions.length;
+        }
+    };
 
     const filteredExercises = exercises
         .filter((e) => filterLevel === "ALL" || e.level === filterLevel)
         .filter((e) => filterPublished === "ALL" || (filterPublished === "YES" ? e.published : !e.published))
         .filter((e) => !exerciseSearchQuery || e.title.toLowerCase().includes(exerciseSearchQuery))
+        .slice()
         .sort((a, b) => {
-            const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-            return sortOrder === "NEWEST" ? -diff : diff;
+            const dir = sortDirection === "asc" ? 1 : -1;
+            const va = sortValueFor(a);
+            const vb = sortValueFor(b);
+            if (va < vb) return -1 * dir;
+            if (va > vb) return 1 * dir;
+            return 0;
         });
 
     const exercisesTotalPages = Math.max(1, Math.ceil(filteredExercises.length / exercisesPageSize));
@@ -427,9 +478,6 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
     const pagedExercises = filteredExercises.slice(
         (exercisesCurrentPage - 1) * exercisesPageSize,
         exercisesCurrentPage * exercisesPageSize
-    );
-    const exercisesPageNumbers = Array.from({ length: exercisesTotalPages }, (_, i) => i + 1).filter(
-        (p) => p === 1 || p === exercisesTotalPages || Math.abs(p - exercisesCurrentPage) <= 1
     );
 
     const removeExercise = (exercise: ExamExerciseResponse) => setExerciseToDelete(exercise);
@@ -540,10 +588,39 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                         </div>
                     </div>
 
+                    <div className="flex items-center justify-between">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                            Reuse saved text for the fields below via their &quot;Use a saved preset&quot; dropdown.
+                        </p>
+                        <button
+                            type="button"
+                            className="text-sm text-blue-600 dark:text-blue-400 underline"
+                            onClick={() => setShowPresetManager((v) => !v)}
+                        >
+                            {showPresetManager ? "Hide preset manager" : "Manage presets"}
+                        </button>
+                    </div>
+
+                    {showPresetManager && <ExamFieldPresetManager section={section} initialLevel={form.level} />}
+
                     <div>
                         <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
                             Teil description (shown to students before the passages/questions)
                         </label>
+                        {presetsFor("TEIL_DESCRIPTION").length > 0 && (
+                            <select
+                                value=""
+                                onChange={(e) => applyPreset("teilDescription", e.target.value)}
+                                className="mb-2 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                            >
+                                <option value="">Use a saved preset...</option>
+                                {presetsFor("TEIL_DESCRIPTION").map((p) => (
+                                    <option key={p.id} value={p.id}>
+                                        {p.label}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
                         <Input
                             value={form.teilDescription}
                             onChange={(e) => setForm({ ...form, teilDescription: e.target.value })}
@@ -557,6 +634,20 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                 <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
                                     Default explanation (fallback hint when a question has none)
                                 </label>
+                                {presetsFor("DEFAULT_EXPLANATION").length > 0 && (
+                                    <select
+                                        value=""
+                                        onChange={(e) => applyPreset("defaultExplanation", e.target.value)}
+                                        className="mb-2 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                                    >
+                                        <option value="">Use a saved preset...</option>
+                                        {presetsFor("DEFAULT_EXPLANATION").map((p) => (
+                                            <option key={p.id} value={p.id}>
+                                                {p.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
                                 <Input
                                     value={form.defaultExplanation}
                                     onChange={(e) => setForm({ ...form, defaultExplanation: e.target.value })}
@@ -567,6 +658,20 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                 <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
                                     Default common mistake (fallback)
                                 </label>
+                                {presetsFor("DEFAULT_COMMON_MISTAKE").length > 0 && (
+                                    <select
+                                        value=""
+                                        onChange={(e) => applyPreset("defaultCommonMistake", e.target.value)}
+                                        className="mb-2 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                                    >
+                                        <option value="">Use a saved preset...</option>
+                                        {presetsFor("DEFAULT_COMMON_MISTAKE").map((p) => (
+                                            <option key={p.id} value={p.id}>
+                                                {p.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
                                 <Input
                                     value={form.defaultCommonMistake}
                                     onChange={(e) => setForm({ ...form, defaultCommonMistake: e.target.value })}
@@ -985,44 +1090,17 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                             <option value="YES">Published: yes</option>
                             <option value="NO">Published: no</option>
                         </select>
-
-                        <select
-                            value={sortOrder}
-                            onChange={(e) => changeExercisesFilter(() => setSortOrder(e.target.value as SortOrder))}
-                            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                        >
-                            <option value="NEWEST">Newest first</option>
-                            <option value="OLDEST">Oldest first</option>
-                        </select>
                     </div>
 
-                    <div className="px-6 pt-4 flex flex-wrap items-center justify-between gap-4">
-                        <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                            Show
-                            <select
-                                value={exercisesPageSize}
-                                onChange={(e) => changeExercisesFilter(() => setExercisesPageSize(Number(e.target.value)))}
-                                className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                            >
-                                {PAGE_SIZE_OPTIONS.map((n) => (
-                                    <option key={n} value={n}>
-                                        {n}
-                                    </option>
-                                ))}
-                            </select>
-                            entries
-                        </label>
-
-                        <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                            Search:
-                            <input
-                                type="text"
-                                value={exerciseSearch}
-                                onChange={(e) => changeExercisesFilter(() => setExerciseSearch(e.target.value))}
-                                placeholder="Exercise title..."
-                                className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                            />
-                        </label>
+                    <div className="px-6 pt-4">
+                        <AdminTableControls
+                            pageSize={exercisesPageSize}
+                            onPageSizeChange={(size) => changeExercisesFilter(() => setExercisesPageSize(size))}
+                            pageSizeOptions={PAGE_SIZE_OPTIONS}
+                            search={exerciseSearch}
+                            onSearchChange={(value) => changeExercisesFilter(() => setExerciseSearch(value))}
+                            searchPlaceholder="Exercise title..."
+                        />
                     </div>
 
                     {isLoading ? (
@@ -1032,11 +1110,31 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                             <table className="w-full text-left">
                                 <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm">
                                     <tr>
-                                        <th className="px-6 py-3">Title</th>
-                                        <th className="px-6 py-3">Teil</th>
+                                        <SortableTh
+                                            label="Title"
+                                            active={sortKey === "title"}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort("title")}
+                                        />
+                                        <SortableTh
+                                            label="Teil"
+                                            active={sortKey === "teil"}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort("teil")}
+                                        />
                                         <th className="px-6 py-3">Task type</th>
-                                        <th className="px-6 py-3">Level</th>
-                                        <th className="px-6 py-3">Questions</th>
+                                        <SortableTh
+                                            label="Level"
+                                            active={sortKey === "level"}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort("level")}
+                                        />
+                                        <SortableTh
+                                            label="Questions"
+                                            active={sortKey === "questions"}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort("questions")}
+                                        />
                                         <th className="px-6 py-3">Published</th>
                                         <th className="px-6 py-3">Actions</th>
                                     </tr>
@@ -1057,8 +1155,10 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                             <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
                                                 {exercise.questions.length}
                                             </td>
-                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                                                {exercise.published ? "Yes" : "No"}
+                                            <td className="px-6 py-4">
+                                                <Badge variant={exercise.published ? "default" : "outline"}>
+                                                    {exercise.published ? "Published" : "Draft"}
+                                                </Badge>
                                             </td>
                                             <td className="px-6 py-4 space-x-2 whitespace-nowrap">
                                                 <Button variant="secondary" className="px-3 py-1 text-sm" onClick={() => startEdit(exercise)}>
@@ -1082,65 +1182,16 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                         </div>
                     )}
 
-                    {!isLoading && filteredExercises.length > 0 && (
-                        <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4">
-                            <p className="text-sm text-gray-600 dark:text-gray-300">
-                                Showing {exercisesStartIndex} to {exercisesEndIndex} of {filteredExercises.length} entries
-                            </p>
-                            <div className="flex items-center gap-1">
-                                <button
-                                    type="button"
-                                    disabled={exercisesCurrentPage === 1}
-                                    onClick={() => setExercisesPage(1)}
-                                    className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                >
-                                    <ChevronsLeft className="size-4" />
-                                </button>
-                                <button
-                                    type="button"
-                                    disabled={exercisesCurrentPage === 1}
-                                    onClick={() => setExercisesPage((p) => Math.max(1, p - 1))}
-                                    className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                >
-                                    <ChevronLeft className="size-4" />
-                                </button>
-                                {exercisesPageNumbers.map((p, idx) => {
-                                    const prev = exercisesPageNumbers[idx - 1];
-                                    const showEllipsis = prev !== undefined && p - prev > 1;
-                                    return (
-                                        <div key={p} className="flex items-center gap-1">
-                                            {showEllipsis && <span className="px-1 text-gray-400 dark:text-gray-500">…</span>}
-                                            <button
-                                                type="button"
-                                                onClick={() => setExercisesPage(p)}
-                                                className={`min-w-9 h-9 px-2 rounded-lg text-sm font-medium border ${
-                                                    p === exercisesCurrentPage
-                                                        ? "bg-blue-600 border-blue-600 text-white"
-                                                        : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                                }`}
-                                            >
-                                                {p}
-                                            </button>
-                                        </div>
-                                    );
-                                })}
-                                <button
-                                    type="button"
-                                    disabled={exercisesCurrentPage === exercisesTotalPages}
-                                    onClick={() => setExercisesPage((p) => Math.min(exercisesTotalPages, p + 1))}
-                                    className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                >
-                                    <ChevronRight className="size-4" />
-                                </button>
-                                <button
-                                    type="button"
-                                    disabled={exercisesCurrentPage === exercisesTotalPages}
-                                    onClick={() => setExercisesPage(exercisesTotalPages)}
-                                    className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                >
-                                    <ChevronsRight className="size-4" />
-                                </button>
-                            </div>
+                    {!isLoading && (
+                        <div className="px-6 py-4">
+                            <AdminTablePagination
+                                page={exercisesCurrentPage}
+                                totalPages={exercisesTotalPages}
+                                totalItems={filteredExercises.length}
+                                startIndex={exercisesStartIndex}
+                                endIndex={exercisesEndIndex}
+                                onPageChange={setExercisesPage}
+                            />
                         </div>
                     )}
                 </div>
