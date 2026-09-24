@@ -25,6 +25,7 @@ import com.deutschbridge.backend.repository.ExpressionProgressRepository;
 import com.deutschbridge.backend.repository.ExpressionRepository;
 import com.deutschbridge.backend.service.cache.ContentCacheService;
 import com.deutschbridge.backend.util.ExpressionMapper;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
@@ -207,13 +208,27 @@ public class ExpressionService {
 
     private String describeImportError(Exception e) {
         if (e instanceof InvalidFormatException invalidFormat) {
-            String field = invalidFormat.getPath().isEmpty() ? "a field" : invalidFormat.getPath().get(0).getFieldName();
+            String field = describeFieldPath(invalidFormat.getPath());
             return "Invalid value \"" + invalidFormat.getValue() + "\" for \"" + field + "\".";
         }
         if (e instanceof IllegalArgumentException) {
             return e.getMessage();
         }
         return "Could not import this row: " + e.getMessage();
+    }
+
+    /** Full dotted/indexed path (e.g. "examples[1].context") instead of just the outermost field. */
+    private static String describeFieldPath(List<JsonMappingException.Reference> path) {
+        StringBuilder sb = new StringBuilder();
+        for (JsonMappingException.Reference ref : path) {
+            if (ref.getFieldName() != null) {
+                if (!sb.isEmpty()) sb.append('.');
+                sb.append(ref.getFieldName());
+            } else if (ref.getIndex() >= 0) {
+                sb.append('[').append(ref.getIndex()).append(']');
+            }
+        }
+        return !sb.isEmpty() ? sb.toString() : "a field";
     }
 
     @CacheEvict(cacheNames = "expressions", allEntries = true)
