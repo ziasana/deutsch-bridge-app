@@ -37,6 +37,9 @@ class LearningProgressServiceTest {
     @Mock
     private GrammarService grammarService;
 
+    @Mock
+    private LearningActivityService learningActivityService;
+
     @InjectMocks
     private LearningProgressService service;
 

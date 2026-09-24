@@ -51,6 +51,9 @@ class ExamAttemptServiceTest {
     @Mock
     private RequestContext requestContext;
 
+    @Mock
+    private LearningActivityService learningActivityService;
+
     @InjectMocks
     private ExamAttemptService service;
 
@@ -230,6 +233,7 @@ class ExamAttemptServiceTest {
 
         ExamAttempt attempt = new ExamAttempt();
         attempt.setId("attempt1");
+        attempt.setUser(createUser());
         attempt.setExercise(exercise);
         attempt.setAnswers(List.of(
                 new ExamAnswerRecord("q1", "B", true, "expl", "mistake", "transcript"),
@@ -261,6 +265,7 @@ class ExamAttemptServiceTest {
 
         ExamAttempt attempt = new ExamAttempt();
         attempt.setId("attempt1");
+        attempt.setUser(createUser());
         attempt.setExercise(exercise);
         attempt.setAnswers(List.of(new ExamAnswerRecord("q1", "B", true, null, null, null)));
         when(attemptRepository.findById("attempt1")).thenReturn(Optional.of(attempt));

@@ -16,6 +16,8 @@ import com.deutschbridge.backend.model.dto.StreakResponse;
 import com.deutschbridge.backend.model.entity.*;
 import com.deutschbridge.backend.model.enums.ExpressionMasteryLevel;
 import com.deutschbridge.backend.model.enums.ExpressionStatus;
+import com.deutschbridge.backend.model.enums.LearningActivityType;
+import com.deutschbridge.backend.model.enums.LearningModule;
 import com.deutschbridge.backend.model.enums.VocabularyMasteryLevel;
 import com.deutschbridge.backend.repository.DailyWordRepository;
 import com.deutschbridge.backend.repository.ExamAttemptRepository;
@@ -62,10 +64,11 @@ public class LearningProgressService {
     private final GrammarCategoryRepository grammarCategoryRepository;
     private final GrammarCategoryTestAttemptRepository grammarCategoryTestAttemptRepository;
     private final ExamAttemptRepository examAttemptRepository;
+    private final LearningActivityService learningActivityService;
 
     private static final List<Integer> MILESTONE_THRESHOLDS = List.of(10, 50, 100, 250, 500, 1000);
 
-    public LearningProgressService(LearningProgressRepository repository, RequestContext requestContext, UserService userService, GrammarService grammarService, VocabularyItemRepository vocabularyItemRepository, VocabularyProgressRepository vocabularyProgressRepository, DailyWordService dailyWordService, GrammarLessonRepository grammarLessonRepository, ExpressionRepository expressionRepository, ExpressionProgressRepository expressionProgressRepository, DailyWordRepository dailyWordRepository, ReadingArticleService readingArticleService, ReadingArticleRepository readingArticleRepository, GrammarCategoryRepository grammarCategoryRepository, GrammarCategoryTestAttemptRepository grammarCategoryTestAttemptRepository, ExamAttemptRepository examAttemptRepository) {
+    public LearningProgressService(LearningProgressRepository repository, RequestContext requestContext, UserService userService, GrammarService grammarService, VocabularyItemRepository vocabularyItemRepository, VocabularyProgressRepository vocabularyProgressRepository, DailyWordService dailyWordService, GrammarLessonRepository grammarLessonRepository, ExpressionRepository expressionRepository, ExpressionProgressRepository expressionProgressRepository, DailyWordRepository dailyWordRepository, ReadingArticleService readingArticleService, ReadingArticleRepository readingArticleRepository, GrammarCategoryRepository grammarCategoryRepository, GrammarCategoryTestAttemptRepository grammarCategoryTestAttemptRepository, ExamAttemptRepository examAttemptRepository, LearningActivityService learningActivityService) {
         this.repository = repository;
         this.requestContext = requestContext;
         this.userService = userService;
@@ -82,6 +85,7 @@ public class LearningProgressService {
         this.grammarCategoryRepository = grammarCategoryRepository;
         this.grammarCategoryTestAttemptRepository = grammarCategoryTestAttemptRepository;
         this.examAttemptRepository = examAttemptRepository;
+        this.learningActivityService = learningActivityService;
     }
 
     public List<LearningProgress> findAll()
@@ -113,6 +117,9 @@ public class LearningProgressService {
                     request.learned(),
                     now
             );
+            if (request.learned()) {
+                learningActivityService.track(user.getId(), LearningModule.GRAMMAR, LearningActivityType.GRAMMAR_LESSON_COMPLETED, lesson.getId());
+            }
         }
 
         if (request.dailyWordId() != null) {
@@ -125,6 +132,9 @@ public class LearningProgressService {
                     request.learned(),
                     now
             );
+            if (request.learned()) {
+                learningActivityService.track(user.getId(), LearningModule.DAILY_WORDS, LearningActivityType.DAILY_WORD_COMPLETED, dailyWord.getId());
+            }
         }
 
         if (request.readingId() != null) {

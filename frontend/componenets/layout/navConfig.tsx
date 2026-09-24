@@ -18,6 +18,7 @@ import {
     SpellCheck,
     TrendingUp,
     User,
+    Users,
 } from "lucide-react";
 import type { Dictionary } from "@/lib/i18n/translations";
 
@@ -48,7 +49,8 @@ export function getUserNavItems(t: Dictionary): NavItem[] {
 
 export function getAdminNavItems(t: Dictionary): NavItem[] {
     return [
-        { href: "/admin", label: t.nav.adminDashboard, icon: LayoutDashboard },
+        { href: "/admin", label: t.nav.dashboard, icon: LayoutDashboard },
+        { href: "/admin/users", label: t.nav.manageUsers, icon: Users },
         { href: "/admin/reading", label: t.nav.manageReading, icon: Newspaper },
         {
             label: t.nav.manageExamPrep,

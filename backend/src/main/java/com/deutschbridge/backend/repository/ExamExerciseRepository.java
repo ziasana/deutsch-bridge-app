@@ -33,6 +33,8 @@ public interface ExamExerciseRepository extends JpaRepository<ExamExercise, Stri
 
     boolean existsBySectionAndLevelAndIdNot(ExamSection section, LearningLevel level, String id);
 
+    long countByPublished(boolean published);
+
     /**
      * Per-level progress for one user, computed entirely in SQL (never loads exercise content)
      * so the level selector's payload stays a handful of rows no matter how large this table

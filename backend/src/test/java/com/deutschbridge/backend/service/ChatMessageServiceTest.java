@@ -27,6 +27,9 @@ class ChatMessageServiceTest {
     @Mock
     ChatSessionService chatSessionService;
 
+    @Mock
+    LearningActivityService learningActivityService;
+
     ChatMessage chatMessage;
     ChatSession chatSession;
 

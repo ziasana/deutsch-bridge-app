@@ -39,6 +39,7 @@ class GrammarLearnerViewTest {
     @Mock private RequestContext requestContext;
     @Mock private ContentCacheService contentCacheService;
     @Mock private GrammarProgressCacheService grammarProgressCacheService;
+    @Mock private LearningActivityService learningActivityService;
 
     private User user() {
         User user = new User();
@@ -53,7 +54,7 @@ class GrammarLearnerViewTest {
     @DisplayName("findLevelViewForLearner -> should merge learned flags and test status onto the cached rows")
     void findLevelViewForLearner_shouldMergeUserState() {
         GrammarCategoryService service = new GrammarCategoryService(categoryRepository, lessonRepository, attemptRepository,
-                learningProgressRepository, userService, requestContext, contentCacheService);
+                learningProgressRepository, userService, requestContext, contentCacheService, learningActivityService);
         User user = user();
 
         ContentCacheService.GrammarLessonEntry inCategory = new ContentCacheService.GrammarLessonEntry(
@@ -105,7 +106,7 @@ class GrammarLearnerViewTest {
     @DisplayName("findByIdForLearner -> should throw for an unknown category")
     void findByIdForLearner_shouldThrowWhenMissing() {
         GrammarCategoryService service = new GrammarCategoryService(categoryRepository, lessonRepository, attemptRepository,
-                learningProgressRepository, userService, requestContext, contentCacheService);
+                learningProgressRepository, userService, requestContext, contentCacheService, learningActivityService);
         when(contentCacheService.getGrammarCategoryWithPublishedLessons("missing")).thenReturn(Optional.empty());
 
         assertThrows(DataNotFoundException.class, () -> service.findByIdForLearner("missing"));

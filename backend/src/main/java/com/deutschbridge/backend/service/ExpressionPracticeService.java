@@ -7,7 +7,9 @@ import com.deutschbridge.backend.model.entity.*;
 import com.deutschbridge.backend.model.enums.ExpressionMasteryLevel;
 import com.deutschbridge.backend.model.enums.ExpressionQuestionType;
 import com.deutschbridge.backend.model.enums.ExpressionStatus;
+import com.deutschbridge.backend.model.enums.LearningActivityType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
+import com.deutschbridge.backend.model.enums.LearningModule;
 import com.deutschbridge.backend.repository.ExpressionProgressRepository;
 import com.deutschbridge.backend.repository.ExpressionQuestionOptionRepository;
 import com.deutschbridge.backend.repository.ExpressionQuestionRepository;
@@ -50,6 +52,7 @@ public class ExpressionPracticeService {
     private final UserService userService;
     private final RequestContext requestContext;
     private final OllamaService ollamaService;
+    private final LearningActivityService learningActivityService;
     private final Random random = new Random();
 
     public ExpressionPracticeService(ExpressionRepository expressionRepository,
@@ -58,7 +61,8 @@ public class ExpressionPracticeService {
                                       ExpressionQuestionOptionRepository expressionQuestionOptionRepository,
                                       UserService userService,
                                       RequestContext requestContext,
-                                      OllamaService ollamaService) {
+                                      OllamaService ollamaService,
+                                      LearningActivityService learningActivityService) {
         this.expressionRepository = expressionRepository;
         this.expressionProgressRepository = expressionProgressRepository;
         this.expressionQuestionRepository = expressionQuestionRepository;
@@ -66,6 +70,7 @@ public class ExpressionPracticeService {
         this.userService = userService;
         this.requestContext = requestContext;
         this.ollamaService = ollamaService;
+        this.learningActivityService = learningActivityService;
     }
 
     /** A session made of exactly one expression, for practicing it on demand from its detail page or list card. */
@@ -146,6 +151,7 @@ public class ExpressionPracticeService {
         progress.setRecallScore(clamp(progress.getRecallScore() + (correct ? 20 : -10)));
         markAnswered(progress, correct);
         expressionProgressRepository.save(progress);
+        learningActivityService.track(user.getId(), LearningModule.EXPRESSIONS, LearningActivityType.EXPRESSION_PRACTICED, expression.getId());
 
         return new RecallAnswerResponse(correct, expression.getExpression(), ExpressionMapper.mapProgress(progress));
     }
@@ -173,6 +179,7 @@ public class ExpressionPracticeService {
         }
         markAnswered(progress, correct);
         expressionProgressRepository.save(progress);
+        learningActivityService.track(user.getId(), LearningModule.EXPRESSIONS, LearningActivityType.EXPRESSION_PRACTICED, expression.getId());
 
         String correctOptionId = question.getOptions().stream()
                 .filter(ExpressionQuestionOption::isCorrect)
@@ -220,6 +227,7 @@ public class ExpressionPracticeService {
         progress.setTransformationScore(clamp(progress.getTransformationScore() + delta));
         markAnswered(progress, correct);
         expressionProgressRepository.save(progress);
+        learningActivityService.track(user.getId(), LearningModule.EXPRESSIONS, LearningActivityType.EXPRESSION_PRACTICED, expression.getId());
 
         return new TransformationAnswerResponse(usedExpression, grammarCorrect, meaningPreserved, feedback, c1Suggestion,
                 ExpressionMapper.mapProgress(progress));
@@ -261,6 +269,7 @@ public class ExpressionPracticeService {
         markAnswered(progress, correct);
         applySm2(progress, correct);
         expressionProgressRepository.save(progress);
+        learningActivityService.track(user.getId(), LearningModule.EXPRESSIONS, LearningActivityType.EXPRESSION_PRACTICED, expression.getId());
 
         return new ProductionAnswerResponse(usedCorrectly, grammarCorrect, natural, feedback, c1Suggestion,
                 ExpressionMapper.mapProgress(progress));

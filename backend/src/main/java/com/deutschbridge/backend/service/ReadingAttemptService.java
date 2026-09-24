@@ -16,7 +16,9 @@ import com.deutschbridge.backend.model.entity.ReadingQuizQuestion;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.entity.UserArticleAttempt;
 import com.deutschbridge.backend.model.entity.UserWordProgress;
+import com.deutschbridge.backend.model.enums.LearningActivityType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
+import com.deutschbridge.backend.model.enums.LearningModule;
 import com.deutschbridge.backend.model.enums.ReadingQuizQuestionType;
 import com.deutschbridge.backend.repository.ReadingArticleRepository;
 import com.deutschbridge.backend.repository.UserArticleAttemptRepository;
@@ -49,19 +51,22 @@ public class ReadingAttemptService {
     private final ReadingArticleService readingArticleService;
     private final UserService userService;
     private final RequestContext requestContext;
+    private final LearningActivityService learningActivityService;
 
     public ReadingAttemptService(UserArticleAttemptRepository attemptRepository,
                                   UserWordProgressRepository wordProgressRepository,
                                   ReadingArticleRepository readingArticleRepository,
                                   ReadingArticleService readingArticleService,
                                   UserService userService,
-                                  RequestContext requestContext) {
+                                  RequestContext requestContext,
+                                  LearningActivityService learningActivityService) {
         this.attemptRepository = attemptRepository;
         this.wordProgressRepository = wordProgressRepository;
         this.readingArticleRepository = readingArticleRepository;
         this.readingArticleService = readingArticleService;
         this.userService = userService;
         this.requestContext = requestContext;
+        this.learningActivityService = learningActivityService;
     }
 
     public StartAttemptResponse start(String articleId) throws DataNotFoundException {
@@ -130,6 +135,7 @@ public class ReadingAttemptService {
         attempt.setWordsSaved(request.wordsSaved() != null ? request.wordsSaved() : new ArrayList<>());
         attempt.setCompletedAt(LocalDateTime.now());
         attemptRepository.save(attempt);
+        learningActivityService.track(attempt.getUser().getId(), LearningModule.READING, LearningActivityType.READING_COMPLETED, article.getId());
 
         ArticleRecommendation recommendation = buildRecommendation(attempt.getUser(), article, comprehensionScore);
 

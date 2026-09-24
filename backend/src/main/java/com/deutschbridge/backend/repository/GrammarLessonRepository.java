@@ -74,6 +74,8 @@ public interface GrammarLessonRepository extends JpaRepository<GrammarLesson, St
 
     long countByStatusAndCreatedAtAfter(GrammarLessonStatus status, LocalDateTime after);
 
+    long countByStatus(GrammarLessonStatus status);
+
     @Modifying
     @Query("UPDATE grammarLessons g SET g.category = null WHERE g.category = :category")
     void unassignCategory(GrammarCategory category);

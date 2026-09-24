@@ -8,7 +8,6 @@ import org.hibernate.annotations.ColumnDefault;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.Instant;
-import java.util.List;
 
 @Entity
 @NoArgsConstructor
@@ -56,11 +55,6 @@ public class User {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinColumn(name = "id")
     private UserProfile profile;
-
-
-    @OneToMany(mappedBy = "userId", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @ToString.Exclude
-    private static List<DailyPracticeLog> dailyPracticeLog;
 
     @PrePersist
     public void ensureId() {

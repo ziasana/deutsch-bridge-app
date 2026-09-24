@@ -11,6 +11,8 @@ import com.deutschbridge.backend.model.dto.VocabularyRoundResponse;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.entity.VocabularyItem;
 import com.deutschbridge.backend.model.entity.VocabularyProgress;
+import com.deutschbridge.backend.model.enums.LearningActivityType;
+import com.deutschbridge.backend.model.enums.LearningModule;
 import com.deutschbridge.backend.model.enums.VocabularyMasteryLevel;
 import com.deutschbridge.backend.repository.VocabularyItemRepository;
 import com.deutschbridge.backend.repository.VocabularyProgressRepository;
@@ -45,15 +47,18 @@ public class VocabularyPracticeService {
     private final VocabularyProgressRepository vocabularyProgressRepository;
     private final UserService userService;
     private final RequestContext requestContext;
+    private final LearningActivityService learningActivityService;
 
     public VocabularyPracticeService(VocabularyItemRepository vocabularyItemRepository,
                                       VocabularyProgressRepository vocabularyProgressRepository,
                                       UserService userService,
-                                      RequestContext requestContext) {
+                                      RequestContext requestContext,
+                                      LearningActivityService learningActivityService) {
         this.vocabularyItemRepository = vocabularyItemRepository;
         this.vocabularyProgressRepository = vocabularyProgressRepository;
         this.userService = userService;
         this.requestContext = requestContext;
+        this.learningActivityService = learningActivityService;
     }
 
     /** vocabularyItemId present -> a session made of exactly that one item (practice-on-demand from
@@ -160,6 +165,7 @@ public class VocabularyPracticeService {
         applySm2(progress, combinedCorrect);
         progress.setMasteryLevel(VocabularyMapper.computeMasteryLevel(progress));
         vocabularyProgressRepository.save(progress);
+        learningActivityService.track(user.getId(), LearningModule.VOCABULARY, LearningActivityType.VOCABULARY_REVIEW_COMPLETED, item.getId());
 
         return new VocabularyRoundResponse(request.flashcardKnewIt(), contextCorrect, correctContextKey, VocabularyMapper.mapProgress(progress));
     }

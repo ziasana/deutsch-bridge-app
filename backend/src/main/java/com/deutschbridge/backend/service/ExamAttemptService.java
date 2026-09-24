@@ -16,6 +16,9 @@ import com.deutschbridge.backend.model.entity.ExamExercise;
 import com.deutschbridge.backend.model.entity.ExamPassage;
 import com.deutschbridge.backend.model.entity.ExamQuestion;
 import com.deutschbridge.backend.model.entity.User;
+import com.deutschbridge.backend.model.enums.ExamSection;
+import com.deutschbridge.backend.model.enums.LearningActivityType;
+import com.deutschbridge.backend.model.enums.LearningModule;
 import com.deutschbridge.backend.repository.ExamAttemptRepository;
 import com.deutschbridge.backend.util.ExamExerciseMapper;
 import org.springframework.stereotype.Service;
@@ -39,15 +42,18 @@ public class ExamAttemptService {
     private final ExamExerciseService examExerciseService;
     private final UserService userService;
     private final RequestContext requestContext;
+    private final LearningActivityService learningActivityService;
 
     public ExamAttemptService(ExamAttemptRepository attemptRepository,
                                ExamExerciseService examExerciseService,
                                UserService userService,
-                               RequestContext requestContext) {
+                               RequestContext requestContext,
+                               LearningActivityService learningActivityService) {
         this.attemptRepository = attemptRepository;
         this.examExerciseService = examExerciseService;
         this.userService = userService;
         this.requestContext = requestContext;
+        this.learningActivityService = learningActivityService;
     }
 
     public StartExamAttemptResponse start(String exerciseId) throws DataNotFoundException {
@@ -124,6 +130,14 @@ public class ExamAttemptService {
         attempt.setCompletedAt(LocalDateTime.now());
         attemptRepository.save(attempt);
         examExerciseService.saveLastScore(attempt.getExercise().getId(), score);
+
+        boolean isListening = attempt.getExercise().getSection() == ExamSection.HOERVERSTEHEN;
+        learningActivityService.track(
+                attempt.getUser().getId(),
+                isListening ? LearningModule.LISTENING : LearningModule.EXAM_PREPARATION,
+                isListening ? LearningActivityType.LISTENING_COMPLETED : LearningActivityType.EXAM_EXERCISE_COMPLETED,
+                attempt.getExercise().getId()
+        );
 
         return new ExamAttemptResultResponse(attempt.getId(), score, answers, transcriptsOf(attempt.getExercise()));
     }

@@ -32,6 +32,7 @@ export interface Dictionary {
         manageExamPrep: string;
         manageGrammar: string;
         manageExpressions: string;
+        manageUsers: string;
         collapseSidebar: string;
         expandSidebar: string;
         manageNotifications: string;
@@ -627,6 +628,7 @@ const en: Dictionary = {
         manageExamPrep: "Manage Exam Prep",
         manageGrammar: "Manage Grammar",
         manageExpressions: "Manage Expressions",
+        manageUsers: "Users",
         collapseSidebar: "Collapse sidebar",
         expandSidebar: "Expand sidebar",
         manageNotifications: "Manage Notifications",
@@ -1269,6 +1271,7 @@ const fa: Dictionary = {
         manageExamPrep: "مدیریت آمادگی آزمون",
         manageGrammar: "مدیریت دستور زبان",
         manageExpressions: "مدیریت عبارات",
+        manageUsers: "کاربران",
         collapseSidebar: "جمع کردن نوار کناری",
         expandSidebar: "باز کردن نوار کناری",
         manageNotifications: "مدیریت اعلان‌ها",

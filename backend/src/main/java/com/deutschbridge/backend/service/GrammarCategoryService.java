@@ -15,7 +15,9 @@ import com.deutschbridge.backend.model.entity.GrammarCategoryTestAttempt;
 import com.deutschbridge.backend.model.entity.GrammarLesson;
 import com.deutschbridge.backend.model.entity.LearningProgress;
 import com.deutschbridge.backend.model.entity.User;
+import com.deutschbridge.backend.model.enums.LearningActivityType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
+import com.deutschbridge.backend.model.enums.LearningModule;
 import com.deutschbridge.backend.repository.GrammarCategoryRepository;
 import com.deutschbridge.backend.repository.GrammarCategoryTestAttemptRepository;
 import com.deutschbridge.backend.repository.GrammarLessonRepository;
@@ -44,6 +46,7 @@ public class GrammarCategoryService {
     private final UserService userService;
     private final RequestContext requestContext;
     private final ContentCacheService contentCacheService;
+    private final LearningActivityService learningActivityService;
 
     public GrammarCategoryService(GrammarCategoryRepository categoryRepository,
                                    GrammarLessonRepository lessonRepository,
@@ -51,7 +54,8 @@ public class GrammarCategoryService {
                                    LearningProgressRepository learningProgressRepository,
                                    UserService userService,
                                    RequestContext requestContext,
-                                   ContentCacheService contentCacheService) {
+                                   ContentCacheService contentCacheService,
+                                   LearningActivityService learningActivityService) {
         this.categoryRepository = categoryRepository;
         this.lessonRepository = lessonRepository;
         this.attemptRepository = attemptRepository;
@@ -59,6 +63,7 @@ public class GrammarCategoryService {
         this.userService = userService;
         this.requestContext = requestContext;
         this.contentCacheService = contentCacheService;
+        this.learningActivityService = learningActivityService;
     }
 
     public List<GrammarCategoryAdminResponse> findAllForAdmin() {
@@ -237,6 +242,7 @@ public class GrammarCategoryService {
         attempt.setPassed(passed);
         attempt.setCompleted(false);
         attemptRepository.save(attempt);
+        learningActivityService.track(user.getId(), LearningModule.GRAMMAR, LearningActivityType.GRAMMAR_EXERCISE_COMPLETED, categoryId);
 
         return new CategoryTestStatusResponse(true, attempt.getScore(), attempt.getTotal(),
                 attempt.isPassed(), attempt.isCompleted(), category.getPassThreshold());

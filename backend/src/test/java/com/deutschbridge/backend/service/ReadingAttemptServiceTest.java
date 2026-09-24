@@ -54,6 +54,9 @@ class ReadingAttemptServiceTest {
     @Mock
     private RequestContext requestContext;
 
+    @Mock
+    private LearningActivityService learningActivityService;
+
     @InjectMocks
     private ReadingAttemptService service;
 
