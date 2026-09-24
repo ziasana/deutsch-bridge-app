@@ -2,6 +2,9 @@ import api from "./api";
 import {
     AdminNotificationSettings,
     NotificationAnalytics,
+    NotificationAudienceType,
+    NotificationBroadcastPage,
+    NotificationBroadcastRequest,
     NotificationCategory,
     NotificationItemDto,
     NotificationPage,
@@ -71,4 +74,39 @@ export const getNotificationAnalytics = async (days: number) => {
 
 export const runNotificationSweep = async () => {
     return await api.post("/admin/notifications/run-sweep");
+};
+
+export const getNotificationBroadcasts = async (page = 0, size = 20) => {
+    return await api.get<NotificationBroadcastPage>(`/admin/notifications/broadcasts?page=${page}&size=${size}`);
+};
+
+export const createNotificationBroadcast = async (payload: NotificationBroadcastRequest) => {
+    return await api.post<{ message: string; data: NotificationBroadcastPage["items"][number] }>(
+        "/admin/notifications/broadcasts",
+        payload
+    );
+};
+
+export const updateNotificationBroadcast = async (id: string, payload: NotificationBroadcastRequest) => {
+    return await api.put<{ message: string; data: NotificationBroadcastPage["items"][number] }>(
+        `/admin/notifications/broadcasts/${id}`,
+        payload
+    );
+};
+
+export const deleteNotificationBroadcast = async (id: string) => {
+    return await api.delete(`/admin/notifications/broadcasts/${id}`);
+};
+
+export const getAudienceCount = async (
+    audienceType: NotificationAudienceType,
+    level: string | null,
+    accountType: string | null,
+    language: string | null
+) => {
+    const params = new URLSearchParams({ audienceType });
+    if (level) params.set("level", level);
+    if (language) params.set("language", language);
+    if (accountType) params.set("accountType", accountType);
+    return await api.get<{ message: string | null; data: number }>(`/admin/notifications/broadcasts/audience-count?${params.toString()}`);
 };

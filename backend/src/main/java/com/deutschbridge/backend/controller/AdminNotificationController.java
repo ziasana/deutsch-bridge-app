@@ -1,12 +1,21 @@
 package com.deutschbridge.backend.controller;
 
 import com.deutschbridge.backend.context.RequestContext;
+import com.deutschbridge.backend.exception.DataNotFoundException;
+import com.deutschbridge.backend.model.dto.AdminBroadcastPageResponse;
 import com.deutschbridge.backend.model.dto.AdminNotificationSettingsDto;
 import com.deutschbridge.backend.model.dto.ApiResponse;
 import com.deutschbridge.backend.model.dto.NotificationAnalyticsResponse;
+import com.deutschbridge.backend.model.dto.NotificationBroadcastRequest;
+import com.deutschbridge.backend.model.dto.NotificationBroadcastResponse;
 import com.deutschbridge.backend.model.dto.NotificationTemplateDto;
+import com.deutschbridge.backend.model.enums.AccountType;
+import com.deutschbridge.backend.model.enums.LearningLevel;
+import com.deutschbridge.backend.model.enums.NotificationAudienceType;
 import com.deutschbridge.backend.model.enums.NotificationType;
+import com.deutschbridge.backend.model.enums.PreferredLanguage;
 import com.deutschbridge.backend.service.AdminAuditLogService;
+import com.deutschbridge.backend.service.notification.NotificationBroadcastService;
 import com.deutschbridge.backend.service.notification.NotificationScheduler;
 import com.deutschbridge.backend.service.notification.NotificationService;
 import com.deutschbridge.backend.service.notification.NotificationSettingsService;
@@ -35,6 +44,7 @@ public class AdminNotificationController {
     private final NotificationTemplateService templateService;
     private final NotificationService notificationService;
     private final NotificationScheduler notificationScheduler;
+    private final NotificationBroadcastService broadcastService;
     private final AdminAuditLogService adminAuditLogService;
     private final RequestContext requestContext;
 
@@ -42,12 +52,14 @@ public class AdminNotificationController {
                                        NotificationTemplateService templateService,
                                        NotificationService notificationService,
                                        NotificationScheduler notificationScheduler,
+                                       NotificationBroadcastService broadcastService,
                                        AdminAuditLogService adminAuditLogService,
                                        RequestContext requestContext) {
         this.settingsService = settingsService;
         this.templateService = templateService;
         this.notificationService = notificationService;
         this.notificationScheduler = notificationScheduler;
+        this.broadcastService = broadcastService;
         this.adminAuditLogService = adminAuditLogService;
         this.requestContext = requestContext;
     }
@@ -110,6 +122,45 @@ public class AdminNotificationController {
     public ResponseEntity<ApiResponse<Void>> runSweep() {
         notificationScheduler.sweep(true);
         return ResponseEntity.ok(new ApiResponse<>("Notification sweep completed", null));
+    }
+
+    @GetMapping("/broadcasts")
+    public AdminBroadcastPageResponse listBroadcasts(@RequestParam(defaultValue = "0") int page,
+                                                      @RequestParam(defaultValue = "20") int size) {
+        return broadcastService.list(page, size);
+    }
+
+    @PostMapping("/broadcasts")
+    public ResponseEntity<ApiResponse<NotificationBroadcastResponse>> createBroadcast(@RequestBody NotificationBroadcastRequest request) {
+        NotificationBroadcastResponse result = broadcastService.create(request, requestContext.getUserId(), requestContext.getUserEmail());
+        adminAuditLogService.record(requestContext.getUserId(), requestContext.getUserEmail(),
+                "NOTIFICATION_BROADCAST_CREATED", result.id() + " -> " + result.status());
+        return ResponseEntity.ok(new ApiResponse<>("Notification broadcast created", result));
+    }
+
+    @PutMapping("/broadcasts/{id}")
+    public ResponseEntity<ApiResponse<NotificationBroadcastResponse>> updateBroadcast(@PathVariable String id,
+                                                                                       @RequestBody NotificationBroadcastRequest request) throws DataNotFoundException {
+        NotificationBroadcastResponse result = broadcastService.update(id, request);
+        adminAuditLogService.record(requestContext.getUserId(), requestContext.getUserEmail(),
+                "NOTIFICATION_BROADCAST_UPDATED", result.id() + " -> " + result.status());
+        return ResponseEntity.ok(new ApiResponse<>("Notification broadcast updated", result));
+    }
+
+    @DeleteMapping("/broadcasts/{id}")
+    public ResponseEntity<ApiResponse<Void>> cancelBroadcast(@PathVariable String id) throws DataNotFoundException {
+        broadcastService.cancel(id);
+        adminAuditLogService.record(requestContext.getUserId(), requestContext.getUserEmail(),
+                "NOTIFICATION_BROADCAST_CANCELLED", id);
+        return ResponseEntity.ok(new ApiResponse<>("Notification broadcast cancelled", null));
+    }
+
+    @GetMapping("/broadcasts/audience-count")
+    public ResponseEntity<ApiResponse<Long>> audienceCount(@RequestParam NotificationAudienceType audienceType,
+                                                            @RequestParam(required = false) LearningLevel level,
+                                                            @RequestParam(required = false) AccountType accountType,
+                                                            @RequestParam(required = false) PreferredLanguage language) {
+        return ResponseEntity.ok(new ApiResponse<>(null, broadcastService.audienceCount(audienceType, level, accountType, language)));
     }
 
     private static AdminNotificationSettingsDto toDto(NotificationSettingsService.GlobalSettings s) {

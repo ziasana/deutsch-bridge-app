@@ -1,0 +1,7 @@
+-- Baseline marker. The schema up to this point was built by Hibernate's ddl-auto=update and already
+-- exists in every environment this app has run in so far, so there is nothing to execute here -
+-- spring.flyway.baseline-on-migrate=true stamps flyway_schema_history at this version without running it.
+--
+-- A brand-new, empty database is not covered by this baseline: it still needs the pre-Flyway schema
+-- created first (e.g. temporarily run with ddl-auto=update once, or import a schema dump) before Flyway
+-- can take over from V2 onward. Every migration from V2 on is a real, versioned script.

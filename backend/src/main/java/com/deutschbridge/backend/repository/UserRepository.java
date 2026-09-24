@@ -28,6 +28,12 @@ public interface UserRepository extends JpaRepository<User,String> {
 
     long countByDeletedFalseAndAccountType(AccountType accountType);
 
+    @Query("SELECT u.id FROM User u WHERE u.deleted = false AND u.enabled = true")
+    List<String> findIdsByDeletedFalseAndEnabledTrue();
+
+    @Query("SELECT u.id FROM User u WHERE u.deleted = false AND u.enabled = true AND u.accountType = :accountType")
+    List<String> findIdsByDeletedFalseAndEnabledTrueAndAccountType(@Param("accountType") AccountType accountType);
+
     @Modifying
     @Transactional
     @Query("UPDATE User u SET u.accessTokenFlag = u.accessTokenFlag + 1 WHERE u.email = :email")

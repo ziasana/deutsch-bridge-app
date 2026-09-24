@@ -1,7 +1,10 @@
 package com.deutschbridge.backend.service.notification;
 
+import com.deutschbridge.backend.model.entity.NotificationBroadcast;
 import com.deutschbridge.backend.model.entity.NotificationPreference;
+import com.deutschbridge.backend.model.enums.NotificationBroadcastStatus;
 import com.deutschbridge.backend.model.enums.NotificationStatus;
+import com.deutschbridge.backend.repository.NotificationBroadcastRepository;
 import com.deutschbridge.backend.repository.NotificationPreferenceRepository;
 import com.deutschbridge.backend.repository.NotificationRepository;
 import org.slf4j.Logger;
@@ -40,6 +43,8 @@ public class NotificationScheduler {
     private final NotificationPreferenceService preferenceService;
     private final NotificationSettingsService settingsService;
     private final NotificationDispatchService dispatchService;
+    private final NotificationBroadcastRepository broadcastRepository;
+    private final NotificationBroadcastDispatchService broadcastDispatchService;
     private final Clock clock;
     private final int reminderWindowSeconds;
 
@@ -48,6 +53,8 @@ public class NotificationScheduler {
                                  NotificationPreferenceService preferenceService,
                                  NotificationSettingsService settingsService,
                                  NotificationDispatchService dispatchService,
+                                 NotificationBroadcastRepository broadcastRepository,
+                                 NotificationBroadcastDispatchService broadcastDispatchService,
                                  Clock clock,
                                  @Value("${notifications.scheduler.reminder-window-seconds:300}") int reminderWindowSeconds) {
         this.preferenceRepository = preferenceRepository;
@@ -55,6 +62,8 @@ public class NotificationScheduler {
         this.preferenceService = preferenceService;
         this.settingsService = settingsService;
         this.dispatchService = dispatchService;
+        this.broadcastRepository = broadcastRepository;
+        this.broadcastDispatchService = broadcastDispatchService;
         this.clock = clock;
         this.reminderWindowSeconds = reminderWindowSeconds;
     }
@@ -102,6 +111,20 @@ public class NotificationScheduler {
     public void expireOverdue() {
         notificationRepository.expireOverdue(
                 EnumSet.of(NotificationStatus.SENT, NotificationStatus.DELIVERED), Instant.now(clock));
+    }
+
+    /** Fans out admin broadcasts whose scheduledAt has been reached. */
+    @Scheduled(fixedDelayString = "${notifications.broadcast-scheduler.dispatch-interval-ms:60000}")
+    public void dispatchDueBroadcasts() {
+        List<NotificationBroadcast> due = broadcastRepository.findByStatusAndScheduledAtLessThanEqual(
+                NotificationBroadcastStatus.SCHEDULED, Instant.now(clock));
+        for (NotificationBroadcast broadcast : due) {
+            try {
+                broadcastDispatchService.send(broadcast);
+            } catch (Exception e) {
+                log.warn("Broadcast dispatch failed for {}: {}", broadcast.getId(), e.getMessage());
+            }
+        }
     }
 
     private int dispatchSafely(String userId, boolean manualRun) {

@@ -31,6 +31,11 @@ spring:
       data-source-properties:
         reWriteBatchedInserts: true
 
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
+
 
   ai:
     ollama:
@@ -48,7 +53,7 @@ spring:
   #JPA and Hibernate settings
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
@@ -90,6 +95,8 @@ notifications:
     sweep-interval-ms: 900000              # evaluate learners every 15 minutes
     reminder-cron: "0 */5 * * * *"          # check for reached preferred reminder times
     reminder-window-seconds: 300
+  broadcast-scheduler:
+    dispatch-interval-ms: 60000            # check for due admin broadcasts every minute
 
 app:
   upload:

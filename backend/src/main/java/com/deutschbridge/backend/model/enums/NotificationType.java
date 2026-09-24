@@ -40,7 +40,11 @@ public enum NotificationType {
     // Premium
     AI_LIMIT_REACHED(NotificationCategory.PREMIUM, NotificationPriority.LOW),
     PREMIUM_FEATURE_AVAILABLE(NotificationCategory.PREMIUM, NotificationPriority.LOW),
-    PREMIUM_EXPIRING(NotificationCategory.PREMIUM, NotificationPriority.MEDIUM);
+    PREMIUM_EXPIRING(NotificationCategory.PREMIUM, NotificationPriority.MEDIUM),
+
+    // Admin broadcast (manually composed by an admin, never set by NotificationRuleEngine)
+    ANNOUNCEMENT(NotificationCategory.SYSTEM, NotificationPriority.MEDIUM),
+    PROMOTION(NotificationCategory.PREMIUM, NotificationPriority.LOW);
 
     private final NotificationCategory category;
     private final NotificationPriority defaultPriority;

@@ -77,3 +77,52 @@ export interface NotificationAnalytics {
     totals: FunnelRow;
     byType: FunnelRow[];
 }
+
+// ---------------- Admin broadcasts ----------------
+
+export type NotificationAudienceType = "ALL" | "LEVEL" | "ACCOUNT_TYPE" | "LANGUAGE" | "SPECIFIC_USERS";
+
+/** Matches backend PreferredLanguage (EN/DE/PR) - not the lowercase en/de/fa codes used by NotificationTemplate. */
+export type NotificationAudienceLanguage = "EN" | "PR";
+
+export type NotificationBroadcastType = "ANNOUNCEMENT" | "SYSTEM_MESSAGE" | "PROMOTION";
+
+export type NotificationBroadcastStatus = "SCHEDULED" | "SENT" | "CANCELLED";
+
+export interface NotificationBroadcast {
+    id: string;
+    title: string;
+    message: string;
+    type: NotificationBroadcastType;
+    audienceType: NotificationAudienceType;
+    audienceLevel: string | null;
+    audienceAccountType: string | null;
+    audienceLanguage: string | null;
+    audienceUserIds: string[];
+    status: NotificationBroadcastStatus;
+    scheduledAt: string | null;
+    sentAt: string | null;
+    recipientCount: number | null;
+    createdByEmail: string;
+    createdAt: string;
+}
+
+export interface NotificationBroadcastRequest {
+    title: string;
+    message: string;
+    type: NotificationBroadcastType;
+    audienceType: NotificationAudienceType;
+    audienceLevel: string | null;
+    audienceAccountType: string | null;
+    audienceLanguage: string | null;
+    audienceUserIds: string[] | null;
+    scheduledAt: string | null;
+}
+
+export interface NotificationBroadcastPage {
+    items: NotificationBroadcast[];
+    page: number;
+    size: number;
+    totalElements: number;
+    hasNext: boolean;
+}
