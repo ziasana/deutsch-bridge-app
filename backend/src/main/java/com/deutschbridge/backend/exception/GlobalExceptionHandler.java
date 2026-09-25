@@ -1,5 +1,7 @@
 package com.deutschbridge.backend.exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +15,7 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler  {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ResponseStatus(HttpStatus.NOT_FOUND)
     @ExceptionHandler(DataNotFoundException.class)
@@ -62,7 +65,8 @@ public class GlobalExceptionHandler  {
 
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
     @ExceptionHandler(MailServerException.class)
-    public ResponseEntity<ResponseException> handleMailServerException(){
+    public ResponseEntity<ResponseException> handleMailServerException(MailServerException e){
+        log.error("Mail send failed: {}", e.getMessage(), e);
         ResponseException responseException = new ResponseException(
                 "Mail service is currently unavailable",
                 HttpStatus.SERVICE_UNAVAILABLE.value()
@@ -92,6 +96,7 @@ public class GlobalExceptionHandler  {
         @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
         @ExceptionHandler(Exception.class)
         public ResponseEntity<ResponseException> handleException(Exception e){
+            log.error("Unhandled exception: {}", e.getMessage(), e);
             ResponseException responseException = new ResponseException(
                     e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR.value()

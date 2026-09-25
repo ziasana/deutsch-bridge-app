@@ -3,6 +3,8 @@ package com.deutschbridge.backend.service;
 import com.deutschbridge.backend.exception.MailServerException;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -13,6 +15,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @Service
 public class EmailService {
+    private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
     private final JavaMailSender mailSender;
     @Value("${spring.mail.username}")
@@ -86,8 +89,10 @@ public class EmailService {
             mailSender.send(mimeMessage);
 
         } catch (MailException | MessagingException ex) {
-            // Log the real root cause
-            Throwable root = ex.getCause();
+            // SMTP auth/connection failures are often thrown without a wrapped cause, so fall
+            // back to the exception itself rather than NPE-ing on a null getCause().
+            Throwable root = ex.getCause() != null ? ex.getCause() : ex;
+            log.error("Failed to send email to {}: {}", email, root.getMessage(), ex);
             throw new MailServerException("Mail server error: " + root.getMessage());
         }
     }
