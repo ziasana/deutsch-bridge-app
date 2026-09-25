@@ -1,4 +1,4 @@
-const BACKEND_ORIGIN = "http://localhost:8080";
+import { BACKEND_ORIGIN } from "@/lib/backendOrigin";
 
 const DEFAULT_IMAGE_BY_LEVEL: Record<string, string> = {
     A1: "/reading-defaults/a1.svg",

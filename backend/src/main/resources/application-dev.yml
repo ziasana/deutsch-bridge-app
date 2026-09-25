@@ -1,0 +1,22 @@
+spring:
+  # Local email testing via MailHog by default (docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog)
+  # UI at http://localhost:8025 - no real emails are sent, no auth/TLS needed.
+  #
+  # To test against real Gmail SMTP from dev instead, override via env vars (e.g. in backend/.env):
+  #   MAIL_HOST=smtp.gmail.com
+  #   MAIL_PORT=587
+  #   MAIL_USERNAME=your-app@gmail.com
+  #   MAIL_PASSWORD=your-16-char-app-password
+  #   MAIL_SMTP_AUTH=true
+  #   MAIL_SMTP_STARTTLS=true
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:noreply@deutschbridge.local}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS:false}

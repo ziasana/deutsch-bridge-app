@@ -1,4 +1,11 @@
 spring:
+  # Just enough to auto-configure a JavaMailSender bean so contexts wiring EmailService can start -
+  # tests don't actually send mail over this, so no auth/TLS/running server is needed.
+  mail:
+    host: localhost
+    port: 1025
+    username: test@deutschbridge.local
+
   datasource:
     url: jdbc:tc:postgresql:15:///testdb
     username: testuser

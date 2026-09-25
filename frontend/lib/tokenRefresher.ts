@@ -1,4 +1,6 @@
 // lib/simpleTokenRefresher.ts
+import { BACKEND_ORIGIN } from "@/lib/backendOrigin";
+
 let refreshInterval: ReturnType<typeof setInterval> | null = null;
 
 export function startSimpleRefresh() {
@@ -9,7 +11,7 @@ export function startSimpleRefresh() {
     refreshInterval = setInterval(() => {
         console.log("⏱ refresh timer fired:", new Date());
 
-        fetch("http://localhost:8080/api/auth/refresh", {
+        fetch(`${BACKEND_ORIGIN}/api/auth/refresh`, {
             method: "GET",
             credentials: "include",
         })

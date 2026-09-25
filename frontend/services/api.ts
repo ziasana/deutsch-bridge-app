@@ -2,10 +2,10 @@
 import axios from "axios";
 import useAuthStore from "@/store/useAuthStore";
 import usePremiumUpsellStore from "@/store/usePremiumUpsellStore";
-const API_URL = "http://localhost:8080";
+import { BACKEND_ORIGIN } from "@/lib/backendOrigin";
 
 const api = axios.create({
-    baseURL: API_URL + "/api",
+    baseURL: BACKEND_ORIGIN + "/api",
     headers: {
         "Content-Type": "application/json",
     },

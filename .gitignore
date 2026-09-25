@@ -16,6 +16,8 @@ backend/node_modules
 backend/package.json
 backend/package-lock.json
 /backend/uploads/
+backend/.env.*
+!backend/.env.*.example
 
 # Claude Code session-local tooling (launch configs, worktrees)
 .claude/

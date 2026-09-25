@@ -50,7 +50,8 @@ class CookieServiceTest {
         assertEquals(7 * 24 * 60 * 60, cookie.getMaxAge());
         assertEquals("/", cookie.getPath());
         assertTrue(cookie.isHttpOnly());
-        assertFalse(cookie.getSecure());
+        assertTrue(cookie.getSecure());
+        assertEquals("None", cookie.getAttribute("SameSite"));
     }
 
 

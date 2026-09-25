@@ -1,4 +1,4 @@
-const BACKEND_ORIGIN = "http://localhost:8080";
+import { BACKEND_ORIGIN } from "@/lib/backendOrigin";
 
 /** Resolves a relative backend-served audio URL (under /uploads etc.) to an absolute one. Already-absolute URLs pass through untouched. */
 export function getVocabularyAudioSrc(audioUrl: string | null | undefined): string | null {

@@ -1,4 +1,7 @@
-export const BACKEND_ORIGIN = "http://localhost:8080";
+// Baked in at build time (this app is statically exported - see next.config.ts) so
+// NEXT_PUBLIC_BACKEND_URL must be set in the environment the build runs in (e.g. Vercel's
+// project settings), not just at runtime.
+export const BACKEND_ORIGIN = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
 
 /** Resolves a backend-relative "/uploads/..." path to an absolute URL. Already-absolute URLs pass through untouched. */
 export function resolveUploadUrl(url: string | null | undefined): string | null {

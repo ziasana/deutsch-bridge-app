@@ -2,18 +2,8 @@ spring:
   application:
     name: deutschbridge-backend
 
-  #Email configuration
-  mail:
-    host: localhost
-    port: 1025
-    username: aliemran2022@gmail.com
-    password:
-    properties:
-      mail:
-        smtp:
-          auth: false
-          starttls:
-            enable: false
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
 
   lifecycle:
     timeout-per-shutdown-phase: 20s
@@ -78,7 +68,13 @@ logging:
 
 
 server:
+  # Render (and most PaaS providers) assign the port dynamically via $PORT; falls back to 8080 locally.
+  port: ${PORT:8080}
   shutdown: graceful
+  # Honor X-Forwarded-* headers from a reverse proxy/load balancer so links built with
+  # ServletUriComponentsBuilder (e.g. EmailService's verification/reset links) use the
+  # public scheme/host/port instead of the container's internal one. No-op if there's no proxy.
+  forward-headers-strategy: framework
 
 jwt:
   secret: ${JWT_SECRET}

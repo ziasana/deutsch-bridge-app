@@ -22,9 +22,13 @@ public class CookieService {
     {
         Cookie cookie = new Cookie(name,token);
         cookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
-        cookie.setSecure(false);
+        cookie.setSecure(true);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
+        // Frontend (Vercel) and backend (Render) are on different origins, so the cookie must be
+        // SameSite=None (which requires Secure) or browsers drop it on cross-site requests.
+        // Secure still works on http://localhost since browsers treat it as a trustworthy origin.
+        cookie.setAttribute("SameSite", "None");
         return cookie;
     }
 
@@ -54,9 +58,10 @@ public class CookieService {
     {
         Cookie cookie = new Cookie(name, "");
         cookie.setMaxAge(0);
-        cookie.setSecure(false);
+        cookie.setSecure(true);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
+        cookie.setAttribute("SameSite", "None");
         return cookie;
     }
 }
