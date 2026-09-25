@@ -9,9 +9,7 @@
 /backend/.mvn/wrapper/maven-wrapper.jar
 /backend/!**/src/main/**/target/
 /backend/!**/src/test/**/target/
-backend/mvnw.cmd
-backend/mvnw
-backend/.mvn
+# mvnw/.mvn are needed for Docker builds (Render, CI) to run Maven without a local install
 backend/node_modules
 backend/package.json
 backend/package-lock.json
