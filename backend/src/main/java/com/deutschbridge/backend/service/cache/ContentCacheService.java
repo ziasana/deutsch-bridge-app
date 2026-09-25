@@ -22,7 +22,10 @@ import com.deutschbridge.backend.repository.ReadingArticleListProjection;
 import com.deutschbridge.backend.repository.ReadingArticleRepository;
 import jakarta.transaction.Transactional;
 import org.hibernate.Hibernate;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -62,17 +65,20 @@ public class ContentCacheService {
     private final ExamExerciseRepository examExerciseRepository;
     private final ExpressionRepository expressionRepository;
     private final ReadingArticleRepository readingArticleRepository;
+    private final CacheManager cacheManager;
 
     public ContentCacheService(GrammarLessonRepository grammarLessonRepository,
                                 GrammarCategoryRepository grammarCategoryRepository,
                                 ExamExerciseRepository examExerciseRepository,
                                 ExpressionRepository expressionRepository,
-                                ReadingArticleRepository readingArticleRepository) {
+                                ReadingArticleRepository readingArticleRepository,
+                                CacheManager cacheManager) {
         this.grammarLessonRepository = grammarLessonRepository;
         this.grammarCategoryRepository = grammarCategoryRepository;
         this.examExerciseRepository = examExerciseRepository;
         this.expressionRepository = expressionRepository;
         this.readingArticleRepository = readingArticleRepository;
+        this.cacheManager = cacheManager;
     }
 
     @Cacheable("grammarLessons")
@@ -168,7 +174,7 @@ public class ContentCacheService {
      * card preview). search must already be trimmed and lower-cased so equivalent searches share
      * a cache entry. Never includes per-user data (mastery/bookmark) - callers merge that live.
      */
-    @Cacheable("expressionListPage")
+    @Cacheable(cacheNames = "expressionListPage", key = "#type + ':' + #level + ':' + #search + ':' + #page + ':' + #size")
     @Transactional
     public ExpressionListPage getExpressionListPage(ExpressionType type, LearningLevel level, String search, int page, int size) {
         Page<ExpressionListProjection> rows = expressionRepository.findListPage(type, level, search, PageRequest.of(page, size));
@@ -229,7 +235,7 @@ public class ContentCacheService {
      * trimmed and lower-cased so equivalent searches share a cache entry. See the viewCount note on
      * {@link #getAllReadingArticles()}.
      */
-    @Cacheable("readingArticleList")
+    @Cacheable(cacheNames = "readingArticleList", key = "#level + ':' + #search + ':' + #page + ':' + #size")
     @Transactional
     public ReadingArticleListPage getReadingArticleListPage(LearningLevel level, String search, int page, int size) {
         Page<ReadingArticleListProjection> rows = readingArticleRepository.findListPage(level, search, PageRequest.of(page, size));
@@ -263,6 +269,41 @@ public class ContentCacheService {
         Optional<ReadingArticle> article = readingArticleRepository.findById(id);
         article.ifPresent(a -> initializeReadingArticles(List.of(a)));
         return article;
+    }
+
+    /**
+     * Evicts only this type's cached list pages (every level/search/page/size combination for it),
+     * leaving other types' cached pages intact - an admin edit to one expression only ever changes
+     * that expression's own type, so there's no need to also recompute every other type's pages.
+     */
+    public void evictExpressionListPagesForType(ExpressionType type) {
+        evictKeysWithPrefix("expressionListPage", type + ":");
+    }
+
+    public void evictExpressionDetail(String id) {
+        evictKey("expressionDetail", id);
+    }
+
+    /** Same scoping as {@link #evictExpressionListPagesForType}, but keyed by level instead of type. */
+    public void evictReadingArticleListPagesForLevel(LearningLevel level) {
+        evictKeysWithPrefix("readingArticleList", level + ":");
+    }
+
+    public void evictReadingArticleDetail(String id) {
+        evictKey("readingArticleDetail", id);
+    }
+
+    private void evictKey(String cacheName, String key) {
+        Cache cache = cacheManager.getCache(cacheName);
+        if (cache != null) cache.evict(key);
+    }
+
+    private void evictKeysWithPrefix(String cacheName, String prefix) {
+        Cache cache = cacheManager.getCache(cacheName);
+        if (cache instanceof CaffeineCache caffeineCache) {
+            caffeineCache.getNativeCache().asMap().keySet()
+                    .removeIf(key -> key instanceof String s && s.startsWith(prefix));
+        }
     }
 
     private void initializeReadingArticles(List<ReadingArticle> articles) {

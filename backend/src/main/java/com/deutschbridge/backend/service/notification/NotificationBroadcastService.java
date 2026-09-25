@@ -112,18 +112,8 @@ public class NotificationBroadcastService {
         broadcast.setScheduledAt(request.scheduledAt());
         broadcast.setLastDispatchError(null);
 
-        if (audienceType == NotificationAudienceType.LEVEL && broadcast.getAudienceLevel() == null) {
-            throw new IllegalArgumentException("audienceLevel is required for audienceType LEVEL");
-        }
-        if (audienceType == NotificationAudienceType.ACCOUNT_TYPE && broadcast.getAudienceAccountType() == null) {
-            throw new IllegalArgumentException("audienceAccountType is required for audienceType ACCOUNT_TYPE");
-        }
-        if (audienceType == NotificationAudienceType.LANGUAGE && broadcast.getAudienceLanguage() == null) {
-            throw new IllegalArgumentException("audienceLanguage is required for audienceType LANGUAGE");
-        }
-        if (audienceType == NotificationAudienceType.SPECIFIC_USERS && broadcast.getAudienceUserIds().isEmpty()) {
-            throw new IllegalArgumentException("audienceUserIds is required for audienceType SPECIFIC_USERS");
-        }
+        audienceResolverService.validateSelector(audienceType, broadcast.getAudienceLevel(),
+                broadcast.getAudienceAccountType(), broadcast.getAudienceLanguage(), broadcast.getAudienceUserIds());
     }
 
     private NotificationType parseType(String type) {

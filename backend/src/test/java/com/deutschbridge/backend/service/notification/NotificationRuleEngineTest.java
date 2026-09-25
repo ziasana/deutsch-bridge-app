@@ -123,7 +123,7 @@ class NotificationRuleEngineTest {
         assertEquals("MILESTONE_REACHED:WORDS:50", milestones.get(0).dedupKey());
         assertEquals("50", milestones.get(0).params().get("value"));
         assertEquals("MILESTONE_REACHED:STREAK:7", milestones.get(1).dedupKey());
-        assertNull(milestones.get(0).expiresAt());
+        assertEquals(EVENING.plus(NotificationRuleEngine.MILESTONE_EXPIRY), milestones.get(0).expiresAt());
     }
 
     @Test

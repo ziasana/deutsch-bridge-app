@@ -38,7 +38,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -46,6 +45,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -239,15 +239,13 @@ public class ExpressionService {
         return ExpressionMapper.mapToAdminResponse(findEntityById(id));
     }
 
-    @Caching(evict = {
-            @CacheEvict(cacheNames = "expressionCollectionSummary", allEntries = true),
-            @CacheEvict(cacheNames = "expressionListPage", allEntries = true),
-            @CacheEvict(cacheNames = "expressionDetail", allEntries = true)
-    })
+    @CacheEvict(cacheNames = "expressionCollectionSummary", allEntries = true)
     public ExpressionResponse createManual(ExpressionManualRequest request) {
         Expression expression = new Expression();
         applyRequest(expression, request);
-        return ExpressionMapper.mapToAdminResponse(expressionRepository.save(expression));
+        Expression saved = expressionRepository.save(expression);
+        contentCacheService.evictExpressionListPagesForType(saved.getType());
+        return ExpressionMapper.mapToAdminResponse(saved);
     }
 
     /**
@@ -257,13 +255,10 @@ public class ExpressionService {
      * single unparseable row surfaces as one failed row instead of rejecting the whole request at
      * the HTTP deserialization layer.
      */
-    @Caching(evict = {
-            @CacheEvict(cacheNames = "expressionCollectionSummary", allEntries = true),
-            @CacheEvict(cacheNames = "expressionListPage", allEntries = true),
-            @CacheEvict(cacheNames = "expressionDetail", allEntries = true)
-    })
+    @CacheEvict(cacheNames = "expressionCollectionSummary", allEntries = true)
     public ExpressionBulkImportResult bulkImport(List<JsonNode> rows) {
         List<ExpressionBulkImportRowResult> results = new ArrayList<>();
+        Set<ExpressionType> affectedTypes = new HashSet<>();
         int successCount = 0;
 
         for (int i = 0; i < rows.size(); i++) {
@@ -275,12 +270,14 @@ public class ExpressionService {
                 Expression expression = new Expression();
                 applyRequest(expression, request);
                 Expression saved = expressionRepository.save(expression);
+                affectedTypes.add(saved.getType());
                 results.add(new ExpressionBulkImportRowResult(i, expressionText, true, null, saved.getId()));
                 successCount++;
             } catch (Exception e) {
                 results.add(new ExpressionBulkImportRowResult(i, expressionText, false, describeImportError(e), null));
             }
         }
+        affectedTypes.forEach(contentCacheService::evictExpressionListPagesForType);
 
         return new ExpressionBulkImportResult(rows.size(), successCount, rows.size() - successCount, results);
     }
@@ -325,16 +322,19 @@ public class ExpressionService {
         return !sb.isEmpty() ? sb.toString() : "a field";
     }
 
-    @Caching(evict = {
-            @CacheEvict(cacheNames = "expressionCollectionSummary", allEntries = true),
-            @CacheEvict(cacheNames = "expressionListPage", allEntries = true),
-            @CacheEvict(cacheNames = "expressionDetail", allEntries = true)
-    })
+    @CacheEvict(cacheNames = "expressionCollectionSummary", allEntries = true)
     public ExpressionResponse updateManual(String id, ExpressionManualRequest request) throws DataNotFoundException {
         Expression existing = findEntityById(id);
         String previousImageUrl = existing.getImageUrl();
+        ExpressionType previousType = existing.getType();
         applyRequest(existing, request);
-        ExpressionResponse response = ExpressionMapper.mapToAdminResponse(expressionRepository.save(existing));
+        Expression saved = expressionRepository.save(existing);
+        contentCacheService.evictExpressionDetail(id);
+        contentCacheService.evictExpressionListPagesForType(previousType);
+        if (saved.getType() != previousType) {
+            contentCacheService.evictExpressionListPagesForType(saved.getType());
+        }
+        ExpressionResponse response = ExpressionMapper.mapToAdminResponse(saved);
 
         // Only once the new value is actually persisted, and only when the request touched imageUrl
         // at all (a partial update like the draft/publish toggle sends no imageUrl and must not
@@ -345,15 +345,13 @@ public class ExpressionService {
         return response;
     }
 
-    @Caching(evict = {
-            @CacheEvict(cacheNames = "expressionCollectionSummary", allEntries = true),
-            @CacheEvict(cacheNames = "expressionListPage", allEntries = true),
-            @CacheEvict(cacheNames = "expressionDetail", allEntries = true)
-    })
+    @CacheEvict(cacheNames = "expressionCollectionSummary", allEntries = true)
     public void deleteById(String id) throws DataNotFoundException {
         Expression existing = findEntityById(id);
         fileStorageService.deleteFile(existing.getImageUrl());
         expressionRepository.delete(existing);
+        contentCacheService.evictExpressionDetail(id);
+        contentCacheService.evictExpressionListPagesForType(existing.getType());
     }
 
     private void applyRequest(Expression expression, ExpressionManualRequest request) {

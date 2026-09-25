@@ -35,7 +35,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -93,7 +93,7 @@ public class AdminDashboardService {
         LocalDate today = LocalDate.now();
         LocalDateTime startOfToday = LocalDateTime.of(today, LocalTime.MIDNIGHT);
         LocalDateTime weekAgo = startOfToday.minusDays(7);
-        Instant todayInstant = startOfToday.toInstant(ZoneOffset.UTC);
+        Instant todayInstant = startOfToday.atZone(ZoneId.systemDefault()).toInstant();
 
         long draftExpressions = expressionRepository.countByStatus(ExpressionStatus.DRAFT);
         long draftGrammarLessons = grammarLessonRepository.countByStatus(GrammarLessonStatus.DRAFT);
@@ -165,17 +165,23 @@ public class AdminDashboardService {
         List<FeatureUsage> usagesToday = featureUsageRepository.findByUsageDate(today);
         if (usagesToday.isEmpty()) return 0;
 
+        List<String> userIds = usagesToday.stream().map(FeatureUsage::getUserId).distinct().toList();
         Map<String, AccountType> accountTypeByUserId = new HashMap<>();
-        for (User user : userRepository.findAllByDeletedFalse()) {
+        for (User user : userRepository.findAllById(userIds)) {
             accountTypeByUserId.put(user.getId(), user.getAccountType() == null ? AccountType.BASIC : user.getAccountType());
+        }
+
+        Map<String, FeatureLimit> limitsByFeatureAndAccountType = new HashMap<>();
+        for (FeatureLimit limit : featureLimitService.findAll()) {
+            limitsByFeatureAndAccountType.put(limit.getFeatureType() + "|" + limit.getAccountType(), limit);
         }
 
         java.util.Set<String> usersAtLimit = new java.util.HashSet<>();
         for (FeatureUsage usage : usagesToday) {
             AccountType accountType = accountTypeByUserId.get(usage.getUserId());
             if (accountType == null) continue;
-            FeatureLimit limit = featureLimitService.get(usage.getFeatureType(), accountType);
-            if (limit.isEnabled() && usage.getCount() >= limit.getDailyLimit()) {
+            FeatureLimit limit = limitsByFeatureAndAccountType.get(usage.getFeatureType() + "|" + accountType);
+            if (limit != null && limit.isEnabled() && usage.getCount() >= limit.getDailyLimit()) {
                 usersAtLimit.add(usage.getUserId());
             }
         }

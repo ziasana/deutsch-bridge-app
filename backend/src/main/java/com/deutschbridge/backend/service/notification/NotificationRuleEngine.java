@@ -34,6 +34,11 @@ public class NotificationRuleEngine {
     /** Don't nudge about an unfinished activity the learner only just walked away from. */
     static final Duration CONTINUE_LEARNING_COOLDOWN = Duration.ofHours(2);
 
+    /** Milestones are notified once ever (the dedup key never changes), but still get a long expiry
+     * so an unread one is eventually marked EXPIRED instead of sitting as SENT forever, which would
+     * otherwise permanently skew notification funnel analytics. */
+    static final Duration MILESTONE_EXPIRY = Duration.ofDays(30);
+
     static final String MILESTONE_ROUTE = "/user-progress";
     static final String ENTITY_MILESTONE = "MILESTONE";
 
@@ -95,7 +100,7 @@ public class NotificationRuleEngine {
         dailyPlanIncomplete(state, ctx, candidates.size()).ifPresent(candidates::add);
         dailyWordsReady(recommendations, ctx, candidates.size()).ifPresent(candidates::add);
         for (MilestoneMetric metric : MilestoneMetric.values()) {
-            milestone(metric, state, candidates.size()).ifPresent(candidates::add);
+            milestone(metric, state, ctx, candidates.size()).ifPresent(candidates::add);
         }
         return candidates;
     }
@@ -173,7 +178,7 @@ public class NotificationRuleEngine {
     }
 
     // Rule 5 - milestones: the highest threshold reached per metric, notified once ever
-    private Optional<NotificationCandidate> milestone(MilestoneMetric metric, LearningState state, int rank) {
+    private Optional<NotificationCandidate> milestone(MilestoneMetric metric, LearningState state, RuleContext ctx, int rank) {
         int value = switch (metric) {
             case WORDS -> state.wordsMastered();
             case GRAMMAR -> state.grammarLearned();
@@ -194,7 +199,7 @@ public class NotificationRuleEngine {
                 NotificationType.MILESTONE_REACHED.name() + ":" + context,
                 ENTITY_MILESTONE, context, MILESTONE_ROUTE,
                 Map.of("value", String.valueOf(reached)),
-                null,
+                ctx.now().plus(MILESTONE_EXPIRY),
                 rank));
     }
 

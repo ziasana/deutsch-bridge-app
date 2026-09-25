@@ -38,6 +38,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -190,8 +191,6 @@ public class ReadingArticleService {
 
     @Caching(evict = {
             @CacheEvict(cacheNames = "readingArticles", allEntries = true),
-            @CacheEvict(cacheNames = "readingArticleList", allEntries = true),
-            @CacheEvict(cacheNames = "readingArticleDetail", allEntries = true),
             @CacheEvict(cacheNames = "readingLevelSummary", allEntries = true)
     })
     public ReadingArticleResponse generate(String topic, LearningLevel level) {
@@ -206,7 +205,9 @@ public class ReadingArticleService {
         article.setKeyVocabulary(parsed.vocabulary());
         article.setTokens(tokenizationService.tokenize(parsed.text()));
 
-        return ReadingArticleMapper.mapToResponse(readingArticleRepository.save(article), null, Set.of());
+        ReadingArticle saved = readingArticleRepository.save(article);
+        contentCacheService.evictReadingArticleListPagesForLevel(level);
+        return ReadingArticleMapper.mapToResponse(saved, null, Set.of());
     }
 
     public List<KeyVocabularyItem> suggestVocabulary(String content, LearningLevel level) {
@@ -236,8 +237,6 @@ public class ReadingArticleService {
 
     @Caching(evict = {
             @CacheEvict(cacheNames = "readingArticles", allEntries = true),
-            @CacheEvict(cacheNames = "readingArticleList", allEntries = true),
-            @CacheEvict(cacheNames = "readingArticleDetail", allEntries = true),
             @CacheEvict(cacheNames = "readingLevelSummary", allEntries = true)
     })
     public ReadingArticleResponse createManual(ReadingArticleManualRequest request) {
@@ -253,17 +252,18 @@ public class ReadingArticleService {
         article.setLinkedGroupId(request.linkedGroupId());
         article.setTokens(tokenizationService.tokenize(article.getContent()));
 
-        return ReadingArticleMapper.mapToResponse(readingArticleRepository.save(article), null, Set.of());
+        ReadingArticle saved = readingArticleRepository.save(article);
+        contentCacheService.evictReadingArticleListPagesForLevel(saved.getLevel());
+        return ReadingArticleMapper.mapToResponse(saved, null, Set.of());
     }
 
     @Caching(evict = {
             @CacheEvict(cacheNames = "readingArticles", allEntries = true),
-            @CacheEvict(cacheNames = "readingArticleList", allEntries = true),
-            @CacheEvict(cacheNames = "readingArticleDetail", allEntries = true),
             @CacheEvict(cacheNames = "readingLevelSummary", allEntries = true)
     })
     public ReadingArticleResponse update(String id, ReadingArticleManualRequest request) throws DataNotFoundException {
         ReadingArticle existing = findById(id);
+        LearningLevel previousLevel = existing.getLevel();
 
         boolean contentChanged = request.content() != null && !request.content().equals(existing.getContent());
 
@@ -280,29 +280,36 @@ public class ReadingArticleService {
             existing.setTokens(tokenizationService.tokenize(existing.getContent()));
         }
 
-        return ReadingArticleMapper.mapToResponse(readingArticleRepository.save(existing), null, Set.of());
+        ReadingArticle saved = readingArticleRepository.save(existing);
+        contentCacheService.evictReadingArticleDetail(id);
+        contentCacheService.evictReadingArticleListPagesForLevel(previousLevel);
+        if (saved.getLevel() != previousLevel) {
+            contentCacheService.evictReadingArticleListPagesForLevel(saved.getLevel());
+        }
+        return ReadingArticleMapper.mapToResponse(saved, null, Set.of());
     }
 
     @Caching(evict = {
             @CacheEvict(cacheNames = "readingArticles", allEntries = true),
-            @CacheEvict(cacheNames = "readingArticleList", allEntries = true),
-            @CacheEvict(cacheNames = "readingArticleDetail", allEntries = true),
             @CacheEvict(cacheNames = "readingLevelSummary", allEntries = true)
     })
     public void delete(String id) throws DataNotFoundException {
-        findById(id);
+        ReadingArticle existing = findById(id);
         readingArticleRepository.deleteById(id);
+        contentCacheService.evictReadingArticleDetail(id);
+        contentCacheService.evictReadingArticleListPagesForLevel(existing.getLevel());
     }
 
-    /** Best-effort bulk import: each row is validated and saved independently. */
+    /** Best-effort bulk import: each row is validated and saved independently.
+     * createManual's own scoped eviction doesn't fire here (this is an internal self-invocation,
+     * bypassing the Spring AOP proxy), so every affected level is evicted once at the end instead. */
     @Caching(evict = {
             @CacheEvict(cacheNames = "readingArticles", allEntries = true),
-            @CacheEvict(cacheNames = "readingArticleList", allEntries = true),
-            @CacheEvict(cacheNames = "readingArticleDetail", allEntries = true),
             @CacheEvict(cacheNames = "readingLevelSummary", allEntries = true)
     })
     public ReadingArticleBulkImportResult bulkImport(List<JsonNode> rows) {
         List<ReadingArticleBulkImportRowResult> results = new ArrayList<>();
+        Set<LearningLevel> affectedLevels = new HashSet<>();
         int successCount = 0;
 
         for (int i = 0; i < rows.size(); i++) {
@@ -312,12 +319,14 @@ public class ReadingArticleService {
                 ReadingArticleManualRequest request = objectMapper.treeToValue(row, ReadingArticleManualRequest.class);
                 validateRequiredFields(request);
                 ReadingArticleResponse saved = createManual(request);
+                affectedLevels.add(request.level());
                 results.add(new ReadingArticleBulkImportRowResult(i, title, true, null, saved.id()));
                 successCount++;
             } catch (Exception e) {
                 results.add(new ReadingArticleBulkImportRowResult(i, title, false, describeImportError(e), null));
             }
         }
+        affectedLevels.forEach(contentCacheService::evictReadingArticleListPagesForLevel);
 
         return new ReadingArticleBulkImportResult(rows.size(), successCount, rows.size() - successCount, results);
     }
