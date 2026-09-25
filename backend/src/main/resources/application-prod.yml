@@ -1,10 +1,12 @@
 spring:
-  # Production email via Gmail SMTP. MAIL_USERNAME must be a full Gmail address and
-  # MAIL_PASSWORD must be a 16-character Google App Password (not the account password) -
-  # generate one at https://myaccount.google.com/apppasswords (requires 2-Step Verification).
+  # Production email via an SMTP relay. Defaults to Brevo (smtp-relay.brevo.com:2525) because
+  # Render's free tier blocks outbound ports 25/465/587 - 2525 is the one submission port it
+  # doesn't block. Gmail SMTP only supports 25/465/587, so it can't be reached from a Render
+  # free instance regardless of credentials; switch host/port back to smtp.gmail.com:587 via
+  # env vars if you're on a paid Render plan (or any host that doesn't block SMTP) instead.
   mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
+    host: ${MAIL_HOST:smtp-relay.brevo.com}
+    port: ${MAIL_PORT:2525}
     username: ${MAIL_USERNAME}
     password: ${MAIL_PASSWORD}
     properties:
@@ -14,4 +16,4 @@ spring:
           starttls:
             enable: true
           ssl:
-            trust: ${MAIL_HOST:smtp.gmail.com}
+            trust: ${MAIL_HOST:smtp-relay.brevo.com}
