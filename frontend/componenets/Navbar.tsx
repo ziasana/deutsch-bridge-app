@@ -1,11 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useDarkMode } from "./DarkModeProvider";
 import useAuthStore from "@/store/useAuthStore";
 import { useI18n } from "./I18nProvider";
 import {  Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
-import { GraduationCap, Menu as MenuIcon, Moon, Sun, X } from "lucide-react";
+import { GraduationCap, Menu as MenuIcon, X } from "lucide-react";
 import Image from "next/image";
 
 export default function Navbar() {
@@ -13,18 +12,31 @@ export default function Navbar() {
   const logout = useAuthStore((state) => state.logout);
 
   const [isOpen, setIsOpen] = useState(false);
-  const { darkMode, toggle } = useDarkMode();
+  const [scrolled, setScrolled] = useState(false);
   const { t } = useI18n();
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <nav className="bg-card border-b border-border sticky top-0 z-50 transition">
+    <nav
+      className={`sticky top-0 z-50 transition-all duration-300 ${
+        scrolled || isOpen
+          ? "bg-card border-b border-border shadow-sm"
+          : "bg-accent/60 border-b border-transparent"
+      }`}
+    >
       <div className="container mx-auto px-6 py-4 flex justify-between items-center">
         {/* Logo */}
         <Link
           href="/"
-          className="flex items-center gap-2 text-xl font-bold text-foreground"
+          className="group flex items-center gap-2 text-xl font-bold text-foreground"
         >
-          <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+          <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-transform duration-300 group-hover:-rotate-12 group-hover:scale-110">
             <GraduationCap className="size-5" />
           </span>
           DeutschBridge
@@ -32,39 +44,33 @@ export default function Navbar() {
 
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center gap-6">
+          <Link href="/" className="nav-link">
+            {t.nav.home}
+          </Link>
+          <Link href="/#features" className="nav-link">
+            {t.nav.features}
+          </Link>
+          <Link href="/#about" className="nav-link">
+            {t.nav.about}
+          </Link>
+          <Link href="/#blog" className="nav-link">
+            {t.nav.blog}
+          </Link>
+          <Link href="/contact" className="nav-link">
+            {t.nav.contact}
+          </Link>
 
-          {isLoggedIn && userProfile != null ? (
+          {isLoggedIn && userProfile != null && (
               userProfile.role === "ADMIN" ? (
                   <Link href="/admin" className="nav-link">
                     {t.nav.adminDashboard}
                   </Link>
               ) : (
-              <>
-                <Link href="/dashboard" className="nav-link">
-                  {t.nav.dashboard}
-                </Link>
-                <Link href="/dashboard/chat" className="nav-link">
-                  {t.nav.chatAi}
-                </Link>
-                <Link href="/dashboard/vocabulary" className="nav-link">
-                  {t.nav.vocabulary}
-                </Link>
-                <Link href="/dashboard/expressions" className="nav-link">
-                  {t.nav.expressions}
-                </Link>
-              </>
+                  <Link href="/dashboard" className="nav-link">
+                    {t.nav.dashboard}
+                  </Link>
               )
-          ) : (
-              <>
-                <Link href="/" className="nav-link">
-                  {t.nav.home}
-                </Link>
-                <Link href="/contact" className="nav-link">
-                  {t.nav.contact}
-                </Link>
-              </>
           )}
-
         </div>
 
         {/* Right Side Buttons */}
@@ -77,22 +83,18 @@ export default function Navbar() {
 
           {!isLoggedIn && userProfile == null && (
               <>
-                <Link href="/login" className="btn-primary">
+                <Link
+                    href="/login"
+                    className="font-semibold text-foreground/70 hover:text-primary transition-colors"
+                >
                   {t.nav.login}
                 </Link>
-              <Link href="/signup" className="btn-outline">
-                {t.nav.signup}
-              </Link>
+                <Link href="/signup" className="btn-primary rounded-full px-5">
+                  {t.nav.signup}
+                </Link>
               </>
           )
           }
-
-          <button
-              onClick={toggle}
-              className="p-2 rounded-lg bg-accent text-accent-foreground hover:bg-accent/70 transition"
-          >
-            {darkMode ? <Sun className="size-5" /> : <Moon className="size-5" />}
-          </button>
 
           {isLoggedIn && userProfile != null && (
               <Menu as="div" className="relative">
@@ -164,7 +166,23 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {isOpen && (
         <div className="md:hidden bg-card border-t border-border">
-          {isLoggedIn && userProfile != null ? (
+          <Link href="/" className="mobile-link">
+            {t.nav.home}
+          </Link>
+          <Link href="/#features" className="mobile-link">
+            {t.nav.features}
+          </Link>
+          <Link href="/#about" className="mobile-link">
+            {t.nav.about}
+          </Link>
+          <Link href="/#blog" className="mobile-link">
+            {t.nav.blog}
+          </Link>
+          <Link href="/contact" className="mobile-link">
+            {t.nav.contact}
+          </Link>
+
+          {isLoggedIn && userProfile != null && (
               userProfile.role === "ADMIN" ? (
                   <Link href="/admin" className="mobile-link">
                     {t.nav.adminDashboard}
@@ -174,15 +192,6 @@ export default function Navbar() {
                     <Link href="/dashboard" className="mobile-link">
                       {t.nav.dashboard}
                     </Link>
-                    <Link href="/dashboard/chat" className="mobile-link">
-                      {t.nav.chatAi}
-                    </Link>
-                    <Link href="/dashboard/vocabulary" className="mobile-link">
-                      {t.nav.vocabulary}
-                    </Link>
-                    <Link href="/dashboard/expressions" className="mobile-link">
-                      {t.nav.expressions}
-                    </Link>
                     <Link href="/profile" className="mobile-link">
                       {t.nav.profile}
                     </Link>
@@ -191,27 +200,9 @@ export default function Navbar() {
                     </Link>
                   </>
               )
-          ) : (
-              <>
-                <Link href="/" className="mobile-link">
-                  {t.nav.home}
-                </Link>
-                <Link href="/contact" className="mobile-link">
-                  {t.nav.contact}
-                </Link>
-              </>
           )}
 
           <div className="border-t border-border mt-2 pt-2 flex flex-col gap-2 px-6 pb-4">
-            {/* Dark Mode Button */}
-            <button
-              onClick={toggle}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-accent-foreground"
-            >
-              {darkMode ? <Sun className="size-4" /> : <Moon className="size-4" />}
-              {darkMode ? t.nav.lightMode : t.nav.darkMode}
-            </button>
-
             {isLoggedIn && userProfile != null ? (
                 <Link href="#" onClick={logout}  className="btn-outline w-full text-center">
                   {t.nav.logout}

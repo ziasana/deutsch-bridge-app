@@ -17,6 +17,8 @@ export interface Dictionary {
         vocabulary: string;
         expressions: string;
         home: string;
+        features: string;
+        blog: string;
         contact: string;
         about: string;
         login: string;
@@ -491,18 +493,60 @@ export interface Dictionary {
         };
     };
     home: {
-        heroTitle: string;
-        heroSubtitle: string;
-        getStarted: string;
-        featuresTitle: string;
-        learnTitle: string;
-        learnDescription: string;
-        practiceTitle: string;
-        practiceDescription: string;
-        trackTitle: string;
-        trackDescription: string;
-        ctaTitle: string;
-        exploreFeatures: string;
+        hero: {
+            titleStart: string;
+            titleHighlight: string;
+            titleEnd: string;
+            subtitle: string;
+            bullets: string[];
+            ctaPrimary: string;
+            ctaSecondary: string;
+            statStudents: { value: string; label: string };
+            statRating: { value: string; label: string };
+            statCourses: { value: string; label: string };
+        };
+        faq: {
+            badge: string;
+            title: string;
+            description: string;
+            items: { question: string; answer: string }[];
+            statValue: string;
+            statLabel: string;
+        };
+        testimonials: {
+            badge: string;
+            title: string;
+            items: { quote: string; name: string; role: string }[];
+        };
+        stats: {
+            titleStart: string;
+            titleHighlight: string;
+            titleEnd: string;
+            items: { value: number; suffix: string; label: string }[];
+        };
+        blog: {
+            badge: string;
+            title: string;
+            subtitle: string;
+            posts: { category: string; title: string; author: string; date: string }[];
+        };
+    };
+    footer: {
+        about: string;
+        quickLinksTitle: string;
+        quickLinks: string[];
+        resourcesTitle: string;
+        resources: string[];
+        getInTouchTitle: string;
+        getInTouchSubtitle: string;
+        contactEmail: string;
+        copyright: (year: number) => string;
+        termsLabel: string;
+        privacyLabel: string;
+    };
+    topbar: {
+        address: string;
+        followUs: string;
     };
     progress: {
         title: string;
@@ -614,6 +658,8 @@ const en: Dictionary = {
         vocabulary: "Vocabulary",
         expressions: "Expressions",
         home: "Home",
+        features: "Features",
+        blog: "Blog",
         contact: "Contact",
         about: "About",
         login: "Login",
@@ -1131,22 +1177,117 @@ const en: Dictionary = {
         },
     },
     home: {
-        heroTitle: "Learn German the Smart Way",
-        heroSubtitle:
-            "DeutschBridge makes mastering German simple, fun, and effective. Start your learning journey today!",
-        getStarted: "Get Started",
-        featuresTitle: "Why Choose DeutschBridge?",
-        learnTitle: "Learn",
-        learnDescription:
-            "Interactive lessons for all levels, from beginner to advanced, to master German at your pace.",
-        practiceTitle: "Practice",
-        practiceDescription:
-            "Exercises designed to improve reading, writing, and speaking skills with real-world examples.",
-        trackTitle: "Track",
-        trackDescription:
-            "Monitor your learning progress easily and stay motivated to reach your German goals.",
-        ctaTitle: "Ready to Start Learning German?",
-        exploreFeatures: "Explore Features",
+        hero: {
+            titleStart: "Confidently Speak",
+            titleHighlight: "German",
+            titleEnd: "Every Day",
+            subtitle:
+                "DeutschBridge makes mastering German simple, fun, and effective — with daily words, grammar lessons, and an AI tutor built around how you actually learn.",
+            bullets: [
+                "Daily words & grammar lessons",
+                "Practice speaking with an AI tutor",
+                "Free to start, no credit card needed",
+            ],
+            ctaPrimary: "Start Learning Free",
+            ctaSecondary: "See How It Works",
+            statStudents: { value: "10K+", label: "Active Learners" },
+            statRating: { value: "4.9/5", label: "Real Reviews" },
+            statCourses: { value: "40+", label: "Grammar Lessons" },
+        },
+        faq: {
+            badge: "Why DeutschBridge",
+            title: "Why Learners Choose DeutschBridge",
+            description:
+                "Everything you need to go from your first words to confident conversations — structured, flexible, and built around how you actually learn.",
+            items: [
+                {
+                    question: "Certified, Native-Level Content",
+                    answer: "Every lesson and grammar explanation is reviewed by experienced German teachers, so what you learn is accurate and exam-ready.",
+                },
+                {
+                    question: "Flexible Learning Plans",
+                    answer: "Learn on your own schedule with bite-sized daily lessons, or follow a structured path toward your next exam level.",
+                },
+                {
+                    question: "Learn From Anywhere",
+                    answer: "Practice vocabulary, grammar, and conversation from your phone or laptop — your progress always syncs across devices.",
+                },
+            ],
+            statValue: "50K+",
+            statLabel: "Words Learned Daily",
+        },
+        testimonials: {
+            badge: "Testimonials",
+            title: "What Our Learners Say About Us",
+            items: [
+                {
+                    quote: "DeutschBridge turned my daily commute into German practice. The daily words and quick quizzes actually stuck.",
+                    name: "Amelia Novak",
+                    role: "B1 Learner",
+                },
+                {
+                    quote: "The grammar lessons finally made cases make sense to me. I passed my B2 exam three months after starting.",
+                    name: "Daniel Brooks",
+                    role: "B2 Graduate",
+                },
+                {
+                    quote: "I love that I can chat with the AI tutor whenever I want to practice speaking without feeling embarrassed.",
+                    name: "Sofia Rossi",
+                    role: "A2 Learner",
+                },
+            ],
+        },
+        stats: {
+            titleStart: "Thousands Of Learners",
+            titleHighlight: "Mastering German",
+            titleEnd: "With Us Every Day",
+            items: [
+                { value: 10000, suffix: "+", label: "Active Learners" },
+                { value: 120, suffix: "+", label: "Certified Tutors" },
+            ],
+        },
+        blog: {
+            badge: "News & Blogs",
+            title: "Our Latest Learning Tips",
+            subtitle: "Guides, grammar tips, and study strategies from the DeutschBridge team.",
+            posts: [
+                {
+                    category: "Grammar",
+                    title: "5 Common Mistakes German Learners Make (and How to Fix Them)",
+                    author: "Admin",
+                    date: "12 March, 2025",
+                },
+                {
+                    category: "Study Tips",
+                    title: "How to Build a Daily German Habit That Actually Sticks",
+                    author: "Admin",
+                    date: "2 April, 2025",
+                },
+                {
+                    category: "Exam Prep",
+                    title: "A Complete Guide to Passing Your Goethe B1 Exam",
+                    author: "Admin",
+                    date: "18 May, 2025",
+                },
+            ],
+        },
+    },
+    footer: {
+        about: "DeutschBridge helps you learn German the smart way — structured lessons, real practice, and an AI tutor whenever you need it.",
+        quickLinksTitle: "Quick Links",
+        quickLinks: ["Home", "About Us", "Grammar Lessons", "Vocabulary", "Contact"],
+        resourcesTitle: "Resources",
+        resources: ["Blog", "FAQ", "AI Tutor", "Exam Prep", "Privacy Policy"],
+        getInTouchTitle: "Get In Touch",
+        getInTouchSubtitle: "Have a question? We'd love to help you on your German learning journey.",
+        contactEmail: "support@deutschbridge.app",
+        copyright: (year: number) => `© ${year} DeutschBridge. All rights reserved.`,
+        termsLabel: "Terms of Use",
+        privacyLabel: "Privacy Policy",
+    },
+    topbar: {
+        address: "Berlin, Germany",
+        followUs: "Follow Us On:",
     },
     progress: {
         title: "Your Progress",
@@ -1258,6 +1399,8 @@ const fa: Dictionary = {
         vocabulary: "واژگان",
         expressions: "عبارات کاربردی",
         home: "خانه",
+        features: "امکانات",
+        blog: "مقالات",
         contact: "تماس با ما",
         about: "درباره ما",
         login: "ورود",
@@ -1774,22 +1917,117 @@ const fa: Dictionary = {
         },
     },
     home: {
-        heroTitle: "زبان آلمانی را هوشمندانه یاد بگیرید",
-        heroSubtitle:
-            "دویچ‌بریج یادگیری زبان آلمانی را ساده، سرگرم‌کننده و مؤثر می‌کند. همین امروز سفر یادگیری خود را آغاز کنید!",
-        getStarted: "شروع کنید",
-        featuresTitle: "چرا دویچ‌بریج را انتخاب کنیم؟",
-        learnTitle: "یادگیری",
-        learnDescription:
-            "دروس تعاملی برای همه سطوح، از مبتدی تا پیشرفته، برای تسلط بر زبان آلمانی با سرعت خودتان.",
-        practiceTitle: "تمرین",
-        practiceDescription:
-            "تمرین‌هایی طراحی‌شده برای بهبود مهارت‌های خواندن، نوشتن و صحبت‌کردن با مثال‌های واقعی.",
-        trackTitle: "پیگیری",
-        trackDescription:
-            "پیشرفت یادگیری خود را به‌راحتی دنبال کنید و برای رسیدن به اهداف زبان آلمانی خود انگیزه داشته باشید.",
-        ctaTitle: "آماده‌اید یادگیری زبان آلمانی را شروع کنید؟",
-        exploreFeatures: "مشاهده امکانات",
+        hero: {
+            titleStart: "هر روز آلمانی را",
+            titleHighlight: "مطمئن",
+            titleEnd: "صحبت کنید",
+            subtitle:
+                "دویچ‌بریج یادگیری زبان آلمانی را ساده، سرگرم‌کننده و مؤثر می‌کند — با کلمات روزانه، دروس گرامر و یک مربی هوش مصنوعی متناسب با روش یادگیری شما.",
+            bullets: [
+                "کلمات روزانه و دروس گرامر",
+                "تمرین مکالمه با مربی هوش مصنوعی",
+                "شروع رایگان، بدون نیاز به کارت اعتباری",
+            ],
+            ctaPrimary: "شروع رایگان یادگیری",
+            ctaSecondary: "ببینید چگونه کار می‌کند",
+            statStudents: { value: "+۱۰ هزار", label: "زبان‌آموز فعال" },
+            statRating: { value: "۴.۹/۵", label: "نظرات واقعی" },
+            statCourses: { value: "+۴۰", label: "درس گرامر" },
+        },
+        faq: {
+            badge: "چرا دویچ‌بریج",
+            title: "چرا زبان‌آموزان دویچ‌بریج را انتخاب می‌کنند",
+            description:
+                "هر آنچه برای رسیدن از اولین کلمات تا مکالمه با اعتمادبه‌نفس نیاز دارید — ساختاریافته، منعطف و متناسب با روش واقعی یادگیری شما.",
+            items: [
+                {
+                    question: "محتوای معتبر و در سطح بومی",
+                    answer: "هر درس و توضیح گرامری توسط معلمان باتجربهٔ آلمانی بررسی می‌شود، بنابراین آنچه یاد می‌گیرید دقیق و آماده برای آزمون است.",
+                },
+                {
+                    question: "برنامه‌های یادگیری منعطف",
+                    answer: "با درس‌های کوتاه روزانه طبق برنامهٔ خودتان یاد بگیرید، یا مسیری ساختاریافته به سمت سطح آزمون بعدی خود دنبال کنید.",
+                },
+                {
+                    question: "یادگیری از هر مکان",
+                    answer: "واژگان، گرامر و مکالمه را از گوشی یا لپ‌تاپ خود تمرین کنید — پیشرفت شما همیشه بین دستگاه‌ها همگام می‌شود.",
+                },
+            ],
+            statValue: "+۵۰ هزار",
+            statLabel: "کلمهٔ آموخته‌شده روزانه",
+        },
+        testimonials: {
+            badge: "نظرات کاربران",
+            title: "زبان‌آموزان ما چه می‌گویند",
+            items: [
+                {
+                    quote: "دویچ‌بریج رفت‌وآمد روزانه‌ام را به تمرین آلمانی تبدیل کرد. کلمات روزانه و آزمون‌های سریع واقعاً در ذهنم ماند.",
+                    name: "املیا نواک",
+                    role: "زبان‌آموز B1",
+                },
+                {
+                    quote: "دروس گرامر بالاخره حالت‌های صرف را برایم قابل‌فهم کرد. سه ماه بعد از شروع، آزمون B2 را قبول شدم.",
+                    name: "دنیل بروکس",
+                    role: "فارغ‌التحصیل B2",
+                },
+                {
+                    quote: "عاشق این هستم که هر وقت بخواهم می‌توانم با مربی هوش مصنوعی بدون خجالت مکالمه تمرین کنم.",
+                    name: "سوفیا روسی",
+                    role: "زبان‌آموز A2",
+                },
+            ],
+        },
+        stats: {
+            titleStart: "هزاران زبان‌آموز",
+            titleHighlight: "در حال تسلط بر آلمانی",
+            titleEnd: "همراه ما، هر روز",
+            items: [
+                { value: 10000, suffix: "+", label: "زبان‌آموز فعال" },
+                { value: 120, suffix: "+", label: "مربی گواهی‌شده" },
+            ],
+        },
+        blog: {
+            badge: "اخبار و مقالات",
+            title: "آخرین نکات یادگیری ما",
+            subtitle: "راهنماها، نکات گرامری و استراتژی‌های مطالعه از تیم دویچ‌بریج.",
+            posts: [
+                {
+                    category: "گرامر",
+                    title: "۵ اشتباه رایج زبان‌آموزان آلمانی (و راه رفع آن‌ها)",
+                    author: "ادمین",
+                    date: "۲۱ اسفند ۱۴۰۳",
+                },
+                {
+                    category: "نکات مطالعه",
+                    title: "چگونه یک عادت روزانهٔ یادگیری آلمانی بسازیم که واقعاً دوام بیاورد",
+                    author: "ادمین",
+                    date: "۱۳ فروردین ۱۴۰۴",
+                },
+                {
+                    category: "آمادگی آزمون",
+                    title: "راهنمای کامل قبولی در آزمون گوته B1",
+                    author: "ادمین",
+                    date: "۲۸ اردیبهشت ۱۴۰۴",
+                },
+            ],
+        },
+    },
+    footer: {
+        about: "دویچ‌بریج به شما کمک می‌کند آلمانی را هوشمندانه یاد بگیرید — دروس ساختاریافته، تمرین واقعی و مربی هوش مصنوعی هر وقت نیاز داشتید.",
+        quickLinksTitle: "لینک‌های سریع",
+        quickLinks: ["خانه", "درباره ما", "دروس گرامر", "واژگان", "تماس با ما"],
+        resourcesTitle: "منابع",
+        resources: ["مقالات", "سوالات متداول", "مربی هوش مصنوعی", "آمادگی آزمون", "حریم خصوصی"],
+        getInTouchTitle: "در ارتباط باشید",
+        getInTouchSubtitle: "سوالی دارید؟ خوشحال می‌شویم در مسیر یادگیری آلمانی به شما کمک کنیم.",
+        contactEmail: "support@deutschbridge.app",
+        copyright: (year: number) => `© ${year} دویچ‌بریج. تمامی حقوق محفوظ است.`,
+        termsLabel: "شرایط استفاده",
+        privacyLabel: "حریم خصوصی",
+    },
+    topbar: {
+        address: "برلین، آلمان",
+        followUs: "ما را دنبال کنید:",
     },
     progress: {
         title: "پیشرفت شما",

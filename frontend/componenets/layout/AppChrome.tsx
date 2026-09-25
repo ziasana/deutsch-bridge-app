@@ -3,6 +3,8 @@
 import { usePathname } from "next/navigation";
 import AppShell from "@/componenets/layout/AppShell";
 import Navbar from "@/componenets/Navbar";
+import Footer from "@/componenets/Footer";
+import TopBar from "@/componenets/TopBar";
 
 const SHELL_PREFIXES = ["/dashboard", "/admin", "/profile", "/user-progress", "/notifications"];
 
@@ -16,8 +18,10 @@ export default function AppChrome({ children }: Readonly<{ children: React.React
 
     return (
         <>
+            <TopBar />
             <Navbar />
             <main>{children}</main>
+            <Footer />
         </>
     );
 }
