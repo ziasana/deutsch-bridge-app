@@ -19,7 +19,9 @@ export default function ReviewNeededCard({ data }: ReviewNeededCardProps) {
     if (!hasReview) {
         return (
             <Card className="p-6 h-full flex flex-col items-center justify-center text-center gap-2">
-                <PartyPopper className="h-6 w-6 text-primary" />
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-motivation/12">
+                    <PartyPopper className="h-5 w-5 text-motivation" />
+                </div>
                 <h2 className="text-lg font-semibold text-foreground">{r.allCaughtUpTitle}</h2>
                 <p className="text-foreground/60 text-sm">{r.allCaughtUpSubtitle}</p>
             </Card>
@@ -29,7 +31,9 @@ export default function ReviewNeededCard({ data }: ReviewNeededCardProps) {
     return (
         <Card className="p-6 h-full flex flex-col">
             <div className="flex items-center gap-2">
-                <RefreshCw className="h-5 w-5 text-primary" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-learning-review/12">
+                    <RefreshCw className="h-4 w-4 text-learning-review" />
+                </div>
                 <h2 className="text-lg font-semibold text-foreground">{r.title}</h2>
             </div>
 
@@ -40,7 +44,7 @@ export default function ReviewNeededCard({ data }: ReviewNeededCardProps) {
                 )}
             </div>
 
-            <Button asChild className="mt-4 w-full">
+            <Button asChild variant="outline" className="mt-4 w-full">
                 <Link href={data.wordsDue > 0 ? "/dashboard/vocabulary/practice" : "/dashboard/expressions"}>
                     {r.cta}
                 </Link>

@@ -1,6 +1,6 @@
 "use client";
 
-import { PartyPopper } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { useI18n } from "@/componenets/I18nProvider";
 import { Card } from "@/componenets/ui/card";
 import { MilestoneDto } from "@/types/dashboard";
@@ -15,8 +15,8 @@ export default function LearningMilestone({ data }: LearningMilestoneProps) {
 
     return (
         <Card className="p-6 flex items-center gap-4">
-            <div className="rounded-full bg-accent p-3 shrink-0">
-                <PartyPopper className="h-6 w-6 text-accent-foreground" />
+            <div className="rounded-full bg-motivation/12 p-3 shrink-0">
+                <Trophy className="h-6 w-6 text-motivation" />
             </div>
             <div>
                 <h2 className="text-lg font-semibold text-foreground">{m.title}</h2>

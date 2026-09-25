@@ -39,6 +39,14 @@
   --color-topbar: var(--topbar);
   --color-topbar-foreground: var(--topbar-foreground);
   --color-topbar-accent: var(--topbar-accent);
+  --color-learning-vocabulary: var(--learning-vocabulary);
+  --color-learning-review: var(--learning-review);
+  --color-learning-grammar: var(--learning-grammar);
+  --color-learning-reading: var(--learning-reading);
+  --color-learning-expression: var(--learning-expression);
+  --color-learning-exam: var(--learning-exam);
+  --color-motivation: var(--motivation);
+  --color-vocabulary-ai: var(--vocabulary-ai);
   --shadow-card: var(--card-shadow);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -50,7 +58,7 @@
 }
 
 :root {
-  --background: hsl(220 33% 98%);
+  --background: hsl(220 50% 98%);
   --foreground: hsl(224 27% 15%);
   --card: hsl(0 0% 100%);
   --card-foreground: hsl(224 27% 15%);
@@ -86,6 +94,17 @@
   --topbar: hsl(216 100% 62%);
   --topbar-foreground: hsl(0 0% 100%);
   --topbar-accent: hsl(216 90% 70%);
+
+  /* Learning-category identity colors - used as tinted icon backgrounds, never as full card backgrounds */
+  --learning-vocabulary: hsl(38 92% 50%);
+  --learning-review: hsl(262 83% 66%);
+  --learning-grammar: hsl(221 83% 58%);
+  --learning-reading: hsl(173 58% 39%);
+  --learning-expression: hsl(24 94% 53%);
+  --learning-exam: hsl(243 75% 59%);
+  --motivation: hsl(14 90% 55%);
+  --vocabulary-ai: hsl(285 75% 60%);
+
   --card-shadow: 0 5px 5px 0 rgba(82, 63, 105, 0.05);
 
   /* react-toastify theming - keep in sync with the tokens above (see lib/toast.ts) */
@@ -144,6 +163,16 @@
   --topbar: hsl(216 100% 62%);
   --topbar-foreground: hsl(0 0% 100%);
   --topbar-accent: hsl(216 90% 70%);
+
+  --learning-vocabulary: hsl(38 95% 62%);
+  --learning-review: hsl(262 90% 75%);
+  --learning-grammar: hsl(221 90% 68%);
+  --learning-reading: hsl(173 55% 50%);
+  --learning-expression: hsl(24 95% 62%);
+  --learning-exam: hsl(243 85% 72%);
+  --motivation: hsl(14 90% 62%);
+  --vocabulary-ai: hsl(285 80% 72%);
+
   --card-shadow: 0 5px 5px 0 rgba(0, 0, 0, 0.25);
 }
 
@@ -199,6 +228,14 @@
 /* Toast cards get the same subtle border every other card surface uses (badges/modals/etc). */
 .Toastify__toast {
   border: 1px solid var(--border);
+}
+
+/* Very subtle brand-colored atmosphere behind the dashboard home page only -
+   the learner should feel it, not consciously notice a colored background. */
+.dashboard-atmosphere {
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--primary) 6%, transparent), transparent 45%),
+    var(--background);
 }
 
 /* Persian UI language - applied to <html> by I18nProvider when the account's preferred language is Persian */

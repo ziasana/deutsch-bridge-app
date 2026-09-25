@@ -30,8 +30,9 @@ export default function ExamPartCard({ index, title, exerciseCount, mastered, to
         <button
             type="button"
             onClick={onClick}
+            style={{ "--hover-color": color } as React.CSSProperties}
             className={cn(
-                "w-full flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 rounded-[10px] bg-card p-4 text-left transition hover:bg-accent/40",
+                "w-full flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 rounded-[10px] border border-border/60 bg-card p-4 text-left shadow-card transition hover:-translate-y-0.5 hover:shadow-lg hover:border-[var(--hover-color)]/40 hover:bg-[var(--hover-color)]/[0.06] cursor-pointer",
                 className,
             )}
         >

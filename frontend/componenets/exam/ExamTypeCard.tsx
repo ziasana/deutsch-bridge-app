@@ -26,11 +26,12 @@ export default function ExamTypeCard({ section, partsCount, mastered, total, avg
             role="tab"
             onClick={onClick}
             aria-selected={active}
+            style={{ "--hover-color": meta.color } as React.CSSProperties}
             className={cn(
-                "group flex min-w-0 flex-col gap-3 rounded-2xl border bg-card p-4 text-left transition-all duration-200",
+                "group flex min-w-0 flex-col gap-3 rounded-2xl border bg-card p-4 text-left transition-all duration-200 cursor-pointer",
                 active
-                    ? "border-primary bg-primary/[0.05]"
-                    : "border-border/60 shadow-card hover:-translate-y-0.5 hover:shadow-lg",
+                    ? "border-[var(--hover-color)] bg-[var(--hover-color)]/[0.05]"
+                    : "border-border/60 shadow-card hover:-translate-y-0.5 hover:shadow-lg hover:border-[var(--hover-color)]/40 hover:bg-[var(--hover-color)]/[0.06]",
                 className,
             )}
         >

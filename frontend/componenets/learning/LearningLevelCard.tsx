@@ -43,11 +43,12 @@ export default function LearningLevelCard({
             onClick={onClick}
             aria-selected={active}
             aria-label={`${level}: ${completed} of ${total} ${unitLabel} completed, ${pct}%${active ? `, ${activeLabel ?? "current level"}` : ""}`}
+            style={{ "--hover-color": color } as React.CSSProperties}
             className={cn(
-                "group relative flex shrink-0 flex-col gap-3 rounded-2xl border bg-card p-4 text-left transition-all duration-200 min-w-[176px] sm:min-w-0 sm:flex-1",
+                "group relative flex shrink-0 flex-col gap-3 rounded-2xl border bg-card p-4 text-left transition-all duration-200 min-w-[176px] sm:min-w-0 sm:flex-1 cursor-pointer",
                 active
-                    ? "border-primary bg-primary/[0.05]"
-                    : "border-border/60 shadow-card hover:-translate-y-0.5 hover:shadow-lg",
+                    ? "border-[var(--hover-color)] bg-[var(--hover-color)]/[0.05]"
+                    : "border-border/60 shadow-card hover:-translate-y-0.5 hover:shadow-lg hover:border-[var(--hover-color)]/40 hover:bg-[var(--hover-color)]/[0.06]",
                 className,
             )}
         >

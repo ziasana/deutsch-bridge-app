@@ -20,7 +20,7 @@ export default function ExpressionFilterSelect({ label, value, options, onChange
     return (
         <div
             className={cn(
-                "relative min-w-[140px] rounded-[10px] border border-border/60 bg-card px-3 py-2 shadow-card",
+                "relative min-w-[140px] rounded-[10px] border border-border/60 bg-card px-3 py-2 shadow-card transition-colors hover:border-primary/40",
                 className,
             )}
         >

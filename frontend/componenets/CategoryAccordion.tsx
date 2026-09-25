@@ -119,12 +119,12 @@ export function ContentItemRow({
             }}
             dir={dir}
             className={cn(
-                "w-full flex items-center gap-3 rounded-lg p-3.5 transition-colors cursor-pointer group",
-                !learned && "bg-background/60 dark:bg-white/5 hover:bg-accent/50",
+                "w-full flex items-center gap-3 rounded-lg border border-transparent p-3.5 transition-colors cursor-pointer group hover:border-[var(--hover-color)]/40 hover:bg-[var(--hover-color)]/[0.1]",
+                learned ? "bg-[var(--hover-color)]/[0.08]" : "bg-background/60 dark:bg-white/5",
                 dir === "rtl" ? "text-right" : "text-left",
                 className,
             )}
-            style={learned ? { backgroundColor: `${levelColor}14` } : undefined}
+            style={{ "--hover-color": levelColor ?? "var(--primary)" } as React.CSSProperties}
         >
             {learned === undefined ? null : learned ? (
                 <span

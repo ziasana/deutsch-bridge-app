@@ -7,6 +7,7 @@ import { VocabularyItem } from "@/types/vocabulary";
 import { cn } from "@/lib/utils";
 import { playVocabularyAudio } from "@/lib/vocabularyAudio";
 import { useI18n } from "@/componenets/I18nProvider";
+import { SOURCE_HOVER_BORDER } from "@/componenets/vocabulary/sourceColors";
 
 const RECALL_COLOR = "#22c55e";
 const CONTEXT_COLOR = "#3b82f6";
@@ -44,7 +45,8 @@ export default function VocabularyCard({
                 if (e.key === "Enter" || e.key === " ") onOpen(item);
             }}
             className={cn(
-                "flex flex-col gap-3 rounded-2xl border border-border/60 bg-card p-5 text-left shadow-card transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-lg hover:border-border",
+                "flex flex-col gap-3 rounded-2xl border border-border/60 bg-card p-5 text-left shadow-card transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-lg",
+                SOURCE_HOVER_BORDER[item.source],
                 className,
             )}
         >

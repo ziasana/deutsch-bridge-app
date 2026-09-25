@@ -145,10 +145,12 @@ export default function ReadingPage() {
                                         openArticle(article.id);
                                     }
                                 }}
-                                className={`w-full flex items-center gap-4 rounded-[10px] overflow-hidden p-3 text-left transition cursor-pointer ${
-                                    learned ? "" : "bg-card shadow-card hover:shadow-lg"
+                                className={`w-full flex items-center gap-4 rounded-[10px] overflow-hidden p-3 text-left transition cursor-pointer border hover:border-[var(--hover-color)]/40 hover:bg-[var(--hover-color)]/[0.1] ${
+                                    learned
+                                        ? "border-transparent bg-[var(--hover-color)]/[0.08]"
+                                        : "border-border/60 bg-card shadow-card hover:-translate-y-0.5 hover:shadow-lg"
                                 }`}
-                                style={learned ? { backgroundColor: `${levelColor}14` } : undefined}
+                                style={{ "--hover-color": levelColor } as React.CSSProperties}
                             >
                                 {learned ? (
                                     <span

@@ -1,38 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, BookOpen, Brain, GraduationCap, Newspaper, Sparkles, SpellCheck } from "lucide-react";
+import { ArrowRight, GraduationCap } from "lucide-react";
 import { useI18n } from "@/componenets/I18nProvider";
 import { Card } from "@/componenets/ui/card";
 import { Button } from "@/componenets/ui/button";
 import LearningProgressBar from "@/componenets/learning/LearningProgressBar";
+import ActivityIcon from "@/componenets/learning/ActivityIcon";
+import { ActivityType } from "@/componenets/learning/activityConfig";
 import { ContinueLearningDto } from "@/types/dashboard";
 
 interface ContinueLearningCardProps {
     data: ContinueLearningDto;
 }
 
-const ICONS = {
-    DAILY_WORDS: SpellCheck,
-    VOCAB_REVIEW: Brain,
-    GRAMMAR: BookOpen,
-    READING: Newspaper,
-    EXPRESSIONS: Sparkles,
-    EXAM: GraduationCap,
-    START: GraduationCap,
-} as const;
-
 export default function ContinueLearningCard({ data }: ContinueLearningCardProps) {
     const { t } = useI18n();
     const c = t.dashboard.continueLearning;
-    const Icon = ICONS[data.type];
 
     if (data.type === "START") {
         return (
             <Card className="p-6 sm:p-8">
                 <div className="flex flex-col items-center gap-4 text-center">
                     <div className="rounded-full bg-accent p-4">
-                        <Icon className="h-8 w-8 text-accent-foreground" />
+                        <GraduationCap className="h-8 w-8 text-accent-foreground" />
                     </div>
                     <div>
                         <h2 className="text-xl font-semibold text-foreground">{c.startTitle}</h2>
@@ -71,9 +62,7 @@ export default function ContinueLearningCard({ data }: ContinueLearningCardProps
             <p className="text-xs font-semibold uppercase tracking-wide text-primary">{c.label}</p>
 
             <div className="mt-3 flex items-start gap-4">
-                <div className="rounded-xl bg-accent p-3">
-                    <Icon className="h-6 w-6 text-accent-foreground" />
-                </div>
+                <ActivityIcon type={data.type as ActivityType} size="lg" />
                 <div className="min-w-0 flex-1">
                     <h2 className="text-lg font-semibold text-foreground sm:text-xl">{titleByType[data.type]}</h2>
                     <p className="text-foreground/60 mt-1 text-sm sm:text-base">{descriptionByType[data.type]}</p>

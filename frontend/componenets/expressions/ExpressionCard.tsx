@@ -72,7 +72,7 @@ export default function ExpressionCard({
                 if (e.key === "Enter" || e.key === " ") onOpen(expression);
             }}
             className={cn(
-                "flex flex-col gap-3 rounded-2xl border border-border/60 bg-card text-left shadow-card transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-lg hover:border-border overflow-hidden",
+                "flex flex-col gap-3 rounded-2xl border border-border/60 bg-card text-left shadow-card transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-lg hover:border-primary/40 overflow-hidden",
                 hasVisual ? "pb-5" : "p-5",
                 className,
             )}

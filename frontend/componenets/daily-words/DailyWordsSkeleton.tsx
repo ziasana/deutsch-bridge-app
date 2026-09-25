@@ -1,6 +1,6 @@
 export default function DailyWordsSkeleton() {
     return (
-        <div className="max-w-2xl mx-auto animate-pulse">
+        <div className="max-w-4xl mx-auto animate-pulse">
             <div className="h-8 w-48 rounded bg-foreground/10" />
             <div className="h-4 w-64 rounded bg-foreground/10 mt-3" />
             <div className="h-1.5 w-full rounded-full bg-foreground/10 mt-6" />

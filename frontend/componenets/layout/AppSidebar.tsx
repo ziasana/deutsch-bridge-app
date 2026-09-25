@@ -22,10 +22,18 @@ export default function AppSidebar({ items, collapsed, onToggleCollapsed, onNavi
     const { t } = useI18n();
     const [expandedOverride, setExpandedOverride] = useState<Record<string, boolean>>({});
 
-    const isActive = (href: string) =>
-        href === "/dashboard" || href === "/admin"
-            ? pathname === href
-            : pathname === href || pathname.startsWith(`${href}/`);
+    // Pick the single most specific (longest) href that matches the current path, so a
+    // parent route (e.g. "/dashboard/reading") never lights up alongside a nested one
+    // that also matches (e.g. "/dashboard/reading/review").
+    const allHrefs = items.flatMap((item) => (item.children ? item.children.map((c) => c.href) : [item.href])).filter(
+        (href): href is string => Boolean(href),
+    );
+    const bestMatch = allHrefs.reduce<string | null>((best, href) => {
+        const matches = pathname === href || pathname.startsWith(`${href}/`);
+        if (!matches) return best;
+        return !best || href.length > best.length ? href : best;
+    }, null);
+    const isActive = (href: string) => href === bestMatch;
 
     const toggleExpand = (label: string, current: boolean) =>
         setExpandedOverride((prev) => ({ ...prev, [label]: !current }));

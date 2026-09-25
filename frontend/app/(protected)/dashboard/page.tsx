@@ -53,11 +53,11 @@ const DashboardPage = () => {
     const loading = !hasHydrated || isLoading;
 
     return (
-        <div className="px-4 py-8 sm:px-6 sm:py-10">
+        <div className="dashboard-atmosphere min-h-full px-4 py-8 sm:px-6 sm:py-10">
             {loading && <DashboardSkeleton />}
 
             {!loading && isError && (
-                <div className="max-w-6xl mx-auto text-center py-16">
+                <div className="text-center py-16">
                     <p className="text-foreground/60">{t.dashboard.error.message}</p>
                     <Button onClick={() => refetch()} className="mt-4">
                         {t.dashboard.error.retry}
@@ -66,7 +66,7 @@ const DashboardPage = () => {
             )}
 
             {!loading && !isError && dashboard && (
-                <div className="max-w-6xl mx-auto space-y-6">
+                <div className="space-y-6">
                     <DashboardHeader
                         displayName={dashboard.user.displayName || userProfile?.displayName || ""}
                         level={dashboard.user.learningLevel}

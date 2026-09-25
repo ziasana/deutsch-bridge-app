@@ -3,6 +3,7 @@
 import { LucideIcon, ChevronRight } from "lucide-react";
 import { VocabularySource } from "@/types/vocabulary";
 import { cn } from "@/lib/utils";
+import { SOURCE_HOVER_BORDER, SOURCE_HOVER_BG } from "@/componenets/vocabulary/sourceColors";
 
 export interface VocabularySourceOption {
     source: VocabularySource;
@@ -27,7 +28,7 @@ export default function VocabularySourceSelector({
     className,
 }: VocabularySourceSelectorProps) {
     return (
-        <div role="tablist" aria-label="Vocabulary source" className={cn("grid grid-cols-1 sm:grid-cols-2 gap-4", className)}>
+        <div role="tablist" aria-label="Vocabulary source" className={cn("grid grid-cols-1 sm:grid-cols-3 gap-4", className)}>
             {options.map((opt) => {
                 const active = selected === opt.source;
                 const Icon = opt.icon;
@@ -39,10 +40,14 @@ export default function VocabularySourceSelector({
                         aria-selected={active}
                         onClick={() => onSelect(opt.source)}
                         className={cn(
-                            "flex items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-200",
+                            "flex items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-200 cursor-pointer",
                             active
                                 ? "border-primary bg-primary/[0.06]"
-                                : "border-border/60 bg-card shadow-card hover:-translate-y-0.5 hover:shadow-lg",
+                                : cn(
+                                      "border-border/60 bg-card shadow-card hover:-translate-y-0.5 hover:shadow-lg",
+                                      SOURCE_HOVER_BORDER[opt.source],
+                                      SOURCE_HOVER_BG[opt.source],
+                                  ),
                         )}
                     >
                         <div

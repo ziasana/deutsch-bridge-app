@@ -39,10 +39,10 @@ export default function ExpressionCollectionSelector({
                         aria-selected={active}
                         onClick={() => onSelect(opt.type)}
                         className={cn(
-                            "flex items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-200",
+                            "flex items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-200 cursor-pointer",
                             active
                                 ? "border-primary bg-primary/[0.06]"
-                                : "border-border/60 bg-card shadow-card hover:-translate-y-0.5 hover:shadow-lg",
+                                : "border-border/60 bg-card shadow-card hover:-translate-y-0.5 hover:shadow-lg hover:border-primary/40 hover:bg-primary/[0.06]",
                         )}
                     >
                         <div

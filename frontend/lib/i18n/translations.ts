@@ -108,6 +108,7 @@ export interface Dictionary {
             vocabReview: string;
             grammar: string;
             reading: string;
+            recommendedNext: string;
         };
         review: {
             title: string;
@@ -728,6 +729,7 @@ const en: Dictionary = {
             vocabReview: "Word Review",
             grammar: "Grammar",
             reading: "Reading",
+            recommendedNext: "Recommended next",
         },
         review: {
             title: "Review needed",
@@ -1371,6 +1373,7 @@ const fa: Dictionary = {
             vocabReview: "مرور کلمات",
             grammar: "گرامر",
             reading: "مطالعه",
+            recommendedNext: "پیشنهاد بعدی",
         },
         review: {
             title: "نیاز به مرور",
