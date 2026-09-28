@@ -3,11 +3,15 @@
 import { useEditor, EditorContent, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import TextAlign from "@tiptap/extension-text-align";
+import { TextStyle } from "@tiptap/extension-text-style";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import { useEffect, useRef } from "react";
 import { resolveUploadUrl, resolveUploadUrlsInHtml, stripBackendOrigin } from "@/lib/backendOrigin";
 import { ExamGap, extractGapNumbers } from "@/lib/examGap";
+import { FontSize, TextDirection } from "@/lib/tiptapExtensions";
+
+const FONT_SIZES = ["12px", "14px", "16px", "18px", "20px", "24px", "28px", "32px"];
 
 function ToolbarButton({
     active,
@@ -120,6 +124,27 @@ function Toolbar({
                 <span className="underline">U</span>
             </ToolbarButton>
             <div className="w-px bg-gray-300 dark:bg-gray-600 mx-1" />
+            <select
+                title="Font size"
+                value={editor.getAttributes("textStyle").fontSize ?? ""}
+                onChange={(e) => {
+                    const value = e.target.value;
+                    if (value) {
+                        editor.chain().focus().setFontSize(value).run();
+                    } else {
+                        editor.chain().focus().unsetFontSize().run();
+                    }
+                }}
+                className="px-1 py-1 rounded text-sm bg-transparent text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none"
+            >
+                <option value="">Default size</option>
+                {FONT_SIZES.map((size) => (
+                    <option key={size} value={size}>
+                        {size}
+                    </option>
+                ))}
+            </select>
+            <div className="w-px bg-gray-300 dark:bg-gray-600 mx-1" />
             <ToolbarButton
                 title="Heading"
                 active={editor.isActive("heading", { level: 2 })}
@@ -155,6 +180,21 @@ function Toolbar({
                 onClick={() => editor.chain().focus().setTextAlign("right").run()}
             >
                 ⯈
+            </ToolbarButton>
+            <div className="w-px bg-gray-300 dark:bg-gray-600 mx-1" />
+            <ToolbarButton
+                title="Left-to-right text"
+                active={editor.isActive("paragraph", { dir: "ltr" }) || editor.isActive("heading", { dir: "ltr" })}
+                onClick={() => editor.chain().focus().setTextDirection("ltr").run()}
+            >
+                LTR
+            </ToolbarButton>
+            <ToolbarButton
+                title="Right-to-left text"
+                active={editor.isActive("paragraph", { dir: "rtl" }) || editor.isActive("heading", { dir: "rtl" })}
+                onClick={() => editor.chain().focus().setTextDirection("rtl").run()}
+            >
+                RTL
             </ToolbarButton>
             <div className="w-px bg-gray-300 dark:bg-gray-600 mx-1" />
             <ToolbarButton
@@ -197,6 +237,9 @@ export default function RichTextEditor({
         extensions: [
             StarterKit.configure({ heading: { levels: [1, 2] } }),
             TextAlign.configure({ types: ["paragraph", "heading"] }),
+            TextStyle,
+            FontSize,
+            TextDirection,
             Image.configure({ allowBase64: true, HTMLAttributes: { class: "max-w-full rounded-lg" } }),
             ExamGap,
             Placeholder.configure({ placeholder: placeholder ?? "" }),

@@ -36,7 +36,9 @@ import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
 import AdminTableControls from "@/componenets/admin/table/AdminTableControls";
 import AdminTablePagination from "@/componenets/admin/table/AdminTablePagination";
 import SortableTh from "@/componenets/admin/table/SortableTh";
+import RichTextEditor from "@/componenets/RichTextEditor";
 import { getArticleImageSrc } from "@/lib/readingImages";
+import { htmlToPlainText, plainTextToHtml } from "@/lib/richTextPlainText";
 import { Upload, CheckCircle2, XCircle, Trash2 } from "lucide-react";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
@@ -60,7 +62,6 @@ const emptyManualForm = {
     title: "",
     topic: "",
     level: "A2",
-    content: "",
     linkedGroupId: "",
     imageUrl: null as string | null,
 };
@@ -127,6 +128,11 @@ export default function AdminReadingPage() {
     const [genLevel, setGenLevel] = useState("A2");
 
     const [manualForm, setManualForm] = useState(emptyManualForm);
+    // Kept as HTML while editing (pure controlled value/onChange through RichTextEditor, so the
+    // cursor never fights a round-trip); only flattened to plain text at the read/write boundaries
+    // (loading an existing article, submitting, and the AI-suggestion calls) - see richTextPlainText.ts.
+    const [contentHtml, setContentHtml] = useState("");
+    const articleContent = htmlToPlainText(contentHtml);
     const [manualVocab, setManualVocab] = useState<KeyVocabularyItem[]>([]);
     const [manualAnnotations, setManualAnnotations] = useState<Annotation[]>([]);
     const [manualQuiz, setManualQuiz] = useState<ReadingQuizQuestion[]>([]);
@@ -161,6 +167,7 @@ export default function AdminReadingPage() {
 
     const resetManualForm = () => {
         setManualForm(emptyManualForm);
+        setContentHtml("");
         setManualVocab([]);
         setManualAnnotations([]);
         setManualQuiz([]);
@@ -202,12 +209,12 @@ export default function AdminReadingPage() {
     const removeImage = () => setManualForm((prev) => ({ ...prev, imageUrl: "" }));
 
     const runSuggestVocabulary = () => {
-        if (!manualForm.content.trim()) {
+        if (!articleContent.trim()) {
             toast.error("Paste the article content first.");
             return;
         }
         setIsSuggesting(true);
-        suggestVocabulary({ content: manualForm.content, level: manualForm.level })
+        suggestVocabulary({ content: articleContent, level: manualForm.level })
             .then((res) => {
                 setManualVocab(res.data);
                 toast.success("Vocabulary suggested — review before saving.");
@@ -217,12 +224,12 @@ export default function AdminReadingPage() {
     };
 
     const runSuggestAnnotations = () => {
-        if (!manualForm.content.trim()) {
+        if (!articleContent.trim()) {
             toast.error("Paste the article content first.");
             return;
         }
         setIsSuggestingAnnotations(true);
-        suggestAnnotations({ content: manualForm.content, level: manualForm.level })
+        suggestAnnotations({ content: articleContent, level: manualForm.level })
             .then((res) => {
                 setManualAnnotations(res.data);
                 toast.success("Annotations suggested — review before saving.");
@@ -232,12 +239,12 @@ export default function AdminReadingPage() {
     };
 
     const runGenerateQuiz = () => {
-        if (!manualForm.content.trim()) {
+        if (!articleContent.trim()) {
             toast.error("Paste the article content first.");
             return;
         }
         setIsGeneratingQuiz(true);
-        generateQuiz({ content: manualForm.content, level: manualForm.level, annotations: manualAnnotations })
+        generateQuiz({ content: articleContent, level: manualForm.level, annotations: manualAnnotations })
             .then((res) => {
                 setManualQuiz(res.data);
                 toast.success("Quiz generated — review before saving.");
@@ -282,10 +289,10 @@ export default function AdminReadingPage() {
             title: article.title,
             topic: article.topic,
             level: article.level,
-            content: article.content,
             linkedGroupId: article.linkedGroupId ?? "",
             imageUrl: article.imageUrl,
         });
+        setContentHtml(plainTextToHtml(article.content));
         setManualVocab(article.keyVocabulary);
         setManualAnnotations(article.annotations ?? []);
         setManualQuiz([]);
@@ -342,7 +349,7 @@ export default function AdminReadingPage() {
 
     const submitManual = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!manualForm.title.trim() || !manualForm.content.trim()) {
+        if (!manualForm.title.trim() || !articleContent.trim()) {
             toast.error("Title and content are required.");
             return;
         }
@@ -351,7 +358,7 @@ export default function AdminReadingPage() {
             title: manualForm.title,
             topic: manualForm.topic,
             level: manualForm.level,
-            content: manualForm.content,
+            content: articleContent,
             imageUrl: manualForm.imageUrl,
             keyVocabulary: manualVocab.filter((v) => v.word.trim() && v.meaning.trim()),
             annotations: manualAnnotations.filter((a) => a.surfaceText.trim() && a.lemma.trim()),
@@ -792,13 +799,20 @@ export default function AdminReadingPage() {
                                 <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
                                     Article text
                                 </label>
-                                <textarea
-                                    value={manualForm.content}
-                                    onChange={(e) => setManualForm({ ...manualForm, content: e.target.value })}
-                                    placeholder="Paste the article text here"
-                                    rows={8}
-                                    className="w-full mt-2 px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                />
+                                <div className="mt-2">
+                                    <RichTextEditor
+                                        value={contentHtml}
+                                        onChange={setContentHtml}
+                                        placeholder="Paste or type the article text here"
+                                        onUploadImage={(file) => uploadReadingArticleImage(file).then((res) => res.data.url)}
+                                    />
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Formatting (bold, headings, images) is for readability while writing only -
+                                    the saved article is plain text, since annotations and click-to-define locate
+                                    words by their position in the raw text. Inserted images won&apos;t be saved;
+                                    use the article image field above for the cover photo.
+                                </p>
                             </div>
 
                             <div>
