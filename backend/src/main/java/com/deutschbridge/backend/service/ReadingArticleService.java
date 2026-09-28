@@ -23,6 +23,7 @@ import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.model.enums.ReadingQuizQuestionType;
 import com.deutschbridge.backend.repository.LearningProgressRepository;
 import com.deutschbridge.backend.repository.ReadingArticleRepository;
+import com.deutschbridge.backend.repository.UserArticleAttemptRepository;
 import com.deutschbridge.backend.repository.UserWordProgressRepository;
 import com.deutschbridge.backend.service.cache.ContentCacheService;
 import com.deutschbridge.backend.service.cache.ReadingProgressCacheService;
@@ -57,6 +58,7 @@ public class ReadingArticleService {
 
     private final ReadingArticleRepository readingArticleRepository;
     private final LearningProgressRepository learningProgressRepository;
+    private final UserArticleAttemptRepository userArticleAttemptRepository;
     private final UserWordProgressRepository userWordProgressRepository;
     private final UserService userService;
     private final RequestContext requestContext;
@@ -68,6 +70,7 @@ public class ReadingArticleService {
 
     public ReadingArticleService(ReadingArticleRepository readingArticleRepository,
                                   LearningProgressRepository learningProgressRepository,
+                                  UserArticleAttemptRepository userArticleAttemptRepository,
                                   UserWordProgressRepository userWordProgressRepository,
                                   UserService userService,
                                   RequestContext requestContext,
@@ -78,6 +81,7 @@ public class ReadingArticleService {
                                   ObjectMapper objectMapper) {
         this.readingArticleRepository = readingArticleRepository;
         this.learningProgressRepository = learningProgressRepository;
+        this.userArticleAttemptRepository = userArticleAttemptRepository;
         this.userWordProgressRepository = userWordProgressRepository;
         this.userService = userService;
         this.requestContext = requestContext;
@@ -289,15 +293,35 @@ public class ReadingArticleService {
         return ReadingArticleMapper.mapToResponse(saved, null, Set.of());
     }
 
+    @Transactional
     @Caching(evict = {
             @CacheEvict(cacheNames = "readingArticles", allEntries = true),
             @CacheEvict(cacheNames = "readingLevelSummary", allEntries = true)
     })
     public void delete(String id) throws DataNotFoundException {
         ReadingArticle existing = findById(id);
+        userArticleAttemptRepository.deleteByArticle(existing);
+        learningProgressRepository.deleteByReading(existing);
         readingArticleRepository.deleteById(id);
         contentCacheService.evictReadingArticleDetail(id);
         contentCacheService.evictReadingArticleListPagesForLevel(existing.getLevel());
+    }
+
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "readingArticles", allEntries = true),
+            @CacheEvict(cacheNames = "readingLevelSummary", allEntries = true)
+    })
+    public void deleteAll(List<String> ids) {
+        for (String id : ids) {
+            ReadingArticle existing = readingArticleRepository.findById(id).orElse(null);
+            if (existing == null) continue;
+            userArticleAttemptRepository.deleteByArticle(existing);
+            learningProgressRepository.deleteByReading(existing);
+            readingArticleRepository.deleteById(id);
+            contentCacheService.evictReadingArticleDetail(id);
+            contentCacheService.evictReadingArticleListPagesForLevel(existing.getLevel());
+        }
     }
 
     /** Best-effort bulk import: each row is validated and saved independently.

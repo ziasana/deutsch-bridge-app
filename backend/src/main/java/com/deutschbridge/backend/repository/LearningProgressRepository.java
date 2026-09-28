@@ -53,4 +53,7 @@ public interface LearningProgressRepository extends JpaRepository<LearningProgre
 
     @Modifying
     void deleteByLesson(GrammarLesson lesson);
+
+    @Modifying
+    void deleteByReading(ReadingArticle reading);
 }

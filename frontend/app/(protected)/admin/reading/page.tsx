@@ -10,6 +10,7 @@ import {
     createReadingArticle,
     updateReadingArticle,
     deleteReadingArticle,
+    deleteReadingArticles,
     suggestVocabulary,
     suggestAnnotations,
     generateQuiz,
@@ -36,7 +37,7 @@ import AdminTableControls from "@/componenets/admin/table/AdminTableControls";
 import AdminTablePagination from "@/componenets/admin/table/AdminTablePagination";
 import SortableTh from "@/componenets/admin/table/SortableTh";
 import { getArticleImageSrc } from "@/lib/readingImages";
-import { Upload, CheckCircle2, XCircle } from "lucide-react";
+import { Upload, CheckCircle2, XCircle, Trash2 } from "lucide-react";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
@@ -106,6 +107,8 @@ export default function AdminReadingPage() {
     });
     const [isSaving, setIsSaving] = useState(false);
     const [articleToDelete, setArticleToDelete] = useState<ReadingArticle | null>(null);
+    const [selectedArticleIds, setSelectedArticleIds] = useState<Set<string>>(new Set());
+    const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
     const [tableSearch, setTableSearch] = useState("");
     const [tablePageSize, setTablePageSize] = useState(10);
@@ -387,6 +390,30 @@ export default function AdminReadingPage() {
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to delete article."));
     };
 
+    const toggleSelectArticle = (id: string) => {
+        setSelectedArticleIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const runBulkDelete = () => {
+        setConfirmBulkDelete(false);
+        const ids = [...selectedArticleIds];
+        if (ids.length === 0) return;
+        setIsSaving(true);
+        deleteReadingArticles(ids)
+            .then(() => {
+                toast.success(`${ids.length} article(s) deleted.`);
+                setSelectedArticleIds(new Set());
+                invalidateArticles();
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to delete selected articles."))
+            .finally(() => setIsSaving(false));
+    };
+
     const toggleSort = (key: SortKey) => {
         if (sortKey === key) {
             setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -432,6 +459,25 @@ export default function AdminReadingPage() {
     const tableEndIndex = Math.min(tableCurrentPage * tablePageSize, sortedArticles.length);
     const paginatedArticles = sortedArticles.slice((tableCurrentPage - 1) * tablePageSize, tableCurrentPage * tablePageSize);
 
+    // Drop selections that no longer exist in the list (deleted elsewhere, or by a refresh).
+    const validArticleIds = new Set(articles.map((a) => a.id));
+    const validSelectedIds = new Set([...selectedArticleIds].filter((id) => validArticleIds.has(id)));
+    const selectablePageArticleIds = paginatedArticles.map((a) => a.id);
+    const allOnPageSelected =
+        selectablePageArticleIds.length > 0 && selectablePageArticleIds.every((id) => validSelectedIds.has(id));
+
+    const toggleSelectAllOnPage = () => {
+        setSelectedArticleIds((prev) => {
+            const next = new Set(prev);
+            if (allOnPageSelected) {
+                selectablePageArticleIds.forEach((id) => next.delete(id));
+            } else {
+                selectablePageArticleIds.forEach((id) => next.add(id));
+            }
+            return next;
+        });
+    };
+
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
             <div className="max-w-7xl mx-auto">
@@ -442,15 +488,28 @@ export default function AdminReadingPage() {
                             Generate an article with AI, or paste in one you already have.
                         </p>
                     </div>
-                    <Button
-                        type="button"
-                        variant="secondary"
-                        className="flex items-center gap-2"
-                        onClick={() => setShowBulkImport((prev) => !prev)}
-                    >
-                        <Upload className="size-4" />
-                        Bulk upload
-                    </Button>
+                    <div className="flex items-center gap-3">
+                        {validSelectedIds.size > 0 && (
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                className="flex items-center gap-2 text-red-600 dark:text-red-400"
+                                onClick={() => setConfirmBulkDelete(true)}
+                            >
+                                <Trash2 className="size-4" />
+                                Delete Selected ({validSelectedIds.size})
+                            </Button>
+                        )}
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            className="flex items-center gap-2"
+                            onClick={() => setShowBulkImport((prev) => !prev)}
+                        >
+                            <Upload className="size-4" />
+                            Bulk upload
+                        </Button>
+                    </div>
                 </div>
 
                 {showBulkImport && (
@@ -1045,6 +1104,16 @@ export default function AdminReadingPage() {
                                 <table className="w-full text-left">
                                     <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm">
                                         <tr>
+                                            <th className="px-6 py-3 w-10">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={allOnPageSelected}
+                                                    onChange={toggleSelectAllOnPage}
+                                                    disabled={selectablePageArticleIds.length === 0}
+                                                    className="h-4 w-4 accent-blue-600"
+                                                    aria-label="Select all articles on this page"
+                                                />
+                                            </th>
                                             <th className="px-6 py-3">Image</th>
                                             <SortableTh
                                                 label="Title"
@@ -1076,6 +1145,15 @@ export default function AdminReadingPage() {
                                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                                         {paginatedArticles.map((article) => (
                                             <tr key={article.id}>
+                                                <td className="px-6 py-4">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={validSelectedIds.has(article.id)}
+                                                        onChange={() => toggleSelectArticle(article.id)}
+                                                        className="h-4 w-4 accent-blue-600"
+                                                        aria-label={`Select ${article.title}`}
+                                                    />
+                                                </td>
                                                 <td className="px-6 py-4">
                                                     <img
                                                         src={getArticleImageSrc(article.imageUrl, article.level)}
@@ -1115,7 +1193,7 @@ export default function AdminReadingPage() {
                                         ))}
                                         {sortedArticles.length === 0 && (
                                             <tr>
-                                                <td colSpan={6} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                                                <td colSpan={7} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
                                                     No reading articles found.
                                                 </td>
                                             </tr>
@@ -1149,6 +1227,15 @@ export default function AdminReadingPage() {
                 cancelLabel="Cancel"
                 onConfirm={confirmRemoveArticle}
                 onCancel={() => setArticleToDelete(null)}
+            />
+            <ConfirmDialog
+                isOpen={confirmBulkDelete}
+                title={`Delete ${validSelectedIds.size} selected article(s)?`}
+                message="This cannot be undone."
+                confirmLabel="Delete Selected"
+                cancelLabel="Cancel"
+                onConfirm={runBulkDelete}
+                onCancel={() => setConfirmBulkDelete(false)}
             />
         </div>
     );

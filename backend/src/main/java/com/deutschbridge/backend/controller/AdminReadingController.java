@@ -94,4 +94,10 @@ public class AdminReadingController {
         readingArticleService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping("/bulk")
+    public ResponseEntity<Void> deleteBulk(@RequestBody List<String> ids) {
+        readingArticleService.deleteAll(ids);
+        return ResponseEntity.noContent().build();
+    }
 }

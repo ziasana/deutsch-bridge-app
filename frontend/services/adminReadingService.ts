@@ -56,6 +56,10 @@ export const deleteReadingArticle = async (id: string) => {
     return await api.delete(`/admin/reading/${id}`);
 };
 
+export const deleteReadingArticles = async (ids: string[]) => {
+    return await api.delete("/admin/reading/bulk", { data: ids });
+};
+
 export const bulkImportReadingArticles = async (rows: unknown[]) => {
     return await api.post<ReadingArticleBulkImportResult>("/admin/reading/bulk", rows);
 };

@@ -1,9 +1,11 @@
 package com.deutschbridge.backend.repository;
 
+import com.deutschbridge.backend.model.entity.ReadingArticle;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.entity.UserArticleAttempt;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -19,4 +21,7 @@ public interface UserArticleAttemptRepository extends JpaRepository<UserArticleA
     /** Most recent reading the learner opened but didn't finish, within a recency window. */
     Optional<UserArticleAttempt> findFirstByUserAndCompletedAtIsNullAndStartedAtAfterOrderByStartedAtDesc(
             User user, LocalDateTime startedAfter);
+
+    @Modifying
+    void deleteByArticle(ReadingArticle article);
 }
