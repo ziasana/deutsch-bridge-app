@@ -2,7 +2,10 @@
 
 Use `reading-article-bulk-import-template.json` as a starting point: duplicate one of its two
 entries per new article, edit the values, and paste the whole array into the "Bulk upload" panel
-on the admin Reading Articles page (or upload the `.json` file directly there).
+on the admin Reading Articles page (or upload the `.json` file directly there). Both entries in
+the template are fully filled out - key vocabulary, one annotation of each type
+(`WORD`, `NOMEN_VERB_VERBINDUNG`, `REDEWENDUNG`), and 5 quiz questions covering all 5 quiz types
+- so you can see a complete, realistic example rather than a bare-minimum stub.
 
 The import is best-effort: each row is validated and saved independently, so a mistake in one
 row won't block the rest of the batch. You'll get a per-row success/failure report after import.

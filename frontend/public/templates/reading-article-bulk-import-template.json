@@ -3,12 +3,14 @@
     "title": "Ein Wochenende in Berlin",
     "topic": "Reisen",
     "level": "A2",
-    "content": "Am Samstag bin ich mit dem Zug nach Berlin gefahren. Die Stadt war voller Leben und ich habe viele neue Orte entdeckt. Am Abend habe ich mit Freunden in einem kleinen Restaurant gegessen.",
+    "content": "Am Samstag bin ich mit dem Zug nach Berlin gefahren. Die Stadt war voller Leben und ich habe viele neue Orte entdeckt. Am Nachmittag habe ich einen Termin beim Arzt gehabt, aber danach hatte ich viel Zeit für die Stadt. Am Abend habe ich mit Freunden in einem kleinen Restaurant gegessen und wir haben stundenlang geplaudert. Am Sonntag war ich müde, aber ich habe trotzdem noch ein Museum besucht, bevor ich wieder nach Hause gefahren bin.",
     "imageUrl": null,
-    "linkedGroupId": null,
+    "linkedGroupId": "berlin-weekend-story",
     "keyVocabulary": [
       { "word": "entdecken", "meaning": "to discover" },
-      { "word": "voller Leben", "meaning": "full of life" }
+      { "word": "voller Leben", "meaning": "full of life" },
+      { "word": "plaudern", "meaning": "to chat" },
+      { "word": "trotzdem", "meaning": "nevertheless" }
     ],
     "annotations": [
       {
@@ -22,9 +24,55 @@
         "literalTranslation": null,
         "cefrLevel": "A2",
         "exampleSentence": "Ich habe viele neue Orte entdeckt."
+      },
+      {
+        "type": "WORD",
+        "surfaceText": "Zeit",
+        "lemma": "die Zeit",
+        "pos": "noun",
+        "gender": "die",
+        "pluralForm": "die Zeiten",
+        "translationEn": "time",
+        "literalTranslation": null,
+        "cefrLevel": "A1",
+        "exampleSentence": "Ich hatte viel Zeit für die Stadt."
+      },
+      {
+        "type": "NOMEN_VERB_VERBINDUNG",
+        "surfaceText": "einen Termin gehabt",
+        "lemma": "einen Termin haben",
+        "pos": null,
+        "gender": null,
+        "pluralForm": null,
+        "translationEn": "to have an appointment",
+        "literalTranslation": null,
+        "cefrLevel": "B1",
+        "exampleSentence": "Am Nachmittag habe ich einen Termin beim Arzt gehabt."
+      },
+      {
+        "type": "REDEWENDUNG",
+        "surfaceText": "voller Leben",
+        "lemma": "voller Leben sein",
+        "pos": null,
+        "gender": null,
+        "pluralForm": null,
+        "translationEn": "full of life",
+        "literalTranslation": "full of life",
+        "cefrLevel": "B1",
+        "exampleSentence": "Die Stadt war voller Leben."
       }
     ],
     "quiz": [
+      {
+        "type": "HAUPTIDEE",
+        "prompt": "Worum geht es in diesem Text vor allem?",
+        "options": ["Ein Wochenende in Berlin", "Ein Arbeitstag im Büro", "Ein Fußballspiel"],
+        "correctAnswer": "Ein Wochenende in Berlin",
+        "explanation": "Der Text beschreibt, was die Person an einem Wochenende in Berlin erlebt hat.",
+        "supportingSentence": "Am Samstag bin ich mit dem Zug nach Berlin gefahren.",
+        "relatedAnnotationId": null,
+        "minLevel": "A1"
+      },
       {
         "type": "DETAIL",
         "prompt": "Wie ist die Person nach Berlin gefahren?",
@@ -34,6 +82,40 @@
         "supportingSentence": "Am Samstag bin ich mit dem Zug nach Berlin gefahren.",
         "relatedAnnotationId": null,
         "minLevel": "A1"
+      },
+      {
+        "type": "VOCAB_CONTEXT",
+        "prompt": "Was bedeutet \"entdecken\" in diesem Zusammenhang?",
+        "options": ["to discover", "to destroy", "to forget"],
+        "correctAnswer": "to discover",
+        "explanation": "\"Entdecken\" bedeutet, etwas Neues zu finden.",
+        "supportingSentence": "Ich habe viele neue Orte entdeckt.",
+        "relatedAnnotationId": null,
+        "minLevel": "A2"
+      },
+      {
+        "type": "INFERENCE",
+        "prompt": "Warum hatte die Person am Nachmittag Zeit für die Stadt?",
+        "options": [
+          "Der Arzttermin war kurz und danach war noch viel vom Tag übrig",
+          "Sie ist direkt nach Hause gefahren",
+          "Das Museum war geschlossen"
+        ],
+        "correctAnswer": "Der Arzttermin war kurz und danach war noch viel vom Tag übrig",
+        "explanation": "Der Text sagt, dass sie nach dem Termin beim Arzt noch viel Zeit für die Stadt hatte, auch wenn das nicht direkt erklärt wird.",
+        "supportingSentence": "Am Nachmittag habe ich einen Termin beim Arzt gehabt, aber danach hatte ich viel Zeit für die Stadt.",
+        "relatedAnnotationId": null,
+        "minLevel": "B1"
+      },
+      {
+        "type": "RICHTIG_FALSCH_NICHT_IM_TEXT",
+        "prompt": "Die Person hat am Sonntag ein Museum besucht.",
+        "options": ["Richtig", "Falsch", "Nicht im Text"],
+        "correctAnswer": "Richtig",
+        "explanation": "Im Text steht, dass sie am Sonntag trotzdem noch ein Museum besucht hat.",
+        "supportingSentence": "Am Sonntag war ich müde, aber ich habe trotzdem noch ein Museum besucht.",
+        "relatedAnnotationId": null,
+        "minLevel": "A2"
       }
     ]
   },
@@ -41,14 +123,41 @@
     "title": "Gesunde Ernährung im Alltag",
     "topic": "Gesundheit",
     "level": "B1",
-    "content": "Viele Menschen möchten sich gesünder ernähren, wissen aber nicht, wo sie anfangen sollen. Ein guter erster Schritt ist es, mehr Obst und Gemüse zu essen und weniger Fertiggerichte zu kaufen.",
+    "content": "Viele Menschen möchten sich gesünder ernähren, wissen aber nicht, wo sie anfangen sollen. Ein guter erster Schritt ist es, mehr Obst und Gemüse zu essen und weniger Fertiggerichte zu kaufen. Man sollte auch darauf achten, genug Wasser zu trinken und regelmäßig zu essen, statt Mahlzeiten auszulassen. Experten sind sich einig, dass kleine Veränderungen im Alltag langfristig mehr bringen als radikale Diäten.",
     "imageUrl": null,
     "linkedGroupId": null,
     "keyVocabulary": [
       { "word": "sich ernähren", "meaning": "to eat, to nourish oneself" },
-      { "word": "das Fertiggericht", "meaning": "ready-made meal" }
+      { "word": "das Fertiggericht", "meaning": "ready-made meal" },
+      { "word": "auslassen", "meaning": "to skip, to leave out" },
+      { "word": "langfristig", "meaning": "long-term" }
     ],
-    "annotations": [],
+    "annotations": [
+      {
+        "type": "WORD",
+        "surfaceText": "Fertiggerichte",
+        "lemma": "das Fertiggericht",
+        "pos": "noun",
+        "gender": "das",
+        "pluralForm": "die Fertiggerichte",
+        "translationEn": "ready-made meal",
+        "literalTranslation": null,
+        "cefrLevel": "B1",
+        "exampleSentence": "...weniger Fertiggerichte zu kaufen."
+      },
+      {
+        "type": "WORD",
+        "surfaceText": "achten",
+        "lemma": "achten",
+        "pos": "verb",
+        "gender": null,
+        "pluralForm": null,
+        "translationEn": "to pay attention",
+        "literalTranslation": null,
+        "cefrLevel": "B1",
+        "exampleSentence": "Man sollte auch darauf achten, genug Wasser zu trinken."
+      }
+    ],
     "quiz": [
       {
         "type": "HAUPTIDEE",
@@ -59,6 +168,54 @@
         "supportingSentence": "Viele Menschen möchten sich gesünder ernähren.",
         "relatedAnnotationId": null,
         "minLevel": "A1"
+      },
+      {
+        "type": "DETAIL",
+        "prompt": "Was ist laut Text ein guter erster Schritt?",
+        "options": [
+          "Mehr Obst und Gemüse essen",
+          "Jeden Tag Sport machen",
+          "Nur noch Fertiggerichte essen"
+        ],
+        "correctAnswer": "Mehr Obst und Gemüse essen",
+        "explanation": "Der Text nennt mehr Obst und Gemüse essen als guten ersten Schritt.",
+        "supportingSentence": "Ein guter erster Schritt ist es, mehr Obst und Gemüse zu essen.",
+        "relatedAnnotationId": null,
+        "minLevel": "A2"
+      },
+      {
+        "type": "VOCAB_CONTEXT",
+        "prompt": "Was bedeutet \"auslassen\" in diesem Zusammenhang?",
+        "options": ["to skip", "to cook", "to buy"],
+        "correctAnswer": "to skip",
+        "explanation": "\"Auslassen\" bedeutet hier, eine Mahlzeit nicht zu essen.",
+        "supportingSentence": "...statt Mahlzeiten auszulassen.",
+        "relatedAnnotationId": null,
+        "minLevel": "B1"
+      },
+      {
+        "type": "INFERENCE",
+        "prompt": "Was würden die Experten wahrscheinlich von einer radikalen Crash-Diät halten?",
+        "options": [
+          "Sie würden eher davon abraten",
+          "Sie würden sie empfehlen",
+          "Sie hätten keine Meinung dazu"
+        ],
+        "correctAnswer": "Sie würden eher davon abraten",
+        "explanation": "Der Text sagt, dass kleine Veränderungen langfristig mehr bringen als radikale Diäten - Experten würden also eher davon abraten.",
+        "supportingSentence": "Experten sind sich einig, dass kleine Veränderungen im Alltag langfristig mehr bringen als radikale Diäten.",
+        "relatedAnnotationId": null,
+        "minLevel": "B1"
+      },
+      {
+        "type": "RICHTIG_FALSCH_NICHT_IM_TEXT",
+        "prompt": "Der Text empfiehlt, jeden Tag ins Fitnessstudio zu gehen.",
+        "options": ["Richtig", "Falsch", "Nicht im Text"],
+        "correctAnswer": "Nicht im Text",
+        "explanation": "Der Text spricht nur über Ernährung, nicht über Fitnessstudio-Besuche.",
+        "supportingSentence": "Ein guter erster Schritt ist es, mehr Obst und Gemüse zu essen und weniger Fertiggerichte zu kaufen.",
+        "relatedAnnotationId": null,
+        "minLevel": "A2"
       }
     ]
   }
