@@ -8,9 +8,9 @@ import { ChevronDown, Play, Quote, Star } from "lucide-react";
 import { useI18n } from "@/componenets/I18nProvider";
 
 const HERO_IMAGE =
-    "https://images.unsplash.com/photo-1615914143778-1a1a6e50c5dd?auto=format&fit=crop&w=1200&q=80";
-const FAQ_IMAGE =
-    "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=800&q=80";
+    "/images/deutsch-hero.png";
+
+const FAQ_IMAGE = "/images/hero-image.jpg";
 const TESTIMONIAL_IMAGES = [
     "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
     "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
@@ -134,36 +134,36 @@ export default function HomePage() {
                                 <Image
                                     src={HERO_IMAGE}
                                     alt="A learner writing German notes in a notebook next to a laptop"
-                                    width={1200}
-                                    height={800}
-                                    className="h-[320px] sm:h-[420px] md:h-[560px] w-full object-cover"
+                                    width={800}
+                                    height={700}
+                                    className="h-[420px] w-full object-cover"
                                     priority
                                 />
                             </div>
 
                             {/* Floating stat cards */}
-                            <div className="animate-float absolute -left-6 top-10 flex items-center gap-2 rounded-2xl bg-card px-4 py-3 shadow-card transition-transform duration-300 hover:-translate-y-2 hover:scale-105 hover:shadow-lg cursor-default">
+                            <div className="animate-float absolute -left-10 top-5 flex items-center gap-2 rounded-xl bg-neutral-500 px-6 py-4 shadow-card transition-transform duration-300 hover:-translate-y-2 hover:scale-105 hover:shadow-lg cursor-default">
                                 <Star className="size-5 fill-yellow-400 text-yellow-400" />
                                 <div>
-                                    <p className="font-bold text-foreground leading-none">{t.home.hero.statRating.value}</p>
-                                    <p className="text-xs text-foreground/60">{t.home.hero.statRating.label}</p>
+                                    <p className="font-bold text-primary-foreground leading-none">{t.home.hero.statRating.value}</p>
+                                    <p className="text-s text-primary-foreground/60">{t.home.hero.statRating.label}</p>
                                 </div>
                             </div>
 
                             <div
-                                className="animate-float-slow absolute -right-4 bottom-28 rounded-2xl bg-primary px-4 py-3 text-primary-foreground shadow-card transition-transform duration-300 hover:-translate-y-2 hover:scale-105 hover:shadow-lg cursor-default"
+                                className="animate-float-slow absolute -left-15  bottom-28 rounded-xl bg-primary px-6 py-4 text-primary-foreground shadow-card border transition-transform duration-300 hover:-translate-y-2 hover:scale-105 hover:shadow-lg cursor-default"
                                 style={{ animationDelay: "0.6s" }}
                             >
                                 <p className="font-bold leading-none">{t.home.hero.statCourses.value}</p>
-                                <p className="text-xs text-primary-foreground/80">{t.home.hero.statCourses.label}</p>
+                                <p className="text-s text-primary-foreground/80">{t.home.hero.statCourses.label}</p>
                             </div>
 
                             <div
-                                className="animate-float absolute -bottom-6 left-6 rounded-2xl bg-card px-4 py-3 shadow-card transition-transform duration-300 hover:-translate-y-2 hover:scale-105 hover:shadow-lg cursor-default"
+                                className="animate-float absolute -bottom-6 right-6 rounded-xl bg-card px-6 py-4 shadow-card transition-transform duration-300 border  hover:-translate-y-2 hover:scale-105 hover:shadow-lg cursor-default"
                                 style={{ animationDelay: "1.2s" }}
                             >
                                 <p className="font-bold text-foreground leading-none">{t.home.hero.statStudents.value}</p>
-                                <p className="text-xs text-foreground/60">{t.home.hero.statStudents.label}</p>
+                                <p className="text-s text-foreground/60">{t.home.hero.statStudents.label}</p>
                             </div>
                         </div>
                     </div>
@@ -204,7 +204,7 @@ export default function HomePage() {
                     <div className="overflow-hidden rounded-[2.5rem] shadow-card">
                         <Image
                             src={FAQ_IMAGE}
-                            alt="A learner reviewing German flashcards"
+                            alt="Colorful speech bubbles with common German words and phrases"
                             width={600}
                             height={700}
                             className="h-[420px] w-full object-cover"
@@ -274,17 +274,78 @@ export default function HomePage() {
             </section>
 
             {/* Stats Counter Band */}
-            <section id="about" className="scroll-mt-24 bg-primary py-16">
-                <div className="container mx-auto px-6 flex flex-col items-center gap-12">
-                    <h2 className="max-w-3xl text-center text-3xl md:text-4xl font-bold text-white">
+            <section id="about" className="scroll-mt-24 relative overflow-hidden bg-primary py-24 md:py-28">
+                {/* Wave transition from the section above */}
+                <svg
+                    aria-hidden="true"
+                    viewBox="0 0 1440 120"
+                    preserveAspectRatio="none"
+                    className="absolute top-0 left-0 h-16 w-full text-background md:h-24"
+                >
+                    <path
+                        fill="currentColor"
+                        d="M0,64 C240,120 480,0 720,32 C960,64 1200,120 1440,64 L1440,0 L0,0 Z"
+                    />
+                </svg>
+
+                {/* Wavy illustration texture */}
+                <svg
+                    aria-hidden="true"
+                    viewBox="0 0 1440 400"
+                    preserveAspectRatio="none"
+                    className="pointer-events-none absolute inset-0 h-full w-full opacity-15"
+                >
+                    <path
+                        fill="none"
+                        stroke="white"
+                        strokeWidth="2"
+                        d="M0,80 C240,140 480,20 720,80 C960,140 1200,20 1440,80"
+                    />
+                    <path
+                        fill="none"
+                        stroke="white"
+                        strokeWidth="2"
+                        d="M0,180 C240,240 480,120 720,180 C960,240 1200,120 1440,180"
+                    />
+                    <path
+                        fill="none"
+                        stroke="white"
+                        strokeWidth="2"
+                        d="M0,280 C240,340 480,220 720,280 C960,340 1200,220 1440,280"
+                    />
+                    <path
+                        fill="none"
+                        stroke="white"
+                        strokeWidth="2"
+                        d="M0,380 C240,440 480,320 720,380 C960,440 1200,320 1440,380"
+                    />
+                </svg>
+
+                {/* Wave transition into the section below */}
+                <svg
+                    aria-hidden="true"
+                    viewBox="0 0 1440 120"
+                    preserveAspectRatio="none"
+                    className="absolute bottom-0 left-0 h-16 w-full text-background md:h-24"
+                >
+                    <path
+                        fill="currentColor"
+                        d="M0,56 C240,0 480,120 720,88 C960,56 1200,0 1440,56 L1440,120 L0,120 Z"
+                    />
+                </svg>
+
+                <div className="relative container mx-auto flex flex-col items-center gap-12 px-6 text-center">
+                    <h2 className="max-w-3xl text-3xl md:text-5xl font-bold leading-tight text-white">
                         {t.home.stats.titleStart}{" "}
                         <span className="rounded-lg bg-white/15 px-2">{t.home.stats.titleHighlight}</span>{" "}
                         {t.home.stats.titleEnd}
                     </h2>
 
-                    <div className="grid grid-cols-2 gap-10 md:gap-24">
+                    <div className="flex w-full max-w-3xl flex-col divide-y divide-white/15 sm:flex-row sm:divide-x sm:divide-y-0">
                         {t.home.stats.items.map((item) => (
-                            <StatCounter key={item.label} value={item.value} suffix={item.suffix} label={item.label} />
+                            <div key={item.label} className="flex-1 py-6 sm:py-0 sm:px-8">
+                                <StatCounter value={item.value} suffix={item.suffix} label={item.label} />
+                            </div>
                         ))}
                     </div>
                 </div>

@@ -1178,15 +1178,17 @@ const en: Dictionary = {
     },
     home: {
         hero: {
-            titleStart: "Confidently Speak",
+            titleStart: "Master",
             titleHighlight: "German",
-            titleEnd: "Every Day",
+            titleEnd: "with AI",
             subtitle:
-                "DeutschBridge makes mastering German simple, fun, and effective — with daily words, grammar lessons, and an AI tutor built around how you actually learn.",
+                "Build your German skills with daily practice, personalized learning, and an AI tutor that helps you keep moving forward. h daily words, grammar lessons.",
             bullets: [
                 "Daily words & grammar lessons",
-                "Practice speaking with an AI tutor",
-                "Free to start, no credit card needed",
+                "Learn with an AI tutor",
+                "Practice & Review",
+                "Exam Preparation",
+                "A1–C2"
             ],
             ctaPrimary: "Start Learning Free",
             ctaSecondary: "See How It Works",
@@ -1243,7 +1245,8 @@ const en: Dictionary = {
             titleEnd: "With Us Every Day",
             items: [
                 { value: 10000, suffix: "+", label: "Active Learners" },
-                { value: 120, suffix: "+", label: "Certified Tutors" },
+                { value: 500, suffix: "+", label: "Lessons & Vocabulary" },
+                { value: 1000, suffix: "+", label: "Exam Exercises" },
             ],
         },
         blog: {
@@ -1983,7 +1986,8 @@ const fa: Dictionary = {
             titleEnd: "همراه ما، هر روز",
             items: [
                 { value: 10000, suffix: "+", label: "زبان‌آموز فعال" },
-                { value: 120, suffix: "+", label: "مربی گواهی‌شده" },
+                { value: 500, suffix: "+", label: "درس و واژگان" },
+                { value: 1000, suffix: "+", label: "تمرین آزمون" },
             ],
         },
         blog: {
