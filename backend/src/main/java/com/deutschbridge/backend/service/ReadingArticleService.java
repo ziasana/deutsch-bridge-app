@@ -136,6 +136,7 @@ public class ReadingArticleService {
                         e.topic(),
                         e.level() != null ? e.level().getValue() : null,
                         e.imageUrl(),
+                        e.thumbnailUrl(),
                         e.viewCount(),
                         e.createdAt(),
                         (int) e.annotationLemmas().stream().filter(l -> !knownLemmas.contains(l)).count(),
@@ -250,6 +251,7 @@ public class ReadingArticleService {
         article.setLevel(request.level());
         article.setContent(request.content());
         article.setImageUrl(request.imageUrl());
+        article.setThumbnailUrl(request.thumbnailUrl());
         article.setKeyVocabulary(request.keyVocabulary() != null ? request.keyVocabulary() : new ArrayList<>());
         article.setAnnotations(prepareAnnotations(request.annotations(), article.getContent()));
         article.setQuiz(prepareQuiz(request.quiz()));
@@ -276,6 +278,7 @@ public class ReadingArticleService {
         if (request.level() != null) existing.setLevel(request.level());
         if (request.content() != null) existing.setContent(request.content());
         if (request.imageUrl() != null) existing.setImageUrl(request.imageUrl());
+        if (request.thumbnailUrl() != null) existing.setThumbnailUrl(request.thumbnailUrl());
         if (request.keyVocabulary() != null) existing.setKeyVocabulary(request.keyVocabulary());
         if (request.annotations() != null) existing.setAnnotations(prepareAnnotations(request.annotations(), existing.getContent()));
         if (request.quiz() != null) existing.setQuiz(prepareQuiz(request.quiz()));

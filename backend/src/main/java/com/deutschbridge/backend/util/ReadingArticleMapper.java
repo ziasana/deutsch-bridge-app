@@ -53,6 +53,7 @@ public class ReadingArticleMapper {
                 article.getLevel() != null ? article.getLevel().getValue() : null,
                 article.getContent(),
                 article.getImageUrl(),
+                article.getThumbnailUrl(),
                 article.getViewCount(),
                 article.getCreatedAt(),
                 article.getKeyVocabulary(),

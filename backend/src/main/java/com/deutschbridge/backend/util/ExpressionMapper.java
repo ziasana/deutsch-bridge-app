@@ -42,6 +42,7 @@ public class ExpressionMapper {
                 e.getLiteralMeaning(),
                 e.getFigurativeMeaning(),
                 e.getImageUrl(),
+                e.getThumbnailUrl(),
                 e.getGrammarNote(),
                 e.getUsageNote(),
                 e.getRegister() != null ? e.getRegister().name() : null,

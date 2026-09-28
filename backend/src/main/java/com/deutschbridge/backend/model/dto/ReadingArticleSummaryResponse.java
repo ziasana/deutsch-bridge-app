@@ -13,6 +13,7 @@ public record ReadingArticleSummaryResponse(
         String topic,
         String level,
         String imageUrl,
+        String thumbnailUrl,
         long viewCount,
         LocalDateTime createdAt,
         int newWordCount,

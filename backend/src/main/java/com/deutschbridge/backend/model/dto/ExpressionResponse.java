@@ -13,6 +13,7 @@ public record ExpressionResponse(
         String literalMeaning,
         String figurativeMeaning,
         String imageUrl,
+        String thumbnailUrl,
         String grammarNote,
         String usageNote,
         String register,

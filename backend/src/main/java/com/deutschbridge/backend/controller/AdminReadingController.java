@@ -45,6 +45,11 @@ public class AdminReadingController {
         return ResponseEntity.ok(new ImageUploadResponse(fileStorageService.storeReadingArticleImage(file)));
     }
 
+    @PostMapping(value = "/upload-thumbnail", consumes = "multipart/form-data")
+    public ResponseEntity<ImageUploadResponse> uploadThumbnail(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(new ImageUploadResponse(fileStorageService.storeReadingArticleThumbnail(file)));
+    }
+
     @PostMapping("/generate")
     public ResponseEntity<ReadingArticleResponse> generate(@RequestBody ReadingArticleGenerateRequest request) {
         return ResponseEntity.ok(readingArticleService.generate(request.topic(), request.level()));

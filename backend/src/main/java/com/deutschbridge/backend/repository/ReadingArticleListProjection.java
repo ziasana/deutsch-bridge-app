@@ -11,6 +11,7 @@ public interface ReadingArticleListProjection {
     String getTopic();
     LearningLevel getLevel();
     String getImageUrl();
+    String getThumbnailUrl();
     long getViewCount();
     LocalDateTime getCreatedAt();
 }

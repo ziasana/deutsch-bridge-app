@@ -38,6 +38,11 @@ public class AdminExpressionController {
         return ResponseEntity.ok(new ImageUploadResponse(fileStorageService.storeExpressionImage(file)));
     }
 
+    @PostMapping(value = "/upload-thumbnail", consumes = "multipart/form-data")
+    public ResponseEntity<ImageUploadResponse> uploadThumbnail(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(new ImageUploadResponse(fileStorageService.storeExpressionThumbnail(file)));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ExpressionResponse> getById(@PathVariable String id) throws DataNotFoundException {
         return ResponseEntity.ok(expressionService.findByIdForAdmin(id));

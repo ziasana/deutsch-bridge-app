@@ -185,6 +185,26 @@
             <version>2.21.1</version>
         </dependency>
 
+        <!-- Image resizing (admin-uploaded cover/illustration images) -->
+        <dependency>
+            <groupId>net.coobird</groupId>
+            <artifactId>thumbnailator</artifactId>
+            <version>0.4.21</version>
+        </dependency>
+        <!--
+          Pure-Java ImageIO WebP *reader* (so ImageIO.read() also accepts admin-uploaded .webp
+          files) - JDK's own ImageIO only reads JPEG/PNG/GIF/BMP. WebP *writing* is done by
+          shelling out to the cwebp CLI (see WebpEncoder): the JNI-based WebP writer libraries
+          only ship prebuilt native binaries for x86_64 (no Apple Silicon/ARM support), so they
+          crash in local dev and on ARM deploy targets - cwebp side-steps that entirely since
+          each platform's own package manager builds it for the right architecture.
+        -->
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-webp</artifactId>
+            <version>3.15.2</version>
+        </dependency>
+
     </dependencies>
 
     <build>

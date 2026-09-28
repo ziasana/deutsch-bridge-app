@@ -13,6 +13,7 @@ public record ReadingArticleResponse(
         String level,
         String content,
         String imageUrl,
+        String thumbnailUrl,
         long viewCount,
         LocalDateTime createdAt,
         List<KeyVocabularyItem> keyVocabulary,

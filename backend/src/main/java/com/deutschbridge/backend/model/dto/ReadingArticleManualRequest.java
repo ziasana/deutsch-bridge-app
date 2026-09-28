@@ -13,6 +13,7 @@ public record ReadingArticleManualRequest(
         LearningLevel level,
         String content,
         String imageUrl,
+        String thumbnailUrl,
         List<KeyVocabularyItem> keyVocabulary,
         List<Annotation> annotations,
         List<ReadingQuizQuestion> quiz,

@@ -60,6 +60,10 @@ public class Expression {
     @Column(columnDefinition = "TEXT")
     private String imageUrl;
 
+    /** Separately-cropped small image, null until an admin uploads one (falls back to imageUrl). */
+    @Column(columnDefinition = "TEXT")
+    private String thumbnailUrl;
+
     @Column(columnDefinition = "TEXT")
     private String grammarNote;
 

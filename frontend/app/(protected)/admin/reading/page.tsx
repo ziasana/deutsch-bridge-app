@@ -16,6 +16,7 @@ import {
     generateQuiz,
     getArticleQuizForAdmin,
     uploadReadingArticleImage,
+    uploadReadingArticleThumbnail,
     bulkImportReadingArticles,
     getAdminReadingArticles,
 } from "@/services/adminReadingService";
@@ -37,6 +38,7 @@ import AdminTableControls from "@/componenets/admin/table/AdminTableControls";
 import AdminTablePagination from "@/componenets/admin/table/AdminTablePagination";
 import SortableTh from "@/componenets/admin/table/SortableTh";
 import RichTextEditor from "@/componenets/RichTextEditor";
+import ImageCropUpload from "@/componenets/admin/ImageCropUpload";
 import { getArticleImageSrc } from "@/lib/readingImages";
 import { htmlToPlainText, plainTextToHtml } from "@/lib/richTextPlainText";
 import { Upload, CheckCircle2, XCircle, Trash2 } from "lucide-react";
@@ -64,6 +66,7 @@ const emptyManualForm = {
     level: "A2",
     linkedGroupId: "",
     imageUrl: null as string | null,
+    thumbnailUrl: null as string | null,
 };
 
 const emptyAnnotation = (): Annotation => ({
@@ -137,7 +140,6 @@ export default function AdminReadingPage() {
     const [manualAnnotations, setManualAnnotations] = useState<Annotation[]>([]);
     const [manualQuiz, setManualQuiz] = useState<ReadingQuizQuestion[]>([]);
     const [isSuggesting, setIsSuggesting] = useState(false);
-    const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [isSuggestingAnnotations, setIsSuggestingAnnotations] = useState(false);
     const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
 
@@ -191,22 +193,8 @@ export default function AdminReadingPage() {
             .finally(() => setIsSaving(false));
     };
 
-    const handleImageSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        e.target.value = "";
-        if (!file) return;
-
-        setIsUploadingImage(true);
-        uploadReadingArticleImage(file)
-            .then((res) => {
-                setManualForm((prev) => ({ ...prev, imageUrl: res.data.url }));
-                toast.success("Image uploaded.");
-            })
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to upload image."))
-            .finally(() => setIsUploadingImage(false));
-    };
-
     const removeImage = () => setManualForm((prev) => ({ ...prev, imageUrl: "" }));
+    const removeThumbnail = () => setManualForm((prev) => ({ ...prev, thumbnailUrl: "" }));
 
     const runSuggestVocabulary = () => {
         if (!articleContent.trim()) {
@@ -291,6 +279,7 @@ export default function AdminReadingPage() {
             level: article.level,
             linkedGroupId: article.linkedGroupId ?? "",
             imageUrl: article.imageUrl,
+            thumbnailUrl: article.thumbnailUrl,
         });
         setContentHtml(plainTextToHtml(article.content));
         setManualVocab(article.keyVocabulary);
@@ -360,6 +349,7 @@ export default function AdminReadingPage() {
             level: manualForm.level,
             content: articleContent,
             imageUrl: manualForm.imageUrl,
+            thumbnailUrl: manualForm.thumbnailUrl,
             keyVocabulary: manualVocab.filter((v) => v.word.trim() && v.meaning.trim()),
             annotations: manualAnnotations.filter((a) => a.surfaceText.trim() && a.lemma.trim()),
             quiz: manualQuiz
@@ -745,39 +735,43 @@ export default function AdminReadingPage() {
                             </div>
                             <div>
                                 <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
-                                    Article image (optional)
+                                    Hero image (optional)
                                 </label>
-                                <div className="flex items-center gap-4">
-                                    <img
-                                        src={getArticleImageSrc(manualForm.imageUrl, manualForm.level)}
-                                        alt="Article cover preview"
-                                        className="w-24 h-16 object-cover rounded-lg border border-gray-300 dark:border-gray-700"
-                                    />
-                                    <div className="flex flex-col gap-2">
-                                        <input
-                                            type="file"
-                                            accept="image/jpeg,image/png,image/webp"
-                                            onChange={handleImageSelected}
-                                            disabled={isUploadingImage}
-                                            className="text-sm text-gray-600 dark:text-gray-300"
-                                        />
-                                        {manualForm.imageUrl && (
-                                            <button
-                                                type="button"
-                                                className="text-xs text-left underline text-gray-500 dark:text-gray-400 w-fit"
-                                                onClick={removeImage}
-                                            >
-                                                Remove image (use default)
-                                            </button>
-                                        )}
-                                        {isUploadingImage && (
-                                            <span className="text-xs text-gray-500 dark:text-gray-400">Uploading...</span>
-                                        )}
-                                    </div>
-                                </div>
+                                <ImageCropUpload
+                                    previewSrc={getArticleImageSrc(manualForm.imageUrl, manualForm.level)}
+                                    hasImage={!!manualForm.imageUrl}
+                                    aspectRatio={4 / 1}
+                                    previewClassName="w-28 h-7 object-cover rounded-lg border border-gray-300 dark:border-gray-700"
+                                    onUpload={uploadReadingArticleImage}
+                                    onUploaded={(url) => setManualForm((prev) => ({ ...prev, imageUrl: url }))}
+                                    onRemove={removeImage}
+                                    removeLabel="Remove image (use default)"
+                                />
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    JPEG, PNG, or WEBP, up to 5MB. If you don&apos;t upload one, a default image for
-                                    the selected level is shown instead.
+                                    JPEG, PNG, or WEBP. Shown as the wide banner at the top of the article page
+                                    (max width 896px × 224px tall), cropped to 4:1 to match exactly. If you
+                                    don&apos;t upload one, a default image for the selected level is shown instead.
+                                </p>
+                            </div>
+                            <div>
+                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                                    Thumbnail image (optional)
+                                </label>
+                                <ImageCropUpload
+                                    previewSrc={getArticleImageSrc(manualForm.thumbnailUrl, manualForm.level)}
+                                    hasImage={!!manualForm.thumbnailUrl}
+                                    aspectRatio={7 / 5}
+                                    previewClassName="w-28 h-20 object-cover rounded-lg border border-gray-300 dark:border-gray-700"
+                                    onUpload={uploadReadingArticleThumbnail}
+                                    onUploaded={(url) => setManualForm((prev) => ({ ...prev, thumbnailUrl: url }))}
+                                    onRemove={removeThumbnail}
+                                    removeLabel="Remove thumbnail (use hero image)"
+                                />
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    JPEG, PNG, or WEBP. Shown next to the article in lists, cropped to a shorter 7:5
+                                    ratio - crop this separately from the hero image if the hero&apos;s framing
+                                    doesn&apos;t also work as a small thumbnail. If you don&apos;t upload one, the
+                                    hero image is used instead.
                                 </p>
                             </div>
                             <div>

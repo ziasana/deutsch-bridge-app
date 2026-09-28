@@ -62,6 +62,7 @@ export interface ReadingArticle {
     level: string;
     content: string;
     imageUrl: string | null;
+    thumbnailUrl: string | null;
     viewCount: number;
     createdAt: string;
     keyVocabulary: KeyVocabularyItem[];
@@ -79,6 +80,7 @@ export interface ReadingArticleSummary {
     topic: string;
     level: string;
     imageUrl: string | null;
+    thumbnailUrl: string | null;
     viewCount: number;
     createdAt: string;
     newWordCount: number;
@@ -111,6 +113,7 @@ export interface ReadingArticleManualRequest {
     level: string;
     content: string;
     imageUrl: string | null;
+    thumbnailUrl: string | null;
     keyVocabulary: KeyVocabularyItem[];
     annotations: Annotation[];
     quiz: ReadingQuizQuestion[];

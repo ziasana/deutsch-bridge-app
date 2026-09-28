@@ -25,6 +25,15 @@ export const uploadExpressionImage = async (file: File) => {
   });
 };
 
+/** Not yet wired into the admin form - no expression view currently renders a separate thumbnail size. */
+export const uploadExpressionThumbnail = async (file: File) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  return await api.post<{ url: string }>("/admin/expressions/upload-thumbnail", formData, {
+    headers: { "Content-Type": undefined },
+  });
+};
+
 export const bulkImportExpressions = async (rows: unknown[]) => {
   return await api.post<ExpressionBulkImportResult>("/admin/expressions/bulk", rows);
 };

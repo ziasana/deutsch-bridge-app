@@ -34,7 +34,7 @@ public interface ReadingArticleRepository extends JpaRepository<ReadingArticle, 
      */
     @Query(value = """
             SELECT r.id AS id, r.title AS title, r.topic AS topic, r.level AS level,
-                   r.imageUrl AS imageUrl, r.viewCount AS viewCount, r.createdAt AS createdAt
+                   r.imageUrl AS imageUrl, r.thumbnailUrl AS thumbnailUrl, r.viewCount AS viewCount, r.createdAt AS createdAt
             FROM readingArticles r
             WHERE r.level = :level
               AND (:search = '' OR LOWER(r.title) LIKE CONCAT('%', :search, '%'))

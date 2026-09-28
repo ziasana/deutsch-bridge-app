@@ -164,8 +164,9 @@ export default function ReadingPage() {
                                 )}
 
                                 <img
-                                    src={getArticleImageSrc(article.imageUrl, article.level)}
+                                    src={getArticleImageSrc(article.thumbnailUrl ?? article.imageUrl, article.level)}
                                     alt=""
+                                    loading="lazy"
                                     className="w-28 h-20 object-cover rounded-xl shrink-0"
                                 />
                                 <div className="min-w-0 flex-1">

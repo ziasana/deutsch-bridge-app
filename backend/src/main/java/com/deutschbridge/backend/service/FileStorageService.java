@@ -1,13 +1,17 @@
 package com.deutschbridge.backend.service;
 
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
+import net.coobird.thumbnailator.Thumbnails;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,6 +22,13 @@ import java.util.Set;
  * Saves admin-uploaded files (e.g. reading article images) to a directory on disk, outside the
  * app's own classpath/jar so writes at runtime are always visible - and returns the relative URL
  * they're served under (see WebMvcConfig, which maps that same directory to /uploads/**).
+ *
+ * <p>Images are expected to already be cropped client-side to their intended aspect ratio (see the
+ * frontend's reusable ImageCropUpload component). This service just re-encodes each cropped image
+ * to WebP at a purpose-appropriate size and discards the original upload. Callers that need both a
+ * small list thumbnail and a larger detail/hero image ask the admin to crop and upload each
+ * separately (see storeXThumbnail vs storeXImage) - each crop can frame its subject differently
+ * for its own aspect ratio, rather than one crop being resized to serve both.
  */
 @Service
 public class FileStorageService {
@@ -25,11 +36,12 @@ public class FileStorageService {
     private static final Logger log = LoggerFactory.getLogger(FileStorageService.class);
 
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
-    private static final Map<String, String> EXTENSION_BY_CONTENT_TYPE = Map.of(
-            "image/jpeg", ".jpg",
-            "image/png", ".png",
-            "image/webp", ".webp"
-    );
+
+    private static final String IMAGE_OUTPUT_EXTENSION = ".webp";
+    private static final int DETAIL_MAX_WIDTH = 1400;
+    private static final int THUMBNAIL_MAX_WIDTH = 480;
+    private static final float DETAIL_QUALITY = 0.82f;
+    private static final float THUMBNAIL_QUALITY = 0.75f;
 
     private static final Map<String, String> AUDIO_EXTENSION_BY_CONTENT_TYPE = Map.ofEntries(
             Map.entry("audio/mpeg", ".mp3"),
@@ -57,29 +69,39 @@ public class FileStorageService {
     );
 
     private final Path uploadRoot;
+    private final WebpEncoder webpEncoder;
 
-    public FileStorageService(@Value("${app.upload.dir}") String uploadDir) {
+    public FileStorageService(@Value("${app.upload.dir}") String uploadDir, WebpEncoder webpEncoder) {
         this.uploadRoot = Path.of(uploadDir).toAbsolutePath().normalize();
+        this.webpEncoder = webpEncoder;
     }
 
     public String storeReadingArticleImage(MultipartFile file) {
-        return storeImage(file, "reading-articles");
+        return storeImage(file, "reading-articles", DETAIL_MAX_WIDTH, DETAIL_QUALITY);
+    }
+
+    public String storeReadingArticleThumbnail(MultipartFile file) {
+        return storeImage(file, "reading-articles", THUMBNAIL_MAX_WIDTH, THUMBNAIL_QUALITY);
     }
 
     public String storeExamPassageImage(MultipartFile file) {
-        return storeImage(file, "exam-passages");
+        return storeImage(file, "exam-passages", DETAIL_MAX_WIDTH, DETAIL_QUALITY);
     }
 
     public String storeGrammarLessonImage(MultipartFile file) {
-        return storeImage(file, "grammar-lessons");
+        return storeImage(file, "grammar-lessons", DETAIL_MAX_WIDTH, DETAIL_QUALITY);
     }
 
     public String storeExpressionImage(MultipartFile file) {
-        return storeImage(file, "expressions");
+        return storeImage(file, "expressions", DETAIL_MAX_WIDTH, DETAIL_QUALITY);
+    }
+
+    public String storeExpressionThumbnail(MultipartFile file) {
+        return storeImage(file, "expressions", THUMBNAIL_MAX_WIDTH, THUMBNAIL_QUALITY);
     }
 
     public String storeUserAvatar(MultipartFile file) {
-        return storeImage(file, "avatars");
+        return storeImage(file, "avatars", DETAIL_MAX_WIDTH, DETAIL_QUALITY);
     }
 
     public String storeExamPassageAudio(MultipartFile file) {
@@ -104,7 +126,12 @@ public class FileStorageService {
         return dotIndex >= 0 ? filename.substring(dotIndex).toLowerCase() : "";
     }
 
-    private String storeImage(MultipartFile file, String subdirName) {
+    /**
+     * Re-encodes an admin-uploaded image (already cropped client-side to its intended aspect
+     * ratio) to WebP at {@code maxWidth}/{@code quality}, discarding the original bytes, and
+     * returns its "/uploads/..." URL.
+     */
+    private String storeImage(MultipartFile file, String subdirName, int maxWidth, float quality) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("No file was uploaded.");
         }
@@ -113,14 +140,54 @@ public class FileStorageService {
             throw new IllegalArgumentException("Only JPEG, PNG, or WEBP images are allowed.");
         }
 
-        return store(file, subdirName, EXTENSION_BY_CONTENT_TYPE.get(contentType), "Failed to store uploaded image.");
+        BufferedImage image;
+        try (InputStream in = file.getInputStream()) {
+            image = ImageIO.read(in);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read uploaded image.", e);
+        }
+        if (image == null) {
+            throw new IllegalArgumentException("The uploaded file is not a readable image.");
+        }
+
+        String filename = NanoIdUtils.randomNanoId() + IMAGE_OUTPUT_EXTENSION;
+        Path subdir = uploadRoot.resolve(subdirName);
+
+        try {
+            Files.createDirectories(subdir);
+            writeResized(image, subdir.resolve(filename), maxWidth, quality);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to store uploaded image.", e);
+        }
+
+        return "/uploads/" + subdirName + "/" + filename;
     }
 
     /**
-     * Deletes a previously stored file given its "/uploads/&lt;subdir&gt;/&lt;name&gt;" URL (as returned by
-     * store()), e.g. when an admin replaces or removes an illustration. Silently no-ops for URLs
-     * that aren't ours (null/blank, or an external link an admin pasted some other way) instead of
-     * throwing, since a missing/foreign file is not itself an error for the caller.
+     * Resizes (never upscales) {@code source} to {@code maxWidth} with Thumbnailator, then hands
+     * the result to {@link WebpEncoder} to encode as WebP at {@code target}. Resizing happens
+     * here, in pure Java, rather than via cwebp's own {@code -resize} flag, specifically so this
+     * method already knows the source's dimensions and never asks cwebp to upscale a small image.
+     */
+    private void writeResized(BufferedImage source, Path target, int maxWidth, float quality) throws IOException {
+        int targetWidth = Math.min(maxWidth, source.getWidth());
+        Path tempPng = Files.createTempFile("upload-resized-", ".png");
+        try {
+            Thumbnails.of(source).width(targetWidth).outputFormat("png").toFile(tempPng.toFile());
+            webpEncoder.encode(tempPng, target, quality);
+        } finally {
+            Files.deleteIfExists(tempPng);
+        }
+    }
+
+    /**
+     * Deletes a previously stored file given its "/uploads/&lt;subdir&gt;/&lt;name&gt;" URL (as
+     * returned by store()/storeImage()), e.g. when an admin replaces or removes an image or
+     * thumbnail. Silently no-ops for URLs that aren't ours (null/blank, or an external link an
+     * admin pasted some other way) instead of throwing, since a missing/foreign file is not
+     * itself an error for the caller. Callers that track an image and a separate thumbnail (e.g.
+     * ReadingArticle.imageUrl/thumbnailUrl) must call this once per URL - the two are independent
+     * uploads now, not a derived pair.
      */
     public void deleteFile(String relativeUrl) {
         if (relativeUrl == null || relativeUrl.isBlank() || !relativeUrl.startsWith("/uploads/")) return;

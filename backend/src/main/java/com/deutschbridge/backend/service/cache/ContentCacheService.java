@@ -255,6 +255,7 @@ public class ContentCacheService {
                         row.getTopic(),
                         row.getLevel(),
                         row.getImageUrl(),
+                        row.getThumbnailUrl(),
                         row.getViewCount(),
                         row.getCreatedAt(),
                         lemmasByArticleId.getOrDefault(row.getId(), List.of())))
@@ -324,7 +325,8 @@ public class ContentCacheService {
     }
 
     public record ReadingArticleListEntry(String id, String title, String topic, LearningLevel level, String imageUrl,
-                                          long viewCount, LocalDateTime createdAt, List<String> annotationLemmas) {
+                                          String thumbnailUrl, long viewCount, LocalDateTime createdAt,
+                                          List<String> annotationLemmas) {
     }
 
     public record ReadingArticleListPage(List<ReadingArticleListEntry> entries, long totalElements, int totalPages) {

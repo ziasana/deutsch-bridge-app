@@ -326,6 +326,7 @@ public class ExpressionService {
     public ExpressionResponse updateManual(String id, ExpressionManualRequest request) throws DataNotFoundException {
         Expression existing = findEntityById(id);
         String previousImageUrl = existing.getImageUrl();
+        String previousThumbnailUrl = existing.getThumbnailUrl();
         ExpressionType previousType = existing.getType();
         applyRequest(existing, request);
         Expression saved = expressionRepository.save(existing);
@@ -336,11 +337,14 @@ public class ExpressionService {
         }
         ExpressionResponse response = ExpressionMapper.mapToAdminResponse(saved);
 
-        // Only once the new value is actually persisted, and only when the request touched imageUrl
-        // at all (a partial update like the draft/publish toggle sends no imageUrl and must not
-        // wipe the existing illustration file).
+        // Only once the new value is actually persisted, and only when the request touched imageUrl/
+        // thumbnailUrl at all (a partial update like the draft/publish toggle sends neither and must
+        // not wipe the existing illustration files).
         if (request.imageUrl() != null && !request.imageUrl().equals(previousImageUrl)) {
             fileStorageService.deleteFile(previousImageUrl);
+        }
+        if (request.thumbnailUrl() != null && !request.thumbnailUrl().equals(previousThumbnailUrl)) {
+            fileStorageService.deleteFile(previousThumbnailUrl);
         }
         return response;
     }
@@ -349,6 +353,7 @@ public class ExpressionService {
     public void deleteById(String id) throws DataNotFoundException {
         Expression existing = findEntityById(id);
         fileStorageService.deleteFile(existing.getImageUrl());
+        fileStorageService.deleteFile(existing.getThumbnailUrl());
         expressionRepository.delete(existing);
         contentCacheService.evictExpressionDetail(id);
         contentCacheService.evictExpressionListPagesForType(existing.getType());
@@ -364,6 +369,7 @@ public class ExpressionService {
         if (request.literalMeaning() != null) expression.setLiteralMeaning(request.literalMeaning());
         if (request.figurativeMeaning() != null) expression.setFigurativeMeaning(request.figurativeMeaning());
         if (request.imageUrl() != null) expression.setImageUrl(request.imageUrl());
+        if (request.thumbnailUrl() != null) expression.setThumbnailUrl(request.thumbnailUrl());
         if (request.grammarNote() != null) expression.setGrammarNote(request.grammarNote());
         if (request.usageNote() != null) expression.setUsageNote(request.usageNote());
         if (request.register() != null) expression.setRegister(request.register());

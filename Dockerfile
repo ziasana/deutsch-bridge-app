@@ -10,6 +10,8 @@ RUN ./mvnw -B -q -DskipTests package
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
+# webp provides cwebp, used by WebpEncoder to re-encode admin-uploaded images
+RUN apt-get update && apt-get install -y --no-install-recommends webp && rm -rf /var/lib/apt/lists/*
 EXPOSE 8080
 COPY --from=build /app/target/app.jar app.jar
 ENTRYPOINT ["java", "-jar", "app.jar"]

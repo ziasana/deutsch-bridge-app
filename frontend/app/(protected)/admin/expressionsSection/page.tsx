@@ -14,6 +14,7 @@ import {
     bulkImportExpressions,
 } from "@/services/expressionAdminService";
 import { getExpressionImageSrc } from "@/lib/expressionImages";
+import ImageCropUpload from "@/componenets/admin/ImageCropUpload";
 import {
     Expression,
     ExpressionBulkImportResult,
@@ -84,6 +85,7 @@ const emptyForm: ExpressionManualRequest = {
     literalMeaning: "",
     figurativeMeaning: "",
     imageUrl: null,
+    thumbnailUrl: null,
     grammarNote: "",
     usageNote: "",
     register: "NEUTRAL_FORMAL",
@@ -116,7 +118,6 @@ export default function AdminExpressionsPage() {
 
     const [form, setForm] = useState<ExpressionManualRequest>(emptyForm);
     const [editingEntry, setEditingEntry] = useState<Expression | null>(null);
-    const [isUploadingImage, setIsUploadingImage] = useState(false);
 
     const [showBulkImport, setShowBulkImport] = useState(false);
     const [bulkText, setBulkText] = useState("");
@@ -158,6 +159,7 @@ export default function AdminExpressionsPage() {
             literalMeaning: entry.literalMeaning ?? "",
             figurativeMeaning: entry.figurativeMeaning ?? "",
             imageUrl: entry.imageUrl,
+            thumbnailUrl: entry.thumbnailUrl,
             grammarNote: entry.grammarNote ?? "",
             usageNote: entry.usageNote ?? "",
             register: entry.register ?? "NEUTRAL_FORMAL",
@@ -208,21 +210,6 @@ export default function AdminExpressionsPage() {
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to save entry."))
             .finally(() => setIsSaving(false));
-    };
-
-    const handleImageSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        e.target.value = "";
-        if (!file) return;
-
-        setIsUploadingImage(true);
-        uploadExpressionImage(file)
-            .then((res) => {
-                setForm((prev) => ({ ...prev, imageUrl: res.data.url }));
-                toast.success("Image uploaded.");
-            })
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to upload image."))
-            .finally(() => setIsUploadingImage(false));
     };
 
     const removeImage = () => setForm((prev) => ({ ...prev, imageUrl: "" }));
@@ -654,46 +641,19 @@ export default function AdminExpressionsPage() {
                                     <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
                                         Illustration (optional)
                                     </label>
-                                    <div className="flex items-center gap-4">
-                                        {getExpressionImageSrc(form.imageUrl) ? (
-                                            // eslint-disable-next-line @next/next/no-img-element
-                                            <img
-                                                src={getExpressionImageSrc(form.imageUrl) as string}
-                                                alt="Illustration preview"
-                                                className="w-24 h-16 object-cover rounded-lg border border-gray-300 dark:border-gray-700"
-                                            />
-                                        ) : (
-                                            <div className="w-24 h-16 rounded-lg border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-[10px] text-gray-400 text-center px-1">
-                                                No image
-                                            </div>
-                                        )}
-                                        <div className="flex flex-col gap-2">
-                                            <input
-                                                type="file"
-                                                accept="image/jpeg,image/png,image/webp"
-                                                onChange={handleImageSelected}
-                                                disabled={isUploadingImage}
-                                                className="text-sm text-gray-600 dark:text-gray-300"
-                                            />
-                                            {form.imageUrl && (
-                                                <button
-                                                    type="button"
-                                                    className="text-xs text-left underline text-gray-500 dark:text-gray-400 w-fit"
-                                                    onClick={removeImage}
-                                                >
-                                                    Remove image
-                                                </button>
-                                            )}
-                                            {isUploadingImage && (
-                                                <span className="text-xs text-gray-500 dark:text-gray-400">Uploading...</span>
-                                            )}
-                                        </div>
-                                    </div>
+                                    <ImageCropUpload
+                                        previewSrc={getExpressionImageSrc(form.imageUrl)}
+                                        hasImage={!!form.imageUrl}
+                                        aspectRatio={2.3 / 1}
+                                        onUpload={uploadExpressionImage}
+                                        onUploaded={(url) => setForm((prev) => ({ ...prev, imageUrl: url }))}
+                                        onRemove={removeImage}
+                                        removeLabel="Remove image"
+                                    />
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                        JPEG, PNG, or WEBP. Shown as a featured banner on the expression card; if you
-                                        don&apos;t upload one, the card falls back to a plain text layout. Recommended
-                                        size: at least 1200×520px (2.3:1 ratio) so it isn&apos;t awkwardly cropped -
-                                        the image is auto-cropped to fit that ratio either way.
+                                        JPEG, PNG, or WEBP. Shown as a featured banner on the expression card, cropped
+                                        to a 2.3:1 ratio; if you don&apos;t upload one, the card falls back to a plain
+                                        text layout.
                                     </p>
                                 </div>
                             </div>

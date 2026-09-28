@@ -91,6 +91,8 @@ export interface Expression {
   figurativeMeaning: string;
   /** Relative URL under /uploads, or null until an admin uploads one. Only rendered for REDEWENDUNG cards. */
   imageUrl: string | null;
+  /** Separately-cropped small image, or null. Not yet consumed by any frontend view - see admin upload-thumbnail. */
+  thumbnailUrl: string | null;
   grammarNote: string;
   usageNote: string;
   register: ExpressionRegister | null;
@@ -152,6 +154,7 @@ export interface ExpressionManualRequest {
   literalMeaning: string;
   figurativeMeaning: string;
   imageUrl: string | null;
+  thumbnailUrl: string | null;
   grammarNote: string;
   usageNote: string;
   register: ExpressionRegister | null;

@@ -30,6 +30,9 @@ public class ReadingArticle {
     /** Relative URL under /uploads (e.g. "/uploads/reading-articles/xyz.jpg") - null until an admin uploads one. */
     private @Column(columnDefinition = "TEXT") String imageUrl;
 
+    /** Separately-cropped small image for list rows - null until an admin uploads one (falls back to imageUrl). */
+    private @Column(columnDefinition = "TEXT") String thumbnailUrl;
+
     @Column(columnDefinition = "bigint not null default 0")
     private long viewCount = 0;
 

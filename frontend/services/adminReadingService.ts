@@ -24,6 +24,14 @@ export const uploadReadingArticleImage = async (file: File) => {
     });
 };
 
+export const uploadReadingArticleThumbnail = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return await api.post<{ url: string }>("/admin/reading/upload-thumbnail", formData, {
+        headers: { "Content-Type": undefined },
+    });
+};
+
 export const generateReadingArticle = async (request: ReadingArticleGenerateRequest) => {
     return await api.post<ReadingArticle>("/admin/reading/generate", request);
 };
