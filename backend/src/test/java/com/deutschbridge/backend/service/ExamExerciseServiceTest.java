@@ -2,6 +2,7 @@ package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.exception.DataNotFoundException;
+import com.deutschbridge.backend.model.dto.ExamExerciseManualRequest;
 import com.deutschbridge.backend.model.dto.ExamExercisePublicResponse;
 import com.deutschbridge.backend.model.dto.ExamExerciseSummaryResponse;
 import com.deutschbridge.backend.model.dto.ExamLevelSummaryResponse;
@@ -12,6 +13,7 @@ import com.deutschbridge.backend.model.entity.ExamQuestion;
 import com.deutschbridge.backend.model.enums.ExamSection;
 import com.deutschbridge.backend.model.enums.ExamTaskType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
+import com.deutschbridge.backend.repository.ExamAttemptRepository;
 import com.deutschbridge.backend.repository.ExamExerciseCompletionRepository;
 import com.deutschbridge.backend.repository.ExamExerciseRepository;
 import com.deutschbridge.backend.service.cache.ContentCacheService;
@@ -24,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -38,6 +41,9 @@ class ExamExerciseServiceTest {
     private ExamExerciseCompletionRepository examExerciseCompletionRepository;
 
     @Mock
+    private ExamAttemptRepository examAttemptRepository;
+
+    @Mock
     private RequestContext requestContext;
 
     @Mock
@@ -45,6 +51,9 @@ class ExamExerciseServiceTest {
 
     @Mock
     private ExamProgressCacheService examProgressCacheService;
+
+    @Mock
+    private FileStorageService fileStorageService;
 
     @InjectMocks
     private ExamExerciseService service;
@@ -65,6 +74,51 @@ class ExamExerciseServiceTest {
         exercise.setQuestions(List.of(question));
         exercise.setPublished(true);
         return exercise;
+    }
+
+    private ExamExerciseManualRequest updateRequestWithAudio(String audioUrl) {
+        ExamPassage passage = new ExamPassage("p1", "Durchsage 1", null, null, audioUrl, "Geheimes Transkript.");
+        return new ExamExerciseManualRequest(
+                "Hörverstehen B1 - Teil 1", ExamSection.HOERVERSTEHEN, ExamTaskType.MULTIPLE_CHOICE, LearningLevel.B1,
+                null, List.of(passage), List.of(), List.of(), null, null, null, null, true
+        );
+    }
+
+    @Test
+    @DisplayName("update -> should delete a passage's old audio file once it's replaced by a new one")
+    void update_shouldDeleteReplacedPassageAudio() throws DataNotFoundException {
+        ExamExercise existing = hoerverstehenExercise();
+        when(examExerciseRepository.findById("ex1")).thenReturn(Optional.of(existing));
+        when(examExerciseRepository.save(any(ExamExercise.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.update("ex1", updateRequestWithAudio("/uploads/exam-audio/clip2.m4a"));
+
+        verify(fileStorageService).deleteFile("/uploads/exam-audio/clip1.m4a");
+        verify(fileStorageService, never()).deleteFile("/uploads/exam-audio/clip2.m4a");
+    }
+
+    @Test
+    @DisplayName("update -> should not delete the audio file when it wasn't actually replaced")
+    void update_shouldNotDeleteUnchangedPassageAudio() throws DataNotFoundException {
+        ExamExercise existing = hoerverstehenExercise();
+        when(examExerciseRepository.findById("ex1")).thenReturn(Optional.of(existing));
+        when(examExerciseRepository.save(any(ExamExercise.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.update("ex1", updateRequestWithAudio("/uploads/exam-audio/clip1.m4a"));
+
+        verify(fileStorageService, never()).deleteFile(anyString());
+    }
+
+    @Test
+    @DisplayName("delete -> should delete every file the exercise referenced (passage audio included)")
+    void delete_shouldDeleteReferencedAudioFile() throws DataNotFoundException {
+        ExamExercise existing = hoerverstehenExercise();
+        when(examExerciseRepository.findById("ex1")).thenReturn(Optional.of(existing));
+
+        service.delete("ex1");
+
+        verify(fileStorageService).deleteFile("/uploads/exam-audio/clip1.m4a");
+        verify(examExerciseRepository).deleteById("ex1");
     }
 
     @Test

@@ -28,6 +28,7 @@ import AdminTablePagination from "@/componenets/admin/table/AdminTablePagination
 import SortableTh from "@/componenets/admin/table/SortableTh";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
 import { extractGapNumbers } from "@/lib/examGap";
+import { uploadEmbeddedRichTextImages } from "@/lib/richTextImages";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
@@ -370,7 +371,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
-    const submit = (e: React.FormEvent) => {
+    const submit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!form.title.trim()) {
             toast.error("Title is required.");
@@ -388,13 +389,30 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                 return { ...p, label: p.label.trim() || passageLabelDefault(newIdx, section) };
             });
 
+        setIsSaving(true);
+
+        // Only now - the exercise is actually being saved - do any base64 images the admin
+        // inserted while editing (see RichTextEditor) get uploaded and turned into real URLs.
+        const [resolvedPassages, resolvedModelSolution] = await Promise.all([
+            Promise.all(
+                cleanedPassages.map(async (p) => ({
+                    ...p,
+                    content: await uploadEmbeddedRichTextImages(p.content, uploadInlineImage),
+                    transcript: p.transcript
+                        ? await uploadEmbeddedRichTextImages(p.transcript, uploadInlineImage)
+                        : p.transcript,
+                }))
+            ),
+            uploadEmbeddedRichTextImages(form.modelSolution, uploadInlineImage),
+        ]);
+
         const payload = {
             title: form.title,
             section,
             taskType: form.taskType,
             level: form.level,
             partNumber: form.partNumber.trim() ? Number(form.partNumber) : null,
-            passages: cleanedPassages,
+            passages: resolvedPassages,
             questions: questions
                 .filter((q) => q.prompt.trim())
                 .map((q) => ({
@@ -406,11 +424,10 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
             defaultExplanation: form.defaultExplanation.trim() || null,
             defaultCommonMistake: form.defaultCommonMistake.trim() || null,
             teilDescription: form.teilDescription.trim() || null,
-            modelSolution: form.modelSolution.trim() || null,
+            modelSolution: resolvedModelSolution.trim() || null,
             published: form.published,
         };
 
-        setIsSaving(true);
         const request = editingExercise
             ? updateExamExercise(editingExercise.id, payload)
             : createExamExercise(payload);
@@ -704,7 +721,6 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                         value={p.content}
                                         onChange={(html) => updatePassage(idx, "content", html)}
                                         placeholder="Passage text"
-                                        onUploadImage={uploadInlineImage}
                                         allowGapInsertion={form.taskType === "WORD_BANK_CLOZE"}
                                     />
 
@@ -783,7 +799,6 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                                     value={p.transcript ?? ""}
                                                     onChange={(html) => updatePassage(idx, "transcript", isEmptyTranscript(html) ? "" : html)}
                                                     placeholder="Transcript of the audio. Use paragraphs, bold speaker names, etc."
-                                                    onUploadImage={uploadInlineImage}
                                                 />
                                             </div>
                                         </div>
@@ -1054,7 +1069,6 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                 value={form.modelSolution}
                                 onChange={(html) => setForm({ ...form, modelSolution: html })}
                                 placeholder="Mögliche Antwort..."
-                                onUploadImage={uploadInlineImage}
                             />
                         </div>
                     )}

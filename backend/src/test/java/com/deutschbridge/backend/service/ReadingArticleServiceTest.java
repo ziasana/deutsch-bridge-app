@@ -161,7 +161,7 @@ class ReadingArticleServiceTest {
         question.setPrompt("Frage");
 
         ReadingArticleManualRequest request = new ReadingArticleManualRequest(
-                "Titel", "Thema", LearningLevel.A1, "Inhalt", null, List.of(), List.of(annotation), List.of(question), null
+                "Titel", "Thema", LearningLevel.A1, "Inhalt", null, null, List.of(), List.of(annotation), List.of(question), null
         );
 
         when(readingArticleRepository.save(org.mockito.ArgumentMatchers.any(ReadingArticle.class)))
@@ -245,9 +245,9 @@ class ReadingArticleServiceTest {
     void findPageWithLearningProgress_shouldMergeUserState() {
         User user = createUser();
         ContentCacheService.ReadingArticleListEntry learnedEntry = new ContentCacheService.ReadingArticleListEntry(
-                "a1", "Haus", "Wohnen", LearningLevel.A1, null, 3, null, List.of("Haus", "Garten"));
+                "a1", "Haus", "Wohnen", LearningLevel.A1, null, null, 3, null, List.of("Haus", "Garten"));
         ContentCacheService.ReadingArticleListEntry otherEntry = new ContentCacheService.ReadingArticleListEntry(
-                "a2", "Schule", "Bildung", LearningLevel.A1, null, 0, null, List.of());
+                "a2", "Schule", "Bildung", LearningLevel.A1, null, null, 0, null, List.of());
 
         when(contentCacheService.getReadingArticleListPage(LearningLevel.A1, "haus", 0, 50))
                 .thenReturn(new ContentCacheService.ReadingArticleListPage(List.of(learnedEntry, otherEntry), 2, 1));

@@ -22,12 +22,14 @@ import java.util.Set;
  * app's own classpath/jar so writes at runtime are always visible - and returns the relative URL
  * they're served under (see WebMvcConfig, which maps that same directory to /uploads/**).
  *
- * <p>Images are expected to already be cropped client-side to their intended aspect ratio (see the
- * frontend's reusable ImageCropUpload component). This service just re-encodes each cropped image
- * to WebP at a purpose-appropriate size and discards the original upload. Callers that need both a
- * small list thumbnail and a larger detail/hero image ask the admin to crop and upload each
- * separately (see storeXThumbnail vs storeXImage) - each crop can frame its subject differently
- * for its own aspect ratio, rather than one crop being resized to serve both.
+ * <p>Most images are expected to already be cropped client-side to their intended aspect ratio
+ * (see the frontend's reusable ImageCropUpload component); this service then re-encodes each
+ * cropped image to WebP at a purpose-appropriate size and discards the original upload. Callers
+ * that need both a small list thumbnail and a larger detail/hero image ask the admin to crop and
+ * upload each separately (see storeXThumbnail vs storeXImage) - each crop can frame its subject
+ * differently for its own aspect ratio, rather than one crop being resized to serve both.
+ * storeExamPassageImage is the one exception: no crop, no resize, just WebP re-encoding for
+ * compression, since exam passage images are shown at whatever dimensions the admin uploaded.
  */
 @Service
 public class FileStorageService {
@@ -41,6 +43,8 @@ public class FileStorageService {
     private static final int THUMBNAIL_MAX_WIDTH = 480;
     private static final float DETAIL_QUALITY = 0.82f;
     private static final float THUMBNAIL_QUALITY = 0.75f;
+    /** For images that must keep their original width/height (no crop, no resize) - only the WebP re-encode compresses them. */
+    private static final int PRESERVE_DIMENSIONS = Integer.MAX_VALUE;
 
     private static final String AUDIO_OUTPUT_EXTENSION = ".ogg";
     private static final int AUDIO_BITRATE_KBPS = 24;
@@ -76,8 +80,9 @@ public class FileStorageService {
         return storeImage(file, "reading-articles", THUMBNAIL_MAX_WIDTH, THUMBNAIL_QUALITY);
     }
 
+    /** No crop/resize - exam passage images are shown at their original dimensions, just compressed to WebP. */
     public String storeExamPassageImage(MultipartFile file) {
-        return storeImage(file, "exam-passages", DETAIL_MAX_WIDTH, DETAIL_QUALITY);
+        return storeImage(file, "exam-passages", PRESERVE_DIMENSIONS, DETAIL_QUALITY);
     }
 
     public String storeGrammarLessonImage(MultipartFile file) {

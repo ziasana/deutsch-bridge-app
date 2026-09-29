@@ -16,6 +16,7 @@ import { ExamExerciseResponse } from "@/types/exam";
 import Button from "@/componenets/Button";
 import Loading from "@/componenets/Loading";
 import RichTextEditor from "@/componenets/RichTextEditor";
+import { uploadEmbeddedRichTextImages } from "@/lib/richTextImages";
 import { Badge } from "@/componenets/ui/badge";
 import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
 
@@ -101,12 +102,18 @@ export default function AdminExamTestformatInformationPage() {
         }
     };
 
-    const submit = (e: React.FormEvent) => {
+    const submit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!form.level) {
             toast.error("Please select a level.");
             return;
         }
+
+        setIsSaving(true);
+
+        // Only now - the page is actually being saved - do any base64 images the admin inserted
+        // while editing (see RichTextEditor) get uploaded and turned into real URLs.
+        const resolvedContent = await uploadEmbeddedRichTextImages(form.content, uploadInlineImage);
 
         const payload = {
             title: TITLE,
@@ -118,7 +125,7 @@ export default function AdminExamTestformatInformationPage() {
                 {
                     id: editingExercise?.passages[0]?.id ?? crypto.randomUUID(),
                     label: TITLE,
-                    content: form.content,
+                    content: resolvedContent,
                     imageUrl: null,
                     audioUrl: null,
                     transcript: null,
@@ -133,7 +140,6 @@ export default function AdminExamTestformatInformationPage() {
             published: form.published,
         };
 
-        setIsSaving(true);
         const request = editingExercise ? updateExamExercise(editingExercise.id, payload) : createExamExercise(payload);
 
         request
@@ -220,7 +226,6 @@ export default function AdminExamTestformatInformationPage() {
                             value={form.content}
                             onChange={(html) => setForm({ ...form, content: html })}
                             placeholder="Describe the exam format: sections, timing, scoring, tips..."
-                            onUploadImage={uploadInlineImage}
                         />
                     </div>
 

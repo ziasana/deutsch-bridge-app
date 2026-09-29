@@ -7,7 +7,7 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import { useEffect, useRef } from "react";
-import { resolveUploadUrl, resolveUploadUrlsInHtml, stripBackendOrigin } from "@/lib/backendOrigin";
+import { resolveUploadUrlsInHtml, stripBackendOrigin } from "@/lib/backendOrigin";
 import { ExamGap, extractGapNumbers } from "@/lib/examGap";
 import { FontSize, TextDirection } from "@/lib/tiptapExtensions";
 
@@ -44,47 +44,24 @@ function ToolbarButton({
 }
 
 /**
- * Uploads a single File and inserts it as an image node at the current cursor position.
- * The uploaded URL is backend-relative (like every other upload in the app); resolve it to
- * absolute here so it renders while editing - onUpdate strips it back off before it's saved.
+ * Inserts a File as a base64 image node at the current cursor position - no network upload here.
+ * Images stay as base64 while editing (paste from Word/Google Docs already lands as base64 too,
+ * with no special handling needed) and are only uploaded once, at save time, by whichever admin
+ * page owns the form - see uploadEmbeddedRichTextImages in lib/richTextImages.ts. This means an
+ * image never reaches the server, and nothing is ever orphaned there, unless the form is actually
+ * submitted.
  */
-async function insertUploadedImage(editor: Editor, file: File, onUploadImage: (file: File) => Promise<string>) {
+async function insertImageAsBase64(editor: Editor, file: File) {
     try {
-        const url = await onUploadImage(file);
-        editor.chain().focus().setImage({ src: resolveUploadUrl(url) ?? url }).run();
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(file);
+        });
+        editor.chain().focus().setImage({ src: dataUrl }).run();
     } catch {
-        // Upload failures are surfaced by onUploadImage's own caller (e.g. a toast) - nothing more to do here.
-    }
-}
-
-/**
- * Replaces any base64-embedded <img> the browser pasted inline (common when pasting from Word/
- * Google Docs) with an uploaded, URL-backed image, so the stored HTML stays small and consistent
- * with every other image in the app. Attribute-only edits don't change node sizes, so positions
- * gathered up front stay valid across the sequential replacements below.
- */
-async function uploadEmbeddedImages(editor: Editor, onUploadImage: (file: File) => Promise<string>) {
-    const targets: { pos: number; src: string }[] = [];
-    editor.state.doc.descendants((node, pos) => {
-        if (node.type.name === "image" && typeof node.attrs.src === "string" && node.attrs.src.startsWith("data:")) {
-            targets.push({ pos, src: node.attrs.src });
-        }
-    });
-
-    for (const { pos, src } of targets) {
-        try {
-            const blob = await (await fetch(src)).blob();
-            const file = new File([blob], "pasted-image", { type: blob.type || "image/png" });
-            const url = await onUploadImage(file);
-            editor.commands.command(({ tr }) => {
-                const node = tr.doc.nodeAt(pos);
-                if (!node) return false;
-                tr.setNodeMarkup(pos, undefined, { ...node.attrs, src: resolveUploadUrl(url) ?? url });
-                return true;
-            });
-        } catch {
-            // Leave this particular embedded image as a base64 data URL if the upload fails.
-        }
+        // Nothing more to do - the file simply won't appear in the editor.
     }
 }
 
@@ -220,14 +197,11 @@ export default function RichTextEditor({
     value,
     onChange,
     placeholder,
-    onUploadImage,
     allowGapInsertion,
 }: Readonly<{
     value: string;
     onChange: (html: string) => void;
     placeholder?: string;
-    /** Uploads a file and resolves to its served URL - used for both the toolbar button and pasted images. */
-    onUploadImage: (file: File) => Promise<string>;
     /** Shows the "insert blank" toolbar button for authoring Sprachbausteine word-bank cloze passages. */
     allowGapInsertion?: boolean;
 }>) {
@@ -255,15 +229,12 @@ export default function RichTextEditor({
                 const files = Array.from(event.clipboardData?.files ?? []).filter((f) => f.type.startsWith("image/"));
                 if (files.length > 0 && editor) {
                     event.preventDefault();
-                    files.forEach((file) => insertUploadedImage(editor, file, onUploadImage));
+                    files.forEach((file) => insertImageAsBase64(editor, file));
                     return true;
                 }
                 // Otherwise let the browser's normal rich paste run (this is what preserves bold/
-                // italic/underline/headings/lists/alignment from the source), then sweep for any
-                // base64 <img> tags it embedded and swap them for uploaded, URL-backed images.
-                if (editor) {
-                    setTimeout(() => uploadEmbeddedImages(editor, onUploadImage), 0);
-                }
+                // italic/underline/headings/lists/alignment from the source) - any <img> it embeds
+                // inline (e.g. pasting from Word/Google Docs) already lands as base64, same as above.
                 return false;
             },
         },
@@ -297,7 +268,7 @@ export default function RichTextEditor({
                 onChange={(e) => {
                     const file = e.target.files?.[0];
                     e.target.value = "";
-                    if (file) insertUploadedImage(editor, file, onUploadImage);
+                    if (file) insertImageAsBase64(editor, file);
                 }}
             />
         </div>

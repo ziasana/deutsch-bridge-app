@@ -67,6 +67,7 @@ public class ReadingArticleService {
     private final ContentCacheService contentCacheService;
     private final ReadingProgressCacheService readingProgressCacheService;
     private final ObjectMapper objectMapper;
+    private final FileStorageService fileStorageService;
 
     public ReadingArticleService(ReadingArticleRepository readingArticleRepository,
                                   LearningProgressRepository learningProgressRepository,
@@ -78,7 +79,8 @@ public class ReadingArticleService {
                                   TokenizationService tokenizationService,
                                   ContentCacheService contentCacheService,
                                   ReadingProgressCacheService readingProgressCacheService,
-                                  ObjectMapper objectMapper) {
+                                  ObjectMapper objectMapper,
+                                  FileStorageService fileStorageService) {
         this.readingArticleRepository = readingArticleRepository;
         this.learningProgressRepository = learningProgressRepository;
         this.userArticleAttemptRepository = userArticleAttemptRepository;
@@ -90,6 +92,7 @@ public class ReadingArticleService {
         this.contentCacheService = contentCacheService;
         this.readingProgressCacheService = readingProgressCacheService;
         this.objectMapper = objectMapper;
+        this.fileStorageService = fileStorageService;
     }
 
     public ReadingArticle findById(String id) throws DataNotFoundException {
@@ -270,6 +273,8 @@ public class ReadingArticleService {
     public ReadingArticleResponse update(String id, ReadingArticleManualRequest request) throws DataNotFoundException {
         ReadingArticle existing = findById(id);
         LearningLevel previousLevel = existing.getLevel();
+        String previousImageUrl = existing.getImageUrl();
+        String previousThumbnailUrl = existing.getThumbnailUrl();
 
         boolean contentChanged = request.content() != null && !request.content().equals(existing.getContent());
 
@@ -293,6 +298,17 @@ public class ReadingArticleService {
         if (saved.getLevel() != previousLevel) {
             contentCacheService.evictReadingArticleListPagesForLevel(saved.getLevel());
         }
+
+        // Only once the new value is actually persisted, and only when the request touched imageUrl/
+        // thumbnailUrl at all (a partial update that doesn't touch either must not wipe the existing
+        // files).
+        if (request.imageUrl() != null && !request.imageUrl().equals(previousImageUrl)) {
+            fileStorageService.deleteFile(previousImageUrl);
+        }
+        if (request.thumbnailUrl() != null && !request.thumbnailUrl().equals(previousThumbnailUrl)) {
+            fileStorageService.deleteFile(previousThumbnailUrl);
+        }
+
         return ReadingArticleMapper.mapToResponse(saved, null, Set.of());
     }
 
@@ -303,6 +319,8 @@ public class ReadingArticleService {
     })
     public void delete(String id) throws DataNotFoundException {
         ReadingArticle existing = findById(id);
+        fileStorageService.deleteFile(existing.getImageUrl());
+        fileStorageService.deleteFile(existing.getThumbnailUrl());
         userArticleAttemptRepository.deleteByArticle(existing);
         learningProgressRepository.deleteByReading(existing);
         readingArticleRepository.deleteById(id);
@@ -319,6 +337,8 @@ public class ReadingArticleService {
         for (String id : ids) {
             ReadingArticle existing = readingArticleRepository.findById(id).orElse(null);
             if (existing == null) continue;
+            fileStorageService.deleteFile(existing.getImageUrl());
+            fileStorageService.deleteFile(existing.getThumbnailUrl());
             userArticleAttemptRepository.deleteByArticle(existing);
             learningProgressRepository.deleteByReading(existing);
             readingArticleRepository.deleteById(id);

@@ -20,6 +20,7 @@ import com.deutschbridge.backend.repository.ExamExerciseRepository;
 import com.deutschbridge.backend.service.cache.ContentCacheService;
 import com.deutschbridge.backend.service.cache.ExamProgressCacheService;
 import com.deutschbridge.backend.util.ExamExerciseMapper;
+import com.deutschbridge.backend.util.UploadUrlExtractor;
 import jakarta.transaction.Transactional;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
@@ -27,9 +28,12 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class ExamExerciseService {
@@ -42,19 +46,22 @@ public class ExamExerciseService {
     private final RequestContext requestContext;
     private final ContentCacheService contentCacheService;
     private final ExamProgressCacheService examProgressCacheService;
+    private final FileStorageService fileStorageService;
 
     public ExamExerciseService(ExamExerciseRepository examExerciseRepository,
                                 ExamExerciseCompletionRepository examExerciseCompletionRepository,
                                 ExamAttemptRepository examAttemptRepository,
                                 RequestContext requestContext,
                                 ContentCacheService contentCacheService,
-                                ExamProgressCacheService examProgressCacheService) {
+                                ExamProgressCacheService examProgressCacheService,
+                                FileStorageService fileStorageService) {
         this.examExerciseRepository = examExerciseRepository;
         this.examExerciseCompletionRepository = examExerciseCompletionRepository;
         this.examAttemptRepository = examAttemptRepository;
         this.requestContext = requestContext;
         this.contentCacheService = contentCacheService;
         this.examProgressCacheService = examProgressCacheService;
+        this.fileStorageService = fileStorageService;
     }
 
     public ExamExercise findById(String id) throws DataNotFoundException {
@@ -152,8 +159,34 @@ public class ExamExerciseService {
     public ExamExerciseResponse update(String id, ExamExerciseManualRequest request) throws DataNotFoundException {
         ExamExercise existing = findById(id);
         validateNoDuplicateLevel(request, id);
+        Set<String> previousUploadUrls = collectUploadUrls(existing);
         applyRequest(existing, request);
-        return ExamExerciseMapper.mapToResponse(examExerciseRepository.save(existing));
+        ExamExercise saved = examExerciseRepository.save(existing);
+
+        // Whatever the previous version referenced (a passage image, an inline content/transcript
+        // image, ...) that the new version no longer does - e.g. an admin removed an embedded
+        // image from the rich text and re-saved - has no other reference left, so its file is
+        // deleted here rather than left to accumulate on disk forever.
+        Set<String> currentUploadUrls = collectUploadUrls(saved);
+        previousUploadUrls.stream()
+                .filter(url -> !currentUploadUrls.contains(url))
+                .forEach(fileStorageService::deleteFile);
+
+        return ExamExerciseMapper.mapToResponse(saved);
+    }
+
+    /** Every "/uploads/..." URL this exercise references, across all passages' content/transcript/
+     *  imageUrl/audioUrl and the exercise-level modelSolution rich text. */
+    private Set<String> collectUploadUrls(ExamExercise exercise) {
+        List<ExamPassage> passages = exercise.getPassages();
+        String[] passageTexts = passages == null
+                ? new String[0]
+                : passages.stream()
+                        .flatMap(p -> Stream.of(p.getContent(), p.getTranscript(), p.getImageUrl(), p.getAudioUrl()))
+                        .toArray(String[]::new);
+        Set<String> urls = new LinkedHashSet<>(UploadUrlExtractor.extract(passageTexts));
+        urls.addAll(UploadUrlExtractor.extract(exercise.getModelSolution()));
+        return urls;
     }
 
     /**
@@ -181,6 +214,7 @@ public class ExamExerciseService {
     })
     public void delete(String id) throws DataNotFoundException {
         ExamExercise exercise = findById(id);
+        collectUploadUrls(exercise).forEach(fileStorageService::deleteFile);
         examAttemptRepository.deleteByExercise(exercise);
         examExerciseCompletionRepository.deleteByExerciseId(id);
         examExerciseRepository.deleteById(id);

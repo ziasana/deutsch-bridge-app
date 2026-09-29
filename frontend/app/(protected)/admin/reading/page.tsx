@@ -798,7 +798,6 @@ export default function AdminReadingPage() {
                                         value={contentHtml}
                                         onChange={setContentHtml}
                                         placeholder="Paste or type the article text here"
-                                        onUploadImage={(file) => uploadReadingArticleImage(file).then((res) => res.data.url)}
                                     />
                                 </div>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">

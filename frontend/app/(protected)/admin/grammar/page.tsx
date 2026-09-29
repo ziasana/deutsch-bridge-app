@@ -26,6 +26,7 @@ import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
 import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
 import RichTextEditor from "@/componenets/RichTextEditor";
+import { uploadEmbeddedRichTextImages } from "@/lib/richTextImages";
 import GrammarSubNav from "@/componenets/admin/GrammarSubNav";
 import { isTranslatableLevel } from "@/lib/grammarLocalization";
 import {
@@ -248,23 +249,32 @@ export default function AdminGrammarPage() {
 
     const isTranslatable = isTranslatableLevel(form.level);
 
-    const submitForm = (e: React.FormEvent) => {
+    const submitForm = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!form.title.trim() || !form.content.trim()) {
             toast.error("Title and description are required.");
             return;
         }
 
+        setIsSaving(true);
+
+        // Only now - the lesson is actually being saved - do any base64 images the admin inserted
+        // while editing (see RichTextEditor) get uploaded and turned into real URLs.
+        const [resolvedContent, resolvedContentFa] = await Promise.all([
+            uploadEmbeddedRichTextImages(form.content, uploadInlineImage),
+            isTranslatable ? uploadEmbeddedRichTextImages(form.contentFa, uploadInlineImage) : Promise.resolve(form.contentFa),
+        ]);
+
         const payload = {
             title: form.title,
             level: form.level,
             summary: form.summary,
-            content: form.content,
+            content: resolvedContent,
             example: form.example,
             usageTips: form.usageTips,
             titleFa: isTranslatable ? form.titleFa.trim() || null : null,
             summaryFa: isTranslatable ? form.summaryFa.trim() || null : null,
-            contentFa: isTranslatable ? form.contentFa.trim() || null : null,
+            contentFa: isTranslatable ? resolvedContentFa.trim() || null : null,
             exampleFa: isTranslatable ? form.exampleFa.trim() || null : null,
             usageTipsFa: isTranslatable ? form.usageTipsFa.trim() || null : null,
             videoLink: form.videoLink.trim() || null,
@@ -281,7 +291,6 @@ export default function AdminGrammarPage() {
                 })),
         };
 
-        setIsSaving(true);
         const request = editingLesson
             ? updateGrammarLesson(editingLesson.id, payload)
             : createGrammarLesson(payload);
@@ -657,7 +666,6 @@ export default function AdminGrammarPage() {
                                 value={form.content}
                                 onChange={(html) => setForm((prev) => ({ ...prev, content: html }))}
                                 placeholder="Explain the grammar topic..."
-                                onUploadImage={uploadInlineImage}
                             />
                             {isUploadingImage && (
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Uploading image...</p>
@@ -733,7 +741,6 @@ export default function AdminGrammarPage() {
                                             value={form.contentFa}
                                             onChange={(html) => setForm((prev) => ({ ...prev, contentFa: html }))}
                                             placeholder="موضوع گرامری را توضیح دهید..."
-                                            onUploadImage={uploadInlineImage}
                                         />
                                     </div>
                                 </div>
