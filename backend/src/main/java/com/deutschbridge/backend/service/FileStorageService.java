@@ -15,7 +15,6 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -43,17 +42,12 @@ public class FileStorageService {
     private static final float DETAIL_QUALITY = 0.82f;
     private static final float THUMBNAIL_QUALITY = 0.75f;
 
-    private static final Map<String, String> AUDIO_EXTENSION_BY_CONTENT_TYPE = Map.ofEntries(
-            Map.entry("audio/mpeg", ".mp3"),
-            Map.entry("audio/mp3", ".mp3"),
-            Map.entry("audio/mp4", ".m4a"),
-            Map.entry("audio/x-m4a", ".m4a"),
-            Map.entry("audio/m4a", ".m4a"),
-            Map.entry("audio/wav", ".wav"),
-            Map.entry("audio/x-wav", ".wav"),
-            Map.entry("audio/wave", ".wav"),
-            Map.entry("audio/ogg", ".ogg"),
-            Map.entry("application/ogg", ".ogg")
+    private static final String AUDIO_OUTPUT_EXTENSION = ".ogg";
+    private static final int AUDIO_BITRATE_KBPS = 24;
+
+    private static final Set<String> ALLOWED_AUDIO_CONTENT_TYPES = Set.of(
+            "audio/mpeg", "audio/mp3", "audio/mp4", "audio/x-m4a", "audio/m4a",
+            "audio/wav", "audio/x-wav", "audio/wave", "audio/ogg", "application/ogg"
     );
 
     /**
@@ -61,19 +55,17 @@ public class FileStorageService {
      * (e.g. some send "application/octet-stream" for .mp3/.m4a) - fall back to the filename
      * extension so a valid audio file is never rejected just because of a wrong/missing MIME type.
      */
-    private static final Map<String, String> AUDIO_EXTENSION_BY_FILE_SUFFIX = Map.of(
-            ".mp3", ".mp3",
-            ".m4a", ".m4a",
-            ".wav", ".wav",
-            ".ogg", ".ogg"
-    );
+    private static final Set<String> ALLOWED_AUDIO_FILE_SUFFIXES = Set.of(".mp3", ".m4a", ".wav", ".ogg");
 
     private final Path uploadRoot;
     private final WebpEncoder webpEncoder;
+    private final OpusEncoder opusEncoder;
 
-    public FileStorageService(@Value("${app.upload.dir}") String uploadDir, WebpEncoder webpEncoder) {
+    public FileStorageService(@Value("${app.upload.dir}") String uploadDir, WebpEncoder webpEncoder,
+                               OpusEncoder opusEncoder) {
         this.uploadRoot = Path.of(uploadDir).toAbsolutePath().normalize();
         this.webpEncoder = webpEncoder;
+        this.opusEncoder = opusEncoder;
     }
 
     public String storeReadingArticleImage(MultipartFile file) {
@@ -104,20 +96,48 @@ public class FileStorageService {
         return storeImage(file, "avatars", DETAIL_MAX_WIDTH, DETAIL_QUALITY);
     }
 
+    /**
+     * Transcodes an admin-uploaded audio file (any of MP3/M4A/WAV/OGG, typically 128-320kbps
+     * stereo) to mono Opus at {@link #AUDIO_BITRATE_KBPS}kbps, discarding the original bytes -
+     * same "re-encode and discard the original" approach as storeImage(), since exam listening
+     * audio is spoken word and a low Opus bitrate is perceptually transparent for that while
+     * being a fraction of the size.
+     */
     public String storeExamPassageAudio(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("No file was uploaded.");
         }
 
-        String extension = AUDIO_EXTENSION_BY_CONTENT_TYPE.get(file.getContentType());
-        if (extension == null) {
-            extension = AUDIO_EXTENSION_BY_FILE_SUFFIX.get(fileSuffix(file.getOriginalFilename()));
-        }
-        if (extension == null) {
+        String contentType = file.getContentType();
+        boolean allowed = (contentType != null && ALLOWED_AUDIO_CONTENT_TYPES.contains(contentType))
+                || ALLOWED_AUDIO_FILE_SUFFIXES.contains(fileSuffix(file.getOriginalFilename()));
+        if (!allowed) {
             throw new IllegalArgumentException("Only MP3, M4A, WAV, or OGG audio files are allowed.");
         }
 
-        return store(file, "exam-audio", extension, "Failed to store uploaded audio.");
+        String subdirName = "exam-audio";
+        String filename = NanoIdUtils.randomNanoId() + AUDIO_OUTPUT_EXTENSION;
+        Path subdir = uploadRoot.resolve(subdirName);
+        Path tempUpload = null;
+
+        try {
+            Files.createDirectories(subdir);
+            tempUpload = Files.createTempFile("audio-upload-", fileSuffix(file.getOriginalFilename()));
+            file.transferTo(tempUpload);
+            opusEncoder.encode(tempUpload, subdir.resolve(filename), AUDIO_BITRATE_KBPS);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to store uploaded audio.", e);
+        } finally {
+            if (tempUpload != null) {
+                try {
+                    Files.deleteIfExists(tempUpload);
+                } catch (IOException e) {
+                    log.warn("Failed to delete temporary audio upload {}", tempUpload, e);
+                }
+            }
+        }
+
+        return "/uploads/" + subdirName + "/" + filename;
     }
 
     private String fileSuffix(String filename) {
@@ -182,8 +202,8 @@ public class FileStorageService {
 
     /**
      * Deletes a previously stored file given its "/uploads/&lt;subdir&gt;/&lt;name&gt;" URL (as
-     * returned by store()/storeImage()), e.g. when an admin replaces or removes an image or
-     * thumbnail. Silently no-ops for URLs that aren't ours (null/blank, or an external link an
+     * returned by storeImage()/storeExamPassageAudio()), e.g. when an admin replaces or removes an
+     * image or thumbnail. Silently no-ops for URLs that aren't ours (null/blank, or an external link an
      * admin pasted some other way) instead of throwing, since a missing/foreign file is not
      * itself an error for the caller. Callers that track an image and a separate thumbnail (e.g.
      * ReadingArticle.imageUrl/thumbnailUrl) must call this once per URL - the two are independent
@@ -203,19 +223,5 @@ public class FileStorageService {
         } catch (IOException e) {
             log.warn("Failed to delete old file {}", relativeUrl, e);
         }
-    }
-
-    private String store(MultipartFile file, String subdirName, String extension, String errorMessage) {
-        String filename = NanoIdUtils.randomNanoId() + extension;
-        Path subdir = uploadRoot.resolve(subdirName);
-
-        try {
-            Files.createDirectories(subdir);
-            file.transferTo(subdir.resolve(filename));
-        } catch (IOException e) {
-            throw new UncheckedIOException(errorMessage, e);
-        }
-
-        return "/uploads/" + subdirName + "/" + filename;
     }
 }
