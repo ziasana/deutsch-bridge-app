@@ -13,6 +13,7 @@ import {
     ContinueLearningCard,
     EXAM_TYPE_META,
     EXAM_TYPE_ORDER,
+    ExamExerciseList,
     ExamPartCard,
     ExamTypeSelector,
     averageScore,
@@ -92,14 +93,24 @@ function ExamPrepContent() {
     const selectedItems = exercisesForSectionAndLevel(exercises, selectedSection, effectiveLevel);
     const searchTerm = search.trim().toLowerCase();
 
-    const selectedGroups = groupIntoParts(selectedItems, selectedSection).filter(
-        (g) => searchTerm === "" || g.label.toLowerCase().includes(searchTerm) || g.items.some((i) => i.title.toLowerCase().includes(searchTerm)),
-    );
+    // Schriftlicher Ausdruck has no Teile: its Übungen are listed directly instead of as Teil cards.
+    const isFlatList = selectedSection === "SCHRIFTLICHER_AUSDRUCK";
+    const flatItems = isFlatList
+        ? (groupIntoParts(selectedItems, selectedSection)[0]?.items ?? []).filter(
+              (i) => searchTerm === "" || i.title.toLowerCase().includes(searchTerm),
+          )
+        : [];
+
+    const selectedGroups = isFlatList
+        ? []
+        : groupIntoParts(selectedItems, selectedSection).filter(
+              (g) => searchTerm === "" || g.label.toLowerCase().includes(searchTerm) || g.items.some((i) => i.title.toLowerCase().includes(searchTerm)),
+          );
     const infoItems = selectedMeta.informational
         ? selectedItems.filter((i) => searchTerm === "" || i.title.toLowerCase().includes(searchTerm))
         : [];
 
-    const selectedFilteredItems = selectedGroups.flatMap((g) => g.items);
+    const selectedFilteredItems = isFlatList ? flatItems : selectedGroups.flatMap((g) => g.items);
     const selectedMastered = masteredCount(selectedFilteredItems);
     const selectedTotal = selectedFilteredItems.length;
     const selectedAvgScore = averageScore(selectedFilteredItems);
@@ -238,6 +249,12 @@ function ExamPrepContent() {
                                     </div>
                                 )}
                             </>
+                        ) : isFlatList ? (
+                            <ExamExerciseList
+                                key={`${selectedSection}-${effectiveLevel}-${searchTerm}`}
+                                items={flatItems}
+                                color={selectedMeta.color}
+                            />
                         ) : (
                             <>
                                 {selectedGroups.map((group, i) => (

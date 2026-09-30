@@ -654,7 +654,9 @@ function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-3">
             <p className="text-xs text-gray-500 dark:text-gray-400">
-                Aufgabe {question.questionNumber ?? quiz.currentIndex + 1} von {quiz.questions.length}
+                {question.questionNumber != null && question.questionNumber !== quiz.currentIndex + 1
+                    ? `Aufgabe ${question.questionNumber} (${quiz.currentIndex + 1} von ${quiz.questions.length})`
+                    : `Aufgabe ${quiz.currentIndex + 1} von ${quiz.questions.length}`}
                 {currentPassage && ` — ${currentPassage.label}`}
             </p>
 
