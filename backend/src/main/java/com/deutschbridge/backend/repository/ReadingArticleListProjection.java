@@ -8,7 +8,8 @@ import java.time.LocalDateTime;
 public interface ReadingArticleListProjection {
     String getId();
     String getTitle();
-    String getTopic();
+    String getCategoryId();
+    String getCategoryTitle();
     LearningLevel getLevel();
     String getImageUrl();
     String getThumbnailUrl();

@@ -174,6 +174,10 @@ export interface Dictionary {
         previous: string;
         next: string;
         pageOf: (page: number, total: number) => string;
+        showAll: string;
+        bookmarkedFilter: string;
+        category: string;
+        allCategories: string;
     };
     dailyWords: {
         title: string;
@@ -243,6 +247,13 @@ export interface Dictionary {
         savedToReview: (lemma: string) => string;
         keyVocabulary: string;
         keyVocabularySubtitle: string;
+        bookmark: string;
+        unbookmark: string;
+        bookmarkAdded: string;
+        bookmarkRemoved: string;
+        previousArticle: string;
+        nextArticle: string;
+        quizNotFinishedHint: string;
         quiz: {
             title: string;
             ready: string;
@@ -839,6 +850,10 @@ const en: Dictionary = {
         previous: "Previous",
         next: "Next",
         pageOf: (page: number, total: number) => `Page ${page} of ${total}`,
+        showAll: "All",
+        bookmarkedFilter: "Bookmarked",
+        category: "Category",
+        allCategories: "All categories",
     },
     dailyWords: {
         title: "Daily Words",
@@ -908,6 +923,13 @@ const en: Dictionary = {
         savedToReview: (lemma: string) => `Saved "${lemma}" to your review list.`,
         keyVocabulary: "Key vocabulary",
         keyVocabularySubtitle: "The key words for this article.",
+        bookmark: "Bookmark this article",
+        unbookmark: "Remove bookmark",
+        bookmarkAdded: "Article bookmarked.",
+        bookmarkRemoved: "Bookmark removed.",
+        previousArticle: "Previous",
+        nextArticle: "Next",
+        quizNotFinishedHint: "Quiz not finished",
         quiz: {
             title: "Quiz",
             ready: "Ready to check your understanding? Start the quiz for this article.",
@@ -1583,6 +1605,10 @@ const fa: Dictionary = {
         previous: "قبلی",
         next: "بعدی",
         pageOf: (page: number, total: number) => `صفحه ${page} از ${total}`,
+        showAll: "همه",
+        bookmarkedFilter: "نشان‌شده‌ها",
+        category: "دسته‌بندی",
+        allCategories: "همه دسته‌بندی‌ها",
     },
     dailyWords: {
         title: "واژه‌های روزانه",
@@ -1652,6 +1678,13 @@ const fa: Dictionary = {
         savedToReview: (lemma: string) => `«${lemma}» به فهرست مرور شما اضافه شد.`,
         keyVocabulary: "واژگان کلیدی",
         keyVocabularySubtitle: "کلمات کلیدی این مقاله.",
+        bookmark: "نشان کردن این مقاله",
+        unbookmark: "حذف نشان",
+        bookmarkAdded: "مقاله نشان‌گذاری شد.",
+        bookmarkRemoved: "نشان حذف شد.",
+        previousArticle: "قبلی",
+        nextArticle: "بعدی",
+        quizNotFinishedHint: "آزمون کامل نشده",
         quiz: {
             title: "آزمون",
             ready: "آماده‌اید درک خود را بسنجید؟ آزمون این مقاله را شروع کنید.",

@@ -10,13 +10,15 @@ import java.time.LocalDateTime;
 public record ReadingArticleSummaryResponse(
         String id,
         String title,
-        String topic,
+        String categoryId,
+        String categoryTitle,
         String level,
         String imageUrl,
         String thumbnailUrl,
         long viewCount,
         LocalDateTime createdAt,
         int newWordCount,
-        boolean learned
+        boolean learned,
+        boolean bookmarked
 ) {
 }

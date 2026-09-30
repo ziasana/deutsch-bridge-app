@@ -1,16 +1,27 @@
 [
   {
     "title": "Ein Wochenende in Berlin",
-    "topic": "Reisen",
     "level": "A2",
     "content": "Am Samstag bin ich mit dem Zug nach Berlin gefahren. Die Stadt war voller Leben und ich habe viele neue Orte entdeckt. Am Nachmittag habe ich einen Termin beim Arzt gehabt, aber danach hatte ich viel Zeit für die Stadt. Am Abend habe ich mit Freunden in einem kleinen Restaurant gegessen und wir haben stundenlang geplaudert. Am Sonntag war ich müde, aber ich habe trotzdem noch ein Museum besucht, bevor ich wieder nach Hause gefahren bin.",
     "imageUrl": null,
     "linkedGroupId": "berlin-weekend-story",
     "keyVocabulary": [
-      { "word": "entdecken", "meaning": "to discover" },
-      { "word": "voller Leben", "meaning": "full of life" },
-      { "word": "plaudern", "meaning": "to chat" },
-      { "word": "trotzdem", "meaning": "nevertheless" }
+      {
+        "word": "entdecken",
+        "meaning": "to discover"
+      },
+      {
+        "word": "voller Leben",
+        "meaning": "full of life"
+      },
+      {
+        "word": "plaudern",
+        "meaning": "to chat"
+      },
+      {
+        "word": "trotzdem",
+        "meaning": "nevertheless"
+      }
     ],
     "annotations": [
       {
@@ -66,7 +77,11 @@
       {
         "type": "HAUPTIDEE",
         "prompt": "Worum geht es in diesem Text vor allem?",
-        "options": ["Ein Wochenende in Berlin", "Ein Arbeitstag im Büro", "Ein Fußballspiel"],
+        "options": [
+          "Ein Wochenende in Berlin",
+          "Ein Arbeitstag im Büro",
+          "Ein Fußballspiel"
+        ],
         "correctAnswer": "Ein Wochenende in Berlin",
         "explanation": "Der Text beschreibt, was die Person an einem Wochenende in Berlin erlebt hat.",
         "supportingSentence": "Am Samstag bin ich mit dem Zug nach Berlin gefahren.",
@@ -76,7 +91,11 @@
       {
         "type": "DETAIL",
         "prompt": "Wie ist die Person nach Berlin gefahren?",
-        "options": ["Mit dem Zug", "Mit dem Auto", "Mit dem Flugzeug"],
+        "options": [
+          "Mit dem Zug",
+          "Mit dem Auto",
+          "Mit dem Flugzeug"
+        ],
         "correctAnswer": "Mit dem Zug",
         "explanation": "Im Text steht: \"Am Samstag bin ich mit dem Zug nach Berlin gefahren.\"",
         "supportingSentence": "Am Samstag bin ich mit dem Zug nach Berlin gefahren.",
@@ -86,7 +105,11 @@
       {
         "type": "VOCAB_CONTEXT",
         "prompt": "Was bedeutet \"entdecken\" in diesem Zusammenhang?",
-        "options": ["to discover", "to destroy", "to forget"],
+        "options": [
+          "to discover",
+          "to destroy",
+          "to forget"
+        ],
         "correctAnswer": "to discover",
         "explanation": "\"Entdecken\" bedeutet, etwas Neues zu finden.",
         "supportingSentence": "Ich habe viele neue Orte entdeckt.",
@@ -110,27 +133,43 @@
       {
         "type": "RICHTIG_FALSCH_NICHT_IM_TEXT",
         "prompt": "Die Person hat am Sonntag ein Museum besucht.",
-        "options": ["Richtig", "Falsch", "Nicht im Text"],
+        "options": [
+          "Richtig",
+          "Falsch",
+          "Nicht im Text"
+        ],
         "correctAnswer": "Richtig",
         "explanation": "Im Text steht, dass sie am Sonntag trotzdem noch ein Museum besucht hat.",
         "supportingSentence": "Am Sonntag war ich müde, aber ich habe trotzdem noch ein Museum besucht.",
         "relatedAnnotationId": null,
         "minLevel": "A2"
       }
-    ]
+    ],
+    "categoryTitle": "Reisen"
   },
   {
     "title": "Gesunde Ernährung im Alltag",
-    "topic": "Gesundheit",
     "level": "B1",
     "content": "Viele Menschen möchten sich gesünder ernähren, wissen aber nicht, wo sie anfangen sollen. Ein guter erster Schritt ist es, mehr Obst und Gemüse zu essen und weniger Fertiggerichte zu kaufen. Man sollte auch darauf achten, genug Wasser zu trinken und regelmäßig zu essen, statt Mahlzeiten auszulassen. Experten sind sich einig, dass kleine Veränderungen im Alltag langfristig mehr bringen als radikale Diäten.",
     "imageUrl": null,
     "linkedGroupId": null,
     "keyVocabulary": [
-      { "word": "sich ernähren", "meaning": "to eat, to nourish oneself" },
-      { "word": "das Fertiggericht", "meaning": "ready-made meal" },
-      { "word": "auslassen", "meaning": "to skip, to leave out" },
-      { "word": "langfristig", "meaning": "long-term" }
+      {
+        "word": "sich ernähren",
+        "meaning": "to eat, to nourish oneself"
+      },
+      {
+        "word": "das Fertiggericht",
+        "meaning": "ready-made meal"
+      },
+      {
+        "word": "auslassen",
+        "meaning": "to skip, to leave out"
+      },
+      {
+        "word": "langfristig",
+        "meaning": "long-term"
+      }
     ],
     "annotations": [
       {
@@ -162,7 +201,11 @@
       {
         "type": "HAUPTIDEE",
         "prompt": "Worum geht es in diesem Text vor allem?",
-        "options": ["Um gesunde Ernährung", "Um Sport", "Um Reisen"],
+        "options": [
+          "Um gesunde Ernährung",
+          "Um Sport",
+          "Um Reisen"
+        ],
         "correctAnswer": "Um gesunde Ernährung",
         "explanation": "Der Text erklärt, wie man sich im Alltag gesünder ernähren kann.",
         "supportingSentence": "Viele Menschen möchten sich gesünder ernähren.",
@@ -186,7 +229,11 @@
       {
         "type": "VOCAB_CONTEXT",
         "prompt": "Was bedeutet \"auslassen\" in diesem Zusammenhang?",
-        "options": ["to skip", "to cook", "to buy"],
+        "options": [
+          "to skip",
+          "to cook",
+          "to buy"
+        ],
         "correctAnswer": "to skip",
         "explanation": "\"Auslassen\" bedeutet hier, eine Mahlzeit nicht zu essen.",
         "supportingSentence": "...statt Mahlzeiten auszulassen.",
@@ -210,13 +257,18 @@
       {
         "type": "RICHTIG_FALSCH_NICHT_IM_TEXT",
         "prompt": "Der Text empfiehlt, jeden Tag ins Fitnessstudio zu gehen.",
-        "options": ["Richtig", "Falsch", "Nicht im Text"],
+        "options": [
+          "Richtig",
+          "Falsch",
+          "Nicht im Text"
+        ],
         "correctAnswer": "Nicht im Text",
         "explanation": "Der Text spricht nur über Ernährung, nicht über Fitnessstudio-Besuche.",
         "supportingSentence": "Ein guter erster Schritt ist es, mehr Obst und Gemüse zu essen und weniger Fertiggerichte zu kaufen.",
         "relatedAnnotationId": null,
         "minLevel": "A2"
       }
-    ]
+    ],
+    "categoryTitle": "Gesundheit"
   }
 ]

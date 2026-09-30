@@ -18,6 +18,9 @@ public interface UserArticleAttemptRepository extends JpaRepository<UserArticleA
     List<UserArticleAttempt> findTop5ByUserAndArticleLevelAndCompletedAtIsNotNullOrderByCompletedAtDesc(
             User user, LearningLevel level);
 
+    /** Whether this user has finished the quiz for this article at least once - purely informational (never gates navigation). */
+    boolean existsByUserAndArticleAndCompletedAtIsNotNull(User user, ReadingArticle article);
+
     /** Most recent reading the learner opened but didn't finish, within a recency window. */
     Optional<UserArticleAttempt> findFirstByUserAndCompletedAtIsNullAndStartedAtAfterOrderByStartedAtDesc(
             User user, LocalDateTime startedAfter);

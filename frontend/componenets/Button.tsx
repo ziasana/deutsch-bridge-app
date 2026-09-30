@@ -8,7 +8,7 @@ export default function Button({
   className = "",
   ...props
 }: Readonly <ButtonProps>) {
-  const base = "px-4 py-2 rounded-lg font-semibold transition";
+  const base = "px-4 py-2 rounded-lg font-semibold transition cursor-pointer disabled:cursor-not-allowed";
   const styles =
     variant === "primary"
       ? "bg-primary hover:bg-primary/90 text-primary-foreground"

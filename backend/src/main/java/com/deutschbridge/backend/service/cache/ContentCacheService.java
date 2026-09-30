@@ -235,10 +235,10 @@ public class ContentCacheService {
      * trimmed and lower-cased so equivalent searches share a cache entry. See the viewCount note on
      * {@link #getAllReadingArticles()}.
      */
-    @Cacheable(cacheNames = "readingArticleList", key = "#level + ':' + #search + ':' + #page + ':' + #size")
+    @Cacheable(cacheNames = "readingArticleList", key = "#level + ':' + #search + ':' + (#categoryId ?: '') + ':' + #page + ':' + #size")
     @Transactional
-    public ReadingArticleListPage getReadingArticleListPage(LearningLevel level, String search, int page, int size) {
-        Page<ReadingArticleListProjection> rows = readingArticleRepository.findListPage(level, search, PageRequest.of(page, size));
+    public ReadingArticleListPage getReadingArticleListPage(LearningLevel level, String search, String categoryId, int page, int size) {
+        Page<ReadingArticleListProjection> rows = readingArticleRepository.findListPage(level, search, categoryId, PageRequest.of(page, size));
 
         Map<String, List<String>> lemmasByArticleId = rows.isEmpty()
                 ? Map.of()
@@ -252,7 +252,8 @@ public class ContentCacheService {
                 .map(row -> new ReadingArticleListEntry(
                         row.getId(),
                         row.getTitle(),
-                        row.getTopic(),
+                        row.getCategoryId(),
+                        row.getCategoryTitle(),
                         row.getLevel(),
                         row.getImageUrl(),
                         row.getThumbnailUrl(),
@@ -290,6 +291,12 @@ public class ContentCacheService {
         evictKeysWithPrefix("readingArticleList", level + ":");
     }
 
+    /** A category rename touches every cached list row that shows its title, across every level - clear them all. */
+    public void evictAllReadingArticleListPages() {
+        Cache cache = cacheManager.getCache("readingArticleList");
+        if (cache != null) cache.clear();
+    }
+
     public void evictReadingArticleDetail(String id) {
         evictKey("readingArticleDetail", id);
     }
@@ -313,6 +320,7 @@ public class ContentCacheService {
             Hibernate.initialize(article.getAnnotations());
             Hibernate.initialize(article.getQuiz());
             Hibernate.initialize(article.getTokens());
+            Hibernate.initialize(article.getCategory());
         });
     }
 
@@ -324,8 +332,8 @@ public class ContentCacheService {
     public record ExpressionListPage(List<ExpressionListEntry> entries, long totalElements, int totalPages) {
     }
 
-    public record ReadingArticleListEntry(String id, String title, String topic, LearningLevel level, String imageUrl,
-                                          String thumbnailUrl, long viewCount, LocalDateTime createdAt,
+    public record ReadingArticleListEntry(String id, String title, String categoryId, String categoryTitle, LearningLevel level,
+                                          String imageUrl, String thumbnailUrl, long viewCount, LocalDateTime createdAt,
                                           List<String> annotationLemmas) {
     }
 

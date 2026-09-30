@@ -23,9 +23,13 @@ public class ReadingArticle {
     @Id
     private String id;
     private String title;
-    private String topic;
     private @Column(columnDefinition = "TEXT") String content;
     private LearningLevel level;
+
+    /** Admin-managed topic ("Thema") this article is filed under - null until an admin assigns one. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private ReadingCategory category;
 
     /** Relative URL under /uploads (e.g. "/uploads/reading-articles/xyz.jpg") - null until an admin uploads one. */
     private @Column(columnDefinition = "TEXT") String imageUrl;

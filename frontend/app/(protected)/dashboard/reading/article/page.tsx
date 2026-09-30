@@ -4,8 +4,15 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Bookmark, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { getReadingArticleById, recordReadingArticleView } from "@/services/readingService";
+import {
+    addReadingArticleBookmark,
+    getReadingArticleById,
+    getReadingArticleNavigation,
+    recordReadingArticleView,
+    removeReadingArticleBookmark,
+} from "@/services/readingService";
 import { setLearningProgress } from "@/services/grammarService";
 import { saveToLexicon } from "@/services/lexiconService";
 import { startAttempt, submitAnswer, completeAttempt } from "@/services/readingAttemptService";
@@ -17,6 +24,7 @@ import {
     KeyVocabularyItem,
     QuizQuestionPublic,
     ReadingArticle,
+    ReadingArticleNeighbor,
 } from "@/types/reading";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
@@ -423,7 +431,7 @@ function QuizSection({
                                     type="button"
                                     disabled={Boolean(quiz.feedback)}
                                     onClick={() => setQuiz({ ...quiz, selectedAnswer: option })}
-                                    className={`w-full text-left px-3 py-2 rounded-lg border text-sm ${
+                                    className={`w-full text-left px-3 py-2 rounded-lg border text-sm cursor-pointer disabled:cursor-not-allowed ${
                                         quiz.selectedAnswer === option
                                             ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
                                             : "border-gray-300 dark:border-gray-600"
@@ -515,7 +523,7 @@ function QuizSection({
                         {results.recommendation.suggestedArticleId && (
                             <button
                                 type="button"
-                                className="mt-2 underline font-medium"
+                                className="mt-2 cursor-pointer underline font-medium"
                                 onClick={() => router.push(`/dashboard/reading/article?id=${results.recommendation.suggestedArticleId}`)}
                             >
                                 {results.recommendation.suggestedTitle ?? t.readingArticle.quiz.goToArticle} →
@@ -532,22 +540,85 @@ function formatPostedDate(iso: string, locale: string): string {
     return new Date(iso).toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
 }
 
+/**
+ * Previous/Next within the current level's list order (spec: never gated on quiz completion -
+ * a learner should always be free to move on, whether they're skimming or studying deeply). The
+ * "quiz not finished" hint next to Next is purely informational and never blocks the click.
+ */
+function ArticleNavRow({
+    previous,
+    next,
+    quizCompleted,
+    onNavigate,
+}: Readonly<{
+    previous: ReadingArticleNeighbor | null | undefined;
+    next: ReadingArticleNeighbor | null | undefined;
+    quizCompleted: boolean;
+    onNavigate: (id: string) => void;
+}>) {
+    const { t } = useI18n();
+    if (!previous && !next) return null;
+
+    return (
+        <div className="flex items-center justify-between gap-3">
+            <button
+                type="button"
+                disabled={!previous}
+                onClick={() => previous && onNavigate(previous.id)}
+                title={previous?.title}
+                className="flex min-w-0 cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-gray-600 transition hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-0 disabled:hover:bg-transparent disabled:hover:text-gray-600 dark:text-gray-300"
+            >
+                <ChevronLeft className="size-4 shrink-0" />
+                <span className="truncate">{t.readingArticle.previousArticle}</span>
+            </button>
+
+            {!quizCompleted && (
+                <span className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                    {t.readingArticle.quizNotFinishedHint}
+                </span>
+            )}
+
+            <button
+                type="button"
+                disabled={!next}
+                onClick={() => next && onNavigate(next.id)}
+                title={next?.title}
+                className="flex min-w-0 cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-gray-600 transition hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-0 disabled:hover:bg-transparent disabled:hover:text-gray-600 dark:text-gray-300"
+            >
+                <span className="truncate">{t.readingArticle.nextArticle}</span>
+                <ChevronRight className="size-4 shrink-0" />
+            </button>
+        </div>
+    );
+}
+
 export default function ReadingArticleDetailPage() {
     return (
         <Suspense fallback={<Loading />}>
-            <ReadingArticleDetailContent />
+            <ReadingArticleDetailRouter />
         </Suspense>
     );
 }
 
-function ReadingArticleDetailContent() {
+/**
+ * Reads the id from the URL and keys the content below by it, so Previous/Next (and the quiz's
+ * "next article" suggestion) - which push a new id onto this same route - fully remount the page
+ * instead of leaving stale per-article state (tapped words, quiz progress, view count) behind.
+ */
+function ReadingArticleDetailRouter() {
     const searchParams = useSearchParams();
     const articleId = searchParams.get("id") ?? "";
+    return <ReadingArticleDetailContent key={articleId} articleId={articleId} />;
+}
+
+function ReadingArticleDetailContent({ articleId }: Readonly<{ articleId: string }>) {
+    const router = useRouter();
     const { t, language } = useI18n();
     const queryClient = useQueryClient();
     const [viewCount, setViewCount] = useState<number | null>(null);
     const countedViewFor = useRef<string | null>(null);
     const [updatingLearned, setUpdatingLearned] = useState(false);
+    const [updatingBookmark, setUpdatingBookmark] = useState(false);
     const [activeAnnotation, setActiveAnnotation] = useState<Annotation | null>(null);
     const [tappedLemmas, setTappedLemmas] = useState<Set<string>>(new Set());
     const [savedLemmas, setSavedLemmas] = useState<Set<string>>(new Set());
@@ -561,6 +632,14 @@ function ReadingArticleDetailContent() {
         queryFn: () => getReadingArticleById(articleId).then((res) => res.data),
         enabled: !!articleId,
     });
+
+    // Previous/Next within the current level's list order - lightweight, so it's fine to always fetch.
+    const { data: navigation } = useQuery({
+        queryKey: ["reading", "navigation", articleId],
+        queryFn: () => getReadingArticleNavigation(articleId).then((res) => res.data),
+        enabled: !!articleId,
+    });
+    const goToArticle = (id: string) => router.push(`/dashboard/reading/article?id=${id}`);
 
     useEffect(() => {
         if (articleError) {
@@ -627,6 +706,20 @@ function ReadingArticleDetailContent() {
             .finally(() => setUpdatingLearned(false));
     };
 
+    const toggleBookmark = () => {
+        const bookmarked = article.bookmarked;
+        setUpdatingBookmark(true);
+        const request = bookmarked ? removeReadingArticleBookmark(article.id) : addReadingArticleBookmark(article.id);
+        request
+            .then((res) => {
+                queryClient.setQueryData<ReadingArticle>(articleQueryKey, () => res.data);
+                queryClient.invalidateQueries({ queryKey: ["reading", "list"] });
+                toast.success(bookmarked ? t.readingArticle.bookmarkRemoved : t.readingArticle.bookmarkAdded);
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to update bookmark."))
+            .finally(() => setUpdatingBookmark(false));
+    };
+
     const handleAnnotationClick = (annotation: Annotation) => {
         setActiveAnnotation(annotation);
         setTappedLemmas((prev) => new Set(prev).add(annotation.lemma));
@@ -650,19 +743,44 @@ function ReadingArticleDetailContent() {
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
             <div className="max-w-4xl mx-auto space-y-6">
-                <Link
-                    href="/dashboard/reading"
-                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline inline-block"
-                >
-                    {t.readingArticle.back}
-                </Link>
+                <div className="flex items-center justify-between gap-4">
+                    <Link
+                        href="/dashboard/reading"
+                        className="text-sm text-blue-600 dark:text-blue-400 hover:underline inline-block shrink-0"
+                    >
+                        {t.readingArticle.back}
+                    </Link>
+                    <div className="min-w-0 flex-1">
+                        <ArticleNavRow
+                            previous={navigation?.previous}
+                            next={navigation?.next}
+                            quizCompleted={article.quizCompleted}
+                            onNavigate={goToArticle}
+                        />
+                    </div>
+                </div>
 
                 <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] overflow-hidden">
-                    <img
-                        src={getArticleImageSrc(article.imageUrl, article.level)}
-                        alt=""
-                        className="w-full h-56 object-cover"
-                    />
+                    <div className="relative">
+                        <img
+                            src={getArticleImageSrc(article.imageUrl, article.level)}
+                            alt=""
+                            className="w-full h-56 object-cover"
+                        />
+                        <button
+                            type="button"
+                            disabled={updatingBookmark}
+                            onClick={toggleBookmark}
+                            aria-pressed={article.bookmarked}
+                            aria-label={article.bookmarked ? t.readingArticle.unbookmark : t.readingArticle.bookmark}
+                            title={article.bookmarked ? t.readingArticle.unbookmark : t.readingArticle.bookmark}
+                            className="absolute top-3 right-3 flex size-10 cursor-pointer items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-md backdrop-blur-sm transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-900/80 dark:text-gray-200 dark:hover:bg-gray-900"
+                        >
+                            <Bookmark
+                                className={`size-5 ${article.bookmarked ? "fill-current text-blue-600 dark:text-blue-400" : ""}`}
+                            />
+                        </button>
+                    </div>
                     <div className="p-6 space-y-4">
                         <div className="flex items-center gap-2 flex-wrap">
                             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{article.title}</h1>
@@ -677,7 +795,9 @@ function ReadingArticleDetailContent() {
                                 )}
                             </span>
                         </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 italic">{article.topic}</p>
+                        {article.categoryTitle && (
+                            <p className="text-sm text-gray-500 dark:text-gray-400 italic">{article.categoryTitle}</p>
+                        )}
 
                         <ArticleContent
                             content={article.content}
@@ -717,11 +837,21 @@ function ReadingArticleDetailContent() {
                 <GlossarySection article={article} savedLemmas={savedLemmas} onSave={handleSaveWord} />
 
                 <QuizSection
+                    key={article.id}
                     article={article}
                     tappedLemmas={tappedLemmas}
                     savedLemmas={savedLemmas}
                     onSaveWord={handleSaveWord}
                 />
+
+                <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] px-4 py-2">
+                    <ArticleNavRow
+                        previous={navigation?.previous}
+                        next={navigation?.next}
+                        quizCompleted={article.quizCompleted}
+                        onNavigate={goToArticle}
+                    />
+                </div>
             </div>
             <DictionaryPanel activeLemma={activeDictionaryLemma} onClose={() => setActiveDictionaryLemma(null)} />
         </div>

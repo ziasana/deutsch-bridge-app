@@ -7,6 +7,7 @@ import {
     ReadingArticleBulkImportResult,
     ReadingArticleGenerateRequest,
     ReadingArticleManualRequest,
+    ReadingCategoryAdmin,
     ReadingQuizQuestion,
     SuggestAnnotationsRequest,
     SuggestVocabularyRequest,
@@ -70,4 +71,22 @@ export const deleteReadingArticles = async (ids: string[]) => {
 
 export const bulkImportReadingArticles = async (rows: unknown[]) => {
     return await api.post<ReadingArticleBulkImportResult>("/admin/reading/bulk", rows);
+};
+
+// ---- Categories ("Thema") ----
+
+export const getAdminReadingCategories = async () => {
+    return await api.get<ReadingCategoryAdmin[]>("/admin/reading/categories");
+};
+
+export const createReadingCategory = async (title: string) => {
+    return await api.post<ReadingCategoryAdmin>("/admin/reading/categories", { title });
+};
+
+export const updateReadingCategory = async (id: string, title: string) => {
+    return await api.put<ReadingCategoryAdmin>(`/admin/reading/categories/${id}`, { title });
+};
+
+export const deleteReadingCategory = async (id: string) => {
+    return await api.delete(`/admin/reading/categories/${id}`);
 };

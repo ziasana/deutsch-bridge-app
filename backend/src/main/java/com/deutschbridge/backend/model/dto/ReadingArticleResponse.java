@@ -9,7 +9,8 @@ import java.util.List;
 public record ReadingArticleResponse(
         String id,
         String title,
-        String topic,
+        String categoryId,
+        String categoryTitle,
         String level,
         String content,
         String imageUrl,
@@ -21,6 +22,8 @@ public record ReadingArticleResponse(
         int newWordCount,
         String linkedGroupId,
         List<ArticleTokenItem> tokens,
-        List<LearningProgressResponse> learningProgresses
+        List<LearningProgressResponse> learningProgresses,
+        boolean bookmarked,
+        boolean quizCompleted
 ) {
 }

@@ -5,6 +5,8 @@ import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.ReadingArticleBulkImportResult;
 import com.deutschbridge.backend.model.dto.ReadingArticleBulkImportRowResult;
 import com.deutschbridge.backend.model.dto.ReadingArticleManualRequest;
+import com.deutschbridge.backend.model.dto.ReadingArticleNavigationResponse;
+import com.deutschbridge.backend.model.dto.ReadingArticleNeighborResponse;
 import com.deutschbridge.backend.model.dto.ReadingArticlePageResponse;
 import com.deutschbridge.backend.model.dto.ReadingArticleResponse;
 import com.deutschbridge.backend.model.dto.ReadingArticleSummaryResponse;
@@ -14,6 +16,8 @@ import com.deutschbridge.backend.model.entity.Annotation;
 import com.deutschbridge.backend.model.entity.KeyVocabularyItem;
 import com.deutschbridge.backend.model.entity.LearningProgress;
 import com.deutschbridge.backend.model.entity.ReadingArticle;
+import com.deutschbridge.backend.model.entity.ReadingArticleBookmark;
+import com.deutschbridge.backend.model.entity.ReadingCategory;
 import com.deutschbridge.backend.model.entity.ReadingQuizQuestion;
 import com.deutschbridge.backend.model.entity.Span;
 import com.deutschbridge.backend.model.entity.User;
@@ -22,7 +26,11 @@ import com.deutschbridge.backend.model.enums.AnnotationType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.model.enums.ReadingQuizQuestionType;
 import com.deutschbridge.backend.repository.LearningProgressRepository;
+import com.deutschbridge.backend.repository.ReadingArticleBookmarkRepository;
+import com.deutschbridge.backend.repository.ReadingArticleListProjection;
+import com.deutschbridge.backend.repository.ReadingArticleNeighborProjection;
 import com.deutschbridge.backend.repository.ReadingArticleRepository;
+import com.deutschbridge.backend.repository.ReadingCategoryRepository;
 import com.deutschbridge.backend.repository.UserArticleAttemptRepository;
 import com.deutschbridge.backend.repository.UserWordProgressRepository;
 import com.deutschbridge.backend.service.cache.ContentCacheService;
@@ -35,6 +43,9 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import jakarta.transaction.Transactional;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -57,6 +68,9 @@ public class ReadingArticleService {
     private static final int MAX_PAGE_SIZE = 50;
 
     private final ReadingArticleRepository readingArticleRepository;
+    private final ReadingArticleBookmarkRepository readingArticleBookmarkRepository;
+    private final ReadingCategoryRepository readingCategoryRepository;
+    private final ReadingCategoryService readingCategoryService;
     private final LearningProgressRepository learningProgressRepository;
     private final UserArticleAttemptRepository userArticleAttemptRepository;
     private final UserWordProgressRepository userWordProgressRepository;
@@ -70,6 +84,9 @@ public class ReadingArticleService {
     private final FileStorageService fileStorageService;
 
     public ReadingArticleService(ReadingArticleRepository readingArticleRepository,
+                                  ReadingArticleBookmarkRepository readingArticleBookmarkRepository,
+                                  ReadingCategoryRepository readingCategoryRepository,
+                                  ReadingCategoryService readingCategoryService,
                                   LearningProgressRepository learningProgressRepository,
                                   UserArticleAttemptRepository userArticleAttemptRepository,
                                   UserWordProgressRepository userWordProgressRepository,
@@ -82,6 +99,9 @@ public class ReadingArticleService {
                                   ObjectMapper objectMapper,
                                   FileStorageService fileStorageService) {
         this.readingArticleRepository = readingArticleRepository;
+        this.readingArticleBookmarkRepository = readingArticleBookmarkRepository;
+        this.readingCategoryRepository = readingCategoryRepository;
+        this.readingCategoryService = readingCategoryService;
         this.learningProgressRepository = learningProgressRepository;
         this.userArticleAttemptRepository = userArticleAttemptRepository;
         this.userWordProgressRepository = userWordProgressRepository;
@@ -107,25 +127,43 @@ public class ReadingArticleService {
                 .toList();
     }
 
-    /** One page of a level's list: cached shared columns + the current user's live learned/new-word state. */
-    public ReadingArticlePageResponse findPageWithLearningProgress(LearningLevel level, String search, int page, int size) {
+    /**
+     * One page of a level's list. The common case (bookmarkedOnly=false) uses the shared cached
+     * columns (keyed by level/search/categoryId/page/size) plus the current user's live learned/
+     * new-word/bookmark state merged onto just this page's items. The "Bookmarked" filter changes
+     * which rows belong on a page at all, so - exactly like expression's bookmark filter - it
+     * bypasses the cache entirely and hits a live per-user-joined query instead, keeping the
+     * WHERE/pagination in SQL. categoryId is null for "all categories".
+     */
+    public ReadingArticlePageResponse findPageWithLearningProgress(LearningLevel level, String search, boolean bookmarkedOnly,
+                                                                     String categoryId, int page, int size) {
         int safePage = Math.max(page, 0);
         int safeSize = Math.clamp(size, 1, MAX_PAGE_SIZE);
         String normalizedSearch = search != null ? search.trim().toLowerCase() : "";
+        String normalizedCategoryId = categoryId != null && !categoryId.isBlank() ? categoryId : null;
+
+        if (bookmarkedOnly) {
+            User user = userService.findByEmail(requestContext.getUserEmail());
+            return findBookmarkedPage(user, level, normalizedSearch, normalizedCategoryId, safePage, safeSize);
+        }
 
         ContentCacheService.ReadingArticleListPage cached =
-                contentCacheService.getReadingArticleListPage(level, normalizedSearch, safePage, safeSize);
+                contentCacheService.getReadingArticleListPage(level, normalizedSearch, normalizedCategoryId, safePage, safeSize);
         List<ContentCacheService.ReadingArticleListEntry> entries = cached.entries();
         if (entries.isEmpty()) {
             return new ReadingArticlePageResponse(List.of(), safePage, safeSize, cached.totalElements(), cached.totalPages());
         }
 
         User user = userService.findByEmail(requestContext.getUserEmail());
+        List<String> ids = entries.stream().map(ContentCacheService.ReadingArticleListEntry::id).toList();
         Set<String> learnedIds = learningProgressRepository
-                .findByUserAndReadingIdIn(user, entries.stream().map(ContentCacheService.ReadingArticleListEntry::id).toList())
+                .findByUserAndReadingIdIn(user, ids)
                 .stream()
                 .filter(p -> Boolean.TRUE.equals(p.getIsLearned()))
                 .map(p -> p.getReading().getId())
+                .collect(Collectors.toSet());
+        Set<String> bookmarkedIds = readingArticleBookmarkRepository.findByUserAndArticle_IdIn(user, ids).stream()
+                .map(b -> b.getArticle().getId())
                 .collect(Collectors.toSet());
         Set<String> knownLemmas = findKnownLemmas(user, entries.stream()
                 .flatMap(e -> e.annotationLemmas().stream())
@@ -136,16 +174,59 @@ public class ReadingArticleService {
                 .map(e -> new ReadingArticleSummaryResponse(
                         e.id(),
                         e.title(),
-                        e.topic(),
+                        e.categoryId(),
+                        e.categoryTitle(),
                         e.level() != null ? e.level().getValue() : null,
                         e.imageUrl(),
                         e.thumbnailUrl(),
                         e.viewCount(),
                         e.createdAt(),
                         (int) e.annotationLemmas().stream().filter(l -> !knownLemmas.contains(l)).count(),
-                        learnedIds.contains(e.id())))
+                        learnedIds.contains(e.id()),
+                        bookmarkedIds.contains(e.id())))
                 .toList();
         return new ReadingArticlePageResponse(items, safePage, safeSize, cached.totalElements(), cached.totalPages());
+    }
+
+    private ReadingArticlePageResponse findBookmarkedPage(User user, LearningLevel level, String normalizedSearch,
+                                                            String categoryId, int safePage, int safeSize) {
+        Page<ReadingArticleListProjection> rows = readingArticleRepository.findBookmarkedListPageForUser(
+                level, normalizedSearch, categoryId, user.getId(), PageRequest.of(safePage, safeSize));
+        if (rows.isEmpty()) {
+            return new ReadingArticlePageResponse(List.of(), safePage, safeSize, rows.getTotalElements(), rows.getTotalPages());
+        }
+
+        List<String> ids = rows.map(ReadingArticleListProjection::getId).toList();
+        Set<String> learnedIds = learningProgressRepository.findByUserAndReadingIdIn(user, ids).stream()
+                .filter(p -> Boolean.TRUE.equals(p.getIsLearned()))
+                .map(p -> p.getReading().getId())
+                .collect(Collectors.toSet());
+        Map<String, List<String>> lemmasByArticleId = readingArticleRepository.findAnnotationLemmas(ids).stream()
+                .filter(row -> row.getLemma() != null)
+                .collect(Collectors.groupingBy(
+                        com.deutschbridge.backend.repository.ReadingArticleLemmaProjection::getArticleId,
+                        Collectors.mapping(com.deutschbridge.backend.repository.ReadingArticleLemmaProjection::getLemma, Collectors.toList())));
+        Set<String> knownLemmas = findKnownLemmas(user, lemmasByArticleId.values().stream().flatMap(List::stream).distinct().toList());
+
+        List<ReadingArticleSummaryResponse> items = rows.stream()
+                .map(r -> {
+                    List<String> lemmas = lemmasByArticleId.getOrDefault(r.getId(), List.of());
+                    return new ReadingArticleSummaryResponse(
+                            r.getId(),
+                            r.getTitle(),
+                            r.getCategoryId(),
+                            r.getCategoryTitle(),
+                            r.getLevel() != null ? r.getLevel().getValue() : null,
+                            r.getImageUrl(),
+                            r.getThumbnailUrl(),
+                            r.getViewCount(),
+                            r.getCreatedAt(),
+                            (int) lemmas.stream().filter(l -> !knownLemmas.contains(l)).count(),
+                            learnedIds.contains(r.getId()),
+                            true);
+                })
+                .toList();
+        return new ReadingArticlePageResponse(items, safePage, safeSize, rows.getTotalElements(), rows.getTotalPages());
     }
 
     public List<ReadingLevelSummaryResponse> getLevelSummary() {
@@ -176,6 +257,12 @@ public class ReadingArticleService {
         Map<String, LearningProgress> progressByArticleId = progresses.stream()
                 .collect(Collectors.toMap(p -> p.getReading().getId(), p -> p, (first, second) -> first));
 
+        Set<String> bookmarkedIds = readingArticleBookmarkRepository.findByUserAndArticle_IdIn(
+                        user, articles.stream().map(ReadingArticle::getId).toList())
+                .stream()
+                .map(b -> b.getArticle().getId())
+                .collect(Collectors.toSet());
+
         List<String> lemmas = articles.stream()
                 .flatMap(a -> a.getAnnotations() != null ? a.getAnnotations().stream() : java.util.stream.Stream.empty())
                 .map(Annotation::getLemma)
@@ -185,8 +272,59 @@ public class ReadingArticleService {
         Set<String> knownLemmas = findKnownLemmas(user, lemmas);
 
         return articles.stream()
-                .map(a -> ReadingArticleMapper.mapToResponse(a, progressByArticleId.get(a.getId()), knownLemmas))
+                .map(a -> ReadingArticleMapper.mapToResponse(a, progressByArticleId.get(a.getId()), knownLemmas,
+                        bookmarkedIds.contains(a.getId()),
+                        userArticleAttemptRepository.existsByUserAndArticleAndCompletedAtIsNotNull(user, a)))
                 .toList();
+    }
+
+    /**
+     * The previous/next article in the current level's list order (see ReadingArticleRepository.findListPage) -
+     * a lightweight sibling lookup for the reading page's Previous/Next controls, not user-scoped.
+     */
+    public ReadingArticleNavigationResponse findNavigation(String id) throws DataNotFoundException {
+        ReadingArticle article = contentCacheService.getReadingArticle(id)
+                .orElseThrow(() -> new DataNotFoundException(NOT_FOUND_MSG));
+        if (article.getLevel() == null) {
+            return new ReadingArticleNavigationResponse(null, null);
+        }
+
+        Pageable oneRow = PageRequest.of(0, 1);
+        ReadingArticleNeighborResponse previous = readingArticleRepository
+                .findPreviousInLevel(article.getLevel(), article.getCreatedAt(), article.getId(), oneRow)
+                .stream()
+                .findFirst()
+                .map(n -> new ReadingArticleNeighborResponse(n.getId(), n.getTitle()))
+                .orElse(null);
+        ReadingArticleNeighborResponse next = readingArticleRepository
+                .findNextInLevel(article.getLevel(), article.getCreatedAt(), article.getId(), oneRow)
+                .stream()
+                .findFirst()
+                .map(n -> new ReadingArticleNeighborResponse(n.getId(), n.getTitle()))
+                .orElse(null);
+        return new ReadingArticleNavigationResponse(previous, next);
+    }
+
+    /** Adds the current user's bookmark on this article (idempotent - re-bookmarking is a no-op). */
+    public ReadingArticleResponse addBookmark(String id) throws DataNotFoundException {
+        ReadingArticle article = contentCacheService.getReadingArticle(id)
+                .orElseThrow(() -> new DataNotFoundException(NOT_FOUND_MSG));
+        User user = userService.findByEmail(requestContext.getUserEmail());
+        if (!readingArticleBookmarkRepository.existsByUserAndArticle(user, article)) {
+            ReadingArticleBookmark bookmark = new ReadingArticleBookmark();
+            bookmark.setUser(user);
+            bookmark.setArticle(article);
+            readingArticleBookmarkRepository.save(bookmark);
+        }
+        return mapWithCurrentUserProgress(List.of(article)).get(0);
+    }
+
+    public ReadingArticleResponse removeBookmark(String id) throws DataNotFoundException {
+        ReadingArticle article = contentCacheService.getReadingArticle(id)
+                .orElseThrow(() -> new DataNotFoundException(NOT_FOUND_MSG));
+        User user = userService.findByEmail(requestContext.getUserEmail());
+        readingArticleBookmarkRepository.deleteByUserAndArticle(user, article);
+        return mapWithCurrentUserProgress(List.of(article)).get(0);
     }
 
     private Set<String> findKnownLemmas(User user, List<String> lemmas) {
@@ -195,6 +333,22 @@ public class ReadingArticleService {
                 .filter(p -> p.getStatus() == com.deutschbridge.backend.model.enums.WordProgressStatus.KNOWN)
                 .map(UserWordProgress::getLemma)
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     * categoryId (the admin form's dropdown) wins when present; categoryTitle (bulk import's plain-text
+     * convenience) is only used as a fallback, resolving to an existing category or creating one.
+     * Both blank/absent means "no category" - null is a valid, intentional result.
+     */
+    private ReadingCategory resolveCategory(ReadingArticleManualRequest request) {
+        if (request.categoryId() != null && !request.categoryId().isBlank()) {
+            return readingCategoryRepository.findById(request.categoryId())
+                    .orElseThrow(() -> new IllegalArgumentException("Category not found: " + request.categoryId()));
+        }
+        if (request.categoryTitle() != null && !request.categoryTitle().isBlank()) {
+            return readingCategoryService.resolveOrCreateByTitle(request.categoryTitle());
+        }
+        return null;
     }
 
     @Caching(evict = {
@@ -207,7 +361,6 @@ public class ReadingArticleService {
 
         ReadingArticle article = new ReadingArticle();
         article.setTitle(parsed.title());
-        article.setTopic(topic);
         article.setLevel(level);
         article.setContent(parsed.text());
         article.setKeyVocabulary(parsed.vocabulary());
@@ -250,7 +403,7 @@ public class ReadingArticleService {
     public ReadingArticleResponse createManual(ReadingArticleManualRequest request) {
         ReadingArticle article = new ReadingArticle();
         article.setTitle(request.title());
-        article.setTopic(request.topic());
+        article.setCategory(resolveCategory(request));
         article.setLevel(request.level());
         article.setContent(request.content());
         article.setImageUrl(request.imageUrl());
@@ -279,7 +432,9 @@ public class ReadingArticleService {
         boolean contentChanged = request.content() != null && !request.content().equals(existing.getContent());
 
         if (request.title() != null) existing.setTitle(request.title());
-        if (request.topic() != null) existing.setTopic(request.topic());
+        // Unlike the other fields below, category is always resolved (never skipped when absent) so
+        // the edit form can also clear it - selecting "None" sends a blank categoryId/categoryTitle.
+        existing.setCategory(resolveCategory(request));
         if (request.level() != null) existing.setLevel(request.level());
         if (request.content() != null) existing.setContent(request.content());
         if (request.imageUrl() != null) existing.setImageUrl(request.imageUrl());
@@ -323,6 +478,7 @@ public class ReadingArticleService {
         fileStorageService.deleteFile(existing.getThumbnailUrl());
         userArticleAttemptRepository.deleteByArticle(existing);
         learningProgressRepository.deleteByReading(existing);
+        readingArticleBookmarkRepository.deleteByArticle(existing);
         readingArticleRepository.deleteById(id);
         contentCacheService.evictReadingArticleDetail(id);
         contentCacheService.evictReadingArticleListPagesForLevel(existing.getLevel());
@@ -341,6 +497,7 @@ public class ReadingArticleService {
             fileStorageService.deleteFile(existing.getThumbnailUrl());
             userArticleAttemptRepository.deleteByArticle(existing);
             learningProgressRepository.deleteByReading(existing);
+            readingArticleBookmarkRepository.deleteByArticle(existing);
             readingArticleRepository.deleteById(id);
             contentCacheService.evictReadingArticleDetail(id);
             contentCacheService.evictReadingArticleListPagesForLevel(existing.getLevel());

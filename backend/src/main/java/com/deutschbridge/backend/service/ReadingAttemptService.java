@@ -207,17 +207,17 @@ public class ReadingAttemptService {
         }
 
         LearningLevel lowerLevel = LearningLevel.values()[level.ordinal() - 1];
-        Optional<ReadingArticle> sameTopic = article.getTopic() != null
-                ? readingArticleRepository.findFirstByLevelAndTopicIgnoreCase(lowerLevel, article.getTopic())
+        Optional<ReadingArticle> sameCategory = article.getCategory() != null
+                ? readingArticleRepository.findFirstByLevelAndCategory(lowerLevel, article.getCategory())
                 : Optional.empty();
-        Optional<ReadingArticle> suggestion = sameTopic.isPresent()
-                ? sameTopic
+        Optional<ReadingArticle> suggestion = sameCategory.isPresent()
+                ? sameCategory
                 : readingArticleRepository.findFirstByLevel(lowerLevel);
 
         if (suggestion.isPresent()) {
             ReadingArticle a = suggestion.get();
             return new ArticleRecommendation("EASIER", a.getId(), a.getTitle(), lowerLevel.getValue(),
-                    "That was tough — try this easier one" + (sameTopic.isPresent() ? " on the same topic." : "."));
+                    "That was tough — try this easier one" + (sameCategory.isPresent() ? " on the same topic." : "."));
         }
         return new ArticleRecommendation("EASIER", null, null, lowerLevel.getValue(),
                 "That was tough — try an easier article at " + lowerLevel.getValue() + ".");

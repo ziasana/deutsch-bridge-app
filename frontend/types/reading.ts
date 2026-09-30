@@ -5,6 +5,19 @@ export interface KeyVocabularyItem {
     meaning: string;
 }
 
+/** An admin-managed reading topic ("Thema") articles can be filed under and students can filter by. */
+export interface ReadingCategory {
+    id: string;
+    title: string;
+}
+
+/** Admin category table row - includes how many articles currently reference it. */
+export interface ReadingCategoryAdmin {
+    id: string;
+    title: string;
+    articleCount: number;
+}
+
 export type AnnotationType = "WORD" | "NOMEN_VERB_VERBINDUNG" | "REDEWENDUNG";
 
 export interface Span {
@@ -58,7 +71,8 @@ export interface ArticleToken {
 export interface ReadingArticle {
     id: string;
     title: string;
-    topic: string;
+    categoryId: string | null;
+    categoryTitle: string | null;
     level: string;
     content: string;
     imageUrl: string | null;
@@ -71,13 +85,27 @@ export interface ReadingArticle {
     linkedGroupId: string | null;
     tokens: ArticleToken[];
     learningProgresses: LearningProgress[];
+    bookmarked: boolean;
+    quizCompleted: boolean;
+}
+
+/** One adjacent article in the current level's list order, for the Previous/Next controls. */
+export interface ReadingArticleNeighbor {
+    id: string;
+    title: string;
+}
+
+export interface ReadingArticleNavigation {
+    previous: ReadingArticleNeighbor | null;
+    next: ReadingArticleNeighbor | null;
 }
 
 /** Lightweight list shape - no content/tokens/annotations/vocabulary; fetch the article by id for those. */
 export interface ReadingArticleSummary {
     id: string;
     title: string;
-    topic: string;
+    categoryId: string | null;
+    categoryTitle: string | null;
     level: string;
     imageUrl: string | null;
     thumbnailUrl: string | null;
@@ -85,6 +113,7 @@ export interface ReadingArticleSummary {
     createdAt: string;
     newWordCount: number;
     learned: boolean;
+    bookmarked: boolean;
 }
 
 /** One server-side page of a level's list. page is zero-based. */
@@ -109,7 +138,8 @@ export interface ReadingArticleGenerateRequest {
 
 export interface ReadingArticleManualRequest {
     title: string;
-    topic: string;
+    /** Existing category id, from the admin form's dropdown. */
+    categoryId: string | null;
     level: string;
     content: string;
     imageUrl: string | null;

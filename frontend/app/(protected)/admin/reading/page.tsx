@@ -19,6 +19,7 @@ import {
     uploadReadingArticleThumbnail,
     bulkImportReadingArticles,
     getAdminReadingArticles,
+    getAdminReadingCategories,
 } from "@/services/adminReadingService";
 import {
     Annotation,
@@ -39,6 +40,7 @@ import AdminTablePagination from "@/componenets/admin/table/AdminTablePagination
 import SortableTh from "@/componenets/admin/table/SortableTh";
 import RichTextEditor from "@/componenets/RichTextEditor";
 import ImageCropUpload from "@/componenets/admin/ImageCropUpload";
+import ReadingCategoriesPanel, { READING_CATEGORIES_KEY } from "@/componenets/admin/reading/ReadingCategoriesPanel";
 import { getArticleImageSrc } from "@/lib/readingImages";
 import { htmlToPlainText, plainTextToHtml } from "@/lib/richTextPlainText";
 import { Upload, CheckCircle2, XCircle, Trash2 } from "lucide-react";
@@ -59,10 +61,11 @@ const QUIZ_TYPES: ReadingQuizQuestionType[] = [
 ];
 
 type Mode = "generate" | "paste";
+type PageTab = "articles" | "categories";
 
 const emptyManualForm = {
     title: "",
-    topic: "",
+    categoryId: "",
     level: "A2",
     linkedGroupId: "",
     imageUrl: null as string | null,
@@ -109,6 +112,14 @@ export default function AdminReadingPage() {
         queryFn: () => getAdminReadingArticles().then((res) => res.data),
         enabled: hasHydrated && userProfile?.role === "ADMIN",
     });
+    // Shared with ReadingCategoriesPanel via the same query key - one fetch, one cache.
+    const { data: categories = [] } = useQuery({
+        queryKey: READING_CATEGORIES_KEY,
+        queryFn: () => getAdminReadingCategories().then((res) => res.data),
+        enabled: hasHydrated && userProfile?.role === "ADMIN",
+    });
+
+    const [pageTab, setPageTab] = useState<PageTab>("articles");
     const [isSaving, setIsSaving] = useState(false);
     const [articleToDelete, setArticleToDelete] = useState<ReadingArticle | null>(null);
     const [selectedArticleIds, setSelectedArticleIds] = useState<Set<string>>(new Set());
@@ -275,7 +286,7 @@ export default function AdminReadingPage() {
         setEditingArticle(article);
         setManualForm({
             title: article.title,
-            topic: article.topic,
+            categoryId: article.categoryId ?? "",
             level: article.level,
             linkedGroupId: article.linkedGroupId ?? "",
             imageUrl: article.imageUrl,
@@ -345,7 +356,7 @@ export default function AdminReadingPage() {
 
         const payload = {
             title: manualForm.title,
-            topic: manualForm.topic,
+            categoryId: manualForm.categoryId || null,
             level: manualForm.level,
             content: articleContent,
             imageUrl: manualForm.imageUrl,
@@ -424,7 +435,7 @@ export default function AdminReadingPage() {
     const tableQuery = tableSearch.trim().toLowerCase();
     const filteredArticles = tableQuery
         ? articles.filter(
-              (a) => a.title.toLowerCase().includes(tableQuery) || a.topic.toLowerCase().includes(tableQuery)
+              (a) => a.title.toLowerCase().includes(tableQuery) || (a.categoryTitle ?? "").toLowerCase().includes(tableQuery)
           )
         : articles;
 
@@ -485,31 +496,54 @@ export default function AdminReadingPage() {
                             Generate an article with AI, or paste in one you already have.
                         </p>
                     </div>
-                    <div className="flex items-center gap-3">
-                        {validSelectedIds.size > 0 && (
+                    {pageTab === "articles" && (
+                        <div className="flex items-center gap-3">
+                            {validSelectedIds.size > 0 && (
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    className="flex items-center gap-2 text-red-600 dark:text-red-400"
+                                    onClick={() => setConfirmBulkDelete(true)}
+                                >
+                                    <Trash2 className="size-4" />
+                                    Delete Selected ({validSelectedIds.size})
+                                </Button>
+                            )}
                             <Button
                                 type="button"
                                 variant="secondary"
-                                className="flex items-center gap-2 text-red-600 dark:text-red-400"
-                                onClick={() => setConfirmBulkDelete(true)}
+                                className="flex items-center gap-2"
+                                onClick={() => setShowBulkImport((prev) => !prev)}
                             >
-                                <Trash2 className="size-4" />
-                                Delete Selected ({validSelectedIds.size})
+                                <Upload className="size-4" />
+                                Bulk upload
                             </Button>
-                        )}
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            className="flex items-center gap-2"
-                            onClick={() => setShowBulkImport((prev) => !prev)}
-                        >
-                            <Upload className="size-4" />
-                            Bulk upload
-                        </Button>
-                    </div>
+                        </div>
+                    )}
                 </div>
 
-                {showBulkImport && (
+                <div className="flex gap-2 mt-6">
+                    <Button
+                        type="button"
+                        variant={pageTab === "articles" ? "primary" : "secondary"}
+                        className="text-sm px-4 py-2"
+                        onClick={() => setPageTab("articles")}
+                    >
+                        Reading
+                    </Button>
+                    <Button
+                        type="button"
+                        variant={pageTab === "categories" ? "primary" : "secondary"}
+                        className="text-sm px-4 py-2"
+                        onClick={() => setPageTab("categories")}
+                    >
+                        Categories (Thema)
+                    </Button>
+                </div>
+
+                {pageTab === "categories" && <ReadingCategoriesPanel />}
+
+                {pageTab === "articles" && showBulkImport && (
                     <div className="mt-6 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-4">
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Bulk upload</h2>
@@ -568,7 +602,7 @@ export default function AdminReadingPage() {
 {`[
   {
     "title": "Ein Wochenende in Berlin",
-    "topic": "Reisen",
+    "categoryTitle": "Reisen",
     "level": "A2",
     "content": "Am Samstag bin ich mit dem Zug nach Berlin gefahren...",
     "keyVocabulary": [
@@ -640,6 +674,8 @@ export default function AdminReadingPage() {
                     </div>
                 )}
 
+                {pageTab === "articles" && (
+                <>
                 <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
                     <div className="flex gap-2 mb-6">
                         <Button
@@ -695,12 +731,22 @@ export default function AdminReadingPage() {
                     ) : (
                         <form onSubmit={submitManual} className="space-y-6">
                             {editingArticle && (
-                                <p className="text-sm text-blue-600 dark:text-blue-400">
-                                    Editing &quot;{editingArticle.title}&quot; —{" "}
-                                    <button type="button" className="underline" onClick={resetManualForm}>
-                                        cancel
-                                    </button>
-                                </p>
+                                <div className="flex items-start justify-between gap-4">
+                                    <p className="text-sm text-blue-600 dark:text-blue-400">
+                                        Editing &quot;{editingArticle.title}&quot; —{" "}
+                                        <button type="button" className="underline" onClick={resetManualForm}>
+                                            cancel
+                                        </button>
+                                    </p>
+                                    <Button
+                                        variant="primary"
+                                        type="submit"
+                                        disabled={isSaving}
+                                        className="text-sm px-4 py-2 shrink-0"
+                                    >
+                                        {isSaving ? "Saving..." : "Save changes"}
+                                    </Button>
+                                </div>
                             )}
                             <div>
                                 <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Title</label>
@@ -711,13 +757,22 @@ export default function AdminReadingPage() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Topic</label>
-                                <Input
-                                    value={manualForm.topic}
-                                    onChange={(e) => setManualForm({ ...manualForm, topic: e.target.value })}
-                                    placeholder="Short topic label"
-                                    required={false}
-                                />
+                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Category (Thema)</label>
+                                <select
+                                    value={manualForm.categoryId}
+                                    onChange={(e) => setManualForm({ ...manualForm, categoryId: e.target.value })}
+                                    className="w-full mt-2 px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                >
+                                    <option value="">— None —</option>
+                                    {categories.map((category) => (
+                                        <option key={category.id} value={category.id}>
+                                            {category.title}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Manage the list from the &quot;Categories&quot; tab above.
+                                </p>
                             </div>
                             <div>
                                 <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Level</label>
@@ -1103,7 +1158,7 @@ export default function AdminReadingPage() {
                                         setTableSearch(value);
                                         setTablePage(1);
                                     }}
-                                    searchPlaceholder="Title or topic..."
+                                    searchPlaceholder="Title or category..."
                                 />
                             </div>
 
@@ -1223,6 +1278,8 @@ export default function AdminReadingPage() {
                         </div>
                     )}
                 </div>
+                </>
+                )}
             </div>
 
             {isSaving && <Loading message="Please wait..." />}

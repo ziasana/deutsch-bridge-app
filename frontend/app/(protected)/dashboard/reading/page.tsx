@@ -5,13 +5,14 @@ import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-quer
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { Newspaper, CheckCircle2, Circle, ChevronRight, RotateCw, ArrowRight } from "lucide-react";
-import { getReadingArticlesPage, getReadingLevelSummary } from "@/services/readingService";
+import { getReadingArticlesPage, getReadingCategories, getReadingLevelSummary } from "@/services/readingService";
 import Loading from "@/componenets/Loading";
 import { getArticleImageSrc } from "@/lib/readingImages";
 import { LearningLevelOption, LearningLevelSelector, LearningSearch } from "@/componenets/learning";
 import { getLevelMeta } from "@/componenets/learning/levelMeta";
 import { useI18n } from "@/componenets/I18nProvider";
 import useAuthStore from "@/store/useAuthStore";
+import { cn } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 8;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -20,7 +21,15 @@ function formatPostedDate(iso: string, locale: string): string {
     return new Date(iso).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
 }
 
-const listQueryKey = (level: string, search: string, page: number) => ["reading", "list", level, search, page];
+const listQueryKey = (level: string, search: string, bookmarkedOnly: boolean, categoryId: string, page: number) => [
+    "reading",
+    "list",
+    level,
+    search,
+    bookmarkedOnly,
+    categoryId,
+    page,
+];
 
 export default function ReadingPage() {
     const router = useRouter();
@@ -30,6 +39,8 @@ export default function ReadingPage() {
     const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
+    const [categoryId, setCategoryId] = useState("");
     // Zero-based, matching the backend.
     const [page, setPage] = useState(0);
 
@@ -47,6 +58,12 @@ export default function ReadingPage() {
         queryFn: () => getReadingLevelSummary().then((res) => res.data),
     });
 
+    // For the category ("Thema") filter dropdown.
+    const { data: categories = [] } = useQuery({
+        queryKey: ["reading", "categories"],
+        queryFn: () => getReadingCategories().then((res) => res.data),
+    });
+
     // The backend can send the literal string "null" for an unset profile level.
     const profileLevel = userProfile?.learningLevel && userProfile.learningLevel !== "null" ? userProfile.learningLevel : null;
     const effectiveLevel = selectedLevel ?? profileLevel ?? levelSummaries[0]?.level ?? "A1";
@@ -59,8 +76,11 @@ export default function ReadingPage() {
         isPlaceholderData,
         error: listError,
     } = useQuery({
-        queryKey: listQueryKey(effectiveLevel, debouncedSearch, page),
-        queryFn: () => getReadingArticlesPage(effectiveLevel, page, ITEMS_PER_PAGE, debouncedSearch).then((res) => res.data),
+        queryKey: listQueryKey(effectiveLevel, debouncedSearch, bookmarkedOnly, categoryId, page),
+        queryFn: () =>
+            getReadingArticlesPage(effectiveLevel, page, ITEMS_PER_PAGE, debouncedSearch, bookmarkedOnly, categoryId).then(
+                (res) => res.data
+            ),
         enabled: profileLevel !== null || selectedLevel !== null || !summaryLoading,
         placeholderData: keepPreviousData,
     });
@@ -71,11 +91,13 @@ export default function ReadingPage() {
     useEffect(() => {
         if (!articlePage || isPlaceholderData || page + 1 >= totalPages) return;
         queryClient.prefetchQuery({
-            queryKey: listQueryKey(effectiveLevel, debouncedSearch, page + 1),
+            queryKey: listQueryKey(effectiveLevel, debouncedSearch, bookmarkedOnly, categoryId, page + 1),
             queryFn: () =>
-                getReadingArticlesPage(effectiveLevel, page + 1, ITEMS_PER_PAGE, debouncedSearch).then((res) => res.data),
+                getReadingArticlesPage(effectiveLevel, page + 1, ITEMS_PER_PAGE, debouncedSearch, bookmarkedOnly, categoryId).then(
+                    (res) => res.data
+                ),
         });
-    }, [articlePage, isPlaceholderData, page, totalPages, effectiveLevel, debouncedSearch, queryClient]);
+    }, [articlePage, isPlaceholderData, page, totalPages, effectiveLevel, debouncedSearch, bookmarkedOnly, categoryId, queryClient]);
 
     useEffect(() => {
         const failure = listError ?? summaryError;
@@ -123,12 +145,66 @@ export default function ReadingPage() {
                     ariaLabel={t.reading.level}
                 />
 
-                <LearningSearch
-                    className="mt-4"
-                    value={search}
-                    onChange={setSearch}
-                    placeholder={t.reading.searchPlaceholder}
-                />
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <LearningSearch
+                        className="flex-1"
+                        value={search}
+                        onChange={setSearch}
+                        placeholder={t.reading.searchPlaceholder}
+                    />
+                    <select
+                        value={categoryId}
+                        onChange={(e) => {
+                            setCategoryId(e.target.value);
+                            setPage(0);
+                        }}
+                        aria-label={t.reading.category}
+                        className="shrink-0 rounded-[10px] border border-border/60 bg-card px-3 py-3 text-sm text-foreground shadow-card outline-none transition focus:ring-2 focus:ring-primary/40"
+                    >
+                        <option value="">{t.reading.allCategories}</option>
+                        {categories.map((category) => (
+                            <option key={category.id} value={category.id}>
+                                {category.title}
+                            </option>
+                        ))}
+                    </select>
+                    <div
+                        role="tablist"
+                        aria-label={t.reading.bookmarkedFilter}
+                        className="inline-flex shrink-0 rounded-[10px] border border-border/60 bg-card p-1 shadow-card"
+                    >
+                        <button
+                            type="button"
+                            role="tab"
+                            aria-selected={!bookmarkedOnly}
+                            onClick={() => {
+                                setBookmarkedOnly(false);
+                                setPage(0);
+                            }}
+                            className={cn(
+                                "rounded-lg px-3 py-1.5 text-sm font-medium transition",
+                                !bookmarkedOnly ? "bg-primary text-primary-foreground" : "text-foreground/60 hover:text-foreground"
+                            )}
+                        >
+                            {t.reading.showAll}
+                        </button>
+                        <button
+                            type="button"
+                            role="tab"
+                            aria-selected={bookmarkedOnly}
+                            onClick={() => {
+                                setBookmarkedOnly(true);
+                                setPage(0);
+                            }}
+                            className={cn(
+                                "rounded-lg px-3 py-1.5 text-sm font-medium transition",
+                                bookmarkedOnly ? "bg-primary text-primary-foreground" : "text-foreground/60 hover:text-foreground"
+                            )}
+                        >
+                            {t.reading.bookmarkedFilter}
+                        </button>
+                    </div>
+                </div>
 
                 <div className={`mt-6 space-y-3 transition-opacity ${isPlaceholderData ? "opacity-60" : ""}`}>
                     {articles.map((article) => {
@@ -180,9 +256,11 @@ export default function ReadingPage() {
                                             </span>
                                         )}
                                     </div>
-                                    <p className="text-sm text-foreground/55 truncate mt-1">
-                                        {article.topic}
-                                    </p>
+                                    {article.categoryTitle && (
+                                        <p className="text-sm text-foreground/55 truncate mt-1">
+                                            {article.categoryTitle}
+                                        </p>
+                                    )}
                                     <div className="flex items-center gap-4 mt-2 text-xs text-foreground/50">
                                         <span>{t.reading.views(article.viewCount)}</span>
                                         <span>

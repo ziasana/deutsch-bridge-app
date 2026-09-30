@@ -24,6 +24,11 @@ public class ReadingArticleMapper {
      * and counted as "new").
      */
     public static ReadingArticleResponse mapToResponse(ReadingArticle article, LearningProgress userProgress, Set<String> knownLemmas) {
+        return mapToResponse(article, userProgress, knownLemmas, false, false);
+    }
+
+    public static ReadingArticleResponse mapToResponse(ReadingArticle article, LearningProgress userProgress, Set<String> knownLemmas,
+                                                         boolean bookmarked, boolean quizCompleted) {
         List<Annotation> annotations = article.getAnnotations() != null ? article.getAnnotations() : List.of();
 
         List<AnnotationResponse> annotationResponses = annotations.stream()
@@ -49,7 +54,8 @@ public class ReadingArticleMapper {
         return new ReadingArticleResponse(
                 article.getId(),
                 article.getTitle(),
-                article.getTopic(),
+                article.getCategory() != null ? article.getCategory().getId() : null,
+                article.getCategory() != null ? article.getCategory().getTitle() : null,
                 article.getLevel() != null ? article.getLevel().getValue() : null,
                 article.getContent(),
                 article.getImageUrl(),
@@ -63,7 +69,9 @@ public class ReadingArticleMapper {
                 article.getTokens(),
                 userProgress != null
                         ? List.of(new LearningProgressResponse(userProgress.getId(), Boolean.TRUE.equals(userProgress.getIsLearned())))
-                        : List.of()
+                        : List.of(),
+                bookmarked,
+                quizCompleted
         );
     }
 }

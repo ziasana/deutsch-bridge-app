@@ -10,6 +10,7 @@ import com.deutschbridge.backend.model.dto.SubmitAnswerRequest;
 import com.deutschbridge.backend.model.entity.Annotation;
 import com.deutschbridge.backend.model.entity.QuizAnswerRecord;
 import com.deutschbridge.backend.model.entity.ReadingArticle;
+import com.deutschbridge.backend.model.entity.ReadingCategory;
 import com.deutschbridge.backend.model.entity.ReadingQuizQuestion;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.entity.UserArticleAttempt;
@@ -299,8 +300,11 @@ class ReadingAttemptServiceTest {
     @DisplayName("complete -> should recommend an easier same-topic article after a low score")
     void complete_shouldRecommendEasierArticleAfterLowScore() throws DataNotFoundException {
         User user = createUser();
+        ReadingCategory category = new ReadingCategory();
+        category.setId("cat-travel");
+        category.setTitle("travel");
         ReadingArticle article = articleWithQuiz(List.of(hauptidee()), List.of());
-        article.setTopic("travel");
+        article.setCategory(category);
         UserArticleAttempt attempt = new UserArticleAttempt();
         attempt.setId("attempt1");
         attempt.setUser(user);
@@ -311,11 +315,11 @@ class ReadingAttemptServiceTest {
         easierArticle.setId("article-a1");
         easierArticle.setTitle("Reisen - leicht");
         easierArticle.setLevel(LearningLevel.A1);
-        easierArticle.setTopic("travel");
+        easierArticle.setCategory(category);
 
         when(attemptRepository.findById("attempt1")).thenReturn(Optional.of(attempt));
         when(attemptRepository.save(attempt)).thenReturn(attempt);
-        when(readingArticleRepository.findFirstByLevelAndTopicIgnoreCase(LearningLevel.A1, "travel"))
+        when(readingArticleRepository.findFirstByLevelAndCategory(LearningLevel.A1, category))
                 .thenReturn(Optional.of(easierArticle));
 
         AttemptResultResponse result = service.complete("attempt1", new CompleteAttemptRequest(List.of(), List.of()));

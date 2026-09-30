@@ -41,7 +41,6 @@ class ReadingArticleRepositoryIntegrationTest {
     private ReadingArticle article(String title, LearningLevel level, LocalDateTime createdAt, String... lemmas) {
         ReadingArticle article = new ReadingArticle();
         article.setTitle(title);
-        article.setTopic("topic");
         article.setLevel(level);
         article.setContent("content");
         article.setCreatedAt(createdAt);
@@ -63,12 +62,12 @@ class ReadingArticleRepositoryIntegrationTest {
         article("Mein Hausboot", LearningLevel.A1, base.plusDays(3));
         article("Das Haus B2", LearningLevel.B2, base.plusDays(4));
 
-        Page<ReadingArticleListProjection> first = readingArticleRepository.findListPage(LearningLevel.A1, "", PageRequest.of(0, 2));
+        Page<ReadingArticleListProjection> first = readingArticleRepository.findListPage(LearningLevel.A1, "", null, PageRequest.of(0, 2));
         assertEquals(3, first.getTotalElements());
         assertEquals(2, first.getTotalPages());
         assertEquals(List.of("Mein Hausboot", "Der Garten"), first.map(ReadingArticleListProjection::getTitle).toList());
 
-        Page<ReadingArticleListProjection> searched = readingArticleRepository.findListPage(LearningLevel.A1, "haus", PageRequest.of(0, 10));
+        Page<ReadingArticleListProjection> searched = readingArticleRepository.findListPage(LearningLevel.A1, "haus", null, PageRequest.of(0, 10));
         assertEquals(List.of("Mein Hausboot", "Das Haus"), searched.map(ReadingArticleListProjection::getTitle).toList());
         assertEquals(LearningLevel.A1, searched.getContent().get(0).getLevel());
     }

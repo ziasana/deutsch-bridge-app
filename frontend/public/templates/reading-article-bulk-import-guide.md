@@ -25,7 +25,7 @@ don't have a value for it.
 
 | Field           | Type            | Notes                                                                 |
 |------------------|-----------------|------------------------------------------------------------------------|
-| `topic`         | string          | Short topic/category label shown in the article list.                 |
+| `categoryTitle` | string          | The category ("Thema") this article belongs to. Matches an existing category by title (case-insensitive) or creates a new one - manage the final list from the admin "Categories" tab. |
 | `imageUrl`      | string or null  | Leave as `null` — illustrations are uploaded separately per article from the admin edit form, not through bulk import. |
 | `linkedGroupId` | string or null  | Groups articles that share the same story across levels.              |
 

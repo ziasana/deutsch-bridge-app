@@ -17,7 +17,10 @@ import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.model.enums.ReadingQuizQuestionType;
 import com.deutschbridge.backend.model.enums.WordProgressStatus;
 import com.deutschbridge.backend.repository.LearningProgressRepository;
+import com.deutschbridge.backend.repository.ReadingArticleBookmarkRepository;
 import com.deutschbridge.backend.repository.ReadingArticleRepository;
+import com.deutschbridge.backend.repository.ReadingCategoryRepository;
+import com.deutschbridge.backend.repository.UserArticleAttemptRepository;
 import com.deutschbridge.backend.repository.UserWordProgressRepository;
 import com.deutschbridge.backend.service.cache.ContentCacheService;
 import com.deutschbridge.backend.service.cache.ReadingProgressCacheService;
@@ -43,7 +46,19 @@ class ReadingArticleServiceTest {
     private ReadingArticleRepository readingArticleRepository;
 
     @Mock
+    private ReadingArticleBookmarkRepository readingArticleBookmarkRepository;
+
+    @Mock
+    private ReadingCategoryRepository readingCategoryRepository;
+
+    @Mock
+    private ReadingCategoryService readingCategoryService;
+
+    @Mock
     private LearningProgressRepository learningProgressRepository;
+
+    @Mock
+    private UserArticleAttemptRepository userArticleAttemptRepository;
 
     @Mock
     private UserWordProgressRepository userWordProgressRepository;
@@ -161,7 +176,7 @@ class ReadingArticleServiceTest {
         question.setPrompt("Frage");
 
         ReadingArticleManualRequest request = new ReadingArticleManualRequest(
-                "Titel", "Thema", LearningLevel.A1, "Inhalt", null, null, List.of(), List.of(annotation), List.of(question), null
+                "Titel", null, null, LearningLevel.A1, "Inhalt", null, null, List.of(), List.of(annotation), List.of(question), null
         );
 
         when(readingArticleRepository.save(org.mockito.ArgumentMatchers.any(ReadingArticle.class)))
@@ -245,11 +260,11 @@ class ReadingArticleServiceTest {
     void findPageWithLearningProgress_shouldMergeUserState() {
         User user = createUser();
         ContentCacheService.ReadingArticleListEntry learnedEntry = new ContentCacheService.ReadingArticleListEntry(
-                "a1", "Haus", "Wohnen", LearningLevel.A1, null, null, 3, null, List.of("Haus", "Garten"));
+                "a1", "Haus", "c1", "Wohnen", LearningLevel.A1, null, null, 3, null, List.of("Haus", "Garten"));
         ContentCacheService.ReadingArticleListEntry otherEntry = new ContentCacheService.ReadingArticleListEntry(
-                "a2", "Schule", "Bildung", LearningLevel.A1, null, null, 0, null, List.of());
+                "a2", "Schule", "c2", "Bildung", LearningLevel.A1, null, null, 0, null, List.of());
 
-        when(contentCacheService.getReadingArticleListPage(LearningLevel.A1, "haus", 0, 50))
+        when(contentCacheService.getReadingArticleListPage(LearningLevel.A1, "haus", null, 0, 50))
                 .thenReturn(new ContentCacheService.ReadingArticleListPage(List.of(learnedEntry, otherEntry), 2, 1));
         when(requestContext.getUserEmail()).thenReturn(user.getEmail());
         when(userService.findByEmail(user.getEmail())).thenReturn(user);
@@ -260,13 +275,14 @@ class ReadingArticleServiceTest {
         progress.setReading(a1);
         progress.setIsLearned(true);
         when(learningProgressRepository.findByUserAndReadingIdIn(user, List.of("a1", "a2"))).thenReturn(List.of(progress));
+        when(readingArticleBookmarkRepository.findByUserAndArticle_IdIn(user, List.of("a1", "a2"))).thenReturn(List.of());
 
         UserWordProgress knownProgress = new UserWordProgress();
         knownProgress.setLemma("Haus");
         knownProgress.setStatus(WordProgressStatus.KNOWN);
         when(userWordProgressRepository.findByUserAndLemmaIn(user, List.of("Haus", "Garten"))).thenReturn(List.of(knownProgress));
 
-        ReadingArticlePageResponse response = service.findPageWithLearningProgress(LearningLevel.A1, "  HAUS ", -3, 500);
+        ReadingArticlePageResponse response = service.findPageWithLearningProgress(LearningLevel.A1, "  HAUS ", false, null, -3, 500);
 
         assertEquals(0, response.page());
         assertEquals(50, response.size());
@@ -281,10 +297,10 @@ class ReadingArticleServiceTest {
     @Test
     @DisplayName("findPageWithLearningProgress -> should skip user lookups for an empty page")
     void findPageWithLearningProgress_shouldSkipUserLookupsWhenEmpty() {
-        when(contentCacheService.getReadingArticleListPage(LearningLevel.B2, "", 0, 8))
+        when(contentCacheService.getReadingArticleListPage(LearningLevel.B2, "", null, 0, 8))
                 .thenReturn(new ContentCacheService.ReadingArticleListPage(List.of(), 0, 0));
 
-        ReadingArticlePageResponse response = service.findPageWithLearningProgress(LearningLevel.B2, null, 0, 8);
+        ReadingArticlePageResponse response = service.findPageWithLearningProgress(LearningLevel.B2, null, false, null, 0, 8);
 
         assertTrue(response.items().isEmpty());
         verify(userService, never()).findByEmail(any());
