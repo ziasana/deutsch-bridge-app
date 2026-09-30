@@ -12,6 +12,12 @@ public enum ExamTaskType {
     MULTIPLE_CHOICE,
     /** Leseverstehen Teil 3: richtig/falsch/nicht im Text statements about short passages. */
     TRUE_FALSE_NOT_GIVEN,
+    /**
+     * Leseverstehen Teil 3: the reverse of MATCHING - short situations (questions) are matched to one
+     * of several ads (passages, each usable once). correctAnswer is the matching passage's id, or
+     * "X" when no ad fits.
+     */
+    SITUATION_MATCHING,
     /** Sprachbausteine Teil 2: one running text with numbered gaps filled from a shared word pool. */
     WORD_BANK_CLOZE,
     /** Schriftlicher Ausdruck: a writing prompt with no grading, just a revealable model solution. */

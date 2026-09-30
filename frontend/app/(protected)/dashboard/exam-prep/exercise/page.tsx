@@ -36,6 +36,13 @@ const TFN_OPTIONS = [
     { value: "NICHT_IM_TEXT", label: "Nicht im Text" },
 ];
 
+/** SITUATION_MATCHING's correctAnswer for "no ad fits" (the "x" on the answer sheet). */
+const NO_AD_ANSWER = "X";
+
+/** SITUATION_MATCHING answers are passage ids; show the ad's label ("e") instead of the raw id. */
+const answerLabelFor = (passages: ExamPassagePublic[], value: string) =>
+    value === NO_AD_ANSWER ? "x (keine Anzeige)" : (passages.find((p) => p.id === value)?.label ?? value);
+
 const letterFor = (index: number) => String.fromCharCode(97 + index);
 /** Admin-edited label for an answer option, falling back to its positional letter. */
 const optionLabelFor = (labels: string[] | null | undefined, index: number) => labels?.[index]?.trim() || letterFor(index);
@@ -115,7 +122,12 @@ interface ResultsState {
     transcripts: ExamTranscript[];
 }
 
-function ResultCard({ index, item, hideTranscript }: Readonly<{ index: number; item: ResultItem; hideTranscript?: boolean }>) {
+function ResultCard({
+    index,
+    item,
+    hideTranscript,
+    formatAnswer,
+}: Readonly<{ index: number; item: ResultItem; hideTranscript?: boolean; formatAnswer?: (value: string) => string }>) {
     const { question, feedback } = item;
     return (
         <div
@@ -130,7 +142,7 @@ function ResultCard({ index, item, hideTranscript }: Readonly<{ index: number; i
             </p>
             {!feedback.correct && (
                 <p>
-                    Richtige Antwort: <span className="font-medium">{feedback.correctAnswer}</span>
+                    Richtige Antwort: <span className="font-medium">{formatAnswer ? formatAnswer(feedback.correctAnswer) : feedback.correctAnswer}</span>
                 </p>
             )}
             {feedback.explanation && <p className="mt-1">💡 {feedback.explanation}</p>}
@@ -153,7 +165,9 @@ function ResultsView({
     markingCompleted,
     onPracticeAgain,
     onMarkCompleted,
+    formatAnswer,
 }: Readonly<{
+    formatAnswer?: (value: string) => string;
     results: ResultsState;
     defaultExplanation?: string | null;
     defaultCommonMistake?: string | null;
@@ -209,7 +223,7 @@ function ResultsView({
             <div className="space-y-3 pt-2">
                 {results.items.map((item, idx) => (
                     // The transcript link above covers every transcript; don't repeat it under each question.
-                    <ResultCard key={item.question.id} index={idx} item={item} hideTranscript={results.transcripts.length > 0} />
+                    <ResultCard key={item.question.id} index={idx} item={item} hideTranscript={results.transcripts.length > 0} formatAnswer={formatAnswer} />
                 ))}
             </div>
 
@@ -313,6 +327,7 @@ function QuestionSelect({
     taskType,
     value,
     disabled,
+    choices,
     onChange,
 }: Readonly<{
     question: ExamQuestionPublic;
@@ -321,14 +336,16 @@ function QuestionSelect({
     taskType: string;
     value: string;
     disabled: boolean;
+    /** Overrides the options derived from taskType (used by SITUATION_MATCHING, whose choices are the ads). */
+    choices?: { value: string; label: string; disabled?: boolean }[];
     onChange: (value: string) => void;
 }>) {
-    const options =
-        taskType === "TRUE_FALSE_NOT_GIVEN"
+    const options: { value: string; label: string; disabled?: boolean }[] =
+        choices ?? (taskType === "TRUE_FALSE_NOT_GIVEN"
             ? TFN_OPTIONS
             : taskType === "MATCHING" || taskType === "WORD_BANK_CLOZE"
                 ? answerOptions.map((o, idx) => ({ value: o, label: `${optionLabelFor(answerOptionLabels, idx)}) ${o}` }))
-                : (question.options ?? []).map((o) => ({ value: o, label: o }));
+                : (question.options ?? []).map((o) => ({ value: o, label: o })));
 
     return (
         <select
@@ -339,7 +356,7 @@ function QuestionSelect({
         >
             <option value="">Antwort wählen...</option>
             {options.map((option) => (
-                <option key={option.value} value={option.value}>
+                <option key={option.value} value={option.value} disabled={option.disabled}>
                     {option.label}
                 </option>
             ))}
@@ -374,12 +391,14 @@ interface GridQuizState {
 }
 
 /**
- * Word-bank cloze (Sprachbausteine Teil 2): every gap is shown at once as a card in a grid, each
+ * Grid quizzes (answered all at once): word-bank cloze (Sprachbausteine Teil 2) and
+ * SITUATION_MATCHING (Leseverstehen Teil 3, situations matched to ads). Every gap is shown at once as a card in a grid, each
  * with a dropdown; a single "Antworten abgeben" submits everything together, mirroring how this
  * part is actually taken in the real exam (a running text with 10 gaps answered all at once).
  */
 function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse }>) {
     const [quiz, setQuiz] = useState<GridQuizState | null>(null);
+    const isSituationMatching = exercise.taskType === "SITUATION_MATCHING";
     const [results, setResults] = useState<ResultsState | null>(null);
     const [starting, setStarting] = useState(false);
     const { completed, marking, markCompleted } = useExerciseCompletion(exercise);
@@ -438,6 +457,7 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
                 markingCompleted={marking}
                 onPracticeAgain={practiceAgain}
                 onMarkCompleted={markCompleted}
+                formatAnswer={isSituationMatching ? (value) => answerLabelFor(exercise.passages, value) : undefined}
             />
         );
     }
@@ -448,13 +468,27 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
 
     const allAnswered = quiz.questions.every((q) => quiz.answers[q.id]);
 
+    // Each ad may be used once: disable it in every other situation's dropdown once picked ("x" stays available).
+    const choicesFor = (questionId: string) =>
+        isSituationMatching
+            ? [
+                  ...quiz.passages.map((p) => ({
+                      value: p.id,
+                      label: p.label,
+                      disabled: Object.entries(quiz.answers).some(([id, answer]) => id !== questionId && answer === p.id),
+                  })),
+                  { value: NO_AD_ANSWER, label: "x (keine Anzeige)" },
+              ]
+            : undefined;
+
     return (
         <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-4">
             <p className="text-sm text-gray-600 dark:text-gray-300">
                 Beantworte alle {quiz.questions.length} Aufgaben und klicke dann auf &quot;Antworten abgeben&quot;.
+                {isSituationMatching && " Jede Anzeige darf nur einmal benutzt werden. Wenn keine Anzeige passt, wähle x."}
             </p>
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className={`grid gap-3 sm:grid-cols-2 ${isSituationMatching ? "" : "lg:grid-cols-3 xl:grid-cols-4"}`}>
                 {quiz.questions.map((question, idx) => {
                     const referencedPassage = question.sectionIndex != null ? quiz.passages[question.sectionIndex] : null;
                     return (
@@ -470,6 +504,7 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
                                 taskType={exercise.taskType ?? ""}
                                 value={quiz.answers[question.id] ?? ""}
                                 disabled={quiz.submitting}
+                                choices={choicesFor(question.id)}
                                 onChange={(value) =>
                                     setQuiz((prev) => (prev ? { ...prev, answers: { ...prev.answers, [question.id]: value } } : prev))
                                 }
@@ -976,7 +1011,7 @@ function ExamExerciseContent() {
                     <SchriftlicherAusdruckView exercise={exercise} />
                 ) : exercise.section === "TESTFORMAT_INFORMATION" ? (
                     <TestformatInformationView exercise={exercise} />
-                ) : exercise.taskType === "WORD_BANK_CLOZE" ? (
+                ) : exercise.taskType === "WORD_BANK_CLOZE" || exercise.taskType === "SITUATION_MATCHING" ? (
                     <ClozeGridQuiz exercise={exercise} />
                 ) : (
                     <StepQuiz exercise={exercise} />

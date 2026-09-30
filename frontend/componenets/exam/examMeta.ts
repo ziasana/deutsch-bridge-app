@@ -54,6 +54,7 @@ export const EXAM_TYPE_META: Record<ExamSection, ExamTypeMeta> = {
 
 export const TASK_TYPE_LABELS: Record<ExamTaskType, string> = {
     MATCHING: "Zuordnungsaufgaben",
+    SITUATION_MATCHING: "Zuordnung: Situation → Anzeige",
     MULTIPLE_CHOICE: "Multiple-Choice-Aufgaben",
     TRUE_FALSE_NOT_GIVEN: "Aufgaben richtig/falsch/nicht",
     WORD_BANK_CLOZE: "Lückentext (Wortbank)",

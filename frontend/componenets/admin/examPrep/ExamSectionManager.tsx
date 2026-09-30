@@ -34,7 +34,7 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1"];
 const TASK_TYPES_BY_SECTION: Record<ExamSection, ExamTaskType[]> = {
-    LESEVERSTEHEN: ["MATCHING", "MULTIPLE_CHOICE", "TRUE_FALSE_NOT_GIVEN"],
+    LESEVERSTEHEN: ["MATCHING", "SITUATION_MATCHING", "MULTIPLE_CHOICE", "TRUE_FALSE_NOT_GIVEN"],
     SPRACHBAUSTEINE: ["MULTIPLE_CHOICE", "WORD_BANK_CLOZE"],
     HOERVERSTEHEN: ["MATCHING", "MULTIPLE_CHOICE", "TRUE_FALSE_NOT_GIVEN"],
     SCHRIFTLICHER_AUSDRUCK: ["WRITING_TASK"],
@@ -51,6 +51,7 @@ const TEIL_NUMBERS_BY_SECTION: Partial<Record<ExamSection, number[]>> = {
 
 const TASK_TYPE_LABELS: Record<ExamTaskType, string> = {
     MATCHING: "Zuordnungsaufgaben",
+    SITUATION_MATCHING: "Zuordnung: Situation → Anzeige",
     MULTIPLE_CHOICE: "Multiple-Choice-Aufgaben",
     TRUE_FALSE_NOT_GIVEN: "Aufgaben richtig/falsch/nicht",
     WORD_BANK_CLOZE: "Lückentext (Wortbank)",
@@ -128,12 +129,17 @@ const hasPassageContent = (p: ExamPassage) => {
     return hasText || hasEmbeddedImage || Boolean(p.imageUrl) || Boolean(p.audioUrl);
 };
 
-const passageLabelDefault = (index: number, section: ExamSection): string =>
-    section === "HOERVERSTEHEN" ? `Audiodatei ${index + 1}` : `Text ${index + 1}`;
+/** Correct-answer value for "no ad fits" (the "x" on the answer sheet) in SITUATION_MATCHING. */
+const NO_AD_ANSWER = "X";
 
-const emptyPassage = (index: number, section: ExamSection): ExamPassage => ({
+const passageLabelDefault = (index: number, section: ExamSection, taskType?: ExamTaskType | null): string => {
+    if (taskType === "SITUATION_MATCHING") return String.fromCharCode(97 + index);
+    return section === "HOERVERSTEHEN" ? `Audiodatei ${index + 1}` : `Text ${index + 1}`;
+};
+
+const emptyPassage = (index: number, section: ExamSection, taskType?: ExamTaskType | null): ExamPassage => ({
     id: crypto.randomUUID(),
-    label: passageLabelDefault(index, section),
+    label: passageLabelDefault(index, section, taskType),
     content: "",
     imageUrl: null,
     audioUrl: null,
@@ -290,7 +296,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
         });
     };
     const removePassage = (idx: number) => setPassages((prev) => prev.filter((_, i) => i !== idx));
-    const addPassage = () => setPassages((prev) => [...prev, emptyPassage(prev.length, section)]);
+    const addPassage = () => setPassages((prev) => [...prev, emptyPassage(prev.length, section, form.taskType)]);
 
     const uploadPassageImage = (idx: number, file: File) => {
         setUploadingPassageImage(idx);
@@ -407,6 +413,20 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
             return;
         }
 
+        if (form.taskType === "SITUATION_MATCHING") {
+            const adIds = new Set(passages.filter(hasPassageContent).map((p) => p.id));
+            const answered = questions.filter((q) => q.prompt.trim());
+            if (answered.some((q) => q.correctAnswer !== NO_AD_ANSWER && !adIds.has(q.correctAnswer))) {
+                toast.error("Every situation needs a correct ad (or \"x\") that still exists.");
+                return;
+            }
+            const usedAds = answered.map((q) => q.correctAnswer).filter((a) => a !== NO_AD_ANSWER);
+            if (new Set(usedAds).size !== usedAds.length) {
+                toast.error("An ad can only be the correct answer for one situation.");
+                return;
+            }
+        }
+
         // Passages with no content are dropped, but that shifts array indices - remap each
         // question's sectionIndex (which points into the passages array) so links survive.
         const passageIndexRemap = new Map<number, number>();
@@ -415,7 +435,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
             .filter(({ p }) => hasPassageContent(p))
             .map(({ p, originalIdx }, newIdx) => {
                 passageIndexRemap.set(originalIdx, newIdx);
-                return { ...p, label: p.label.trim() || passageLabelDefault(newIdx, section) };
+                return { ...p, label: p.label.trim() || passageLabelDefault(newIdx, section, form.taskType) };
             });
 
         setIsSaving(true);
@@ -736,7 +756,9 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
 
                     <div>
                         <div className="flex items-center justify-between mb-2">
-                            <label className="text-gray-700 dark:text-gray-300 text-sm">Passages / texts</label>
+                            <label className="text-gray-700 dark:text-gray-300 text-sm">
+                                {form.taskType === "SITUATION_MATCHING" ? "Ads (a, b, c, ... — more ads than situations are fine)" : "Passages / texts"}
+                            </label>
                         </div>
                         <div className="space-y-3">
                             {passages.map((p, idx) => (
@@ -986,6 +1008,8 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                         placeholder={
                                             form.taskType === "MATCHING"
                                                 ? "Prompt shown above the text (optional)"
+                                                : form.taskType === "SITUATION_MATCHING"
+                                                    ? "Situation, e.g. \"Sie möchten draußen essen.\""
                                                 : section === "HOERVERSTEHEN"
                                                     ? "Statement, e.g. \"Der Zug hat Verspätung.\""
                                                     : "Question prompt"
@@ -1020,6 +1044,22 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                                 ))}
                                             </select>
                                         </div>
+                                    )}
+
+                                    {form.taskType === "SITUATION_MATCHING" && (
+                                        <select
+                                            value={q.correctAnswer}
+                                            onChange={(e) => updateQuestion(idx, "correctAnswer", e.target.value)}
+                                            className="w-full px-2 py-2 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm"
+                                        >
+                                            <option value="">Select the matching ad...</option>
+                                            {passages.filter(hasPassageContent).map((p) => (
+                                                <option key={p.id} value={p.id}>
+                                                    {p.label}
+                                                </option>
+                                            ))}
+                                            <option value={NO_AD_ANSWER}>x (no ad fits)</option>
+                                        </select>
                                     )}
 
                                     {form.taskType === "MULTIPLE_CHOICE" && (

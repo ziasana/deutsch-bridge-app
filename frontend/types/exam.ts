@@ -5,7 +5,7 @@ export type ExamSection =
     | "SCHRIFTLICHER_AUSDRUCK"
     | "TESTFORMAT_INFORMATION";
 
-export type ExamTaskType = "MATCHING" | "MULTIPLE_CHOICE" | "TRUE_FALSE_NOT_GIVEN" | "WORD_BANK_CLOZE" | "WRITING_TASK";
+export type ExamTaskType = "MATCHING" | "SITUATION_MATCHING" | "MULTIPLE_CHOICE" | "TRUE_FALSE_NOT_GIVEN" | "WORD_BANK_CLOZE" | "WRITING_TASK";
 
 export type ExamFieldPresetType = "TEIL_DESCRIPTION" | "DEFAULT_EXPLANATION" | "DEFAULT_COMMON_MISTAKE";
 
@@ -47,7 +47,7 @@ export interface ExamQuestion {
     sectionIndex: number | null;
     /** MULTIPLE_CHOICE options; null for MATCHING (uses the exercise-level shared answerOptions pool) and TRUE_FALSE_NOT_GIVEN. */
     options: string[] | null;
-    /** MC: matches an options entry. TFN: "RICHTIG"|"FALSCH"|"NICHT_IM_TEXT". MATCHING/WORD_BANK_CLOZE: matches an entry in the exercise's answerOptions. */
+    /** SITUATION_MATCHING: the matching passage's id, or "X" for no ad. MC: matches an options entry. TFN: "RICHTIG"|"FALSCH"|"NICHT_IM_TEXT". MATCHING/WORD_BANK_CLOZE: matches an entry in the exercise's answerOptions. */
     correctAnswer: string;
     /** WORD_BANK_CLOZE only: the gap's number, matching the marker embedded in the passage content. */
     gapNumber: number | null;
