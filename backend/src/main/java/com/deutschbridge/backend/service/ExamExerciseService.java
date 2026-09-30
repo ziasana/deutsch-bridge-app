@@ -229,6 +229,7 @@ public class ExamExerciseService {
         if (request.passages() != null) exercise.setPassages(preparePassages(request.passages()));
         if (request.questions() != null) exercise.setQuestions(prepareQuestions(request.questions()));
         if (request.answerOptions() != null) exercise.setAnswerOptions(request.answerOptions());
+        if (request.answerOptionLabels() != null) exercise.setAnswerOptionLabels(request.answerOptionLabels());
         if (request.defaultExplanation() != null) exercise.setDefaultExplanation(request.defaultExplanation());
         if (request.defaultCommonMistake() != null) exercise.setDefaultCommonMistake(request.defaultCommonMistake());
         if (request.teilDescription() != null) exercise.setTeilDescription(request.teilDescription());

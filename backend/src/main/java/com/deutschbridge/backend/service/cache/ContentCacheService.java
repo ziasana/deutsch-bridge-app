@@ -159,6 +159,7 @@ public class ContentCacheService {
             Hibernate.initialize(exercise.getPassages());
             Hibernate.initialize(exercise.getQuestions());
             Hibernate.initialize(exercise.getAnswerOptions());
+            Hibernate.initialize(exercise.getAnswerOptionLabels());
         });
         return published;
     }

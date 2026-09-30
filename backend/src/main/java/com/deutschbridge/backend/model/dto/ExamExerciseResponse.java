@@ -17,6 +17,7 @@ public record ExamExerciseResponse(
         List<ExamPassage> passages,
         List<ExamQuestion> questions,
         List<String> answerOptions,
+        List<String> answerOptionLabels,
         String defaultExplanation,
         String defaultCommonMistake,
         String teilDescription,

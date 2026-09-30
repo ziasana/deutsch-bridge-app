@@ -21,7 +21,7 @@ import { Badge } from "@/componenets/ui/badge";
 import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
 
 const TITLE = "Testformat Information";
-const LEVELS = ["A1", "A2", "B1", "B2", "C1"];
+const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
 const makeEmptyForm = () => ({ level: "", content: "", published: true });
 
@@ -133,6 +133,7 @@ export default function AdminExamTestformatInformationPage() {
             ],
             questions: [],
             answerOptions: [],
+            answerOptionLabels: [],
             defaultExplanation: null,
             defaultCommonMistake: null,
             teilDescription: null,

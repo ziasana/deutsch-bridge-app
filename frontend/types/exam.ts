@@ -70,6 +70,8 @@ export interface ExamExerciseResponse {
     questions: ExamQuestion[];
     /** MATCHING only: shared pool of candidate headlines (includes distractors), one per line. */
     answerOptions: string[] | null;
+    /** Optional admin-edited labels ("a", "1", ...) per answerOptions entry, by index; blank = default letter. */
+    answerOptionLabels: string[] | null;
     defaultExplanation: string | null;
     defaultCommonMistake: string | null;
     /** Shown to the student at the start of this Teil, before the passages/questions. */
@@ -109,6 +111,8 @@ export interface ExamExercisePublicResponse {
     passages: ExamPassagePublic[];
     questions: ExamQuestionPublic[];
     answerOptions: string[] | null;
+    /** Optional admin-edited labels ("a", "1", ...) per answerOptions entry, by index; blank = default letter. */
+    answerOptionLabels: string[] | null;
     /** Shown to the student at the start of this Teil, before the passages/questions. */
     teilDescription: string | null;
     /** SCHRIFTLICHER_AUSDRUCK only: the "mögliche Antwort" revealed via a button. */
@@ -157,6 +161,8 @@ export interface ExamExerciseManualRequest {
     passages: ExamPassage[];
     questions: ExamQuestion[];
     answerOptions: string[] | null;
+    /** Optional admin-edited labels ("a", "1", ...) per answerOptions entry, by index; blank = default letter. */
+    answerOptionLabels: string[] | null;
     defaultExplanation: string | null;
     defaultCommonMistake: string | null;
     teilDescription: string | null;
@@ -171,6 +177,8 @@ export interface StartExamAttemptResponse {
     passages: ExamPassagePublic[];
     questions: ExamQuestionPublic[];
     answerOptions: string[] | null;
+    /** Optional admin-edited labels ("a", "1", ...) per answerOptions entry, by index; blank = default letter. */
+    answerOptionLabels: string[] | null;
 }
 
 export interface SubmitExamAnswerRequest {

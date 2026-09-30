@@ -66,6 +66,8 @@ const SHARED_POOL_TASK_TYPES: ExamTaskType[] = ["MATCHING", "WORD_BANK_CLOZE", "
 const usesAnswerOptionsPool = (taskType: ExamTaskType | null) =>
     taskType != null && SHARED_POOL_TASK_TYPES.includes(taskType);
 
+const defaultOptionLabel = (index: number): string => String.fromCharCode(97 + index);
+
 const taskTypeLabel = (taskType: ExamTaskType): string => TASK_TYPE_LABELS[taskType] ?? taskType;
 
 const sectionLabel = (section: ExamSection, partNumber: number | null): string => {
@@ -204,6 +206,9 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
     const [passages, setPassages] = useState<ExamPassage[]>([]);
     const [questions, setQuestions] = useState<ExamQuestion[]>([]);
     const [answerOptions, setAnswerOptions] = useState<string[]>([]);
+    // Parallel to answerOptions; "" means "use the default positional letter (a, b, c...)".
+    const [answerOptionLabels, setAnswerOptionLabels] = useState<string[]>([]);
+    const optionLabel = (idx: number) => answerOptionLabels[idx]?.trim() || defaultOptionLabel(idx);
     const [editingExercise, setEditingExercise] = useState<ExamExerciseResponse | null>(null);
     const [uploadingPassageImage, setUploadingPassageImage] = useState<number | null>(null);
     const [uploadingPassageAudio, setUploadingPassageAudio] = useState<number | null>(null);
@@ -253,6 +258,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
         setPassages([]);
         setQuestions([]);
         setAnswerOptions([]);
+        setAnswerOptionLabels([]);
         setEditingExercise(null);
     };
 
@@ -341,8 +347,21 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
     const updateAnswerOption = (idx: number, value: string) => {
         setAnswerOptions((prev) => prev.map((o, i) => (i === idx ? value : o)));
     };
-    const removeAnswerOption = (idx: number) => setAnswerOptions((prev) => prev.filter((_, i) => i !== idx));
-    const addAnswerOption = () => setAnswerOptions((prev) => [...prev, ""]);
+    const updateAnswerOptionLabel = (idx: number, value: string) => {
+        setAnswerOptionLabels((prev) => {
+            const next = answerOptions.map((_, i) => prev[i] ?? "");
+            next[idx] = value;
+            return next;
+        });
+    };
+    const removeAnswerOption = (idx: number) => {
+        setAnswerOptions((prev) => prev.filter((_, i) => i !== idx));
+        setAnswerOptionLabels((prev) => prev.filter((_, i) => i !== idx));
+    };
+    const addAnswerOption = () => {
+        setAnswerOptions((prev) => [...prev, ""]);
+        setAnswerOptionLabels((prev) => [...answerOptions.map((_, i) => prev[i] ?? ""), ""]);
+    };
 
     const updateSectionIndex = (idx: number, passageIdx: string) => {
         setQuestions((prev) =>
@@ -377,6 +396,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                 : exercise.questions
         );
         setAnswerOptions(isLegacyTfn ? TFN_DEFAULT_ANSWER_OPTIONS : exercise.answerOptions ?? []);
+        setAnswerOptionLabels(isLegacyTfn ? [] : exercise.answerOptionLabels ?? []);
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
@@ -429,7 +449,12 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                     sectionIndex: q.sectionIndex != null ? passageIndexRemap.get(q.sectionIndex) ?? null : null,
                     options: q.options ? q.options.map((o) => o.trim()).filter(Boolean) : null,
                 })),
+            // Blank options are dropped, so their labels must be dropped with them to stay index-aligned.
             answerOptions: answerOptions.map((o) => o.trim()).filter(Boolean),
+            answerOptionLabels: answerOptions
+                .map((o, i) => ({ option: o.trim(), label: (answerOptionLabels[i] ?? "").trim() }))
+                .filter(({ option }) => option)
+                .map(({ label }) => label),
             defaultExplanation: form.defaultExplanation.trim() || null,
             defaultCommonMistake: form.defaultCommonMistake.trim() || null,
             teilDescription: form.teilDescription.trim() || null,
@@ -837,8 +862,17 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                 {answerOptions.map((option, idx) => (
                                     <div key={idx} className="flex gap-2 items-center">
                                         {form.taskType !== "TRUE_FALSE_NOT_GIVEN" && (
-                                            <span className="text-xs text-gray-500 dark:text-gray-400 w-5">
-                                                {String.fromCharCode(97 + idx)})
+                                            <span className="flex items-center gap-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                                <input
+                                                    value={answerOptionLabels[idx] ?? ""}
+                                                    onChange={(e) => updateAnswerOptionLabel(idx, e.target.value)}
+                                                    placeholder={defaultOptionLabel(idx)}
+                                                    maxLength={4}
+                                                    aria-label={`Label for option ${idx + 1}`}
+                                                    title="Label shown before this option (default: letter by position). Can be a number."
+                                                    className="w-10 px-1 py-1 text-center rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
+                                                />
+                                                )
                                             </span>
                                         )}
                                         <Input
@@ -894,7 +928,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                                     <option value="">Select correct word...</option>
                                                     {answerOptions.map((option, oIdx) => (
                                                         <option key={option || oIdx} value={option}>
-                                                            {String.fromCharCode(97 + oIdx)}) {option}
+                                                            {optionLabel(oIdx)}) {option}
                                                         </option>
                                                     ))}
                                                 </select>
@@ -981,7 +1015,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                                 <option value="">Select correct headline...</option>
                                                 {answerOptions.map((option, oIdx) => (
                                                     <option key={option || oIdx} value={option}>
-                                                        {String.fromCharCode(97 + oIdx)}) {option}
+                                                        {optionLabel(oIdx)}) {option}
                                                     </option>
                                                 ))}
                                             </select>

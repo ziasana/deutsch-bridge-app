@@ -73,7 +73,7 @@ public class ExamAttemptService {
                 .toList();
         List<ExamQuestionPublic> questionsPublic = ExamExerciseMapper.mapQuestionsToPublic(questions);
 
-        return new StartExamAttemptResponse(attempt.getId(), passagesPublic, questionsPublic, exercise.getAnswerOptions());
+        return new StartExamAttemptResponse(attempt.getId(), passagesPublic, questionsPublic, exercise.getAnswerOptions(), exercise.getAnswerOptionLabels());
     }
 
     public ExamAnswerFeedbackResponse submitAnswer(String attemptId, SubmitExamAnswerRequest request) throws DataNotFoundException {

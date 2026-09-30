@@ -53,6 +53,14 @@ public class ExamExercise {
     @Column(columnDefinition = "jsonb")
     private List<String> answerOptions;
 
+    /**
+     * Optional labels shown in front of each answerOptions entry (e.g. "a", "b" or "1", "2"),
+     * matched by index. A missing or blank entry means "use the default positional letter".
+     */
+    @Type(JsonType.class)
+    @Column(columnDefinition = "jsonb")
+    private List<String> answerOptionLabels;
+
     /** Fallback explanation/commonMistake used when a question's own fields are blank. */
     private @Column(columnDefinition = "TEXT") String defaultExplanation;
     private @Column(columnDefinition = "TEXT") String defaultCommonMistake;

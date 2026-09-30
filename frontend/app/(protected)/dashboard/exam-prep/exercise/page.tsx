@@ -37,11 +37,14 @@ const TFN_OPTIONS = [
 ];
 
 const letterFor = (index: number) => String.fromCharCode(97 + index);
+/** Admin-edited label for an answer option, falling back to its positional letter. */
+const optionLabelFor = (labels: string[] | null | undefined, index: number) => labels?.[index]?.trim() || letterFor(index);
 
 function AnswerOptionsPoolView({
     answerOptions,
+    answerOptionLabels,
     taskType,
-}: Readonly<{ answerOptions: string[]; taskType: string }>) {
+}: Readonly<{ answerOptions: string[]; answerOptionLabels: string[]; taskType: string }>) {
     if (answerOptions.length === 0) return null;
     return (
         <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
@@ -53,7 +56,7 @@ function AnswerOptionsPoolView({
             <ul className="space-y-2">
                 {answerOptions.map((option, idx) => (
                     <li key={option} className="text-sm text-gray-800 dark:text-gray-200">
-                        <span className="font-semibold">{letterFor(idx)})</span> {option}
+                        <span className="font-semibold">{optionLabelFor(answerOptionLabels, idx)})</span> {option}
                     </li>
                 ))}
             </ul>
@@ -306,6 +309,7 @@ function StartCard({ starting, onStart }: Readonly<{ starting: boolean; onStart:
 function QuestionSelect({
     question,
     answerOptions,
+    answerOptionLabels,
     taskType,
     value,
     disabled,
@@ -313,6 +317,7 @@ function QuestionSelect({
 }: Readonly<{
     question: ExamQuestionPublic;
     answerOptions: string[];
+    answerOptionLabels: string[];
     taskType: string;
     value: string;
     disabled: boolean;
@@ -322,7 +327,7 @@ function QuestionSelect({
         taskType === "TRUE_FALSE_NOT_GIVEN"
             ? TFN_OPTIONS
             : taskType === "MATCHING" || taskType === "WORD_BANK_CLOZE"
-                ? answerOptions.map((o, idx) => ({ value: o, label: `${letterFor(idx)}) ${o}` }))
+                ? answerOptions.map((o, idx) => ({ value: o, label: `${optionLabelFor(answerOptionLabels, idx)}) ${o}` }))
                 : (question.options ?? []).map((o) => ({ value: o, label: o }));
 
     return (
@@ -363,6 +368,7 @@ interface GridQuizState {
     passages: ExamPassagePublic[];
     questions: ExamQuestionPublic[];
     answerOptions: string[];
+    answerOptionLabels: string[];
     answers: Record<string, string>;
     submitting: boolean;
 }
@@ -387,6 +393,7 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
                     passages: res.data.passages,
                     questions: res.data.questions,
                     answerOptions: res.data.answerOptions ?? [],
+                    answerOptionLabels: res.data.answerOptionLabels ?? [],
                     answers: {},
                     submitting: false,
                 });
@@ -459,6 +466,7 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
                             <QuestionSelect
                                 question={question}
                                 answerOptions={quiz.answerOptions}
+                answerOptionLabels={quiz.answerOptionLabels}
                                 taskType={exercise.taskType ?? ""}
                                 value={quiz.answers[question.id] ?? ""}
                                 disabled={quiz.submitting}
@@ -483,6 +491,7 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
 function QuestionInput({
     question,
     answerOptions,
+    answerOptionLabels,
     taskType,
     selectedAnswer,
     disabled,
@@ -490,6 +499,7 @@ function QuestionInput({
 }: Readonly<{
     question: ExamQuestionPublic;
     answerOptions: string[];
+    answerOptionLabels: string[];
     taskType: string;
     selectedAnswer: string;
     disabled: boolean;
@@ -499,7 +509,7 @@ function QuestionInput({
         taskType === "TRUE_FALSE_NOT_GIVEN"
             ? TFN_OPTIONS
             : taskType === "MATCHING" || taskType === "WORD_BANK_CLOZE"
-                ? answerOptions.map((o, idx) => ({ value: o, label: `${letterFor(idx)}) ${o}` }))
+                ? answerOptions.map((o, idx) => ({ value: o, label: `${optionLabelFor(answerOptionLabels, idx)}) ${o}` }))
                 : (question.options ?? []).map((o) => ({ value: o, label: o }));
 
     return (
@@ -555,6 +565,7 @@ interface StepQuizState {
     passages: ExamPassagePublic[];
     questions: ExamQuestionPublic[];
     answerOptions: string[];
+    answerOptionLabels: string[];
     currentIndex: number;
     selectedAnswer: string;
     feedback: ExamAnswerFeedbackResponse | null;
@@ -586,6 +597,7 @@ function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse 
                     passages: res.data.passages,
                     questions: res.data.questions,
                     answerOptions: res.data.answerOptions ?? [],
+                    answerOptionLabels: res.data.answerOptionLabels ?? [],
                     currentIndex: 0,
                     selectedAnswer: "",
                     feedback: null,
@@ -672,6 +684,7 @@ function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse 
             <QuestionInput
                 question={question}
                 answerOptions={quiz.answerOptions}
+                answerOptionLabels={quiz.answerOptionLabels}
                 taskType={exercise.taskType ?? ""}
                 selectedAnswer={quiz.selectedAnswer}
                 disabled={Boolean(quiz.feedback)}
@@ -705,6 +718,7 @@ interface HoerenListQuizState {
     passages: ExamPassagePublic[];
     questions: ExamQuestionPublic[];
     answerOptions: string[];
+    answerOptionLabels: string[];
     answers: Record<string, string>;
     submitting: boolean;
 }
@@ -730,6 +744,7 @@ function HoerenListQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRes
                     passages: res.data.passages,
                     questions: res.data.questions,
                     answerOptions: res.data.answerOptions ?? [],
+                    answerOptionLabels: res.data.answerOptionLabels ?? [],
                     answers: {},
                     submitting: false,
                 });
@@ -949,7 +964,7 @@ function ExamExerciseContent() {
                     exercise.section !== "TESTFORMAT_INFORMATION" && (
                     <>
                         {(exercise.taskType === "MATCHING" || exercise.taskType === "WORD_BANK_CLOZE") && (
-                            <AnswerOptionsPoolView answerOptions={exercise.answerOptions ?? []} taskType={exercise.taskType} />
+                            <AnswerOptionsPoolView answerOptions={exercise.answerOptions ?? []} answerOptionLabels={exercise.answerOptionLabels ?? []} taskType={exercise.taskType} />
                         )}
                         <PassagesView passages={exercise.passages} taskType={exercise.taskType ?? ""} />
                     </>

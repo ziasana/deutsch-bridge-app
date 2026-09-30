@@ -6,6 +6,7 @@ public record StartExamAttemptResponse(
         String attemptId,
         List<ExamPassagePublic> passages,
         List<ExamQuestionPublic> questions,
-        List<String> answerOptions
+        List<String> answerOptions,
+        List<String> answerOptionLabels
 ) {
 }
