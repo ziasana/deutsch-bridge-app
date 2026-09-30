@@ -69,14 +69,13 @@ function TeilContent() {
     const continueItem = group.items[continueIndex];
     const continueLabel =
         group.state === "completed"
-            ? `Review: Übung ${continueIndex + 1}`
+            ? `Review: ${continueItem.title}`
             : group.mastered === 0 && !group.items.some((item) => item.completed)
-              ? `Starten: Übung ${continueIndex + 1}`
-              : `Weiter: Übung ${continueIndex + 1}`;
+              ? `Starten: ${continueItem.title}`
+              : `Weiter: ${continueItem.title}`;
 
-    const numberedItems = group.items.map((item, i) => ({ item, number: i + 1 }));
-    const filteredItems = numberedItems.filter(
-        ({ item }) => statusFilter === "ALL" || (statusFilter === "COMPLETED" ? effectiveScore(item) === 100 : effectiveScore(item) < 100),
+    const filteredItems = group.items.filter(
+        (item) => statusFilter === "ALL" || (statusFilter === "COMPLETED" ? effectiveScore(item) === 100 : effectiveScore(item) < 100),
     );
     const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
     const currentPage = Math.min(page, totalPages);
@@ -140,7 +139,7 @@ function TeilContent() {
                 </div>
 
                 <div className="mt-4 space-y-2">
-                    {pageItems.map(({ item, number }) => (
+                    {pageItems.map((item) => (
                         <button
                             key={item.id}
                             type="button"
@@ -153,7 +152,7 @@ function TeilContent() {
                                 <Circle className="size-6 shrink-0 text-foreground/25" />
                             )}
                             <div className="min-w-0 flex-1">
-                                <div className="font-semibold text-foreground">Übung {number}</div>
+                                <div className="font-semibold text-foreground">{item.title}</div>
                                 <div className="text-xs text-foreground/50">
                                     {item.questionsCount} {item.questionsCount === 1 ? "Frage" : "Fragen"}
                                 </div>

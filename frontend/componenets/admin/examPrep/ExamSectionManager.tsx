@@ -33,82 +33,75 @@ import { uploadEmbeddedRichTextImages } from "@/lib/richTextImages";
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1"];
-const TFN_ANSWERS = ["RICHTIG", "FALSCH", "NICHT_IM_TEXT"];
-
 const TASK_TYPES_BY_SECTION: Record<ExamSection, ExamTaskType[]> = {
     LESEVERSTEHEN: ["MATCHING", "MULTIPLE_CHOICE", "TRUE_FALSE_NOT_GIVEN"],
     SPRACHBAUSTEINE: ["MULTIPLE_CHOICE", "WORD_BANK_CLOZE"],
-    HOERVERSTEHEN: ["TRUE_FALSE_NOT_GIVEN"],
+    HOERVERSTEHEN: ["MATCHING", "MULTIPLE_CHOICE", "TRUE_FALSE_NOT_GIVEN"],
     SCHRIFTLICHER_AUSDRUCK: ["WRITING_TASK"],
     TESTFORMAT_INFORMATION: [],
 };
 
-/** Leseverstehen's three Teile conventionally map to these task types - used only as a starting
- * suggestion for "Teil" when the admin picks a task type; still freely editable afterward. */
-const LESEVERSTEHEN_DEFAULT_PART: Partial<Record<ExamTaskType, string>> = {
-    MATCHING: "1",
-    MULTIPLE_CHOICE: "2",
-    TRUE_FALSE_NOT_GIVEN: "3",
+/** Teil numbers offered in the "Section" dropdown. Sections not listed (Schriftlicher Ausdruck) keep
+ * the free-form optional Teil input. Teil and task type are independent choices. */
+const TEIL_NUMBERS_BY_SECTION: Partial<Record<ExamSection, number[]>> = {
+    LESEVERSTEHEN: [1, 2, 3],
+    HOERVERSTEHEN: [1, 2, 3],
+    SPRACHBAUSTEINE: [1, 2],
 };
 
-const TASK_TYPE_LABELS: Partial<Record<ExamTaskType, string>> = {
-    MULTIPLE_CHOICE: "Multiple choice",
+const TASK_TYPE_LABELS: Record<ExamTaskType, string> = {
+    MATCHING: "Zuordnungsaufgaben",
+    MULTIPLE_CHOICE: "Multiple-Choice-Aufgaben",
+    TRUE_FALSE_NOT_GIVEN: "richtig/falsch/nicht",
+    WORD_BANK_CLOZE: "Lückentext (Wortbank)",
     WRITING_TASK: "Schriftlicher Ausdruck",
 };
 
-const TASK_TYPE_LABELS_BY_SECTION: Partial<Record<ExamSection, Partial<Record<ExamTaskType, string>>>> = {
-    SPRACHBAUSTEINE: {
-        MULTIPLE_CHOICE: "Sprachbausteine Teil 1",
-        WORD_BANK_CLOZE: "Sprachbausteine Teil 2",
-    },
-    HOERVERSTEHEN: {
-        TRUE_FALSE_NOT_GIVEN: "Richtig / Falsch (+/-)",
-    },
-};
+/** Pre-seeded answer options for TRUE_FALSE_NOT_GIVEN - still editable by the admin. */
+const TFN_DEFAULT_ANSWER_OPTIONS = ["+", "-", "o"];
 
-const SHARED_POOL_TASK_TYPES: ExamTaskType[] = ["MATCHING", "WORD_BANK_CLOZE"];
+const SHARED_POOL_TASK_TYPES: ExamTaskType[] = ["MATCHING", "WORD_BANK_CLOZE", "TRUE_FALSE_NOT_GIVEN"];
 
-/** Hoerverstehen's Richtig/Falsch answer is authored via the same editable pool as MATCHING's
- * headlines, just pre-seeded with "+"/"-" - so the Section/Task type dropdowns don't govern this,
- * only the section does (all three Hoeren Teile share the one true/false format). */
-const usesAnswerOptionsPool = (section: ExamSection, taskType: ExamTaskType | null) =>
-    section === "HOERVERSTEHEN" || (taskType != null && SHARED_POOL_TASK_TYPES.includes(taskType));
+/** These task types are authored via the editable exercise-level answer-options pool. */
+const usesAnswerOptionsPool = (taskType: ExamTaskType | null) =>
+    taskType != null && SHARED_POOL_TASK_TYPES.includes(taskType);
 
-const taskTypeLabel = (section: ExamSection, taskType: ExamTaskType): string =>
-    TASK_TYPE_LABELS_BY_SECTION[section]?.[taskType] ?? TASK_TYPE_LABELS[taskType] ?? taskType;
+const taskTypeLabel = (taskType: ExamTaskType): string => TASK_TYPE_LABELS[taskType] ?? taskType;
 
 const sectionLabel = (section: ExamSection, partNumber: number | null): string => {
     if (section === "LESEVERSTEHEN") return `Leseverstehen Teil ${partNumber ?? 1}`;
     if (section === "HOERVERSTEHEN") return `Hörverstehen Teil ${partNumber ?? 1}`;
+    if (section === "SPRACHBAUSTEINE") return `Sprachbausteine Teil ${partNumber ?? 1}`;
     if (section === "SCHRIFTLICHER_AUSDRUCK") return "Schriftlicher Ausdruck";
     if (section === "TESTFORMAT_INFORMATION") return "Testformat Information";
-    return "Sprachbausteine";
+    return section;
+};
+
+/** Legacy exercises saved before the Teil dropdown existed may have no partNumber. */
+const defaultTeil = (section: ExamSection, taskType: ExamTaskType | null): string => {
+    if (!TEIL_NUMBERS_BY_SECTION[section]) return "";
+    if (section === "SPRACHBAUSTEINE" && taskType === "WORD_BANK_CLOZE") return "2";
+    return "1";
 };
 
 const SECTION_META: Record<Exclude<ExamSection, "TESTFORMAT_INFORMATION">, { heading: string; description: string }> = {
     LESEVERSTEHEN: {
         heading: "Leseverstehen",
-        description: "Create Leseverstehen exercises: Überschriften zuordnen, Multiple Choice, and Richtig/Falsch/Nicht im Text.",
+        description: "Create Leseverstehen exercises per Teil: Zuordnungsaufgaben, Multiple-Choice-Aufgaben, and richtig/falsch/nicht.",
     },
     SPRACHBAUSTEINE: {
         heading: "Sprachbausteine",
-        description: "Create Sprachbausteine exercises: Multiple Choice (Teil 1) and word-bank cloze gaps (Teil 2).",
+        description: "Create Sprachbausteine exercises per Teil: Multiple-Choice-Aufgaben and word-bank cloze gaps.",
     },
     HOERVERSTEHEN: {
         heading: "Hörverstehen",
-        description: "Create Hörverstehen exercises with audio clips, transcripts, and Richtig/Falsch statements.",
+        description: "Create Hörverstehen exercises per Teil with audio clips and transcripts: Zuordnungsaufgaben, Multiple-Choice-Aufgaben, and richtig/falsch/nicht.",
     },
     SCHRIFTLICHER_AUSDRUCK: {
         heading: "Schriftlicher Ausdruck",
         description: "Create writing-task prompts with a revealable \"mögliche Antwort\" model solution.",
     },
 };
-
-const HOERVERSTEHEN_TEIL_OPTIONS = [
-    { value: "1", label: "Hörverstehen Teil 1" },
-    { value: "2", label: "Hörverstehen Teil 2" },
-    { value: "3", label: "Hörverstehen Teil 3" },
-];
 
 type PublishedFilter = "ALL" | "YES" | "NO";
 type ExerciseSortKey = "title" | "teil" | "level" | "questions";
@@ -119,7 +112,7 @@ const makeEmptyForm = (section: ExamSection) => ({
     section,
     taskType: (TASK_TYPES_BY_SECTION[section][0] ?? null) as ExamTaskType | null,
     level: "B1",
-    partNumber: section === "HOERVERSTEHEN" ? "1" : "",
+    partNumber: defaultTeil(section, TASK_TYPES_BY_SECTION[section][0] ?? null),
     defaultExplanation: "",
     defaultCommonMistake: "",
     teilDescription: "",
@@ -145,13 +138,13 @@ const emptyPassage = (index: number, section: ExamSection): ExamPassage => ({
     transcript: null,
 });
 
-const emptyQuestion = (taskType: ExamTaskType, section?: ExamSection): ExamQuestion => ({
+const emptyQuestion = (taskType: ExamTaskType): ExamQuestion => ({
     id: "",
     taskType,
     prompt: taskType === "MATCHING" ? "Welche Überschrift passt zu diesem Text?" : "",
     sectionIndex: null,
     options: taskType === "MULTIPLE_CHOICE" ? [] : null,
-    correctAnswer: taskType === "TRUE_FALSE_NOT_GIVEN" && section !== "HOERVERSTEHEN" ? "RICHTIG" : "",
+    correctAnswer: "",
     gapNumber: null,
     questionNumber: null,
     explanation: "",
@@ -210,7 +203,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
     const [form, setForm] = useState(() => makeEmptyForm(section));
     const [passages, setPassages] = useState<ExamPassage[]>([]);
     const [questions, setQuestions] = useState<ExamQuestion[]>([]);
-    const [answerOptions, setAnswerOptions] = useState<string[]>(section === "HOERVERSTEHEN" ? ["+", "-"] : []);
+    const [answerOptions, setAnswerOptions] = useState<string[]>([]);
     const [editingExercise, setEditingExercise] = useState<ExamExerciseResponse | null>(null);
     const [uploadingPassageImage, setUploadingPassageImage] = useState<number | null>(null);
     const [uploadingPassageAudio, setUploadingPassageAudio] = useState<number | null>(null);
@@ -259,17 +252,25 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
         setForm(makeEmptyForm(section));
         setPassages([]);
         setQuestions([]);
-        setAnswerOptions(section === "HOERVERSTEHEN" ? ["+", "-"] : []);
+        setAnswerOptions([]);
         setEditingExercise(null);
     };
 
+    const isDefaultTfnPool = (options: string[]) =>
+        options.length === TFN_DEFAULT_ANSWER_OPTIONS.length && options.every((o, i) => o === TFN_DEFAULT_ANSWER_OPTIONS[i]);
+
     const changeTaskType = (taskType: ExamTaskType) => {
-        const suggestedPart = section === "LESEVERSTEHEN" ? LESEVERSTEHEN_DEFAULT_PART[taskType] ?? form.partNumber : form.partNumber;
-        setForm({ ...form, taskType, partNumber: suggestedPart });
+        setForm({ ...form, taskType });
         setQuestions((prev) => prev.map((q) => ({ ...q, taskType })));
+        // Seed "+"/"-"/"o" for richtig/falsch/nicht; drop an untouched seed when leaving that type.
+        if (taskType === "TRUE_FALSE_NOT_GIVEN" && answerOptions.length === 0) {
+            setAnswerOptions(TFN_DEFAULT_ANSWER_OPTIONS);
+        } else if (taskType !== "TRUE_FALSE_NOT_GIVEN" && isDefaultTfnPool(answerOptions)) {
+            setAnswerOptions([]);
+        }
     };
 
-    const changeHoerenTeil = (partNumber: string) => {
+    const changeTeil = (partNumber: string) => {
         setForm({ ...form, partNumber });
     };
 
@@ -349,16 +350,20 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
         );
     };
     const removeQuestion = (idx: number) => setQuestions((prev) => prev.filter((_, i) => i !== idx));
-    const addQuestion = () => setQuestions((prev) => [...prev, emptyQuestion(form.taskType ?? "MULTIPLE_CHOICE", section)]);
+    const addQuestion = () => setQuestions((prev) => [...prev, emptyQuestion(form.taskType ?? "MULTIPLE_CHOICE")]);
 
     const startEdit = (exercise: ExamExerciseResponse) => {
         setEditingExercise(exercise);
+        // Legacy Leseverstehen richtig/falsch/nicht exercises stored RICHTIG/FALSCH/NICHT_IM_TEXT with
+        // no pool; show them in the new +/-/o answer-options format so they can be re-saved.
+        const isLegacyTfn = exercise.taskType === "TRUE_FALSE_NOT_GIVEN" && !(exercise.answerOptions?.length);
+        const legacyTfnAnswers: Record<string, string> = { RICHTIG: "+", FALSCH: "-", NICHT_IM_TEXT: "o" };
         setForm({
             title: exercise.title,
             section,
             taskType: exercise.taskType,
             level: exercise.level ?? "B1",
-            partNumber: exercise.partNumber != null ? String(exercise.partNumber) : "",
+            partNumber: exercise.partNumber != null ? String(exercise.partNumber) : defaultTeil(section, exercise.taskType),
             defaultExplanation: exercise.defaultExplanation ?? "",
             defaultCommonMistake: exercise.defaultCommonMistake ?? "",
             teilDescription: exercise.teilDescription ?? "",
@@ -366,8 +371,12 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
             published: exercise.published,
         });
         setPassages(exercise.passages);
-        setQuestions(exercise.questions);
-        setAnswerOptions(exercise.answerOptions ?? []);
+        setQuestions(
+            isLegacyTfn
+                ? exercise.questions.map((q) => ({ ...q, correctAnswer: legacyTfnAnswers[q.correctAnswer] ?? q.correctAnswer }))
+                : exercise.questions
+        );
+        setAnswerOptions(isLegacyTfn ? TFN_DEFAULT_ANSWER_OPTIONS : exercise.answerOptions ?? []);
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
@@ -537,34 +546,36 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                     </div>
 
                     <div className="flex gap-4 flex-wrap">
-                        {(section === "HOERVERSTEHEN" || taskTypes.length > 1) && (
+                        {TEIL_NUMBERS_BY_SECTION[section] && (
+                            <div>
+                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Section</label>
+                                <select
+                                    value={form.partNumber}
+                                    onChange={(e) => changeTeil(e.target.value)}
+                                    className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+                                >
+                                    {TEIL_NUMBERS_BY_SECTION[section]?.map((n) => (
+                                        <option key={n} value={String(n)}>
+                                            Teil {n}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                        {taskTypes.length > 1 && (
                             <div>
                                 <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Task type</label>
-                                {section === "HOERVERSTEHEN" ? (
-                                    <select
-                                        value={form.partNumber || "1"}
-                                        onChange={(e) => changeHoerenTeil(e.target.value)}
-                                        className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
-                                    >
-                                        {HOERVERSTEHEN_TEIL_OPTIONS.map((opt) => (
-                                            <option key={opt.value} value={opt.value}>
-                                                {opt.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                ) : (
-                                    <select
-                                        value={form.taskType ?? ""}
-                                        onChange={(e) => changeTaskType(e.target.value as ExamTaskType)}
-                                        className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
-                                    >
-                                        {taskTypes.map((t) => (
-                                            <option key={t} value={t}>
-                                                {taskTypeLabel(section, t)}
-                                            </option>
-                                        ))}
-                                    </select>
-                                )}
+                                <select
+                                    value={form.taskType ?? ""}
+                                    onChange={(e) => changeTaskType(e.target.value as ExamTaskType)}
+                                    className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+                                >
+                                    {taskTypes.map((t) => (
+                                        <option key={t} value={t}>
+                                            {taskTypeLabel(t)}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                         )}
                         <div>
@@ -581,7 +592,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                 ))}
                             </select>
                         </div>
-                        {section !== "HOERVERSTEHEN" && (
+                        {!TEIL_NUMBERS_BY_SECTION[section] && (
                             <div>
                                 <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Teil (optional)</label>
                                 <Input
@@ -811,11 +822,11 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                         </div>
                     </div>
 
-                    {usesAnswerOptionsPool(section, form.taskType) && (
+                    {usesAnswerOptionsPool(form.taskType) && (
                         <div>
                             <div className="flex items-center justify-between mb-2">
                                 <label className="text-gray-700 dark:text-gray-300 text-sm">
-                                    {section === "HOERVERSTEHEN"
+                                    {form.taskType === "TRUE_FALSE_NOT_GIVEN"
                                         ? "Answer options (Richtig/Falsch) — e.g. \"+\" and \"-\", used by every question below"
                                         : form.taskType === "WORD_BANK_CLOZE"
                                             ? "Answer options (words) — include a few extra distractors that don't fit any gap"
@@ -825,7 +836,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                             <div className="space-y-2">
                                 {answerOptions.map((option, idx) => (
                                     <div key={idx} className="flex gap-2 items-center">
-                                        {section !== "HOERVERSTEHEN" && (
+                                        {form.taskType !== "TRUE_FALSE_NOT_GIVEN" && (
                                             <span className="text-xs text-gray-500 dark:text-gray-400 w-5">
                                                 {String.fromCharCode(97 + idx)})
                                             </span>
@@ -833,9 +844,9 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                         <Input
                                             value={option}
                                             onChange={(e) => updateAnswerOption(idx, e.target.value)}
-                                            placeholder={section === "HOERVERSTEHEN" ? "e.g. + or -" : "Headline text"}
+                                            placeholder={form.taskType === "TRUE_FALSE_NOT_GIVEN" ? "e.g. + or -" : "Headline text"}
                                             required={false}
-                                            className={section === "HOERVERSTEHEN" ? "w-24" : "flex-1"}
+                                            className={form.taskType === "TRUE_FALSE_NOT_GIVEN" ? "w-24" : "flex-1"}
                                         />
                                         <button type="button" onClick={() => removeAnswerOption(idx)} className="text-red-500 text-sm px-2">
                                             ✕
@@ -843,7 +854,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                     </div>
                                 ))}
                                 <Button type="button" variant="secondary" className="text-xs px-3 py-1" onClick={addAnswerOption}>
-                                    {section === "HOERVERSTEHEN" ? "+ Add option" : "+ Add headline"}
+                                    {form.taskType === "TRUE_FALSE_NOT_GIVEN" ? "+ Add option" : "+ Add headline"}
                                 </Button>
                             </div>
                         </div>
@@ -955,7 +966,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                                 onChange={(e) => updateSectionIndex(idx, e.target.value)}
                                                 className="px-2 py-2 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm"
                                             >
-                                                <option value="">Select text...</option>
+                                                <option value="">{section === "HOERVERSTEHEN" ? "Select audio clip..." : "Select text..."}</option>
                                                 {passages.map((p, pIdx) => (
                                                     <option key={p.id} value={pIdx}>
                                                         {p.label}
@@ -1010,32 +1021,18 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                                     </option>
                                                 ))}
                                             </select>
-                                            {section === "HOERVERSTEHEN" ? (
-                                                <select
-                                                    value={q.correctAnswer}
-                                                    onChange={(e) => updateQuestion(idx, "correctAnswer", e.target.value)}
-                                                    className="px-2 py-2 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm"
-                                                >
-                                                    <option value="">Select correct answer...</option>
-                                                    {answerOptions.map((option, oIdx) => (
-                                                        <option key={option || oIdx} value={option}>
-                                                            {option}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            ) : (
-                                                <select
-                                                    value={q.correctAnswer}
-                                                    onChange={(e) => updateQuestion(idx, "correctAnswer", e.target.value)}
-                                                    className="px-2 py-2 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm"
-                                                >
-                                                    {TFN_ANSWERS.map((a) => (
-                                                        <option key={a} value={a}>
-                                                            {a}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            )}
+                                            <select
+                                                value={q.correctAnswer}
+                                                onChange={(e) => updateQuestion(idx, "correctAnswer", e.target.value)}
+                                                className="px-2 py-2 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm"
+                                            >
+                                                <option value="">Select correct answer...</option>
+                                                {answerOptions.map((option, oIdx) => (
+                                                    <option key={option || oIdx} value={option}>
+                                                        {option}
+                                                    </option>
+                                                ))}
+                                            </select>
                                         </div>
                                     )}
 
@@ -1161,7 +1158,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                                 {sectionLabel(exercise.section, exercise.partNumber)}
                                             </td>
                                             <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                                                {exercise.taskType ? taskTypeLabel(exercise.section, exercise.taskType) : "—"}
+                                                {exercise.taskType ? taskTypeLabel(exercise.taskType) : "—"}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <Badge variant="secondary">{exercise.level ?? "All levels"}</Badge>

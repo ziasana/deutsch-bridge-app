@@ -54,6 +54,8 @@ export interface ExamPartGroup {
 }
 
 function buildGroup(key: string, label: string, heading: string, subheading: string | undefined, groupItems: ExamExerciseSummaryResponse[]): ExamPartGroup {
+    // The API returns exercises in no defined order; sort by title ("1. Übung" < "2. Übung" < "10. Übung").
+    groupItems = [...groupItems].sort((x, y) => x.title.localeCompare(y.title, "de", { numeric: true }));
     const mastered = masteredCount(groupItems);
     const attempted = groupItems.filter((e) => e.completed).length;
     return {

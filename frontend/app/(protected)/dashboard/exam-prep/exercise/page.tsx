@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
 import { getExamExerciseById } from "@/services/examService";
@@ -864,6 +864,7 @@ function HoerenListQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRes
 }
 
 function ExamExerciseContent() {
+    const router = useRouter();
     const searchParams = useSearchParams();
     const exerciseId = searchParams.get("id") ?? "";
     const {
@@ -914,12 +915,21 @@ function ExamExerciseContent() {
     return (
         <div dir="ltr" className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
             <div className="max-w-4xl mx-auto space-y-6">
-                <Link
-                    href="/dashboard/exam-prep"
+                {/* Behaves like the browser's back button (returns to the Teil list this exercise was opened from). */}
+                <button
+                    type="button"
+                    onClick={() => {
+                        if (window.history.length > 1) {
+                            router.back();
+                        } else {
+                            const levelQuery = exercise.level ? `&level=${encodeURIComponent(exercise.level)}` : "";
+                            router.push(`/dashboard/exam-prep?section=${exercise.section}${levelQuery}`);
+                        }
+                    }}
                     className="text-sm text-blue-600 dark:text-blue-400 hover:underline inline-block"
                 >
-                    ← Zurück zur Prüfungsvorbereitung
-                </Link>
+                    ← Zurück
+                </button>
 
                 <div className="flex items-center gap-2 flex-wrap">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{exercise.title}</h1>
