@@ -24,6 +24,8 @@ import {
 } from "@/componenets/exam";
 import { ContentItemRow } from "@/componenets/CategoryAccordion";
 import useAuthStore from "@/store/useAuthStore";
+import TeilTimeCard from "@/componenets/exam/TeilTimeCard";
+import { useExerciseLastTimes } from "@/hooks/exam/useExerciseLastTimes";
 
 const VALID_SECTIONS = new Set<string>(EXAM_TYPE_ORDER);
 
@@ -48,9 +50,27 @@ function ExamPrepContent() {
     );
     const [search, setSearch] = useState("");
 
+    // Keep the picked section/level in the URL (replacing, not adding a history entry), so that
+    // "Zurück" from an exercise reopens this same view instead of the default one.
+    const syncUrl = (patch: { section?: ExamSection; level?: string }) => {
+        const params = new URLSearchParams(window.location.search);
+        if (patch.section) params.set("section", patch.section);
+        if (patch.level) params.set("level", patch.level);
+        window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+    };
+    const chooseSection = (section: ExamSection) => {
+        setSelectedSection(section);
+        syncUrl({ section });
+    };
+    const chooseLevel = (level: string) => {
+        setSelectedLevel(level);
+        syncUrl({ level });
+    };
+
     // The backend can send the literal string "null" for an unset profile level.
     const profileLevel = userProfile?.learningLevel && userProfile.learningLevel !== "null" ? userProfile.learningLevel : null;
     const effectiveLevel = selectedLevel ?? profileLevel ?? levelSummaries[0]?.level ?? "B1";
+    const writingLastTimes = useExerciseLastTimes("SCHRIFTLICHER_AUSDRUCK", selectedSection === "SCHRIFTLICHER_AUSDRUCK" ? effectiveLevel : null);
 
     // Every section at the current level only - never the whole table. Refetches (and caches,
     // per level) the first time a level is opened; switching section alone needs no new fetch.
@@ -143,7 +163,7 @@ function ExamPrepContent() {
                     {profileLevel && (
                         <button
                             type="button"
-                            onClick={() => setSelectedLevel(profileLevel)}
+                            onClick={() => chooseLevel(profileLevel)}
                             className="flex items-center gap-3 rounded-2xl bg-card shadow-card px-4 py-3 text-left shrink-0 hover:bg-accent/40 transition"
                         >
                             <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent">
@@ -162,7 +182,7 @@ function ExamPrepContent() {
                     className="mt-6"
                     types={examTypeOptions}
                     selected={selectedSection}
-                    onSelect={setSelectedSection}
+                    onSelect={chooseSection}
                 />
 
                 <h2 className="mt-8 text-sm font-semibold text-foreground/70">Prüfungsniveau</h2>
@@ -170,7 +190,7 @@ function ExamPrepContent() {
                     className="mt-3"
                     levels={levelOptions}
                     selectedLevel={effectiveLevel}
-                    onLevelChange={(level) => setSelectedLevel(level)}
+                    onLevelChange={chooseLevel}
                     unitLabel="Aufgaben"
                     activeLabel="Aktuelles Niveau"
                     ariaLabel="Prüfungsniveau"
@@ -250,11 +270,15 @@ function ExamPrepContent() {
                                 )}
                             </>
                         ) : isFlatList ? (
-                            <ExamExerciseList
-                                key={`${selectedSection}-${effectiveLevel}-${searchTerm}`}
-                                items={flatItems}
-                                color={selectedMeta.color}
-                            />
+                            <>
+                                <TeilTimeCard section={selectedSection} level={effectiveLevel} teil={1} showLastResult={false} />
+                                <ExamExerciseList
+                                    key={`${selectedSection}-${effectiveLevel}-${searchTerm}`}
+                                    items={flatItems}
+                                    color={selectedMeta.color}
+                                    lastTimes={writingLastTimes}
+                                />
+                            </>
                         ) : (
                             <>
                                 {selectedGroups.map((group, i) => (

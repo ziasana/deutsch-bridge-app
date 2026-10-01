@@ -16,6 +16,8 @@ import { Card, CardContent } from "@/componenets/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/componenets/ui/table";
 import Button from "@/componenets/Button";
 import Loading from "@/componenets/Loading";
+import Toggle from "@/componenets/admin/Toggle";
+import SettingsSubNav from "@/componenets/admin/SettingsSubNav";
 import { ArrowLeft, Sparkles } from "lucide-react";
 
 const FEATURE_LABELS: Record<FeatureType, string> = {
@@ -26,27 +28,6 @@ const FEATURE_LABELS: Record<FeatureType, string> = {
 };
 
 const FEATURE_ORDER: FeatureType[] = ["AI_CHAT", "AI_CORRECTION", "AI_EXAMPLE", "AI_SYNONYM"];
-
-function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
-    return (
-        <button
-            type="button"
-            role="switch"
-            aria-checked={checked}
-            disabled={disabled}
-            onClick={() => onChange(!checked)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
-                checked ? "bg-primary" : "bg-muted border border-border"
-            }`}
-        >
-            <span
-                className={`inline-block size-4 transform rounded-full bg-white shadow transition-transform ${
-                    checked ? "translate-x-6" : "translate-x-1"
-                }`}
-            />
-        </button>
-    );
-}
 
 export default function AdminSettingsPage() {
     const router = useRouter();
@@ -137,6 +118,10 @@ export default function AdminSettingsPage() {
                             Control the global Premium switch and per-feature daily usage limits.
                         </p>
                     </div>
+                </div>
+
+                <div className="mt-6">
+                    <SettingsSubNav />
                 </div>
 
                 {isLoading ? (

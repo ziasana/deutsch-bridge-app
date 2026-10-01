@@ -13,6 +13,8 @@ public record ExamExerciseSummaryResponse(
         String taskType,
         String level,
         Integer partNumber,
+        /** Resolved Teil number (see ExamTeilResolver) - the key for looking up the Teil's time configuration. */
+        Integer teil,
         /** Shown inline for informational (level-agnostic) entries like Testformat Information. */
         String teilDescription,
         int questionsCount,

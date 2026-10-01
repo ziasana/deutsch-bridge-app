@@ -21,5 +21,8 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, String
     Optional<ExamAttempt> findFirstByUserAndCompletedAtIsNullAndStartedAtAfterOrderByStartedAtDesc(
             User user, LocalDateTime startedAfter);
 
+    /** Attempts the learner finished since a point in time - used to total up a timed practice session. */
+    List<ExamAttempt> findByUserAndCompletedAtGreaterThanEqual(User user, LocalDateTime since);
+
     boolean existsByUserAndCompletedAtAfter(User user, LocalDateTime after);
 }

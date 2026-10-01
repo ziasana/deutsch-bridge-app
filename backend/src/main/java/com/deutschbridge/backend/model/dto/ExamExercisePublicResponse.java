@@ -10,6 +10,8 @@ public record ExamExercisePublicResponse(
         String taskType,
         String level,
         Integer partNumber,
+        /** Resolved Teil number (see ExamTeilResolver) - the key for looking up the Teil's time configuration. */
+        Integer teil,
         List<ExamPassagePublic> passages,
         List<ExamQuestionPublic> questions,
         List<String> answerOptions,

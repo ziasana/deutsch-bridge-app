@@ -29,6 +29,11 @@ import TranscriptModal from "@/componenets/exam/TranscriptModal";
 import TranscriptContent from "@/componenets/exam/TranscriptContent";
 import { isEmptyTranscript } from "@/lib/transcriptFormat";
 import { FileText } from "lucide-react";
+import ExamExerciseTimer, { useStopExerciseTimer } from "@/componenets/exam/ExamExerciseTimer";
+import useExamTimerStore from "@/store/useExamTimerStore";
+import ExamTimeSummary from "@/componenets/exam/ExamTimeSummary";
+import { showZeitCheckToast } from "@/lib/examTimeToast";
+import { ExamPracticeSessionResult } from "@/types/examTime";
 
 const TFN_OPTIONS = [
     { value: "RICHTIG", label: "Richtig" },
@@ -185,22 +190,31 @@ function ResultsView({
 }>) {
     const correctCount = results.items.filter((item) => item.feedback.correct).length;
     const [transcriptOpen, setTranscriptOpen] = useState(false);
+    const stopExerciseTimer = useStopExerciseTimer();
+    const [timeResult, setTimeResult] = useState<ExamPracticeSessionResult | null>(null);
 
     // Finishing the attempt counts as completing the exercise, regardless of score.
     useEffect(() => {
         if (!completed && !markingCompleted) {
             onMarkCompleted();
         }
+        // The timer stops by itself; its Zeit-Check appears in the corner of this card.
+        stopExerciseTimer().then(setTimeResult);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-4">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Ergebnis</h2>
-            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{Math.round(results.score)}%</p>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
-                {correctCount} von {results.items.length} Aufgaben richtig
-            </p>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-4">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Ergebnis</h2>
+                    <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{Math.round(results.score)}%</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                        {correctCount} von {results.items.length} Aufgaben richtig
+                    </p>
+                </div>
+                {timeResult && <ExamTimeSummary result={timeResult} className="sm:min-w-48 sm:shrink-0" />}
+            </div>
 
             {results.transcripts.length > 0 && (
                 <>
@@ -235,7 +249,14 @@ function ResultsView({
             </div>
 
             <div className="flex justify-end gap-2 pt-2 flex-wrap">
-                <Button variant="secondary" className="text-sm px-4 py-2" onClick={onPracticeAgain}>
+                <Button
+                    variant="secondary"
+                    className="text-sm px-4 py-2"
+                    onClick={() => {
+                        onPracticeAgain();
+                        useExamTimerStore.getState().requestRestart();
+                    }}
+                >
                     Erneut üben
                 </Button>
             </div>
@@ -251,6 +272,7 @@ function ResultsView({
 function SchriftlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse }>) {
     const [showSolution, setShowSolution] = useState(false);
     const { completed, marking, markCompleted } = useExerciseCompletion(exercise);
+    const stopExerciseTimer = useStopExerciseTimer();
 
     return (
         <div className="space-y-4">
@@ -283,7 +305,10 @@ function SchriftlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExerci
                         variant="primary"
                         className="text-sm px-4 py-2"
                         disabled={completed || marking}
-                        onClick={markCompleted}
+                        onClick={() => {
+                            markCompleted();
+                            stopExerciseTimer().then((result) => result && showZeitCheckToast(result));
+                        }}
                     >
                         {completed ? "Als erledigt markiert ✓" : marking ? "Wird markiert..." : "Als erledigt markieren"}
                     </Button>
@@ -997,6 +1022,8 @@ function ExamExerciseContent() {
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{exercise.title}</h1>
                     <Badge variant="secondary">{exercise.level ?? "Alle Niveaus"}</Badge>
                 </div>
+
+                <ExamExerciseTimer exercise={exercise} />
 
                 {exercise.teilDescription && (
                     <div className="rounded-lg border-2 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/20 p-4 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">

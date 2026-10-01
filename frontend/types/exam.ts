@@ -108,6 +108,8 @@ export interface ExamExercisePublicResponse {
     taskType: ExamTaskType | null;
     level: string | null;
     partNumber: number | null;
+    /** Resolved Teil number - the key for looking up this Teil's recommended time. */
+    teil: number | null;
     passages: ExamPassagePublic[];
     questions: ExamQuestionPublic[];
     answerOptions: string[] | null;
@@ -137,6 +139,8 @@ export interface ExamExerciseSummaryResponse {
     taskType: ExamTaskType | null;
     level: string | null;
     partNumber: number | null;
+    /** Resolved Teil number - the key for looking up this Teil's recommended time. */
+    teil: number | null;
     /** Shown inline for informational (level-agnostic) entries like Testformat Information. */
     teilDescription: string | null;
     questionsCount: number;

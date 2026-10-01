@@ -53,6 +53,12 @@ spring:
         order_inserts: true
         order_updates: true
 
+exam:
+  time:
+    # Validation bounds for the admin exam time settings (minutes).
+    max-minutes: 180
+    max-total-minutes: 300
+
 ollama:
   api:
     key: ${OLLAMA_API_KEY}

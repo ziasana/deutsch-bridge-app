@@ -9,7 +9,16 @@ import { getExamExercisesSummary } from "@/services/examService";
 import { ExamSection } from "@/types/exam";
 import Loading from "@/componenets/Loading";
 import LearningProgressBar from "@/componenets/learning/LearningProgressBar";
-import { EXAM_TYPE_META, EXAM_TYPE_ORDER, ExamExerciseList, effectiveScore, findGroupByKey } from "@/componenets/exam";
+import {
+    EXAM_TYPE_META,
+    EXAM_TYPE_ORDER,
+    ExamExerciseList,
+    effectiveScore,
+    findGroupByKey,
+} from "@/componenets/exam";
+import TeilTimeCard from "@/componenets/exam/TeilTimeCard";
+import { useExerciseLastTimes } from "@/hooks/exam/useExerciseLastTimes";
+import { TIMED_SECTIONS } from "@/lib/examTime";
 
 const VALID_SECTIONS = new Set<string>(EXAM_TYPE_ORDER);
 
@@ -38,6 +47,8 @@ function TeilContent() {
     const isValid = !!section && !!level && !!partKey && VALID_SECTIONS.has(section);
     const typedSection = section as ExamSection;
 
+    const lastTimes = useExerciseLastTimes(typedSection, level);
+
     const { data: exercises = [], isLoading } = useQuery({
         queryKey: ["exam", "exercises", typedSection, level],
         queryFn: () => getExamExercisesSummary(typedSection, level!).then((res) => res.data),
@@ -61,6 +72,8 @@ function TeilContent() {
             : group.mastered === 0 && !group.items.some((item) => item.completed)
               ? `Starten: ${continueItem.title}`
               : `Weiter: ${continueItem.title}`;
+
+    const teil = group.items[0]?.teil ?? null;
 
     const backHref = `/dashboard/exam-prep?section=${typedSection}&level=${encodeURIComponent(level)}`;
 
@@ -98,9 +111,15 @@ function TeilContent() {
                     </button>
                 </div>
 
+                {teil != null && TIMED_SECTIONS.includes(typedSection) && (
+                    <div className="mt-4">
+                        <TeilTimeCard section={typedSection} level={level} teil={teil} />
+                    </div>
+                )}
+
                 <h2 className="mt-8 text-sm font-semibold text-foreground/70">Übungen</h2>
 
-                <ExamExerciseList className="mt-3" items={group.items} color={meta.color} />
+                <ExamExerciseList className="mt-3" items={group.items} color={meta.color} lastTimes={lastTimes} />
             </div>
         </div>
     );

@@ -6,6 +6,8 @@ import { CheckCircle2, ChevronLeft, ChevronRight, Circle, RotateCw } from "lucid
 import { ExamExerciseSummaryResponse } from "@/types/exam";
 import { effectiveScore } from "./examData";
 import { cn } from "@/lib/utils";
+import { formatClock } from "@/lib/examTime";
+import { ExamExerciseLastTime } from "@/types/examTime";
 
 type StatusFilter = "ALL" | "OPEN" | "COMPLETED";
 const PAGE_SIZE = 10;
@@ -20,10 +22,12 @@ interface ExamExerciseListProps {
     items: ExamExerciseSummaryResponse[];
     color: string;
     className?: string;
+    /** Last finished time per exercise id, shown under the title. */
+    lastTimes?: Record<string, ExamExerciseLastTime>;
 }
 
 /** Status-filterable, paginated list of exercises (title, progress, click-through) shared by the Teil page and Schriftlicher Ausdruck. */
-export default function ExamExerciseList({ items, color, className }: Readonly<ExamExerciseListProps>) {
+export default function ExamExerciseList({ items, color, className, lastTimes }: Readonly<ExamExerciseListProps>) {
     const router = useRouter();
     const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
     const [page, setPage] = useState(1);
@@ -71,9 +75,17 @@ export default function ExamExerciseList({ items, color, className }: Readonly<E
                         )}
                         <div className="min-w-0 flex-1">
                             <div className="font-semibold text-foreground">{item.title}</div>
-                            {item.questionsCount > 0 && (
+                            {(item.questionsCount > 0 || lastTimes?.[item.id]) && (
                                 <div className="text-xs text-foreground/50">
-                                    {item.questionsCount} {item.questionsCount === 1 ? "Frage" : "Fragen"}
+                                    {item.questionsCount > 0 && `${item.questionsCount} ${item.questionsCount === 1 ? "Frage" : "Fragen"}`}
+                                    {item.questionsCount > 0 && lastTimes?.[item.id] && " · "}
+                                    {lastTimes?.[item.id] && (
+                                        <>
+                                            Letzte Zeit: {formatClock(lastTimes[item.id].elapsedSeconds)}
+                                            {lastTimes[item.id].targetSeconds != null &&
+                                                ` von ${formatClock(lastTimes[item.id].targetSeconds!)} empfohlen`}
+                                        </>
+                                    )}
                                 </div>
                             )}
                         </div>
