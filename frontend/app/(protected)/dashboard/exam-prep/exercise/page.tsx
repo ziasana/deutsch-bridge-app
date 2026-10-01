@@ -100,7 +100,7 @@ function PassagesView({ passages, taskType }: Readonly<{ passages: ExamPassagePu
     }
 
     return (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className={`grid gap-4 sm:grid-cols-2 ${taskType === "SITUATION_MATCHING" ? "lg:grid-cols-3" : ""}`}>
             {passages.map((p) => (
                 <div key={p.id} className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-4">
                     <p className="font-semibold text-gray-900 dark:text-white mb-1">{p.label}</p>

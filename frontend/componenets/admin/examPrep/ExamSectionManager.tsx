@@ -71,10 +71,22 @@ const defaultOptionLabel = (index: number): string => String.fromCharCode(97 + i
 
 const taskTypeLabel = (taskType: ExamTaskType): string => TASK_TYPE_LABELS[taskType] ?? taskType;
 
+/**
+ * Sprachbausteine's Teil is fixed by its task type (Multiple-Choice = Teil 1, Lückentext = Teil 2),
+ * which is also how students see it - so a stale stored partNumber (e.g. a cloze saved as Teil 1)
+ * must not override it. Other sections use the stored partNumber.
+ */
+const effectivePartNumber = (exercise: Pick<ExamExerciseResponse, "section" | "taskType" | "partNumber">): number | null => {
+    if (exercise.section === "SPRACHBAUSTEINE" && exercise.taskType) {
+        return exercise.taskType === "WORD_BANK_CLOZE" ? 2 : 1;
+    }
+    return exercise.partNumber;
+};
+
 const sectionLabel = (section: ExamSection, partNumber: number | null): string => {
-    if (section === "LESEVERSTEHEN") return `Leseverstehen Teil ${partNumber ?? 1}`;
-    if (section === "HOERVERSTEHEN") return `Hörverstehen Teil ${partNumber ?? 1}`;
-    if (section === "SPRACHBAUSTEINE") return `Sprachbausteine Teil ${partNumber ?? 1}`;
+    if (section === "LESEVERSTEHEN") return `Teil ${partNumber ?? 1}`;
+    if (section === "HOERVERSTEHEN") return `Teil ${partNumber ?? 1}`;
+    if (section === "SPRACHBAUSTEINE") return `Teil ${partNumber ?? 1}`;
     if (section === "SCHRIFTLICHER_AUSDRUCK") return "Schriftlicher Ausdruck";
     if (section === "TESTFORMAT_INFORMATION") return "Testformat Information";
     return section;
@@ -272,7 +284,8 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
         options.length === TFN_DEFAULT_ANSWER_OPTIONS.length && options.every((o, i) => o === TFN_DEFAULT_ANSWER_OPTIONS[i]);
 
     const changeTaskType = (taskType: ExamTaskType) => {
-        setForm({ ...form, taskType });
+        // Sprachbausteine's Teil follows its task type, so keep the Teil dropdown in step with it.
+        setForm({ ...form, taskType, partNumber: section === "SPRACHBAUSTEINE" ? defaultTeil(section, taskType) : form.partNumber });
         setQuestions((prev) => prev.map((q) => ({ ...q, taskType })));
         // Seed "+"/"-"/"o" for richtig/falsch/nicht; drop an untouched seed when leaving that type.
         if (taskType === "TRUE_FALSE_NOT_GIVEN" && answerOptions.length === 0) {
@@ -388,7 +401,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
             section,
             taskType: exercise.taskType,
             level: exercise.level ?? "B1",
-            partNumber: exercise.partNumber != null ? String(exercise.partNumber) : defaultTeil(section, exercise.taskType),
+            partNumber: effectivePartNumber(exercise) != null ? String(effectivePartNumber(exercise)) : defaultTeil(section, exercise.taskType),
             defaultExplanation: exercise.defaultExplanation ?? "",
             defaultCommonMistake: exercise.defaultCommonMistake ?? "",
             teilDescription: exercise.teilDescription ?? "",
@@ -520,7 +533,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
             case "title":
                 return exercise.title.toLowerCase();
             case "teil":
-                return exercise.partNumber ?? 1;
+                return effectivePartNumber(exercise) ?? 1;
             case "level":
                 return exercise.level ?? "";
             case "questions":
@@ -1229,7 +1242,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                         <tr key={exercise.id}>
                                             <td className="px-6 py-4 text-gray-900 dark:text-white">{exercise.title}</td>
                                             <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                                                {sectionLabel(exercise.section, exercise.partNumber)}
+                                                {sectionLabel(exercise.section, effectivePartNumber(exercise))}
                                             </td>
                                             <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
                                                 {exercise.taskType ? taskTypeLabel(exercise.taskType) : "—"}
