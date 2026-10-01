@@ -479,7 +479,11 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                 .filter((q) => q.prompt.trim())
                 .map((q) => ({
                     ...q,
-                    sectionIndex: q.sectionIndex != null ? passageIndexRemap.get(q.sectionIndex) ?? null : null,
+                    // SITUATION_MATCHING questions never refer to a passage; drop any leftover link.
+                    sectionIndex:
+                        form.taskType !== "SITUATION_MATCHING" && q.sectionIndex != null
+                            ? passageIndexRemap.get(q.sectionIndex) ?? null
+                            : null,
                     options: q.options ? q.options.map((o) => o.trim()).filter(Boolean) : null,
                 })),
             // Blank options are dropped, so their labels must be dropped with them to stay index-aligned.

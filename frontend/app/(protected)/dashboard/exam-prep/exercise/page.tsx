@@ -60,7 +60,14 @@ function AnswerOptionsPoolView({
                     ? "Wörter — nicht jedes passt in eine Lücke:"
                     : "Überschriften — nicht jede passt zu einem Text:"}
             </p>
-            <ul className="space-y-2">
+            <ul
+                className={
+                    taskType === "WORD_BANK_CLOZE"
+                        ? // Short words: four per row, filled left to right (a b c d / e f g h ...).
+                          "grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2"
+                        : "space-y-2"
+                }
+            >
                 {answerOptions.map((option, idx) => (
                     <li key={option} className="text-sm text-gray-800 dark:text-gray-200">
                         <span className="font-semibold">{optionLabelFor(answerOptionLabels, idx)})</span> {option}
@@ -490,7 +497,10 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
 
             <div className={`grid gap-3 sm:grid-cols-2 ${isSituationMatching ? "" : "lg:grid-cols-3 xl:grid-cols-4"}`}>
                 {quiz.questions.map((question, idx) => {
-                    const referencedPassage = question.sectionIndex != null ? quiz.passages[question.sectionIndex] : null;
+                    // SITUATION_MATCHING's passages are the answer ads, not a text the question refers to - a leftover
+                    // sectionIndex (e.g. from a former Zuordnung question) must not prefix the situation with an ad's label.
+                    const referencedPassage =
+                        !isSituationMatching && question.sectionIndex != null ? quiz.passages[question.sectionIndex] : null;
                     return (
                         <div key={question.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2">
                             <p className="font-medium text-gray-900 dark:text-white">
