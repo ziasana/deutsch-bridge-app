@@ -20,6 +20,16 @@ export default function CurrentFocusCard({ data }: CurrentFocusCardProps) {
         GRAMMAR: { title: f.grammarTitle, description: f.grammarDescription },
         READING: { title: f.readingTitle, description: f.readingDescription },
         EXPRESSIONS: { title: f.expressionsTitle, description: f.expressionsDescription },
+        WRITING: {
+            title: f.writingTitle,
+            description:
+                {
+                    TASK: f.writingTaskDescription,
+                    STRUCTURE: f.writingStructureDescription,
+                    VOCABULARY: f.writingVocabularyDescription,
+                    FORM: f.writingFormDescription,
+                }[data.detail ?? ""] ?? f.writingStructureDescription,
+        },
     };
 
     const content = data.area ? contentByArea[data.area] : null;

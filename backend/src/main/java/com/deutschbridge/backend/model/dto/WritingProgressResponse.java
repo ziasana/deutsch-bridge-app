@@ -8,6 +8,8 @@ public record WritingProgressResponse(
         int exercisesWritten,
         int revisedTexts,
         int totalWords,
+        /** When the learner last submitted a text, or null if never. */
+        java.time.LocalDateTime lastAttemptAt,
         /** Dimensions that most often had open improvement points in the recent attempts, most frequent first. */
         List<Issue> topIssues,
         /** Most recent concrete grammar corrections from AI feedback. */

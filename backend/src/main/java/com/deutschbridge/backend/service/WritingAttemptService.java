@@ -170,6 +170,7 @@ public class WritingAttemptService {
                 (int) all.stream().map(WritingAttempt::getExerciseId).distinct().count(),
                 (int) all.stream().filter(a -> a.getParentAttemptId() != null).count(),
                 all.stream().mapToInt(WritingAttempt::getWordCount).sum(),
+                all.isEmpty() ? null : all.get(0).getSubmittedAt(),
                 top, fixes);
     }
 

@@ -3,6 +3,7 @@ package com.deutschbridge.backend.service;
 import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.model.dto.ContinueLearningDto;
 import com.deutschbridge.backend.model.dto.CurrentFocusDto;
+import com.deutschbridge.backend.model.dto.WritingProgressResponse;
 import com.deutschbridge.backend.model.dto.DailyWordResponse;
 import com.deutschbridge.backend.model.dto.DashboardResponse;
 import com.deutschbridge.backend.model.dto.DashboardUserDto;
@@ -31,6 +32,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -44,6 +46,9 @@ import java.util.Set;
 @Service
 public class DashboardService {
 
+    static final int WRITING_FOCUS_MIN_REPEATS = 2;
+    static final int WRITING_FOCUS_RECENT_DAYS = 14;
+
     private static final int[] MILESTONE_THRESHOLDS = {10, 50, 100, 250, 500, 1000};
 
     private final RequestContext requestContext;
@@ -56,6 +61,7 @@ public class DashboardService {
     private final ReadingArticleRepository readingArticleRepository;
     private final LearningProgressRepository learningProgressRepository;
     private final GrammarLessonRepository grammarLessonRepository;
+    private final WritingAttemptService writingAttemptService;
 
     public DashboardService(RequestContext requestContext,
                              UserService userService,
@@ -66,8 +72,10 @@ public class DashboardService {
                              ExpressionRepository expressionRepository,
                              ReadingArticleRepository readingArticleRepository,
                              LearningProgressRepository learningProgressRepository,
-                             GrammarLessonRepository grammarLessonRepository) {
+                             GrammarLessonRepository grammarLessonRepository,
+                             WritingAttemptService writingAttemptService) {
         this.requestContext = requestContext;
+        this.writingAttemptService = writingAttemptService;
         this.userService = userService;
         this.learningProgressService = learningProgressService;
         this.dailyWordService = dailyWordService;
@@ -95,7 +103,8 @@ public class DashboardService {
         LearningState state = learningRecommendationService.buildState(user, dailyWords);
         ContinueLearningDto continueLearning = toContinueLearning(learningRecommendationService.getNextRecommendation(state));
 
-        CurrentFocusDto focus = resolveCurrentFocus(state, (int) vocabularyItemRepository.countByUser(user));
+        CurrentFocusDto focus = writingFocus(writingAttemptService.progress(), LocalDateTime.now())
+                .orElseGet(() -> resolveCurrentFocus(state, (int) vocabularyItemRepository.countByUser(user)));
 
         WeekSummaryDto week = buildWeekSummary(user);
 
@@ -134,6 +143,22 @@ public class DashboardService {
 
         if (total == 0) return null;
         return new NewContentDto(grammarLessons, readingArticles, expressions, total);
+    }
+
+    /**
+     * Writing becomes the focus only on a concrete, current signal: the same problem area showed up in
+     * at least {@value #WRITING_FOCUS_MIN_REPEATS} of the learner's recent texts and they wrote within the last
+     * {@value #WRITING_FOCUS_RECENT_DAYS} days. Otherwise the completion-ratio comparison decides, so
+     * writing doesn't permanently outrank the other areas.
+     */
+    static Optional<CurrentFocusDto> writingFocus(WritingProgressResponse progress, LocalDateTime now) {
+        if (progress.lastAttemptAt() == null || progress.topIssues().isEmpty()
+                || progress.lastAttemptAt().isBefore(now.minusDays(WRITING_FOCUS_RECENT_DAYS))) {
+            return Optional.empty();
+        }
+        WritingProgressResponse.Issue top = progress.topIssues().get(0);
+        if (top.count() < WRITING_FOCUS_MIN_REPEATS) return Optional.empty();
+        return Optional.of(new CurrentFocusDto("WRITING", "/dashboard/exam-prep/schreiben/fortschritt", top.key()));
     }
 
     private CurrentFocusDto resolveCurrentFocus(LearningState state, int vocabTotal) {

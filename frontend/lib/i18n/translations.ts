@@ -130,6 +130,11 @@ export interface Dictionary {
             readingDescription: string;
             expressionsTitle: string;
             expressionsDescription: string;
+            writingTitle: string;
+            writingTaskDescription: string;
+            writingStructureDescription: string;
+            writingVocabularyDescription: string;
+            writingFormDescription: string;
             neutralDescription: string;
             cta: string;
         };
@@ -806,6 +811,11 @@ const en: Dictionary = {
             readingDescription: "More reading practice can help build on what you've already learned.",
             expressionsTitle: "Active Expressions",
             expressionsDescription: "Practicing expressions a little more can help make them stick.",
+            writingTitle: "Writing",
+            writingTaskDescription: "In your recent texts some task points were missing or too short. Try answering every point in full.",
+            writingStructureDescription: "Your recent texts could use a clearer structure: greeting, closing, paragraphs and connectors.",
+            writingVocabularyDescription: "Your recent texts could use more varied wording and useful phrases.",
+            writingFormDescription: "Watch capitalization and punctuation in your recent texts.",
             neutralDescription: "Keep building your German vocabulary.",
             cta: "Practice now →",
         },
@@ -1561,6 +1571,11 @@ const fa: Dictionary = {
             readingDescription: "تمرین بیشتر مطالعه می‌تواند به آنچه قبلاً یاد گرفته‌اید کمک کند.",
             expressionsTitle: "عبارات کاربردی",
             expressionsDescription: "تمرین بیشتر عبارات کاربردی می‌تواند به ماندگاری آن‌ها کمک کند.",
+            writingTitle: "نوشتن",
+            writingTaskDescription: "در متن‌های اخیر شما برخی بخش‌های تکلیف جا افتاده یا کوتاه بوده است. سعی کنید به همهٔ بخش‌ها کامل پاسخ دهید.",
+            writingStructureDescription: "ساختار متن‌های اخیر شما می‌تواند واضح‌تر باشد: خطاب، پایان، پاراگراف‌ها و حروف ربط.",
+            writingVocabularyDescription: "متن‌های اخیر شما می‌توانند واژگان متنوع‌تر و عبارات کاربردی بیشتری داشته باشند.",
+            writingFormDescription: "به حروف بزرگ و علائم نگارشی در متن‌های اخیر خود توجه کنید.",
             neutralDescription: "به ساختن واژگان آلمانی خود ادامه دهید.",
             cta: "← اکنون تمرین کنید",
         },

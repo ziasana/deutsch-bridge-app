@@ -35,11 +35,13 @@ export interface ReviewNeededDto {
     expressionsDue: number;
 }
 
-export type FocusArea = "VOCABULARY" | "GRAMMAR" | "READING" | "EXPRESSIONS" | null;
+export type FocusArea = "VOCABULARY" | "GRAMMAR" | "READING" | "EXPRESSIONS" | "WRITING" | null;
 
 export interface CurrentFocusDto {
     area: FocusArea;
     route: string | null;
+    /** WRITING only: the recurring problem dimension (TASK, STRUCTURE, VOCABULARY, FORM). */
+    detail?: string | null;
 }
 
 export interface WeekSummaryDto {
