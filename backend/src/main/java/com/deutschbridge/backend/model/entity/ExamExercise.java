@@ -71,6 +71,14 @@ public class ExamExercise {
     /** SCHRIFTLICHER_AUSDRUCK only: the "mögliche Antwort" a student can reveal via a button. */
     private @Column(columnDefinition = "TEXT") String modelSolution;
 
+    /** SCHRIFTLICHER_AUSDRUCK only: offer the optional pre-writing planner for this task. */
+    private boolean requiresPlanning;
+
+    /** SCHRIFTLICHER_AUSDRUCK only: the task's Leitpunkte, used as prompts in the planner. */
+    @Type(JsonType.class)
+    @Column(columnDefinition = "jsonb")
+    private List<String> leitpunkte;
+
     private boolean published = true;
     private LocalDateTime createdAt;
 

@@ -1,0 +1,495 @@
+{
+  "level": "C1",
+  "items": [
+    {
+      "kind": "FORMAT",
+      "title": "Was erwartet dich?",
+      "content": "Du verfasst einen anspruchsvollen Text, etwa eine Erörterung, einen formellen Brief oder einen Kommentar. Du argumentierst differenziert, setzt dich mit Gegenpositionen auseinander und achtest auf Stil und Register.",
+      "data": {
+        "time": "ca. 45–60 Minuten",
+        "requirements": [
+          "Das Thema umfassend und differenziert behandeln",
+          "Argumente gewichten und mit Beispielen oder Belegen stützen",
+          "Gegenpositionen berücksichtigen",
+          "Stil und Register präzise wählen",
+          "Textkohärenz durch vielfältige Konnektoren sichern"
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Aufgabe lesen",
+      "content": "Lies die Aufgabe ganz in Ruhe. Bevor du schreibst, musst du wissen, worum es geht.",
+      "data": {
+        "tips": [
+          "Situation: Was ist passiert?",
+          "Empfänger: An wen schreibst du? (Freund/in, Kollege/in, Firma)",
+          "Zweck: Warum schreibst du? (einladen, absagen, nachfragen, sich beschweren)",
+          "Textsorte: E-Mail, Brief oder Nachricht?",
+          "Pflichtpunkte: Welche Leitpunkte musst du bearbeiten?"
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Leitpunkte markieren",
+      "content": "Die Leitpunkte sind das Wichtigste. Frage dich bei jedem Punkt: Was muss ich unbedingt beantworten?",
+      "data": {
+        "tips": [
+          "Unterstreiche jeden Leitpunkt in der Aufgabe.",
+          "Nummeriere sie: 1, 2, 3.",
+          "Ein vergessener Leitpunkt kostet Punkte – auch wenn dein Deutsch gut ist."
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Ideen sammeln",
+      "content": "Schreibe zuerst nur Stichwörter, noch keine ganzen Sätze. So verlierst du keine Zeit und keine Idee.",
+      "data": {
+        "tips": [
+          "Zu jedem Leitpunkt 2–3 Stichwörter notieren.",
+          "Wähle Ideen, die du auf Deutsch sicher ausdrücken kannst.",
+          "Du musst nichts erfinden, was zu schwierig zu formulieren ist."
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Text strukturieren",
+      "content": "Plane die Reihenfolge deines Textes: Anrede, Einleitung, Hauptteil mit allen Leitpunkten und Schluss.",
+      "data": {
+        "tips": [
+          "Plane die Gliederung: Einleitung → Hauptteil (ein Absatz pro Leitpunkt/Argument) → Schluss.",
+          "Lege fest, welches Argument am stärksten ist und wohin es gehört.",
+          "Plane einen Absatz für eine Gegenposition ein."
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Schreiben",
+      "content": "Entwickle deine Argumentation Schritt für Schritt und achte auf Stil, Register und Kohärenz.",
+      "data": {
+        "tips": [
+          "These – Begründung – Beleg/Beispiel – Zwischenfazit.",
+          "Nutze Nominalisierungen und komplexe Satzstrukturen gezielt – ohne die Klarheit zu verlieren.",
+          "Greife Gegenpositionen auf."
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Kontrollieren",
+      "content": "Plane die letzten Minuten zum Lesen ein. Eine kurze Kontrolle findet viele Flüchtigkeitsfehler.",
+      "data": {
+        "tips": [
+          "Habe ich alle Leitpunkte beantwortet?",
+          "Stehen die Verben an der richtigen Stelle?",
+          "Stimmen Artikel und Endungen?",
+          "Habe ich Anrede und Schluss geschrieben?"
+        ]
+      }
+    },
+    {
+      "kind": "STRUCTURE_PART",
+      "title": "Einleitung",
+      "content": "Das Thema einordnen, die Fragestellung formulieren und die Gliederung andeuten.",
+      "data": {
+        "examples": [
+          "In der aktuellen Debatte um die Vier-Tage-Woche stellt sich die Frage, ob verkürzte Arbeitszeiten tatsächlich zu höherer Produktivität führen."
+        ],
+        "phrases": [
+          "Die Frage, ob …, wird zunehmend kontrovers diskutiert.",
+          "Im Folgenden soll erörtert werden, …"
+        ]
+      }
+    },
+    {
+      "kind": "STRUCTURE_PART",
+      "title": "Hauptteil: Argumentation",
+      "content": "Argumente steigern oder gewichten; jedes Argument besteht aus These, Begründung und Beispiel.",
+      "data": {
+        "examples": [
+          "Zunächst ist anzuführen, dass …",
+          "Gewichtiger noch ist der Umstand, dass …"
+        ],
+        "phrases": [
+          "Zunächst …",
+          "Hinzu kommt, dass …",
+          "Schwerer wiegt, dass …"
+        ]
+      }
+    },
+    {
+      "kind": "STRUCTURE_PART",
+      "title": "Hauptteil: Gegenposition",
+      "content": "Einwände aufgreifen und entkräften oder relativieren.",
+      "data": {
+        "examples": [
+          "Zwar mag man einwenden, dass …, doch dabei wird übersehen, dass …"
+        ],
+        "phrases": [
+          "Zwar …, doch …",
+          "Dem ist entgegenzuhalten, dass …",
+          "Dieser Einwand greift zu kurz, weil …"
+        ]
+      }
+    },
+    {
+      "kind": "STRUCTURE_PART",
+      "title": "Schluss",
+      "content": "Eine abgewogene eigene Position formulieren, ggf. einen Ausblick geben.",
+      "data": {
+        "examples": [
+          "Alles in allem erscheint es angebracht, die Arbeitszeit flexibler zu gestalten."
+        ],
+        "phrases": [
+          "Alles in allem …",
+          "Abschließend bleibt festzuhalten, dass …",
+          "Ausblickend ist zu erwarten, dass …"
+        ]
+      }
+    },
+    {
+      "kind": "EXAMPLE",
+      "title": "Kommentar zur Vier-Tage-Woche",
+      "content": "Schreiben Sie einen Kommentar zur Frage, ob die Vier-Tage-Woche eingeführt werden sollte.",
+      "data": {
+        "sections": [
+          {
+            "key": "intro",
+            "label": "Einleitung",
+            "text": "Kaum ein arbeitspolitisches Thema wird derzeit so kontrovers diskutiert wie die Vier-Tage-Woche.",
+            "why": "Der Einstieg ordnet das Thema ein und weckt Interesse.",
+            "phrases": [
+              "Kaum ein Thema wird so kontrovers diskutiert wie …"
+            ]
+          },
+          {
+            "key": "arg",
+            "label": "Argument",
+            "text": "Befürworter verweisen darauf, dass ausgeruhte Beschäftigte nachweislich produktiver arbeiten und seltener krank sind.",
+            "why": "Eine These mit Begründung und Beleg-Hinweis.",
+            "phrases": [
+              "Befürworter verweisen darauf, dass …"
+            ]
+          },
+          {
+            "key": "counter",
+            "label": "Gegenposition",
+            "text": "Zwar mag man einwenden, dass sich nicht jede Branche eine verkürzte Arbeitszeit leisten kann; dabei wird jedoch übersehen, dass flexible Modelle möglich sind.",
+            "why": "Die Gegenposition wird aufgegriffen und relativiert.",
+            "phrases": [
+              "Zwar mag man einwenden, dass …, doch …"
+            ]
+          },
+          {
+            "key": "closing",
+            "label": "Schluss",
+            "text": "Alles in allem spricht vieles dafür, die Vier-Tage-Woche zumindest in Pilotprojekten zu erproben.",
+            "why": "Das Fazit ist abgewogen und mündet in eine Empfehlung.",
+            "phrases": [
+              "Alles in allem spricht vieles dafür, dass …"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Zwar …, aber/doch …",
+      "content": "Konzessive Struktur, um Gegenargumente einzubauen.",
+      "data": {
+        "examples": [
+          "Zwar ist das Modell innovativ, doch seine Umsetzung bleibt unklar."
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Nominalisierung statt Nebensatz",
+      "content": "Verdichteter, formeller Stil.",
+      "data": {
+        "examples": [
+          "Aufgrund der steigenden Mieten ziehen viele aufs Land.",
+          "Die Zunahme der Heimarbeit verändert die Arbeitskultur."
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Partizipialattribut",
+      "content": "Komplexe Informationen kompakt ausdrücken.",
+      "data": {
+        "examples": [
+          "die von der Regierung beschlossenen Maßnahmen"
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Es lässt sich feststellen, dass …",
+      "content": "Unpersönliche, sachliche Formulierung.",
+      "data": {
+        "examples": [
+          "Es lässt sich feststellen, dass die Nachfrage deutlich gestiegen ist."
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Konjunktiv I (indirekte Rede)",
+      "content": "Positionen anderer wiedergeben.",
+      "data": {
+        "examples": [
+          "Die Kritiker betonen, die Kosten seien zu hoch."
+        ]
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Alltagssprache im formellen Text",
+      "content": "Auf C1 wird stilistische Angemessenheit erwartet.",
+      "data": {
+        "wrong": "Das ist echt voll schlecht.",
+        "right": "Das ist äußerst problematisch."
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Argumente ohne Gewichtung",
+      "content": "Eine bloße Aufzählung wirkt unreflektiert; ordne und gewichte deine Argumente.",
+      "data": {
+        "wrong": "Erstens …, zweitens …, drittens … (alles gleich gewichtet)",
+        "right": "Zunächst …; schwerer wiegt jedoch …"
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Gegenposition fehlt",
+      "content": "Eine einseitige Argumentation wirkt weniger überzeugend.",
+      "data": {
+        "wrong": "Nur Pro-Argumente",
+        "right": "Zwar mag man einwenden …, doch …"
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Konnektoren falsch verwendet",
+      "content": "Achte auf Wortstellung nach Konnektoren (z. B. deswegen, hingegen).",
+      "data": {
+        "wrong": "Deshalb ich bin dagegen.",
+        "right": "Deshalb bin ich dagegen."
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Zu lange Schachtelsätze",
+      "content": "Komplexität darf nicht auf Kosten der Klarheit gehen.",
+      "data": {
+        "wrong": "Ein Satz über fünf Zeilen mit vier Nebensätzen.",
+        "right": "Zwei klar gegliederte Sätze."
+      }
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich alle Leitpunkte beantwortet?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich eine passende Anrede?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich eine klare Einleitung?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Ist mein Text logisch aufgebaut?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich passende Verbindungswörter verwendet?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich einen passenden Schluss?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich die Verbposition kontrolliert?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich Artikel und Endungen kontrolliert?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich Präpositionen kontrolliert?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich die Rechtschreibung kontrolliert?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich Argumente gewichtet und eine Gegenposition berücksichtigt?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Passen Stil und Register durchgehend?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Sind meine Sätze komplex, aber noch klar verständlich?"
+    }
+  ],
+  "phrases": [
+    {
+      "category": "INTRODUCTION",
+      "phrase": "Die Frage, ob …, wird zunehmend kontrovers diskutiert.",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "INTRODUCTION",
+      "phrase": "Im Folgenden soll erörtert werden, …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "INTRODUCTION",
+      "phrase": "Kaum ein Thema wird derzeit so intensiv diskutiert wie …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "OPINION",
+      "phrase": "Meines Erachtens …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "OPINION",
+      "phrase": "Bei näherer Betrachtung lässt sich feststellen, dass …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "OPINION",
+      "phrase": "Es drängt sich der Eindruck auf, dass …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "REASON",
+      "phrase": "Dies ist darauf zurückzuführen, dass …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "REASON",
+      "phrase": "Ausschlaggebend dafür ist, dass …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "EXAMPLE",
+      "phrase": "Dies verdeutlicht das Beispiel von …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "EXAMPLE",
+      "phrase": "Exemplarisch sei … genannt.",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "ADDITION",
+      "phrase": "Hinzu kommt, dass …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "ADDITION",
+      "phrase": "Nicht zuletzt …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "CONTRAST",
+      "phrase": "Dem steht entgegen, dass …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "CONTRAST",
+      "phrase": "Demgegenüber …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "CONTRAST",
+      "phrase": "Zwar …, doch …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "AGREEMENT",
+      "phrase": "Dieser Auffassung ist uneingeschränkt zuzustimmen.",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "DISAGREEMENT",
+      "phrase": "Dieser Einwand greift zu kurz, weil …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "DISAGREEMENT",
+      "phrase": "Dem ist entgegenzuhalten, dass …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "ADVANTAGE_DISADVANTAGE",
+      "phrase": "Zu den Vorzügen zählt …, zu den Nachteilen hingegen …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "ADVANTAGE_DISADVANTAGE",
+      "phrase": "Es gilt, Chancen und Risiken sorgfältig abzuwägen.",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "SUGGESTION",
+      "phrase": "Denkbar wäre es, …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "SUGGESTION",
+      "phrase": "Es empfiehlt sich, …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "REQUEST",
+      "phrase": "Ich möchte Sie höflich bitten, …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "REQUEST",
+      "phrase": "Für eine zeitnahe Rückmeldung wäre ich Ihnen sehr verbunden.",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "APOLOGY",
+      "phrase": "Ich bedauere, Ihnen mitteilen zu müssen, dass …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "QUESTION",
+      "phrase": "Ich wäre Ihnen für Auskunft darüber dankbar, ob …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "CONCLUSION",
+      "phrase": "Alles in allem lässt sich festhalten, dass …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "CONCLUSION",
+      "phrase": "Abschließend bleibt festzuhalten, dass …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "CONCLUSION",
+      "phrase": "Mit vorzüglicher Hochachtung",
+      "formality": "FORMAL"
+    }
+  ]
+}

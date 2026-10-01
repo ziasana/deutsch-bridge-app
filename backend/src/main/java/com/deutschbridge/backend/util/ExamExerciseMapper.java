@@ -36,7 +36,9 @@ public class ExamExerciseMapper {
                 exercise.getTeilDescription(),
                 exercise.getModelSolution(),
                 exercise.isPublished(),
-                exercise.getCreatedAt()
+                exercise.getCreatedAt(),
+                exercise.isRequiresPlanning(),
+                exercise.getLeitpunkte()
         );
     }
 
@@ -70,7 +72,9 @@ public class ExamExerciseMapper {
                 exercise.getDefaultExplanation(),
                 exercise.getDefaultCommonMistake(),
                 completion != null,
-                completion != null ? completion.getLastScore() : null
+                completion != null ? completion.getLastScore() : null,
+                exercise.isRequiresPlanning(),
+                exercise.getLeitpunkte()
         );
     }
 

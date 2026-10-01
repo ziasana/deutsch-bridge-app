@@ -235,6 +235,8 @@ public class ExamExerciseService {
         if (request.teilDescription() != null) exercise.setTeilDescription(request.teilDescription());
         if (request.modelSolution() != null) exercise.setModelSolution(request.modelSolution());
         if (request.published() != null) exercise.setPublished(request.published());
+        if (request.requiresPlanning() != null) exercise.setRequiresPlanning(request.requiresPlanning());
+        if (request.leitpunkte() != null) exercise.setLeitpunkte(request.leitpunkte());
     }
 
     private List<ExamPassage> preparePassages(List<ExamPassage> passages) {

@@ -1,0 +1,458 @@
+{
+  "level": "A2",
+  "items": [
+    {
+      "kind": "FORMAT",
+      "title": "Was erwartet dich?",
+      "content": "Du bekommst eine kurze, alltägliche Situation und einige Fragen oder Stichpunkte. Du schreibst eine kurze Nachricht, E-Mail oder Karte mit einfachen Sätzen.",
+      "data": {
+        "time": "ca. 20–30 Minuten",
+        "requirements": [
+          "Alle Punkte beantworten",
+          "Eine passende Anrede und Grußformel schreiben",
+          "Kurze, einfache Sätze verwenden",
+          "Mit „und“, „aber“, „weil“ verbinden"
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Aufgabe lesen",
+      "content": "Lies die Aufgabe ganz in Ruhe. Bevor du schreibst, musst du wissen, worum es geht.",
+      "data": {
+        "tips": [
+          "Situation: Was ist passiert?",
+          "Empfänger: An wen schreibst du? (Freund/in, Kollege/in, Firma)",
+          "Zweck: Warum schreibst du? (einladen, absagen, nachfragen, sich beschweren)",
+          "Textsorte: E-Mail, Brief oder Nachricht?",
+          "Pflichtpunkte: Welche Leitpunkte musst du bearbeiten?"
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Leitpunkte markieren",
+      "content": "Die Leitpunkte sind das Wichtigste. Frage dich bei jedem Punkt: Was muss ich unbedingt beantworten?",
+      "data": {
+        "tips": [
+          "Unterstreiche jeden Leitpunkt in der Aufgabe.",
+          "Nummeriere sie: 1, 2, 3.",
+          "Ein vergessener Leitpunkt kostet Punkte – auch wenn dein Deutsch gut ist."
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Ideen sammeln",
+      "content": "Schreibe zuerst nur Stichwörter, noch keine ganzen Sätze. So verlierst du keine Zeit und keine Idee.",
+      "data": {
+        "tips": [
+          "Zu jedem Leitpunkt 2–3 Stichwörter notieren.",
+          "Wähle Ideen, die du auf Deutsch sicher ausdrücken kannst.",
+          "Du musst nichts erfinden, was zu schwierig zu formulieren ist."
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Text strukturieren",
+      "content": "Plane die Reihenfolge deines Textes: Anrede, Einleitung, Hauptteil mit allen Leitpunkten und Schluss.",
+      "data": {
+        "tips": [
+          "Anrede → Einleitung → Hauptteil (Leitpunkt 1, 2, 3) → Schluss → Grußformel",
+          "Bearbeite die Leitpunkte am besten in der Reihenfolge der Aufgabe.",
+          "Beginne für jeden Leitpunkt einen neuen Absatz."
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Schreiben",
+      "content": "Schreibe einfache, kurze Sätze. Konzentriere dich darauf, die Fragen zu beantworten.",
+      "data": {
+        "tips": [
+          "Ein Gedanke pro Satz.",
+          "Verbinde Sätze mit und, aber, weil.",
+          "Wenn dir ein Wort fehlt: Nimm ein einfaches Wort."
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Kontrollieren",
+      "content": "Plane die letzten Minuten zum Lesen ein. Eine kurze Kontrolle findet viele Flüchtigkeitsfehler.",
+      "data": {
+        "tips": [
+          "Habe ich alle Leitpunkte beantwortet?",
+          "Stehen die Verben an der richtigen Stelle?",
+          "Stimmen Artikel und Endungen?",
+          "Habe ich Anrede und Schluss geschrieben?"
+        ]
+      }
+    },
+    {
+      "kind": "STRUCTURE_PART",
+      "title": "Anrede",
+      "content": "Die Person freundlich ansprechen.",
+      "data": {
+        "examples": [
+          "Liebe Lisa,",
+          "Lieber Tom,",
+          "Hallo Anna,"
+        ],
+        "phrases": [
+          "Liebe/r + Vorname,",
+          "Hallo + Vorname,"
+        ]
+      }
+    },
+    {
+      "kind": "STRUCTURE_PART",
+      "title": "Einleitung",
+      "content": "Kurz sagen, warum du schreibst.",
+      "data": {
+        "examples": [
+          "vielen Dank für deine Nachricht.",
+          "ich schreibe dir, weil ich eine Frage habe."
+        ],
+        "phrases": [
+          "Danke für deine E-Mail.",
+          "Wie geht es dir?"
+        ]
+      }
+    },
+    {
+      "kind": "STRUCTURE_PART",
+      "title": "Hauptteil",
+      "content": "Beantworte jeden Punkt in ein bis zwei einfachen Sätzen.",
+      "data": {
+        "examples": [
+          "Ich komme am Samstag.",
+          "Wir treffen uns um 15 Uhr am Bahnhof."
+        ],
+        "phrases": [
+          "Ich möchte …",
+          "Ich kann …",
+          "Können wir …?"
+        ]
+      }
+    },
+    {
+      "kind": "STRUCTURE_PART",
+      "title": "Schluss",
+      "content": "Mit einem kurzen Satz und einem Gruß enden.",
+      "data": {
+        "examples": [
+          "Bis bald!",
+          "Viele Grüße"
+        ],
+        "phrases": [
+          "Bis bald!",
+          "Schreib mir bitte bald.",
+          "Viele Grüße / Liebe Grüße"
+        ]
+      }
+    },
+    {
+      "kind": "EXAMPLE",
+      "title": "Einladung zum Geburtstag",
+      "content": "Dein Freund Tom lädt dich zu seiner Geburtstagsfeier ein. Schreiben Sie eine E-Mail: Sagen Sie danke. Sagen Sie, ob Sie kommen. Fragen Sie, was Sie mitbringen sollen.",
+      "data": {
+        "sections": [
+          {
+            "key": "greeting",
+            "label": "Anrede",
+            "text": "Lieber Tom,",
+            "why": "Einem Freund schreibst du „Lieber“ + Vorname und ein Komma.",
+            "phrases": [
+              "Lieber Tom,",
+              "Hallo Tom,"
+            ]
+          },
+          {
+            "key": "intro",
+            "label": "Einleitung",
+            "text": "vielen Dank für deine Einladung.",
+            "why": "Du bedankst dich zuerst – das ist höflich.",
+            "phrases": [
+              "Vielen Dank für deine Einladung.",
+              "Danke für deine E-Mail."
+            ]
+          },
+          {
+            "key": "point1",
+            "label": "Leitpunkt 1",
+            "text": "Ich komme gern zu deiner Party.",
+            "why": "Du sagst klar, ob du kommst.",
+            "phrases": [
+              "Ich komme gern.",
+              "Leider kann ich nicht kommen."
+            ]
+          },
+          {
+            "key": "point2",
+            "label": "Leitpunkt 2",
+            "text": "Soll ich etwas mitbringen? Ich kann einen Kuchen machen.",
+            "why": "Eine Frage und ein einfacher Vorschlag beantworten den dritten Punkt.",
+            "phrases": [
+              "Soll ich etwas mitbringen?",
+              "Ich kann … mitbringen."
+            ]
+          },
+          {
+            "key": "closing",
+            "label": "Schluss",
+            "text": "Bis Samstag!\n\nViele Grüße\nMaria",
+            "why": "Ein kurzer Schluss und ein Gruß.",
+            "phrases": [
+              "Bis bald!",
+              "Viele Grüße"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Ich möchte + Infinitiv",
+      "content": "Das Verb steht am Satzende.",
+      "data": {
+        "examples": [
+          "Ich möchte dich besuchen.",
+          "Ich möchte einen Kurs machen."
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Kannst du / Können Sie + Infinitiv?",
+      "content": "Eine einfache Bitte. Der Infinitiv steht am Ende.",
+      "data": {
+        "examples": [
+          "Kannst du mir bitte helfen?",
+          "Können Sie mir die Adresse schicken?"
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "…, weil + Nebensatz",
+      "content": "Ein Grund. Das Verb steht am Ende.",
+      "data": {
+        "examples": [
+          "Ich komme nicht, weil ich krank bin."
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Am + Wochentag / Um + Uhrzeit",
+      "content": "Zeitangaben für Termine.",
+      "data": {
+        "examples": [
+          "Am Samstag um 15 Uhr."
+        ]
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Leitpunkt vergessen",
+      "content": "Jede Frage der Aufgabe braucht eine Antwort.",
+      "data": {
+        "wrong": "Nur „Danke für die Einladung.“",
+        "right": "Danke, ich komme, und ich bringe einen Kuchen mit."
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Verb nicht an Position 2",
+      "content": "Im Hauptsatz steht das konjugierte Verb an Position 2.",
+      "data": {
+        "wrong": "Heute ich gehe ins Kino.",
+        "right": "Heute gehe ich ins Kino."
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Keine Anrede oder kein Gruß",
+      "content": "Eine E-Mail beginnt mit einer Anrede und endet mit einem Gruß.",
+      "data": {
+        "wrong": "Ich komme am Samstag.",
+        "right": "Lieber Tom, ich komme am Samstag. Viele Grüße, Maria"
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Falscher Artikel",
+      "content": "Lerne Nomen immer mit Artikel.",
+      "data": {
+        "wrong": "Ich bringe die Kuchen mit.",
+        "right": "Ich bringe den Kuchen mit."
+      }
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich alle Leitpunkte beantwortet?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich eine passende Anrede?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich eine klare Einleitung?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Ist mein Text logisch aufgebaut?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich passende Verbindungswörter verwendet?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich einen passenden Schluss?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich die Verbposition kontrolliert?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich Artikel und Endungen kontrolliert?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich Präpositionen kontrolliert?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich die Rechtschreibung kontrolliert?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Sind meine Sätze kurz und klar?"
+    }
+  ],
+  "phrases": [
+    {
+      "category": "GREETING",
+      "phrase": "Liebe Lisa, / Lieber Tom,",
+      "formality": "INFORMAL"
+    },
+    {
+      "category": "GREETING",
+      "phrase": "Hallo Anna,",
+      "formality": "INFORMAL"
+    },
+    {
+      "category": "GREETING",
+      "phrase": "Sehr geehrte Frau Müller,",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "INTRODUCTION",
+      "phrase": "Danke für deine E-Mail.",
+      "formality": "INFORMAL"
+    },
+    {
+      "category": "INTRODUCTION",
+      "phrase": "Vielen Dank für deine Einladung.",
+      "formality": "INFORMAL"
+    },
+    {
+      "category": "INTRODUCTION",
+      "phrase": "Wie geht es dir?",
+      "formality": "INFORMAL"
+    },
+    {
+      "category": "REASON",
+      "phrase": "…, weil …",
+      "formality": "NEUTRAL",
+      "example": "Ich komme nicht, weil ich arbeiten muss.",
+      "usageNote": "Verb am Ende."
+    },
+    {
+      "category": "REASON",
+      "phrase": "Ich habe keine Zeit, denn …",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "ADDITION",
+      "phrase": "Und …",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "CONTRAST",
+      "phrase": "Aber …",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "SUGGESTION",
+      "phrase": "Wollen wir …?",
+      "formality": "INFORMAL",
+      "example": "Wollen wir ins Kino gehen?"
+    },
+    {
+      "category": "SUGGESTION",
+      "phrase": "Wir können …",
+      "formality": "INFORMAL"
+    },
+    {
+      "category": "SUGGESTION",
+      "phrase": "Wie wäre es am Samstag?",
+      "formality": "INFORMAL"
+    },
+    {
+      "category": "REQUEST",
+      "phrase": "Kannst du mir bitte …?",
+      "formality": "INFORMAL"
+    },
+    {
+      "category": "REQUEST",
+      "phrase": "Können Sie mir bitte …?",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "APOLOGY",
+      "phrase": "Es tut mir leid.",
+      "formality": "INFORMAL"
+    },
+    {
+      "category": "APOLOGY",
+      "phrase": "Leider kann ich nicht kommen.",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "QUESTION",
+      "phrase": "Wann beginnt …?",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "QUESTION",
+      "phrase": "Wo ist …?",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "QUESTION",
+      "phrase": "Was kostet …?",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "CONCLUSION",
+      "phrase": "Bis bald!",
+      "formality": "INFORMAL"
+    },
+    {
+      "category": "CONCLUSION",
+      "phrase": "Viele Grüße",
+      "formality": "INFORMAL"
+    },
+    {
+      "category": "CONCLUSION",
+      "phrase": "Mit freundlichen Grüßen",
+      "formality": "FORMAL"
+    }
+  ]
+}

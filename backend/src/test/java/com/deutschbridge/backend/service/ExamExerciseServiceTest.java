@@ -80,7 +80,7 @@ class ExamExerciseServiceTest {
         ExamPassage passage = new ExamPassage("p1", "Durchsage 1", null, null, audioUrl, "Geheimes Transkript.");
         return new ExamExerciseManualRequest(
                 "Hörverstehen B1 - Teil 1", ExamSection.HOERVERSTEHEN, ExamTaskType.MULTIPLE_CHOICE, LearningLevel.B1,
-                null, List.of(passage), List.of(), List.of(), List.of(), null, null, null, null, true
+                null, List.of(passage), List.of(), List.of(), List.of(), null, null, null, null, true, null, null
         );
     }
 

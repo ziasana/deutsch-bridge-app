@@ -1,0 +1,338 @@
+{
+  "level": "B1",
+  "items": [
+    {
+      "kind": "FORMAT",
+      "title": "Was erwartet dich?",
+      "content": "Du bekommst eine Situation und mehrere Leitpunkte. Deine Aufgabe ist es, einen zusammenhängenden Text zu schreiben (meist eine E-Mail oder einen Brief) und alle geforderten Punkte angemessen zu bearbeiten.",
+      "data": {
+        "time": "ca. 30 Minuten",
+        "requirements": [
+          "Alle Leitpunkte beachten",
+          "Passende Anrede verwenden",
+          "Text sinnvoll strukturieren",
+          "Passenden Schluss schreiben",
+          "Verständliche Sätze formulieren"
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Aufgabe lesen",
+      "content": "Lies die Aufgabe ganz in Ruhe. Bevor du schreibst, musst du wissen, worum es geht.",
+      "data": {
+        "tips": [
+          "Situation: Was ist passiert?",
+          "Empfänger: An wen schreibst du? (Freund/in, Kollege/in, Firma)",
+          "Zweck: Warum schreibst du? (einladen, absagen, nachfragen, sich beschweren)",
+          "Textsorte: E-Mail, Brief oder Nachricht?",
+          "Pflichtpunkte: Welche Leitpunkte musst du bearbeiten?"
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Leitpunkte markieren",
+      "content": "Die Leitpunkte sind das Wichtigste. Frage dich bei jedem Punkt: Was muss ich unbedingt beantworten?",
+      "data": {
+        "tips": [
+          "Unterstreiche jeden Leitpunkt in der Aufgabe.",
+          "Nummeriere sie: 1, 2, 3.",
+          "Ein vergessener Leitpunkt kostet Punkte – auch wenn dein Deutsch gut ist."
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Ideen sammeln",
+      "content": "Schreibe zuerst nur Stichwörter, noch keine ganzen Sätze. So verlierst du keine Zeit und keine Idee.",
+      "data": {
+        "tips": [
+          "Zu jedem Leitpunkt 2–3 Stichwörter notieren.",
+          "Wähle Ideen, die du auf Deutsch sicher ausdrücken kannst.",
+          "Du musst nichts erfinden, was zu schwierig zu formulieren ist."
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Text strukturieren",
+      "content": "Plane die Reihenfolge deines Textes: Anrede, Einleitung, Hauptteil mit allen Leitpunkten und Schluss.",
+      "data": {
+        "tips": [
+          "Anrede → Einleitung → Hauptteil (Leitpunkt 1, 2, 3) → Schluss → Grußformel",
+          "Bearbeite die Leitpunkte am besten in der Reihenfolge der Aufgabe.",
+          "Beginne für jeden Leitpunkt einen neuen Absatz."
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Schreiben",
+      "content": "Konzentriere dich zuerst darauf, deine Inhalte klar mitzuteilen. Perfekte Sätze sind weniger wichtig als ein verständlicher Text.",
+      "data": {
+        "tips": [
+          "Schreibe einfache, aber korrekte Sätze.",
+          "Verbinde Sätze mit weil, denn, deshalb, aber, außerdem.",
+          "Wenn dir ein Wort fehlt: Umschreibe es mit anderen Worten."
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Kontrollieren",
+      "content": "Plane die letzten Minuten zum Lesen ein. Eine kurze Kontrolle findet viele Flüchtigkeitsfehler.",
+      "data": {
+        "tips": [
+          "Habe ich alle Leitpunkte beantwortet?",
+          "Stehen die Verben an der richtigen Stelle?",
+          "Stimmen Artikel und Endungen?",
+          "Habe ich Anrede und Schluss geschrieben?"
+        ]
+      }
+    },
+    {
+      "kind": "STRUCTURE_PART",
+      "title": "Anrede",
+      "content": "Den Empfänger passend ansprechen. Die Anrede zeigt, ob du die Beziehung (Freund/in oder formell) verstanden hast.",
+      "data": {
+        "examples": ["Liebe Anna,", "Hallo Peter,", "Sehr geehrte Frau Müller,", "Sehr geehrte Damen und Herren,"],
+        "phrases": ["Informell: Liebe/r …, Hallo …", "Formell: Sehr geehrte/r Frau/Herr …"]
+      }
+    },
+    {
+      "kind": "STRUCTURE_PART",
+      "title": "Einleitung",
+      "content": "Kurz auf die Situation oder die Nachricht des Empfängers reagieren und den Grund deines Schreibens nennen.",
+      "data": {
+        "examples": [
+          "vielen Dank für deine Einladung.",
+          "ich schreibe Ihnen, weil ich eine Frage zu Ihrem Angebot habe."
+        ],
+        "phrases": ["Vielen Dank für deine Nachricht.", "Ich schreibe dir, weil …", "Ich habe mich sehr über … gefreut."]
+      }
+    },
+    {
+      "kind": "STRUCTURE_PART",
+      "title": "Hauptteil",
+      "content": "Hier bearbeitest du nacheinander alle Leitpunkte. Jeder Leitpunkt bekommt eigene Sätze mit Begründung oder Details.",
+      "data": {
+        "examples": [
+          "Leitpunkt 1: Leider kann ich am Samstag nicht kommen, weil ich arbeiten muss.",
+          "Leitpunkt 2: Können wir uns vielleicht am Sonntag treffen?",
+          "Leitpunkt 3: Ich würde gern mit dir ins Kino gehen."
+        ],
+        "phrases": ["Zuerst …", "Außerdem …", "Deshalb …", "Ich möchte gern …"]
+      }
+    },
+    {
+      "kind": "STRUCTURE_PART",
+      "title": "Schluss",
+      "content": "Den Text höflich beenden: eine Bitte um Antwort, ein Wunsch oder ein Dank – und danach die Grußformel.",
+      "data": {
+        "examples": ["Ich hoffe, das passt für dich.", "Liebe Grüße", "Mit freundlichen Grüßen"],
+        "phrases": ["Ich freue mich auf deine Antwort.", "Bitte melde dich bald.", "Viele Grüße / Mit freundlichen Grüßen"]
+      }
+    },
+    {
+      "kind": "EXAMPLE",
+      "title": "Absage einer Einladung",
+      "content": "Deine Freundin Anna hat dich zu ihrer Geburtstagsfeier am Samstag eingeladen. Schreiben Sie eine E-Mail. Schreiben Sie etwas zu: Warum können Sie nicht kommen? Wann können Sie sich treffen? Was möchten Sie zusammen machen?",
+      "data": {
+        "sections": [
+          {
+            "key": "greeting",
+            "label": "Anrede",
+            "text": "Liebe Anna,",
+            "why": "Eine Freundin sprichst du informell an: Liebe + Vorname, danach ein Komma.",
+            "phrases": ["Liebe Anna,", "Hallo Anna,"]
+          },
+          {
+            "key": "intro",
+            "label": "Einleitung",
+            "text": "vielen Dank für deine Einladung.",
+            "why": "Hier reagiert der Schreiber zunächst auf die Nachricht des Empfängers. Das wirkt höflich und stellt den Bezug her.",
+            "phrases": ["Vielen Dank für deine Nachricht.", "Vielen Dank für deine Einladung.", "Ich habe mich sehr über deine Nachricht gefreut."]
+          },
+          {
+            "key": "point1",
+            "label": "Leitpunkt 1",
+            "text": "Leider kann ich am Samstag nicht kommen, weil ich arbeiten muss.",
+            "why": "Der erste Leitpunkt (Warum kannst du nicht kommen?) wird direkt beantwortet – mit einer Begründung durch „weil“ (Verb am Ende!).",
+            "phrases": ["Leider kann ich nicht kommen, weil …", "Ich muss leider absagen, denn …"]
+          },
+          {
+            "key": "point2",
+            "label": "Leitpunkt 2",
+            "text": "Können wir uns vielleicht am Sonntag treffen?",
+            "why": "Hier wird ein Vorschlag als höfliche Frage formuliert. „vielleicht“ macht die Frage weicher.",
+            "phrases": ["Können wir uns vielleicht … treffen?", "Wie wäre es mit …?", "Hast du am … Zeit?"]
+          },
+          {
+            "key": "point3",
+            "label": "Leitpunkt 3",
+            "text": "Wir könnten zusammen ins Kino gehen.",
+            "why": "Der dritte Leitpunkt (gemeinsame Aktivität) wird mit „könnten“ als Vorschlag formuliert.",
+            "phrases": ["Wir könnten zusammen …", "Ich würde gern mit dir … gehen."]
+          },
+          {
+            "key": "closing",
+            "label": "Schluss",
+            "text": "Ich hoffe, das passt für dich.\n\nLiebe Grüße\nMohammad",
+            "why": "Ein kurzer Schlusssatz und eine passende Grußformel runden den Text ab.",
+            "phrases": ["Ich freue mich auf deine Antwort.", "Ich hoffe, das passt für dich.", "Liebe Grüße"]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Ich bin der Meinung, dass + Nebensatz",
+      "content": "Nach „dass“ steht das konjugierte Verb am Ende des Nebensatzes.",
+      "data": {
+        "examples": [
+          "Ich bin der Meinung, dass öffentliche Verkehrsmittel stärker gefördert werden sollten.",
+          "Ich bin der Meinung, dass wir mehr Zeit brauchen."
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Meiner Meinung nach + Hauptsatz (Verb an Position 2)",
+      "content": "Nach „Meiner Meinung nach“ folgt sofort das Verb, danach das Subjekt.",
+      "data": {
+        "examples": [
+          "Meiner Meinung nach ist das Angebot zu teuer.",
+          "Meiner Meinung nach sollte man früher anfangen."
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Leider kann ich nicht …, weil + Nebensatz",
+      "content": "Mit „weil“ gibst du einen Grund an. Das Verb steht am Ende.",
+      "data": {
+        "examples": [
+          "Leider kann ich am Samstag nicht kommen, weil ich arbeiten muss.",
+          "Ich komme später, weil mein Zug Verspätung hat."
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Könnten Sie mir bitte + Infinitiv",
+      "content": "Eine höfliche Bitte im formellen Brief. Der Infinitiv steht am Satzende.",
+      "data": {
+        "examples": [
+          "Könnten Sie mir bitte weitere Informationen schicken?",
+          "Könnten Sie mir bitte einen neuen Termin nennen?"
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Ich würde gern + Infinitiv",
+      "content": "Mit „würde gern“ drückst du einen Wunsch oder Vorschlag höflich aus.",
+      "data": {
+        "examples": ["Ich würde gern mit dir ins Kino gehen.", "Ich würde gern am Kurs teilnehmen."]
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Leitpunkt vergessen",
+      "content": "Wenn du nur zwei von drei Leitpunkten bearbeitest, ist die Aufgabe nicht vollständig gelöst. Das gibt Punktabzug.",
+      "data": {
+        "wrong": "Nur zwei der drei geforderten Punkte beantworten.",
+        "right": "Vor dem Abgeben jeden Leitpunkt noch einmal abhaken."
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Text zu kurz",
+      "content": "Ein sehr kurzer Text kann die Aufgabe nicht ausreichend erfüllen. Jeder Leitpunkt braucht mindestens einen vollständigen Satz mit Begründung oder Detail.",
+      "data": {
+        "wrong": "Ich kann nicht kommen. Am Sonntag. Kino.",
+        "right": "Leider kann ich nicht kommen. Können wir uns am Sonntag treffen und ins Kino gehen?"
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Verbindungswörter fehlen",
+      "content": "Aneinandergereihte kurze Sätze wirken abgehackt. Verbinde sie mit weil, denn, deshalb, aber.",
+      "data": {
+        "wrong": "Ich kann nicht kommen. Ich muss arbeiten.",
+        "right": "Ich kann nicht kommen, weil ich arbeiten muss."
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Falsche Förmlichkeit",
+      "content": "Achte auf die Beziehung zum Empfänger. Eine fremde Person sprichst du mit „Sie“ und formeller Anrede an.",
+      "data": {
+        "wrong": "Hallo Frau Müller, kannst du mir helfen?",
+        "right": "Sehr geehrte Frau Müller, könnten Sie mir bitte helfen?"
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Schluss fehlt",
+      "content": "Ohne Schlusssatz und Grußformel endet dein Text abrupt. Ein passender Schluss gehört zur Textsorte E-Mail/Brief.",
+      "data": {
+        "wrong": "… Wir könnten ins Kino gehen.",
+        "right": "… Wir könnten ins Kino gehen. Ich freue mich auf deine Antwort. Liebe Grüße, Mohammad"
+      }
+    },
+    { "kind": "CHECKLIST_ITEM", "title": "Habe ich alle Leitpunkte beantwortet?" },
+    { "kind": "CHECKLIST_ITEM", "title": "Habe ich eine passende Anrede?" },
+    { "kind": "CHECKLIST_ITEM", "title": "Habe ich eine klare Einleitung?" },
+    { "kind": "CHECKLIST_ITEM", "title": "Ist mein Text logisch aufgebaut?" },
+    { "kind": "CHECKLIST_ITEM", "title": "Habe ich passende Verbindungswörter verwendet?" },
+    { "kind": "CHECKLIST_ITEM", "title": "Habe ich einen passenden Schluss?" },
+    { "kind": "CHECKLIST_ITEM", "title": "Habe ich die Verbposition kontrolliert?" },
+    { "kind": "CHECKLIST_ITEM", "title": "Habe ich Artikel und Endungen kontrolliert?" },
+    { "kind": "CHECKLIST_ITEM", "title": "Habe ich Präpositionen kontrolliert?" },
+    { "kind": "CHECKLIST_ITEM", "title": "Habe ich die Rechtschreibung kontrolliert?" }
+  ],
+  "phrases": [
+    { "category": "GREETING", "phrase": "Liebe Anna, / Lieber Peter,", "formality": "INFORMAL", "example": "Liebe Anna, …" },
+    { "category": "GREETING", "phrase": "Hallo Peter,", "formality": "INFORMAL" },
+    { "category": "GREETING", "phrase": "Sehr geehrte Frau Müller, / Sehr geehrter Herr Schmidt,", "formality": "FORMAL" },
+    { "category": "GREETING", "phrase": "Sehr geehrte Damen und Herren,", "formality": "FORMAL", "usageNote": "Wenn du die Person nicht kennst." },
+    { "category": "INTRODUCTION", "phrase": "Vielen Dank für deine Nachricht.", "formality": "INFORMAL" },
+    { "category": "INTRODUCTION", "phrase": "Ich habe mich sehr über deine Nachricht gefreut.", "formality": "INFORMAL" },
+    { "category": "INTRODUCTION", "phrase": "Ich schreibe Ihnen, weil …", "formality": "FORMAL", "example": "Ich schreibe Ihnen, weil ich eine Frage zum Kurs habe." },
+    { "category": "OPINION", "phrase": "Ich denke, dass …", "formality": "NEUTRAL", "example": "Ich denke, dass das eine gute Idee ist." },
+    { "category": "OPINION", "phrase": "Ich bin der Meinung, dass …", "formality": "NEUTRAL" },
+    { "category": "OPINION", "phrase": "Meiner Meinung nach …", "formality": "NEUTRAL", "example": "Meiner Meinung nach ist das zu teuer." },
+    { "category": "REASON", "phrase": "…, weil …", "formality": "NEUTRAL", "example": "Ich kann nicht kommen, weil ich arbeiten muss.", "usageNote": "Verb am Ende des Nebensatzes." },
+    { "category": "REASON", "phrase": "…, denn …", "formality": "NEUTRAL", "example": "Ich bleibe zu Hause, denn ich bin krank.", "usageNote": "Nach „denn“ bleibt die normale Wortstellung." },
+    { "category": "REASON", "phrase": "Deshalb …", "formality": "NEUTRAL", "example": "Deshalb kann ich leider nicht kommen." },
+    { "category": "EXAMPLE", "phrase": "Zum Beispiel …", "formality": "NEUTRAL" },
+    { "category": "EXAMPLE", "phrase": "Das ist zum Beispiel der Fall, wenn …", "formality": "NEUTRAL" },
+    { "category": "ADDITION", "phrase": "Außerdem …", "formality": "NEUTRAL" },
+    { "category": "ADDITION", "phrase": "Und noch etwas: …", "formality": "INFORMAL" },
+    { "category": "CONTRAST", "phrase": "Aber …", "formality": "NEUTRAL" },
+    { "category": "CONTRAST", "phrase": "Auf der anderen Seite …", "formality": "NEUTRAL" },
+    { "category": "AGREEMENT", "phrase": "Da stimme ich dir zu.", "formality": "INFORMAL" },
+    { "category": "AGREEMENT", "phrase": "Das finde ich auch.", "formality": "INFORMAL" },
+    { "category": "DISAGREEMENT", "phrase": "Das sehe ich anders.", "formality": "NEUTRAL" },
+    { "category": "DISAGREEMENT", "phrase": "Da bin ich nicht sicher, ob …", "formality": "NEUTRAL" },
+    { "category": "ADVANTAGE_DISADVANTAGE", "phrase": "Ein Vorteil ist, dass …", "formality": "NEUTRAL" },
+    { "category": "ADVANTAGE_DISADVANTAGE", "phrase": "Ein Nachteil ist, dass …", "formality": "NEUTRAL" },
+    { "category": "SUGGESTION", "phrase": "Wie wäre es mit …?", "formality": "INFORMAL", "example": "Wie wäre es mit Sonntag?" },
+    { "category": "SUGGESTION", "phrase": "Wir könnten …", "formality": "INFORMAL", "example": "Wir könnten zusammen ins Kino gehen." },
+    { "category": "SUGGESTION", "phrase": "Ich schlage vor, dass …", "formality": "NEUTRAL" },
+    { "category": "REQUEST", "phrase": "Kannst du mir bitte …?", "formality": "INFORMAL" },
+    { "category": "REQUEST", "phrase": "Könnten Sie mir bitte … schicken?", "formality": "FORMAL" },
+    { "category": "REQUEST", "phrase": "Ich würde mich freuen, wenn …", "formality": "NEUTRAL" },
+    { "category": "APOLOGY", "phrase": "Es tut mir leid, aber …", "formality": "INFORMAL" },
+    { "category": "APOLOGY", "phrase": "Leider kann ich nicht …", "formality": "NEUTRAL" },
+    { "category": "APOLOGY", "phrase": "Ich möchte mich entschuldigen, dass …", "formality": "FORMAL" },
+    { "category": "QUESTION", "phrase": "Ich möchte gern wissen, …", "formality": "NEUTRAL", "example": "Ich möchte gern wissen, wann der Kurs beginnt." },
+    { "category": "QUESTION", "phrase": "Könnten Sie mir sagen, …?", "formality": "FORMAL" },
+    { "category": "CONCLUSION", "phrase": "Ich freue mich auf deine Antwort.", "formality": "INFORMAL" },
+    { "category": "CONCLUSION", "phrase": "Liebe Grüße", "formality": "INFORMAL" },
+    { "category": "CONCLUSION", "phrase": "Ich hoffe auf Ihre baldige Antwort.", "formality": "FORMAL" },
+    { "category": "CONCLUSION", "phrase": "Mit freundlichen Grüßen", "formality": "FORMAL" }
+  ]
+}

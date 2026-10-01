@@ -1,5 +1,6 @@
 "use client";
 
+import { WritingExercise } from "@/componenets/exam/writing";
 import { Suspense, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -265,13 +266,11 @@ function ResultsView({
 }
 
 /**
- * Schriftlicher Ausdruck: no attempt/grading flow at all - just the writing prompt (as a passage)
- * and a "Lösung anzeigen" button that reveals the admin-authored model solution. The student can
- * still mark the exercise as done via the shared completion hook.
+ * Schriftlicher Ausdruck: the writing prompt (as a passage) followed by the plan/write/submit flow.
+ * Submitting marks the exercise done; the admin-authored model solution is revealed afterwards.
  */
 function SchriftlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse }>) {
-    const [showSolution, setShowSolution] = useState(false);
-    const { completed, marking, markCompleted } = useExerciseCompletion(exercise);
+    const { completed, markCompleted } = useExerciseCompletion(exercise);
     const stopExerciseTimer = useStopExerciseTimer();
 
     return (
@@ -282,38 +281,17 @@ function SchriftlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExerci
                 ))}
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-4">
-                {showSolution && exercise.modelSolution ? (
-                    <LessonMarkdown
-                        content={exercise.modelSolution}
-                        className="text-sm text-gray-700 dark:text-gray-300"
-                    />
-                ) : (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Schreibe deine Antwort in einem eigenen Dokument. Wenn du fertig bist, kannst du dir eine
-                        mögliche Lösung ansehen.
-                    </p>
-                )}
-
-                <div className="flex justify-end gap-2 flex-wrap">
-                    {!showSolution && (
-                        <Button variant="secondary" className="text-sm px-4 py-2" onClick={() => setShowSolution(true)}>
-                            Lösung anzeigen
-                        </Button>
-                    )}
-                    <Button
-                        variant="primary"
-                        className="text-sm px-4 py-2"
-                        disabled={completed || marking}
-                        onClick={() => {
-                            markCompleted();
-                            stopExerciseTimer().then((result) => result && showZeitCheckToast(result));
-                        }}
-                    >
-                        {completed ? "Als erledigt markiert ✓" : marking ? "Wird markiert..." : "Als erledigt markieren"}
-                    </Button>
-                </div>
-            </div>
+            <WritingExercise
+                exerciseId={exercise.id}
+                level={exercise.level}
+                requiresPlanning={exercise.requiresPlanning}
+                leitpunkte={exercise.leitpunkte ?? []}
+                modelSolution={exercise.modelSolution}
+                onSubmitted={() => {
+                    if (!completed) markCompleted();
+                    stopExerciseTimer().then((result) => result && showZeitCheckToast(result));
+                }}
+            />
         </div>
     );
 }

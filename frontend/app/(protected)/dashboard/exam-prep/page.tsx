@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { BarChart3, ChevronRight } from "lucide-react";
@@ -59,6 +60,11 @@ function ExamPrepContent() {
         window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
     };
     const chooseSection = (section: ExamSection) => {
+        // Schreiben has its own landing: learn first, then practise.
+        if (section === "SCHRIFTLICHER_AUSDRUCK" && selectedSection !== section) {
+            router.push(`/dashboard/exam-prep/schreiben?level=${encodeURIComponent(effectiveLevel)}`);
+            return;
+        }
         setSelectedSection(section);
         syncUrl({ section });
     };
@@ -271,6 +277,13 @@ function ExamPrepContent() {
                             </>
                         ) : isFlatList ? (
                             <>
+                                <Link
+                                    href={`/dashboard/exam-prep/schreiben/lernen?level=${encodeURIComponent(effectiveLevel)}`}
+                                    className="flex items-center justify-between rounded-xl bg-accent/50 px-4 py-3 text-sm font-medium text-foreground hover:bg-accent transition"
+                                >
+                                    <span>📚 Erst lernen: So löst du eine Schreibaufgabe</span>
+                                    <ChevronRight className="size-4 text-foreground/40" />
+                                </Link>
                                 <TeilTimeCard section={selectedSection} level={effectiveLevel} teil={1} showLastResult={false} />
                                 <ExamExerciseList
                                     key={`${selectedSection}-${effectiveLevel}-${searchTerm}`}

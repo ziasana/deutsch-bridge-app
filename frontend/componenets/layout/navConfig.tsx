@@ -60,6 +60,7 @@ export function getAdminNavItems(t: Dictionary): NavItem[] {
                 { href: "/admin/exam-prep/sprachbausteine", label: "Sprachbausteine", icon: Blocks },
                 { href: "/admin/exam-prep/hoerverstehen", label: "Hörverstehen", icon: Headphones },
                 { href: "/admin/exam-prep/schriftlicher-ausdruck", label: "Schriftlicher Ausdruck", icon: PenLine },
+                { href: "/admin/exam-prep/schreiben-inhalte", label: "Schreiben lernen", icon: PenLine },
                 { href: "/admin/exam-prep/testformat-information", label: "Testformat Information", icon: Info },
             ],
         },

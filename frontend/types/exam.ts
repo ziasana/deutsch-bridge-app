@@ -78,6 +78,10 @@ export interface ExamExerciseResponse {
     teilDescription: string | null;
     /** SCHRIFTLICHER_AUSDRUCK only: the "mögliche Antwort" revealed to students via a button. */
     modelSolution: string | null;
+    /** SCHRIFTLICHER_AUSDRUCK only: offer the optional planner before writing. */
+    requiresPlanning: boolean;
+    /** SCHRIFTLICHER_AUSDRUCK only: the task's Leitpunkte (planner prompts). */
+    leitpunkte: string[] | null;
     published: boolean;
     createdAt: string;
 }
@@ -119,6 +123,8 @@ export interface ExamExercisePublicResponse {
     teilDescription: string | null;
     /** SCHRIFTLICHER_AUSDRUCK only: the "mögliche Antwort" revealed via a button. */
     modelSolution: string | null;
+    requiresPlanning: boolean;
+    leitpunkte: string[] | null;
     /** General tip/mistake-avoidance guidance for this whole Teil - shown once on the results screen, not per question. */
     defaultExplanation: string | null;
     defaultCommonMistake: string | null;
@@ -171,6 +177,8 @@ export interface ExamExerciseManualRequest {
     defaultCommonMistake: string | null;
     teilDescription: string | null;
     modelSolution: string | null;
+    requiresPlanning?: boolean;
+    leitpunkte?: string[] | null;
     published: boolean;
 }
 

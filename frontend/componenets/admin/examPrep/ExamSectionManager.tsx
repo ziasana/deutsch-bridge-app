@@ -132,6 +132,8 @@ const makeEmptyForm = (section: ExamSection) => ({
     defaultCommonMistake: "",
     teilDescription: "",
     modelSolution: "",
+    requiresPlanning: false,
+    leitpunkteText: "",
     published: true,
 });
 
@@ -406,6 +408,8 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
             defaultCommonMistake: exercise.defaultCommonMistake ?? "",
             teilDescription: exercise.teilDescription ?? "",
             modelSolution: exercise.modelSolution ?? "",
+            requiresPlanning: exercise.requiresPlanning ?? false,
+            leitpunkteText: (exercise.leitpunkte ?? []).join("\n"),
             published: exercise.published,
         });
         setPassages(exercise.passages);
@@ -496,6 +500,8 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
             defaultCommonMistake: form.defaultCommonMistake.trim() || null,
             teilDescription: form.teilDescription.trim() || null,
             modelSolution: resolvedModelSolution.trim() || null,
+            requiresPlanning: form.requiresPlanning,
+            leitpunkte: form.leitpunkteText.split("\n").map((l) => l.trim()).filter(Boolean),
             published: form.published,
         };
 
@@ -1146,6 +1152,31 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                             </Button>
                         </div>
                     </div>
+                    )}
+
+                    {section === "SCHRIFTLICHER_AUSDRUCK" && (
+                        <div className="space-y-3">
+                            <div>
+                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                                    Leitpunkte (one per line - used as prompts in the planner)
+                                </label>
+                                <textarea
+                                    value={form.leitpunkteText}
+                                    onChange={(e) => setForm({ ...form, leitpunkteText: e.target.value })}
+                                    rows={4}
+                                    className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                                    placeholder={"Warum können Sie nicht kommen?\nWann können Sie sich treffen?"}
+                                />
+                            </div>
+                            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                <input
+                                    type="checkbox"
+                                    checked={form.requiresPlanning}
+                                    onChange={(e) => setForm({ ...form, requiresPlanning: e.target.checked })}
+                                />
+                                Offer the planner (&quot;Plane deinen Text&quot;) before writing
+                            </label>
+                        </div>
                     )}
 
                     {section === "SCHRIFTLICHER_AUSDRUCK" && (

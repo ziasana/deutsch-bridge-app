@@ -1,0 +1,482 @@
+{
+  "level": "C2",
+  "items": [
+    {
+      "kind": "FORMAT",
+      "title": "Was erwartet dich?",
+      "content": "Du schreibst einen stilistisch ausgefeilten, präzise argumentierenden Text (z. B. Essay, Stellungnahme, Gutachten). Gefragt sind Ausdrucksvielfalt, stilistische Kontrolle und eine klare, anspruchsvolle Textarchitektur.",
+      "data": {
+        "time": "ca. 60 Minuten",
+        "requirements": [
+          "Das Thema nuanciert und mit eigener Positionierung entfalten",
+          "Präzise, variantenreiche Formulierungen",
+          "Stilistische Mittel gezielt einsetzen",
+          "Komplexe Textstruktur mit klarer Leserführung",
+          "Hohe sprachliche Korrektheit auch bei komplexen Strukturen"
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Aufgabe lesen",
+      "content": "Lies die Aufgabe ganz in Ruhe. Bevor du schreibst, musst du wissen, worum es geht.",
+      "data": {
+        "tips": [
+          "Situation: Was ist passiert?",
+          "Empfänger: An wen schreibst du? (Freund/in, Kollege/in, Firma)",
+          "Zweck: Warum schreibst du? (einladen, absagen, nachfragen, sich beschweren)",
+          "Textsorte: E-Mail, Brief oder Nachricht?",
+          "Pflichtpunkte: Welche Leitpunkte musst du bearbeiten?"
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Leitpunkte markieren",
+      "content": "Die Leitpunkte sind das Wichtigste. Frage dich bei jedem Punkt: Was muss ich unbedingt beantworten?",
+      "data": {
+        "tips": [
+          "Unterstreiche jeden Leitpunkt in der Aufgabe.",
+          "Nummeriere sie: 1, 2, 3.",
+          "Ein vergessener Leitpunkt kostet Punkte – auch wenn dein Deutsch gut ist."
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Ideen sammeln",
+      "content": "Schreibe zuerst nur Stichwörter, noch keine ganzen Sätze. So verlierst du keine Zeit und keine Idee.",
+      "data": {
+        "tips": [
+          "Zu jedem Leitpunkt 2–3 Stichwörter notieren.",
+          "Wähle Ideen, die du auf Deutsch sicher ausdrücken kannst.",
+          "Du musst nichts erfinden, was zu schwierig zu formulieren ist."
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Text strukturieren",
+      "content": "Plane die Reihenfolge deines Textes: Anrede, Einleitung, Hauptteil mit allen Leitpunkten und Schluss.",
+      "data": {
+        "tips": [
+          "Plane die Gliederung: Einleitung → Hauptteil (ein Absatz pro Leitpunkt/Argument) → Schluss.",
+          "Lege fest, welches Argument am stärksten ist und wohin es gehört.",
+          "Plane einen Absatz für eine Gegenposition ein."
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Schreiben",
+      "content": "Forme deinen Gedankengang bewusst aus: präzise Begriffe, variantenreicher Ausdruck, klare Leserführung.",
+      "data": {
+        "tips": [
+          "Verknüpfe Absätze durch Rückgriffe und Überleitungen.",
+          "Variiere Satzanfänge, Verben und Konnektoren.",
+          "Setze stilistische Mittel sparsam und gezielt ein."
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Kontrollieren",
+      "content": "Plane die letzten Minuten zum Lesen ein. Eine kurze Kontrolle findet viele Flüchtigkeitsfehler.",
+      "data": {
+        "tips": [
+          "Habe ich alle Leitpunkte beantwortet?",
+          "Stehen die Verben an der richtigen Stelle?",
+          "Stimmen Artikel und Endungen?",
+          "Habe ich Anrede und Schluss geschrieben?"
+        ]
+      }
+    },
+    {
+      "kind": "STRUCTURE_PART",
+      "title": "Einleitung",
+      "content": "Die Fragestellung pointiert entwickeln und die eigene Perspektive andeuten.",
+      "data": {
+        "examples": [
+          "Die These, technischer Fortschritt mache den Menschen zwangsläufig freier, hält einer genaueren Prüfung kaum stand."
+        ],
+        "phrases": [
+          "Die gängige Annahme, …, bedarf der Differenzierung.",
+          "Es mag verwundern, dass …"
+        ]
+      }
+    },
+    {
+      "kind": "STRUCTURE_PART",
+      "title": "Argumentative Entfaltung",
+      "content": "Ein Gedankengang, der Thesen verknüpft, Begriffe klärt und Zwischenfazits zieht.",
+      "data": {
+        "examples": [
+          "Dabei ist zu unterscheiden zwischen …"
+        ],
+        "phrases": [
+          "Dabei ist zu unterscheiden zwischen …",
+          "Daraus folgt, dass …",
+          "Mit Blick auf … erweist sich …"
+        ]
+      }
+    },
+    {
+      "kind": "STRUCTURE_PART",
+      "title": "Auseinandersetzung",
+      "content": "Gegenpositionen ernst nehmen, ihre Stärken würdigen und ihre Grenzen aufzeigen.",
+      "data": {
+        "examples": [
+          "Dieser Position ist zugutezuhalten, dass …; sie übersieht jedoch, …"
+        ],
+        "phrases": [
+          "Dieser Position ist zugutezuhalten, dass …",
+          "Gleichwohl bleibt festzuhalten, dass …"
+        ]
+      }
+    },
+    {
+      "kind": "STRUCTURE_PART",
+      "title": "Schluss",
+      "content": "Gedanken bündeln und über das Einzelthema hinausweisen.",
+      "data": {
+        "examples": [
+          "So betrachtet, ist die Frage weniger eine der Technik als eine der Haltung."
+        ],
+        "phrases": [
+          "So betrachtet …",
+          "Letztlich läuft alles auf die Frage hinaus, …"
+        ]
+      }
+    },
+    {
+      "kind": "EXAMPLE",
+      "title": "Essay: Fortschritt und Freiheit",
+      "content": "Verfassen Sie einen Essay zur Frage, ob technischer Fortschritt den Menschen freier macht.",
+      "data": {
+        "sections": [
+          {
+            "key": "intro",
+            "label": "Einleitung",
+            "text": "Die Annahme, technischer Fortschritt mache den Menschen zwangsläufig freier, ist ebenso verbreitet wie fragwürdig.",
+            "why": "Pointierter Einstieg, der die Gegenposition andeutet.",
+            "phrases": [
+              "Die Annahme, …, ist ebenso verbreitet wie fragwürdig."
+            ]
+          },
+          {
+            "key": "develop",
+            "label": "Entfaltung",
+            "text": "Dabei ist zu unterscheiden zwischen der Freiheit von Mühsal und der Freiheit zur Selbstbestimmung – nur Letztere setzt Urteilskraft voraus.",
+            "why": "Begriffsklärung als Strukturprinzip.",
+            "phrases": [
+              "Dabei ist zu unterscheiden zwischen … und …"
+            ]
+          },
+          {
+            "key": "counter",
+            "label": "Auseinandersetzung",
+            "text": "Den Optimisten ist zugutezuhalten, dass Technik reale Entlastung schafft; gleichwohl verschiebt sie Abhängigkeiten, statt sie aufzulösen.",
+            "why": "Die Gegenposition wird gewürdigt und dann begrenzt.",
+            "phrases": [
+              "… ist zugutezuhalten, dass …; gleichwohl …"
+            ]
+          },
+          {
+            "key": "closing",
+            "label": "Schluss",
+            "text": "So betrachtet, ist die Frage weniger eine der Technik als eine der Haltung, mit der wir ihr begegnen.",
+            "why": "Das Fazit verallgemeinert und bleibt elegant offen.",
+            "phrases": [
+              "So betrachtet, ist die Frage weniger eine der … als eine der …"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Je …, desto …",
+      "content": "Gradierende Relation, stilistisch elegant.",
+      "data": {
+        "examples": [
+          "Je größer die Datenmenge, desto schwerer fällt die Einordnung."
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Nicht nur …, sondern auch … / Weniger … als vielmehr …",
+      "content": "Differenzierende Gegenüberstellungen.",
+      "data": {
+        "examples": [
+          "Es geht weniger um Technik als vielmehr um Verantwortung."
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Inversion zur Betonung",
+      "content": "Betontes Satzglied am Satzanfang.",
+      "data": {
+        "examples": [
+          "Umso bemerkenswerter ist, dass …",
+          "Kaum jemand hätte dies erwartet."
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Konjunktiv I und II im Wechsel",
+      "content": "Distanz und Irrealität präzise kennzeichnen.",
+      "data": {
+        "examples": [
+          "Man behaupte, der Markt regle alles; wäre dem so, gäbe es keine Krisen."
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Erweiterte Attribute",
+      "content": "Verdichtung für wissenschaftlichen Stil.",
+      "data": {
+        "examples": [
+          "die in der Fachliteratur seit Jahren diskutierte These"
+        ]
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Floskelhafter Stil",
+      "content": "Auf C2 wirken Allgemeinplätze schwach; sei präzise.",
+      "data": {
+        "wrong": "Heutzutage ist das ein wichtiges Thema.",
+        "right": "Die Frage nach … gewinnt zunehmend an Brisanz."
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Unklare Begriffe",
+      "content": "Zentrale Begriffe sollten definiert oder abgegrenzt werden.",
+      "data": {
+        "wrong": "Freiheit ist wichtig.",
+        "right": "Freiheit – verstanden als Wahlmöglichkeit, nicht als Willkür – …"
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Wiederholung statt Variation",
+      "content": "Variiere Verben, Konnektoren und Satzanfänge.",
+      "data": {
+        "wrong": "Es zeigt … Es zeigt … Es zeigt …",
+        "right": "Es zeigt sich …; dies belegt …; daran wird deutlich …"
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Brüche in der Leserführung",
+      "content": "Kündige Übergänge an und verknüpfe Absätze.",
+      "data": {
+        "wrong": "Neuer Absatz ohne Bezug.",
+        "right": "Absatzanfang mit Rückgriff: „Diese Überlegung führt zu …“"
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Kleine Fehler in komplexen Strukturen",
+      "content": "Gerade bei langen Sätzen entstehen Kasus- und Kongruenzfehler.",
+      "data": {
+        "wrong": "trotz dem Aufwand",
+        "right": "trotz des Aufwands"
+      }
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich alle Leitpunkte beantwortet?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich eine passende Anrede?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich eine klare Einleitung?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Ist mein Text logisch aufgebaut?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich passende Verbindungswörter verwendet?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich einen passenden Schluss?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich die Verbposition kontrolliert?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich Artikel und Endungen kontrolliert?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich Präpositionen kontrolliert?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich die Rechtschreibung kontrolliert?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Ist meine Argumentation präzise und nuanciert?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich Wortwahl und Satzanfänge variiert?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Führt mein Text den Leser klar von Absatz zu Absatz?"
+    }
+  ],
+  "phrases": [
+    {
+      "category": "INTRODUCTION",
+      "phrase": "Die gängige Annahme, …, bedarf der Differenzierung.",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "INTRODUCTION",
+      "phrase": "Es mag verwundern, dass …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "INTRODUCTION",
+      "phrase": "Ausgangspunkt der folgenden Überlegungen ist die Beobachtung, dass …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "OPINION",
+      "phrase": "Ich halte es für geboten, …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "OPINION",
+      "phrase": "Nach meinem Dafürhalten …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "OPINION",
+      "phrase": "Es spricht manches dafür, dass …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "REASON",
+      "phrase": "Ursächlich hierfür ist …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "REASON",
+      "phrase": "Dies hat seinen Grund darin, dass …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "EXAMPLE",
+      "phrase": "Als Beleg mag … dienen.",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "EXAMPLE",
+      "phrase": "Paradigmatisch hierfür ist …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "ADDITION",
+      "phrase": "Erschwerend kommt hinzu, dass …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "ADDITION",
+      "phrase": "Überdies …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "CONTRAST",
+      "phrase": "Gleichwohl …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "CONTRAST",
+      "phrase": "Wohingegen …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "CONTRAST",
+      "phrase": "Dem ist freilich entgegenzuhalten, dass …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "AGREEMENT",
+      "phrase": "Dem ist im Kern zuzustimmen.",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "DISAGREEMENT",
+      "phrase": "Diese Sichtweise verkennt, dass …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "DISAGREEMENT",
+      "phrase": "Dagegen lässt sich einwenden, …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "ADVANTAGE_DISADVANTAGE",
+      "phrase": "Dem Gewinn an … steht ein Verlust an … gegenüber.",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "SUGGESTION",
+      "phrase": "Anzustreben wäre …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "SUGGESTION",
+      "phrase": "Wünschenswert erschiene es, …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "REQUEST",
+      "phrase": "Ich darf Sie bitten, …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "APOLOGY",
+      "phrase": "Ich bitte um Nachsicht, dass …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "QUESTION",
+      "phrase": "Wäre es Ihnen möglich, mir mitzuteilen, …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "CONCLUSION",
+      "phrase": "So betrachtet, …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "CONCLUSION",
+      "phrase": "Letztlich läuft alles auf die Frage hinaus, …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "CONCLUSION",
+      "phrase": "Mit vorzüglicher Hochachtung",
+      "formality": "FORMAL"
+    }
+  ]
+}

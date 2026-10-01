@@ -22,6 +22,8 @@ public record ExamExerciseManualRequest(
         String defaultCommonMistake,
         String teilDescription,
         String modelSolution,
-        Boolean published
+        Boolean published,
+        Boolean requiresPlanning,
+        List<String> leitpunkte
 ) {
 }

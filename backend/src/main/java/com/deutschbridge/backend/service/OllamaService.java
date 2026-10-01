@@ -160,6 +160,15 @@ public class OllamaService {
         return callOllama(messages);
     }
 
+    public String evaluateWriting(LearningLevel level, String taskText, List<String> leitpunkte, String learnerText) {
+        entitlementService.consume(requestContext.getUserId(), FeatureType.AI_CORRECTION);
+        List<OllamaMessage> messages = List.of(
+                new OllamaMessage("system", PromptLibrary.evaluateWriting(level.name(), taskText, leitpunkte, learnerText)),
+                new OllamaMessage("user", "Bitte bewerte den Text.")
+        );
+        return callOllama(messages);
+    }
+
     public String generateDailyWords(LearningLevel level, int count, boolean includePersian) {
         List<OllamaMessage> messages = List.of(
                 new OllamaMessage("system", PromptLibrary.generateDailyWords(level.name(), count, includePersian)),

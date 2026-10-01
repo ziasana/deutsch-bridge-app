@@ -23,6 +23,8 @@ public record ExamExerciseResponse(
         String teilDescription,
         String modelSolution,
         boolean published,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        boolean requiresPlanning,
+        java.util.List<String> leitpunkte
 ) {
 }

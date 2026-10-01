@@ -1,0 +1,527 @@
+{
+  "level": "B2",
+  "items": [
+    {
+      "kind": "FORMAT",
+      "title": "Was erwartet dich?",
+      "content": "Du schreibst einen strukturierten Text zu einem Thema, zum Beispiel einen Leserbrief, eine formelle E-Mail oder eine Stellungnahme. Du musst Argumente nennen, abwägen und eine eigene Meinung begründen.",
+      "data": {
+        "time": "ca. 30–45 Minuten",
+        "requirements": [
+          "Alle Leitpunkte differenziert bearbeiten",
+          "Register (formell/neutral) konsequent einhalten",
+          "Argumente logisch aufbauen und belegen",
+          "Komplexere Verbindungswörter und Satzstrukturen nutzen",
+          "Einen klaren Schluss oder ein Fazit schreiben"
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Aufgabe lesen",
+      "content": "Lies die Aufgabe ganz in Ruhe. Bevor du schreibst, musst du wissen, worum es geht.",
+      "data": {
+        "tips": [
+          "Situation: Was ist passiert?",
+          "Empfänger: An wen schreibst du? (Freund/in, Kollege/in, Firma)",
+          "Zweck: Warum schreibst du? (einladen, absagen, nachfragen, sich beschweren)",
+          "Textsorte: E-Mail, Brief oder Nachricht?",
+          "Pflichtpunkte: Welche Leitpunkte musst du bearbeiten?"
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Leitpunkte markieren",
+      "content": "Die Leitpunkte sind das Wichtigste. Frage dich bei jedem Punkt: Was muss ich unbedingt beantworten?",
+      "data": {
+        "tips": [
+          "Unterstreiche jeden Leitpunkt in der Aufgabe.",
+          "Nummeriere sie: 1, 2, 3.",
+          "Ein vergessener Leitpunkt kostet Punkte – auch wenn dein Deutsch gut ist."
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Ideen sammeln",
+      "content": "Schreibe zuerst nur Stichwörter, noch keine ganzen Sätze. So verlierst du keine Zeit und keine Idee.",
+      "data": {
+        "tips": [
+          "Zu jedem Leitpunkt 2–3 Stichwörter notieren.",
+          "Wähle Ideen, die du auf Deutsch sicher ausdrücken kannst.",
+          "Du musst nichts erfinden, was zu schwierig zu formulieren ist."
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Text strukturieren",
+      "content": "Plane die Reihenfolge deines Textes: Anrede, Einleitung, Hauptteil mit allen Leitpunkten und Schluss.",
+      "data": {
+        "tips": [
+          "Anrede → Einleitung → Hauptteil (ein Absatz pro Leitpunkt) → Schluss → Grußformel.",
+          "Plane Argument, Begründung und Beispiel für jeden Leitpunkt.",
+          "Plane ein Fazit ein."
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Schreiben",
+      "content": "Entwickle jeden Absatz um ein Argument. Achte auf Register und abwechslungsreiche Verbindungswörter.",
+      "data": {
+        "tips": [
+          "Argument – Begründung – Beispiel.",
+          "Variiere Konnektoren (da, zudem, allerdings, folglich).",
+          "Bleibe im gleichen Register (formell oder neutral)."
+        ]
+      }
+    },
+    {
+      "kind": "STRATEGY_STEP",
+      "title": "Kontrollieren",
+      "content": "Plane die letzten Minuten zum Lesen ein. Eine kurze Kontrolle findet viele Flüchtigkeitsfehler.",
+      "data": {
+        "tips": [
+          "Habe ich alle Leitpunkte beantwortet?",
+          "Stehen die Verben an der richtigen Stelle?",
+          "Stimmen Artikel und Endungen?",
+          "Habe ich Anrede und Schluss geschrieben?"
+        ]
+      }
+    },
+    {
+      "kind": "STRUCTURE_PART",
+      "title": "Anrede & Betreff",
+      "content": "Den Empfänger passend ansprechen; bei E-Mails einen klaren Betreff nennen.",
+      "data": {
+        "examples": [
+          "Sehr geehrte Damen und Herren,",
+          "Sehr geehrter Herr Dr. Schmidt,"
+        ],
+        "phrases": [
+          "Sehr geehrte/r …,",
+          "Betreff: Beschwerde zu …"
+        ]
+      }
+    },
+    {
+      "kind": "STRUCTURE_PART",
+      "title": "Einleitung",
+      "content": "Anlass und Ziel des Schreibens nennen und das Thema einordnen.",
+      "data": {
+        "examples": [
+          "mit großem Interesse habe ich Ihren Artikel zum Thema Homeoffice gelesen.",
+          "ich wende mich an Sie, weil ich Ihnen meine Meinung zu … mitteilen möchte."
+        ],
+        "phrases": [
+          "Mit Interesse habe ich … gelesen.",
+          "Ich wende mich an Sie, weil …",
+          "Ich beziehe mich auf …"
+        ]
+      }
+    },
+    {
+      "kind": "STRUCTURE_PART",
+      "title": "Hauptteil",
+      "content": "Jeden Leitpunkt in einem eigenen Absatz mit Argument, Begründung und Beispiel entfalten; Vor- und Nachteile abwägen.",
+      "data": {
+        "examples": [
+          "Einerseits spart man Fahrtzeit, andererseits fehlt der Kontakt zu den Kollegen."
+        ],
+        "phrases": [
+          "Einerseits … andererseits …",
+          "Ein wichtiges Argument ist …",
+          "Dafür spricht, dass …",
+          "Dagegen spricht, dass …"
+        ]
+      }
+    },
+    {
+      "kind": "STRUCTURE_PART",
+      "title": "Schluss",
+      "content": "Das Wichtigste zusammenfassen, eine eigene Position oder Bitte formulieren und höflich enden.",
+      "data": {
+        "examples": [
+          "Zusammenfassend lässt sich sagen, dass die Vorteile überwiegen.",
+          "Für Ihre Antwort bedanke ich mich im Voraus."
+        ],
+        "phrases": [
+          "Zusammenfassend …",
+          "Abschließend möchte ich betonen, dass …",
+          "Mit freundlichen Grüßen"
+        ]
+      }
+    },
+    {
+      "kind": "EXAMPLE",
+      "title": "Leserbrief zum Thema Homeoffice",
+      "content": "In einer Zeitung wurde ein Artikel zum Thema Homeoffice veröffentlicht. Schreiben Sie einen Leserbrief: Nehmen Sie Stellung, nennen Sie Vor- und Nachteile und machen Sie einen Vorschlag.",
+      "data": {
+        "sections": [
+          {
+            "key": "greeting",
+            "label": "Anrede",
+            "text": "Sehr geehrte Damen und Herren,",
+            "why": "Ein Leserbrief an eine Redaktion ist formell.",
+            "phrases": [
+              "Sehr geehrte Damen und Herren,"
+            ]
+          },
+          {
+            "key": "intro",
+            "label": "Einleitung",
+            "text": "mit großem Interesse habe ich Ihren Artikel über Homeoffice gelesen, zu dem ich gern Stellung nehmen möchte.",
+            "why": "Bezug zum Artikel und Ziel des Briefs werden genannt.",
+            "phrases": [
+              "Mit Interesse habe ich … gelesen.",
+              "Dazu möchte ich Stellung nehmen."
+            ]
+          },
+          {
+            "key": "point1",
+            "label": "Leitpunkt 1 – Vor- und Nachteile",
+            "text": "Einerseits sparen Arbeitnehmer Zeit und Geld, da der Arbeitsweg entfällt. Andererseits fehlt häufig der persönliche Kontakt zu den Kollegen.",
+            "why": "Die Abwägung mit „einerseits … andererseits“ zeigt differenzierte Argumentation.",
+            "phrases": [
+              "Einerseits … andererseits …",
+              "Ein Vorteil ist …, ein Nachteil dagegen …"
+            ]
+          },
+          {
+            "key": "point2",
+            "label": "Leitpunkt 2 – Vorschlag",
+            "text": "Meines Erachtens wäre ein Modell sinnvoll, bei dem man zwei Tage pro Woche im Büro arbeitet.",
+            "why": "Der Vorschlag steht im Konjunktiv II und ist begründet.",
+            "phrases": [
+              "Meines Erachtens wäre es sinnvoll, wenn …",
+              "Ich schlage vor, dass …"
+            ]
+          },
+          {
+            "key": "closing",
+            "label": "Schluss",
+            "text": "Zusammenfassend bin ich überzeugt, dass flexible Lösungen für alle Seiten die beste Wahl sind.\n\nMit freundlichen Grüßen\nMaria Schneider",
+            "why": "Fazit plus formelle Grußformel.",
+            "phrases": [
+              "Zusammenfassend …",
+              "Mit freundlichen Grüßen"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Einerseits …, andererseits …",
+      "content": "Zwei Seiten eines Themas gegenüberstellen.",
+      "data": {
+        "examples": [
+          "Einerseits ist das Angebot günstig, andererseits ist die Qualität nicht überzeugend."
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Meines Erachtens + Hauptsatz",
+      "content": "Eine Meinung formell einleiten; das Verb steht direkt danach.",
+      "data": {
+        "examples": [
+          "Meines Erachtens ist dieser Vorschlag nicht praktikabel."
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Obwohl + Nebensatz, + Hauptsatz",
+      "content": "Ein Gegensatz; im Hauptsatz steht das Verb direkt nach dem Komma.",
+      "data": {
+        "examples": [
+          "Obwohl der Preis hoch ist, würde ich das Angebot nutzen."
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Wenn …, würde ich … (Konjunktiv II)",
+      "content": "Irreale oder höfliche Vorschläge.",
+      "data": {
+        "examples": [
+          "Wenn das Büro näher wäre, würde ich öfter kommen."
+        ]
+      }
+    },
+    {
+      "kind": "SENTENCE_PATTERN",
+      "title": "Dadurch, dass … / Aufgrund + Genitiv",
+      "content": "Begründungen auf höherem Niveau.",
+      "data": {
+        "examples": [
+          "Aufgrund der hohen Kosten habe ich mich dagegen entschieden."
+        ]
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Nur Meinung, keine Begründung",
+      "content": "Auf B2 reicht eine bloße Behauptung nicht. Jedes Argument braucht Begründung oder Beispiel.",
+      "data": {
+        "wrong": "Homeoffice ist schlecht.",
+        "right": "Homeoffice ist problematisch, weil der Austausch mit Kollegen leidet und Arbeit und Privatleben verschwimmen."
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Registerwechsel",
+      "content": "Formell beginnen und im Text locker werden wirkt unsicher.",
+      "data": {
+        "wrong": "Sehr geehrte Frau Weber, du hast geschrieben …",
+        "right": "Sehr geehrte Frau Weber, Sie haben geschrieben …"
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Zu viele einfache Konnektoren",
+      "content": "Auf B2 werden abwechslungsreiche Verbindungswörter erwartet.",
+      "data": {
+        "wrong": "Ich finde das gut. Und es ist billig. Und es ist schnell.",
+        "right": "Ich finde das Angebot überzeugend, da es günstig ist und zudem schnell funktioniert."
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Kein Fazit",
+      "content": "Ohne Zusammenfassung bleibt der Text offen.",
+      "data": {
+        "wrong": "… Deshalb ist es schwierig.",
+        "right": "… Zusammenfassend lässt sich sagen, dass die Vorteile überwiegen."
+      }
+    },
+    {
+      "kind": "MISTAKE",
+      "title": "Nominalstil falsch gebaut",
+      "content": "Genitiv und Präpositionen mit Genitiv müssen stimmen.",
+      "data": {
+        "wrong": "wegen dem Wetter",
+        "right": "wegen des Wetters"
+      }
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich alle Leitpunkte beantwortet?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich eine passende Anrede?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich eine klare Einleitung?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Ist mein Text logisch aufgebaut?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich passende Verbindungswörter verwendet?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich einen passenden Schluss?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich die Verbposition kontrolliert?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich Artikel und Endungen kontrolliert?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich Präpositionen kontrolliert?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich die Rechtschreibung kontrolliert?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich zu jedem Argument eine Begründung oder ein Beispiel genannt?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Ist mein Register (formell/neutral) durchgehend gleich?"
+    },
+    {
+      "kind": "CHECKLIST_ITEM",
+      "title": "Habe ich ein Fazit geschrieben?"
+    }
+  ],
+  "phrases": [
+    {
+      "category": "GREETING",
+      "phrase": "Sehr geehrte Damen und Herren,",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "GREETING",
+      "phrase": "Sehr geehrter Herr Professor Müller,",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "INTRODUCTION",
+      "phrase": "Mit Interesse habe ich … gelesen.",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "INTRODUCTION",
+      "phrase": "Ich wende mich an Sie, weil …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "INTRODUCTION",
+      "phrase": "Ich beziehe mich auf Ihre Anzeige vom …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "OPINION",
+      "phrase": "Meiner Ansicht nach …",
+      "formality": "NEUTRAL",
+      "example": "Meiner Ansicht nach sind die Vorteile größer."
+    },
+    {
+      "category": "OPINION",
+      "phrase": "Ich persönlich vertrete die Meinung, dass …",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "OPINION",
+      "phrase": "Aus meiner Sicht …",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "REASON",
+      "phrase": "Das liegt daran, dass …",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "REASON",
+      "phrase": "Aufgrund + Genitiv …",
+      "formality": "FORMAL",
+      "example": "Aufgrund der hohen Kosten …"
+    },
+    {
+      "category": "REASON",
+      "phrase": "Da …",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "EXAMPLE",
+      "phrase": "Ein Beispiel dafür ist …",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "EXAMPLE",
+      "phrase": "Das lässt sich am Beispiel von … zeigen.",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "ADDITION",
+      "phrase": "Darüber hinaus …",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "ADDITION",
+      "phrase": "Zudem …",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "CONTRAST",
+      "phrase": "Im Gegensatz dazu …",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "CONTRAST",
+      "phrase": "Allerdings …",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "CONTRAST",
+      "phrase": "Obwohl …",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "AGREEMENT",
+      "phrase": "Ich stimme Ihnen insofern zu, als …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "DISAGREEMENT",
+      "phrase": "Das sehe ich etwas anders, denn …",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "DISAGREEMENT",
+      "phrase": "Ich bezweifle, dass …",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "ADVANTAGE_DISADVANTAGE",
+      "phrase": "Einerseits … andererseits …",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "ADVANTAGE_DISADVANTAGE",
+      "phrase": "Dafür spricht, dass … / Dagegen spricht, dass …",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "SUGGESTION",
+      "phrase": "Ich schlage vor, dass …",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "SUGGESTION",
+      "phrase": "Es wäre sinnvoll, wenn …",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "REQUEST",
+      "phrase": "Ich wäre Ihnen dankbar, wenn Sie …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "REQUEST",
+      "phrase": "Ich bitte Sie, …",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "APOLOGY",
+      "phrase": "Ich möchte mich für … entschuldigen.",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "QUESTION",
+      "phrase": "Könnten Sie mir mitteilen, ob …?",
+      "formality": "FORMAL"
+    },
+    {
+      "category": "CONCLUSION",
+      "phrase": "Zusammenfassend lässt sich sagen, dass …",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "CONCLUSION",
+      "phrase": "Abschließend möchte ich betonen, dass …",
+      "formality": "NEUTRAL"
+    },
+    {
+      "category": "CONCLUSION",
+      "phrase": "Mit freundlichen Grüßen",
+      "formality": "FORMAL"
+    }
+  ]
+}

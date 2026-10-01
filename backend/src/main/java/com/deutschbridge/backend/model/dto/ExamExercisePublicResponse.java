@@ -25,6 +25,8 @@ public record ExamExercisePublicResponse(
         String defaultCommonMistake,
         boolean completed,
         /** Percentage (0-100) from the most recent completed attempt, or null if never attempted. */
-        Double lastScore
+        Double lastScore,
+        boolean requiresPlanning,
+        List<String> leitpunkte
 ) {
 }
