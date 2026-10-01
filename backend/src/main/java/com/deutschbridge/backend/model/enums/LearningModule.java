@@ -10,5 +10,6 @@ public enum LearningModule {
     NOMEN_VERB_VERBINDUNGEN,
     EXAM_PREPARATION,
     DAILY_WORDS,
-    AI_TUTOR
+    AI_TUTOR,
+    REDEMITTEL
 }

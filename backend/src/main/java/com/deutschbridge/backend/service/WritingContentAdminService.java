@@ -6,6 +6,7 @@ import com.deutschbridge.backend.model.dto.AdminWritingPhraseDto;
 import com.deutschbridge.backend.model.entity.WritingGuideItem;
 import com.deutschbridge.backend.model.entity.WritingPhrase;
 import com.deutschbridge.backend.model.enums.LearningLevel;
+import com.deutschbridge.backend.repository.RedemittelExerciseRepository;
 import com.deutschbridge.backend.repository.WritingGuideItemRepository;
 import com.deutschbridge.backend.repository.WritingPhraseRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -23,11 +24,14 @@ public class WritingContentAdminService {
 
     private final WritingGuideItemRepository guideRepository;
     private final WritingPhraseRepository phraseRepository;
+    private final RedemittelExerciseRepository exerciseRepository;
     private final ObjectMapper objectMapper;
 
     public WritingContentAdminService(WritingGuideItemRepository guideRepository,
                                       WritingPhraseRepository phraseRepository,
+                                      RedemittelExerciseRepository exerciseRepository,
                                       ObjectMapper objectMapper) {
+        this.exerciseRepository = exerciseRepository;
         this.guideRepository = guideRepository;
         this.phraseRepository = phraseRepository;
         this.objectMapper = objectMapper;
@@ -103,6 +107,7 @@ public class WritingContentAdminService {
 
     public void deletePhrase(String id) throws DataNotFoundException {
         if (!phraseRepository.existsById(id)) throw new DataNotFoundException("Phrase not found!");
+        exerciseRepository.deleteByPhraseId(id);
         phraseRepository.deleteById(id);
     }
 
@@ -119,12 +124,20 @@ public class WritingContentAdminService {
         p.setUsageNote(blankToNull(dto.usageNote()));
         p.setSortOrder(dto.sortOrder());
         p.setActive(dto.active());
+        p.setMeaningEn(blankToNull(dto.meaningEn()));
+        p.setMeaningFa(blankToNull(dto.meaningFa()));
+        p.setGrammarPattern(blankToNull(dto.grammarPattern()));
+        p.setCommonMistake(blankToNull(dto.commonMistake()));
+        p.setSimilarExpressions(RedemittelText.joinLines(dto.similarExpressions()));
+        p.setContexts(RedemittelText.joinContexts(dto.contexts()));
         return p;
     }
 
     private AdminWritingPhraseDto toDto(WritingPhrase p) {
         return new AdminWritingPhraseDto(p.getId(), p.getLevel(), p.getCategory(), p.getPhrase(), p.getExplanation(),
-                p.getExample(), p.getFormality(), p.getUsageNote(), p.getSortOrder(), p.isActive());
+                p.getExample(), p.getFormality(), p.getUsageNote(), p.getSortOrder(), p.isActive(),
+                p.getMeaningEn(), p.getMeaningFa(), p.getGrammarPattern(), p.getCommonMistake(),
+                RedemittelText.splitLines(p.getSimilarExpressions()), RedemittelText.splitContexts(p.getContexts()));
     }
 
     private static String blankToNull(String s) {

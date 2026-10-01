@@ -270,3 +270,46 @@
 .font-fa body {
   font-family: "Vazirmatn", var(--font-poppins), sans-serif;
 }
+/* Writing lessons: small feedback animations. Disabled for users who prefer reduced motion. */
+@keyframes lesson-pop {
+  0% { transform: scale(0.85); opacity: 0; }
+  60% { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes lesson-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+@keyframes lesson-slide-in {
+  from { transform: translateX(16px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes lesson-burst {
+  0% { transform: translate(0, 0) scale(0.4); opacity: 1; }
+  100% { transform: translate(var(--bx), var(--by)) scale(1); opacity: 0; }
+}
+.anim-pop { animation: lesson-pop 0.3s ease-out both; }
+.anim-shake { animation: lesson-shake 0.3s ease-in-out; }
+.anim-slide-in { animation: lesson-slide-in 0.25s ease-out both; }
+.anim-burst { animation: lesson-burst 0.9s ease-out forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .anim-pop, .anim-shake, .anim-slide-in, .anim-burst { animation: none; }
+}
+
+/* Redemittel hub: staggered card entrance and the flip card. Disabled for users who prefer reduced motion. */
+@keyframes fade-up {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.anim-fade-up { animation: fade-up 0.4s ease-out both; }
+.flip-scene { perspective: 900px; }
+.flip-inner { transform-style: preserve-3d; transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1); }
+.flip-inner[data-flipped="true"] { transform: rotateY(180deg); }
+.flip-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.flip-back { transform: rotateY(180deg); }
+@media (prefers-reduced-motion: reduce) {
+  .anim-fade-up { animation: none; }
+  .flip-inner { transition: none; }
+  .animate-float, .animate-float-slow { animation: none; }
+}

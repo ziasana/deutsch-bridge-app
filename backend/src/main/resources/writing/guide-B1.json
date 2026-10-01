@@ -294,7 +294,7 @@
     { "kind": "CHECKLIST_ITEM", "title": "Habe ich die Rechtschreibung kontrolliert?" }
   ],
   "phrases": [
-    { "category": "GREETING", "phrase": "Liebe Anna, / Lieber Peter,", "formality": "INFORMAL", "example": "Liebe Anna, …" },
+    { "category": "GREETING", "phrase": "Liebe Anna, / Lieber Peter,", "formality": "INFORMAL", "example": "Liebe Anna, vielen Dank für deine Einladung zur Party." },
     { "category": "GREETING", "phrase": "Hallo Peter,", "formality": "INFORMAL" },
     { "category": "GREETING", "phrase": "Sehr geehrte Frau Müller, / Sehr geehrter Herr Schmidt,", "formality": "FORMAL" },
     { "category": "GREETING", "phrase": "Sehr geehrte Damen und Herren,", "formality": "FORMAL", "usageNote": "Wenn du die Person nicht kennst." },

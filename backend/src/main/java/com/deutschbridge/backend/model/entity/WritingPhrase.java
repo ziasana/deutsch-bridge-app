@@ -42,6 +42,27 @@ public class WritingPhrase {
     @Column(columnDefinition = "TEXT")
     private String usageNote;
 
+    /** Learner-facing English / Persian gloss; the German `explanation` is the fallback. */
+    @Column(columnDefinition = "TEXT")
+    private String meaningEn;
+
+    @Column(columnDefinition = "TEXT")
+    private String meaningFa;
+
+    /** Grammar / structure, e.g. "Ich bin der Meinung, dass + Nebensatz". */
+    @Column(columnDefinition = "TEXT")
+    private String grammarPattern;
+
+    @Column(columnDefinition = "TEXT")
+    private String commonMistake;
+
+    /** One similar expression per line. */
+    @Column(columnDefinition = "TEXT")
+    private String similarExpressions;
+
+    /** Comma-separated {@link com.deutschbridge.backend.model.enums.RedemittelContext} names. */
+    private String contexts;
+
     private int sortOrder;
     private boolean active = true;
 

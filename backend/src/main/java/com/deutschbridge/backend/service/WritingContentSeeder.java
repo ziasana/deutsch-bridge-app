@@ -6,6 +6,7 @@ import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.model.enums.WritingFormality;
 import com.deutschbridge.backend.model.enums.WritingGuideKind;
 import com.deutschbridge.backend.model.enums.WritingPhraseCategory;
+import com.deutschbridge.backend.repository.RedemittelExerciseRepository;
 import com.deutschbridge.backend.repository.WritingGuideItemRepository;
 import com.deutschbridge.backend.repository.WritingPhraseRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -34,6 +35,7 @@ public class WritingContentSeeder {
     @Bean
     public CommandLineRunner seedWritingContent(WritingGuideItemRepository guideRepository,
                                                 WritingPhraseRepository phraseRepository,
+                                                RedemittelExerciseRepository exerciseRepository,
                                                 ObjectMapper objectMapper,
                                                 TransactionTemplate tx) {
         return args -> {
@@ -45,6 +47,30 @@ public class WritingContentSeeder {
                 } catch (Exception e) {
                     log.error("Could not seed writing content from {}", file.getFilename(), e);
                 }
+            }
+            try {
+                int enriched = tx.execute(status -> {
+                    try {
+                        return RedemittelContentEnricher.enrich(phraseRepository, objectMapper);
+                    } catch (Exception e) {
+                        throw new IllegalStateException(e);
+                    }
+                });
+                if (enriched > 0) log.info("Enriched {} Redemittel with meanings and contexts", enriched);
+            } catch (Exception e) {
+                log.error("Could not enrich Redemittel", e);
+            }
+            try {
+                int added = tx.execute(status -> {
+                    try {
+                        return RedemittelExerciseSeeder.seed(phraseRepository, exerciseRepository, objectMapper);
+                    } catch (Exception e) {
+                        throw new IllegalStateException(e);
+                    }
+                });
+                if (added > 0) log.info("Seeded {} Redemittel practice exercises", added);
+            } catch (Exception e) {
+                log.error("Could not seed Redemittel exercises", e);
             }
         };
     }

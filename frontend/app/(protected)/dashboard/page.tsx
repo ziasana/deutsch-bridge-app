@@ -15,6 +15,7 @@ import CurrentFocusCard from "@/componenets/dashboard/CurrentFocusCard";
 import WeeklyLearningSummary from "@/componenets/dashboard/WeeklyLearningSummary";
 import LearningMilestone from "@/componenets/dashboard/LearningMilestone";
 import ExamTimeInsightCard from "@/componenets/dashboard/ExamTimeInsightCard";
+import RedemittelDashboardCard from "@/componenets/dashboard/RedemittelDashboardCard";
 import DashboardSkeleton from "@/componenets/dashboard/DashboardSkeleton";
 import { Button } from "@/componenets/ui/button";
 
@@ -89,6 +90,8 @@ const DashboardPage = () => {
                     </div>
 
                     <ExamTimeInsightCard />
+
+                    <RedemittelDashboardCard />
 
                     {dashboard.milestone && <LearningMilestone data={dashboard.milestone} />}
                 </div>

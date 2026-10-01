@@ -10,12 +10,16 @@ import {
     deleteAdminWritingGuideItem,
     deleteAdminWritingPhrase,
     getAdminWritingGuideItems,
+    getAdminRedemittelExerciseCounts,
     getAdminWritingPhrases,
     updateAdminWritingGuideItem,
     updateAdminWritingPhrase,
 } from "@/services/adminWritingService";
 import { AdminWritingGuideItem, AdminWritingPhrase, WritingFormality, WritingGuideKind, WritingPhraseCategory } from "@/types/writing";
 import { FORMALITY_LABELS, PHRASE_CATEGORY_LABELS, WRITING_LEVELS } from "@/componenets/exam/writing/writingMeta";
+import RedemittelExerciseEditor from "./RedemittelExerciseEditor";
+import { CONTEXT_LABELS } from "@/componenets/redemittel/redemittelMeta";
+import { RedemittelContext } from "@/types/redemittel";
 
 const KIND_LABELS: Record<WritingGuideKind, string> = {
     FORMAT: "Prüfungsformat",
@@ -45,6 +49,7 @@ const cardClass = "bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_
 const emptyItem = (level: string): AdminWritingGuideItem => ({ level, kind: "STRATEGY_STEP", title: "", content: "", data: null, sortOrder: 0, active: true });
 const emptyPhrase = (level: string): AdminWritingPhrase => ({
     level, category: "OPINION", phrase: "", explanation: "", example: "", formality: "NEUTRAL", usageNote: "", sortOrder: 0, active: true,
+    meaningEn: "", meaningFa: "", grammarPattern: "", commonMistake: "", similarExpressions: [], contexts: [],
 });
 
 const errorMessage = (err: unknown, fallback: string) => (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
@@ -181,6 +186,10 @@ function Phrases({ level }: Readonly<{ level: string }>) {
     const queryClient = useQueryClient();
     const key = ["admin", "writing", "phrases", level];
     const { data: phrases = [] } = useQuery({ queryKey: key, queryFn: () => getAdminWritingPhrases(level).then((r) => r.data) });
+    const { data: exerciseCounts = {} } = useQuery({
+        queryKey: ["admin", "writing", "exercise-counts", level],
+        queryFn: () => getAdminRedemittelExerciseCounts(level).then((r) => r.data),
+    });
     const [form, setForm] = useState<AdminWritingPhrase>(emptyPhrase(level));
     const [saving, setSaving] = useState(false);
 
@@ -259,14 +268,60 @@ function Phrases({ level }: Readonly<{ level: string }>) {
                     Hinweis zur Verwendung
                     <input className={inputClass} value={form.usageNote ?? ""} onChange={(e) => setForm({ ...form, usageNote: e.target.value })} />
                 </label>
+                <fieldset className="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+                    <legend className="px-1 text-sm font-medium text-gray-700 dark:text-gray-300">Lernmodul „Redemittel“ (optional)</legend>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="block text-sm text-gray-700 dark:text-gray-300">
+                            Bedeutung (Englisch)
+                            <input className={inputClass} value={form.meaningEn ?? ""} onChange={(e) => setForm({ ...form, meaningEn: e.target.value })} />
+                        </label>
+                        <label className="block text-sm text-gray-700 dark:text-gray-300">
+                            Bedeutung (Persisch)
+                            <input className={inputClass} dir="rtl" value={form.meaningFa ?? ""} onChange={(e) => setForm({ ...form, meaningFa: e.target.value })} />
+                        </label>
+                    </div>
+                    <label className="block text-sm text-gray-700 dark:text-gray-300">
+                        Grammatik / Struktur
+                        <input className={inputClass} placeholder="Ich bin der Meinung, dass + Nebensatz" value={form.grammarPattern ?? ""} onChange={(e) => setForm({ ...form, grammarPattern: e.target.value })} />
+                    </label>
+                    <label className="block text-sm text-gray-700 dark:text-gray-300">
+                        Häufiger Fehler
+                        <textarea rows={2} className={inputClass} placeholder={"❌ Ich bin Meinung, dass …\n✓ Ich bin der Meinung, dass …"} value={form.commonMistake ?? ""} onChange={(e) => setForm({ ...form, commonMistake: e.target.value })} />
+                    </label>
+                    <label className="block text-sm text-gray-700 dark:text-gray-300">
+                        Ähnliche Redemittel (eins pro Zeile)
+                        <textarea rows={3} className={inputClass} value={form.similarExpressions.join("\n")} onChange={(e) => setForm({ ...form, similarExpressions: e.target.value.split("\n") })} />
+                    </label>
+                    <div className="text-sm text-gray-700 dark:text-gray-300">
+                        Verwendung
+                        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+                            {(Object.keys(CONTEXT_LABELS) as RedemittelContext[]).map((c) => (
+                                <label key={c} className="flex items-center gap-1.5">
+                                    <input
+                                        type="checkbox"
+                                        checked={form.contexts.includes(c)}
+                                        onChange={(e) => setForm({ ...form, contexts: e.target.checked ? [...form.contexts, c] : form.contexts.filter((x) => x !== c) })}
+                                    />
+                                    {CONTEXT_LABELS[c]}
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                </fieldset>
                 <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                    <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} /> Aktiv
+                    <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} /> Aktiv (für Lernende sichtbar)
                 </label>
                 <div className="flex gap-2">
                     <Button type="submit" disabled={saving}>{saving ? "Speichern…" : "Speichern"}</Button>
                     {form.id && <Button type="button" variant="secondary" onClick={() => setForm(emptyPhrase(level))}>Abbrechen</Button>}
                 </div>
             </form>
+
+            {form.id && (
+                <div className={cardClass}>
+                    <RedemittelExerciseEditor key={form.id} phraseId={form.id} level={level} />
+                </div>
+            )}
 
             <div className={cardClass}>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Redemittel {level} ({phrases.length})</h2>
@@ -277,6 +332,11 @@ function Phrases({ level }: Readonly<{ level: string }>) {
                                 <span className="mr-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs dark:bg-gray-700">{PHRASE_CATEGORY_LABELS[p.category]}</span>
                                 {p.phrase}
                                 {!p.active && <span className="ml-2 text-xs text-orange-600">inaktiv</span>}
+                                {p.id && (exerciseCounts[p.id] ?? 0) === 0 ? (
+                                    <span className="ml-2 text-xs text-orange-600">keine Übungen</span>
+                                ) : (
+                                    <span className="ml-2 text-xs text-gray-500">{p.id ? exerciseCounts[p.id] : 0} Übungen</span>
+                                )}
                             </span>
                             <span className="flex shrink-0 gap-2">
                                 <Button type="button" variant="secondary" className="px-3 py-1 text-xs" onClick={() => setForm(p)}>Bearbeiten</Button>
@@ -302,7 +362,7 @@ export default function WritingContentManager() {
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Schreiben lernen – Inhalte</h1>
                 <div className="flex flex-wrap items-center gap-3">
                     <select className={`${inputClass} w-28`} value={level} onChange={(e) => setLevel(e.target.value)} aria-label="Niveau">
-                        {WRITING_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
+                        {(["A1", ...WRITING_LEVELS] as string[]).map((l) => <option key={l} value={l}>{l}</option>)}
                     </select>
                     <Button type="button" variant={tab === "items" ? "primary" : "secondary"} onClick={() => setTab("items")}>Lerninhalte</Button>
                     <Button type="button" variant={tab === "phrases" ? "primary" : "secondary"} onClick={() => setTab("phrases")}>Redemittel</Button>

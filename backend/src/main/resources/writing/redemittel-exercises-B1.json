@@ -1,0 +1,1345 @@
+{
+ "level": "B1",
+ "exercises": [
+  {
+   "phrase": "Liebe Anna, / Lieber Peter,",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "Dear Anna, / Dear Peter, (informal letter opening)",
+   "wrongAnswers": [
+    "I think that …",
+    "This is the case, for example, when …"
+   ]
+  },
+  {
+   "phrase": "Liebe Anna, / Lieber Peter,",
+   "type": "FILL_BLANK",
+   "prompt": "___ Anna, wie geht es dir?",
+   "correctAnswer": "Liebe",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Liebe Anna, / Lieber Peter,",
+   "type": "SITUATION",
+   "prompt": "Du schreibst eine E-Mail an eine Freundin namens Anna. Wie fängst du an?\n\nWelches Redemittel passt?",
+   "correctAnswer": "Liebe Anna,",
+   "wrongAnswers": [
+    "Da bin ich nicht sicher, ob …",
+    "Ich möchte mich entschuldigen, dass …"
+   ]
+  },
+  {
+   "phrase": "Liebe Anna, / Lieber Peter,",
+   "type": "PRODUCTION",
+   "prompt": "Schreibe die Anrede und den ersten Satz einer E-Mail an deine Freundin Anna.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Hallo Peter,",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "Hello Peter, (informal opening)",
+   "wrongAnswers": [
+    "I am of the opinion that …",
+    "In addition … / Besides …"
+   ]
+  },
+  {
+   "phrase": "Hallo Peter,",
+   "type": "FILL_BLANK",
+   "prompt": "___ Peter, hast du morgen Zeit?",
+   "correctAnswer": "Hallo",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Hallo Peter,",
+   "type": "SITUATION",
+   "prompt": "Du schreibst eine kurze, lockere Nachricht an einen Bekannten. Wie sprichst du ihn an?\n\nWelches Redemittel passt?",
+   "correctAnswer": "Hallo Peter,",
+   "wrongAnswers": [
+    "Deshalb …",
+    "Ein Vorteil ist, dass …"
+   ]
+  },
+  {
+   "phrase": "Hallo Peter,",
+   "type": "PRODUCTION",
+   "prompt": "Schreibe eine kurze Nachricht an Peter und lade ihn ins Kino ein.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Sehr geehrte Frau Müller, / Sehr geehrter Herr Schmidt,",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "Dear Ms Müller, / Dear Mr Schmidt, (formal opening)",
+   "wrongAnswers": [
+    "In my opinion …",
+    "And one more thing: …"
+   ]
+  },
+  {
+   "phrase": "Sehr geehrte Frau Müller, / Sehr geehrter Herr Schmidt,",
+   "type": "FILL_BLANK",
+   "prompt": "Sehr ___ Frau Müller, ich schreibe Ihnen wegen der Wohnung.",
+   "correctAnswer": "geehrte",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Sehr geehrte Frau Müller, / Sehr geehrter Herr Schmidt,",
+   "type": "SITUATION",
+   "prompt": "Du schreibst einen offiziellen Brief an Frau Müller, die du nicht persönlich kennst. Wie sprichst du sie an?\n\nWelches Redemittel passt?",
+   "correctAnswer": "Sehr geehrte Frau Müller,",
+   "wrongAnswers": [
+    "Zum Beispiel …",
+    "Ein Nachteil ist, dass …"
+   ]
+  },
+  {
+   "phrase": "Sehr geehrte Frau Müller, / Sehr geehrter Herr Schmidt,",
+   "type": "PRODUCTION",
+   "prompt": "Schreibe die Anrede und den ersten Satz eines Briefes an Herrn Schmidt von der Hausverwaltung.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Sehr geehrte Damen und Herren,",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "Dear Sir or Madam, (formal opening to an unknown reader)",
+   "wrongAnswers": [
+    "…, because … (gives a reason; the verb goes to the end)",
+    "But … (introduces a contrast)"
+   ]
+  },
+  {
+   "phrase": "Sehr geehrte Damen und Herren,",
+   "type": "FILL_BLANK",
+   "prompt": "Sehr geehrte ___ und Herren, ich interessiere mich für den Kurs.",
+   "correctAnswer": "Damen",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Sehr geehrte Damen und Herren,",
+   "type": "SITUATION",
+   "prompt": "Du schreibst an eine Firma und kennst den Namen der Person nicht. Wie sprichst du die Leser an?\n\nWelches Redemittel passt?",
+   "correctAnswer": "Sehr geehrte Damen und Herren,",
+   "wrongAnswers": [
+    "Das ist zum Beispiel der Fall, wenn …",
+    "Wie wäre es mit …?"
+   ]
+  },
+  {
+   "phrase": "Sehr geehrte Damen und Herren,",
+   "type": "PRODUCTION",
+   "prompt": "Schreibe die Anrede und den ersten Satz einer Beschwerde an ein Reisebüro.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Vielen Dank für deine Nachricht.",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "Thank you very much for your message.",
+   "wrongAnswers": [
+    "…, because … (the verb stays in second position)",
+    "On the other hand …"
+   ]
+  },
+  {
+   "phrase": "Vielen Dank für deine Nachricht.",
+   "type": "FILL_BLANK",
+   "prompt": "Vielen ___ für deine Nachricht.",
+   "correctAnswer": "Dank",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Vielen Dank für deine Nachricht.",
+   "type": "SITUATION",
+   "prompt": "Ein Freund hat dir geschrieben. Du beginnst deine Antwort und bedankst dich.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Vielen Dank für deine Nachricht.",
+   "wrongAnswers": [
+    "Außerdem …",
+    "Wir könnten …"
+   ]
+  },
+  {
+   "phrase": "Vielen Dank für deine Nachricht.",
+   "type": "PRODUCTION",
+   "prompt": "Antworte auf eine Nachricht von einem Freund, der dir zum Geburtstag gratuliert hat. Beginne mit einem Dank.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ich habe mich sehr über deine Nachricht gefreut.",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "I was very happy about your message.",
+   "wrongAnswers": [
+    "That is why … / Therefore …",
+    "I agree with you on that."
+   ]
+  },
+  {
+   "phrase": "Ich habe mich sehr über deine Nachricht gefreut.",
+   "type": "FILL_BLANK",
+   "prompt": "Ich habe mich sehr über deine Nachricht ___.",
+   "correctAnswer": "gefreut",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ich habe mich sehr über deine Nachricht gefreut.",
+   "type": "SITUATION",
+   "prompt": "Du hast unerwartet eine nette Nachricht von einem alten Freund bekommen und möchtest zeigen, dass du dich freust.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Ich habe mich sehr über deine Nachricht gefreut.",
+   "wrongAnswers": [
+    "Und noch etwas: …",
+    "Ich schlage vor, dass …"
+   ]
+  },
+  {
+   "phrase": "Ich habe mich sehr über deine Nachricht gefreut.",
+   "type": "PRODUCTION",
+   "prompt": "Schreibe zwei Sätze an einen alten Freund, der sich nach langer Zeit gemeldet hat.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ich schreibe Ihnen, weil …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "I am writing to you because …",
+   "wrongAnswers": [
+    "For example …",
+    "I think so too."
+   ]
+  },
+  {
+   "phrase": "Ich schreibe Ihnen, weil …",
+   "type": "FILL_BLANK",
+   "prompt": "Ich schreibe Ihnen, ___ ich eine Frage zu Ihrem Angebot habe.",
+   "correctAnswer": "weil",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ich schreibe Ihnen, weil …",
+   "type": "SITUATION",
+   "prompt": "Du beginnst eine formelle E-Mail und willst gleich den Grund für dein Schreiben nennen.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Ich schreibe Ihnen, weil …",
+   "wrongAnswers": [
+    "Aber …",
+    "Kannst du mir bitte …?"
+   ]
+  },
+  {
+   "phrase": "Ich schreibe Ihnen, weil …",
+   "type": "PRODUCTION",
+   "prompt": "Schreibe den Anfang einer E-Mail an einen Vermieter, in der du dich nach der Wohnung erkundigst.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ich denke, dass …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "I think that …",
+   "wrongAnswers": [
+    "This is the case, for example, when …",
+    "I see it differently."
+   ]
+  },
+  {
+   "phrase": "Ich denke, dass …",
+   "type": "FILL_BLANK",
+   "prompt": "Ich ___, dass Sport für alle wichtig ist.",
+   "correctAnswer": "denke",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ich denke, dass …",
+   "type": "SITUATION",
+   "prompt": "Dein Freund fragt, was du von Sport in der Schule hältst. Du sagst locker deine Meinung.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Ich denke, dass …",
+   "wrongAnswers": [
+    "Auf der anderen Seite …",
+    "Könnten Sie mir bitte … schicken?"
+   ]
+  },
+  {
+   "phrase": "Ich denke, dass …",
+   "type": "PRODUCTION",
+   "prompt": "Ist es gut, wenn Kinder viel Zeit am Computer verbringen? Nenne deine Meinung.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ich bin der Meinung, dass …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "I am of the opinion that …",
+   "wrongAnswers": [
+    "In addition … / Besides …",
+    "I am not sure whether … (about that)"
+   ]
+  },
+  {
+   "phrase": "Ich bin der Meinung, dass …",
+   "type": "FILL_BLANK",
+   "prompt": "Ich bin der ___, dass öffentliche Verkehrsmittel billiger sein sollten.",
+   "correctAnswer": "Meinung",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ich bin der Meinung, dass …",
+   "type": "SITUATION",
+   "prompt": "Du nimmst an einer Diskussion teil und möchtest deine Meinung etwas formeller ausdrücken.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Ich bin der Meinung, dass …",
+   "wrongAnswers": [
+    "Da stimme ich dir zu.",
+    "Ich würde mich freuen, wenn …"
+   ]
+  },
+  {
+   "phrase": "Ich bin der Meinung, dass …",
+   "type": "PRODUCTION",
+   "prompt": "Sollten Schüler Uniformen tragen? Schreibe deine Meinung.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Meiner Meinung nach …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "In my opinion …",
+   "wrongAnswers": [
+    "And one more thing: …",
+    "One advantage is that …"
+   ]
+  },
+  {
+   "phrase": "Meiner Meinung nach …",
+   "type": "FILL_BLANK",
+   "prompt": "___ Meinung nach ist Lesen besser als Fernsehen.",
+   "correctAnswer": "Meiner",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Meiner Meinung nach …",
+   "type": "SITUATION",
+   "prompt": "In einem Aufsatz möchtest du einen Satz mit deiner Meinung beginnen.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Meiner Meinung nach …",
+   "wrongAnswers": [
+    "Das finde ich auch.",
+    "Es tut mir leid, aber …"
+   ]
+  },
+  {
+   "phrase": "Meiner Meinung nach …",
+   "type": "PRODUCTION",
+   "prompt": "Ist Online-Shopping besser als Einkaufen im Geschäft? Beginne mit „Meiner Meinung nach“.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "…, weil …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "…, because … (gives a reason; the verb goes to the end)",
+   "wrongAnswers": [
+    "But … (introduces a contrast)",
+    "One disadvantage is that …"
+   ]
+  },
+  {
+   "phrase": "…, weil …",
+   "type": "FILL_BLANK",
+   "prompt": "Ich bleibe zu Hause, ___ ich krank bin.",
+   "correctAnswer": "weil",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "…, weil …",
+   "type": "PRODUCTION",
+   "prompt": "Warum lernst du Deutsch? Gib einen Grund mit „weil“ an.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "…, denn …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "…, because … (the verb stays in second position)",
+   "wrongAnswers": [
+    "On the other hand …",
+    "How about …?"
+   ]
+  },
+  {
+   "phrase": "…, denn …",
+   "type": "FILL_BLANK",
+   "prompt": "Ich gehe nicht mit, ___ ich muss arbeiten.",
+   "correctAnswer": "denn",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "…, denn …",
+   "type": "PRODUCTION",
+   "prompt": "Warum kannst du am Wochenende nicht kommen? Begründe mit „denn“.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Deshalb …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "That is why … / Therefore …",
+   "wrongAnswers": [
+    "I agree with you on that.",
+    "We could …"
+   ]
+  },
+  {
+   "phrase": "Deshalb …",
+   "type": "FILL_BLANK",
+   "prompt": "Es regnet. ___ bleibe ich zu Hause.",
+   "correctAnswer": "Deshalb",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Deshalb …",
+   "type": "SITUATION",
+   "prompt": "Du hast gerade einen Grund genannt und möchtest nun die Folge daraus sagen.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Deshalb …",
+   "wrongAnswers": [
+    "Ein Vorteil ist, dass …",
+    "Ich möchte gern wissen, …"
+   ]
+  },
+  {
+   "phrase": "Deshalb …",
+   "type": "PRODUCTION",
+   "prompt": "Schreibe zwei Sätze: erst einen Grund, dann die Folge mit „Deshalb“.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Zum Beispiel …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "For example …",
+   "wrongAnswers": [
+    "I think so too.",
+    "I suggest that …"
+   ]
+  },
+  {
+   "phrase": "Zum Beispiel …",
+   "type": "FILL_BLANK",
+   "prompt": "___ Beispiel kann man mit dem Fahrrad zur Arbeit fahren.",
+   "correctAnswer": "Zum",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Zum Beispiel …",
+   "type": "SITUATION",
+   "prompt": "Du hast etwas behauptet und willst es mit einem Beispiel erklären.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Zum Beispiel …",
+   "wrongAnswers": [
+    "Ein Nachteil ist, dass …",
+    "Könnten Sie mir sagen, …?"
+   ]
+  },
+  {
+   "phrase": "Zum Beispiel …",
+   "type": "PRODUCTION",
+   "prompt": "Nenne ein Beispiel dafür, wie man Energie sparen kann.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Das ist zum Beispiel der Fall, wenn …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "This is the case, for example, when …",
+   "wrongAnswers": [
+    "I see it differently.",
+    "Can you please … for me? (informal request)"
+   ]
+  },
+  {
+   "phrase": "Das ist zum Beispiel der Fall, wenn …",
+   "type": "FILL_BLANK",
+   "prompt": "Das ist zum Beispiel der Fall, ___ man keinen Parkplatz findet.",
+   "correctAnswer": "wenn",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Das ist zum Beispiel der Fall, wenn …",
+   "type": "SITUATION",
+   "prompt": "Du möchtest eine Situation beschreiben, in der etwas zutrifft.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Das ist zum Beispiel der Fall, wenn …",
+   "wrongAnswers": [
+    "Wie wäre es mit …?",
+    "Ich freue mich auf deine Antwort."
+   ]
+  },
+  {
+   "phrase": "Das ist zum Beispiel der Fall, wenn …",
+   "type": "PRODUCTION",
+   "prompt": "Beschreibe eine Situation, in der Online-Unterricht besser ist als Präsenzunterricht.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Außerdem …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "In addition … / Besides …",
+   "wrongAnswers": [
+    "I am not sure whether … (about that)",
+    "Could you please send me …?"
+   ]
+  },
+  {
+   "phrase": "Außerdem …",
+   "type": "FILL_BLANK",
+   "prompt": "___ ist das Wetter dort im Sommer sehr schön.",
+   "correctAnswer": "Außerdem",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Außerdem …",
+   "type": "SITUATION",
+   "prompt": "Du hast schon einen Grund genannt und fügst einen weiteren Punkt hinzu.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Außerdem …",
+   "wrongAnswers": [
+    "Wir könnten …",
+    "Liebe Grüße"
+   ]
+  },
+  {
+   "phrase": "Außerdem …",
+   "type": "PRODUCTION",
+   "prompt": "Nenne zwei Vorteile einer Stadt und verbinde sie mit „Außerdem“.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Und noch etwas: …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "And one more thing: …",
+   "wrongAnswers": [
+    "One advantage is that …",
+    "I would be happy if …"
+   ]
+  },
+  {
+   "phrase": "Und noch etwas: …",
+   "type": "FILL_BLANK",
+   "prompt": "Und noch ___: Vergiss deinen Pass nicht!",
+   "correctAnswer": "etwas",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Und noch etwas: …",
+   "type": "SITUATION",
+   "prompt": "In einer E-Mail an einen Freund fällt dir am Ende noch etwas Wichtiges ein.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Und noch etwas: …",
+   "wrongAnswers": [
+    "Ich schlage vor, dass …",
+    "Ich hoffe auf Ihre baldige Antwort."
+   ]
+  },
+  {
+   "phrase": "Und noch etwas: …",
+   "type": "PRODUCTION",
+   "prompt": "Schreibe einem Freund eine Einladung und füge am Ende mit „Und noch etwas“ einen Hinweis hinzu.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Aber …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "But … (introduces a contrast)",
+   "wrongAnswers": [
+    "One disadvantage is that …",
+    "I am sorry, but …"
+   ]
+  },
+  {
+   "phrase": "Aber …",
+   "type": "FILL_BLANK",
+   "prompt": "Ich möchte kommen. ___ ich habe keine Zeit.",
+   "correctAnswer": "Aber",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Aber …",
+   "type": "SITUATION",
+   "prompt": "Du möchtest etwas sagen, das im Gegensatz zum vorherigen Satz steht.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Aber …",
+   "wrongAnswers": [
+    "Kannst du mir bitte …?",
+    "Mit freundlichen Grüßen"
+   ]
+  },
+  {
+   "phrase": "Aber …",
+   "type": "PRODUCTION",
+   "prompt": "Schreibe zwei Sätze: Du würdest gern verreisen, aber etwas hindert dich.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Auf der anderen Seite …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "On the other hand …",
+   "wrongAnswers": [
+    "How about …?",
+    "Unfortunately I cannot …"
+   ]
+  },
+  {
+   "phrase": "Auf der anderen Seite …",
+   "type": "FILL_BLANK",
+   "prompt": "Auf der anderen ___ ist das Leben auf dem Land ruhiger.",
+   "correctAnswer": "Seite",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Auf der anderen Seite …",
+   "type": "SITUATION",
+   "prompt": "Du hast einen Vorteil genannt und möchtest nun die Gegenseite zeigen.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Auf der anderen Seite …",
+   "wrongAnswers": [
+    "Könnten Sie mir bitte … schicken?",
+    "Liebe Anna,"
+   ]
+  },
+  {
+   "phrase": "Auf der anderen Seite …",
+   "type": "PRODUCTION",
+   "prompt": "Die Stadt hat Vorteile. Nenne dann mit „Auf der anderen Seite“ einen Nachteil.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Da stimme ich dir zu.",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "I agree with you on that.",
+   "wrongAnswers": [
+    "We could …",
+    "I would like to apologise that …"
+   ]
+  },
+  {
+   "phrase": "Da stimme ich dir zu.",
+   "type": "FILL_BLANK",
+   "prompt": "Da ___ ich dir zu.",
+   "correctAnswer": "stimme",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Da stimme ich dir zu.",
+   "type": "SITUATION",
+   "prompt": "Dein Freund sagt: „Wir sollten mehr Rad fahren.“ Du bist derselben Meinung.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Da stimme ich dir zu.",
+   "wrongAnswers": [
+    "Ich würde mich freuen, wenn …",
+    "Hallo Peter,"
+   ]
+  },
+  {
+   "phrase": "Da stimme ich dir zu.",
+   "type": "PRODUCTION",
+   "prompt": "Ein Freund sagt: „Fremdsprachen sind wichtig.“ Stimme ihm zu.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Das finde ich auch.",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "I think so too.",
+   "wrongAnswers": [
+    "I suggest that …",
+    "I would like to know …"
+   ]
+  },
+  {
+   "phrase": "Das finde ich auch.",
+   "type": "FILL_BLANK",
+   "prompt": "Das ___ ich auch.",
+   "correctAnswer": "finde",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Das finde ich auch.",
+   "type": "SITUATION",
+   "prompt": "Jemand sagt, der Film war toll. Du denkst das auch und antwortest kurz.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Das finde ich auch.",
+   "wrongAnswers": [
+    "Es tut mir leid, aber …",
+    "Sehr geehrte Frau Müller,"
+   ]
+  },
+  {
+   "phrase": "Das finde ich auch.",
+   "type": "PRODUCTION",
+   "prompt": "Reagiere auf die Aussage „Pizza ist das beste Essen“ und stimme zu.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Das sehe ich anders.",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "I see it differently.",
+   "wrongAnswers": [
+    "Can you please … for me? (informal request)",
+    "Could you tell me …?"
+   ]
+  },
+  {
+   "phrase": "Das sehe ich anders.",
+   "type": "FILL_BLANK",
+   "prompt": "Das ___ ich anders.",
+   "correctAnswer": "sehe",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Das sehe ich anders.",
+   "type": "SITUATION",
+   "prompt": "Jemand sagt, Hausaufgaben seien unnötig. Du bist nicht einverstanden.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Das sehe ich anders.",
+   "wrongAnswers": [
+    "Leider kann ich nicht …",
+    "Sehr geehrte Damen und Herren,"
+   ]
+  },
+  {
+   "phrase": "Das sehe ich anders.",
+   "type": "PRODUCTION",
+   "prompt": "Ein Freund sagt: „Fernsehen ist Zeitverschwendung.“ Widersprich höflich.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Da bin ich nicht sicher, ob …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "I am not sure whether … (about that)",
+   "wrongAnswers": [
+    "Could you please send me …?",
+    "I look forward to your reply."
+   ]
+  },
+  {
+   "phrase": "Da bin ich nicht sicher, ob …",
+   "type": "FILL_BLANK",
+   "prompt": "Da bin ich nicht ___, ob das stimmt.",
+   "correctAnswer": "sicher",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Da bin ich nicht sicher, ob …",
+   "type": "SITUATION",
+   "prompt": "Jemand behauptet etwas und du bist dir nicht sicher, ob es stimmt.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Da bin ich nicht sicher, ob …",
+   "wrongAnswers": [
+    "Ich möchte mich entschuldigen, dass …",
+    "Vielen Dank für deine Nachricht."
+   ]
+  },
+  {
+   "phrase": "Da bin ich nicht sicher, ob …",
+   "type": "PRODUCTION",
+   "prompt": "Jemand sagt: „Morgen regnet es bestimmt.“ Drücke deinen Zweifel aus.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ein Vorteil ist, dass …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "One advantage is that …",
+   "wrongAnswers": [
+    "I would be happy if …",
+    "Warm regards (informal closing)"
+   ]
+  },
+  {
+   "phrase": "Ein Vorteil ist, dass …",
+   "type": "FILL_BLANK",
+   "prompt": "Ein ___ ist, dass man dort viele Freunde findet.",
+   "correctAnswer": "Vorteil",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ein Vorteil ist, dass …",
+   "type": "SITUATION",
+   "prompt": "Du sprichst über das Leben in einer Wohngemeinschaft und nennst eine gute Seite.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Ein Vorteil ist, dass …",
+   "wrongAnswers": [
+    "Ich möchte gern wissen, …",
+    "Ich habe mich sehr über deine Nachricht gefreut."
+   ]
+  },
+  {
+   "phrase": "Ein Vorteil ist, dass …",
+   "type": "PRODUCTION",
+   "prompt": "Nenne einen Vorteil von Homeoffice.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ein Nachteil ist, dass …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "One disadvantage is that …",
+   "wrongAnswers": [
+    "I am sorry, but …",
+    "I hope to receive your reply soon."
+   ]
+  },
+  {
+   "phrase": "Ein Nachteil ist, dass …",
+   "type": "FILL_BLANK",
+   "prompt": "Ein ___ ist, dass es dort sehr laut ist.",
+   "correctAnswer": "Nachteil",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ein Nachteil ist, dass …",
+   "type": "SITUATION",
+   "prompt": "Du sprichst über das Leben in der Großstadt und nennst eine schlechte Seite.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Ein Nachteil ist, dass …",
+   "wrongAnswers": [
+    "Könnten Sie mir sagen, …?",
+    "Ich schreibe Ihnen, weil …"
+   ]
+  },
+  {
+   "phrase": "Ein Nachteil ist, dass …",
+   "type": "PRODUCTION",
+   "prompt": "Nenne einen Nachteil von Handys im Unterricht.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Wie wäre es mit …?",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "How about …?",
+   "wrongAnswers": [
+    "Unfortunately I cannot …",
+    "Yours sincerely / Kind regards (formal closing)"
+   ]
+  },
+  {
+   "phrase": "Wie wäre es mit …?",
+   "type": "FILL_BLANK",
+   "prompt": "Wie ___ es mit einem Spaziergang?",
+   "correctAnswer": "wäre",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Wie wäre es mit …?",
+   "type": "SITUATION",
+   "prompt": "Du möchtest einem Freund freundlich eine Aktivität für das Wochenende vorschlagen.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Wie wäre es mit …?",
+   "wrongAnswers": [
+    "Ich freue mich auf deine Antwort.",
+    "Ich denke, dass …"
+   ]
+  },
+  {
+   "phrase": "Wie wäre es mit …?",
+   "type": "PRODUCTION",
+   "prompt": "Schlage einem Freund eine Aktivität für den Samstag vor.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Wir könnten …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "We could …",
+   "wrongAnswers": [
+    "I would like to apologise that …",
+    "Dear Anna, / Dear Peter, (informal letter opening)"
+   ]
+  },
+  {
+   "phrase": "Wir könnten …",
+   "type": "FILL_BLANK",
+   "prompt": "Wir ___ ins Kino gehen.",
+   "correctAnswer": "könnten",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Wir könnten …",
+   "type": "SITUATION",
+   "prompt": "Du und deine Kollegin sucht eine Idee für den Abend. Du machst einen vorsichtigen Vorschlag.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Wir könnten …",
+   "wrongAnswers": [
+    "Liebe Grüße",
+    "Ich bin der Meinung, dass …"
+   ]
+  },
+  {
+   "phrase": "Wir könnten …",
+   "type": "PRODUCTION",
+   "prompt": "Mache einen Vorschlag für einen gemeinsamen Ausflug.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ich schlage vor, dass …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "I suggest that …",
+   "wrongAnswers": [
+    "I would like to know …",
+    "Hello Peter, (informal opening)"
+   ]
+  },
+  {
+   "phrase": "Ich schlage vor, dass …",
+   "type": "FILL_BLANK",
+   "prompt": "Ich ___ vor, dass wir früher anfangen.",
+   "correctAnswer": "schlage",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ich schlage vor, dass …",
+   "type": "SITUATION",
+   "prompt": "In einem Meeting möchtest du einen konkreten Vorschlag machen.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Ich schlage vor, dass …",
+   "wrongAnswers": [
+    "Ich hoffe auf Ihre baldige Antwort.",
+    "Meiner Meinung nach …"
+   ]
+  },
+  {
+   "phrase": "Ich schlage vor, dass …",
+   "type": "PRODUCTION",
+   "prompt": "Schlage vor, wie der Deutschkurs besser werden könnte.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Kannst du mir bitte …?",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "Can you please … for me? (informal request)",
+   "wrongAnswers": [
+    "Could you tell me …?",
+    "Dear Ms Müller, / Dear Mr Schmidt, (formal opening)"
+   ]
+  },
+  {
+   "phrase": "Kannst du mir bitte …?",
+   "type": "FILL_BLANK",
+   "prompt": "___ du mir bitte helfen?",
+   "correctAnswer": "Kannst",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Kannst du mir bitte …?",
+   "type": "SITUATION",
+   "prompt": "Du brauchst Hilfe bei den Hausaufgaben und fragst einen Freund.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Kannst du mir bitte …?",
+   "wrongAnswers": [
+    "Mit freundlichen Grüßen",
+    "Das sehe ich anders."
+   ]
+  },
+  {
+   "phrase": "Kannst du mir bitte …?",
+   "type": "PRODUCTION",
+   "prompt": "Bitte einen Freund höflich, dir sein Wörterbuch zu leihen.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Könnten Sie mir bitte … schicken?",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "Could you please send me …?",
+   "wrongAnswers": [
+    "I look forward to your reply.",
+    "Dear Sir or Madam, (formal opening to an unknown reader)"
+   ]
+  },
+  {
+   "phrase": "Könnten Sie mir bitte … schicken?",
+   "type": "FILL_BLANK",
+   "prompt": "Könnten Sie mir bitte die Unterlagen ___?",
+   "correctAnswer": "schicken",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Könnten Sie mir bitte … schicken?",
+   "type": "SITUATION",
+   "prompt": "Du schreibst an eine Firma und bittest höflich um Informationsmaterial per Post.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Könnten Sie mir bitte … schicken?",
+   "wrongAnswers": [
+    "Liebe Anna,",
+    "Da bin ich nicht sicher, ob …"
+   ]
+  },
+  {
+   "phrase": "Könnten Sie mir bitte … schicken?",
+   "type": "PRODUCTION",
+   "prompt": "Bitte die Hausverwaltung höflich, dir den Mietvertrag zu schicken.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ich würde mich freuen, wenn …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "I would be happy if …",
+   "wrongAnswers": [
+    "Warm regards (informal closing)",
+    "Thank you very much for your message."
+   ]
+  },
+  {
+   "phrase": "Ich würde mich freuen, wenn …",
+   "type": "FILL_BLANK",
+   "prompt": "Ich ___ mich freuen, wenn du kommst.",
+   "correctAnswer": "würde",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ich würde mich freuen, wenn …",
+   "type": "SITUATION",
+   "prompt": "Du lädst einen Freund ein und möchtest sagen, dass du dich über sein Kommen freuen würdest.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Ich würde mich freuen, wenn …",
+   "wrongAnswers": [
+    "Hallo Peter,",
+    "Deshalb …"
+   ]
+  },
+  {
+   "phrase": "Ich würde mich freuen, wenn …",
+   "type": "PRODUCTION",
+   "prompt": "Lade eine Kollegin zu deiner Feier ein und sage, dass du dich über ihr Kommen freuen würdest.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Es tut mir leid, aber …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "I am sorry, but …",
+   "wrongAnswers": [
+    "I hope to receive your reply soon.",
+    "I was very happy about your message."
+   ]
+  },
+  {
+   "phrase": "Es tut mir leid, aber …",
+   "type": "FILL_BLANK",
+   "prompt": "Es tut mir ___, aber ich habe keine Zeit.",
+   "correctAnswer": "leid",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Es tut mir leid, aber …",
+   "type": "SITUATION",
+   "prompt": "Du musst eine Einladung ablehnen und möchtest dich dafür entschuldigen.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Es tut mir leid, aber …",
+   "wrongAnswers": [
+    "Sehr geehrte Frau Müller,",
+    "Zum Beispiel …"
+   ]
+  },
+  {
+   "phrase": "Es tut mir leid, aber …",
+   "type": "PRODUCTION",
+   "prompt": "Entschuldige dich bei einem Freund, weil du seine Einladung nicht annehmen kannst.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Leider kann ich nicht …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "Unfortunately I cannot …",
+   "wrongAnswers": [
+    "Yours sincerely / Kind regards (formal closing)",
+    "I am writing to you because …"
+   ]
+  },
+  {
+   "phrase": "Leider kann ich nicht …",
+   "type": "FILL_BLANK",
+   "prompt": "___ kann ich nicht kommen.",
+   "correctAnswer": "Leider",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Leider kann ich nicht …",
+   "type": "SITUATION",
+   "prompt": "Du bedauerst, dass du an einem Termin nicht teilnehmen kannst.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Leider kann ich nicht …",
+   "wrongAnswers": [
+    "Sehr geehrte Damen und Herren,",
+    "Das ist zum Beispiel der Fall, wenn …"
+   ]
+  },
+  {
+   "phrase": "Leider kann ich nicht …",
+   "type": "PRODUCTION",
+   "prompt": "Sage einem Kollegen ab, weil du krank bist.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ich möchte mich entschuldigen, dass …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "I would like to apologise that …",
+   "wrongAnswers": [
+    "Dear Anna, / Dear Peter, (informal letter opening)",
+    "I think that …"
+   ]
+  },
+  {
+   "phrase": "Ich möchte mich entschuldigen, dass …",
+   "type": "FILL_BLANK",
+   "prompt": "Ich möchte mich ___, dass ich zu spät bin.",
+   "correctAnswer": "entschuldigen",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ich möchte mich entschuldigen, dass …",
+   "type": "SITUATION",
+   "prompt": "Du bist zu spät zu einem Treffen gekommen und entschuldigst dich höflich.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Ich möchte mich entschuldigen, dass …",
+   "wrongAnswers": [
+    "Vielen Dank für deine Nachricht.",
+    "Außerdem …"
+   ]
+  },
+  {
+   "phrase": "Ich möchte mich entschuldigen, dass …",
+   "type": "PRODUCTION",
+   "prompt": "Entschuldige dich bei deinem Lehrer, weil du die Hausaufgaben vergessen hast.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ich möchte gern wissen, …",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "I would like to know …",
+   "wrongAnswers": [
+    "Hello Peter, (informal opening)",
+    "I am of the opinion that …"
+   ]
+  },
+  {
+   "phrase": "Ich möchte gern wissen, …",
+   "type": "FILL_BLANK",
+   "prompt": "Ich möchte gern ___, wann der Kurs beginnt.",
+   "correctAnswer": "wissen",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ich möchte gern wissen, …",
+   "type": "SITUATION",
+   "prompt": "Du schreibst an eine Sprachschule und willst nach dem Kursbeginn fragen.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Ich möchte gern wissen, …",
+   "wrongAnswers": [
+    "Ich habe mich sehr über deine Nachricht gefreut.",
+    "Und noch etwas: …"
+   ]
+  },
+  {
+   "phrase": "Ich möchte gern wissen, …",
+   "type": "PRODUCTION",
+   "prompt": "Schreibe einen Satz, in dem du dich nach den Öffnungszeiten erkundigst.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Könnten Sie mir sagen, …?",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "Could you tell me …?",
+   "wrongAnswers": [
+    "Dear Ms Müller, / Dear Mr Schmidt, (formal opening)",
+    "In my opinion …"
+   ]
+  },
+  {
+   "phrase": "Könnten Sie mir sagen, …?",
+   "type": "FILL_BLANK",
+   "prompt": "Könnten Sie mir ___, wo das Büro ist?",
+   "correctAnswer": "sagen",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Könnten Sie mir sagen, …?",
+   "type": "SITUATION",
+   "prompt": "Du fragst eine fremde Person höflich nach dem Weg.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Könnten Sie mir sagen, …?",
+   "wrongAnswers": [
+    "Ich schreibe Ihnen, weil …",
+    "Aber …"
+   ]
+  },
+  {
+   "phrase": "Könnten Sie mir sagen, …?",
+   "type": "PRODUCTION",
+   "prompt": "Frage höflich nach dem Preis eines Zimmers.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ich freue mich auf deine Antwort.",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "I look forward to your reply.",
+   "wrongAnswers": [
+    "Dear Sir or Madam, (formal opening to an unknown reader)",
+    "…, because … (gives a reason; the verb goes to the end)"
+   ]
+  },
+  {
+   "phrase": "Ich freue mich auf deine Antwort.",
+   "type": "FILL_BLANK",
+   "prompt": "Ich freue mich auf deine ___.",
+   "correctAnswer": "Antwort",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ich freue mich auf deine Antwort.",
+   "type": "SITUATION",
+   "prompt": "Du beendest eine E-Mail an einen Freund und wartest auf seine Antwort.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Ich freue mich auf deine Antwort.",
+   "wrongAnswers": [
+    "Ich denke, dass …",
+    "Auf der anderen Seite …"
+   ]
+  },
+  {
+   "phrase": "Ich freue mich auf deine Antwort.",
+   "type": "PRODUCTION",
+   "prompt": "Schreibe den Schlusssatz einer E-Mail an einen Freund, in dem du dich auf seine Antwort freust.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Liebe Grüße",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "Warm regards (informal closing)",
+   "wrongAnswers": [
+    "Thank you very much for your message.",
+    "…, because … (the verb stays in second position)"
+   ]
+  },
+  {
+   "phrase": "Liebe Grüße",
+   "type": "FILL_BLANK",
+   "prompt": "___ Grüße, Anna",
+   "correctAnswer": "Liebe",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Liebe Grüße",
+   "type": "SITUATION",
+   "prompt": "Du beendest eine herzliche E-Mail an eine gute Freundin.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Liebe Grüße",
+   "wrongAnswers": [
+    "Ich bin der Meinung, dass …",
+    "Da stimme ich dir zu."
+   ]
+  },
+  {
+   "phrase": "Liebe Grüße",
+   "type": "PRODUCTION",
+   "prompt": "Schreibe einen freundlichen Schluss für eine E-Mail an deine Oma.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ich hoffe auf Ihre baldige Antwort.",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "I hope to receive your reply soon.",
+   "wrongAnswers": [
+    "I was very happy about your message.",
+    "That is why … / Therefore …"
+   ]
+  },
+  {
+   "phrase": "Ich hoffe auf Ihre baldige Antwort.",
+   "type": "FILL_BLANK",
+   "prompt": "Ich hoffe auf Ihre baldige ___.",
+   "correctAnswer": "Antwort",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Ich hoffe auf Ihre baldige Antwort.",
+   "type": "SITUATION",
+   "prompt": "Du beendest eine formelle E-Mail und erwartest bald eine Rückmeldung.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Ich hoffe auf Ihre baldige Antwort.",
+   "wrongAnswers": [
+    "Meiner Meinung nach …",
+    "Das finde ich auch."
+   ]
+  },
+  {
+   "phrase": "Ich hoffe auf Ihre baldige Antwort.",
+   "type": "PRODUCTION",
+   "prompt": "Schreibe den Schlusssatz einer formellen Anfrage.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Mit freundlichen Grüßen",
+   "type": "MEANING",
+   "prompt": null,
+   "correctAnswer": "Yours sincerely / Kind regards (formal closing)",
+   "wrongAnswers": [
+    "I am writing to you because …",
+    "For example …"
+   ]
+  },
+  {
+   "phrase": "Mit freundlichen Grüßen",
+   "type": "FILL_BLANK",
+   "prompt": "Mit freundlichen ___",
+   "correctAnswer": "Grüßen",
+   "wrongAnswers": []
+  },
+  {
+   "phrase": "Mit freundlichen Grüßen",
+   "type": "SITUATION",
+   "prompt": "Du beendest einen offiziellen Brief an eine Firma.\n\nWelches Redemittel passt?",
+   "correctAnswer": "Mit freundlichen Grüßen",
+   "wrongAnswers": [
+    "Das sehe ich anders.",
+    "Leider kann ich nicht …"
+   ]
+  },
+  {
+   "phrase": "Mit freundlichen Grüßen",
+   "type": "PRODUCTION",
+   "prompt": "Schreibe den Schluss eines Bewerbungsschreibens.",
+   "correctAnswer": null,
+   "wrongAnswers": []
+  }
+ ]
+}

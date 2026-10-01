@@ -1,15 +1,18 @@
 package com.deutschbridge.backend.controller;
 
 import com.deutschbridge.backend.exception.DataNotFoundException;
+import com.deutschbridge.backend.model.dto.AdminRedemittelExerciseDto;
 import com.deutschbridge.backend.model.dto.AdminWritingGuideItemDto;
 import com.deutschbridge.backend.model.dto.AdminWritingPhraseDto;
 import com.deutschbridge.backend.model.enums.LearningLevel;
+import com.deutschbridge.backend.service.RedemittelExerciseAdminService;
 import com.deutschbridge.backend.service.WritingContentAdminService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /** Admin CRUD for "Schreiben lernen" content: guide items (format/strategy/structure/examples/patterns/mistakes/checklist) and Redemittel. */
 @RestController
@@ -18,9 +21,27 @@ import java.util.List;
 public class AdminWritingContentController {
 
     private final WritingContentAdminService service;
+    private final RedemittelExerciseAdminService exerciseService;
 
-    public AdminWritingContentController(WritingContentAdminService service) {
+    public AdminWritingContentController(WritingContentAdminService service, RedemittelExerciseAdminService exerciseService) {
         this.service = service;
+        this.exerciseService = exerciseService;
+    }
+
+    /** Exercise count per phrase id, so the admin list can flag Redemittel without practice exercises. */
+    @GetMapping("/phrases/exercise-counts")
+    public ResponseEntity<Map<String, Long>> exerciseCounts(@RequestParam LearningLevel level) {
+        return ResponseEntity.ok(exerciseService.countsForLevel(level));
+    }
+
+    @GetMapping("/phrases/{id}/exercises")
+    public ResponseEntity<List<AdminRedemittelExerciseDto>> listExercises(@PathVariable String id) throws DataNotFoundException {
+        return ResponseEntity.ok(exerciseService.list(id));
+    }
+
+    @PutMapping("/phrases/{id}/exercises")
+    public ResponseEntity<List<AdminRedemittelExerciseDto>> saveExercises(@PathVariable String id, @RequestBody List<AdminRedemittelExerciseDto> body) throws DataNotFoundException {
+        return ResponseEntity.ok(exerciseService.replace(id, body));
     }
 
     @GetMapping("/guide-items")

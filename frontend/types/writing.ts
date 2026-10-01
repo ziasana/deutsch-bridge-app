@@ -1,3 +1,6 @@
+import type { RedemittelContext } from "@/types/redemittel";
+
+
 export type WritingGuideKind =
     | "FORMAT"
     | "STRATEGY_STEP"
@@ -167,6 +170,12 @@ export interface AdminWritingPhrase {
     usageNote: string | null;
     sortOrder: number;
     active: boolean;
+    meaningEn: string | null;
+    meaningFa: string | null;
+    grammarPattern: string | null;
+    commonMistake: string | null;
+    similarExpressions: string[];
+    contexts: RedemittelContext[];
 }
 
 export interface WritingProgress {

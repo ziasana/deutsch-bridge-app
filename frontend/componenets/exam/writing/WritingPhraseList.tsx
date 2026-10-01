@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { WritingPhrase, WritingPhraseCategory } from "@/types/writing";
 import { cn } from "@/lib/utils";
+import RedemittelDetailDialog from "@/componenets/redemittel/RedemittelDetailDialog";
 import { FORMALITY_LABELS, PHRASE_CATEGORY_LABELS } from "./writingMeta";
 
 /** Redemittel grouped by function; one category is shown at a time (progressive disclosure). */
@@ -12,6 +13,8 @@ export default function WritingPhraseList({ phrases }: { phrases: WritingPhrase[
         return (Object.keys(PHRASE_CATEGORY_LABELS) as WritingPhraseCategory[]).filter((c) => present.has(c));
     }, [phrases]);
     const [selected, setSelected] = useState<WritingPhraseCategory | null>(null);
+    // The same shared Redemittel record the learning module uses - open it to learn or save it.
+    const [openId, setOpenId] = useState<string | null>(null);
     const current = selected && categories.includes(selected) ? selected : categories[0];
     const shown = phrases.filter((p) => p.category === current).sort((a, b) => a.sortOrder - b.sortOrder);
 
@@ -37,7 +40,14 @@ export default function WritingPhraseList({ phrases }: { phrases: WritingPhrase[
                 {shown.map((p) => (
                     <li key={p.id} className="rounded-lg bg-accent/40 px-4 py-3">
                         <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-sm font-medium text-foreground">• {p.phrase}</span>
+                            <button
+                                type="button"
+                                onClick={() => setOpenId(p.id)}
+                                aria-label={`${p.phrase} – Details, lernen oder speichern`}
+                                className="text-left text-sm font-medium text-foreground underline-offset-2 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer"
+                            >
+                                • {p.phrase}
+                            </button>
                             {p.formality && (
                                 <span className="rounded-full bg-card px-2 py-0.5 text-[11px] text-foreground/55">{FORMALITY_LABELS[p.formality]}</span>
                             )}
@@ -48,6 +58,7 @@ export default function WritingPhraseList({ phrases }: { phrases: WritingPhrase[
                     </li>
                 ))}
             </ul>
+            <RedemittelDetailDialog redemittelId={openId} onClose={() => setOpenId(null)} />
         </div>
     );
 }

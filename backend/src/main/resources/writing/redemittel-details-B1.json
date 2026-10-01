@@ -1,0 +1,505 @@
+{
+ "level": "B1",
+ "phrases": [
+  {
+   "phrase": "Liebe Anna, / Lieber Peter,",
+   "explanation": "Vertraute Anrede am Anfang eines Briefes oder einer E-Mail an Freunde und Familie.",
+   "usageNote": "Nur für Personen, die du duzt. Nach der Anrede steht ein Komma, der nächste Satz beginnt klein.",
+   "grammarPattern": "Liebe + weiblicher Name, / Lieber + männlicher Name,",
+   "commonMistake": "❌ Lieber Anna,\n✓ Liebe Anna,",
+   "similarExpressions": [
+    "Hallo Anna,",
+    "Hi Anna,"
+   ],
+   "example": "Liebe Anna, vielen Dank für deine Einladung zur Party.",
+   "exampleReplaces": "Liebe Anna, …"
+  },
+  {
+   "phrase": "Hallo Peter,",
+   "explanation": "Lockere Anrede für Freunde, Bekannte und Kollegen, die du duzt.",
+   "usageNote": "Etwas weniger persönlich als „Lieber Peter“. Nicht für formelle Briefe.",
+   "grammarPattern": "Hallo + Vorname, (Komma, danach klein weiterschreiben)",
+   "commonMistake": "❌ Hallo Peter. Wie geht es dir?\n✓ Hallo Peter,\nwie geht es dir?",
+   "similarExpressions": [
+    "Lieber Peter,",
+    "Hi Peter,"
+   ],
+   "example": "Hallo Peter, hast du am Samstag Zeit?"
+  },
+  {
+   "phrase": "Sehr geehrte Frau Müller, / Sehr geehrter Herr Schmidt,",
+   "explanation": "Förmliche Anrede, wenn du die Person mit Namen kennst.",
+   "usageNote": "Für Behörden, Vermieter und Firmen. Danach schreibst du in der Sie-Form.",
+   "grammarPattern": "Sehr geehrte Frau + Nachname, / Sehr geehrter Herr + Nachname,",
+   "commonMistake": "❌ Sehr geehrter Frau Müller,\n✓ Sehr geehrte Frau Müller,",
+   "similarExpressions": [
+    "Sehr geehrte Damen und Herren,",
+    "Guten Tag Frau Müller,"
+   ],
+   "example": "Sehr geehrte Frau Müller, ich schreibe Ihnen wegen der Wohnung."
+  },
+  {
+   "phrase": "Sehr geehrte Damen und Herren,",
+   "explanation": "Förmliche Anrede, wenn du den Namen nicht kennst oder mehrere Personen anschreibst.",
+   "usageNote": "Typisch für Bewerbungen, Anfragen und Beschwerden an Firmen.",
+   "grammarPattern": "Sehr geehrte Damen und Herren, (Komma, nächster Satz beginnt klein)",
+   "commonMistake": "❌ Sehr geehrte Damen und Herren!\n✓ Sehr geehrte Damen und Herren,",
+   "similarExpressions": [
+    "Sehr geehrtes Team,",
+    "Guten Tag,"
+   ],
+   "example": "Sehr geehrte Damen und Herren, ich interessiere mich für Ihren Kurs."
+  },
+  {
+   "phrase": "Vielen Dank für deine Nachricht.",
+   "explanation": "Höflicher Einstieg, wenn du auf eine Nachricht antwortest.",
+   "usageNote": "Für Personen, die du duzt. Bei „Sie“ heißt es „Ihre Nachricht“.",
+   "grammarPattern": "Vielen Dank für + Akkusativ",
+   "commonMistake": "❌ Vielen Dank für dein Nachricht.\n✓ Vielen Dank für deine Nachricht.",
+   "similarExpressions": [
+    "Danke für deine Nachricht.",
+    "Vielen Dank für deine E-Mail."
+   ],
+   "example": "Vielen Dank für deine Nachricht. Ich komme gern zur Party."
+  },
+  {
+   "phrase": "Ich habe mich sehr über deine Nachricht gefreut.",
+   "explanation": "Zeigt, dass du dich über eine Nachricht oder einen Brief gefreut hast.",
+   "usageNote": "Persönlich und herzlich, passend für Freunde und Familie.",
+   "grammarPattern": "sich freuen über + Akkusativ (Perfekt: Ich habe mich … gefreut)",
+   "commonMistake": "❌ Ich habe mich sehr für deine Nachricht gefreut.\n✓ Ich habe mich sehr über deine Nachricht gefreut.",
+   "similarExpressions": [
+    "Ich habe mich sehr gefreut, von dir zu hören.",
+    "Deine Nachricht hat mich sehr gefreut."
+   ],
+   "example": "Ich habe mich sehr über deine Nachricht gefreut. Wie geht es dir?"
+  },
+  {
+   "phrase": "Ich schreibe Ihnen, weil …",
+   "explanation": "Nennt am Anfang eines formellen Briefes den Grund, warum du schreibst.",
+   "usageNote": "Für formelle E-Mails und Briefe an Firmen oder Behörden (Sie-Form).",
+   "grammarPattern": "Ich schreibe Ihnen, weil + Nebensatz (Verb am Ende)",
+   "commonMistake": "❌ Ich schreibe Ihnen, weil ich habe eine Frage.\n✓ Ich schreibe Ihnen, weil ich eine Frage habe.",
+   "similarExpressions": [
+    "Ich wende mich an Sie, weil …",
+    "Ich schreibe Ihnen wegen …"
+   ],
+   "example": "Ich schreibe Ihnen, weil ich eine Frage zum Kurs habe."
+  },
+  {
+   "phrase": "Ich denke, dass …",
+   "explanation": "Leitet die eigene Meinung ein, eher locker.",
+   "usageNote": "Gut im Gespräch und in informellen Texten, in der Prüfung aber auch möglich.",
+   "grammarPattern": "Ich denke, dass + Nebensatz (Verb am Ende)",
+   "commonMistake": "❌ Ich denke, dass Sport ist wichtig.\n✓ Ich denke, dass Sport wichtig ist.",
+   "similarExpressions": [
+    "Ich glaube, dass …",
+    "Ich finde, dass …"
+   ],
+   "example": "Ich denke, dass das eine gute Idee ist."
+  },
+  {
+   "phrase": "Ich bin der Meinung, dass …",
+   "explanation": "Leitet die eigene Meinung ein, etwas förmlicher als „Ich denke“.",
+   "usageNote": "Passt gut in Diskussionen, Leserbriefen und Aufsätzen.",
+   "grammarPattern": "Ich bin der Meinung, dass + Nebensatz (Verb am Ende)",
+   "commonMistake": "❌ Ich bin Meinung, dass …\n✓ Ich bin der Meinung, dass …",
+   "similarExpressions": [
+    "Meiner Meinung nach …",
+    "Ich vertrete die Ansicht, dass …",
+    "Meines Erachtens …"
+   ],
+   "example": "Ich bin der Meinung, dass öffentliche Verkehrsmittel billiger sein sollten."
+  },
+  {
+   "phrase": "Meiner Meinung nach …",
+   "explanation": "Drückt die eigene Meinung aus und steht oft am Satzanfang.",
+   "usageNote": "Danach steht das Verb direkt: „Meiner Meinung nach ist das richtig.“",
+   "grammarPattern": "Meiner Meinung nach + Verb + Subjekt (Position 2)",
+   "commonMistake": "❌ Meiner Meinung nach, das ist richtig.\n✓ Meiner Meinung nach ist das richtig.",
+   "similarExpressions": [
+    "Ich bin der Meinung, dass …",
+    "Meiner Ansicht nach …",
+    "Aus meiner Sicht …"
+   ],
+   "example": "Meiner Meinung nach ist das zu teuer."
+  },
+  {
+   "phrase": "…, weil …",
+   "explanation": "Verbindet zwei Sätze und nennt den Grund.",
+   "usageNote": "Nach „weil“ steht das Verb am Ende. Vor „weil“ steht ein Komma.",
+   "grammarPattern": "Hauptsatz, weil + Nebensatz (Verb am Ende)",
+   "commonMistake": "❌ Ich lerne Deutsch, weil ich will in Deutschland arbeiten.\n✓ Ich lerne Deutsch, weil ich in Deutschland arbeiten will.",
+   "similarExpressions": [
+    "…, denn …",
+    "Da …, …",
+    "Deshalb …"
+   ],
+   "example": "Ich kann nicht kommen, weil ich arbeiten muss."
+  },
+  {
+   "phrase": "…, denn …",
+   "explanation": "Verbindet zwei Hauptsätze und nennt den Grund.",
+   "usageNote": "Nach „denn“ bleibt die normale Wortstellung (Verb an Position 2). Etwas schriftlicher als „weil“.",
+   "grammarPattern": "Hauptsatz, denn + Hauptsatz (Verb an Position 2)",
+   "commonMistake": "❌ Ich bleibe zu Hause, denn ich krank bin.\n✓ Ich bleibe zu Hause, denn ich bin krank.",
+   "similarExpressions": [
+    "…, weil …",
+    "Da …, …"
+   ],
+   "example": "Ich bleibe zu Hause, denn ich bin krank."
+  },
+  {
+   "phrase": "Deshalb …",
+   "explanation": "Nennt die Folge aus dem vorherigen Satz.",
+   "usageNote": "Steht am Satzanfang, danach kommt sofort das Verb.",
+   "grammarPattern": "Deshalb + Verb + Subjekt (Position 2)",
+   "commonMistake": "❌ Deshalb ich bleibe zu Hause.\n✓ Deshalb bleibe ich zu Hause.",
+   "similarExpressions": [
+    "Darum …",
+    "Aus diesem Grund …",
+    "Deswegen …"
+   ],
+   "example": "Deshalb kann ich leider nicht kommen."
+  },
+  {
+   "phrase": "Zum Beispiel …",
+   "explanation": "Führt ein Beispiel ein, das eine Aussage erklärt.",
+   "usageNote": "Steht am Satzanfang oder mitten im Satz. Abkürzung: z. B.",
+   "grammarPattern": "Zum Beispiel + Beispiel (am Satzanfang: Verb an Position 2)",
+   "commonMistake": "❌ Zu Beispiel kann man Rad fahren.\n✓ Zum Beispiel kann man Rad fahren.",
+   "similarExpressions": [
+    "Beispielsweise …",
+    "So kann man zum Beispiel …"
+   ],
+   "example": "Zum Beispiel kann man mit dem Fahrrad zur Arbeit fahren."
+  },
+  {
+   "phrase": "Das ist zum Beispiel der Fall, wenn …",
+   "explanation": "Beschreibt eine Situation, in der eine Aussage zutrifft.",
+   "usageNote": "Gut in Erörterungen, um eine allgemeine Aussage zu belegen.",
+   "grammarPattern": "wenn + Nebensatz (Verb am Ende)",
+   "commonMistake": "❌ …, wenn man findet keinen Parkplatz.\n✓ …, wenn man keinen Parkplatz findet.",
+   "similarExpressions": [
+    "Ein Beispiel dafür ist …",
+    "Zum Beispiel, wenn …"
+   ],
+   "example": "Das ist zum Beispiel der Fall, wenn man keinen Parkplatz findet."
+  },
+  {
+   "phrase": "Außerdem …",
+   "explanation": "Fügt einen weiteren Punkt oder Grund hinzu.",
+   "usageNote": "Steht meist am Satzanfang. Nicht mit „aber“ verwechseln.",
+   "grammarPattern": "Außerdem + Verb + Subjekt (Position 2)",
+   "commonMistake": "❌ Außerdem ich möchte Rad fahren.\n✓ Außerdem möchte ich Rad fahren.",
+   "similarExpressions": [
+    "Zudem …",
+    "Darüber hinaus …",
+    "Hinzu kommt, dass …"
+   ],
+   "example": "Außerdem ist das Wetter dort im Sommer sehr schön."
+  },
+  {
+   "phrase": "Und noch etwas: …",
+   "explanation": "Fügt am Ende noch einen wichtigen Gedanken hinzu.",
+   "usageNote": "Umgangssprachlich, passend für E-Mails an Freunde.",
+   "grammarPattern": "Und noch etwas: + vollständiger Satz",
+   "commonMistake": "❌ Und noch etwas: vergiss nicht dein Pass.\n✓ Und noch etwas: Vergiss deinen Pass nicht!",
+   "similarExpressions": [
+    "Ach ja, …",
+    "Übrigens …"
+   ],
+   "example": "Und noch etwas: Vergiss deinen Pass nicht!"
+  },
+  {
+   "phrase": "Aber …",
+   "explanation": "Zeigt einen Gegensatz oder eine Einschränkung.",
+   "usageNote": "Steht am Satzanfang oder nach einem Komma. Das Verb bleibt an Position 2.",
+   "grammarPattern": "aber + Hauptsatz (aber steht auf Position 0)",
+   "commonMistake": "❌ Aber ich habe keine Zeit nicht.\n✓ Aber ich habe keine Zeit.",
+   "similarExpressions": [
+    "Doch …",
+    "Allerdings …",
+    "Trotzdem …"
+   ],
+   "example": "Aber ich habe am Samstag leider keine Zeit."
+  },
+  {
+   "phrase": "Auf der anderen Seite …",
+   "explanation": "Stellt der ersten Seite eines Themas die Gegenseite gegenüber.",
+   "usageNote": "Oft nach „Einerseits …“ oder nach einem Vorteil.",
+   "grammarPattern": "Auf der anderen Seite + Verb + Subjekt (Position 2)",
+   "commonMistake": "❌ Auf andere Seite ist es ruhiger.\n✓ Auf der anderen Seite ist es ruhiger.",
+   "similarExpressions": [
+    "Andererseits …",
+    "Dagegen …",
+    "Im Gegensatz dazu …"
+   ],
+   "example": "Auf der anderen Seite ist das Leben auf dem Land ruhiger."
+  },
+  {
+   "phrase": "Da stimme ich dir zu.",
+   "explanation": "Zeigt, dass du mit einer Aussage einverstanden bist.",
+   "usageNote": "Informell (dir). Formell: „Da stimme ich Ihnen zu.“",
+   "grammarPattern": "jemandem zustimmen (Dativ)",
+   "commonMistake": "❌ Da stimme ich dich zu.\n✓ Da stimme ich dir zu.",
+   "similarExpressions": [
+    "Das finde ich auch.",
+    "Da bin ich ganz deiner Meinung.",
+    "Genau!"
+   ],
+   "example": "Da stimme ich dir zu. Das Fahrrad ist wirklich besser."
+  },
+  {
+   "phrase": "Das finde ich auch.",
+   "explanation": "Kurze Zustimmung zu einer Meinung.",
+   "usageNote": "Typisch für Gespräche und lockere Texte.",
+   "grammarPattern": "Das + finde + ich + auch (Verb an Position 2)",
+   "commonMistake": "❌ Das ich finde auch.\n✓ Das finde ich auch.",
+   "similarExpressions": [
+    "Da stimme ich dir zu.",
+    "Das sehe ich genauso.",
+    "Stimmt!"
+   ],
+   "example": "Das finde ich auch. Der Film war wirklich toll."
+  },
+  {
+   "phrase": "Das sehe ich anders.",
+   "explanation": "Höfliche Art zu widersprechen.",
+   "usageNote": "Wirkt freundlicher als „Das stimmt nicht“. Oft folgt eine Begründung.",
+   "grammarPattern": "Das + sehe + ich + anders (Verb an Position 2)",
+   "commonMistake": "❌ Das sehe ich andere.\n✓ Das sehe ich anders.",
+   "similarExpressions": [
+    "Da bin ich anderer Meinung.",
+    "Da muss ich dir widersprechen.",
+    "Ich sehe das etwas anders."
+   ],
+   "example": "Das sehe ich anders. Hausaufgaben sind meiner Meinung nach wichtig."
+  },
+  {
+   "phrase": "Da bin ich nicht sicher, ob …",
+   "explanation": "Drückt Zweifel aus.",
+   "usageNote": "Vorsichtig und höflich, passt auch in formellen Gesprächen.",
+   "grammarPattern": "Da bin ich nicht sicher, ob + Nebensatz (Verb am Ende)",
+   "commonMistake": "❌ Da bin ich nicht sicher, dass das stimmt.\n✓ Da bin ich nicht sicher, ob das stimmt.",
+   "similarExpressions": [
+    "Ich bezweifle, dass …",
+    "Ich weiß nicht, ob …"
+   ],
+   "example": "Da bin ich nicht sicher, ob das wirklich stimmt."
+  },
+  {
+   "phrase": "Ein Vorteil ist, dass …",
+   "explanation": "Nennt eine positive Seite eines Themas.",
+   "usageNote": "Für Pro-und-Kontra-Texte. Das Gegenstück ist „Ein Nachteil ist, dass …“.",
+   "grammarPattern": "Ein Vorteil ist, dass + Nebensatz (Verb am Ende)",
+   "commonMistake": "❌ Ein Vorteil ist, dass man hat mehr Zeit.\n✓ Ein Vorteil ist, dass man mehr Zeit hat.",
+   "similarExpressions": [
+    "Dafür spricht, dass …",
+    "Positiv ist, dass …",
+    "Der Vorteil liegt darin, dass …"
+   ],
+   "example": "Ein Vorteil ist, dass man in einer WG viele Freunde findet."
+  },
+  {
+   "phrase": "Ein Nachteil ist, dass …",
+   "explanation": "Nennt eine negative Seite eines Themas.",
+   "usageNote": "Für Pro-und-Kontra-Texte. Das Gegenstück ist „Ein Vorteil ist, dass …“.",
+   "grammarPattern": "Ein Nachteil ist, dass + Nebensatz (Verb am Ende)",
+   "commonMistake": "❌ Ein Nachteil ist, dass es ist laut.\n✓ Ein Nachteil ist, dass es laut ist.",
+   "similarExpressions": [
+    "Dagegen spricht, dass …",
+    "Negativ ist, dass …",
+    "Der Nachteil liegt darin, dass …"
+   ],
+   "example": "Ein Nachteil ist, dass es in der Großstadt sehr laut ist."
+  },
+  {
+   "phrase": "Wie wäre es mit …?",
+   "explanation": "Macht einen freundlichen Vorschlag.",
+   "usageNote": "Informell. Danach steht ein Nomen im Dativ.",
+   "grammarPattern": "Wie wäre es mit + Dativ?",
+   "commonMistake": "❌ Wie wäre es mit ein Spaziergang?\n✓ Wie wäre es mit einem Spaziergang?",
+   "similarExpressions": [
+    "Wollen wir …?",
+    "Wir könnten …",
+    "Hast du Lust auf …?"
+   ],
+   "example": "Wie wäre es mit Sonntag?"
+  },
+  {
+   "phrase": "Wir könnten …",
+   "explanation": "Schlägt etwas vorsichtig vor.",
+   "usageNote": "Der Konjunktiv II macht den Vorschlag höflich und unverbindlich.",
+   "grammarPattern": "Wir könnten + … + Infinitiv (am Ende)",
+   "commonMistake": "❌ Wir könnten gehen ins Kino.\n✓ Wir könnten ins Kino gehen.",
+   "similarExpressions": [
+    "Wir können …",
+    "Wie wäre es, wenn wir …",
+    "Ich schlage vor, dass wir …"
+   ],
+   "example": "Wir könnten zusammen ins Kino gehen."
+  },
+  {
+   "phrase": "Ich schlage vor, dass …",
+   "explanation": "Macht einen konkreten Vorschlag.",
+   "usageNote": "Etwas formeller, passend im Beruf und in Besprechungen.",
+   "grammarPattern": "Ich schlage vor, dass + Nebensatz (Verb am Ende)",
+   "commonMistake": "❌ Ich schlage vor, dass wir fangen früher an.\n✓ Ich schlage vor, dass wir früher anfangen.",
+   "similarExpressions": [
+    "Ich würde vorschlagen, dass …",
+    "Wie wäre es, wenn …",
+    "Mein Vorschlag wäre, …"
+   ],
+   "example": "Ich schlage vor, dass wir die Besprechung früher beginnen."
+  },
+  {
+   "phrase": "Kannst du mir bitte …?",
+   "explanation": "Höfliche Bitte an Personen, die du duzt.",
+   "usageNote": "Das Verb steht am Ende der Frage. „helfen“ steht mit Dativ.",
+   "grammarPattern": "Kannst du mir bitte + … + Infinitiv?",
+   "commonMistake": "❌ Kannst du mich bitte helfen?\n✓ Kannst du mir bitte helfen?",
+   "similarExpressions": [
+    "Könntest du mir bitte …?",
+    "Würdest du mir bitte …?"
+   ],
+   "example": "Kannst du mir bitte bei den Hausaufgaben helfen?"
+  },
+  {
+   "phrase": "Könnten Sie mir bitte … schicken?",
+   "explanation": "Sehr höfliche Bitte an Personen, die du siezt.",
+   "usageNote": "Konjunktiv II. „schicken“ steht am Ende. Typisch für E-Mails an Firmen.",
+   "grammarPattern": "Könnten Sie mir bitte + Akkusativ + schicken?",
+   "commonMistake": "❌ Könnten Sie mich bitte die Unterlagen schicken?\n✓ Könnten Sie mir bitte die Unterlagen schicken?",
+   "similarExpressions": [
+    "Würden Sie mir bitte … schicken?",
+    "Können Sie mir bitte … schicken?"
+   ],
+   "example": "Könnten Sie mir bitte die Unterlagen per Post schicken?"
+  },
+  {
+   "phrase": "Ich würde mich freuen, wenn …",
+   "explanation": "Äußert höflich einen Wunsch oder eine Bitte.",
+   "usageNote": "Klingt freundlich und setzt den anderen nicht unter Druck.",
+   "grammarPattern": "Ich würde mich freuen, wenn + Nebensatz (Konjunktiv II)",
+   "commonMistake": "❌ …, wenn du kommst würdest.\n✓ …, wenn du kommen würdest.",
+   "similarExpressions": [
+    "Ich wäre froh, wenn …",
+    "Ich wäre dankbar, wenn …"
+   ],
+   "example": "Ich würde mich freuen, wenn du zu meiner Feier kommst."
+  },
+  {
+   "phrase": "Es tut mir leid, aber …",
+   "explanation": "Entschuldigt sich und leitet oft eine Absage ein.",
+   "usageNote": "Nach „aber“ folgt meist der Grund.",
+   "grammarPattern": "Es tut mir leid + (, dass + Nebensatz)",
+   "commonMistake": "❌ Ich tut leid.\n✓ Es tut mir leid.",
+   "similarExpressions": [
+    "Leider …",
+    "Entschuldige bitte, aber …",
+    "Das tut mir leid."
+   ],
+   "example": "Es tut mir leid, aber ich habe am Samstag keine Zeit."
+  },
+  {
+   "phrase": "Leider kann ich nicht …",
+   "explanation": "Drückt Bedauern bei einer Absage aus.",
+   "usageNote": "„Leider“ steht am Satzanfang, der Infinitiv am Ende.",
+   "grammarPattern": "Leider + kann + ich + nicht + Infinitiv",
+   "commonMistake": "❌ Leider ich kann nicht kommen.\n✓ Leider kann ich nicht kommen.",
+   "similarExpressions": [
+    "Ich kann leider nicht …",
+    "Leider ist es mir nicht möglich, …"
+   ],
+   "example": "Leider kann ich nicht zum Termin kommen."
+  },
+  {
+   "phrase": "Ich möchte mich entschuldigen, dass …",
+   "explanation": "Entschuldigt sich für etwas, das du getan hast.",
+   "usageNote": "Etwas förmlich. Im Alltag oft: „Entschuldige, dass …“.",
+   "grammarPattern": "sich entschuldigen, dass + Nebensatz (Verb am Ende)",
+   "commonMistake": "❌ Ich möchte mich entschuldigen, dass ich bin zu spät.\n✓ Ich möchte mich entschuldigen, dass ich zu spät bin.",
+   "similarExpressions": [
+    "Entschuldige bitte, dass …",
+    "Es tut mir leid, dass …"
+   ],
+   "example": "Ich möchte mich entschuldigen, dass ich zu spät gekommen bin."
+  },
+  {
+   "phrase": "Ich möchte gern wissen, …",
+   "explanation": "Leitet eine indirekte Frage ein.",
+   "usageNote": "Höflicher als die direkte Frage. Nach dem Komma steht das Verb am Ende.",
+   "grammarPattern": "Ich möchte gern wissen, + W-Wort / ob + Nebensatz",
+   "commonMistake": "❌ Ich möchte gern wissen, wann beginnt der Kurs.\n✓ Ich möchte gern wissen, wann der Kurs beginnt.",
+   "similarExpressions": [
+    "Ich würde gern wissen, …",
+    "Könnten Sie mir sagen, …?"
+   ],
+   "example": "Ich möchte gern wissen, wann der Kurs beginnt."
+  },
+  {
+   "phrase": "Könnten Sie mir sagen, …?",
+   "explanation": "Höfliche Frage an eine Person, die du siezt.",
+   "usageNote": "Nach dem Komma steht ein Nebensatz mit dem Verb am Ende.",
+   "grammarPattern": "Könnten Sie mir sagen, + W-Wort / ob + Nebensatz?",
+   "commonMistake": "❌ Könnten Sie mir sagen, wo ist das Büro?\n✓ Könnten Sie mir sagen, wo das Büro ist?",
+   "similarExpressions": [
+    "Wissen Sie, …?",
+    "Könnten Sie mir mitteilen, …?",
+    "Entschuldigung, wissen Sie, …?"
+   ],
+   "example": "Könnten Sie mir sagen, wo das Büro ist?"
+  },
+  {
+   "phrase": "Ich freue mich auf deine Antwort.",
+   "explanation": "Schlusssatz: Du erwartest eine Antwort.",
+   "usageNote": "Informell, für Freunde und Familie. Die Antwort kommt erst in der Zukunft.",
+   "grammarPattern": "sich freuen auf + Akkusativ (Zukunft)",
+   "commonMistake": "❌ Ich freue mich über deine Antwort.\n✓ Ich freue mich auf deine Antwort.",
+   "similarExpressions": [
+    "Schreib mir bald!",
+    "Ich warte gespannt auf deine Antwort."
+   ],
+   "example": "Danke für die Einladung! Ich freue mich auf deine Antwort."
+  },
+  {
+   "phrase": "Liebe Grüße",
+   "explanation": "Herzliche Grußformel am Ende eines Briefes.",
+   "usageNote": "Nur für Freunde und Familie. Danach folgt dein Name.",
+   "grammarPattern": "Liebe Grüße + Name",
+   "commonMistake": "❌ liebe grüße\n✓ Liebe Grüße",
+   "similarExpressions": [
+    "Viele Grüße",
+    "Herzliche Grüße",
+    "Bis bald!"
+   ],
+   "example": "Bis bald und liebe Grüße, deine Anna"
+  },
+  {
+   "phrase": "Ich hoffe auf Ihre baldige Antwort.",
+   "explanation": "Formeller Schlusssatz, wenn du eine Rückmeldung erwartest.",
+   "usageNote": "Steht vor „Mit freundlichen Grüßen“.",
+   "grammarPattern": "hoffen auf + Akkusativ",
+   "commonMistake": "❌ Ich hoffe für Ihre baldige Antwort.\n✓ Ich hoffe auf Ihre baldige Antwort.",
+   "similarExpressions": [
+    "Ich freue mich auf Ihre Antwort.",
+    "Über eine baldige Rückmeldung würde ich mich freuen."
+   ],
+   "example": "Vielen Dank für Ihre Hilfe. Ich hoffe auf Ihre baldige Antwort."
+  },
+  {
+   "phrase": "Mit freundlichen Grüßen",
+   "explanation": "Standardgruß am Ende eines förmlichen Briefes.",
+   "usageNote": "Nach der Grußformel steht kein Komma. Darunter folgen Unterschrift und Name.",
+   "grammarPattern": "Mit + Dativ Plural (freundlichen Grüßen)",
+   "commonMistake": "❌ Mit freundliche Grüße\n✓ Mit freundlichen Grüßen",
+   "similarExpressions": [
+    "Freundliche Grüße",
+    "Beste Grüße",
+    "Hochachtungsvoll"
+   ],
+   "example": "Ich danke Ihnen im Voraus. Mit freundlichen Grüßen Anna Schmidt"
+  }
+ ]
+}
