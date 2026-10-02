@@ -2,7 +2,7 @@ package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.model.entity.WritingPhrase;
 import com.deutschbridge.backend.model.enums.RedemittelContext;
-import com.deutschbridge.backend.model.enums.WritingPhraseCategory;
+import com.deutschbridge.backend.RedemittelTestFunctions;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -24,9 +24,9 @@ class RedemittelContentEnricherTest {
         }
     }
 
-    private WritingPhrase phrase(WritingPhraseCategory category, String text) {
+    private WritingPhrase phrase(String category, String text) {
         WritingPhrase p = new WritingPhrase();
-        p.setCategory(category);
+        p.setCategory(RedemittelTestFunctions.of(category));
         p.setPhrase(text);
         return p;
     }
@@ -35,7 +35,7 @@ class RedemittelContentEnricherTest {
     @DisplayName("apply -> fills meaning, grammar pattern and default contexts of an empty phrase")
     void fillsEmpty() throws Exception {
         JsonNode root = resource();
-        WritingPhrase p = phrase(WritingPhraseCategory.OPINION, "Ich bin der Meinung, dass …");
+        WritingPhrase p = phrase("OPINION", "Ich bin der Meinung, dass …");
         assertTrue(RedemittelContentEnricher.apply(p, root.path("meanings"), root.path("grammar")));
         assertEquals("I am of the opinion that …", p.getMeaningEn());
         assertEquals("Ich bin der Meinung, dass + Nebensatz", p.getGrammarPattern());
@@ -46,7 +46,7 @@ class RedemittelContentEnricherTest {
     @DisplayName("apply -> never overwrites what an admin already wrote, and a second run changes nothing")
     void keepsAdminEdits() throws Exception {
         JsonNode root = resource();
-        WritingPhrase p = phrase(WritingPhraseCategory.OPINION, "Ich bin der Meinung, dass …");
+        WritingPhrase p = phrase("OPINION", "Ich bin der Meinung, dass …");
         p.setMeaningEn("My own gloss");
         p.setContexts("WORK");
         RedemittelContentEnricher.apply(p, root.path("meanings"), root.path("grammar"));
@@ -59,10 +59,10 @@ class RedemittelContentEnricherTest {
     @DisplayName("every category has default contexts, and unknown phrases still get them")
     void defaultsForEverything() throws Exception {
         JsonNode root = resource();
-        for (WritingPhraseCategory c : WritingPhraseCategory.values()) {
-            assertNotNull(RedemittelContentEnricher.DEFAULT_CONTEXTS.get(c), c.name());
+        for (String c : RedemittelTestFunctions.LABELS.keySet()) {
+            assertNotNull(RedemittelContentEnricher.DEFAULT_CONTEXTS.get(c), c);
         }
-        WritingPhrase p = phrase(WritingPhraseCategory.APOLOGY, "Eine ganz neue Phrase");
+        WritingPhrase p = phrase("APOLOGY", "Eine ganz neue Phrase");
         RedemittelContentEnricher.apply(p, root.path("meanings"), root.path("grammar"));
         assertNull(p.getMeaningEn());
         assertFalse(Arrays.asList(p.getContexts().split(",")).isEmpty());
@@ -91,7 +91,7 @@ class RedemittelContentEnricherTest {
     @DisplayName("applyDetails -> fills empty fields only and stores similar expressions one per line")
     void detailsFillOnlyEmpty() throws Exception {
         JsonNode d = RedemittelContentEnricher.loadDetails(MAPPER).get("B1|Ich bin der Meinung, dass …");
-        WritingPhrase p = phrase(WritingPhraseCategory.OPINION, "Ich bin der Meinung, dass …");
+        WritingPhrase p = phrase("OPINION", "Ich bin der Meinung, dass …");
         p.setUsageNote("Mein eigener Hinweis");
 
         assertTrue(RedemittelContentEnricher.applyDetails(p, d));
@@ -107,7 +107,7 @@ class RedemittelContentEnricherTest {
     @Test
     @DisplayName("applyDetails -> a phrase without a details entry is untouched")
     void noEntry() {
-        assertFalse(RedemittelContentEnricher.applyDetails(phrase(WritingPhraseCategory.OPINION, "Unbekannt"), null));
+        assertFalse(RedemittelContentEnricher.applyDetails(phrase("OPINION", "Unbekannt"), null));
     }
 
     // ---- B1 examples ----
@@ -118,7 +118,7 @@ class RedemittelContentEnricherTest {
         List<WritingPhrase> list = new java.util.ArrayList<>();
         try (InputStream in = getClass().getResourceAsStream("/writing/guide-B1.json")) {
             for (JsonNode n : MAPPER.readTree(in).path("phrases")) {
-                WritingPhrase p = phrase(WritingPhraseCategory.valueOf(n.get("category").asText()), n.get("phrase").asText());
+                WritingPhrase p = phrase(n.get("category").asText(), n.get("phrase").asText());
                 p.setLevel(com.deutschbridge.backend.model.enums.LearningLevel.B1);
                 if (n.hasNonNull("example")) p.setExample(n.get("example").asText());
                 RedemittelContentEnricher.applyDetails(p, details.get("B1|" + p.getPhrase()));
@@ -161,13 +161,13 @@ class RedemittelContentEnricherTest {
     void exampleFillRules() throws Exception {
         java.util.Map<String, JsonNode> details = RedemittelContentEnricher.loadDetails(MAPPER);
 
-        WritingPhrase own = phrase(WritingPhraseCategory.OPINION, "Ich denke, dass …");
+        WritingPhrase own = phrase("OPINION", "Ich denke, dass …");
         own.setLevel(com.deutschbridge.backend.model.enums.LearningLevel.B1);
         own.setExample("Mein eigenes Beispiel.");
         RedemittelContentEnricher.applyDetails(own, details.get("B1|Ich denke, dass …"));
         assertEquals("Mein eigenes Beispiel.", own.getExample());
 
-        WritingPhrase stub = phrase(WritingPhraseCategory.GREETING, "Liebe Anna, / Lieber Peter,");
+        WritingPhrase stub = phrase("GREETING", "Liebe Anna, / Lieber Peter,");
         stub.setLevel(com.deutschbridge.backend.model.enums.LearningLevel.B1);
         stub.setExample("Liebe Anna, …");
         RedemittelContentEnricher.applyDetails(stub, details.get("B1|Liebe Anna, / Lieber Peter,"));

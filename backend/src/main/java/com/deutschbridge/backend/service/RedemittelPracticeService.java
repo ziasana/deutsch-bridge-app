@@ -18,6 +18,7 @@ import com.deutschbridge.backend.repository.RedemittelCollectionRepository;
 import com.deutschbridge.backend.repository.RedemittelExerciseRepository;
 import com.deutschbridge.backend.repository.RedemittelProgressRepository;
 import com.deutschbridge.backend.repository.WritingPhraseRepository;
+import com.deutschbridge.backend.service.cache.RedemittelCacheService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -55,6 +56,7 @@ public class RedemittelPracticeService {
     private final RedemittelExerciseRepository exerciseRepository;
     private final LearningActivityService learningActivityService;
     private final RequestContext requestContext;
+    private final RedemittelCacheService cacheService;
     private final RedemittelExerciseFactory factory;
     private final Random random = new Random();
 
@@ -63,13 +65,15 @@ public class RedemittelPracticeService {
                                      RedemittelCollectionRepository collectionRepository,
                                      RedemittelExerciseRepository exerciseRepository,
                                      LearningActivityService learningActivityService,
-                                     RequestContext requestContext) {
+                                     RequestContext requestContext,
+                                     RedemittelCacheService cacheService) {
         this.phraseRepository = phraseRepository;
         this.progressRepository = progressRepository;
         this.collectionRepository = collectionRepository;
         this.exerciseRepository = exerciseRepository;
         this.learningActivityService = learningActivityService;
         this.requestContext = requestContext;
+        this.cacheService = cacheService;
         this.factory = new RedemittelExerciseFactory(random);
     }
 
@@ -180,11 +184,12 @@ public class RedemittelPracticeService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Exercise is required.");
         }
         String userId = requestContext.getUserId();
-        WritingPhrase phrase = phraseRepository.findById(phraseId).filter(WritingPhrase::isActive)
+        WritingPhrase phrase = cacheService.getActivePhrase(phraseId)
                 .orElseThrow(() -> new DataNotFoundException("Redemittel not found!"));
         Optional<RedemittelExerciseType> derivedType = RedemittelExerciseFactory.autoType(request.exerciseId());
-        RedemittelExercise exercise = derivedType.isPresent() ? null : exerciseRepository.findById(request.exerciseId())
-                .filter(e -> e.getPhraseId().equals(phraseId))
+        RedemittelExercise exercise = derivedType.isPresent() ? null : cacheService.getExercises(phraseId).stream()
+                .filter(e -> e.getId().equals(request.exerciseId()))
+                .findFirst()
                 .orElseThrow(() -> new DataNotFoundException("Exercise not found!"));
         if (derivedType.isPresent() && !factory.canDerive(derivedType.get(), phrase)) {
             throw new DataNotFoundException("Exercise not found!");
@@ -249,7 +254,7 @@ public class RedemittelPracticeService {
             }
             for (RedemittelExerciseType t : RedemittelExerciseType.values()) {
                 if (t.isDerived() && t.tier() == tier && factory.canDerive(t, phrase)) {
-                    options.add(() -> factory.derive(t, phrase).orElseThrow());
+                    options.add(() -> factory.derive(t, phrase, cacheService.getFunctionLabels()).orElseThrow());
                 }
             }
             if (!options.isEmpty()) return Optional.of(options.get(random.nextInt(options.size())).get());
@@ -259,13 +264,20 @@ public class RedemittelPracticeService {
 
     private Map<String, List<RedemittelExercise>> exercisesByPhrase(Collection<String> phraseIds) {
         if (phraseIds.isEmpty()) return Map.of();
-        return exerciseRepository.findByPhraseIdIn(phraseIds).stream()
-                .collect(Collectors.groupingBy(RedemittelExercise::getPhraseId));
+        Map<String, List<RedemittelExercise>> result = new HashMap<>();
+        for (String id : phraseIds) {
+            List<RedemittelExercise> authored = cacheService.getExercises(id);
+            if (!authored.isEmpty()) result.put(id, authored);
+        }
+        return result;
     }
 
     private Map<String, WritingPhrase> activePhrases(Collection<String> ids) {
         if (ids.isEmpty()) return Map.of();
-        return phraseRepository.findByIdInAndActiveTrue(ids).stream()
-                .collect(Collectors.toMap(WritingPhrase::getId, Function.identity()));
+        Map<String, WritingPhrase> result = new HashMap<>();
+        for (String id : ids) {
+            cacheService.getActivePhrase(id).ifPresent(p -> result.put(id, p));
+        }
+        return result;
     }
 }

@@ -1,5 +1,5 @@
 import { WritingLearningResponse, WritingPhrase } from "@/types/writing";
-import { PHRASE_CATEGORY_LABELS } from "../../writingMeta";
+import { phraseCategoryLabels } from "../../writingMeta";
 import Slide from "../Slide";
 import ChoiceQuiz from "../games/ChoiceQuiz";
 import FlashDeck from "../games/FlashDeck";
@@ -29,7 +29,8 @@ export function phraseSteps(data: WritingLearningResponse, seed: string): Lesson
         { id: "phrases-deck", render: (api) => <FlashDeck api={api} phrases={phrases} /> },
     ];
 
-    const categories = Array.from(new Set(phrases.map((p) => p.category)));
+    const labels = phraseCategoryLabels(phrases);
+    const categories = Object.keys(labels);
     if (categories.length >= 3) {
         // One phrase per category first (varied questions), then fill up if there are fewer categories than questions.
         const byCategory = shuffled(categories, rand).map((c) => shuffled(phrases.filter((p) => p.category === c), rand)[0]);
@@ -37,7 +38,7 @@ export function phraseSteps(data: WritingLearningResponse, seed: string): Lesson
 
         picked.forEach((p, i) => {
             const distractors = shuffled(categories.filter((c) => c !== p.category), rand).slice(0, OPTIONS - 1);
-            const options = shuffled([p.category, ...distractors], rand).map((c) => ({ id: c, label: PHRASE_CATEGORY_LABELS[c] }));
+            const options = shuffled([p.category, ...distractors], rand).map((c) => ({ id: c, label: labels[c] }));
             steps.push({
                 id: `phrases-quiz-${p.id}`,
                 gated: true,

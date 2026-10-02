@@ -6,24 +6,26 @@ import com.deutschbridge.backend.model.enums.WritingFormality;
 
 import java.util.List;
 
-/** Admin read/write shape of a Redemittel (the same record is used for requests and responses). */
-public record AdminWritingPhraseDto(
-        String id,
+/**
+ * One row of a Redemittel bulk import. {@code function} is the name (or id) of an existing Funktion;
+ * {@code exercises} are optional authored practice exercises. Omitted optional fields use the defaults.
+ */
+public record RedemittelBulkImportRow(
         LearningLevel level,
-        /** Id of the {@code RedemittelFunction}. */
-        String category,
+        String function,
         String phrase,
-        String explanation,
         String example,
-        WritingFormality formality,
+        String explanation,
         String usageNote,
-        int sortOrder,
-        boolean active,
+        WritingFormality formality,
+        Integer sortOrder,
+        Boolean active,
         String meaningEn,
         String meaningFa,
         String grammarPattern,
         String commonMistake,
         List<String> similarExpressions,
-        List<RedemittelContext> contexts
+        List<RedemittelContext> contexts,
+        List<AdminRedemittelExerciseDto> exercises
 ) {
 }

@@ -3,7 +3,6 @@ package com.deutschbridge.backend.model.entity;
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.model.enums.WritingFormality;
-import com.deutschbridge.backend.model.enums.WritingPhraseCategory;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -24,8 +23,10 @@ public class WritingPhrase {
     @Enumerated(EnumType.STRING)
     private LearningLevel level;
 
-    @Enumerated(EnumType.STRING)
-    private WritingPhraseCategory category;
+    /** Eager: cached phrases are read outside a transaction. */
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "category")
+    private RedemittelFunction category;
 
     @Column(length = 1000)
     private String phrase;

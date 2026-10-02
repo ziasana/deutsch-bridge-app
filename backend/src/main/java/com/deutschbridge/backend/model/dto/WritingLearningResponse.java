@@ -13,7 +13,7 @@ public record WritingLearningResponse(
     public record GuideItem(String id, String kind, String title, String content, JsonNode data, int sortOrder) {
     }
 
-    public record Phrase(String id, String category, String phrase, String explanation, String example,
+    public record Phrase(String id, String category, String categoryLabel, String phrase, String explanation, String example,
                          String formality, String usageNote, int sortOrder) {
     }
 }

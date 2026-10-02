@@ -8,6 +8,8 @@ import com.deutschbridge.backend.model.enums.RedemittelExerciseType;
 import com.deutschbridge.backend.model.entity.WritingPhrase;
 import com.deutschbridge.backend.repository.RedemittelExerciseRepository;
 import com.deutschbridge.backend.repository.WritingPhraseRepository;
+import com.deutschbridge.backend.service.cache.RedemittelCacheService;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +37,7 @@ public class RedemittelExerciseAdminService {
     }
 
     /** Replaces all exercises of the phrase with the given ones (an empty list removes them). */
+    @CacheEvict(cacheNames = RedemittelCacheService.EXERCISE_CACHE, key = "#phraseId")
     @Transactional
     public List<AdminRedemittelExerciseDto> replace(String phraseId, List<AdminRedemittelExerciseDto> dtos) throws DataNotFoundException {
         requirePhrase(phraseId);

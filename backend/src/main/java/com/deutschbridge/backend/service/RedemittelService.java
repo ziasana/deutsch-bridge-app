@@ -12,6 +12,7 @@ import com.deutschbridge.backend.model.enums.*;
 import com.deutschbridge.backend.repository.RedemittelCollectionRepository;
 import com.deutschbridge.backend.repository.RedemittelProgressRepository;
 import com.deutschbridge.backend.repository.WritingPhraseRepository;
+import com.deutschbridge.backend.service.cache.RedemittelCacheService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -42,6 +43,7 @@ public class RedemittelService {
     private final UserService userService;
     private final LearningActivityService learningActivityService;
     private final RequestContext requestContext;
+    private final RedemittelCacheService cacheService;
 
     public RedemittelService(WritingPhraseRepository phraseRepository,
                              RedemittelProgressRepository progressRepository,
@@ -49,7 +51,8 @@ public class RedemittelService {
                              AppSettingService appSettingService,
                              UserService userService,
                              LearningActivityService learningActivityService,
-                             RequestContext requestContext) {
+                             RequestContext requestContext,
+                             RedemittelCacheService cacheService) {
         this.phraseRepository = phraseRepository;
         this.progressRepository = progressRepository;
         this.collectionRepository = collectionRepository;
@@ -57,28 +60,30 @@ public class RedemittelService {
         this.userService = userService;
         this.learningActivityService = learningActivityService;
         this.requestContext = requestContext;
+        this.cacheService = cacheService;
     }
 
     // ---- browse ----
 
     /** One page of Redemittel with the caller's progress; every filter is optional. */
-    public RedemittelPageResponse list(LearningLevel level, WritingPhraseCategory category, String search,
+    public RedemittelPageResponse list(LearningLevel level, String category, String search,
                                        RedemittelStatus status, boolean savedOnly, int page, int size) {
         String userId = requestContext.getUserId();
         int pageSize = Math.max(1, Math.min(size, MAX_PAGE_SIZE));
         String term = search == null ? "" : search.strip().toLowerCase(Locale.ROOT);
 
-        List<WritingPhraseCategory> matchingCategories = term.isEmpty() ? List.of() : Arrays.stream(WritingPhraseCategory.values())
-                .filter(c -> c.getLabel().toLowerCase(Locale.ROOT).contains(term))
-                .toList();
+        // Without a per-user filter the page is shared content: served from the cache, progress merged live.
+        if (status == null && !savedOnly) {
+            RedemittelCacheService.PhrasePage cached = cacheService.getListPage(level, category, term, Math.max(0, page), pageSize);
+            return new RedemittelPageResponse(toDtos(userId, cached.items()), cached.page(), cached.size(), cached.totalElements(), cached.totalPages());
+        }
 
         Page<WritingPhrase> result = phraseRepository.findLearnerPage(
                 userId,
                 level == null ? List.of(LearningLevel.values()) : List.of(level),
-                category == null ? List.of(WritingPhraseCategory.values()) : List.of(category),
+                category == null,
+                category == null ? "" : category,
                 "%" + term + "%",
-                !matchingCategories.isEmpty(),
-                matchingCategories.isEmpty() ? List.of(WritingPhraseCategory.values()) : matchingCategories,
                 status == null || status == RedemittelStatus.NEW,
                 status == null ? List.of(RedemittelStatus.values()) : List.of(status),
                 savedOnly,
@@ -99,7 +104,8 @@ public class RedemittelService {
         String userId = requestContext.getUserId();
         LocalDateTime now = LocalDateTime.now();
 
-        long active = phraseRepository.countByActiveTrue();
+        RedemittelCacheService.HubContent content = cacheService.getHubContent();
+        long active = content.activeCount();
         long started = progressRepository.countByUserId(userId);
         long mastered = progressRepository.countByUserIdAndStatus(userId, RedemittelStatus.MASTERED);
         long review = progressRepository.countByUserIdAndStatus(userId, RedemittelStatus.REVIEW);
@@ -110,14 +116,7 @@ public class RedemittelService {
         int learnedToday = (int) progressRepository.countByUserIdAndLearnedAtAfter(userId, LocalDate.now().atStartOfDay());
         int newToday = (int) Math.min(Math.max(0, target - learnedToday), fresh);
 
-        Map<WritingPhraseCategory, Long> counts = new EnumMap<>(WritingPhraseCategory.class);
-        for (Object[] row : phraseRepository.countActiveByCategory()) {
-            counts.put((WritingPhraseCategory) row[0], (Long) row[1]);
-        }
-        List<RedemittelHubResponse.Category> categories = Arrays.stream(WritingPhraseCategory.values())
-                .filter(c -> counts.getOrDefault(c, 0L) > 0)
-                .map(c -> new RedemittelHubResponse.Category(c.name(), c.getLabel(), counts.get(c)))
-                .toList();
+        List<RedemittelHubResponse.Category> categories = content.categories();
 
         return new RedemittelHubResponse(
                 (int) progressRepository.countDue(userId, now),
@@ -203,8 +202,7 @@ public class RedemittelService {
     }
 
     WritingPhrase findActive(String id) throws DataNotFoundException {
-        return phraseRepository.findById(id)
-                .filter(WritingPhrase::isActive)
+        return cacheService.getActivePhrase(id)
                 .orElseThrow(() -> new DataNotFoundException("Redemittel not found!"));
     }
 
@@ -220,7 +218,7 @@ public class RedemittelService {
     }
 
     static RedemittelDto toDto(WritingPhrase p, RedemittelProgress progress, boolean saved, String language) {
-        return new RedemittelDto(p.getId(), p.getLevel(), p.getCategory(), p.getCategory().getLabel(), p.getPhrase(),
+        return new RedemittelDto(p.getId(), p.getLevel(), p.getCategory().getId(), p.getCategory().getLabel(), p.getPhrase(),
                 meaningOf(p, language), p.getExplanation(), p.getExample(), p.getFormality(), p.getUsageNote(),
                 p.getGrammarPattern(), p.getCommonMistake(),
                 RedemittelText.splitLines(p.getSimilarExpressions()), RedemittelText.splitContexts(p.getContexts()),

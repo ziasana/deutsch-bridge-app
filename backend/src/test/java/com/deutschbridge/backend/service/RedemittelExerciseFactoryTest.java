@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class RedemittelExerciseFactoryTest {
 
+    private static final java.util.List<String> LABELS = com.deutschbridge.backend.RedemittelTestFunctions.LABELS.values().stream().toList();
     private final RedemittelExerciseFactory factory = new RedemittelExerciseFactory(new Random(7));
 
     private final WritingPhrase phrase = phrase();
@@ -108,7 +109,7 @@ class RedemittelExerciseFactoryTest {
 
     private WritingPhrase withExample() {
         WritingPhrase p = phrase();
-        p.setCategory(com.deutschbridge.backend.model.enums.WritingPhraseCategory.OPINION);
+        p.setCategory(com.deutschbridge.backend.RedemittelTestFunctions.of("OPINION"));
         p.setExample("Ich bin der Meinung, dass Busse billiger sein sollten.");
         return p;
     }
@@ -118,7 +119,7 @@ class RedemittelExerciseFactoryTest {
     void function() {
         WritingPhrase p = withExample();
         p.setExample(null);
-        RedemittelExerciseDto dto = factory.derive(RedemittelExerciseType.FUNCTION, p).orElseThrow();
+        RedemittelExerciseDto dto = factory.derive(RedemittelExerciseType.FUNCTION, p, LABELS).orElseThrow();
         assertEquals("auto:FUNCTION", dto.exerciseId());
         assertEquals(3, dto.options().size());
         assertTrue(dto.options().stream().anyMatch(o -> o.text().equals("Meinung äußern")));
@@ -130,7 +131,7 @@ class RedemittelExerciseFactoryTest {
     @DisplayName("cloze -> blanks the phrase inside the example sentence and accepts the phrase")
     void cloze() {
         WritingPhrase p = withExample();
-        RedemittelExerciseDto dto = factory.derive(RedemittelExerciseType.CLOZE, p).orElseThrow();
+        RedemittelExerciseDto dto = factory.derive(RedemittelExerciseType.CLOZE, p, LABELS).orElseThrow();
         assertTrue(dto.prompt().contains("________ Busse billiger sein sollten."));
         assertFalse(dto.prompt().split("Funktion")[0].contains("Meinung"));
         assertTrue(dto.prompt().contains("Funktion: Meinung äußern"));
@@ -143,24 +144,24 @@ class RedemittelExerciseFactoryTest {
     void derivedEligibility() {
         WritingPhrase none = withExample();
         none.setExample(null);
-        assertTrue(factory.derive(RedemittelExerciseType.CLOZE, none).isEmpty());
-        assertTrue(factory.derive(RedemittelExerciseType.WORD_ORDER, none).isEmpty());
+        assertTrue(factory.derive(RedemittelExerciseType.CLOZE, none, LABELS).isEmpty());
+        assertTrue(factory.derive(RedemittelExerciseType.WORD_ORDER, none, LABELS).isEmpty());
 
         WritingPhrase unrelated = withExample();
         unrelated.setExample("Das ist ein ganz anderer Satz hier.");
-        assertTrue(factory.derive(RedemittelExerciseType.CLOZE, unrelated).isEmpty());
-        assertTrue(factory.derive(RedemittelExerciseType.WORD_ORDER, unrelated).isPresent());
+        assertTrue(factory.derive(RedemittelExerciseType.CLOZE, unrelated, LABELS).isEmpty());
+        assertTrue(factory.derive(RedemittelExerciseType.WORD_ORDER, unrelated, LABELS).isPresent());
 
         WritingPhrase tiny = withExample();
         tiny.setExample("Zu kurz hier");
-        assertTrue(factory.derive(RedemittelExerciseType.WORD_ORDER, tiny).isEmpty());
+        assertTrue(factory.derive(RedemittelExerciseType.WORD_ORDER, tiny, LABELS).isEmpty());
     }
 
     @Test
     @DisplayName("word order -> shuffled words of the example; only the exact order is correct")
     void wordOrder() {
         WritingPhrase p = withExample();
-        RedemittelExerciseDto dto = factory.derive(RedemittelExerciseType.WORD_ORDER, p).orElseThrow();
+        RedemittelExerciseDto dto = factory.derive(RedemittelExerciseType.WORD_ORDER, p, LABELS).orElseThrow();
         String original = p.getExample();
         assertEquals(9, dto.options().size());
         assertNotEquals(original, String.join(" ", dto.options().stream().map(RedemittelExerciseDto.Option::text).toList()));

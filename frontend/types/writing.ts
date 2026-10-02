@@ -10,22 +10,8 @@ export type WritingGuideKind =
     | "MISTAKE"
     | "CHECKLIST_ITEM";
 
-export type WritingPhraseCategory =
-    | "GREETING"
-    | "INTRODUCTION"
-    | "OPINION"
-    | "REASON"
-    | "EXAMPLE"
-    | "ADDITION"
-    | "CONTRAST"
-    | "AGREEMENT"
-    | "DISAGREEMENT"
-    | "ADVANTAGE_DISADVANTAGE"
-    | "SUGGESTION"
-    | "REQUEST"
-    | "APOLOGY"
-    | "QUESTION"
-    | "CONCLUSION";
+/** Id of the Redemittel function (Funktion); admin-managed, so any string. */
+export type WritingPhraseCategory = string;
 
 export type WritingFormality = "INFORMAL" | "NEUTRAL" | "FORMAL";
 
@@ -70,6 +56,7 @@ export interface WritingGuideItem<D = unknown> {
 export interface WritingPhrase {
     id: string;
     category: WritingPhraseCategory;
+    categoryLabel: string;
     phrase: string;
     explanation: string | null;
     example: string | null;

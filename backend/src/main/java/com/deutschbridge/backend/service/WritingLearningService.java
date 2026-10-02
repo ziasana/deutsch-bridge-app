@@ -39,7 +39,7 @@ public class WritingLearningService {
                 .map(this::toResponse)
                 .toList();
         List<WritingLearningResponse.Phrase> phrases = phraseRepository
-                .findByLevelAndActiveTrueOrderByCategoryAscSortOrderAsc(level).stream()
+                .findByLevelAndActiveTrueOrderByCategorySortOrderAscSortOrderAsc(level).stream()
                 .map(this::toResponse)
                 .toList();
         return new WritingLearningResponse(level.name(), items, phrases);
@@ -51,7 +51,7 @@ public class WritingLearningService {
     }
 
     private WritingLearningResponse.Phrase toResponse(WritingPhrase p) {
-        return new WritingLearningResponse.Phrase(p.getId(), p.getCategory().name(), p.getPhrase(),
+        return new WritingLearningResponse.Phrase(p.getId(), p.getCategory().getId(), p.getCategory().getLabel(), p.getPhrase(),
                 p.getExplanation(), p.getExample(), p.getFormality() == null ? null : p.getFormality().name(),
                 p.getUsageNote(), p.getSortOrder());
     }

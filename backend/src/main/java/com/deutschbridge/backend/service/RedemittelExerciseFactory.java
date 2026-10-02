@@ -107,11 +107,12 @@ class RedemittelExerciseFactory {
         };
     }
 
-    Optional<RedemittelExerciseDto> derive(RedemittelExerciseType type, WritingPhrase phrase) {
+    /** @param functionLabels the labels of all functions, the pool the wrong "Funktion" options are drawn from */
+    Optional<RedemittelExerciseDto> derive(RedemittelExerciseType type, WritingPhrase phrase, List<String> functionLabels) {
         if (!canDerive(type, phrase)) return Optional.empty();
         String id = autoId(type);
         return Optional.of(switch (type) {
-            case FUNCTION -> function(id, phrase);
+            case FUNCTION -> function(id, phrase, functionLabels);
             case CLOZE -> new RedemittelExerciseDto(id, phrase.getId(), type,
                     "Ergänze den Satz mit dem passenden Redemittel:\n\n" + clozeBlank(phrase).orElseThrow()
                             + "\n\nFunktion: " + phrase.getCategory().getLabel(), null, null, null);
@@ -120,12 +121,11 @@ class RedemittelExerciseFactory {
         });
     }
 
-    private RedemittelExerciseDto function(String id, WritingPhrase phrase) {
-        List<com.deutschbridge.backend.model.enums.WritingPhraseCategory> others = new ArrayList<>(
-                Arrays.asList(com.deutschbridge.backend.model.enums.WritingPhraseCategory.values()));
-        others.remove(phrase.getCategory());
+    private RedemittelExerciseDto function(String id, WritingPhrase phrase, List<String> functionLabels) {
+        List<String> others = new ArrayList<>(functionLabels);
+        others.remove(phrase.getCategory().getLabel());
         Collections.shuffle(others, random);
-        List<String> texts = new ArrayList<>(others.stream().limit(2).map(c -> c.getLabel()).toList());
+        List<String> texts = new ArrayList<>(others.stream().limit(2).toList());
         texts.add(phrase.getCategory().getLabel());
         Collections.shuffle(texts, random);
         return new RedemittelExerciseDto(id, phrase.getId(), RedemittelExerciseType.FUNCTION,

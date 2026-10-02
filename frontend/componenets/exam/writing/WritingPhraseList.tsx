@@ -4,14 +4,13 @@ import { useMemo, useState } from "react";
 import { WritingPhrase, WritingPhraseCategory } from "@/types/writing";
 import { cn } from "@/lib/utils";
 import RedemittelDetailDialog from "@/componenets/redemittel/RedemittelDetailDialog";
-import { FORMALITY_LABELS, PHRASE_CATEGORY_LABELS } from "./writingMeta";
+import { FORMALITY_LABELS, phraseCategoryLabels } from "./writingMeta";
+import { htmlToPlainText } from "@/lib/richTextPlainText";
 
 /** Redemittel grouped by function; one category is shown at a time (progressive disclosure). */
 export default function WritingPhraseList({ phrases }: { phrases: WritingPhrase[] }) {
-    const categories = useMemo(() => {
-        const present = new Set(phrases.map((p) => p.category));
-        return (Object.keys(PHRASE_CATEGORY_LABELS) as WritingPhraseCategory[]).filter((c) => present.has(c));
-    }, [phrases]);
+    const labels = useMemo(() => phraseCategoryLabels(phrases), [phrases]);
+    const categories = useMemo(() => Object.keys(labels), [labels]);
     const [selected, setSelected] = useState<WritingPhraseCategory | null>(null);
     // The same shared Redemittel record the learning module uses - open it to learn or save it.
     const [openId, setOpenId] = useState<string | null>(null);
@@ -32,7 +31,7 @@ export default function WritingPhraseList({ phrases }: { phrases: WritingPhrase[
                             c === current ? "border-primary bg-primary text-primary-foreground" : "border-border text-foreground/70 hover:bg-accent",
                         )}
                     >
-                        {PHRASE_CATEGORY_LABELS[c]}
+                        {labels[c]}
                     </button>
                 ))}
             </div>
@@ -52,9 +51,9 @@ export default function WritingPhraseList({ phrases }: { phrases: WritingPhrase[
                                 <span className="rounded-full bg-card px-2 py-0.5 text-[11px] text-foreground/55">{FORMALITY_LABELS[p.formality]}</span>
                             )}
                         </div>
-                        {p.explanation && <p className="mt-1 text-xs text-foreground/60">{p.explanation}</p>}
+                        {p.explanation && <p className="mt-1 text-xs text-foreground/60">{htmlToPlainText(p.explanation)}</p>}
                         {p.example && <p className="mt-1 text-xs italic text-foreground/65">z. B. {p.example}</p>}
-                        {p.usageNote && <p className="mt-1 text-xs text-foreground/55">Hinweis: {p.usageNote}</p>}
+                        {p.usageNote && <p className="mt-1 text-xs text-foreground/55">Hinweis: {htmlToPlainText(p.usageNote)}</p>}
                     </li>
                 ))}
             </ul>

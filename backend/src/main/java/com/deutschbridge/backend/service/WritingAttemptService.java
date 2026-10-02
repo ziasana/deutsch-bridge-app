@@ -94,7 +94,7 @@ public class WritingAttemptService {
 
     private String buildFeedback(ExamExercise exercise, String text) {
         List<String> phrases = exercise.getLevel() == null ? List.of()
-                : phraseRepository.findByLevelAndActiveTrueOrderByCategoryAscSortOrderAsc(exercise.getLevel()).stream()
+                : phraseRepository.findByLevelAndActiveTrueOrderByCategorySortOrderAscSortOrderAsc(exercise.getLevel()).stream()
                 .map(WritingPhrase::getPhrase).toList();
         List<String> leitpunkte = exercise.getLeitpunkte() != null ? exercise.getLeitpunkte() : List.of();
         try {

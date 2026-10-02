@@ -5,8 +5,8 @@ import com.deutschbridge.backend.model.entity.WritingPhrase;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.model.enums.WritingFormality;
 import com.deutschbridge.backend.model.enums.WritingGuideKind;
-import com.deutschbridge.backend.model.enums.WritingPhraseCategory;
 import com.deutschbridge.backend.repository.RedemittelExerciseRepository;
+import com.deutschbridge.backend.repository.RedemittelFunctionRepository;
 import com.deutschbridge.backend.repository.WritingGuideItemRepository;
 import com.deutschbridge.backend.repository.WritingPhraseRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -35,6 +35,7 @@ public class WritingContentSeeder {
     @Bean
     public CommandLineRunner seedWritingContent(WritingGuideItemRepository guideRepository,
                                                 WritingPhraseRepository phraseRepository,
+                                                RedemittelFunctionRepository functionRepository,
                                                 RedemittelExerciseRepository exerciseRepository,
                                                 ObjectMapper objectMapper,
                                                 TransactionTemplate tx) {
@@ -43,7 +44,7 @@ public class WritingContentSeeder {
             for (Resource file : files) {
                 try (InputStream in = file.getInputStream()) {
                     JsonNode root = objectMapper.readTree(in);
-                    tx.executeWithoutResult(status -> seedLevel(root, guideRepository, phraseRepository, objectMapper));
+                    tx.executeWithoutResult(status -> seedLevel(root, guideRepository, phraseRepository, functionRepository, objectMapper));
                 } catch (Exception e) {
                     log.error("Could not seed writing content from {}", file.getFilename(), e);
                 }
@@ -76,7 +77,8 @@ public class WritingContentSeeder {
     }
 
     private void seedLevel(JsonNode root, WritingGuideItemRepository guideRepository,
-                           WritingPhraseRepository phraseRepository, ObjectMapper objectMapper) {
+                           WritingPhraseRepository phraseRepository,
+                           RedemittelFunctionRepository functionRepository, ObjectMapper objectMapper) {
         LearningLevel level = LearningLevel.valueOf(root.path("level").asText());
 
         if (!guideRepository.existsByLevel(level)) {
@@ -99,7 +101,9 @@ public class WritingContentSeeder {
             for (JsonNode n : root.path("phrases")) {
                 WritingPhrase p = new WritingPhrase();
                 p.setLevel(level);
-                p.setCategory(WritingPhraseCategory.valueOf(n.path("category").asText()));
+                String functionId = n.path("category").asText();
+                p.setCategory(functionRepository.findById(functionId)
+                        .orElseThrow(() -> new IllegalStateException("Unknown Redemittel function: " + functionId)));
                 p.setPhrase(n.path("phrase").asText());
                 p.setExplanation(n.hasNonNull("explanation") ? n.get("explanation").asText() : null);
                 p.setExample(n.hasNonNull("example") ? n.get("example").asText() : null);

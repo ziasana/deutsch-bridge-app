@@ -3,6 +3,7 @@
 import { ReactNode, useId, useState } from "react";
 import { Star } from "lucide-react";
 import { Badge } from "@/componenets/ui/badge";
+import LessonMarkdown from "@/componenets/LessonMarkdown";
 import { Redemittel } from "@/types/redemittel";
 import { CONTEXT_LABELS, FORMALITY_LABELS, STATUS_LABELS } from "./redemittelMeta";
 
@@ -84,7 +85,7 @@ export default function RedemittelDetailCard({ redemittel: r, onToggleSave, savi
 
             <div className="mt-4 space-y-3">
                 {meaning && <Section title="Bedeutung">{meaning}</Section>}
-                {explanation && <Section title="Erklärung">{explanation}</Section>}
+                {explanation && <Section title="Erklärung"><LessonMarkdown content={explanation} /></Section>}
 
                 {r.example && (
                     <Section title="Beispiel">
@@ -92,7 +93,7 @@ export default function RedemittelDetailCard({ redemittel: r, onToggleSave, savi
                     </Section>
                 )}
 
-                {r.usageNote && <Section title="Hinweis">{r.usageNote}</Section>}
+                {r.usageNote && <Section title="Hinweis"><LessonMarkdown content={r.usageNote} /></Section>}
                 {r.grammarPattern && (
                     <Section title="Grammatik / Struktur">
                         <p className="rounded-lg bg-primary/10 px-3 py-2.5 font-medium text-foreground">{r.grammarPattern}</p>

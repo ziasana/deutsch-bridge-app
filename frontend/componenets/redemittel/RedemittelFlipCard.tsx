@@ -4,6 +4,7 @@ import { useState } from "react";
 import { RotateCw } from "lucide-react";
 import { Redemittel } from "@/types/redemittel";
 import { categoryEmoji } from "./redemittelMeta";
+import { htmlToPlainText } from "@/lib/richTextPlainText";
 import { getLevelMeta } from "@/componenets/learning/levelMeta";
 
 /**
@@ -13,7 +14,7 @@ import { getLevelMeta } from "@/componenets/learning/levelMeta";
 export default function RedemittelFlipCard({ redemittel: r }: Readonly<{ redemittel: Redemittel }>) {
     const [flipped, setFlipped] = useState(false);
     const color = getLevelMeta(r.level).color;
-    const back = r.meaning ?? r.explanation ?? r.categoryLabel;
+    const back = r.meaning ?? (r.explanation ? htmlToPlainText(r.explanation) : null) ?? r.categoryLabel;
 
     return (
         <div className="flip-scene h-44">

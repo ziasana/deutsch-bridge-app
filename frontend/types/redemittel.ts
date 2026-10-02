@@ -88,3 +88,18 @@ export interface AdminRedemittelExercise {
     wrongAnswers: string[];
     sortOrder: number;
 }
+
+/** A Redemittel function (Funktion), managed by the admin; `redemittelCount` is only set on reads. */
+export interface AdminRedemittelFunction {
+    id?: string;
+    label: string;
+    sortOrder: number;
+    redemittelCount?: number;
+}
+
+export interface RedemittelBulkImportResult {
+    totalCount: number;
+    successCount: number;
+    failureCount: number;
+    rows: { index: number; phrase: string | null; success: boolean; errorMessage: string | null; id: string | null }[];
+}

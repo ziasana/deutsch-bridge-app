@@ -11,6 +11,9 @@ import com.deutschbridge.backend.model.enums.*;
 import com.deutschbridge.backend.repository.RedemittelCollectionRepository;
 import com.deutschbridge.backend.repository.RedemittelProgressRepository;
 import com.deutschbridge.backend.repository.WritingPhraseRepository;
+import com.deutschbridge.backend.service.cache.RedemittelCacheService;
+import com.deutschbridge.backend.RedemittelTestFunctions;
+import com.deutschbridge.backend.repository.RedemittelFunctionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,6 +38,7 @@ import static org.mockito.Mockito.*;
 class RedemittelServiceTest {
 
     @Mock private WritingPhraseRepository phraseRepository;
+    @Mock private RedemittelFunctionRepository functionRepository;
     @Mock private RedemittelProgressRepository progressRepository;
     @Mock private RedemittelCollectionRepository collectionRepository;
     @Mock private AppSettingService appSettingService;
@@ -47,7 +51,8 @@ class RedemittelServiceTest {
     @BeforeEach
     void setUp() {
         service = new RedemittelService(phraseRepository, progressRepository, collectionRepository,
-                appSettingService, userService, learningActivityService, requestContext);
+                appSettingService, userService, learningActivityService, requestContext,
+                new RedemittelCacheService(phraseRepository, org.mockito.Mockito.mock(com.deutschbridge.backend.repository.RedemittelExerciseRepository.class), functionRepository));
         when(requestContext.getUserId()).thenReturn("u1");
         when(requestContext.getUserEmail()).thenReturn("u1@example.com");
         when(requestContext.getLanguage()).thenReturn("EN");
@@ -64,7 +69,7 @@ class RedemittelServiceTest {
         WritingPhrase p = new WritingPhrase();
         p.setId(id);
         p.setLevel(level);
-        p.setCategory(WritingPhraseCategory.OPINION);
+        p.setCategory(RedemittelTestFunctions.of("OPINION"));
         p.setPhrase("Phrase " + id);
         p.setSortOrder(order);
         p.setActive(true);
@@ -239,7 +244,8 @@ class RedemittelServiceTest {
         when(progressRepository.countDue(eq("u1"), any())).thenReturn(4L);
         when(collectionRepository.countByUserId("u1")).thenReturn(7L);
         when(phraseRepository.countActiveByCategory()).thenReturn(List.<Object[]>of(
-                new Object[]{WritingPhraseCategory.OPINION, 40L}, new Object[]{WritingPhraseCategory.AGREEMENT, 60L}));
+                new Object[]{"OPINION", 40L}, new Object[]{"AGREEMENT", 60L}));
+        when(functionRepository.findAllByOrderBySortOrderAscLabelAsc()).thenReturn(RedemittelTestFunctions.all());
 
         RedemittelHubResponse hub = service.hub();
 

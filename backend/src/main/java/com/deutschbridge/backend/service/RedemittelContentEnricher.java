@@ -2,7 +2,6 @@ package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.model.entity.WritingPhrase;
 import com.deutschbridge.backend.model.enums.RedemittelContext;
-import com.deutschbridge.backend.model.enums.WritingPhraseCategory;
 import com.deutschbridge.backend.repository.WritingPhraseRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.deutschbridge.backend.model.enums.RedemittelContext.*;
-import static com.deutschbridge.backend.model.enums.WritingPhraseCategory.*;
 
 /**
  * Fills the learner-facing Redemittel fields of the built-in phrases: English meaning, grammar pattern
@@ -31,24 +29,25 @@ import static com.deutschbridge.backend.model.enums.WritingPhraseCategory.*;
 final class RedemittelContentEnricher {
 
     /** Where each kind of expression is typically used, until an admin sets the contexts explicitly. */
-    static final Map<WritingPhraseCategory, List<RedemittelContext>> DEFAULT_CONTEXTS = new EnumMap<>(WritingPhraseCategory.class);
+    /** Keyed by the id of the built-in function; functions an admin adds get no default. */
+    static final Map<String, List<RedemittelContext>> DEFAULT_CONTEXTS = new HashMap<>();
 
     static {
-        DEFAULT_CONTEXTS.put(GREETING, List.of(WRITING, EXAM, WORK));
-        DEFAULT_CONTEXTS.put(INTRODUCTION, List.of(WRITING, EXAM));
-        DEFAULT_CONTEXTS.put(OPINION, List.of(WRITING, DISCUSSION, EXAM));
-        DEFAULT_CONTEXTS.put(REASON, List.of(WRITING, DISCUSSION, EXAM));
-        DEFAULT_CONTEXTS.put(EXAMPLE, List.of(WRITING, DISCUSSION, EXAM));
-        DEFAULT_CONTEXTS.put(ADDITION, List.of(WRITING, DISCUSSION));
-        DEFAULT_CONTEXTS.put(CONTRAST, List.of(WRITING, DISCUSSION, EXAM));
-        DEFAULT_CONTEXTS.put(AGREEMENT, List.of(DISCUSSION, SPEAKING, EVERYDAY));
-        DEFAULT_CONTEXTS.put(DISAGREEMENT, List.of(DISCUSSION, SPEAKING, EVERYDAY));
-        DEFAULT_CONTEXTS.put(ADVANTAGE_DISADVANTAGE, List.of(WRITING, DISCUSSION, EXAM));
-        DEFAULT_CONTEXTS.put(SUGGESTION, List.of(EVERYDAY, SPEAKING, WRITING));
-        DEFAULT_CONTEXTS.put(REQUEST, List.of(EVERYDAY, WORK, WRITING));
-        DEFAULT_CONTEXTS.put(APOLOGY, List.of(EVERYDAY, WORK, WRITING));
-        DEFAULT_CONTEXTS.put(QUESTION, List.of(EVERYDAY, WORK, WRITING));
-        DEFAULT_CONTEXTS.put(CONCLUSION, List.of(WRITING, EXAM));
+        DEFAULT_CONTEXTS.put("GREETING", List.of(WRITING, EXAM, WORK));
+        DEFAULT_CONTEXTS.put("INTRODUCTION", List.of(WRITING, EXAM));
+        DEFAULT_CONTEXTS.put("OPINION", List.of(WRITING, DISCUSSION, EXAM));
+        DEFAULT_CONTEXTS.put("REASON", List.of(WRITING, DISCUSSION, EXAM));
+        DEFAULT_CONTEXTS.put("EXAMPLE", List.of(WRITING, DISCUSSION, EXAM));
+        DEFAULT_CONTEXTS.put("ADDITION", List.of(WRITING, DISCUSSION));
+        DEFAULT_CONTEXTS.put("CONTRAST", List.of(WRITING, DISCUSSION, EXAM));
+        DEFAULT_CONTEXTS.put("AGREEMENT", List.of(DISCUSSION, SPEAKING, EVERYDAY));
+        DEFAULT_CONTEXTS.put("DISAGREEMENT", List.of(DISCUSSION, SPEAKING, EVERYDAY));
+        DEFAULT_CONTEXTS.put("ADVANTAGE_DISADVANTAGE", List.of(WRITING, DISCUSSION, EXAM));
+        DEFAULT_CONTEXTS.put("SUGGESTION", List.of(EVERYDAY, SPEAKING, WRITING));
+        DEFAULT_CONTEXTS.put("REQUEST", List.of(EVERYDAY, WORK, WRITING));
+        DEFAULT_CONTEXTS.put("APOLOGY", List.of(EVERYDAY, WORK, WRITING));
+        DEFAULT_CONTEXTS.put("QUESTION", List.of(EVERYDAY, WORK, WRITING));
+        DEFAULT_CONTEXTS.put("CONCLUSION", List.of(WRITING, EXAM));
     }
 
     private RedemittelContentEnricher() {
@@ -140,8 +139,8 @@ final class RedemittelContentEnricher {
             p.setGrammarPattern(grammar.get(p.getPhrase()).asText());
             changed = true;
         }
-        if (isBlank(p.getContexts()) && p.getCategory() != null) {
-            p.setContexts(RedemittelText.joinContexts(DEFAULT_CONTEXTS.get(p.getCategory())));
+        if (isBlank(p.getContexts()) && p.getCategory() != null && DEFAULT_CONTEXTS.containsKey(p.getCategory().getId())) {
+            p.setContexts(RedemittelText.joinContexts(DEFAULT_CONTEXTS.get(p.getCategory().getId())));
             changed = true;
         }
         return changed;

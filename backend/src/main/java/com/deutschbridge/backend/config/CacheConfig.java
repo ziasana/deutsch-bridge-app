@@ -28,7 +28,8 @@ public class CacheConfig {
                 "grammarLessons", "grammarLevelContent", "grammarLessonDetail", "grammarCategoryDetail",
                 "grammarLevelSummary", "examExercises", "examLevelSummary", "readingArticles",
                 "readingArticleList", "readingArticleDetail", "readingLevelSummary",
-                "expressionCollectionSummary", "expressionListPage", "expressionDetail");
+                "expressionCollectionSummary", "expressionListPage", "expressionDetail",
+                "redemittelPhrase", "redemittelListPage", "redemittelHubContent", "redemittelExercises", "redemittelFunctionLabels");
         cacheManager.setCaffeine(Caffeine.newBuilder()
                 .maximumSize(500)
                 .expireAfterWrite(30, TimeUnit.MINUTES));

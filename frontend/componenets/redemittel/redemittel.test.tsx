@@ -804,7 +804,7 @@ describe("integration", () => {
         service.learnRedemittel.mockReturnValue(ok(redemittel({ id: "w1", status: "LEARNING" })));
         withClient(
             <WritingPhraseList
-                phrases={[{ id: "w1", category: "OPINION", phrase: "Ich bin der Meinung, dass …", explanation: null, example: null, formality: null, usageNote: null, sortOrder: 0 }]}
+                phrases={[{ id: "w1", category: "OPINION", categoryLabel: "Meinung äußern", phrase: "Ich bin der Meinung, dass …", explanation: null, example: null, formality: null, usageNote: null, sortOrder: 0 }]}
             />,
         );
         fireEvent.click(screen.getByRole("button", { name: /Details, lernen oder speichern/ }));

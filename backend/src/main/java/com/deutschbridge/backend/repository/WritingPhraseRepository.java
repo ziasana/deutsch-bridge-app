@@ -3,7 +3,6 @@ package com.deutschbridge.backend.repository;
 import com.deutschbridge.backend.model.entity.WritingPhrase;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.model.enums.RedemittelStatus;
-import com.deutschbridge.backend.model.enums.WritingPhraseCategory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,9 +16,11 @@ import java.util.List;
 @Repository
 public interface WritingPhraseRepository extends JpaRepository<WritingPhrase, String> {
 
-    List<WritingPhrase> findByLevelAndActiveTrueOrderByCategoryAscSortOrderAsc(LearningLevel level);
+    List<WritingPhrase> findByLevelAndActiveTrueOrderByCategorySortOrderAscSortOrderAsc(LearningLevel level);
 
     boolean existsByLevel(LearningLevel level);
+
+    boolean existsByLevelAndPhraseIgnoreCase(LearningLevel level, String phrase);
 
     long countByActiveTrue();
 
@@ -37,27 +38,44 @@ public interface WritingPhraseRepository extends JpaRepository<WritingPhrase, St
             left join redemittelProgress pr on pr.phraseId = p.id and pr.userId = :userId
             where p.active = true
               and p.level in :levels
-              and p.category in :categories
+              and (:allCategories = true or p.category.id = :categoryId)
               and (lower(p.phrase) like :search
                    or lower(coalesce(p.explanation, '')) like :search
                    or lower(coalesce(p.meaningEn, '')) like :search
-                   or (:matchCategories = true and p.category in :searchCategories))
+                   or lower(p.category.label) like :search)
               and ((pr.id is null and :includeNew = true)
                    or (pr.id is not null and pr.status in :statuses))
               and (:savedOnly = false or exists (
                     select 1 from redemittelCollection c where c.phraseId = p.id and c.userId = :userId))
-            order by p.level asc, p.category asc, p.sortOrder asc
+            order by p.level asc, p.category.sortOrder asc, p.category.label asc, p.sortOrder asc
             """)
     Page<WritingPhrase> findLearnerPage(@Param("userId") String userId,
                                         @Param("levels") Collection<LearningLevel> levels,
-                                        @Param("categories") Collection<WritingPhraseCategory> categories,
+                                        @Param("allCategories") boolean allCategories,
+                                        @Param("categoryId") String categoryId,
                                         @Param("search") String search,
-                                        @Param("matchCategories") boolean matchCategories,
-                                        @Param("searchCategories") Collection<WritingPhraseCategory> searchCategories,
                                         @Param("includeNew") boolean includeNew,
                                         @Param("statuses") Collection<RedemittelStatus> statuses,
                                         @Param("savedOnly") boolean savedOnly,
                                         Pageable pageable);
+
+    /** The learner list without any per-user filter (the cacheable path); same search and order as {@link #findLearnerPage}. */
+    @Query("""
+            select p from writingPhrases p
+            where p.active = true
+              and p.level in :levels
+              and (:allCategories = true or p.category.id = :categoryId)
+              and (lower(p.phrase) like :search
+                   or lower(coalesce(p.explanation, '')) like :search
+                   or lower(coalesce(p.meaningEn, '')) like :search
+                   or lower(p.category.label) like :search)
+            order by p.level asc, p.category.sortOrder asc, p.category.label asc, p.sortOrder asc
+            """)
+    Page<WritingPhrase> findStaticPage(@Param("levels") Collection<LearningLevel> levels,
+                                       @Param("allCategories") boolean allCategories,
+                                       @Param("categoryId") String categoryId,
+                                       @Param("search") String search,
+                                       Pageable pageable);
 
     /** Active Redemittel the user has not started learning yet (the pool for "Heute lernen"). */
     @Query("""
@@ -67,6 +85,8 @@ public interface WritingPhraseRepository extends JpaRepository<WritingPhrase, St
             """)
     List<WritingPhrase> findUnlearned(@Param("userId") String userId);
 
-    @Query("select p.category, count(p) from writingPhrases p where p.active = true group by p.category")
+    long countByCategoryId(String categoryId);
+
+    @Query("select p.category.id, count(p) from writingPhrases p where p.active = true group by p.category.id")
     List<Object[]> countActiveByCategory();
 }

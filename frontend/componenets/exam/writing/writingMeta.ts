@@ -1,27 +1,16 @@
-import { WritingFormality, WritingHelpTab, WritingMode, WritingGuideItem, WritingGuideKind, WritingLearningResponse, WritingPhraseCategory } from "@/types/writing";
+import { WritingFormality, WritingHelpTab, WritingMode, WritingGuideItem, WritingGuideKind, WritingLearningResponse, WritingPhrase, WritingPhraseCategory } from "@/types/writing";
 
 /** Levels the Schreiben architecture is prepared for; content decides what is actually shown. */
 export const WRITING_LEVELS = ["A2", "B1", "B2", "C1", "C2"] as const;
 
 export const WRITING_COLOR = "#f97316";
 
-export const PHRASE_CATEGORY_LABELS: Record<WritingPhraseCategory, string> = {
-    GREETING: "Anrede",
-    INTRODUCTION: "Einleitung",
-    OPINION: "Meinung äußern",
-    REASON: "Begründen",
-    EXAMPLE: "Beispiele geben",
-    ADDITION: "Ergänzen",
-    CONTRAST: "Vergleichen / Gegensatz",
-    AGREEMENT: "Zustimmen",
-    DISAGREEMENT: "Widersprechen",
-    ADVANTAGE_DISADVANTAGE: "Vor- und Nachteile",
-    SUGGESTION: "Vorschläge machen",
-    REQUEST: "Bitten",
-    APOLOGY: "Entschuldigen",
-    QUESTION: "Nach Informationen fragen",
-    CONCLUSION: "Beenden / Schluss",
-};
+/** The functions present in `phrases` (id -> label), in the order the server sent them. */
+export function phraseCategoryLabels(phrases: WritingPhrase[]): Record<WritingPhraseCategory, string> {
+    const labels: Record<WritingPhraseCategory, string> = {};
+    for (const p of phrases) labels[p.category] ??= p.categoryLabel;
+    return labels;
+}
 
 export const FORMALITY_LABELS: Record<WritingFormality, string> = {
     INFORMAL: "informell",

@@ -7,10 +7,13 @@ import com.deutschbridge.backend.model.entity.WritingGuideItem;
 import com.deutschbridge.backend.model.entity.WritingPhrase;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.RedemittelExerciseRepository;
+import com.deutschbridge.backend.repository.RedemittelFunctionRepository;
 import com.deutschbridge.backend.repository.WritingGuideItemRepository;
 import com.deutschbridge.backend.repository.WritingPhraseRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.deutschbridge.backend.service.cache.RedemittelCacheService;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -25,12 +28,15 @@ public class WritingContentAdminService {
     private final WritingGuideItemRepository guideRepository;
     private final WritingPhraseRepository phraseRepository;
     private final RedemittelExerciseRepository exerciseRepository;
+    private final RedemittelFunctionRepository functionRepository;
     private final ObjectMapper objectMapper;
 
     public WritingContentAdminService(WritingGuideItemRepository guideRepository,
                                       WritingPhraseRepository phraseRepository,
                                       RedemittelExerciseRepository exerciseRepository,
+                                      RedemittelFunctionRepository functionRepository,
                                       ObjectMapper objectMapper) {
+        this.functionRepository = functionRepository;
         this.exerciseRepository = exerciseRepository;
         this.guideRepository = guideRepository;
         this.phraseRepository = phraseRepository;
@@ -92,19 +98,24 @@ public class WritingContentAdminService {
     public List<AdminWritingPhraseDto> listPhrases(LearningLevel level) {
         return phraseRepository.findAll().stream()
                 .filter(p -> p.getLevel() == level)
-                .sorted(Comparator.comparing(WritingPhrase::getCategory).thenComparingInt(WritingPhrase::getSortOrder))
+                .sorted(Comparator.comparingInt((WritingPhrase p) -> p.getCategory().getSortOrder())
+                        .thenComparing(p -> p.getCategory().getLabel())
+                        .thenComparingInt(WritingPhrase::getSortOrder))
                 .map(this::toDto).toList();
     }
 
+    @CacheEvict(cacheNames = {RedemittelCacheService.PHRASE_CACHE, RedemittelCacheService.LIST_CACHE, RedemittelCacheService.HUB_CACHE, RedemittelCacheService.EXERCISE_CACHE}, allEntries = true)
     public AdminWritingPhraseDto createPhrase(AdminWritingPhraseDto dto) {
         return toDto(phraseRepository.save(apply(new WritingPhrase(), dto)));
     }
 
+    @CacheEvict(cacheNames = {RedemittelCacheService.PHRASE_CACHE, RedemittelCacheService.LIST_CACHE, RedemittelCacheService.HUB_CACHE, RedemittelCacheService.EXERCISE_CACHE}, allEntries = true)
     public AdminWritingPhraseDto updatePhrase(String id, AdminWritingPhraseDto dto) throws DataNotFoundException {
         WritingPhrase phrase = phraseRepository.findById(id).orElseThrow(() -> new DataNotFoundException("Phrase not found!"));
         return toDto(phraseRepository.save(apply(phrase, dto)));
     }
 
+    @CacheEvict(cacheNames = {RedemittelCacheService.PHRASE_CACHE, RedemittelCacheService.LIST_CACHE, RedemittelCacheService.HUB_CACHE, RedemittelCacheService.EXERCISE_CACHE}, allEntries = true)
     public void deletePhrase(String id) throws DataNotFoundException {
         if (!phraseRepository.existsById(id)) throw new DataNotFoundException("Phrase not found!");
         exerciseRepository.deleteByPhraseId(id);
@@ -116,7 +127,8 @@ public class WritingContentAdminService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Level, category and phrase are required.");
         }
         p.setLevel(dto.level());
-        p.setCategory(dto.category());
+        p.setCategory(functionRepository.findById(dto.category())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown function.")));
         p.setPhrase(dto.phrase().strip());
         p.setExplanation(blankToNull(dto.explanation()));
         p.setExample(blankToNull(dto.example()));
@@ -134,7 +146,7 @@ public class WritingContentAdminService {
     }
 
     private AdminWritingPhraseDto toDto(WritingPhrase p) {
-        return new AdminWritingPhraseDto(p.getId(), p.getLevel(), p.getCategory(), p.getPhrase(), p.getExplanation(),
+        return new AdminWritingPhraseDto(p.getId(), p.getLevel(), p.getCategory().getId(), p.getPhrase(), p.getExplanation(),
                 p.getExample(), p.getFormality(), p.getUsageNote(), p.getSortOrder(), p.isActive(),
                 p.getMeaningEn(), p.getMeaningFa(), p.getGrammarPattern(), p.getCommonMistake(),
                 RedemittelText.splitLines(p.getSimilarExpressions()), RedemittelText.splitContexts(p.getContexts()));

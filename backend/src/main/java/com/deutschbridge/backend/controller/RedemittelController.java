@@ -4,7 +4,6 @@ import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.*;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.model.enums.RedemittelStatus;
-import com.deutschbridge.backend.model.enums.WritingPhraseCategory;
 import com.deutschbridge.backend.service.RedemittelPracticeService;
 import com.deutschbridge.backend.service.RedemittelService;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +33,7 @@ public class RedemittelController {
     @GetMapping
     public ResponseEntity<RedemittelPageResponse> list(
             @RequestParam(required = false) LearningLevel level,
-            @RequestParam(required = false) WritingPhraseCategory category,
+            @RequestParam(required = false) String category,
             @RequestParam(required = false, defaultValue = "") String search,
             @RequestParam(required = false) RedemittelStatus status,
             @RequestParam(required = false, defaultValue = "false") boolean saved,

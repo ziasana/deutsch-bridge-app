@@ -69,6 +69,14 @@ export function getAdminNavItems(t: Dictionary): NavItem[] {
         { href: "/admin/grammar", label: t.nav.manageGrammar, icon: BookOpen },
         { href: "/admin/expressionsSection", label: t.nav.manageExpressions, icon: Sparkles },
         {
+            label: t.nav.manageRedemittel,
+            icon: MessagesSquare,
+            children: [
+                { href: "/admin/redemittel", label: "Redemittel", icon: MessagesSquare },
+                { href: "/admin/redemittel/functions", label: "Funktionen", icon: Layers },
+            ],
+        },
+        {
             label: t.nav.settings,
             icon: Settings,
             children: [

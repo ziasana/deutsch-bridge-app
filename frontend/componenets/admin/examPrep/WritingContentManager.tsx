@@ -4,22 +4,23 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/lib/toast";
 import Button from "@/componenets/Button";
+import Input from "@/componenets/Input";
+import Loading from "@/componenets/Loading";
+import { Badge } from "@/componenets/ui/badge";
+import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
+import AdminTableControls from "@/componenets/admin/table/AdminTableControls";
+import AdminTablePagination from "@/componenets/admin/table/AdminTablePagination";
+import SortableTh from "@/componenets/admin/table/SortableTh";
 import {
     createAdminWritingGuideItem,
-    createAdminWritingPhrase,
     deleteAdminWritingGuideItem,
-    deleteAdminWritingPhrase,
     getAdminWritingGuideItems,
-    getAdminRedemittelExerciseCounts,
-    getAdminWritingPhrases,
     updateAdminWritingGuideItem,
-    updateAdminWritingPhrase,
 } from "@/services/adminWritingService";
-import { AdminWritingGuideItem, AdminWritingPhrase, WritingFormality, WritingGuideKind, WritingPhraseCategory } from "@/types/writing";
-import { FORMALITY_LABELS, PHRASE_CATEGORY_LABELS, WRITING_LEVELS } from "@/componenets/exam/writing/writingMeta";
-import RedemittelExerciseEditor from "./RedemittelExerciseEditor";
-import { CONTEXT_LABELS } from "@/componenets/redemittel/redemittelMeta";
-import { RedemittelContext } from "@/types/redemittel";
+import { AdminWritingGuideItem, WritingGuideKind } from "@/types/writing";
+import { WRITING_LEVELS } from "@/componenets/exam/writing/writingMeta";
+
+const LEVELS = ["A1", ...WRITING_LEVELS] as string[];
 
 const KIND_LABELS: Record<WritingGuideKind, string> = {
     FORMAT: "Prüfungsformat",
@@ -42,34 +43,61 @@ const DATA_TEMPLATES: Record<WritingGuideKind, string> = {
     CHECKLIST_ITEM: "",
 };
 
-const inputClass =
-    "w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm";
-const cardClass = "bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6";
+const cardClass =
+    "bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)]";
+const labelClass = "block text-gray-700 dark:text-gray-300 mb-2 text-sm";
+const fieldClass =
+    "w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none";
+const filterSelectClass =
+    "rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none";
+
+type SortKey = "title" | "kind" | "sortOrder" | "active";
+type SortDirection = "asc" | "desc";
 
 const emptyItem = (level: string): AdminWritingGuideItem => ({ level, kind: "STRATEGY_STEP", title: "", content: "", data: null, sortOrder: 0, active: true });
-const emptyPhrase = (level: string): AdminWritingPhrase => ({
-    level, category: "OPINION", phrase: "", explanation: "", example: "", formality: "NEUTRAL", usageNote: "", sortOrder: 0, active: true,
-    meaningEn: "", meaningFa: "", grammarPattern: "", commonMistake: "", similarExpressions: [], contexts: [],
-});
 
 const errorMessage = (err: unknown, fallback: string) => (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
 
-function GuideItems({ level }: Readonly<{ level: string }>) {
+/** Admin screen for "Schreiben lernen": the guide items (format, strategy, structure, examples, patterns, mistakes, checklist) per level. */
+export default function WritingContentManager() {
     const queryClient = useQueryClient();
+    const [level, setLevel] = useState("B1");
     const key = ["admin", "writing", "items", level];
-    const { data: items = [] } = useQuery({ queryKey: key, queryFn: () => getAdminWritingGuideItems(level).then((r) => r.data) });
+
+    const { data: items = [], isLoading } = useQuery({ queryKey: key, queryFn: () => getAdminWritingGuideItems(level).then((r) => r.data) });
+
     const [form, setForm] = useState<AdminWritingGuideItem>(emptyItem(level));
     const [dataText, setDataText] = useState("");
     const [saving, setSaving] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<AdminWritingGuideItem | null>(null);
+    const [kindFilter, setKindFilter] = useState<WritingGuideKind | "">("");
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [search, setSearch] = useState("");
+    const [sortKey, setSortKey] = useState<SortKey>("kind");
+    const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+
+    const refresh = async () => {
+        await queryClient.invalidateQueries({ queryKey: key });
+        await queryClient.invalidateQueries({ queryKey: ["writing", "learn", level] });
+    };
 
     const reset = () => {
         setForm(emptyItem(level));
         setDataText("");
     };
 
-    const edit = (item: AdminWritingGuideItem) => {
+    const changeLevel = (next: string) => {
+        setLevel(next);
+        setForm(emptyItem(next));
+        setDataText("");
+        setPage(1);
+    };
+
+    const startEdit = (item: AdminWritingGuideItem) => {
         setForm(item);
         setDataText(item.data ? JSON.stringify(item.data, null, 2) : "");
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     const save = async (e: React.FormEvent) => {
@@ -88,10 +116,9 @@ function GuideItems({ level }: Readonly<{ level: string }>) {
             const payload = { ...form, level, data };
             if (form.id) await updateAdminWritingGuideItem(form.id, payload);
             else await createAdminWritingGuideItem(payload);
-            toast.success("Gespeichert.");
+            toast.success(form.id ? "Entry updated." : "Entry saved.");
             reset();
-            await queryClient.invalidateQueries({ queryKey: key });
-            await queryClient.invalidateQueries({ queryKey: ["writing", "learn", level] });
+            await refresh();
         } catch (err) {
             toast.error(errorMessage(err, "Speichern fehlgeschlagen."));
         } finally {
@@ -99,276 +126,236 @@ function GuideItems({ level }: Readonly<{ level: string }>) {
         }
     };
 
-    const remove = async (id: string) => {
-        if (!window.confirm("Diesen Eintrag löschen?")) return;
+    const toggleActive = async (item: AdminWritingGuideItem) => {
         try {
-            await deleteAdminWritingGuideItem(id);
-            await queryClient.invalidateQueries({ queryKey: key });
-            await queryClient.invalidateQueries({ queryKey: ["writing", "learn", level] });
+            await updateAdminWritingGuideItem(item.id!, { ...item, active: !item.active });
+            toast.success(item.active ? "Entry hidden from students." : "Entry shown to students.");
+            await refresh();
+        } catch (err) {
+            toast.error(errorMessage(err, "Failed to update entry."));
+        }
+    };
+
+    const confirmRemove = async () => {
+        const item = itemToDelete;
+        if (!item?.id) return;
+        setItemToDelete(null);
+        try {
+            await deleteAdminWritingGuideItem(item.id);
+            toast.success("Entry deleted.");
+            if (form.id === item.id) reset();
+            await refresh();
         } catch (err) {
             toast.error(errorMessage(err, "Löschen fehlgeschlagen."));
         }
     };
 
-    return (
-        <div className="space-y-6">
-            <form onSubmit={save} className={`${cardClass} space-y-3`}>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{form.id ? "Eintrag bearbeiten" : "Neuer Eintrag"} ({level})</h2>
-                <div className="grid gap-3 sm:grid-cols-3">
-                    <label className="text-sm text-gray-700 dark:text-gray-300">
-                        Art
-                        <select
-                            className={inputClass}
-                            value={form.kind}
-                            onChange={(e) => {
-                                const kind = e.target.value as WritingGuideKind;
-                                setForm({ ...form, kind });
-                                if (!form.id && !dataText.trim()) setDataText(DATA_TEMPLATES[kind]);
-                            }}
-                        >
-                            {(Object.keys(KIND_LABELS) as WritingGuideKind[]).map((k) => (
-                                <option key={k} value={k}>{KIND_LABELS[k]}</option>
-                            ))}
-                        </select>
-                    </label>
-                    <label className="text-sm text-gray-700 dark:text-gray-300 sm:col-span-2">
-                        Titel
-                        <input className={inputClass} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-                    </label>
-                </div>
-                <label className="block text-sm text-gray-700 dark:text-gray-300">
-                    Inhalt (Erklärung / Zweck / Aufgabenstellung)
-                    <textarea className={inputClass} rows={3} value={form.content ?? ""} onChange={(e) => setForm({ ...form, content: e.target.value })} />
-                </label>
-                <label className="block text-sm text-gray-700 dark:text-gray-300">
-                    Data (JSON, je nach Art)
-                    <textarea className={`${inputClass} font-mono text-xs`} rows={6} value={dataText} onChange={(e) => setDataText(e.target.value)} placeholder={DATA_TEMPLATES[form.kind]} />
-                </label>
-                <div className="flex flex-wrap items-center gap-4">
-                    <label className="text-sm text-gray-700 dark:text-gray-300">
-                        Reihenfolge
-                        <input type="number" className={`${inputClass} w-24`} value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })} />
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                        <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} /> Aktiv
-                    </label>
-                </div>
-                <div className="flex gap-2">
-                    <Button type="submit" disabled={saving}>{saving ? "Speichern…" : "Speichern"}</Button>
-                    {form.id && <Button type="button" variant="secondary" onClick={reset}>Abbrechen</Button>}
-                </div>
-            </form>
+    const toggleSort = (k: SortKey) => {
+        if (sortKey === k) setSortDirection((d) => (d === "asc" ? "desc" : "asc"));
+        else {
+            setSortKey(k);
+            setSortDirection("asc");
+        }
+        setPage(1);
+    };
 
-            <div className={cardClass}>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Lerninhalte {level} ({items.length})</h2>
-                <ul className="mt-3 divide-y divide-gray-200 dark:divide-gray-700">
-                    {items.map((i) => (
-                        <li key={i.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                            <span className="min-w-0 text-gray-800 dark:text-gray-200">
-                                <span className="mr-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs dark:bg-gray-700">{KIND_LABELS[i.kind]}</span>
-                                {i.title}
-                                {!i.active && <span className="ml-2 text-xs text-orange-600">inaktiv</span>}
-                            </span>
-                            <span className="flex shrink-0 gap-2">
-                                <Button type="button" variant="secondary" className="px-3 py-1 text-xs" onClick={() => edit(i)}>Bearbeiten</Button>
-                                <Button type="button" variant="secondary" className="px-3 py-1 text-xs" onClick={() => remove(i.id!)}>Löschen</Button>
-                            </span>
-                        </li>
-                    ))}
-                    {items.length === 0 && <li className="py-4 text-sm text-gray-500">Noch keine Inhalte für dieses Niveau.</li>}
-                </ul>
-            </div>
-        </div>
-    );
-}
-
-function Phrases({ level }: Readonly<{ level: string }>) {
-    const queryClient = useQueryClient();
-    const key = ["admin", "writing", "phrases", level];
-    const { data: phrases = [] } = useQuery({ queryKey: key, queryFn: () => getAdminWritingPhrases(level).then((r) => r.data) });
-    const { data: exerciseCounts = {} } = useQuery({
-        queryKey: ["admin", "writing", "exercise-counts", level],
-        queryFn: () => getAdminRedemittelExerciseCounts(level).then((r) => r.data),
+    const query = search.trim().toLowerCase();
+    const filtered = items
+        .filter((i) => !kindFilter || i.kind === kindFilter)
+        .filter((i) => !query || i.title.toLowerCase().includes(query));
+    const valueFor = (i: AdminWritingGuideItem): string | number => {
+        switch (sortKey) {
+            case "title": return i.title.toLowerCase();
+            case "kind": return KIND_LABELS[i.kind];
+            case "sortOrder": return i.sortOrder;
+            case "active": return i.active ? 1 : 0;
+        }
+    };
+    const sorted = filtered.slice().sort((a, b) => {
+        const dir = sortDirection === "asc" ? 1 : -1;
+        const va = valueFor(a);
+        const vb = valueFor(b);
+        if (va < vb) return -1 * dir;
+        if (va > vb) return 1 * dir;
+        return a.sortOrder - b.sortOrder;
     });
-    const [form, setForm] = useState<AdminWritingPhrase>(emptyPhrase(level));
-    const [saving, setSaving] = useState(false);
 
-    const refresh = async () => {
-        await queryClient.invalidateQueries({ queryKey: key });
-        await queryClient.invalidateQueries({ queryKey: ["writing", "learn", level] });
-    };
-
-    const save = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setSaving(true);
-        try {
-            const payload = { ...form, level };
-            if (form.id) await updateAdminWritingPhrase(form.id, payload);
-            else await createAdminWritingPhrase(payload);
-            toast.success("Gespeichert.");
-            setForm(emptyPhrase(level));
-            await refresh();
-        } catch (err) {
-            toast.error(errorMessage(err, "Speichern fehlgeschlagen."));
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const remove = async (id: string) => {
-        if (!window.confirm("Dieses Redemittel löschen?")) return;
-        try {
-            await deleteAdminWritingPhrase(id);
-            await refresh();
-        } catch (err) {
-            toast.error(errorMessage(err, "Löschen fehlgeschlagen."));
-        }
-    };
+    const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+    const currentPage = Math.min(page, totalPages);
+    const startIndex = sorted.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    const endIndex = Math.min(currentPage * pageSize, sorted.length);
+    const paginated = sorted.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     return (
-        <div className="space-y-6">
-            <form onSubmit={save} className={`${cardClass} space-y-3`}>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{form.id ? "Redemittel bearbeiten" : "Neues Redemittel"} ({level})</h2>
-                <div className="grid gap-3 sm:grid-cols-3">
-                    <label className="text-sm text-gray-700 dark:text-gray-300">
-                        Funktion
-                        <select className={inputClass} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as WritingPhraseCategory })}>
-                            {(Object.keys(PHRASE_CATEGORY_LABELS) as WritingPhraseCategory[]).map((c) => (
-                                <option key={c} value={c}>{PHRASE_CATEGORY_LABELS[c]}</option>
-                            ))}
-                        </select>
-                    </label>
-                    <label className="text-sm text-gray-700 dark:text-gray-300">
-                        Register
-                        <select className={inputClass} value={form.formality ?? ""} onChange={(e) => setForm({ ...form, formality: (e.target.value || null) as WritingFormality | null })}>
-                            <option value="">–</option>
-                            {(Object.keys(FORMALITY_LABELS) as WritingFormality[]).map((f) => (
-                                <option key={f} value={f}>{FORMALITY_LABELS[f]}</option>
-                            ))}
-                        </select>
-                    </label>
-                    <label className="text-sm text-gray-700 dark:text-gray-300">
-                        Reihenfolge
-                        <input type="number" className={inputClass} value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })} />
-                    </label>
+        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10" dir="ltr">
+            <div className="max-w-7xl mx-auto">
+                <div>
+                    <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Schreiben lernen</h1>
+                    <p className="text-gray-600 dark:text-gray-300 mt-2">
+                        Create and manage the learning content of the writing module for each level. Redemittel are managed under Manage Redemittel.
+                    </p>
                 </div>
-                <label className="block text-sm text-gray-700 dark:text-gray-300">
-                    Redemittel
-                    <input className={inputClass} value={form.phrase} onChange={(e) => setForm({ ...form, phrase: e.target.value })} required />
-                </label>
-                <label className="block text-sm text-gray-700 dark:text-gray-300">
-                    Beispiel
-                    <input className={inputClass} value={form.example ?? ""} onChange={(e) => setForm({ ...form, example: e.target.value })} />
-                </label>
-                <label className="block text-sm text-gray-700 dark:text-gray-300">
-                    Erklärung
-                    <input className={inputClass} value={form.explanation ?? ""} onChange={(e) => setForm({ ...form, explanation: e.target.value })} />
-                </label>
-                <label className="block text-sm text-gray-700 dark:text-gray-300">
-                    Hinweis zur Verwendung
-                    <input className={inputClass} value={form.usageNote ?? ""} onChange={(e) => setForm({ ...form, usageNote: e.target.value })} />
-                </label>
-                <fieldset className="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-                    <legend className="px-1 text-sm font-medium text-gray-700 dark:text-gray-300">Lernmodul „Redemittel“ (optional)</legend>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                        <label className="block text-sm text-gray-700 dark:text-gray-300">
-                            Bedeutung (Englisch)
-                            <input className={inputClass} value={form.meaningEn ?? ""} onChange={(e) => setForm({ ...form, meaningEn: e.target.value })} />
-                        </label>
-                        <label className="block text-sm text-gray-700 dark:text-gray-300">
-                            Bedeutung (Persisch)
-                            <input className={inputClass} dir="rtl" value={form.meaningFa ?? ""} onChange={(e) => setForm({ ...form, meaningFa: e.target.value })} />
-                        </label>
+
+                <div className={`${cardClass} mt-6 p-6`}>
+                    <div className="max-w-xs">
+                        <label className={labelClass}>Level</label>
+                        <select className={fieldClass} value={level} onChange={(e) => changeLevel(e.target.value)} aria-label="Niveau">
+                            {LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
+                        </select>
                     </div>
-                    <label className="block text-sm text-gray-700 dark:text-gray-300">
-                        Grammatik / Struktur
-                        <input className={inputClass} placeholder="Ich bin der Meinung, dass + Nebensatz" value={form.grammarPattern ?? ""} onChange={(e) => setForm({ ...form, grammarPattern: e.target.value })} />
-                    </label>
-                    <label className="block text-sm text-gray-700 dark:text-gray-300">
-                        Häufiger Fehler
-                        <textarea rows={2} className={inputClass} placeholder={"❌ Ich bin Meinung, dass …\n✓ Ich bin der Meinung, dass …"} value={form.commonMistake ?? ""} onChange={(e) => setForm({ ...form, commonMistake: e.target.value })} />
-                    </label>
-                    <label className="block text-sm text-gray-700 dark:text-gray-300">
-                        Ähnliche Redemittel (eins pro Zeile)
-                        <textarea rows={3} className={inputClass} value={form.similarExpressions.join("\n")} onChange={(e) => setForm({ ...form, similarExpressions: e.target.value.split("\n") })} />
-                    </label>
-                    <div className="text-sm text-gray-700 dark:text-gray-300">
-                        Verwendung
-                        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
-                            {(Object.keys(CONTEXT_LABELS) as RedemittelContext[]).map((c) => (
-                                <label key={c} className="flex items-center gap-1.5">
-                                    <input
-                                        type="checkbox"
-                                        checked={form.contexts.includes(c)}
-                                        onChange={(e) => setForm({ ...form, contexts: e.target.checked ? [...form.contexts, c] : form.contexts.filter((x) => x !== c) })}
-                                    />
-                                    {CONTEXT_LABELS[c]}
-                                </label>
-                            ))}
+                </div>
+
+                <form onSubmit={save} className={`${cardClass} mt-8 p-6 space-y-6`}>
+                    {form.id && (
+                        <p className="text-sm text-blue-600 dark:text-blue-400">
+                            Editing &quot;{form.title}&quot; —{" "}
+                            <button type="button" className="underline" onClick={reset}>
+                                cancel
+                            </button>
+                        </p>
+                    )}
+
+                    <div className="flex gap-4 flex-wrap">
+                        <div className="flex-1 min-w-[220px]">
+                            <label className={labelClass}>Art</label>
+                            <select
+                                className={fieldClass}
+                                value={form.kind}
+                                onChange={(e) => {
+                                    const kind = e.target.value as WritingGuideKind;
+                                    setForm({ ...form, kind });
+                                    if (!form.id && !dataText.trim()) setDataText(DATA_TEMPLATES[kind]);
+                                }}
+                            >
+                                {(Object.keys(KIND_LABELS) as WritingGuideKind[]).map((k) => (
+                                    <option key={k} value={k}>{KIND_LABELS[k]}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="flex-[2] min-w-[260px]">
+                            <label className={labelClass}>Titel</label>
+                            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Schritt 1: Aufgabe lesen" />
+                        </div>
+                        <div className="flex-1 min-w-[120px]">
+                            <label className={labelClass}>Reihenfolge</label>
+                            <Input type="number" value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })} />
                         </div>
                     </div>
-                </fieldset>
-                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                    <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} /> Aktiv (für Lernende sichtbar)
-                </label>
-                <div className="flex gap-2">
-                    <Button type="submit" disabled={saving}>{saving ? "Speichern…" : "Speichern"}</Button>
-                    {form.id && <Button type="button" variant="secondary" onClick={() => setForm(emptyPhrase(level))}>Abbrechen</Button>}
-                </div>
-            </form>
 
-            {form.id && (
-                <div className={cardClass}>
-                    <RedemittelExerciseEditor key={form.id} phraseId={form.id} level={level} />
-                </div>
-            )}
+                    <div>
+                        <label className={labelClass}>Inhalt (Erklärung / Zweck / Aufgabenstellung)</label>
+                        <textarea className={fieldClass} rows={3} value={form.content ?? ""} onChange={(e) => setForm({ ...form, content: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className={labelClass}>Data (JSON, je nach Art)</label>
+                        <textarea
+                            className={`${fieldClass} font-mono text-xs`}
+                            rows={6}
+                            value={dataText}
+                            onChange={(e) => setDataText(e.target.value)}
+                            placeholder={DATA_TEMPLATES[form.kind]}
+                        />
+                    </div>
 
-            <div className={cardClass}>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Redemittel {level} ({phrases.length})</h2>
-                <ul className="mt-3 divide-y divide-gray-200 dark:divide-gray-700">
-                    {phrases.map((p) => (
-                        <li key={p.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                            <span className="min-w-0 text-gray-800 dark:text-gray-200">
-                                <span className="mr-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs dark:bg-gray-700">{PHRASE_CATEGORY_LABELS[p.category]}</span>
-                                {p.phrase}
-                                {!p.active && <span className="ml-2 text-xs text-orange-600">inaktiv</span>}
-                                {p.id && (exerciseCounts[p.id] ?? 0) === 0 ? (
-                                    <span className="ml-2 text-xs text-orange-600">keine Übungen</span>
-                                ) : (
-                                    <span className="ml-2 text-xs text-gray-500">{p.id ? exerciseCounts[p.id] : 0} Übungen</span>
-                                )}
-                            </span>
-                            <span className="flex shrink-0 gap-2">
-                                <Button type="button" variant="secondary" className="px-3 py-1 text-xs" onClick={() => setForm(p)}>Bearbeiten</Button>
-                                <Button type="button" variant="secondary" className="px-3 py-1 text-xs" onClick={() => remove(p.id!)}>Löschen</Button>
-                            </span>
-                        </li>
-                    ))}
-                    {phrases.length === 0 && <li className="py-4 text-sm text-gray-500">Noch keine Redemittel für dieses Niveau.</li>}
-                </ul>
+                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} /> Aktiv (für Lernende sichtbar)
+                    </label>
+                    <Button type="submit" disabled={saving}>{saving ? "Saving..." : form.id ? "Save changes" : "Save entry"}</Button>
+                </form>
+
+                <div className={`${cardClass} mt-8 overflow-hidden`}>
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white px-6 pt-6">Existing entries ({level})</h2>
+                    {isLoading ? (
+                        <div className="p-10 text-center text-gray-500 dark:text-gray-400">Loading entries...</div>
+                    ) : (
+                        <div className="px-6 pb-6">
+                            <div className="mt-4 mb-3 space-y-3">
+                                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                    Art
+                                    <select
+                                        className={filterSelectClass}
+                                        value={kindFilter}
+                                        onChange={(e) => { setKindFilter(e.target.value as WritingGuideKind | ""); setPage(1); }}
+                                        aria-label="Art filtern"
+                                    >
+                                        <option value="">Alle</option>
+                                        {(Object.keys(KIND_LABELS) as WritingGuideKind[]).map((k) => (
+                                            <option key={k} value={k}>{KIND_LABELS[k]}</option>
+                                        ))}
+                                    </select>
+                                </label>
+                                <AdminTableControls
+                                    pageSize={pageSize}
+                                    onPageSizeChange={(n) => { setPageSize(n); setPage(1); }}
+                                    search={search}
+                                    onSearchChange={(v) => { setSearch(v); setPage(1); }}
+                                    searchPlaceholder="Titel..."
+                                />
+                            </div>
+
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm">
+                                        <tr>
+                                            <SortableTh label="Titel" active={sortKey === "title"} direction={sortDirection} onClick={() => toggleSort("title")} />
+                                            <SortableTh label="Art" active={sortKey === "kind"} direction={sortDirection} onClick={() => toggleSort("kind")} />
+                                            <SortableTh label="Reihenfolge" active={sortKey === "sortOrder"} direction={sortDirection} onClick={() => toggleSort("sortOrder")} />
+                                            <SortableTh label="Status" active={sortKey === "active"} direction={sortDirection} onClick={() => toggleSort("active")} />
+                                            <th className="px-6 py-3">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                        {paginated.map((i) => (
+                                            <tr key={i.id}>
+                                                <td className="px-6 py-4 text-gray-900 dark:text-white">{i.title}</td>
+                                                <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{KIND_LABELS[i.kind]}</td>
+                                                <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{i.sortOrder}</td>
+                                                <td className="px-6 py-4">
+                                                    <Badge variant={i.active ? "default" : "secondary"}>{i.active ? "ACTIVE" : "INACTIVE"}</Badge>
+                                                </td>
+                                                <td className="px-6 py-4 space-x-2 whitespace-nowrap">
+                                                    <Button variant="secondary" className="px-3 py-1 text-sm" onClick={() => startEdit(i)}>Edit</Button>
+                                                    <Button variant="secondary" className="px-3 py-1 text-sm" onClick={() => toggleActive(i)}>{i.active ? "Hide" : "Show"}</Button>
+                                                    <Button variant="secondary" className="px-3 py-1 text-sm" onClick={() => setItemToDelete(i)}>Delete</Button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {sorted.length === 0 && (
+                                            <tr>
+                                                <td colSpan={5} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                                                    No entries found.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="mt-4">
+                                <AdminTablePagination
+                                    page={currentPage}
+                                    totalPages={totalPages}
+                                    totalItems={sorted.length}
+                                    startIndex={startIndex}
+                                    endIndex={endIndex}
+                                    onPageChange={setPage}
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
-    );
-}
 
-/** Admin screen for "Schreiben lernen": guide items and Redemittel per level. */
-export default function WritingContentManager() {
-    const [level, setLevel] = useState<string>("B1");
-    const [tab, setTab] = useState<"items" | "phrases">("items");
-
-    return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 px-6 py-10" dir="ltr">
-            <div className="mx-auto max-w-4xl space-y-6">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Schreiben lernen – Inhalte</h1>
-                <div className="flex flex-wrap items-center gap-3">
-                    <select className={`${inputClass} w-28`} value={level} onChange={(e) => setLevel(e.target.value)} aria-label="Niveau">
-                        {(["A1", ...WRITING_LEVELS] as string[]).map((l) => <option key={l} value={l}>{l}</option>)}
-                    </select>
-                    <Button type="button" variant={tab === "items" ? "primary" : "secondary"} onClick={() => setTab("items")}>Lerninhalte</Button>
-                    <Button type="button" variant={tab === "phrases" ? "primary" : "secondary"} onClick={() => setTab("phrases")}>Redemittel</Button>
-                </div>
-                {tab === "items" ? <GuideItems key={`i-${level}`} level={level} /> : <Phrases key={`p-${level}`} level={level} />}
-            </div>
+            {saving && <Loading message="Please wait..." />}
+            <ConfirmDialog
+                isOpen={Boolean(itemToDelete)}
+                title="Delete this entry?"
+                message={`Delete "${itemToDelete?.title}"? This cannot be undone.`}
+                confirmLabel="Delete"
+                cancelLabel="Cancel"
+                onConfirm={confirmRemove}
+                onCancel={() => setItemToDelete(null)}
+            />
         </div>
     );
 }

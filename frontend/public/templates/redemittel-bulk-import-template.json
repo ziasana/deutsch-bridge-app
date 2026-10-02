@@ -1,0 +1,47 @@
+[
+  {
+    "level": "B1",
+    "function": "Meinung äußern",
+    "phrase": "Ich bin der Meinung, dass …",
+    "example": "Ich bin der Meinung, dass Busse billiger sein sollten.",
+    "explanation": "<p>Damit leitest du deine <strong>eigene Meinung</strong> ein. Danach folgt ein Nebensatz mit „dass“.</p>",
+    "usageNote": "<p>Passt in formelle und neutrale Texte, z. B. in einer E-Mail oder einem Forumsbeitrag.</p>",
+    "formality": "NEUTRAL",
+    "sortOrder": 0,
+    "active": true,
+    "meaningEn": "I am of the opinion that …",
+    "meaningFa": "من معتقدم که …",
+    "grammarPattern": "Ich bin der Meinung, dass + Nebensatz (Verb am Ende)",
+    "commonMistake": "❌ Ich bin Meinung, dass …\n✓ Ich bin der Meinung, dass …",
+    "similarExpressions": ["Ich finde, dass …", "Meiner Meinung nach …"],
+    "contexts": ["WRITING", "DISCUSSION", "EXAM"],
+    "exercises": [
+      {
+        "type": "MEANING",
+        "correctAnswer": "Ich denke, dass …",
+        "wrongAnswers": ["Ich weiß nicht, ob …", "Ich möchte gern …"]
+      },
+      {
+        "type": "FILL_BLANK",
+        "prompt": "Ich bin der ___, dass Sport wichtig ist.",
+        "correctAnswer": "Meinung"
+      },
+      {
+        "type": "SITUATION",
+        "prompt": "Du schreibst deine Meinung zu einem Thema in einem Forum.",
+        "correctAnswer": "Ich bin der Meinung, dass …",
+        "wrongAnswers": ["Es tut mir leid, dass …", "Könnten Sie mir bitte helfen?"]
+      },
+      {
+        "type": "PRODUCTION",
+        "prompt": "Dein Lieblingssport"
+      }
+    ]
+  },
+  {
+    "level": "B1",
+    "function": "Bitten",
+    "phrase": "Könnten Sie mir bitte … ?",
+    "example": "Könnten Sie mir bitte den Weg zum Bahnhof zeigen?"
+  }
+]

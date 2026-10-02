@@ -15,6 +15,9 @@ import com.deutschbridge.backend.repository.RedemittelCollectionRepository;
 import com.deutschbridge.backend.repository.RedemittelExerciseRepository;
 import com.deutschbridge.backend.repository.RedemittelProgressRepository;
 import com.deutschbridge.backend.repository.WritingPhraseRepository;
+import com.deutschbridge.backend.service.cache.RedemittelCacheService;
+import com.deutschbridge.backend.RedemittelTestFunctions;
+import com.deutschbridge.backend.repository.RedemittelFunctionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,6 +49,7 @@ class RedemittelPracticeServiceTest {
     @Mock private RedemittelProgressRepository progressRepository;
     @Mock private RedemittelCollectionRepository collectionRepository;
     @Mock private RedemittelExerciseRepository exerciseRepository;
+    @Mock private RedemittelFunctionRepository functionRepository;
     @Mock private LearningActivityService learningActivityService;
     @Mock private RequestContext requestContext;
 
@@ -55,8 +59,9 @@ class RedemittelPracticeServiceTest {
 
     @BeforeEach
     void setUp() {
+        when(functionRepository.findAllByOrderBySortOrderAscLabelAsc()).thenReturn(RedemittelTestFunctions.all());
         service = new RedemittelPracticeService(phraseRepository, progressRepository, collectionRepository, exerciseRepository,
-                learningActivityService, requestContext);
+                learningActivityService, requestContext, new RedemittelCacheService(phraseRepository, exerciseRepository, functionRepository));
         when(requestContext.getUserId()).thenReturn("u1");
         when(requestContext.getLanguage()).thenReturn("EN");
         when(progressRepository.save(any(RedemittelProgress.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -67,7 +72,7 @@ class RedemittelPracticeServiceTest {
             WritingPhrase p = new WritingPhrase();
             p.setId("p" + i);
             p.setLevel(LearningLevel.B1);
-            p.setCategory(WritingPhraseCategory.values()[i]);
+            p.setCategory(RedemittelTestFunctions.all().get(i));
             p.setPhrase("Ich finde diese Sache wichtig " + i + ", weil …");
             p.setActive(true);
             phrases.add(p);
@@ -87,6 +92,8 @@ class RedemittelPracticeServiceTest {
             Collection<String> ids = inv.getArgument(0);
             return exercises.stream().filter(e -> ids.contains(e.getPhraseId())).toList();
         });
+        when(exerciseRepository.findByPhraseIdOrderBySortOrderAsc(anyString())).thenAnswer(inv ->
+                exercises.stream().filter(e -> e.getPhraseId().equals(inv.getArgument(0))).toList());
         when(exerciseRepository.findById(anyString())).thenAnswer(inv ->
                 exercises.stream().filter(e -> e.getId().equals(inv.getArgument(0))).findFirst());
     }

@@ -4,7 +4,6 @@ import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.model.enums.RedemittelContext;
 import com.deutschbridge.backend.model.enums.RedemittelStatus;
 import com.deutschbridge.backend.model.enums.WritingFormality;
-import com.deutschbridge.backend.model.enums.WritingPhraseCategory;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,7 +16,7 @@ import java.util.List;
 public record RedemittelDto(
         String id,
         LearningLevel level,
-        WritingPhraseCategory category,
+        String category,
         String categoryLabel,
         String phrase,
         /** Gloss in the learner's language, falling back to the German explanation. */

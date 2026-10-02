@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Check, RotateCcw, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WritingPhrase, WritingPhraseCategory } from "@/types/writing";
-import { FORMALITY_LABELS, PHRASE_CATEGORY_LABELS } from "../../writingMeta";
+import { FORMALITY_LABELS, phraseCategoryLabels } from "../../writingMeta";
 import { StepApi } from "../types";
 import { haptic } from "../reactions";
 import { useQuery } from "@tanstack/react-query";
@@ -18,10 +18,8 @@ interface FlashDeckProps {
 
 /** Redemittel by function: pick a function, then work through its cards one at a time. */
 export default function FlashDeck({ api, phrases }: FlashDeckProps) {
-    const categories = useMemo(() => {
-        const present = new Set(phrases.map((p) => p.category));
-        return (Object.keys(PHRASE_CATEGORY_LABELS) as WritingPhraseCategory[]).filter((c) => present.has(c));
-    }, [phrases]);
+    const labels = useMemo(() => phraseCategoryLabels(phrases), [phrases]);
+    const categories = useMemo(() => Object.keys(labels), [labels]);
 
     const [category, setCategory] = useState<WritingPhraseCategory | null>(null);
     const [queue, setQueue] = useState<WritingPhrase[]>([]);
@@ -62,7 +60,7 @@ export default function FlashDeck({ api, phrases }: FlashDeckProps) {
                                 finished.has(c) || api.solved ? "border-emerald-500 bg-emerald-500/10" : "border-border bg-card hover:border-primary/50 hover:bg-primary/5",
                             )}
                         >
-                            <span>{PHRASE_CATEGORY_LABELS[c]}</span>
+                            <span>{labels[c]}</span>
                             {(finished.has(c) || api.solved) && <Check className="size-4 shrink-0 text-emerald-600" aria-label="Geschafft" />}
                         </button>
                     ))}
@@ -81,7 +79,7 @@ export default function FlashDeck({ api, phrases }: FlashDeckProps) {
                 <button type="button" onClick={() => setCategory(null)} className="text-sm font-medium text-primary hover:underline cursor-pointer">
                     ← Funktionen
                 </button>
-                <span className="text-sm font-semibold text-foreground">{PHRASE_CATEGORY_LABELS[category]}</span>
+                <span className="text-sm font-semibold text-foreground">{labels[category]}</span>
                 <span className="text-xs text-foreground/50">{known}/{total}</span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-foreground/10">
@@ -110,7 +108,7 @@ export default function FlashDeck({ api, phrases }: FlashDeckProps) {
             ) : (
                 <div className="anim-pop space-y-3 rounded-2xl bg-emerald-500/10 p-5 text-center">
                     <p className="text-lg font-bold text-foreground">Geschafft! 🎉</p>
-                    <p className="text-sm text-foreground/70">Du kennst alle {total} Redemittel für „{PHRASE_CATEGORY_LABELS[category]}“.</p>
+                    <p className="text-sm text-foreground/70">Du kennst alle {total} Redemittel für „{labels[category]}“.</p>
                     <button type="button" onClick={() => setCategory(null)} className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 cursor-pointer">
                         Nächste Funktion wählen
                     </button>
