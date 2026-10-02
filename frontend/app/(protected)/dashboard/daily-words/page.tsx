@@ -84,7 +84,6 @@ export default function DailyWordsPage() {
         );
     }
 
-    const learnedCount = words.filter((w) => w.learned).length;
     const currentWord = words[currentIndex];
 
     const markLearned = (word: DailyWord) => {
@@ -135,8 +134,19 @@ export default function DailyWordsPage() {
     };
 
     return frame(
-        <div className="space-y-8">
-            <DailyWordsHeader learnedCount={learnedCount} total={words.length} />
+        <div className="space-y-6">
+            <DailyWordsHeader
+                words={words}
+                currentIndex={stage === "learning" ? currentIndex : -1}
+                onSelect={
+                    stage === "learning"
+                        ? setCurrentIndex
+                        : (i) => {
+                              setCurrentIndex(i);
+                              setStage("learning");
+                          }
+                }
+            />
 
             {stage === "learning" && (
                 <>

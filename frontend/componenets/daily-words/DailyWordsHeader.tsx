@@ -1,45 +1,92 @@
+import { Check, SpellCheck } from "lucide-react";
+import { DailyWord } from "@/types/dailyWord";
 import { useI18n } from "@/componenets/I18nProvider";
+import { cn } from "@/lib/utils";
 
 interface DailyWordsHeaderProps {
-    learnedCount: number;
-    total: number;
+    words: DailyWord[];
+    /** Index of the word being studied, or -1 when none is (practice / completion). */
+    currentIndex: number;
+    /** Jump to a word when its step is tapped; omit to make the steps read-only. */
+    onSelect?: (index: number) => void;
 }
 
-/** Gradient banner for today's words: title, how many are learned, one dot per word and a progress bar. */
-export default function DailyWordsHeader({ learnedCount, total }: Readonly<DailyWordsHeaderProps>) {
+/**
+ * A soft, tinted hero: title and a big "x / y" count, with today's words laid out as a journey underneath.
+ * Light on purpose, so the word card right below stays the focus of the page.
+ */
+export default function DailyWordsHeader({ words, currentIndex, onSelect }: Readonly<DailyWordsHeaderProps>) {
     const { t } = useI18n();
-    const remaining = total - learnedCount;
-    const percent = total > 0 ? (learnedCount / total) * 100 : 0;
+    const total = words.length;
+    const learnedCount = words.filter((w) => w.learned).length;
 
     return (
-        <section className="relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,hsl(228_78%_44%),hsl(216_100%_62%))] p-6 text-white shadow-card sm:p-8">
-            <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 size-64 rounded-full bg-white/10" />
-            <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 left-1/3 size-56 rounded-full bg-white/5" />
+        <header className="relative overflow-hidden rounded-3xl border border-primary/10 bg-gradient-to-br from-primary/[0.07] via-card to-card p-5 sm:p-6">
+            <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-12 size-44 rounded-full bg-primary/[0.06]" />
+            <div aria-hidden="true" className="pointer-events-none absolute -bottom-16 right-1/4 size-36 rounded-full bg-primary/[0.04]" />
 
-            <div className="relative">
-                <h1 className="text-2xl font-bold sm:text-3xl">{t.dailyWords.title}</h1>
-                <p className="mt-1 text-white/75">{t.dailyWords.subtitle(total)}</p>
-
-                <div className="mt-6 flex items-center justify-between gap-4 text-sm">
-                    <span className="font-semibold">{t.dailyWords.header.learnedOf(learnedCount, total)}</span>
-                    <div className="flex items-center gap-1.5" aria-hidden="true">
-                        {Array.from({ length: total }).map((_, i) => (
-                            <span key={i} className={`size-2.5 rounded-full transition-colors ${i < learnedCount ? "bg-white" : "bg-white/25"}`} />
-                        ))}
+            <div className="relative flex items-center justify-between gap-4">
+                <div className="flex min-w-0 items-center gap-3.5">
+                    <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
+                        <SpellCheck className="size-6" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                        <h1 className="truncate text-xl font-bold text-foreground sm:text-2xl">{t.dailyWords.title}</h1>
+                        <p className="truncate text-sm text-foreground/60">{t.dailyWords.subtitle(total)}</p>
                     </div>
                 </div>
-                <div
-                    role="progressbar"
-                    aria-valuenow={Math.round(percent)}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label={t.dailyWords.header.progressAria(learnedCount, total)}
-                    className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-white/20"
-                >
-                    <div className="h-full rounded-full bg-white transition-all duration-500" style={{ width: `${percent}%` }} />
+
+                <div className="shrink-0 text-right" aria-label={t.dailyWords.header.learnedOf(learnedCount, total)}>
+                    <p className="text-3xl font-bold leading-none text-primary sm:text-4xl">
+                        {learnedCount}
+                        <span className="text-xl font-semibold text-foreground/35 sm:text-2xl"> / {total}</span>
+                    </p>
                 </div>
-                {remaining > 0 && <p className="mt-2 text-xs text-white/70">{t.dailyWords.header.remaining(remaining)}</p>}
             </div>
-        </section>
+
+            <ol
+                role="progressbar"
+                aria-valuenow={learnedCount}
+                aria-valuemin={0}
+                aria-valuemax={total}
+                aria-label={t.dailyWords.header.progressAria(learnedCount, total)}
+                className="relative mt-6 grid"
+                style={{ gridTemplateColumns: `repeat(${total}, minmax(0, 1fr))` }}
+            >
+                {words.map((word, i) => {
+                    const isCurrent = i === currentIndex;
+                    const stepClass = cn(
+                        "relative z-10 flex size-8 items-center justify-center rounded-full text-xs font-bold transition",
+                        word.learned && "bg-primary text-primary-foreground shadow-sm",
+                        !word.learned && isCurrent && "border-2 border-primary bg-card text-primary shadow-sm",
+                        !word.learned && !isCurrent && "border border-border bg-card text-foreground/40",
+                    );
+                    const content = word.learned ? <Check className="size-4" strokeWidth={3} aria-hidden="true" /> : i + 1;
+                    return (
+                        <li key={word.id} className="relative flex flex-col items-center gap-2 px-0.5">
+                            {i > 0 && <span aria-hidden="true" className={cn("absolute left-0 right-1/2 top-4 h-0.5 -translate-y-1/2 transition-colors duration-500", words[i - 1].learned ? "bg-primary" : "bg-foreground/15")} />}
+                            {i < total - 1 && <span aria-hidden="true" className={cn("absolute left-1/2 right-0 top-4 h-0.5 -translate-y-1/2 transition-colors duration-500", word.learned ? "bg-primary" : "bg-foreground/15")} />}
+
+                            {onSelect ? (
+                                <button
+                                    type="button"
+                                    onClick={() => onSelect(i)}
+                                    aria-current={isCurrent ? "step" : undefined}
+                                    aria-label={word.word}
+                                    className={cn(stepClass, "cursor-pointer hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50")}
+                                >
+                                    {content}
+                                </button>
+                            ) : (
+                                <span className={stepClass}>{content}</span>
+                            )}
+                            <span className={cn("w-full truncate text-center text-xs", isCurrent ? "font-semibold text-primary" : word.learned ? "text-foreground/70" : "text-foreground/45")}>
+                                {word.word}
+                            </span>
+                        </li>
+                    );
+                })}
+            </ol>
+        </header>
     );
 }

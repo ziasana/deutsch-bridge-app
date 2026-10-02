@@ -96,23 +96,15 @@ export default function DailyWordLearningCard({
                 <p className="mt-5 text-xl font-medium text-foreground/85">{word.meaning}</p>
 
                 {word.example && (
-                    <blockquote className="mx-auto mt-5 max-w-md rounded-2xl bg-accent/50 px-5 py-4 text-sm italic leading-relaxed text-foreground/70">
+                    <p className="mx-auto mt-5 max-w-md border-s-4 border-primary/25 ps-4 text-start text-sm italic leading-relaxed text-foreground/65">
                         &ldquo;{word.example}&rdquo;
-                    </blockquote>
+                    </p>
                 )}
 
-                {synonyms.length > 0 && (
-                    <ul className="mt-4 flex flex-wrap justify-center gap-1.5">
-                        {synonyms.map((s) => (
-                            <li key={s} className="rounded-full bg-foreground/[0.06] px-2.5 py-1 text-xs font-medium text-foreground/60">
-                                {s}
-                            </li>
-                        ))}
-                    </ul>
-                )}
+                {synonyms.length > 0 && <p className="mt-4 text-xs text-foreground/50">{synonyms.join(" · ")}</p>}
 
                 {(word.meaningFa || word.exampleFa) && (
-                    <div dir="rtl" className="mt-5 rounded-2xl bg-foreground/[0.04] px-5 py-4 text-right font-fa">
+                    <div dir="rtl" className="mt-5 border-t border-border/60 pt-4 text-right font-fa">
                         {word.meaningFa && <p className="font-medium text-foreground/75">{word.meaningFa}</p>}
                         {word.exampleFa && <p className="mt-1 text-sm text-foreground/55">{word.exampleFa}</p>}
                     </div>
