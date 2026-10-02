@@ -4,7 +4,9 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Bookmark, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, BookOpen, Bookmark, BookmarkCheck, Calendar, Check, ChevronLeft, ChevronRight, Eye, Lightbulb, Play, X } from "lucide-react";
+import CircularProgress from "@/componenets/CircularProgress";
+import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import {
     addReadingArticleBookmark,
@@ -27,23 +29,27 @@ import {
     ReadingArticleNeighbor,
 } from "@/types/reading";
 import Loading from "@/componenets/Loading";
-import { Badge } from "@/componenets/ui/badge";
-import Button from "@/componenets/Button";
 import DictionaryPanel from "@/componenets/DictionaryPanel";
 import { getArticleImageSrc } from "@/lib/readingImages";
 import { useI18n } from "@/componenets/I18nProvider";
 
 const GENDER_COLORS: Record<string, string> = {
-    der: "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200",
-    die: "bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-200",
-    das: "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200",
+    der: "bg-blue-500/12 text-blue-600 dark:text-blue-400",
+    die: "bg-rose-500/12 text-rose-600 dark:text-rose-400",
+    das: "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400",
 };
 
+// Highlight styles use the app's learning colors: words amber, noun-verb phrases blue, idioms orange.
 const ANNOTATION_STYLES: Record<Annotation["type"], string> = {
-    WORD: "bg-yellow-100 dark:bg-yellow-900/30 border-b border-dotted border-gray-400 hover:border-solid hover:border-gray-600 dark:border-gray-500 dark:hover:border-gray-300",
-    NOMEN_VERB_VERBINDUNG: "bg-indigo-50 dark:bg-indigo-900/30 border-b-2 border-solid border-indigo-500 dark:border-indigo-400",
-    REDEWENDUNG: "bg-pink-50 dark:bg-pink-900/30 border-b-2 border-dashed border-pink-500 dark:border-pink-400",
+    WORD: "bg-learning-vocabulary/15 border-b border-dotted border-learning-vocabulary hover:bg-learning-vocabulary/25",
+    NOMEN_VERB_VERBINDUNG: "bg-learning-grammar/10 border-b-2 border-solid border-learning-grammar hover:bg-learning-grammar/20",
+    REDEWENDUNG: "bg-learning-expression/10 border-b-2 border-dashed border-learning-expression hover:bg-learning-expression/20",
 };
+
+const pillPrimary =
+    "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default disabled:opacity-50";
+const pillSmall =
+    "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full px-3.5 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default";
 
 type Segment =
     | { kind: "annotation"; text: string; annotation: Annotation }
@@ -140,7 +146,7 @@ function ArticleContent({
     );
 
     return (
-        <p dir="ltr" className="text-gray-800 dark:text-gray-200 whitespace-pre-line leading-relaxed text-left">
+        <p dir="ltr" className="whitespace-pre-line text-left text-lg leading-8 text-foreground/90">
             {segments.map((segment, idx) => {
                 if (segment.kind === "plain") return <span key={idx}>{segment.text}</span>;
 
@@ -151,12 +157,8 @@ function ArticleContent({
                         <mark
                             key={idx}
                             onClick={() => onAnnotationClick(segment.annotation)}
-                            className={`cursor-pointer not-italic ${ANNOTATION_STYLES[segment.annotation.type]} ${
-                                isActive
-                                    ? "bg-blue-100 dark:bg-blue-900/40"
-                                    : isTapped
-                                        ? "bg-gray-100 dark:bg-gray-700/40"
-                                        : ""
+                            className={`cursor-pointer rounded-sm not-italic text-foreground ${ANNOTATION_STYLES[segment.annotation.type]} ${
+                                isActive ? "bg-primary/20" : isTapped ? "bg-foreground/[0.06]" : ""
                             }`}
                         >
                             {segment.text}
@@ -168,7 +170,7 @@ function ArticleContent({
                     <span
                         key={idx}
                         onClick={() => onWordClick(segment.lemma)}
-                        className="cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900/30 rounded-sm"
+                        className="cursor-pointer rounded-sm hover:bg-learning-vocabulary/20"
                     >
                         {segment.text}
                     </span>
@@ -185,58 +187,57 @@ function AnnotationPopup({
 }: Readonly<{ annotation: Annotation; onSave: () => void; isSaved: boolean }>) {
     const { t } = useI18n();
     return (
-        <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 space-y-2">
-            {annotation.type === "WORD" && (
-                <>
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">
-                            {annotation.lemma}
-                        </span>
-                        {annotation.gender && (
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${GENDER_COLORS[annotation.gender] ?? ""}`}>
-                                {annotation.gender}
-                            </span>
-                        )}
-                        {annotation.pluralForm && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                                {t.readingArticle.plural}
-                                {annotation.pluralForm}
-                            </span>
-                        )}
-                    </div>
-                    <p className="text-blue-800 dark:text-blue-200 text-sm">{annotation.translationEn}</p>
-                </>
-            )}
+        <div className="anim-fade-up flex flex-wrap items-start justify-between gap-4 rounded-2xl border-s-4 border-primary bg-primary/[0.06] p-4 sm:p-5">
+            <div className="min-w-0 space-y-1.5">
+                {annotation.type === "WORD" && (
+                    <>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-lg font-bold text-foreground">{annotation.lemma}</span>
+                            {annotation.gender && (
+                                <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${GENDER_COLORS[annotation.gender] ?? ""}`}>{annotation.gender}</span>
+                            )}
+                            {annotation.pluralForm && (
+                                <span className="text-xs text-foreground/55">
+                                    {t.readingArticle.plural}
+                                    {annotation.pluralForm}
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-sm text-foreground/80">{annotation.translationEn}</p>
+                    </>
+                )}
 
-            {annotation.type === "NOMEN_VERB_VERBINDUNG" && (
-                <>
-                    <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-200">{annotation.lemma}</p>
-                    <p className="text-indigo-800 dark:text-indigo-200 text-sm">{annotation.translationEn}</p>
-                </>
-            )}
+                {annotation.type === "NOMEN_VERB_VERBINDUNG" && (
+                    <>
+                        <p className="text-lg font-bold text-foreground">{annotation.lemma}</p>
+                        <p className="text-sm text-foreground/80">{annotation.translationEn}</p>
+                    </>
+                )}
 
-            {annotation.type === "REDEWENDUNG" && (
-                <div className="space-y-1">
-                    <p className="text-sm font-semibold text-pink-800 dark:text-pink-200">{annotation.lemma}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {t.readingArticle.literal}
-                        <span className="italic">{annotation.literalTranslation}</span>
-                    </p>
-                    <p className="text-pink-800 dark:text-pink-200 text-sm">
-                        {t.readingArticle.meaning}
-                        {annotation.translationEn}
-                    </p>
-                </div>
-            )}
+                {annotation.type === "REDEWENDUNG" && (
+                    <>
+                        <p className="text-lg font-bold text-foreground">{annotation.lemma}</p>
+                        <p className="text-xs text-foreground/55">
+                            {t.readingArticle.literal}
+                            <span className="italic">{annotation.literalTranslation}</span>
+                        </p>
+                        <p className="text-sm text-foreground/80">
+                            {t.readingArticle.meaning}
+                            {annotation.translationEn}
+                        </p>
+                    </>
+                )}
+            </div>
 
-            <Button
-                variant={isSaved ? "secondary" : "primary"}
-                className="text-xs px-3 py-1"
+            <button
+                type="button"
                 disabled={isSaved}
                 onClick={onSave}
+                className={cn(pillSmall, "py-2", isSaved ? "border border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400" : "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90")}
             >
+                {isSaved ? <Check className="mr-1 size-3.5" strokeWidth={3} aria-hidden="true" /> : <Bookmark className="mr-1 size-3.5" aria-hidden="true" />}
                 {isSaved ? t.readingArticle.saved : t.readingArticle.save}
-            </Button>
+            </button>
         </div>
     );
 }
@@ -262,46 +263,54 @@ function GlossarySection({
     if (glossary.length === 0) return null;
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{t.readingArticle.keyVocabulary}</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                {t.readingArticle.keyVocabularySubtitle}
-            </p>
-            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                {glossary.map((v) => (
-                    <li key={v.word} className="py-3 flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                            <span className="font-semibold text-gray-900 dark:text-white">{v.word}</span>
-                            <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">{v.meaning}</p>
-                        </div>
-                        <Button
-                            variant={savedLemmas.has(v.word) ? "secondary" : "primary"}
-                            className="text-xs px-3 py-1 shrink-0"
-                            disabled={savedLemmas.has(v.word)}
-                            onClick={() =>
-                                onSave({
-                                    id: v.word,
-                                    spans: [],
-                                    surfaceText: v.word,
-                                    type: "WORD",
-                                    lemma: v.word,
-                                    pos: null,
-                                    gender: null,
-                                    pluralForm: null,
-                                    translationEn: v.meaning,
-                                    literalTranslation: null,
-                                    cefrLevel: null,
-                                    exampleSentence: null,
-                                    known: false,
-                                })
-                            }
-                        >
-                            {savedLemmas.has(v.word) ? t.readingArticle.saved : t.readingArticle.save}
-                        </Button>
-                    </li>
-                ))}
+        <section className="overflow-hidden rounded-[10px] bg-card shadow-card">
+            <div className="flex items-center gap-3 px-6 pb-4 pt-6 sm:px-8">
+                <span className="flex size-10 items-center justify-center rounded-xl bg-learning-vocabulary/15">
+                    <Lightbulb className="size-5 text-learning-vocabulary" aria-hidden="true" />
+                </span>
+                <div>
+                    <h2 className="text-xl font-bold text-foreground">{t.readingArticle.keyVocabulary}</h2>
+                    <p className="text-sm text-foreground/60">{t.readingArticle.keyVocabularySubtitle}</p>
+                </div>
+            </div>
+            <ul className="divide-y divide-border/60 border-t border-border/60">
+                {glossary.map((v) => {
+                    const isSaved = savedLemmas.has(v.word);
+                    return (
+                        <li key={v.word} className="flex items-center justify-between gap-4 px-6 py-3.5 sm:px-8">
+                            <div className="min-w-0">
+                                <span className="font-semibold text-foreground">{v.word}</span>
+                                <p className="mt-0.5 text-sm text-foreground/60">{v.meaning}</p>
+                            </div>
+                            <button
+                                type="button"
+                                disabled={isSaved}
+                                className={cn(pillSmall, isSaved ? "border border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400" : "bg-primary/10 text-primary hover:bg-primary/20")}
+                                onClick={() =>
+                                    onSave({
+                                        id: v.word,
+                                        spans: [],
+                                        surfaceText: v.word,
+                                        type: "WORD",
+                                        lemma: v.word,
+                                        pos: null,
+                                        gender: null,
+                                        pluralForm: null,
+                                        translationEn: v.meaning,
+                                        literalTranslation: null,
+                                        cefrLevel: null,
+                                        exampleSentence: null,
+                                        known: false,
+                                    })
+                                }
+                            >
+                                {isSaved ? t.readingArticle.saved : t.readingArticle.save}
+                            </button>
+                        </li>
+                    );
+                })}
             </ul>
-        </div>
+        </section>
     );
 }
 
@@ -399,140 +408,161 @@ function QuizSection({
         setQuiz({ ...quiz, currentIndex: quiz.currentIndex + 1, selectedAnswer: "", feedback: null });
     };
 
+    const activeQuestion = quiz?.questions[quiz.currentIndex];
+
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{t.readingArticle.quiz.title}</h2>
+        <section className="rounded-[10px] bg-card p-6 shadow-card sm:p-8">
+            <div className="flex items-center justify-between gap-3">
+                <h2 className="flex items-center gap-3 text-xl font-bold text-foreground">
+                    <span className="flex size-10 items-center justify-center rounded-xl bg-learning-reading/15">
+                        <BookOpen className="size-5 text-learning-reading" aria-hidden="true" />
+                    </span>
+                    {t.readingArticle.quiz.title}
+                </h2>
+                {phase === "active" && quiz && (
+                    <span className="text-sm font-medium text-foreground/55">{t.readingArticle.quiz.questionOf(quiz.currentIndex + 1, quiz.questions.length)}</span>
+                )}
+            </div>
 
             {phase === "idle" && (
-                <div className="space-y-3">
-                    <p className="text-sm text-gray-600 dark:text-gray-300">{t.readingArticle.quiz.ready}</p>
-                    <Button variant="primary" className="text-sm px-4 py-2" disabled={starting} onClick={beginQuiz}>
+                <div className="mt-5 space-y-4">
+                    <p className="text-sm text-foreground/65">{t.readingArticle.quiz.ready}</p>
+                    <button type="button" className={pillPrimary} disabled={starting} onClick={beginQuiz}>
+                        <Play className="size-4 fill-current" aria-hidden="true" />
                         {starting ? t.readingArticle.quiz.loadingQuiz : t.readingArticle.quiz.start}
-                    </Button>
+                    </button>
                 </div>
             )}
 
-            {phase === "active" && quiz && (() => {
-                const question = quiz.questions[quiz.currentIndex];
-                if (!question) {
-                    return <p className="text-sm text-gray-500 dark:text-gray-400">{t.readingArticle.quiz.noQuiz}</p>;
-                }
-                return (
-                    <div className="space-y-3">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {t.readingArticle.quiz.questionOf(quiz.currentIndex + 1, quiz.questions.length)}
-                        </p>
-                        <p className="font-medium text-gray-900 dark:text-white">{question.prompt}</p>
+            {phase === "active" && quiz && !activeQuestion && <p className="mt-5 text-sm text-foreground/60">{t.readingArticle.quiz.noQuiz}</p>}
 
-                        <div className="space-y-2">
-                            {(question.options ?? []).map((option) => (
-                                <button
-                                    key={option}
-                                    type="button"
-                                    disabled={Boolean(quiz.feedback)}
-                                    onClick={() => setQuiz({ ...quiz, selectedAnswer: option })}
-                                    className={`w-full text-left px-3 py-2 rounded-lg border text-sm cursor-pointer disabled:cursor-not-allowed ${
-                                        quiz.selectedAnswer === option
-                                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
-                                            : "border-gray-300 dark:border-gray-600"
-                                    }`}
-                                >
-                                    {option}
-                                </button>
-                            ))}
+            {phase === "active" && quiz && activeQuestion && (
+                <div className="mt-5">
+                    <div className="flex gap-1.5" role="progressbar" aria-valuenow={quiz.currentIndex + 1} aria-valuemin={1} aria-valuemax={quiz.questions.length}>
+                        {quiz.questions.map((q, i) => (
+                            <span key={q.id} className={cn("h-1.5 flex-1 rounded-full transition-colors", i <= quiz.currentIndex ? "bg-primary" : "bg-foreground/10")} />
+                        ))}
+                    </div>
+
+                    <div className="anim-fade-up mt-6" key={quiz.currentIndex}>
+                        <p className="text-lg font-semibold leading-relaxed text-foreground sm:text-xl">{activeQuestion.prompt}</p>
+
+                        <div className="mt-5 space-y-2.5">
+                            {(activeQuestion.options ?? []).map((option, i) => {
+                                const isSelected = quiz.selectedAnswer === option;
+                                const answered = Boolean(quiz.feedback);
+                                const isRight = answered && option === quiz.feedback?.correctAnswer;
+                                const isWrong = answered && isSelected && !isRight;
+                                return (
+                                    <button
+                                        key={option}
+                                        type="button"
+                                        disabled={answered}
+                                        onClick={() => setQuiz({ ...quiz, selectedAnswer: option })}
+                                        className={cn(
+                                            "flex w-full cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm text-foreground transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default",
+                                            !answered && !isSelected && "border-border/60 bg-background hover:-translate-y-0.5 hover:border-primary/50 hover:bg-accent/50 hover:shadow-card",
+                                            !answered && isSelected && "border-primary bg-primary/10",
+                                            isRight && "border-green-500 bg-green-500/10",
+                                            isWrong && "border-red-500 bg-red-500/10",
+                                            answered && !isRight && !isWrong && "border-border/40 opacity-55",
+                                        )}
+                                    >
+                                        <span
+                                            aria-hidden="true"
+                                            className={cn(
+                                                "flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+                                                isRight ? "bg-green-500 text-white" : isWrong ? "bg-red-500 text-white" : isSelected ? "bg-primary text-primary-foreground" : "bg-accent text-primary",
+                                            )}
+                                        >
+                                            {isRight ? <Check className="size-4" strokeWidth={3} /> : isWrong ? <X className="size-4" strokeWidth={3} /> : String.fromCharCode(65 + i)}
+                                        </span>
+                                        <span className="min-w-0 flex-1 break-words">{option}</span>
+                                    </button>
+                                );
+                            })}
                         </div>
 
                         {quiz.feedback && (
                             <div
-                                className={`rounded-lg p-3 text-sm ${
-                                    quiz.feedback.correct
-                                        ? "bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200"
-                                        : "bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200"
-                                }`}
+                                className={cn(
+                                    "mt-5 flex items-start gap-3 rounded-2xl p-4 text-sm",
+                                    quiz.feedback.correct ? "bg-green-500/10 text-green-800 dark:text-green-300" : "bg-red-500/10 text-red-800 dark:text-red-300",
+                                )}
                             >
-                                <p className="font-semibold">
-                                    {quiz.feedback.correct ? t.readingArticle.quiz.correct : t.readingArticle.quiz.incorrect}
-                                </p>
-                                {!quiz.feedback.correct && (
-                                    <p>
-                                        {t.readingArticle.quiz.correctAnswer}
-                                        <span className="font-medium">{quiz.feedback.correctAnswer}</span>
-                                    </p>
-                                )}
-                                <p className="mt-1">{quiz.feedback.explanation}</p>
-                                {!quiz.feedback.correct && quiz.feedback.supportingSentence && (
-                                    <p className="mt-1 italic">&quot;{quiz.feedback.supportingSentence}&quot;</p>
-                                )}
-                                {quiz.feedback.relatedLemma && (
-                                    <p className="mt-1 text-xs">
-                                        {t.readingArticle.quiz.addedToReview(quiz.feedback.relatedLemma)}
-                                    </p>
-                                )}
+                                <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-full text-white", quiz.feedback.correct ? "bg-green-500" : "bg-red-500")} aria-hidden="true">
+                                    {quiz.feedback.correct ? <Check className="size-3.5" strokeWidth={3} /> : <X className="size-3.5" strokeWidth={3} />}
+                                </span>
+                                <div>
+                                    <p className="font-semibold">{quiz.feedback.correct ? t.readingArticle.quiz.correct : t.readingArticle.quiz.incorrect}</p>
+                                    {!quiz.feedback.correct && (
+                                        <p className="mt-0.5">
+                                            {t.readingArticle.quiz.correctAnswer}
+                                            <span className="font-semibold">{quiz.feedback.correctAnswer}</span>
+                                        </p>
+                                    )}
+                                    <p className="mt-1">{quiz.feedback.explanation}</p>
+                                    {!quiz.feedback.correct && quiz.feedback.supportingSentence && <p className="mt-1 italic">&quot;{quiz.feedback.supportingSentence}&quot;</p>}
+                                    {quiz.feedback.relatedLemma && <p className="mt-1 text-xs">{t.readingArticle.quiz.addedToReview(quiz.feedback.relatedLemma)}</p>}
+                                </div>
                             </div>
                         )}
 
-                        <div className="flex justify-end pt-2">
+                        <div className="mt-6 flex justify-end">
                             {quiz.feedback ? (
-                                <Button variant="primary" className="text-sm px-4 py-2" onClick={nextQuestion}>
-                                    {quiz.currentIndex + 1 >= quiz.questions.length
-                                        ? t.readingArticle.quiz.seeResults
-                                        : t.readingArticle.quiz.nextQuestion}
-                                </Button>
+                                <button type="button" className={pillPrimary} onClick={nextQuestion}>
+                                    {quiz.currentIndex + 1 >= quiz.questions.length ? t.readingArticle.quiz.seeResults : t.readingArticle.quiz.nextQuestion}
+                                    <ArrowRight className="size-4" aria-hidden="true" />
+                                </button>
                             ) : (
-                                <Button
-                                    variant="primary"
-                                    className="text-sm px-4 py-2"
-                                    disabled={!quiz.selectedAnswer || quiz.submitting}
-                                    onClick={answerQuestion}
-                                >
+                                <button type="button" className={pillPrimary} disabled={!quiz.selectedAnswer || quiz.submitting} onClick={answerQuestion}>
                                     {quiz.submitting ? t.readingArticle.quiz.checking : t.readingArticle.quiz.submitAnswer}
-                                </Button>
+                                </button>
                             )}
                         </div>
                     </div>
-                );
-            })()}
+                </div>
+            )}
 
             {phase === "results" && results && (
-                <div className="space-y-3">
-                    <div className="flex gap-6">
-                        <div>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                                {Math.round(results.comprehensionScore)}%
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{t.readingArticle.quiz.comprehension}</p>
-                        </div>
-                        <div>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                                {Math.round(results.vocabScore)}%
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{t.readingArticle.quiz.vocabInContext}</p>
-                        </div>
+                <div className="anim-fade-up mt-6">
+                    <div className="flex flex-wrap items-start justify-center gap-10">
+                        {[
+                            { value: results.comprehensionScore, label: t.readingArticle.quiz.comprehension },
+                            { value: results.vocabScore, label: t.readingArticle.quiz.vocabInContext },
+                        ].map((ring) => (
+                            <div key={ring.label} className="flex flex-col items-center gap-2">
+                                <CircularProgress value={ring.value} size={108} color="hsl(173 58% 39%)" trackColor="hsl(0 0% 50% / 0.15)" showLabel />
+                                <span className="text-xs font-medium text-foreground/60">{ring.label}</span>
+                            </div>
+                        ))}
                     </div>
 
                     <div
-                        className={`rounded-lg p-3 text-sm ${
+                        className={cn(
+                            "mt-6 rounded-2xl p-4 text-sm",
                             results.recommendation.type === "LEVEL_UP"
-                                ? "bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200"
+                                ? "bg-green-500/10 text-green-800 dark:text-green-300"
                                 : results.recommendation.type === "EASIER"
-                                    ? "bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200"
-                                    : "bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200"
-                        }`}
+                                    ? "bg-learning-vocabulary/10 text-foreground/85"
+                                    : "bg-primary/[0.07] text-foreground/85",
+                        )}
                     >
                         <p>{results.recommendation.message}</p>
                         {results.recommendation.suggestedArticleId && (
                             <button
                                 type="button"
-                                className="mt-2 cursor-pointer underline font-medium"
+                                className="mt-2 inline-flex cursor-pointer items-center gap-1.5 font-semibold text-primary hover:underline"
                                 onClick={() => router.push(`/dashboard/reading/article?id=${results.recommendation.suggestedArticleId}`)}
                             >
-                                {results.recommendation.suggestedTitle ?? t.readingArticle.quiz.goToArticle} →
+                                {results.recommendation.suggestedTitle ?? t.readingArticle.quiz.goToArticle}
+                                <ArrowRight className="size-4" aria-hidden="true" />
                             </button>
                         )}
                     </div>
                 </div>
             )}
-        </div>
+        </section>
     );
 }
 
@@ -559,34 +589,23 @@ function ArticleNavRow({
     const { t } = useI18n();
     if (!previous && !next) return null;
 
+    const navButton =
+        "flex min-w-0 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground/80 shadow-sm transition hover:text-primary hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:pointer-events-none disabled:opacity-0";
+
     return (
         <div className="flex items-center justify-between gap-3">
-            <button
-                type="button"
-                disabled={!previous}
-                onClick={() => previous && onNavigate(previous.id)}
-                title={previous?.title}
-                className="flex min-w-0 cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-gray-600 transition hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-0 disabled:hover:bg-transparent disabled:hover:text-gray-600 dark:text-gray-300"
-            >
-                <ChevronLeft className="size-4 shrink-0" />
+            <button type="button" disabled={!previous} onClick={() => previous && onNavigate(previous.id)} title={previous?.title} className={navButton}>
+                <ChevronLeft className="size-4 shrink-0" aria-hidden="true" />
                 <span className="truncate">{t.readingArticle.previousArticle}</span>
             </button>
 
             {!quizCompleted && (
-                <span className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-                    {t.readingArticle.quizNotFinishedHint}
-                </span>
+                <span className="hidden shrink-0 rounded-full bg-learning-vocabulary/12 px-3 py-1 text-xs font-medium text-foreground/70 sm:inline">{t.readingArticle.quizNotFinishedHint}</span>
             )}
 
-            <button
-                type="button"
-                disabled={!next}
-                onClick={() => next && onNavigate(next.id)}
-                title={next?.title}
-                className="flex min-w-0 cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-gray-600 transition hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-0 disabled:hover:bg-transparent disabled:hover:text-gray-600 dark:text-gray-300"
-            >
+            <button type="button" disabled={!next} onClick={() => next && onNavigate(next.id)} title={next?.title} className={navButton}>
                 <span className="truncate">{t.readingArticle.nextArticle}</span>
-                <ChevronRight className="size-4 shrink-0" />
+                <ChevronRight className="size-4 shrink-0" aria-hidden="true" />
             </button>
         </div>
     );
@@ -660,33 +679,22 @@ function ReadingArticleDetailContent({ articleId }: Readonly<{ articleId: string
             });
     }, [articleId]);
 
-    if (!articleId) {
-        return (
-            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
-                <div className="max-w-4xl mx-auto text-center text-gray-500 dark:text-gray-400 py-20">
-                    {t.readingArticle.noArticleSelected}{" "}
-                    <Link href="/dashboard/reading" className="underline">
-                        {t.readingArticle.back}
-                    </Link>
-                </div>
+    const message = (text: string) => (
+        <div className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10">
+            <div className="mx-auto max-w-4xl rounded-[10px] bg-card p-10 text-center shadow-card">
+                <p className="text-foreground/65">{text}</p>
+                <Link href="/dashboard/reading" className="mt-3 inline-block font-semibold text-primary hover:underline">
+                    {t.readingArticle.back}
+                </Link>
             </div>
-        );
-    }
+        </div>
+    );
+
+    if (!articleId) return message(t.readingArticle.noArticleSelected);
 
     if (loading) return <Loading />;
 
-    if (!article) {
-        return (
-            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
-                <div className="max-w-4xl mx-auto text-center text-gray-500 dark:text-gray-400 py-20">
-                    {t.readingArticle.articleNotFound}{" "}
-                    <Link href="/dashboard/reading" className="underline">
-                        {t.readingArticle.back}
-                    </Link>
-                </div>
-            </div>
-        );
-    }
+    if (!article) return message(t.readingArticle.articleNotFound);
 
     const learned = article.learningProgresses?.some((lp) => lp.learned === true) ?? false;
 
@@ -740,33 +748,24 @@ function ReadingArticleDetailContent({ articleId }: Readonly<{ articleId: string
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to save word."));
     };
 
+    const chip = "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold";
+
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
-            <div className="max-w-4xl mx-auto space-y-6">
+        <div className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10">
+            <div className="mx-auto max-w-4xl space-y-6">
                 <div className="flex items-center justify-between gap-4">
-                    <Link
-                        href="/dashboard/reading"
-                        className="text-sm text-blue-600 dark:text-blue-400 hover:underline inline-block shrink-0"
-                    >
+                    <Link href="/dashboard/reading" className="inline-block shrink-0 text-sm font-medium text-foreground/60 transition hover:text-foreground">
                         {t.readingArticle.back}
                     </Link>
                     <div className="min-w-0 flex-1">
-                        <ArticleNavRow
-                            previous={navigation?.previous}
-                            next={navigation?.next}
-                            quizCompleted={article.quizCompleted}
-                            onNavigate={goToArticle}
-                        />
+                        <ArticleNavRow previous={navigation?.previous} next={navigation?.next} quizCompleted={article.quizCompleted} onNavigate={goToArticle} />
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] overflow-hidden">
+                <article className="overflow-hidden rounded-[10px] bg-card shadow-card">
                     <div className="relative">
-                        <img
-                            src={getArticleImageSrc(article.imageUrl, article.level)}
-                            alt=""
-                            className="w-full h-56 object-cover"
-                        />
+                        <img src={getArticleImageSrc(article.imageUrl, article.level)} alt="" className="h-56 w-full object-cover sm:h-72" />
+                        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-card to-transparent" />
                         <button
                             type="button"
                             disabled={updatingBookmark}
@@ -774,30 +773,36 @@ function ReadingArticleDetailContent({ articleId }: Readonly<{ articleId: string
                             aria-pressed={article.bookmarked}
                             aria-label={article.bookmarked ? t.readingArticle.unbookmark : t.readingArticle.bookmark}
                             title={article.bookmarked ? t.readingArticle.unbookmark : t.readingArticle.bookmark}
-                            className="absolute top-3 right-3 flex size-10 cursor-pointer items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-md backdrop-blur-sm transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-900/80 dark:text-gray-200 dark:hover:bg-gray-900"
+                            className="absolute right-4 top-4 flex size-10 cursor-pointer items-center justify-center rounded-full bg-card/90 text-foreground/70 shadow-md backdrop-blur-sm transition hover:scale-105 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                            <Bookmark
-                                className={`size-5 ${article.bookmarked ? "fill-current text-blue-600 dark:text-blue-400" : ""}`}
-                            />
+                            {article.bookmarked ? <BookmarkCheck className="size-5 text-primary" /> : <Bookmark className="size-5" />}
                         </button>
                     </div>
-                    <div className="p-6 space-y-4">
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{article.title}</h1>
-                            <Badge variant="secondary">{article.level}</Badge>
-                            {learned && <Badge variant="default">{t.readingArticle.learned}</Badge>}
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                            <span>{t.readingArticle.views(viewCount ?? article.viewCount)}</span>
-                            <span>
-                                {t.readingArticle.posted(
-                                    formatPostedDate(article.createdAt, language === "fa" ? "fa-IR-u-ca-gregory" : "en-US")
+
+                    <div className="space-y-6 px-6 pb-8 sm:px-10">
+                        <header className="-mt-6 relative">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className={`${chip} bg-primary/10 text-primary`}>{article.level}</span>
+                                {article.categoryTitle && <span className={`${chip} bg-foreground/[0.06] text-foreground/65`}>{article.categoryTitle}</span>}
+                                {learned && (
+                                    <span className={`${chip} bg-green-500/10 text-green-700 dark:text-green-400`}>
+                                        <Check className="size-3" strokeWidth={3} aria-hidden="true" />
+                                        {t.readingArticle.learned}
+                                    </span>
                                 )}
-                            </span>
-                        </div>
-                        {article.categoryTitle && (
-                            <p className="text-sm text-gray-500 dark:text-gray-400 italic">{article.categoryTitle}</p>
-                        )}
+                            </div>
+                            <h1 className="mt-3 text-3xl font-bold leading-tight text-foreground sm:text-4xl">{article.title}</h1>
+                            <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-foreground/55">
+                                <span className="inline-flex items-center gap-1.5">
+                                    <Eye className="size-4" aria-hidden="true" />
+                                    {t.readingArticle.views(viewCount ?? article.viewCount).replace("👁 ", "")}
+                                </span>
+                                <span className="inline-flex items-center gap-1.5">
+                                    <Calendar className="size-4" aria-hidden="true" />
+                                    {t.readingArticle.posted(formatPostedDate(article.createdAt, language === "fa" ? "fa-IR-u-ca-gregory" : "en-US"))}
+                                </span>
+                            </p>
+                        </header>
 
                         <ArticleContent
                             content={article.content}
@@ -817,41 +822,30 @@ function ReadingArticleDetailContent({ articleId }: Readonly<{ articleId: string
                             />
                         )}
 
-                        <div className="pt-2">
-                            <Button
-                                variant={learned ? "secondary" : "primary"}
-                                className="text-sm px-4 py-2"
+                        <div className="border-t border-border/60 pt-5">
+                            <button
+                                type="button"
                                 disabled={updatingLearned}
                                 onClick={toggleLearned}
+                                className={cn(
+                                    "inline-flex cursor-pointer items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 disabled:opacity-60",
+                                    learned
+                                        ? "border border-green-500/30 bg-green-500/10 text-green-700 hover:bg-green-500/20 focus-visible:ring-green-400 dark:text-green-400"
+                                        : "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 focus-visible:ring-primary/50",
+                                )}
                             >
-                                {updatingLearned
-                                    ? t.readingArticle.saving
-                                    : learned
-                                    ? t.readingArticle.markNotLearned
-                                    : t.readingArticle.markLearned}
-                            </Button>
+                                <Check className="size-4" strokeWidth={3} aria-hidden="true" />
+                                {updatingLearned ? t.readingArticle.saving : learned ? t.readingArticle.markNotLearned : t.readingArticle.markLearned}
+                            </button>
                         </div>
                     </div>
-                </div>
+                </article>
 
                 <GlossarySection article={article} savedLemmas={savedLemmas} onSave={handleSaveWord} />
 
-                <QuizSection
-                    key={article.id}
-                    article={article}
-                    tappedLemmas={tappedLemmas}
-                    savedLemmas={savedLemmas}
-                    onSaveWord={handleSaveWord}
-                />
+                <QuizSection key={article.id} article={article} tappedLemmas={tappedLemmas} savedLemmas={savedLemmas} onSaveWord={handleSaveWord} />
 
-                <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] px-4 py-2">
-                    <ArticleNavRow
-                        previous={navigation?.previous}
-                        next={navigation?.next}
-                        quizCompleted={article.quizCompleted}
-                        onNavigate={goToArticle}
-                    />
-                </div>
+                <ArticleNavRow previous={navigation?.previous} next={navigation?.next} quizCompleted={article.quizCompleted} onNavigate={goToArticle} />
             </div>
             <DictionaryPanel activeLemma={activeDictionaryLemma} onClose={() => setActiveDictionaryLemma(null)} />
         </div>

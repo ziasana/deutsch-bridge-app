@@ -245,4 +245,59 @@ class UserServiceTest {
     }
 
 
+    // ---------------------------------------------------------------
+    // Change password (a learner changing their own password)
+    // ---------------------------------------------------------------
+    @Test
+    @DisplayName("changePassword -> saves the new encoded password when the current one is right")
+    void testChangePassword() throws Exception {
+        user.setPassword("stored-hash");
+        when(userRepository.findById("id1")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("current", "stored-hash")).thenReturn(true);
+        when(passwordEncoder.matches("brand-new", "stored-hash")).thenReturn(false);
+        when(passwordEncoder.encode("brand-new")).thenReturn("new-hash");
+
+        boolean result = userService.changePassword("id1", "current", "brand-new");
+
+        assertTrue(result);
+        assertEquals("new-hash", user.getPassword());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    @DisplayName("changePassword -> rejects a wrong current password and changes nothing")
+    void testChangePassword_WrongCurrent() {
+        user.setPassword("stored-hash");
+        when(userRepository.findById("id1")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("wrong", "stored-hash")).thenReturn(false);
+
+        assertThatThrownBy(() -> userService.changePassword("id1", "wrong", "brand-new"))
+                .isInstanceOf(UserVerificationException.class)
+                .hasMessage("Current password is incorrect");
+        verify(userRepository, never()).save(any());
+        assertEquals("stored-hash", user.getPassword());
+    }
+
+    @Test
+    @DisplayName("changePassword -> rejects reusing the current password")
+    void testChangePassword_SamePassword() {
+        user.setPassword("stored-hash");
+        when(userRepository.findById("id1")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("same", "stored-hash")).thenReturn(true);
+
+        assertThatThrownBy(() -> userService.changePassword("id1", "same", "same"))
+                .isInstanceOf(UserVerificationException.class)
+                .hasMessageContaining("different");
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("changePassword -> throws when the user does not exist")
+    void testChangePassword_UserNotFound() {
+        when(userRepository.findById("missing")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.changePassword("missing", "current", "brand-new"))
+                .isInstanceOf(DataNotFoundException.class);
+    }
+
 }

@@ -10,7 +10,8 @@ import { Redemittel, RedemittelStatus } from "@/types/redemittel";
 import RedemittelRow from "@/componenets/redemittel/RedemittelRow";
 import RedemittelExplorer from "@/componenets/redemittel/RedemittelExplorer";
 import RedemittelTodayStrip from "@/componenets/redemittel/RedemittelTodayStrip";
-import RedemittelHubPanel from "@/componenets/redemittel/RedemittelHubPanel";
+import RedemittelHeader from "@/componenets/redemittel/RedemittelHeader";
+import RedemittelDayPanel from "@/componenets/redemittel/RedemittelDayPanel";
 import RedemittelDetailDialog from "@/componenets/redemittel/RedemittelDetailDialog";
 import { useRedemittelActions } from "@/componenets/redemittel/useRedemittelActions";
 import { STATUS_LABELS } from "@/componenets/redemittel/redemittelMeta";
@@ -92,26 +93,14 @@ export default function RedemittelPage() {
     return (
         <div className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-10" dir="ltr">
             <div className="mx-auto max-w-4xl">
-                <div className="rounded-3xl border border-border/60 bg-card shadow-card">
-                    <RedemittelHubPanel
-                        hub={hub}
-                        status={status === "ALL" ? null : status}
-                        onSelectStatus={(s) => {
-                            setStatus(s ?? "ALL");
-                            resetPage();
-                            if (s) scrollToList();
-                        }}
-                        onNavigate={(href) => router.push(href)}
-                        onDiscover={() => scrollToList()}
-                        canSurprise={items.length > 0}
-                        onSurprise={() => {
-                            if (items.length === 0) return;
-                            setOpenId(items[Math.floor(Math.random() * items.length)].id);
-                        }}
-                    />
-                <RedemittelTodayStrip onStart={() => router.push("/dashboard/redemittel/learn")} />
+                <div className="space-y-6">
+                    <RedemittelHeader hub={hub} onNavigate={(href) => router.push(href)} onDiscover={() => scrollToList()} />
 
-                <section id="entdecken" aria-label="Entdecken" className="scroll-mt-6 border-t border-border/60">
+                    <RedemittelDayPanel hub={hub} onNavigate={(href) => router.push(href)} onDiscover={() => scrollToList()}>
+                        <RedemittelTodayStrip onStart={() => router.push("/dashboard/redemittel/learn")} />
+                    </RedemittelDayPanel>
+
+                <section id="entdecken" aria-label="Entdecken" className="scroll-mt-6">
                     <RedemittelExplorer
                         search={search}
                         onSearch={setSearch}
@@ -126,6 +115,17 @@ export default function RedemittelPage() {
                             resetPage();
                         }}
                         categories={hub?.categories ?? []}
+                        status={status === "ALL" ? null : status}
+                        onStatus={(st) => {
+                            setStatus(st ?? "ALL");
+                            resetPage();
+                        }}
+                        statusCounts={hub ? { NEW: hub.summary.fresh, LEARNING: hub.summary.learning, REVIEW: hub.summary.review, MASTERED: hub.summary.mastered } : null}
+                        canSurprise={items.length > 0}
+                        onSurprise={() => {
+                            if (items.length === 0) return;
+                            setOpenId(items[Math.floor(Math.random() * items.length)].id);
+                        }}
                         savedOnly={savedOnly}
                         onToggleSaved={() => {
                             setSavedOnly((v) => !v);

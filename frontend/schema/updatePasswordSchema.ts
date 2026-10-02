@@ -3,6 +3,9 @@ import {z} from "zod";
 export const updatePasswordSchema= z
     .object(
         {
+            currentPassword: z
+                .string()
+                .min(1, "Enter your current password"),
             password: z
                 .string()
                 .min(6, "Password must be at least 6 characters")

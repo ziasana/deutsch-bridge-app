@@ -30,12 +30,12 @@ export default function TutorSidebar({
     const groups = groupSessionsByDate(sessions);
 
     return (
-        <aside className="flex h-full w-full flex-col">
+        <aside className="flex h-full w-full flex-col bg-card">
             <div className="p-3">
                 <button
                     type="button"
                     onClick={onNewChat}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
+                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                 >
                     <Plus className="size-4" />
                     {t.chat.newChat}
@@ -63,10 +63,10 @@ export default function TutorSidebar({
                                                 type="button"
                                                 onClick={() => onSelect(session.id)}
                                                 className={cn(
-                                                    "block w-full truncate rounded-lg px-2.5 py-2 pr-8 text-left text-sm transition",
+                                                    "block w-full truncate rounded-xl border-l-[3px] px-3 py-2 pr-8 text-left text-sm transition",
                                                     active
-                                                        ? "bg-accent font-medium text-primary"
-                                                        : "text-foreground/75 hover:bg-accent/60",
+                                                        ? "border-primary bg-accent font-medium text-primary"
+                                                        : "border-transparent text-foreground/75 hover:bg-accent/60",
                                                 )}
                                             >
                                                 {session.title ?? session.id}

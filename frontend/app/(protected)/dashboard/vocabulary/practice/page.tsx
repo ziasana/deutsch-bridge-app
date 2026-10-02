@@ -2,12 +2,16 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Volume2, Check, X as XIcon } from "lucide-react";
+import { Volume2, Check, X as XIcon, ArrowRight } from "lucide-react";
 import { getPracticeSession, submitPracticeRound } from "@/services/vocabularyPracticeService";
 import { PracticeVocabularySession, PracticeVocabularyItem, VocabularyRoundResponse } from "@/types/vocabulary";
 import Loading from "@/componenets/Loading";
-import Button from "@/componenets/Button";
-import { Badge } from "@/componenets/ui/badge";
+import PracticeShell from "@/componenets/practice/PracticeShell";
+import PracticeHeader from "@/componenets/practice/PracticeHeader";
+import PracticeChip from "@/componenets/practice/PracticeChip";
+import PracticeFlipCard from "@/componenets/practice/PracticeFlipCard";
+import PracticeGradeButtons from "@/componenets/practice/PracticeGradeButtons";
+import PracticeSummary, { practicePrimaryButton, practiceSecondaryButton } from "@/componenets/practice/PracticeSummary";
 import { playVocabularyAudio } from "@/lib/vocabularyAudio";
 import { useI18n } from "@/componenets/I18nProvider";
 import { cn } from "@/lib/utils";
@@ -53,15 +57,15 @@ function VocabularyPracticeContent() {
 
     if (!session || session.items.length === 0) {
         return (
-            <div className="min-h-screen bg-background flex items-center justify-center p-6">
-                <div className="rounded-2xl border border-border/60 bg-card p-10 text-center shadow-card max-w-md">
-                    <h2 className="text-2xl font-bold text-foreground mb-2">{t.vocabulary.practice.noWords}</h2>
-                    <p className="text-foreground/60 mb-6">{t.vocabulary.practice.noWordsSubtitle}</p>
-                    <Button variant="primary" onClick={() => router.push(exitTarget)}>
+            <PracticeShell>
+                <div className="anim-fade-up rounded-[10px] bg-card p-10 text-center shadow-card">
+                    <h1 className="text-2xl font-bold text-foreground">{t.vocabulary.practice.noWords}</h1>
+                    <p className="mt-2 text-foreground/65">{t.vocabulary.practice.noWordsSubtitle}</p>
+                    <button type="button" onClick={() => router.push(exitTarget)} className={`${practicePrimaryButton} mt-7`}>
                         {t.vocabulary.practice.goToVocabulary}
-                    </Button>
+                    </button>
                 </div>
-            </div>
+            </PracticeShell>
         );
     }
 
@@ -74,52 +78,40 @@ function VocabularyPracticeContent() {
         const contextAccuracy = contextAnswered.length > 0 ? Math.round((contextCorrect / contextAnswered.length) * 100) : 0;
 
         return (
-            <div className="min-h-screen bg-background flex items-center justify-center p-6">
-                <div className="rounded-2xl border border-border/60 bg-card p-8 shadow-card max-w-lg w-full">
-                    <h2 className="text-2xl font-bold text-foreground mb-1">{t.vocabulary.practice.sessionComplete} 🎉</h2>
-                    <p className="text-foreground/60 mb-6">
-                        {t.vocabulary.practice.wordsPracticed}: {total}
-                    </p>
-
-                    <div className="grid grid-cols-2 gap-4 mb-8">
-                        <div className="rounded-xl bg-accent/50 p-4 text-center">
-                            <p className="text-2xl font-bold text-foreground">{recallAccuracy}%</p>
-                            <p className="text-xs text-foreground/55">{t.vocabulary.practice.recallAccuracy}</p>
-                        </div>
-                        <div className="rounded-xl bg-accent/50 p-4 text-center">
-                            <p className="text-2xl font-bold text-foreground">{contextAccuracy}%</p>
-                            <p className="text-xs text-foreground/55">{t.vocabulary.practice.contextAccuracy}</p>
-                        </div>
-                    </div>
-
-                    <div className="flex gap-3">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setFinished(false);
-                                setResults([]);
-                                setIndex(0);
-                                setStep("flashcard");
-                                setLoading(true);
-                                getPracticeSession(vocabularyItemId ?? undefined)
-                                    .then((res) => setSession(res.data))
-                                    .catch((err) => console.error(err))
-                                    .finally(() => setLoading(false));
-                            }}
-                            className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
-                        >
-                            {t.vocabulary.practice.practiceAgain}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => router.push(exitTarget)}
-                            className="flex-1 rounded-lg border border-border/60 bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-accent"
-                        >
-                            {t.vocabulary.practice.backToVocabulary}
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <PracticeShell>
+                <PracticeSummary
+                    title={t.vocabulary.practice.sessionComplete}
+                    subtitle={`${t.vocabulary.practice.wordsPracticed}: ${total}`}
+                    rings={[
+                        { value: recallAccuracy, label: t.vocabulary.practice.recallAccuracy },
+                        { value: contextAccuracy, label: t.vocabulary.practice.contextAccuracy },
+                    ]}
+                    actions={
+                        <>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setFinished(false);
+                                    setResults([]);
+                                    setIndex(0);
+                                    setStep("flashcard");
+                                    setLoading(true);
+                                    getPracticeSession(vocabularyItemId ?? undefined)
+                                        .then((res) => setSession(res.data))
+                                        .catch((err) => console.error(err))
+                                        .finally(() => setLoading(false));
+                                }}
+                                className={practicePrimaryButton}
+                            >
+                                {t.vocabulary.practice.practiceAgain}
+                            </button>
+                            <button type="button" onClick={() => router.push(exitTarget)} className={practiceSecondaryButton}>
+                                {t.vocabulary.practice.backToVocabulary}
+                            </button>
+                        </>
+                    }
+                />
+            </PracticeShell>
         );
     }
 
@@ -175,124 +167,132 @@ function VocabularyPracticeContent() {
             .finally(() => setSubmitting(false));
     };
 
+    const ARTICLE_TONE: Record<string, string> = {
+        der: "bg-blue-500/12 text-blue-600 dark:text-blue-400",
+        die: "bg-rose-500/12 text-rose-600 dark:text-rose-400",
+        das: "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400",
+    };
+    const articleTone = item.article ? (ARTICLE_TONE[item.article.toLowerCase()] ?? "bg-primary/10 text-primary") : "";
+
+    // Whole-session progress: completed words plus the share of the current word already answered.
+    const percent = ((index + (roundResult ? 1 : step === "context" ? 0.5 : 0)) / session.items.length) * 100;
+
+    const nextButton = (
+        <button type="button" onClick={advanceToNextItem} className={`${practicePrimaryButton} mt-5 w-full`}>
+            {t.vocabulary.practice.next}
+            <ArrowRight className="size-4" aria-hidden="true" />
+        </button>
+    );
+
     return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-6">
-            <div className="rounded-2xl border border-border/60 bg-card p-8 shadow-card max-w-xl w-full">
-                <div className="flex items-center justify-between mb-6">
-                    <span className="text-sm text-foreground/55">{t.vocabulary.practice.itemOf(index + 1, session.items.length)}</span>
-                    <div className="flex items-center gap-2">
-                        {item.level && <Badge variant="secondary">{item.level}</Badge>}
-                        <span className="text-xs text-foreground/50">{t.vocabulary.practice.stepOf(currentStepNumber, totalSteps)}</span>
-                    </div>
-                </div>
+        <PracticeShell>
+            <PracticeHeader
+                exitHref={exitTarget}
+                exitLabel={t.vocabulary.practice.backToVocabulary}
+                counter={t.vocabulary.practice.itemOf(index + 1, session.items.length)}
+                percent={percent}
+                meta={
+                    <>
+                        {item.level && <PracticeChip className="text-primary">{item.level}</PracticeChip>}
+                        {totalSteps > 1 && <PracticeChip>{t.vocabulary.practice.stepOf(currentStepNumber, totalSteps)}</PracticeChip>}
+                    </>
+                }
+            />
 
-                <div className="mb-6 flex gap-1.5">
-                    {Array.from({ length: totalSteps }).map((_, i) => (
-                        <div
-                            key={i}
-                            className={cn(
-                                "h-1.5 flex-1 rounded-full transition-colors",
-                                i < currentStepNumber ? "bg-primary" : "bg-foreground/10",
-                            )}
-                        />
-                    ))}
-                </div>
-
+            <div className="mt-6">
                 {step === "flashcard" && (
                     <div>
-                        <div
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => setFlipped((f) => !f)}
-                            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setFlipped((f) => !f)}
-                            className="rounded-xl border border-border/60 bg-accent/40 p-8 text-center cursor-pointer transition hover:bg-accent/60 min-h-[180px] flex flex-col items-center justify-center gap-3"
-                        >
-                            <div className="flex items-center gap-2">
-                                <h2 className="text-2xl font-bold text-foreground">{wordLabel}</h2>
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        playVocabularyAudio(item.audioUrl, item.word);
-                                    }}
-                                    aria-label={t.vocabulary.card.playAudioAria}
-                                    className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent text-primary transition hover:bg-accent/70"
-                                >
-                                    <Volume2 className="size-4" />
-                                </button>
-                            </div>
+                        <PracticeFlipCard
+                            flipped={flipped}
+                            onToggle={() => setFlipped((f) => !f)}
+                            ariaLabel={`${wordLabel} – ${t.vocabulary.practice.flipPrompt}`}
+                            frontHint={t.vocabulary.practice.flipPrompt}
+                            front={
+                                <>
+                                    {item.article && (
+                                        <span className={cn("rounded-full px-3 py-0.5 text-sm font-bold", articleTone)}>{item.article}</span>
+                                    )}
+                                    <div className="flex items-center gap-2">
+                                        <h2 className="break-words text-4xl font-bold leading-tight text-foreground">{item.word}</h2>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                playVocabularyAudio(item.audioUrl, item.word);
+                                            }}
+                                            aria-label={t.vocabulary.card.playAudioAria}
+                                            className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary/10 text-primary transition hover:scale-110 hover:bg-primary/20"
+                                        >
+                                            <Volume2 className="size-4" aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                </>
+                            }
+                            back={
+                                <>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-white/70">{wordLabel}</span>
+                                    <p className="text-2xl font-bold leading-snug">{item.meaning}</p>
+                                    {item.example && <p className="line-clamp-4 text-sm italic text-white/85">„{item.example}“</p>}
+                                    {item.synonyms && <p className="text-xs text-white/70">{item.synonyms}</p>}
+                                </>
+                            }
+                        />
 
-                            {!flipped ? (
-                                <p className="text-sm text-foreground/55">{t.vocabulary.practice.flipPrompt}</p>
-                            ) : (
-                                <div className="space-y-1">
-                                    <p className="text-lg font-medium text-foreground">{item.meaning}</p>
-                                    {item.example && <p className="text-sm italic text-foreground/65">„{item.example}“</p>}
-                                    {item.synonyms && <p className="text-xs text-foreground/50">{item.synonyms}</p>}
-                                </div>
-                            )}
-                        </div>
-
-                        {flipped && (
-                            <div className="mt-6 flex gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => gradeFlashcard(true)}
-                                    disabled={submitting}
-                                    className="flex-1 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-2.5 text-sm font-semibold text-green-700 dark:text-green-400 transition hover:bg-green-500/20 disabled:opacity-60"
-                                >
-                                    {t.vocabulary.practice.knewIt}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => gradeFlashcard(false)}
-                                    disabled={submitting}
-                                    className="flex-1 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-700 dark:text-red-400 transition hover:bg-red-500/20 disabled:opacity-60"
-                                >
-                                    {t.vocabulary.practice.didntKnowIt}
-                                </button>
-                            </div>
+                        {!roundResult && (
+                            <PracticeGradeButtons
+                                visible={flipped}
+                                disabled={submitting}
+                                knowLabel={t.vocabulary.practice.knewIt}
+                                dontKnowLabel={t.vocabulary.practice.didntKnowIt}
+                                onKnow={() => gradeFlashcard(true)}
+                                onDontKnow={() => gradeFlashcard(false)}
+                            />
                         )}
 
                         {roundResult && !item.contextQuestion && (
                             <div className="mt-6">
                                 <div
                                     className={cn(
-                                        "flex items-center gap-2 rounded-xl p-4",
+                                        "flex items-center gap-2 rounded-2xl p-4",
                                         roundResult.flashcardCorrect
                                             ? "bg-green-500/10 text-green-700 dark:text-green-400"
                                             : "bg-red-500/10 text-red-700 dark:text-red-400",
                                     )}
                                 >
                                     {roundResult.flashcardCorrect ? <Check className="size-4" /> : <XIcon className="size-4" />}
-                                    <span className="text-sm font-medium">
+                                    <span className="text-sm font-semibold">
                                         {roundResult.flashcardCorrect ? t.vocabulary.practice.knewIt : t.vocabulary.practice.didntKnowIt}
                                     </span>
                                 </div>
-                                <Button variant="primary" className="w-full mt-4" onClick={advanceToNextItem}>
-                                    {t.vocabulary.practice.next}
-                                </Button>
+                                {nextButton}
                             </div>
                         )}
                     </div>
                 )}
 
                 {step === "context" && item.contextQuestion && (
-                    <div>
-                        <p className="text-sm text-foreground/60 mb-2">
+                    <div className="anim-fade-up rounded-[10px] border-t-4 border-primary bg-card p-6 shadow-card sm:p-8">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-primary">
                             {item.contextQuestion.isCloze ? t.vocabulary.practice.contextPromptCloze : t.vocabulary.practice.contextPromptMeaning}
                         </p>
-                        <p className="text-lg font-medium text-foreground mb-6">{item.contextQuestion.prompt}</p>
+                        <p className="mt-3 text-xl font-semibold leading-relaxed text-foreground">{item.contextQuestion.prompt}</p>
 
-                        <div className="space-y-2 mb-4">
-                            {item.contextQuestion.options.map((opt) => {
+                        <div className="mt-6 space-y-2.5">
+                            {item.contextQuestion.options.map((opt, i) => {
                                 const isSelected = opt.key === selectedKey;
                                 const isCorrectOption = roundResult && opt.key === roundResult.correctContextKey;
-                                let style = "border-border/60 bg-background hover:border-primary/40";
+                                let style = "border-border/60 bg-background hover:-translate-y-0.5 hover:border-primary/50 hover:bg-accent/50 hover:shadow-card";
+                                let letterStyle = "bg-accent text-primary";
                                 if (roundResult) {
-                                    if (isCorrectOption) style = "border-green-500 bg-green-500/10";
-                                    else if (isSelected) style = "border-red-500 bg-red-500/10";
-                                    else style = "border-border/40 opacity-60";
+                                    if (isCorrectOption) {
+                                        style = "border-green-500 bg-green-500/10";
+                                        letterStyle = "bg-green-500 text-white";
+                                    } else if (isSelected) {
+                                        style = "border-red-500 bg-red-500/10";
+                                        letterStyle = "bg-red-500 text-white";
+                                    } else {
+                                        style = "border-border/40 opacity-55";
+                                    }
                                 } else if (isSelected) {
                                     style = "border-primary bg-primary/10";
                                 }
@@ -303,27 +303,26 @@ function VocabularyPracticeContent() {
                                         disabled={submitting || Boolean(roundResult)}
                                         onClick={() => selectContextOption(opt.key)}
                                         className={cn(
-                                            "flex w-full items-center justify-between gap-2 rounded-lg border px-4 py-3 text-left text-sm text-foreground transition",
+                                            "flex w-full cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm text-foreground transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
                                             style,
                                         )}
                                     >
-                                        {opt.text}
-                                        {roundResult && isCorrectOption && <Check className="size-4 text-green-600 shrink-0" />}
-                                        {roundResult && isSelected && !isCorrectOption && <XIcon className="size-4 text-red-600 shrink-0" />}
+                                        <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold", letterStyle)} aria-hidden="true">
+                                            {String.fromCharCode(65 + i)}
+                                        </span>
+                                        <span className="min-w-0 flex-1 break-words">{opt.text}</span>
+                                        {roundResult && isCorrectOption && <Check className="size-4 shrink-0 text-green-600" aria-hidden="true" />}
+                                        {roundResult && isSelected && !isCorrectOption && <XIcon className="size-4 shrink-0 text-red-600" aria-hidden="true" />}
                                     </button>
                                 );
                             })}
                         </div>
 
-                        {roundResult && (
-                            <Button variant="primary" className="w-full" onClick={advanceToNextItem}>
-                                {t.vocabulary.practice.next}
-                            </Button>
-                        )}
+                        {roundResult && nextButton}
                     </div>
                 )}
             </div>
-        </div>
+        </PracticeShell>
     );
 }
 

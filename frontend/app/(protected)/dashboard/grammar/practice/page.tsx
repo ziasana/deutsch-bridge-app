@@ -8,7 +8,8 @@ import { toast } from "@/lib/toast";
 import { getGrammarLessonById } from "@/services/grammarService";
 import { grammarLessonQueryKey } from "@/lib/grammarQueryCache";
 import Loading from "@/componenets/Loading";
-import { Badge } from "@/componenets/ui/badge";
+import { Dumbbell } from "lucide-react";
+import LearningPageHero from "@/componenets/learning/LearningPageHero";
 import GrammarQuizSection from "@/componenets/GrammarQuizSection";
 import { useI18n } from "@/componenets/I18nProvider";
 import { localizedLessonText } from "@/lib/grammarLocalization";
@@ -40,66 +41,44 @@ function GrammarPracticeContent() {
         }
     }, [lessonError]);
 
-    if (!lessonId || loading) {
-        return loading ? (
-            <Loading />
-        ) : (
-            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
-                <div className="max-w-3xl mx-auto text-center text-gray-500 dark:text-gray-400 py-20">
-                    {t.grammar.noLesson}{" "}
-                    <Link href="/dashboard/grammar" className="underline">
-                        {t.grammar.back}
-                    </Link>
-                </div>
+    const message = (text: string) => (
+        <div className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10">
+            <div className="mx-auto max-w-3xl rounded-[10px] bg-card p-10 text-center shadow-card">
+                <p className="text-foreground/65">{text}</p>
+                <Link href="/dashboard/grammar" className="mt-3 inline-block font-semibold text-primary hover:underline">
+                    {t.grammar.back}
+                </Link>
             </div>
-        );
-    }
+        </div>
+    );
 
-    if (!lesson || (lesson.quiz?.length ?? 0) === 0) {
-        return (
-            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
-                <div className="max-w-3xl mx-auto text-center text-gray-500 dark:text-gray-400 py-20">
-                    {t.grammar.notFoundLesson}{" "}
-                    <Link href="/dashboard/grammar" className="underline">
-                        {t.grammar.back}
-                    </Link>
-                </div>
-            </div>
-        );
-    }
+    if (loading) return <Loading />;
+    if (!lessonId) return message(t.grammar.noLesson);
+    if (!lesson || (lesson.quiz?.length ?? 0) === 0) return message(t.grammar.notFoundLesson);
 
     const localized = localizedLessonText(lesson, language);
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
-            <div className="max-w-3xl mx-auto space-y-4">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                    <Link
-                        href="/dashboard/grammar"
-                        className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                        {t.grammar.back}
+        <div className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10">
+            <div className="mx-auto max-w-3xl space-y-6">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <Link href="/dashboard/grammar" className="inline-block text-sm font-medium text-foreground/60 transition hover:text-foreground">
+                            {t.grammar.back}
                     </Link>
-                    <Link
-                        href={`/dashboard/grammar/lesson?id=${lesson.id}`}
-                        className="text-sm text-gray-500 dark:text-gray-400 hover:underline"
-                    >
+                    <Link href={`/dashboard/grammar/lesson?id=${lesson.id}`} className="text-sm font-medium text-primary hover:underline">
                         View full lesson
                     </Link>
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap" dir={localized.dir}>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{localized.title}</h1>
-                    <Badge variant="secondary">{lesson.level}</Badge>
-                </div>
-
-                <GrammarQuizSection
-                    quiz={lesson.quiz ?? []}
-                    lessonId={lesson.id}
-                    lessonLevel={lesson.level}
-                    language={language}
-                    autoStart
+                <LearningPageHero
+                    icon={Dumbbell}
+                    title={localized.title}
+                    subtitle={localized.summary}
+                    dir={localized.dir}
+                    meta={<span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">{lesson.level}</span>}
                 />
+
+                <GrammarQuizSection quiz={lesson.quiz ?? []} lessonId={lesson.id} lessonLevel={lesson.level} language={language} autoStart />
             </div>
         </div>
     );

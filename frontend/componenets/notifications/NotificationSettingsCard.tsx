@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell } from "lucide-react";
-import { Card, CardContent } from "@/componenets/ui/card";
 import { useI18n } from "@/componenets/I18nProvider";
 import ToggleSwitch from "@/componenets/notifications/ToggleSwitch";
 import useNotificationStore, { deviceTimezone } from "@/store/useNotificationStore";
@@ -11,7 +9,7 @@ import { toast } from "@/lib/toast";
 import { NotificationPreferences } from "@/types/notification";
 
 const TIME_CLASS =
-    "rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground shadow-sm transition focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-50";
+    "rounded-xl border border-border/60 bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50";
 
 type BooleanKey = {
     [K in keyof NotificationPreferences]: NotificationPreferences[K] extends boolean ? K : never;
@@ -32,8 +30,8 @@ function Row({ label, hint, children }: Readonly<{ label: string; hint?: string;
 function Section({ title, children }: Readonly<{ title: string; children: React.ReactNode }>) {
     return (
         <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-foreground/50">{title}</p>
-            <div className="mt-1 divide-y divide-border">{children}</div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary">{title}</p>
+            <div className="mt-1 divide-y divide-border/60">{children}</div>
         </div>
     );
 }
@@ -81,29 +79,24 @@ export default function NotificationSettingsCard() {
     const progressOff = preferences ? !preferences.progressNotificationsEnabled : false;
 
     return (
-        <Card>
-            <CardContent>
-                <div className="flex items-center gap-3 border-b border-border pb-4">
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent">
-                        <Bell className="size-4.5 text-accent-foreground" />
-                    </div>
-                    <div>
-                        <h2 className="text-lg font-semibold text-foreground">{s.title}</h2>
-                        <p className="text-xs text-foreground/55">{s.subtitle}</p>
-                    </div>
+        <section className="rounded-[10px] bg-card shadow-card">
+            <div>
+                <div className="border-b border-border/60 px-6 py-4">
+                    <h2 className="text-base font-semibold text-foreground">{s.title}</h2>
+                    <p className="mt-0.5 text-sm text-foreground/60">{s.subtitle}</p>
                 </div>
 
                 {!preferences && !loadFailed && (
-                    <div className="mt-5 space-y-3" aria-busy>
+                    <div className="space-y-3 p-6" aria-busy>
                         {[0, 1, 2, 3].map((i) => (
                             <div key={i} className="h-9 animate-pulse rounded-lg bg-muted" />
                         ))}
                     </div>
                 )}
-                {loadFailed && <p className="mt-5 text-sm text-foreground/60">{t.notifications.loadError}</p>}
+                {loadFailed && <p className="p-6 text-sm text-foreground/60">{t.notifications.loadError}</p>}
 
                 {preferences && (
-                    <div className="mt-5 space-y-6">
+                    <div className="space-y-6 px-6 pb-4 pt-5">
                         <Section title={s.learningSection}>
                             {toggle("learningRemindersEnabled", s.dailyReminders, { hint: s.dailyRemindersHint })}
                             {toggle("reviewRemindersEnabled", s.reviewReminders, { disabled: learningOff })}
@@ -167,7 +160,7 @@ export default function NotificationSettingsCard() {
                         </Section>
                     </div>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </section>
     );
 }

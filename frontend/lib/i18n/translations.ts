@@ -26,6 +26,12 @@ export interface Dictionary {
         signup: string;
         profile: string;
         yourProgress: string;
+        /** Learner sidebar labels. */
+        sidebarVocabulary: string;
+        sidebarExamPrep: string;
+        sidebarAiChat: string;
+        sidebarWordReview: string;
+        sidebarProgress: string;
         updatePassword: string;
         signOut: string;
         logout: string;
@@ -685,7 +691,12 @@ const en: Dictionary = {
         signup: "Signup",
         profile: "Profile",
         yourProgress: "Your progress",
-        updatePassword: "Update Password",
+        sidebarVocabulary: "Vocabulary Training",
+        sidebarExamPrep: "Exam Preparation",
+        sidebarAiChat: "AI chat",
+        sidebarWordReview: "Word review",
+        sidebarProgress: "My progress",
+        updatePassword: "Update password",
         signOut: "Sign out",
         logout: "Logout",
         darkMode: "Dark Mode 🌙",
@@ -967,7 +978,7 @@ const en: Dictionary = {
     vocabulary: {
         title: "My Vocabulary",
         subtitle: "Build your word bank, track mastery, and practice recall and context together.",
-        practiceCta: "Continue practicing",
+        practiceCta: "Practice",
         addNew: "Add word",
         searchPlaceholder: "Search by word, meaning or example...",
         sourceTabs: { myWords: "My words", fromReading: "From reading", fromAiTutor: "From AI Tutor" },
@@ -1447,6 +1458,11 @@ const fa: Dictionary = {
         signup: "ثبت‌نام",
         profile: "پروفایل",
         yourProgress: "پیشرفت شما",
+        sidebarVocabulary: "تمرین واژگان",
+        sidebarExamPrep: "آمادگی آزمون",
+        sidebarAiChat: "گفتگو با هوش مصنوعی",
+        sidebarWordReview: "مرور کلمات",
+        sidebarProgress: "پیشرفت من",
         updatePassword: "تغییر رمز عبور",
         signOut: "خروج",
         logout: "خروج",
@@ -1729,7 +1745,7 @@ const fa: Dictionary = {
     vocabulary: {
         title: "واژگان من",
         subtitle: "دایره واژگان خود را بسازید، تسلط را پیگیری کنید و یادآوری و کاربرد را با هم تمرین کنید.",
-        practiceCta: "ادامه تمرین",
+        practiceCta: "تمرین",
         addNew: "افزودن واژه",
         searchPlaceholder: "جستجو بر اساس واژه، معنی یا مثال...",
         sourceTabs: { myWords: "واژه‌های من", fromReading: "از بخش مطالعه", fromAiTutor: "از مربی هوش مصنوعی" },

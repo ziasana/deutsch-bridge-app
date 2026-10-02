@@ -1,4 +1,4 @@
-import Button from "@/componenets/Button";
+import { Check } from "lucide-react";
 import { useI18n } from "@/componenets/I18nProvider";
 
 interface DailyWordsCompletionProps {
@@ -6,23 +6,22 @@ interface DailyWordsCompletionProps {
     onReview: () => void;
 }
 
-export default function DailyWordsCompletion({ total, onReview }: DailyWordsCompletionProps) {
+export default function DailyWordsCompletion({ total, onReview }: Readonly<DailyWordsCompletionProps>) {
     const { t } = useI18n();
     return (
-        <div className="rounded-2xl border border-border/60 bg-card p-8 sm:p-10 shadow-card text-center">
-            <span className="text-4xl" aria-hidden="true">🎉</span>
-            <h2 className="mt-3 text-2xl font-bold text-foreground">{t.dailyWords.completion.title}</h2>
+        <div className="anim-fade-up rounded-[10px] bg-card p-8 text-center shadow-card sm:p-10">
+            <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <Check className="size-7" strokeWidth={3} aria-hidden="true" />
+            </span>
+            <h2 className="mt-4 text-2xl font-bold text-foreground">{t.dailyWords.completion.title}</h2>
             <p className="mt-1 text-foreground/60">{t.dailyWords.completion.subtitle(total)}</p>
-
-            <div className="mt-4 flex items-center justify-center gap-1.5" aria-hidden="true">
-                {Array.from({ length: total }).map((_, i) => (
-                    <span key={i} className="size-2.5 rounded-full bg-primary" />
-                ))}
-            </div>
-
-            <Button variant="secondary" className="mt-6 text-sm" onClick={onReview}>
+            <button
+                type="button"
+                onClick={onReview}
+                className="mt-7 inline-flex cursor-pointer items-center justify-center rounded-full border border-border bg-card px-6 py-2.5 text-sm font-semibold text-foreground transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+            >
                 {t.dailyWords.completion.review}
-            </Button>
+            </button>
         </div>
     );
 }

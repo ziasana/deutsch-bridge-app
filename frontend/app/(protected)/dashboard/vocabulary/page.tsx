@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
-import { PenLine, BookOpen, Play, ArrowRight, ChevronLeft, ChevronRight, Flame, Layers, Library, Plus, Sparkles } from "lucide-react";
+import { PenLine, BookOpen, ArrowRight, ChevronLeft, ChevronRight, Flame, Layers, Sparkles } from "lucide-react";
 import { getVocabulary, addVocabularyBookmark, removeVocabularyBookmark, deleteVocabulary } from "@/services/vocabularyService";
 import { VocabularyItem, VocabularyMasteryLevel, VocabularySource } from "@/types/vocabulary";
 import { LearningSearch } from "@/componenets/learning";
 import ExpressionFilterSelect from "@/componenets/expressions/ExpressionFilterSelect";
 import VocabularySourceSelector, { VocabularySourceOption } from "@/componenets/vocabulary/VocabularySourceSelector";
+import VocabularyHeader from "@/componenets/vocabulary/VocabularyHeader";
 import VocabularyCard from "@/componenets/vocabulary/VocabularyCard";
 import VocabularyCardSkeleton from "@/componenets/vocabulary/VocabularyCardSkeleton";
 import VocabularyModal from "@/componenets/vocabulary/VocabularyModal";
@@ -85,6 +86,26 @@ export default function VocabularyPage() {
         { source: "AI_TUTOR", label: t.vocabulary.sourceTabs.fromAiTutor, count: items.filter((i) => i.source === "AI_TUTOR").length, icon: Sparkles },
     ];
 
+    const masteryCounts = useMemo(() => {
+        const counts: Record<VocabularyMasteryLevel, number> = { NEW: 0, LEARNING: 0, FAMILIAR: 0, MASTERED: 0 };
+        sourceItems.forEach((i) => {
+            counts[i.progress?.masteryLevel ?? "NEW"] += 1;
+        });
+        return counts;
+    }, [sourceItems]);
+
+    // Words floating in the header: the ones you have started learning (strongest first), topped up with
+    // other words so the header never sits still. More learning means more bubbles.
+    const showcase = useMemo(() => {
+        const order: VocabularyMasteryLevel[] = ["MASTERED", "FAMILIAR", "LEARNING", "NEW"];
+        const level = (i: VocabularyItem) => i.progress?.masteryLevel ?? "NEW";
+        const started = sourceItems.filter((i) => level(i) !== "NEW").sort((a, b) => order.indexOf(level(a)) - order.indexOf(level(b)));
+        const rest = sourceItems.filter((i) => level(i) === "NEW");
+        const MIN_BUBBLES = 3;
+        const shown = started.length >= MIN_BUBBLES ? started : [...started, ...rest.slice(0, MIN_BUBBLES - started.length)];
+        return shown.slice(0, 6).map((i) => ({ word: i.word }));
+    }, [sourceItems]);
+
     const continueLearning = useMemo(() => {
         const candidates = sourceItems.filter((i) => (i.progress?.masteryLevel ?? "NEW") !== "MASTERED");
         const sorted = [...candidates].sort((a, b) => {
@@ -121,36 +142,7 @@ export default function VocabularyPage() {
     return (
         <div className="min-h-screen bg-background px-6 py-10">
             <div className="max-w-4xl mx-auto">
-                <header className="flex items-start justify-between flex-wrap gap-4">
-                    <div className="flex items-start gap-4">
-                        <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-accent">
-                            <Library className="size-6 text-primary" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold text-foreground">{t.vocabulary.title}</h1>
-                            <p className="mt-1 text-sm text-foreground/60">{t.vocabulary.subtitle}</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => setAddOpen(true)}
-                            className="flex items-center gap-2 rounded-full border border-border/60 bg-card px-5 py-2.5 text-sm font-semibold text-foreground shadow-card transition hover:bg-accent"
-                        >
-                            <Plus className="size-4" />
-                            {t.vocabulary.addNew}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => router.push("/dashboard/vocabulary/practice")}
-                            className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
-                        >
-                            <Play className="size-3.5 fill-current" />
-                            {t.vocabulary.practiceCta}
-                            <ArrowRight className="size-4" />
-                        </button>
-                    </div>
-                </header>
+                <VocabularyHeader counts={masteryCounts} showcase={showcase} onAdd={() => setAddOpen(true)} onPractice={() => router.push("/dashboard/vocabulary/practice")} />
 
                 <VocabularySourceSelector
                     className="mt-8"

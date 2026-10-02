@@ -1,6 +1,5 @@
-import { CheckCircle2, Circle } from "lucide-react";
+import { Check, ChevronRight } from "lucide-react";
 import { DailyWord } from "@/types/dailyWord";
-import { getLevelMeta } from "@/componenets/learning/levelMeta";
 import { useI18n } from "@/componenets/I18nProvider";
 import { cn } from "@/lib/utils";
 
@@ -10,54 +9,53 @@ interface DailyWordsOverviewProps {
     onSelect: (index: number) => void;
 }
 
-export default function DailyWordsOverview({ words, currentIndex, onSelect }: DailyWordsOverviewProps) {
+/** Today's words as one white panel with a heading and divided rows: ticked when learned, accented when current. */
+export default function DailyWordsOverview({ words, currentIndex, onSelect }: Readonly<DailyWordsOverviewProps>) {
     const { t } = useI18n();
+    const learnedCount = words.filter((w) => w.learned).length;
+
     return (
-        <div className="mt-6">
-            <h2 className="text-sm font-semibold text-foreground/70 mb-2">{t.dailyWords.overview.title(words.length)}</h2>
-            <div className="rounded-2xl border border-border/60 bg-card shadow-card overflow-hidden">
+        <section aria-label={t.dailyWords.overview.title(words.length)} className="overflow-hidden rounded-[10px] bg-card shadow-card">
+            <div className="flex items-center justify-between px-5 pb-3 pt-5 sm:px-6">
+                <h2 className="text-base font-semibold text-foreground">{t.dailyWords.overview.title(words.length)}</h2>
+                <span className="text-xs font-medium text-foreground/50">{learnedCount} / {words.length}</span>
+            </div>
+            <ul className="divide-y divide-border/60 border-t border-border/60">
                 {words.map((word, index) => {
                     const isCurrent = index === currentIndex;
-                    const levelColor = getLevelMeta(word.level).color;
 
                     return (
-                        <button
-                            key={word.id}
-                            type="button"
-                            onClick={() => onSelect(index)}
-                            aria-current={isCurrent ? "true" : undefined}
-                            className={cn(
-                                "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-border/40 last:border-b-0 hover:bg-accent/40",
-                                isCurrent && "bg-primary/[0.06]",
-                            )}
-                        >
-                            {word.learned ? (
-                                <CheckCircle2 className="size-5 shrink-0" style={{ color: levelColor }} strokeWidth={2.5} />
-                            ) : isCurrent ? (
-                                <span className="flex size-5 shrink-0 items-center justify-center">
-                                    <span className="size-2.5 rounded-full bg-primary" />
-                                </span>
-                            ) : (
-                                <Circle className="size-5 shrink-0 text-foreground/25" />
-                            )}
-                            <span
+                        <li key={word.id} className="relative">
+                            {isCurrent && <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1 bg-primary" />}
+                            <button
+                                type="button"
+                                onClick={() => onSelect(index)}
+                                aria-current={isCurrent ? "true" : undefined}
                                 className={cn(
-                                    "flex-1 truncate font-medium",
-                                    isCurrent ? "text-primary" : "text-foreground",
+                                    "group flex w-full cursor-pointer items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50 sm:px-6",
+                                    isCurrent && "bg-primary/[0.05]",
                                 )}
                             >
-                                {word.word}
-                            </span>
-                            <span
-                                className="rounded-full px-2 py-0.5 text-xs font-medium shrink-0"
-                                style={{ backgroundColor: `${levelColor}1a`, color: levelColor }}
-                            >
-                                {word.level}
-                            </span>
-                        </button>
+                                <span
+                                    className={cn(
+                                        "flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold transition",
+                                        word.learned && "bg-primary text-primary-foreground",
+                                        !word.learned && isCurrent && "border-2 border-primary text-primary",
+                                        !word.learned && !isCurrent && "bg-foreground/[0.06] text-foreground/45",
+                                    )}
+                                >
+                                    {word.learned ? <Check className="size-4" strokeWidth={3} aria-hidden="true" /> : index + 1}
+                                </span>
+                                <span className={cn("min-w-0 flex-1 truncate text-base font-medium", isCurrent ? "text-primary" : "text-foreground")}>{word.word}</span>
+                                <span className="hidden max-w-[45%] shrink-0 truncate text-right text-sm text-foreground/60 sm:block" title={word.meaning}>
+                                    {word.meaning}
+                                </span>
+                                <ChevronRight className={cn("size-4 shrink-0 transition", isCurrent ? "text-primary" : "text-foreground/25 group-hover:translate-x-0.5 group-hover:text-foreground/50")} aria-hidden="true" />
+                            </button>
+                        </li>
                     );
                 })}
-            </div>
-        </div>
+            </ul>
+        </section>
     );
 }

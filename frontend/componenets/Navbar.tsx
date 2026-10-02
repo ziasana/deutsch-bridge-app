@@ -6,6 +6,7 @@ import { useI18n } from "./I18nProvider";
 import {  Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import { GraduationCap, Menu as MenuIcon, X } from "lucide-react";
 import Image from "next/image";
+import ChangePasswordDialog from "@/componenets/profile/ChangePasswordDialog";
 
 export default function Navbar() {
   const {userProfile, isLoggedIn} = useAuthStore();
@@ -13,6 +14,7 @@ export default function Navbar() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const { t } = useI18n();
 
   useEffect(() => {
@@ -131,12 +133,13 @@ export default function Navbar() {
                     </Link>
                   </MenuItem>
                   <MenuItem>
-                    <Link
-                        href="/profile/update-password"
-                        className="block px-4 py-2 text-sm text-foreground/80 data-focus:bg-accent data-focus:text-accent-foreground outline-none"
+                    <button
+                        type="button"
+                        onClick={() => setPasswordOpen(true)}
+                        className="block w-full cursor-pointer px-4 py-2 text-start text-sm text-foreground/80 data-focus:bg-accent data-focus:text-accent-foreground outline-none"
                     >
                       {t.nav.updatePassword}
-                    </Link>
+                    </button>
                   </MenuItem>
 
                   <MenuItem>
@@ -220,6 +223,7 @@ export default function Navbar() {
           </div>
         </div>
       )}
+      <ChangePasswordDialog open={passwordOpen} onClose={() => setPasswordOpen(false)} />
     </nav>
   );
 }

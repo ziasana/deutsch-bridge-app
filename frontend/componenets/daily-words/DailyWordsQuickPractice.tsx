@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ArrowRight, Check, X } from "lucide-react";
 import { DailyWord } from "@/types/dailyWord";
 import { useI18n } from "@/componenets/I18nProvider";
 import { cn } from "@/lib/utils";
@@ -59,18 +60,24 @@ export default function DailyWordsQuickPractice({ words, onComplete }: DailyWord
     };
 
     return (
-        <div className="rounded-2xl border border-border/60 bg-card p-6 sm:p-8 shadow-card">
+        <div className="anim-fade-up rounded-[10px] border-t-4 border-primary bg-card p-6 shadow-card sm:p-8">
             <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-foreground">{t.dailyWords.practice.title}</h2>
-                <span className="text-xs text-foreground/50">
+                <span className="text-xs font-medium text-foreground/50">
                     {t.dailyWords.practice.questionOf(questionIndex + 1, questions.length)}
                 </span>
             </div>
 
-            <p className="mt-4 text-foreground/80">{t.dailyWords.practice.prompt(promptMeaning)}</p>
+            <div className="mt-3 flex gap-1.5" aria-hidden="true">
+                {questions.map((q, i) => (
+                    <span key={q.word.id} className={cn("h-1.5 flex-1 rounded-full transition-colors", i <= questionIndex ? "bg-primary" : "bg-foreground/10")} />
+                ))}
+            </div>
 
-            <div className="mt-4 space-y-2" role="radiogroup" aria-label={t.dailyWords.practice.answerOptionsAria}>
-                {question.options.map((option) => {
+            <p className="mt-6 text-xl font-semibold leading-relaxed text-foreground">{t.dailyWords.practice.prompt(promptMeaning)}</p>
+
+            <div className="mt-6 space-y-2.5" role="radiogroup" aria-label={t.dailyWords.practice.answerOptionsAria}>
+                {question.options.map((option, i) => {
                     const isCorrect = option === question.word.word;
                     const isSelected = option === selected;
                     const showResult = selected !== null;
@@ -84,30 +91,40 @@ export default function DailyWordsQuickPractice({ words, onComplete }: DailyWord
                             onClick={() => handleSelect(option)}
                             disabled={showResult}
                             className={cn(
-                                "w-full text-left rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors",
-                                !showResult && "border-border/60 hover:bg-accent/50",
-                                showResult && isCorrect && "border-transparent bg-primary/10 text-primary",
-                                showResult && isSelected && !isCorrect && "border-transparent bg-destructive/10 text-destructive",
+                                "flex w-full cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-medium transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                                !showResult && "border-border/60 bg-background hover:-translate-y-0.5 hover:border-primary/50 hover:bg-accent/50 hover:shadow-card",
+                                showResult && isCorrect && "border-green-500 bg-green-500/10 text-foreground",
+                                showResult && isSelected && !isCorrect && "border-red-500 bg-red-500/10 text-foreground",
                                 showResult && !isSelected && !isCorrect && "border-border/40 text-foreground/40",
                             )}
                         >
-                            {option}
+                            <span
+                                aria-hidden="true"
+                                className={cn(
+                                    "flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+                                    showResult && isCorrect ? "bg-green-500 text-white" : showResult && isSelected ? "bg-red-500 text-white" : "bg-accent text-primary",
+                                )}
+                            >
+                                {showResult && isCorrect ? <Check className="size-4" strokeWidth={3} /> : showResult && isSelected ? <X className="size-4" strokeWidth={3} /> : String.fromCharCode(65 + i)}
+                            </span>
+                            <span className="min-w-0 flex-1 break-words">{option}</span>
                         </button>
                     );
                 })}
             </div>
 
             {selected && (
-                <div className="mt-4 flex items-center justify-between">
-                    <p className={cn("text-sm font-medium", selected === question.word.word ? "text-primary" : "text-destructive")}>
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                    <p className={cn("text-sm font-semibold", selected === question.word.word ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400")}>
                         {selected === question.word.word ? t.dailyWords.practice.correct : t.dailyWords.practice.incorrect(question.word.word)}
                     </p>
                     <button
                         type="button"
                         onClick={handleContinue}
-                        className="text-sm font-semibold text-primary hover:underline"
+                        className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                     >
-                        {isLast ? t.dailyWords.practice.finish : t.dailyWords.practice.next} →
+                        {isLast ? t.dailyWords.practice.finish : t.dailyWords.practice.next}
+                        <ArrowRight className="size-4" aria-hidden="true" />
                     </button>
                 </div>
             )}

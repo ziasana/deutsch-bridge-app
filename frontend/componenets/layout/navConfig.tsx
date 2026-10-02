@@ -36,16 +36,15 @@ export function getUserNavItems(t: Dictionary): NavItem[] {
     return [
         { href: "/dashboard", label: t.nav.dashboard, icon: LayoutDashboard },
         { href: "/dashboard/daily-words", label: t.dashboard.modules.dailyWords.title, icon: SpellCheck },
-        { href: "/dashboard/grammar", label: t.dashboard.modules.grammarLessons.title, icon: BookOpen },
+        { href: "/dashboard/vocabulary", label: t.nav.sidebarVocabulary, icon: Layers },
         { href: "/dashboard/expressions", label: t.dashboard.modules.expressions.title, icon: Sparkles },
         { href: "/dashboard/redemittel", label: "Redemittel", icon: MessagesSquare },
+        { href: "/dashboard/grammar", label: t.dashboard.modules.grammarLessons.title, icon: BookOpen },
         { href: "/dashboard/reading", label: t.dashboard.modules.reading.title, icon: Newspaper },
-        { href: "/dashboard/exam-prep", label: t.dashboard.modules.examPrep.title, icon: GraduationCap },
-        { href: "/dashboard/reading/review", label: t.dashboard.modules.wordReview.title, icon: Brain },
-        { href: "/dashboard/vocabulary", label: t.dashboard.modules.vocabularyTrainer.title, icon: Layers },
-        { href: "/dashboard/chat", label: t.dashboard.modules.aiChat.title, icon: MessageSquare },
-        { href: "/user-progress", label: t.nav.yourProgress, icon: TrendingUp },
-        { href: "/profile", label: t.nav.profile, icon: User },
+        { href: "/dashboard/exam-prep", label: t.nav.sidebarExamPrep, icon: GraduationCap },
+        { href: "/dashboard/chat", label: t.nav.sidebarAiChat, icon: MessageSquare },
+        { href: "/dashboard/reading/review", label: t.nav.sidebarWordReview, icon: Brain },
+        { href: "/user-progress", label: t.nav.sidebarProgress, icon: TrendingUp },
     ];
 }
 

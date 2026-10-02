@@ -2,6 +2,8 @@ package com.deutschbridge.backend.controller;
 
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.exception.GlobalExceptionHandler;
+import com.deutschbridge.backend.exception.UserVerificationException;
+import com.deutschbridge.backend.model.dto.ChangePasswordRequest;
 import com.deutschbridge.backend.model.AuthUser;
 import com.deutschbridge.backend.model.dto.UpdatePasswordRequest;
 import com.deutschbridge.backend.model.dto.UserDto;
@@ -137,13 +139,13 @@ class UserControllerTest {
     @DisplayName("UPDATE /api/user/update-password -> should return success message")
     void testUpdatePassword() throws Exception {
         setupAuthentication();
-        UpdatePasswordRequest request = new UpdatePasswordRequest("newPassword");
-        when(userService.updatePassword(anyString(), eq(request.password()))).thenReturn(true);
+        ChangePasswordRequest request = new ChangePasswordRequest("oldPassword", "newPassword");
+        when(userService.changePassword(anyString(), eq(request.currentPassword()), eq(request.password()))).thenReturn(true);
         mockMvc.perform(put("/api/user/update-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                           {
-                                              "id": "user123",
+                                              "currentPassword": "oldPassword",
                                               "password": "newPassword"
                                           }
                                 """))
@@ -153,20 +155,53 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("UPDATE /api/user/update-password -> should throw bad request")
-    void testUpdatePassword_UserNotFound() throws Exception {
+    @DisplayName("UPDATE /api/user/update-password -> should throw bad request when nothing was updated")
+    void testUpdatePassword_NotUpdated() throws Exception {
         setupAuthentication();
         mockMvc.perform(put("/api/user/update-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                           {
-                                              "id": "",
+                                              "currentPassword": "oldPassword",
                                               "password": "newPassword"
                                           }
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Password not updated"));
 
+    }
+
+    @Test
+    @DisplayName("UPDATE /api/user/update-password -> wrong current password is a bad request with a clear message")
+    void testUpdatePassword_WrongCurrentPassword() throws Exception {
+        setupAuthentication();
+        when(userService.changePassword(anyString(), eq("wrong"), anyString()))
+                .thenThrow(new UserVerificationException("Current password is incorrect"));
+        mockMvc.perform(put("/api/user/update-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                          {
+                                              "currentPassword": "wrong",
+                                              "password": "newPassword"
+                                          }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Current password is incorrect"));
+    }
+
+    @Test
+    @DisplayName("UPDATE /api/user/update-password -> the current password is required")
+    void testUpdatePassword_CurrentPasswordRequired() throws Exception {
+        setupAuthentication();
+        mockMvc.perform(put("/api/user/update-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                          {
+                                              "password": "newPassword"
+                                          }
+                                """))
+                .andExpect(status().isBadRequest());
+        verify(userService, never()).changePassword(anyString(), any(), any());
     }
 
     // -------------------------------------------------------------------------

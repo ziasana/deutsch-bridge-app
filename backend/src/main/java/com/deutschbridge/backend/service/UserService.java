@@ -161,6 +161,28 @@ public class UserService {
         return userRepository.save(existing);
     }
 
+    /**
+     * A learner changing their own password. Unlike {@link #updatePassword}, which an admin or the reset flow uses,
+     * this first checks the current password so a borrowed session cannot lock the owner out.
+     */
+    @Transactional
+    public boolean changePassword(String id, String currentPassword, String newPassword) throws DataNotFoundException, UserVerificationException {
+        User existing = userRepository.findById(id)
+                .orElseThrow(() -> new DataNotFoundException(NOT_FOUND));
+        if (currentPassword == null || !passwordEncoder.matches(currentPassword, existing.getPassword())) {
+            throw new UserVerificationException("Current password is incorrect");
+        }
+        if (newPassword == null || newPassword.isBlank()) {
+            return false;
+        }
+        if (passwordEncoder.matches(newPassword, existing.getPassword())) {
+            throw new UserVerificationException("New password must be different from the current one");
+        }
+        existing.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(existing);
+        return true;
+    }
+
     @Transactional
     public boolean updatePassword(String id, String password) throws DataNotFoundException {
         User existing = userRepository.findById(id)

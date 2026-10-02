@@ -1,11 +1,20 @@
 "use client";
 
 import { ReactNode } from "react";
-import { Compass, Star, X } from "lucide-react";
+import { BookOpen, Compass, Dices, RefreshCw, Sparkles, Star, Trophy, X, type LucideIcon } from "lucide-react";
+import { RedemittelStatus } from "@/types/redemittel";
 import { LearningSearch } from "@/componenets/learning";
 import { cn } from "@/lib/utils";
 import RedemittelCategoryPicker from "./RedemittelCategoryPicker";
 import RedemittelLevelPills from "./RedemittelLevelPills";
+
+/** The learning journey, in order: new → learning → review → mastered. Colors are the app's learning tokens. */
+const STATUS_CHIPS: { status: RedemittelStatus; label: string; icon: LucideIcon; tint: string; text: string; bar: string }[] = [
+    { status: "NEW", label: "Neu", icon: Sparkles, tint: "bg-learning-vocabulary/12", text: "text-learning-vocabulary", bar: "bg-learning-vocabulary" },
+    { status: "LEARNING", label: "Lernen", icon: BookOpen, tint: "bg-learning-grammar/12", text: "text-learning-grammar", bar: "bg-learning-grammar" },
+    { status: "REVIEW", label: "Wiederholen", icon: RefreshCw, tint: "bg-learning-review/12", text: "text-learning-review", bar: "bg-learning-review" },
+    { status: "MASTERED", label: "Sicher", icon: Trophy, tint: "bg-learning-reading/12", text: "text-learning-reading", bar: "bg-learning-reading" },
+];
 
 export interface ActiveFilter {
     key: string;
@@ -24,6 +33,13 @@ interface Props {
     savedOnly: boolean;
     onToggleSaved: () => void;
     savedCount: number | null;
+    /** The learning-status filter currently applied (null = none) and the counts shown on its chips; null counts hide the row. */
+    status: RedemittelStatus | null;
+    onStatus: (status: RedemittelStatus | null) => void;
+    statusCounts: { NEW: number; LEARNING: number; REVIEW: number; MASTERED: number } | null;
+    /** Opens a random Redemittel; disabled while there is nothing to pick from. */
+    onSurprise: () => void;
+    canSurprise: boolean;
     /** Filters that can be removed one by one (everything except the plain search box). */
     activeFilters: ActiveFilter[];
     onReset: () => void;
@@ -40,38 +56,73 @@ interface Props {
  */
 export default function RedemittelExplorer(p: Readonly<Props>) {
     return (
-        <div>
-            <div className="space-y-4 border-b border-border/60 p-4 sm:p-6">
+        <div className="rounded-[10px] bg-card shadow-card">
+            <div className="space-y-3 rounded-t-[10px] border-b border-border/60 p-4 sm:px-6">
                 <div className="flex items-center gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent">
-                        <Compass className="size-5 text-primary" aria-hidden="true" />
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent">
+                        <Compass className="size-4.5 text-primary" aria-hidden="true" />
                     </div>
                     <h2 className="text-lg font-semibold text-foreground">Entdecken</h2>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3">
-                    <LearningSearch className="min-w-[220px] flex-1" value={p.search} onChange={p.onSearch} placeholder="Redemittel suchen …" ariaLabel="Redemittel suchen" />
+                <div className="flex flex-wrap items-center gap-2">
+                    <LearningSearch compact className="min-w-[200px] flex-1" value={p.search} onChange={p.onSearch} placeholder="Redemittel suchen …" ariaLabel="Redemittel suchen" />
                     <button
                         type="button"
                         aria-pressed={p.savedOnly}
                         onClick={p.onToggleSaved}
                         className={cn(
-                            "group inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 active:scale-95 cursor-pointer",
+                            "group inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 active:scale-95 cursor-pointer",
                             p.savedOnly
-                                ? "border-transparent bg-amber-400 text-amber-950 shadow-md"
-                                : "border-border/60 bg-card text-foreground hover:-translate-y-0.5 hover:border-amber-400/60 hover:bg-amber-400/10",
+                                ? "border-transparent bg-amber-400 text-amber-950 shadow-sm"
+                                : "border-border/60 bg-card text-foreground hover:border-amber-400/60 hover:bg-amber-400/10",
                         )}
                     >
-                        <Star className={cn("size-4 transition-transform group-hover:rotate-12 group-hover:scale-110", p.savedOnly ? "fill-amber-950" : "text-amber-500")} aria-hidden="true" />
+                        <Star className={cn("size-4 transition-transform group-hover:rotate-12", p.savedOnly ? "fill-amber-950" : "text-amber-500")} aria-hidden="true" />
                         Meine Sammlung{p.savedCount !== null ? ` (${p.savedCount})` : ""}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={p.onSurprise}
+                        disabled={!p.canSurprise}
+                        className="group inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-primary transition hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+                    >
+                        <Dices className="size-4 transition-transform group-hover:rotate-12" aria-hidden="true" />
+                        Überrasch mich
                     </button>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-x-4">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-foreground/50">Niveau</span>
+                <div className="relative flex flex-wrap items-center gap-x-3 gap-y-2">
                     <RedemittelLevelPills value={p.level} onChange={p.onLevel} />
-                    <span className="text-xs font-semibold uppercase tracking-wide text-foreground/50">Funktion</span>
+                    <span aria-hidden="true" className="hidden h-5 w-px bg-border sm:block" />
                     <RedemittelCategoryPicker categories={p.categories} value={p.category} onChange={p.onCategory} />
+                    {p.statusCounts && (
+                        <>
+                            <span aria-hidden="true" className="hidden h-5 w-px bg-border sm:block" />
+                            <div className="flex flex-wrap gap-1" role="group" aria-label="Nach Lernstatus filtern">
+                                {STATUS_CHIPS.map((chip) => {
+                                    const active = p.status === chip.status;
+                                    const Icon = chip.icon;
+                                    return (
+                                        <button
+                                            key={chip.status}
+                                            type="button"
+                                            aria-pressed={active}
+                                            onClick={() => p.onStatus(active ? null : chip.status)}
+                                            className={cn(
+                                                "inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                                                active ? "border-primary bg-primary/[0.08] text-primary" : "border-border/60 bg-card text-foreground hover:border-primary/40",
+                                            )}
+                                        >
+                                            <Icon className={cn("size-3.5", active ? "text-primary" : chip.text)} aria-hidden="true" />
+                                            <span>{chip.label}</span>
+                                            <span className="text-foreground/50">{p.statusCounts![chip.status]}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -98,7 +149,7 @@ export default function RedemittelExplorer(p: Readonly<Props>) {
 
             {p.children}
 
-            {p.footer && <div className="rounded-b-3xl border-t border-border/60 px-4 py-3 sm:px-6">{p.footer}</div>}
+            {p.footer && <div className="rounded-b-[10px] border-t border-border/60 px-4 py-3 sm:px-6">{p.footer}</div>}
         </div>
     );
 }

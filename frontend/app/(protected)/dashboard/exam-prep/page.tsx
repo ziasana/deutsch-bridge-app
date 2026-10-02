@@ -10,6 +10,7 @@ import { getExamExercisesSummary, getExamLevelSummary } from "@/services/examSer
 import { ExamSection } from "@/types/exam";
 import Loading from "@/componenets/Loading";
 import { LearningLevelOption, LearningLevelSelector, LearningSearch } from "@/componenets/learning";
+import LearningPageHero from "@/componenets/learning/LearningPageHero";
 import {
     ContinueLearningCard,
     EXAM_TYPE_META,
@@ -152,37 +153,25 @@ function ExamPrepContent() {
     return (
         <div className="min-h-screen bg-background px-6 py-10" dir="ltr">
             <div className="max-w-4xl mx-auto">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="flex items-start gap-4">
-                        <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-accent">
-                            <selectedMeta.icon className="size-6 text-primary" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold text-foreground">Prüfungsvorbereitung</h1>
-                            <p className="text-foreground/60 mt-1 text-sm max-w-md">
-                                Bereite dich Schritt für Schritt auf die Deutschprüfung vor. Übe gezielt mit echten
-                                Prüfungsformaten und verbessere deine Fertigkeiten.
-                            </p>
-                        </div>
-                    </div>
-
-                    {profileLevel && (
-                        <button
-                            type="button"
-                            onClick={() => chooseLevel(profileLevel)}
-                            className="flex items-center gap-3 rounded-2xl bg-card shadow-card px-4 py-3 text-left shrink-0 hover:bg-accent/40 transition"
-                        >
-                            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent">
-                                <BarChart3 className="size-4.5 text-primary" />
-                            </span>
-                            <div className="min-w-0">
-                                <div className="text-xs text-foreground/50">Dein aktuelles Niveau</div>
-                                <div className="font-semibold text-foreground">{profileLevel}</div>
-                            </div>
-                            <ChevronRight className="size-4 text-foreground/30 shrink-0" />
-                        </button>
-                    )}
-                </div>
+                <LearningPageHero
+                    icon={selectedMeta.icon}
+                    title="Prüfungsvorbereitung"
+                    subtitle="Bereite dich Schritt für Schritt auf die Deutschprüfung vor."
+                    bubbles
+                    meta={
+                        profileLevel && (
+                            <button
+                                type="button"
+                                onClick={() => chooseLevel(profileLevel)}
+                                title="Dein aktuelles Niveau"
+                                className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary transition hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                            >
+                                <BarChart3 className="size-3" aria-hidden="true" />
+                                {profileLevel}
+                            </button>
+                        )
+                    }
+                />
 
                 <ExamTypeSelector
                     className="mt-6"

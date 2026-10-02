@@ -53,7 +53,7 @@ export default function RedemittelCategoryPicker({ categories, value, onChange }
     };
 
     return (
-        <div ref={root} className="relative">
+        <div ref={root}>
             <button
                 ref={trigger}
                 type="button"
@@ -62,13 +62,13 @@ export default function RedemittelCategoryPicker({ categories, value, onChange }
                 aria-controls={open ? panelId : undefined}
                 aria-label={`Funktion wählen, aktuell: ${currentLabel}`}
                 className={cn(
-                    "inline-flex min-h-9 items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-semibold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 active:scale-95 cursor-pointer",
-                    current ? "border-transparent bg-primary text-primary-foreground shadow-md" : "border-border/60 bg-card text-foreground hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm",
+                    "inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 active:scale-95 cursor-pointer",
+                    current ? "border-transparent bg-primary text-primary-foreground shadow-sm" : "border-border/60 bg-card text-foreground hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm",
                 )}
             >
-                <span className="text-base leading-none" aria-hidden="true">{current ? categoryEmoji(current.key) : "✨"}</span>
+                <span className="text-sm leading-none" aria-hidden="true">{current ? categoryEmoji(current.key) : "✨"}</span>
                 {currentLabel}
-                <ChevronDown className={cn("size-4 transition-transform duration-200", open && "rotate-180")} aria-hidden="true" />
+                <ChevronDown className={cn("size-3.5 transition-transform duration-200", open && "rotate-180")} aria-hidden="true" />
             </button>
 
             {open && (
@@ -76,9 +76,9 @@ export default function RedemittelCategoryPicker({ categories, value, onChange }
                     id={panelId}
                     role="group"
                     aria-label="Funktion"
-                    className="anim-pop absolute left-0 top-full z-30 mt-2 w-[min(46rem,calc(100vw-3rem))] rounded-2xl border border-border/60 bg-card p-3 shadow-2xl"
+                    className="anim-pop absolute inset-x-0 top-full z-30 mt-2 rounded-2xl border border-border/60 bg-card p-3 shadow-2xl"
                 >
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                         {options.map((c) => {
                             const active = value === c.key;
                             return (

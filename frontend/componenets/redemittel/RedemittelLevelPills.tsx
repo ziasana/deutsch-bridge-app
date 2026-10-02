@@ -15,7 +15,7 @@ interface Props {
  */
 export default function RedemittelLevelPills({ value, onChange }: Readonly<Props>) {
     return (
-        <div role="group" aria-label="Niveau" className="flex flex-wrap items-center gap-1.5">
+        <div role="group" aria-label="Niveau" className="flex flex-wrap items-center gap-1">
             {["ALL", ...REDEMITTEL_LEVELS].map((l) => {
                 const active = value === l;
                 const meta = l === "ALL" ? null : getLevelMeta(l);
@@ -27,8 +27,8 @@ export default function RedemittelLevelPills({ value, onChange }: Readonly<Props
                         aria-pressed={active}
                         onClick={() => onChange(l)}
                         className={cn(
-                            "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 active:scale-95 cursor-pointer",
-                            active ? "scale-105 border-transparent text-white shadow-md" : "border-transparent hover:-translate-y-0.5 hover:shadow-sm",
+                            "inline-flex min-h-8 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 active:scale-95 cursor-pointer",
+                            active ? "border-transparent text-white shadow-sm" : "border-transparent hover:-translate-y-0.5 hover:shadow-sm",
                             !meta && (active ? "bg-foreground text-background" : "bg-foreground/8 text-foreground/70"),
                         )}
                         style={
@@ -39,7 +39,7 @@ export default function RedemittelLevelPills({ value, onChange }: Readonly<Props
                                 : undefined
                         }
                     >
-                        {Icon && <Icon className="size-3.5" aria-hidden="true" />}
+                        {Icon && <Icon className="size-3" aria-hidden="true" />}
                         {l === "ALL" ? "Alle" : l}
                     </button>
                 );

@@ -46,7 +46,7 @@ export const getUserProfile = async () => {
     return await api.get("/user/profile");
 }
 
-export const updatePassword = async (data: UserType) => {
+export const updatePassword = async (data: { currentPassword: string; password: string }) => {
     return await api.put("/user/update-password", data);
 }
 

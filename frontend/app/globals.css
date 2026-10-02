@@ -308,6 +308,29 @@
 .flip-inner[data-flipped="true"] { transform: rotateY(180deg); }
 .flip-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
 .flip-back { transform: rotateY(180deg); }
+/* Learning bubbles: learned words (and a few plain bubbles) rise from the bottom of a hero, sway, swell and shrink a little, and
+   fade out near the top before starting over. The rise animates `top` as a percentage of the hero, which works in every browser. */
+@keyframes bubble-rise {
+  0% { top: 108%; transform: translateX(0) scale(0.7); opacity: 0; }
+  10% { opacity: 1; transform: translateX(calc(var(--sway, 16px) * 0.4)) scale(1); }
+  35% { transform: translateX(var(--sway, 16px)) scale(1.07); }
+  65% { transform: translateX(calc(var(--sway, 16px) * -1)) scale(0.94); }
+  70% { opacity: 1; }
+  100% { top: -30%; transform: translateX(calc(var(--sway, 16px) * 0.5)) scale(1); opacity: 0; }
+}
+.rise-bubble {
+  position: absolute;
+  top: 108%;
+  animation: bubble-rise var(--bubble-duration, 11s) linear var(--bubble-delay, 0s) infinite both;
+}
+.rise-dot {
+  border-radius: 9999px;
+  background: radial-gradient(circle at 30% 28%, rgb(255 255 255 / 0.9), color-mix(in srgb, var(--primary) 18%, transparent) 65%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .rise-bubble { animation: none; top: var(--bubble-rest, 30%); }
+}
 /* Loading screen: an indeterminate bar that sweeps across its track. */
 @keyframes loading-sweep {
   0% { transform: translateX(-100%); }

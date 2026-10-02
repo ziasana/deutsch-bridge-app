@@ -8,8 +8,8 @@ import { toast } from "@/lib/toast";
 import { getGrammarLessonById, setLearningProgress } from "@/services/grammarService";
 import { grammarLessonQueryKey, markLessonLearnedInCache } from "@/lib/grammarQueryCache";
 import Loading from "@/componenets/Loading";
-import { Badge } from "@/componenets/ui/badge";
-import Button from "@/componenets/Button";
+import { BookOpen, Check, Lightbulb, MessageSquareQuote, PlayCircle } from "lucide-react";
+import LearningPageHero from "@/componenets/learning/LearningPageHero";
 import GrammarQuizSection from "@/componenets/GrammarQuizSection";
 import { useI18n } from "@/componenets/I18nProvider";
 import LessonMarkdown from "@/componenets/LessonMarkdown";
@@ -45,33 +45,22 @@ function GrammarLessonDetailContent() {
         }
     }, [lessonError]);
 
-    if (!lessonId) {
-        return (
-            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
-                <div className="max-w-4xl mx-auto text-center text-gray-500 dark:text-gray-400 py-20">
-                    {t.grammar.noLesson}{" "}
-                    <Link href="/dashboard/grammar" className="underline">
-                        {t.grammar.back}
-                    </Link>
-                </div>
+    const message = (text: string) => (
+        <div className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10">
+            <div className="mx-auto max-w-3xl rounded-[10px] bg-card p-10 text-center shadow-card">
+                <p className="text-foreground/65">{text}</p>
+                <Link href="/dashboard/grammar" className="mt-3 inline-block font-semibold text-primary hover:underline">
+                    {t.grammar.back}
+                </Link>
             </div>
-        );
-    }
+        </div>
+    );
+
+    if (!lessonId) return message(t.grammar.noLesson);
 
     if (loading) return <Loading />;
 
-    if (!lesson) {
-        return (
-            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
-                <div className="max-w-4xl mx-auto text-center text-gray-500 dark:text-gray-400 py-20">
-                    {t.grammar.notFoundLesson}{" "}
-                    <Link href="/dashboard/grammar" className="underline">
-                        {t.grammar.back}
-                    </Link>
-                </div>
-            </div>
-        );
-    }
+    if (!lesson) return message(t.grammar.notFoundLesson);
 
     const learned = lesson.learningProgresses?.some((lp) => lp.learned === true) ?? false;
     const localized = localizedLessonText(lesson, language);
@@ -88,83 +77,87 @@ function GrammarLessonDetailContent() {
             .finally(() => setUpdatingLearned(false));
     };
 
+    const chip = "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold";
+
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10">
-            <div className="max-w-4xl mx-auto space-y-6">
-                <Link
-                    href="/dashboard/grammar"
-                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline inline-block"
-                >
+        <div className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10">
+            <div className="mx-auto max-w-4xl space-y-6">
+                <Link href="/dashboard/grammar" className="inline-block text-sm font-medium text-foreground/60 transition hover:text-foreground">
                     {t.grammar.back}
                 </Link>
-                {language === "fa" && !isTranslatable && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{t.grammar.notTranslatable}</p>
-                )}
+                {language === "fa" && !isTranslatable && <p className="text-xs text-foreground/55">{t.grammar.notTranslatable}</p>}
 
-                <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-4" dir={localized.dir}>
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{localized.title}</h1>
-                        <Badge variant="secondary">{lesson.level}</Badge>
-                        {learned && <Badge variant="default">{t.grammar.learned}</Badge>}
-                    </div>
+                <LearningPageHero
+                    icon={BookOpen}
+                    title={localized.title}
+                    subtitle={localized.summary}
+                    dir={localized.dir}
+                    meta={
+                        <>
+                            <span className={`${chip} bg-primary/10 text-primary`}>{lesson.level}</span>
+                            {learned && (
+                                <span className={`${chip} bg-green-500/10 text-green-700 dark:text-green-400`}>
+                                    <Check className="size-3" strokeWidth={3} aria-hidden="true" />
+                                    {t.grammar.learned}
+                                </span>
+                            )}
+                        </>
+                    }
+                />
 
-                    <p className="text-gray-600 dark:text-gray-300">{localized.summary}</p>
-
-                    <LessonMarkdown content={localized.content} className="text-gray-800 dark:text-gray-200" />
+                <article className="space-y-6 rounded-[10px] bg-card p-6 shadow-card sm:p-8" dir={localized.dir}>
+                    <LessonMarkdown content={localized.content} className="text-foreground/85" />
 
                     {lesson.videoLink && (
-                        <div className="pt-1">
-                            <a
-                                href={lesson.videoLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                            >
-                                {t.grammar.watchVideo}
-                            </a>
-                        </div>
+                        <a
+                            href={lesson.videoLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                        >
+                            <PlayCircle className="size-4" aria-hidden="true" />
+                            {t.grammar.watchVideo}
+                        </a>
                     )}
 
                     {localized.example && (
-                        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                            <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                        <aside className="rounded-2xl border-s-4 border-primary/40 bg-accent/50 p-4 sm:p-5">
+                            <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-primary">
+                                <MessageSquareQuote className="size-4" aria-hidden="true" />
                                 {t.grammar.example}
                             </div>
-                            <LessonMarkdown content={localized.example} className="text-gray-700 dark:text-gray-300" />
-                        </div>
+                            <LessonMarkdown content={localized.example} className="text-foreground/80" />
+                        </aside>
                     )}
 
                     {localized.usageTips && (
-                        <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4">
-                            <div className="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-1">
+                        <aside className="rounded-2xl border-s-4 border-learning-vocabulary bg-learning-vocabulary/10 p-4 sm:p-5">
+                            <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-learning-vocabulary">
+                                <Lightbulb className="size-4" aria-hidden="true" />
                                 {t.grammar.usageTip}
                             </div>
-                            <LessonMarkdown content={localized.usageTips} className="text-blue-700 dark:text-blue-300" />
-                        </div>
+                            <LessonMarkdown content={localized.usageTips} className="text-foreground/80" />
+                        </aside>
                     )}
 
-                    <div className="pt-2">
-                        <Button
-                            variant={learned ? "secondary" : "primary"}
-                            className="text-sm px-4 py-2"
+                    <div className="border-t border-border/60 pt-5">
+                        <button
+                            type="button"
                             disabled={updatingLearned}
                             onClick={toggleLearned}
+                            className={
+                                learned
+                                    ? "inline-flex cursor-pointer items-center gap-2 rounded-full border border-green-500/30 bg-green-500/10 px-5 py-2.5 text-sm font-semibold text-green-700 transition hover:bg-green-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400 disabled:opacity-60 dark:text-green-400"
+                                    : "inline-flex cursor-pointer items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-60"
+                            }
                         >
-                            {updatingLearned
-                                ? t.grammar.saving
-                                : learned
-                                ? t.grammar.markNotLearned
-                                : t.grammar.markLearned}
-                        </Button>
+                            <Check className="size-4" strokeWidth={3} aria-hidden="true" />
+                            {updatingLearned ? t.grammar.saving : learned ? t.grammar.markNotLearned : t.grammar.markLearned}
+                        </button>
                     </div>
-                </div>
+                </article>
 
-                <GrammarQuizSection
-                    quiz={lesson.quiz ?? []}
-                    lessonId={lesson.id}
-                    lessonLevel={lesson.level}
-                    language={language}
-                />
+                <GrammarQuizSection quiz={lesson.quiz ?? []} lessonId={lesson.id} lessonLevel={lesson.level} language={language} />
             </div>
         </div>
     );
