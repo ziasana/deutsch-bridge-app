@@ -1,6 +1,7 @@
 package com.deutschbridge.backend.controller;
 
 import com.deutschbridge.backend.exception.DataNotFoundException;
+import com.deutschbridge.backend.exception.UserVerificationException;
 import com.deutschbridge.backend.model.AuthUser;
 import com.deutschbridge.backend.model.dto.*;
 import com.deutschbridge.backend.model.entity.User;
@@ -98,9 +99,9 @@ public class UserController {
     }
 
     @PutMapping("/update-password")
-    public ResponseEntity<ApiResponse<Void>> updatePassword(@RequestBody @Valid UpdatePasswordRequest request) throws DataNotFoundException {
+    public ResponseEntity<ApiResponse<Void>> updatePassword(@RequestBody @Valid ChangePasswordRequest request) throws DataNotFoundException, UserVerificationException {
         String authId = SecurityUtils.getCurrentUser().getId();
-        boolean updated = userService.updatePassword(authId, request.password());
+        boolean updated = userService.changePassword(authId, request.currentPassword(), request.password());
         if (!updated) {
             return new ResponseEntity<>(new ApiResponse<>("Password not updated", null), HttpStatus.BAD_REQUEST);
         }
