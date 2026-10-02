@@ -49,19 +49,29 @@ export default function ChangePasswordDialog({ open, onClose }: Readonly<Props>)
         onClose();
     };
 
+    // Callers pass a fresh onClose on every render; keep the latest one in a ref so the effects below depend only on
+    // open / saving. Otherwise any parent re-render (scroll, notification polling) would re-run them and steal focus.
+    const onCloseRef = useRef(onClose);
+    useEffect(() => {
+        onCloseRef.current = onClose;
+    });
+
+    useEffect(() => {
+        if (open) firstField.current?.focus();
+    }, [open]);
+
     useEffect(() => {
         if (!open) return;
-        firstField.current?.focus();
         const onKey = (e: KeyboardEvent) => {
             if (e.key === "Escape" && !saving) {
                 reset();
                 setShow(false);
-                onClose();
+                onCloseRef.current();
             }
         };
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
-    }, [open, saving, onClose, reset]);
+    }, [open, saving, reset]);
 
     if (!open || typeof document === "undefined") return null;
 

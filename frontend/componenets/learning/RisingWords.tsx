@@ -31,7 +31,7 @@ export default function RisingWords({ words }: Readonly<{ words: string[] }>) {
                 const lane = index % LANES;
                 const tier = Math.floor(index / LANES);
                 return (
-                    <div key={word} className="absolute inset-y-0 overflow-hidden" style={{ left: `${(lane * 100) / LANES}%`, width: `${100 / LANES}%` }}>
+                    <div key={`${word}-${index}`} className="absolute inset-y-0 overflow-hidden" style={{ left: `${(lane * 100) / LANES}%`, width: `${100 / LANES}%` }}>
                         <span
                             className={`rise-bubble inset-x-0 mx-auto w-fit max-w-[6.75rem] truncate rounded-2xl rounded-bl-sm px-3 py-1.5 font-semibold text-white shadow-lg ${m.size} ${BUBBLE_TONES[index % BUBBLE_TONES.length]}`}
                             style={{

@@ -23,10 +23,11 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
     useEffect(() => {
         if (!hasHydrated) return;
 
-        if (!isLoggedIn && userProfile != null)  {
-            router.push('/login')
+        // Anyone who is not signed in (with or without a leftover profile) goes to the login page.
+        if (!isLoggedIn) {
+            router.replace('/login')
         }
-    }, [hasHydrated, isLoggedIn, router, userProfile]);
+    }, [hasHydrated, isLoggedIn, router]);
 
     useEffect(() => {
         if (!hasHydrated || !isLoggedIn || !userProfile) return;

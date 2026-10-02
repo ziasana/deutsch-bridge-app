@@ -87,7 +87,10 @@ export default function UserProfile() {
     const { userProfile, updateUserProfile } = useAuthStore();
     const { t, language } = useI18n();
 
-    const [profile, setProfile] = useState<UserProfileType>({
+    // Only your edits live here. Everything else is read straight from the store, so a profile that the layout
+    // refreshes from the server after this page opens never looks like "unsaved changes".
+    const [draft, setDraft] = useState<Partial<UserProfileType>>({});
+    const profile: UserProfileType = {
         displayName: userProfile?.displayName,
         email: userProfile?.email,
         learningLevel: userProfile?.learningLevel,
@@ -95,11 +98,11 @@ export default function UserProfile() {
         preferredLanguage: userProfile?.preferredLanguage,
         avatarUrl: userProfile?.avatarUrl,
         createdAt: userProfile?.createdAt,
-    });
+        ...draft,
+    };
 
-    // What can actually be saved: unsaved changes show a bar at the bottom instead of a separate "edit mode".
     const EDITABLE = ["displayName", "learningLevel", "dailyGoalWords", "preferredLanguage"] as const;
-    const dirty = EDITABLE.some((key) => profile[key] !== userProfile?.[key]);
+    const dirty = EDITABLE.some((key) => key in draft && draft[key] !== userProfile?.[key]);
 
     useEffect(() => {
         const sections = NAV.map((n) => document.getElementById(n.id)).filter((el): el is HTMLElement => el !== null);
@@ -122,7 +125,7 @@ export default function UserProfile() {
         : null;
 
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setProfile({ ...profile, [e.target.name]: e.target.value });
+        setDraft((d) => ({ ...d, [e.target.name]: e.target.value }));
     };
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -137,6 +140,7 @@ export default function UserProfile() {
                     // onboardingCompleted/role/etc. and (via the protected-layout guard) bounce
                     // the user straight to the onboarding wizard right after saving.
                     updateUserProfile({ ...userProfile, ...profile });
+                    setDraft({});
                 }
             })
             .catch((err) => {
@@ -146,14 +150,7 @@ export default function UserProfile() {
             .finally(() => setIsLoading(false));
     }
 
-    const discardChanges = () =>
-        setProfile((p) => ({
-            ...p,
-            displayName: userProfile?.displayName,
-            learningLevel: userProfile?.learningLevel,
-            dailyGoalWords: userProfile?.dailyGoalWords,
-            preferredLanguage: userProfile?.preferredLanguage,
-        }));
+    const discardChanges = () => setDraft({});
 
     const handleAvatarSelected = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -164,9 +161,8 @@ export default function UserProfile() {
         uploadAvatar(file)
             .then((res) => {
                 const avatarUrl = res.data.data;
-                const nextProfile = { ...profile, avatarUrl };
-                setProfile(nextProfile);
-                updateUserProfile({ ...userProfile, ...nextProfile });
+                // The photo is saved by the upload itself; only it goes into the store, never your unsaved edits.
+                updateUserProfile({ ...userProfile, avatarUrl });
                 toast.success(t.profile.avatarUpdated);
             })
             .catch((err) => {
@@ -290,7 +286,7 @@ export default function UserProfile() {
                                         label={t.profile.learningLevel}
                                         options={levels.map((l) => ({ value: l, label: l }))}
                                         value={profile.learningLevel}
-                                        onChange={(v) => setProfile((p) => ({ ...p, learningLevel: v }))}
+                                        onChange={(v) => setDraft((d) => ({ ...d, learningLevel: v }))}
                                     />
                                 </Row>
                                 <Row label={t.profile.dailyWordGoal} hint={t.profile.recommendedGoal}>
@@ -298,7 +294,7 @@ export default function UserProfile() {
                                         label={t.profile.dailyWordGoal}
                                         options={WORD_GOALS.map((n) => ({ value: n, label: `${n} ${t.profile.words}` }))}
                                         value={profile.dailyGoalWords}
-                                        onChange={(v) => setProfile((p) => ({ ...p, dailyGoalWords: v }))}
+                                        onChange={(v) => setDraft((d) => ({ ...d, dailyGoalWords: v }))}
                                     />
                                 </Row>
                                 <Row label={t.profile.preferredLanguage}>
@@ -306,7 +302,7 @@ export default function UserProfile() {
                                         label={t.profile.preferredLanguage}
                                         options={languages.map((l) => ({ value: l.value, label: l.value === "PR" ? "🇮🇷 فارسی" : `🇬🇧 ${l.name}` }))}
                                         value={profile.preferredLanguage}
-                                        onChange={(v) => setProfile((p) => ({ ...p, preferredLanguage: v }))}
+                                        onChange={(v) => setDraft((d) => ({ ...d, preferredLanguage: v }))}
                                     />
                                 </Row>
                             </div>
