@@ -58,7 +58,7 @@ function VocabularyPracticeContent() {
     if (!session || session.items.length === 0) {
         return (
             <PracticeShell>
-                <div className="anim-fade-up rounded-3xl bg-card p-10 text-center shadow-card">
+                <div className="anim-fade-up rounded-[10px] bg-card p-10 text-center shadow-card">
                     <h1 className="text-2xl font-bold text-foreground">{t.vocabulary.practice.noWords}</h1>
                     <p className="mt-2 text-foreground/65">{t.vocabulary.practice.noWordsSubtitle}</p>
                     <button type="button" onClick={() => router.push(exitTarget)} className={`${practicePrimaryButton} mt-7`}>
@@ -271,7 +271,7 @@ function VocabularyPracticeContent() {
                 )}
 
                 {step === "context" && item.contextQuestion && (
-                    <div className="anim-fade-up rounded-3xl border-t-4 border-primary bg-card p-6 shadow-card sm:p-8">
+                    <div className="anim-fade-up rounded-[10px] border-t-4 border-primary bg-card p-6 shadow-card sm:p-8">
                         <p className="text-xs font-semibold uppercase tracking-wide text-primary">
                             {item.contextQuestion.isCloze ? t.vocabulary.practice.contextPromptCloze : t.vocabulary.practice.contextPromptMeaning}
                         </p>

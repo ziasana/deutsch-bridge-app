@@ -60,7 +60,7 @@ export default function DailyWordsQuickPractice({ words, onComplete }: DailyWord
     };
 
     return (
-        <div className="anim-fade-up rounded-3xl border-t-4 border-primary bg-card p-6 shadow-card sm:p-8">
+        <div className="anim-fade-up rounded-[10px] border-t-4 border-primary bg-card p-6 shadow-card sm:p-8">
             <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-foreground">{t.dailyWords.practice.title}</h2>
                 <span className="text-xs font-medium text-foreground/50">

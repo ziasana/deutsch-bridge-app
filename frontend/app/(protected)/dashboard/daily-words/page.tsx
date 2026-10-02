@@ -60,7 +60,7 @@ export default function DailyWordsPage() {
 
     if (error) {
         return frame(
-            <div className="rounded-3xl bg-card p-10 text-center shadow-card">
+            <div className="rounded-[10px] bg-card p-10 text-center shadow-card">
                 <p className="font-semibold text-foreground">{t.dailyWords.loadError}</p>
                 <p className="mt-1 text-sm text-foreground/60">{t.dailyWords.loadErrorSubtitle}</p>
                 <button
@@ -76,7 +76,7 @@ export default function DailyWordsPage() {
 
     if (words.length === 0) {
         return frame(
-            <div className="rounded-3xl bg-card p-10 text-center shadow-card">
+            <div className="rounded-[10px] bg-card p-10 text-center shadow-card">
                 <h1 className="text-2xl font-bold text-foreground">{t.dailyWords.title}</h1>
                 <p className="mt-2 text-foreground/65">{t.dailyWords.emptyTitle}</p>
                 <p className="mt-1 text-sm text-foreground/50">{t.dailyWords.emptySubtitle}</p>

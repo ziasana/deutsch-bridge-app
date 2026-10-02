@@ -15,7 +15,7 @@ export default function DailyWordsOverview({ words, currentIndex, onSelect }: Re
     const learnedCount = words.filter((w) => w.learned).length;
 
     return (
-        <section aria-label={t.dailyWords.overview.title(words.length)} className="overflow-hidden rounded-3xl bg-card shadow-card">
+        <section aria-label={t.dailyWords.overview.title(words.length)} className="overflow-hidden rounded-[10px] bg-card shadow-card">
             <div className="flex items-center justify-between px-5 pb-3 pt-5 sm:px-6">
                 <h2 className="text-base font-semibold text-foreground">{t.dailyWords.overview.title(words.length)}</h2>
                 <span className="text-xs font-medium text-foreground/50">{learnedCount} / {words.length}</span>

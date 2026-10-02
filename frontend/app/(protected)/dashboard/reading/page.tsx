@@ -10,6 +10,7 @@ import Loading from "@/componenets/Loading";
 import { getArticleImageSrc } from "@/lib/readingImages";
 import { LearningLevelOption, LearningLevelSelector, LearningSearch } from "@/componenets/learning";
 import { getLevelMeta } from "@/componenets/learning/levelMeta";
+import LearningPageHero from "@/componenets/learning/LearningPageHero";
 import { useI18n } from "@/componenets/I18nProvider";
 import useAuthStore from "@/store/useAuthStore";
 import { cn } from "@/lib/utils";
@@ -120,15 +121,7 @@ export default function ReadingPage() {
     return (
         <div className="min-h-screen bg-background px-6 py-10">
             <div className="max-w-4xl mx-auto">
-                <div className="flex items-start gap-4">
-                    <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-accent">
-                        <Newspaper className="size-6 text-primary" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-foreground">{t.reading.title}</h1>
-                        <p className="text-foreground/60 mt-1 text-sm">{t.reading.subtitle}</p>
-                    </div>
-                </div>
+                <LearningPageHero icon={Newspaper} title={t.reading.title} subtitle={t.reading.subtitle} bubbles />
 
                 {(summaryLoading || listLoading) && <Loading />}
 

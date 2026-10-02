@@ -10,6 +10,7 @@ import { GrammarLessonSummary } from "@/types/grammar";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
 import { LearningLevelOption, LearningLevelSelector, LearningSearch } from "@/componenets/learning";
+import LearningPageHero from "@/componenets/learning/LearningPageHero";
 import { CategoryAccordionCard, ContentItemRow } from "@/componenets/CategoryAccordion";
 import { useI18n } from "@/componenets/I18nProvider";
 import { localizedLessonHeading } from "@/lib/grammarLocalization";
@@ -118,15 +119,7 @@ export default function GrammarLessonsPage() {
     return (
         <div className="min-h-screen bg-background px-6 py-10">
             <div className="max-w-4xl mx-auto">
-                <div className="flex items-start gap-4">
-                    <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-accent">
-                        <BookOpen className="size-6 text-primary" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-foreground">{t.grammar.title}</h1>
-                        <p className="text-foreground/60 mt-1 text-sm">{t.grammar.subtitle}</p>
-                    </div>
-                </div>
+                <LearningPageHero icon={BookOpen} title={t.grammar.title} subtitle={t.grammar.subtitle} bubbles />
 
                 {(summaryLoading || levelLoading) && <Loading />}
 

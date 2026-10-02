@@ -19,8 +19,86 @@ import {
     ProductionAnswerResponse,
 } from "@/types/expression";
 import Loading from "@/componenets/Loading";
-import Button from "@/componenets/Button";
-import { Badge } from "@/componenets/ui/badge";
+import { Check, X } from "lucide-react";
+import { ReactNode } from "react";
+import CircularProgress from "@/componenets/CircularProgress";
+import { cn } from "@/lib/utils";
+
+const pillPrimary =
+    "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default disabled:opacity-50";
+
+const inputClass =
+    "mb-4 w-full rounded-2xl border border-border/60 bg-background px-4 py-3 text-foreground outline-none transition placeholder:text-foreground/40 focus:border-primary focus:ring-2 focus:ring-primary/40";
+
+const chipClass = "inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary";
+
+/** One pass/fail line in an AI evaluation (used expression, grammar, ...). */
+function Criterion({ ok, children }: Readonly<{ ok: boolean; children: ReactNode }>) {
+    return (
+        <p className="flex items-center gap-2 text-sm">
+            <span className={cn("flex size-5 shrink-0 items-center justify-center rounded-full text-white", ok ? "bg-green-500" : "bg-red-500")} aria-hidden="true">
+                {ok ? <Check className="size-3" strokeWidth={3} /> : <X className="size-3" strokeWidth={3} />}
+            </span>
+            {children}
+        </p>
+    );
+}
+
+/** Lettered answer tiles for a multiple-choice step (before checking). */
+function McqOptions({ options, selectedId, onSelect }: Readonly<{ options: { id: string; text: string }[]; selectedId: string | null; onSelect: (id: string) => void }>) {
+    return (
+        <div className="mb-5 space-y-2.5">
+            {options.map((opt, i) => {
+                const isSelected = selectedId === opt.id;
+                return (
+                    <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => onSelect(opt.id)}
+                        className={cn(
+                            "flex w-full cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-left text-foreground transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                            isSelected ? "border-primary bg-primary/10" : "border-border/60 bg-background hover:-translate-y-0.5 hover:border-primary/50 hover:bg-accent/50 hover:shadow-card",
+                        )}
+                    >
+                        <span aria-hidden="true" className={cn("flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold", isSelected ? "bg-primary text-primary-foreground" : "bg-accent text-primary")}>
+                            {String.fromCharCode(65 + i)}
+                        </span>
+                        <span className="min-w-0 flex-1 break-words">{opt.text}</span>
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
+/** The same tiles after checking: right answer green, a wrong pick orange. */
+function McqResultOptions({ options, selectedId, correctId }: Readonly<{ options: { id: string; text: string }[]; selectedId: string | null; correctId: string | null }>) {
+    return (
+        <div className="mb-5 space-y-2.5">
+            {options.map((opt, i) => {
+                const isSelected = opt.id === selectedId;
+                const isRight = opt.id === correctId;
+                const isWrong = isSelected && !isRight;
+                return (
+                    <div
+                        key={opt.id}
+                        className={cn(
+                            "flex items-center gap-3 rounded-2xl border px-4 py-3 text-foreground",
+                            isRight && "border-green-500 bg-green-500/10",
+                            isWrong && "border-orange-500 bg-orange-500/10",
+                            !isRight && !isWrong && "border-border/40 opacity-55",
+                        )}
+                    >
+                        <span aria-hidden="true" className={cn("flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold", isRight ? "bg-green-500 text-white" : isWrong ? "bg-orange-500 text-white" : "bg-accent text-primary")}>
+                            {isRight ? <Check className="size-4" strokeWidth={3} /> : isWrong ? <X className="size-4" strokeWidth={3} /> : String.fromCharCode(65 + i)}
+                        </span>
+                        <span className="min-w-0 flex-1 break-words">{opt.text}</span>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
 
 type StepKey = "discover" | "recall" | "context" | "completion" | "transformation" | "production";
 
@@ -105,15 +183,15 @@ function ExpressionPracticeContent() {
 
     if (!session || session.items.length === 0) {
         return (
-            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6 flex items-center justify-center" dir="ltr">
-                <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-10 text-center max-w-md">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Alles erledigt!</h2>
-                    <p className="text-gray-600 dark:text-gray-300 mb-6">
+            <div className="dashboard-atmosphere flex min-h-screen items-center justify-center p-4 sm:p-6" dir="ltr">
+                <div className="anim-fade-up max-w-md rounded-[10px] bg-card p-10 text-center shadow-card">
+                    <h2 className="text-2xl font-bold text-foreground mb-2">Alles erledigt!</h2>
+                    <p className="text-foreground/65 mb-6">
                         Keine Wendungen sind gerade fällig. Schau später wieder vorbei.
                     </p>
-                    <Button variant="primary" onClick={() => router.push(exitTarget)}>
+                    <button type="button" className={pillPrimary} onClick={() => router.push(exitTarget)}>
                         Zurück zur Übersicht
-                    </Button>
+                    </button>
                 </div>
             </div>
         );
@@ -128,42 +206,51 @@ function ExpressionPracticeContent() {
         const needsPractice = results.filter((r) => r.productionCorrect === false).map((r) => r.expression.expression);
 
         return (
-            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6 flex items-center justify-center" dir="ltr">
-                <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-8 max-w-lg w-full">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Session complete 🎉</h2>
-                    <p className="text-gray-600 dark:text-gray-300 mb-6">Wendungen geübt: {results.length}</p>
+            <div className="dashboard-atmosphere flex min-h-screen items-center justify-center p-4 sm:p-6" dir="ltr">
+                <div className="anim-fade-up w-full max-w-lg rounded-[10px] bg-card p-6 shadow-card sm:p-8">
+                    <h2 className="text-2xl font-bold text-foreground mb-1">Session complete 🎉</h2>
+                    <p className="text-foreground/65 mb-6">Wendungen geübt: {results.length}</p>
+
+                    <div className="mb-6 flex justify-center">
+                        <div className="relative">
+                            <CircularProgress value={totalSteps > 0 ? (totalCorrect / totalSteps) * 100 : 0} size={112} color="hsl(216 100% 62%)" trackColor="hsl(0 0% 50% / 0.15)" />
+                            <span className="absolute inset-0 flex items-center justify-center text-xl font-bold text-foreground">
+                                {totalSteps > 0 ? Math.round((totalCorrect / totalSteps) * 100) : 0}%
+                            </span>
+                        </div>
+                    </div>
 
                     <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 text-center">
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        <div className="bg-accent/50 rounded-2xl p-4 text-center">
+                            <p className="text-2xl font-bold text-foreground">
                                 {totalCorrect}/{totalSteps}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Richtige Antworten</p>
+                            <p className="text-xs text-foreground/60">Richtige Antworten</p>
                         </div>
-                        <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 text-center">
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        <div className="bg-accent/50 rounded-2xl p-4 text-center">
+                            <p className="text-2xl font-bold text-foreground">
                                 {productionCorrectCount}/{productionAttempts.length}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Production</p>
+                            <p className="text-xs text-foreground/60">Production</p>
                         </div>
                     </div>
 
                     {strong.length > 0 && (
                         <div className="mb-4">
                             <p className="text-sm font-semibold text-green-700 dark:text-green-400 mb-1">Strong:</p>
-                            <p className="text-sm text-gray-700 dark:text-gray-300">{strong.join(", ")}</p>
+                            <p className="text-sm text-foreground/80">{strong.join(", ")}</p>
                         </div>
                     )}
                     {needsPractice.length > 0 && (
                         <div className="mb-6">
                             <p className="text-sm font-semibold text-orange-700 dark:text-orange-400 mb-1">Needs practice:</p>
-                            <p className="text-sm text-gray-700 dark:text-gray-300">{needsPractice.join(", ")}</p>
+                            <p className="text-sm text-foreground/80">{needsPractice.join(", ")}</p>
                         </div>
                     )}
 
-                    <Button variant="primary" className="w-full" onClick={() => router.push(exitTarget)}>
+                    <button type="button" className={`${pillPrimary} w-full`} onClick={() => router.push(exitTarget)}>
                         Fertig
-                    </Button>
+                    </button>
                 </div>
             </div>
         );
@@ -258,52 +345,56 @@ function ExpressionPracticeContent() {
     const nextLabel = isLastStep ? "Session beenden" : "Weiter";
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6 flex items-center justify-center" dir="ltr">
-            <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-8 max-w-xl w-full">
-                <div className="flex items-center justify-between mb-6">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="dashboard-atmosphere flex min-h-screen items-center justify-center p-4 sm:p-6" dir="ltr">
+            <div className="anim-fade-up w-full max-w-xl rounded-[10px] bg-card p-6 shadow-card sm:p-8">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                    <span className="text-sm font-medium text-foreground/60">
                         {index + 1} / {session.items.length}
                     </span>
                     <div className="flex gap-2">
-                        <Badge variant="secondary">{item.level}</Badge>
-                        <Badge variant="secondary">
-                            {item.type === "NOMEN_VERB_VERBINDUNG" ? "Nomen-Verb-Verbindung" : "Redewendung"}
-                        </Badge>
+                        <span className={chipClass}>{item.level}</span>
+                        <span className={chipClass}>{item.type === "NOMEN_VERB_VERBINDUNG" ? "Nomen-Verb-Verbindung" : "Redewendung"}</span>
                     </div>
+                </div>
+
+                <div className="mb-6 flex gap-1.5" role="progressbar" aria-valuenow={stepIndex + 1} aria-valuemin={1} aria-valuemax={steps.length}>
+                    {steps.map((step, i) => (
+                        <span key={step} className={cn("h-1.5 flex-1 rounded-full transition-colors", i <= stepIndex ? "bg-primary" : "bg-foreground/10")} />
+                    ))}
                 </div>
 
                 {currentStep === "discover" && (
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{item.expression}</h2>
+                        <h2 className="text-2xl font-bold text-foreground mb-4">{item.expression}</h2>
                         {!revealed ? (
                             <>
-                                <p className="text-gray-600 dark:text-gray-300 mb-6">Was glaubst du, was bedeutet das?</p>
-                                <Button variant="primary" onClick={() => setRevealed(true)}>
+                                <p className="text-foreground/65 mb-6">Was glaubst du, was bedeutet das?</p>
+                                <button type="button" className={pillPrimary} onClick={() => setRevealed(true)}>
                                     Bedeutung anzeigen
-                                </Button>
+                                </button>
                             </>
                         ) : (
                             <>
-                                <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-4 space-y-1">
-                                    <p className="text-gray-900 dark:text-white font-medium">= {item.meaningDe}</p>
-                                    {item.meaningEn && <p className="text-gray-600 dark:text-gray-300 text-sm">🇬🇧 {item.meaningEn}</p>}
+                                <div className="bg-accent/50 rounded-2xl p-4 mb-4 space-y-1">
+                                    <p className="text-foreground font-medium">= {item.meaningDe}</p>
+                                    {item.meaningEn && <p className="text-foreground/65 text-sm">🇬🇧 {item.meaningEn}</p>}
                                     {item.meaningFa && (
-                                        <p className="text-gray-600 dark:text-gray-300 text-sm" dir="rtl">
+                                        <p className="text-foreground/65 text-sm" dir="rtl">
                                             🇮🇷 {item.meaningFa}
                                         </p>
                                     )}
                                     {item.grammarNote && (
-                                        <p className="text-gray-500 dark:text-gray-400 text-xs mt-2">Grammatik: {item.grammarNote}</p>
+                                        <p className="text-foreground/60 text-xs mt-2">Grammatik: {item.grammarNote}</p>
                                     )}
                                 </div>
                                 {item.exampleSentence && (
-                                    <p className="text-gray-700 dark:text-gray-300 text-sm mb-6 italic">
+                                    <p className="text-foreground/80 text-sm mb-6 italic">
                                         &quot;{item.exampleSentence}&quot;
                                     </p>
                                 )}
-                                <Button variant="primary" onClick={() => advance(null)}>
+                                <button type="button" className={pillPrimary} onClick={() => advance(null)}>
                                     Weiter zur Übung
-                                </Button>
+                                </button>
                             </>
                         )}
                     </div>
@@ -311,8 +402,8 @@ function ExpressionPracticeContent() {
 
                 {currentStep === "recall" && (
                     <div>
-                        <p className="text-gray-600 dark:text-gray-300 mb-2">{STEP_INTRO.recall}</p>
-                        <p className="text-lg text-gray-900 dark:text-white mb-6 font-medium">
+                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">{STEP_INTRO.recall}</p>
+                        <p className="mb-6 text-lg font-semibold leading-relaxed text-foreground">
                             {item.maskedSentence ?? `Wie sagt man: "${item.meaningDe}"?`}
                         </p>
 
@@ -324,27 +415,27 @@ function ExpressionPracticeContent() {
                                     onChange={(e) => setRecallInput(e.target.value)}
                                     onKeyDown={(e) => e.key === "Enter" && submitRecall()}
                                     placeholder="Deine Antwort..."
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white mb-4 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    className={inputClass}
                                 />
-                                <Button variant="primary" onClick={submitRecall} disabled={submitting}>
+                                <button type="button" className={pillPrimary} onClick={submitRecall} disabled={submitting}>
                                     {submitting ? "Prüfe..." : "Prüfen"}
-                                </Button>
+                                </button>
                             </>
                         ) : (
                             <>
                                 <div
-                                    className={`rounded-xl p-4 mb-6 ${
+                                    className={`rounded-2xl p-4 mb-6 ${
                                         recallResult.correct
-                                            ? "bg-green-50 dark:bg-green-900/40 text-green-800 dark:text-green-300"
-                                            : "bg-orange-50 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300"
+                                            ? "bg-green-500/10 text-green-800 dark:text-green-300"
+                                            : "bg-orange-500/10 text-orange-800 dark:text-orange-300"
                                     }`}
                                 >
-                                    <p className="font-semibold">{recallResult.correct ? "✅ Richtig!" : "Nicht ganz."}</p>
+                                    <p className="font-semibold">{recallResult.correct ? "Richtig!" : "Nicht ganz."}</p>
                                     {!recallResult.correct && <p className="text-sm mt-1">Richtig wäre: {recallResult.correctAnswer}</p>}
                                 </div>
-                                <Button variant="primary" onClick={() => advance(recallResult.correct)}>
+                                <button type="button" className={pillPrimary} onClick={() => advance(recallResult.correct)}>
                                     {nextLabel}
-                                </Button>
+                                </button>
                             </>
                         )}
                     </div>
@@ -356,57 +447,25 @@ function ExpressionPracticeContent() {
                         if (!question) return null;
                         return (
                             <div>
-                                <p className="text-gray-600 dark:text-gray-300 mb-2">{STEP_INTRO[currentStep]}</p>
-                                <p className="text-lg text-gray-900 dark:text-white mb-6 font-medium">{question.prompt}</p>
+                                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">{STEP_INTRO[currentStep]}</p>
+                                <p className="mb-6 text-lg font-semibold leading-relaxed text-foreground">{question.prompt}</p>
 
                                 {!mcqResult ? (
                                     <>
-                                        <div className="space-y-2 mb-4">
-                                            {question.options.map((opt) => (
-                                                <button
-                                                    key={opt.id}
-                                                    onClick={() => setMcqSelectedOptionId(opt.id)}
-                                                    className={`w-full text-left px-4 py-3 rounded-lg border transition ${
-                                                        mcqSelectedOptionId === opt.id
-                                                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-gray-900 dark:text-white"
-                                                            : "border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white hover:border-blue-300"
-                                                    }`}
-                                                >
-                                                    {opt.text}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <Button variant="primary" onClick={() => submitMcq(question)} disabled={submitting || !mcqSelectedOptionId}>
+                                        <McqOptions options={question.options} selectedId={mcqSelectedOptionId} onSelect={setMcqSelectedOptionId} />
+                                        <button type="button" className={pillPrimary} onClick={() => submitMcq(question)} disabled={submitting || !mcqSelectedOptionId}>
                                             {submitting ? "Prüfe..." : "Prüfen"}
-                                        </Button>
+                                        </button>
                                     </>
                                 ) : (
                                     <>
-                                        <div className="space-y-2 mb-4">
-                                            {question.options.map((opt) => {
-                                                const isSelected = opt.id === mcqSelectedOptionId;
-                                                const isCorrectOption = opt.id === mcqResult.correctOptionId;
-                                                const style = isCorrectOption
-                                                    ? "border-green-500 bg-green-50 dark:bg-green-900/30"
-                                                    : isSelected
-                                                    ? "border-orange-500 bg-orange-50 dark:bg-orange-900/30"
-                                                    : "border-gray-200 dark:border-gray-700";
-                                                return (
-                                                    <div
-                                                        key={opt.id}
-                                                        className={`px-4 py-3 rounded-lg border text-gray-900 dark:text-white ${style}`}
-                                                    >
-                                                        {opt.text} {isCorrectOption && "✅"} {isSelected && !isCorrectOption && "❌"}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
+                                        <McqResultOptions options={question.options} selectedId={mcqSelectedOptionId} correctId={mcqResult.correctOptionId} />
                                         {mcqResult.explanation && (
-                                            <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">{mcqResult.explanation}</p>
+                                            <p className="text-foreground/65 text-sm mb-4">{mcqResult.explanation}</p>
                                         )}
-                                        <Button variant="primary" onClick={() => advance(mcqResult.correct)}>
+                                        <button type="button" className={pillPrimary} onClick={() => advance(mcqResult.correct)}>
                                             {nextLabel}
-                                        </Button>
+                                        </button>
                                     </>
                                 )}
                             </div>
@@ -421,8 +480,8 @@ function ExpressionPracticeContent() {
                         if (question.format === "FREE_TEXT") {
                             return (
                                 <div>
-                                    <p className="text-gray-600 dark:text-gray-300 mb-2">{STEP_INTRO.transformation}</p>
-                                    <p className="text-lg text-gray-900 dark:text-white mb-6 font-medium italic">&quot;{question.prompt}&quot;</p>
+                                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">{STEP_INTRO.transformation}</p>
+                                    <p className="text-lg text-foreground mb-6 font-medium italic">&quot;{question.prompt}&quot;</p>
 
                                     {!transformationResult ? (
                                         <>
@@ -432,36 +491,35 @@ function ExpressionPracticeContent() {
                                                 onChange={(e) => setTransformationInput(e.target.value)}
                                                 placeholder="Dein umformulierter Satz..."
                                                 rows={4}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white mb-4 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                className={inputClass}
                                             />
-                                            <Button variant="primary" onClick={() => submitTransformation(question)} disabled={submitting}>
+                                            <button type="button" className={pillPrimary} onClick={() => submitTransformation(question)} disabled={submitting}>
                                                 {submitting ? "Wird bewertet..." : "Absenden"}
-                                            </Button>
+                                            </button>
                                         </>
                                     ) : (
                                         <>
-                                            <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-4">
-                                                <div className="space-y-1 text-sm">
-                                                    <p>{transformationResult.usedExpression ? "✅" : "❌"} Wendung verwendet</p>
-                                                    <p>{transformationResult.grammarCorrect ? "✅" : "❌"} Grammatik korrekt</p>
-                                                    <p>{transformationResult.meaningPreserved ? "✅" : "❌"} Bedeutung erhalten</p>
+                                            <div className="bg-accent/50 rounded-2xl p-4 mb-4">
+                                                <div className="space-y-1.5">
+                                                    <Criterion ok={transformationResult.usedExpression}>Wendung verwendet</Criterion>
+                                                    <Criterion ok={transformationResult.grammarCorrect}>Grammatik korrekt</Criterion>
+                                                    <Criterion ok={transformationResult.meaningPreserved}>Bedeutung erhalten</Criterion>
                                                 </div>
                                                 {transformationResult.feedback && (
-                                                    <p className="text-gray-700 dark:text-gray-300 text-sm mt-3">{transformationResult.feedback}</p>
+                                                    <p className="text-foreground/80 text-sm mt-3">{transformationResult.feedback}</p>
                                                 )}
                                                 {transformationResult.c1Suggestion && (
-                                                    <div className="mt-3 border-t border-gray-200 dark:border-gray-600 pt-3">
-                                                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">C1 suggestion:</p>
-                                                        <p className="text-gray-900 dark:text-white text-sm">{transformationResult.c1Suggestion}</p>
+                                                    <div className="mt-3 border-t border-border/60 pt-3">
+                                                        <p className="text-xs text-foreground/60 mb-1">C1 suggestion:</p>
+                                                        <p className="text-foreground text-sm">{transformationResult.c1Suggestion}</p>
                                                     </div>
                                                 )}
                                             </div>
-                                            <Button
-                                                variant="primary"
+                                            <button type="button" className={pillPrimary}
                                                 onClick={() => advance(transformationResult.usedExpression && transformationResult.grammarCorrect)}
                                             >
                                                 {nextLabel}
-                                            </Button>
+                                            </button>
                                         </>
                                     )}
                                 </div>
@@ -470,57 +528,25 @@ function ExpressionPracticeContent() {
 
                         return (
                             <div>
-                                <p className="text-gray-600 dark:text-gray-300 mb-2">{STEP_INTRO.transformation}</p>
-                                <p className="text-lg text-gray-900 dark:text-white mb-6 font-medium italic">&quot;{question.prompt}&quot;</p>
+                                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">{STEP_INTRO.transformation}</p>
+                                <p className="text-lg text-foreground mb-6 font-medium italic">&quot;{question.prompt}&quot;</p>
 
                                 {!mcqResult ? (
                                     <>
-                                        <div className="space-y-2 mb-4">
-                                            {question.options.map((opt) => (
-                                                <button
-                                                    key={opt.id}
-                                                    onClick={() => setMcqSelectedOptionId(opt.id)}
-                                                    className={`w-full text-left px-4 py-3 rounded-lg border transition ${
-                                                        mcqSelectedOptionId === opt.id
-                                                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-gray-900 dark:text-white"
-                                                            : "border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white hover:border-blue-300"
-                                                    }`}
-                                                >
-                                                    {opt.text}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <Button variant="primary" onClick={() => submitMcq(question)} disabled={submitting || !mcqSelectedOptionId}>
+                                        <McqOptions options={question.options} selectedId={mcqSelectedOptionId} onSelect={setMcqSelectedOptionId} />
+                                        <button type="button" className={pillPrimary} onClick={() => submitMcq(question)} disabled={submitting || !mcqSelectedOptionId}>
                                             {submitting ? "Prüfe..." : "Prüfen"}
-                                        </Button>
+                                        </button>
                                     </>
                                 ) : (
                                     <>
-                                        <div className="space-y-2 mb-4">
-                                            {question.options.map((opt) => {
-                                                const isSelected = opt.id === mcqSelectedOptionId;
-                                                const isCorrectOption = opt.id === mcqResult.correctOptionId;
-                                                const style = isCorrectOption
-                                                    ? "border-green-500 bg-green-50 dark:bg-green-900/30"
-                                                    : isSelected
-                                                    ? "border-orange-500 bg-orange-50 dark:bg-orange-900/30"
-                                                    : "border-gray-200 dark:border-gray-700";
-                                                return (
-                                                    <div
-                                                        key={opt.id}
-                                                        className={`px-4 py-3 rounded-lg border text-gray-900 dark:text-white ${style}`}
-                                                    >
-                                                        {opt.text} {isCorrectOption && "✅"} {isSelected && !isCorrectOption && "❌"}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
+                                        <McqResultOptions options={question.options} selectedId={mcqSelectedOptionId} correctId={mcqResult.correctOptionId} />
                                         {mcqResult.explanation && (
-                                            <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">{mcqResult.explanation}</p>
+                                            <p className="text-foreground/65 text-sm mb-4">{mcqResult.explanation}</p>
                                         )}
-                                        <Button variant="primary" onClick={() => advance(mcqResult.correct)}>
+                                        <button type="button" className={pillPrimary} onClick={() => advance(mcqResult.correct)}>
                                             {nextLabel}
-                                        </Button>
+                                        </button>
                                     </>
                                 )}
                             </div>
@@ -529,9 +555,9 @@ function ExpressionPracticeContent() {
 
                 {currentStep === "production" && (
                     <div>
-                        <p className="text-gray-600 dark:text-gray-300 mb-2">{STEP_INTRO.production}</p>
-                        <p className="text-lg text-gray-900 dark:text-white mb-6 font-medium">
-                            Schreibe einen eigenen Satz mit: <span className="text-blue-600 dark:text-blue-400">{item.expression}</span>
+                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">{STEP_INTRO.production}</p>
+                        <p className="mb-6 text-lg font-semibold leading-relaxed text-foreground">
+                            Schreibe einen eigenen Satz mit: <span className="text-primary">{item.expression}</span>
                         </p>
 
                         {!productionResult ? (
@@ -542,38 +568,37 @@ function ExpressionPracticeContent() {
                                     onChange={(e) => setProductionInput(e.target.value)}
                                     placeholder="Dein Satz..."
                                     rows={4}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white mb-4 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    className={inputClass}
                                 />
-                                <Button variant="primary" onClick={submitProduction} disabled={submitting}>
+                                <button type="button" className={pillPrimary} onClick={submitProduction} disabled={submitting}>
                                     {submitting ? "Wird bewertet..." : "Absenden"}
-                                </Button>
+                                </button>
                             </>
                         ) : (
                             <>
-                                <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-4">
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Dein Satz:</p>
-                                    <p className="text-gray-900 dark:text-white mb-3">{productionInput}</p>
-                                    <div className="space-y-1 text-sm">
-                                        <p>{productionResult.usedCorrectly ? "✅" : "❌"} Expression used correctly</p>
-                                        <p>{productionResult.grammarCorrect ? "✅" : "❌"} Grammar correct</p>
-                                        <p>{productionResult.natural ? "✅" : "❌"} Natural sentence</p>
+                                <div className="bg-accent/50 rounded-2xl p-4 mb-4">
+                                    <p className="text-sm text-foreground/60 mb-1">Dein Satz:</p>
+                                    <p className="text-foreground mb-3">{productionInput}</p>
+                                    <div className="space-y-1.5">
+                                        <Criterion ok={productionResult.usedCorrectly}>Expression used correctly</Criterion>
+                                        <Criterion ok={productionResult.grammarCorrect}>Grammar correct</Criterion>
+                                        <Criterion ok={productionResult.natural}>Natural sentence</Criterion>
                                     </div>
                                     {productionResult.feedback && (
-                                        <p className="text-gray-700 dark:text-gray-300 text-sm mt-3">{productionResult.feedback}</p>
+                                        <p className="text-foreground/80 text-sm mt-3">{productionResult.feedback}</p>
                                     )}
                                     {productionResult.c1Suggestion && (
-                                        <div className="mt-3 border-t border-gray-200 dark:border-gray-600 pt-3">
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">C1 suggestion:</p>
-                                            <p className="text-gray-900 dark:text-white text-sm">{productionResult.c1Suggestion}</p>
+                                        <div className="mt-3 border-t border-border/60 pt-3">
+                                            <p className="text-xs text-foreground/60 mb-1">C1 suggestion:</p>
+                                            <p className="text-foreground text-sm">{productionResult.c1Suggestion}</p>
                                         </div>
                                     )}
                                 </div>
-                                <Button
-                                    variant="primary"
+                                <button type="button" className={pillPrimary}
                                     onClick={() => advance(productionResult.usedCorrectly && productionResult.grammarCorrect)}
                                 >
                                     {index + 1 >= session.items.length ? "Session beenden" : "Nächste Wendung"}
-                                </Button>
+                                </button>
                             </>
                         )}
                     </div>

@@ -28,12 +28,12 @@ export default function PracticeFlipCard({ flipped, onToggle, ariaLabel, front, 
                         onToggle();
                     }
                 }}
-                className="relative block h-full w-full cursor-pointer rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                className="relative block h-full w-full cursor-pointer rounded-[10px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
             >
                 <div className="flip-inner relative h-full w-full" data-flipped={flipped}>
                     <div
                         aria-hidden={flipped}
-                        className="flip-face absolute inset-0 flex flex-col items-center justify-between rounded-3xl border-t-4 border-primary bg-card p-6 text-center shadow-card"
+                        className="flip-face absolute inset-0 flex flex-col items-center justify-between rounded-[10px] border-t-4 border-primary bg-card p-6 text-center shadow-card"
                     >
                         <span />
                         <div className="flex flex-col items-center gap-3">{front}</div>
@@ -45,7 +45,7 @@ export default function PracticeFlipCard({ flipped, onToggle, ariaLabel, front, 
 
                     <div
                         aria-hidden={!flipped}
-                        className="flip-face flip-back absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-3xl bg-[linear-gradient(135deg,hsl(228_78%_44%),hsl(216_100%_62%))] p-6 text-center text-white shadow-lg"
+                        className="flip-face flip-back absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-[10px] bg-[linear-gradient(135deg,hsl(228_78%_44%),hsl(216_100%_62%))] p-6 text-center text-white shadow-lg"
                     >
                         {back}
                     </div>

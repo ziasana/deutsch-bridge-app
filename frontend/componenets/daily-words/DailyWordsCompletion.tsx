@@ -9,7 +9,7 @@ interface DailyWordsCompletionProps {
 export default function DailyWordsCompletion({ total, onReview }: Readonly<DailyWordsCompletionProps>) {
     const { t } = useI18n();
     return (
-        <div className="anim-fade-up rounded-3xl bg-card p-8 text-center shadow-card sm:p-10">
+        <div className="anim-fade-up rounded-[10px] bg-card p-8 text-center shadow-card sm:p-10">
             <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 <Check className="size-7" strokeWidth={3} aria-hidden="true" />
             </span>

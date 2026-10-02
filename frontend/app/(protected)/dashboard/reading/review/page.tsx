@@ -70,7 +70,7 @@ export default function ReadingReviewPage() {
     if (queue.length === 0) {
         return (
             <PracticeShell>
-                <div className="anim-fade-up rounded-3xl bg-card p-10 text-center shadow-card">
+                <div className="anim-fade-up rounded-[10px] bg-card p-10 text-center shadow-card">
                     <h1 className="text-2xl font-bold text-foreground">{t.readingReview.nothingDue} 🎉</h1>
                     <p className="mt-2 text-foreground/65">{t.readingReview.nothingDueSubtitle}</p>
                     <Link href="/dashboard/reading" className={`${practicePrimaryButton} mt-7`}>

@@ -21,7 +21,7 @@ export default function DailyWordsHeader({ words, currentIndex, onSelect }: Read
     const learnedCount = words.filter((w) => w.learned).length;
 
     return (
-        <header className="relative overflow-hidden rounded-3xl border border-primary/10 bg-gradient-to-br from-primary/[0.07] via-card to-card p-5 sm:p-6">
+        <header className="relative overflow-hidden rounded-3xl border border-primary/10 bg-gradient-to-br from-primary/[0.03] via-card to-card p-5 sm:p-6">
             <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-12 size-44 rounded-full bg-primary/[0.06]" />
             <div aria-hidden="true" className="pointer-events-none absolute -bottom-16 right-1/4 size-36 rounded-full bg-primary/[0.04]" />
 

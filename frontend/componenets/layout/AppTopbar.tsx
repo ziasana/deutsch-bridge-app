@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import { GraduationCap, Menu as MenuIcon, Moon, Search, Sun } from "lucide-react";
@@ -7,6 +8,7 @@ import { useDarkMode } from "@/componenets/DarkModeProvider";
 import { useI18n } from "@/componenets/I18nProvider";
 import useAuthStore from "@/store/useAuthStore";
 import NotificationBell from "@/componenets/notifications/NotificationBell";
+import ChangePasswordDialog from "@/componenets/profile/ChangePasswordDialog";
 
 interface AppTopbarProps {
     collapsed: boolean;
@@ -18,6 +20,7 @@ export default function AppTopbar({ collapsed, onToggleCollapsed, onOpenMobileSi
     const { darkMode, toggle } = useDarkMode();
     const { t } = useI18n();
     const { userProfile, logout } = useAuthStore();
+    const [passwordOpen, setPasswordOpen] = useState(false);
 
     const initials = (userProfile?.displayName ?? userProfile?.email ?? "?")
         .trim()
@@ -99,9 +102,9 @@ export default function AppTopbar({ collapsed, onToggleCollapsed, onOpenMobileSi
                         </Link>
                     </MenuItem>
                     <MenuItem>
-                        <Link href="/profile/update-password" className="block px-4 py-2 text-sm text-foreground/80 data-focus:bg-accent data-focus:text-accent-foreground outline-none">
+                        <button type="button" onClick={() => setPasswordOpen(true)} className="block w-full cursor-pointer px-4 py-2 text-start text-sm text-foreground/80 data-focus:bg-accent data-focus:text-accent-foreground outline-none">
                             {t.nav.updatePassword}
-                        </Link>
+                        </button>
                     </MenuItem>
                     <MenuItem>
                         <a href="#" onClick={logout} className="block px-4 py-2 text-sm text-foreground/80 data-focus:bg-accent data-focus:text-accent-foreground outline-none">
@@ -110,6 +113,7 @@ export default function AppTopbar({ collapsed, onToggleCollapsed, onOpenMobileSi
                     </MenuItem>
                 </MenuItems>
             </Menu>
+            <ChangePasswordDialog open={passwordOpen} onClose={() => setPasswordOpen(false)} />
         </header>
     );
 }

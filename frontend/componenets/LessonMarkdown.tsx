@@ -14,12 +14,12 @@ export const markdownClassNames =
     "[&_h3]:text-base [&_h3]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1 " +
     "[&_p]:my-1 [&_strong]:font-semibold [&_em]:italic " +
     "[&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-2 [&_li]:my-0.5 " +
-    "[&_hr]:my-4 [&_hr]:border-gray-200 dark:[&_hr]:border-gray-600 " +
+    "[&_hr]:my-4 [&_hr]:border-border " +
     "[&_table]:w-full [&_table]:my-3 [&_table]:border-collapse " +
-    "[&_th]:border [&_th]:border-gray-300 dark:[&_th]:border-gray-600 [&_th]:bg-gray-100 dark:[&_th]:bg-gray-700 [&_th]:px-3 [&_th]:py-1.5 [&_th]:text-left " +
-    "[&_td]:border [&_td]:border-gray-300 dark:[&_td]:border-gray-600 [&_td]:px-3 [&_td]:py-1.5 " +
-    "[&_blockquote]:border-l-4 [&_blockquote]:border-blue-300 dark:[&_blockquote]:border-blue-700 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-gray-600 dark:[&_blockquote]:text-gray-400 " +
-    "[&_code]:bg-gray-100 dark:[&_code]:bg-gray-700 [&_code]:rounded [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-sm";
+    "[&_th]:border [&_th]:border-border [&_th]:bg-accent [&_th]:px-3 [&_th]:py-1.5 [&_th]:text-left " +
+    "[&_td]:border [&_td]:border-border [&_td]:px-3 [&_td]:py-1.5 " +
+    "[&_blockquote]:border-l-4 [&_blockquote]:border-primary/40 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-foreground/65 " +
+    "[&_code]:bg-accent [&_code]:rounded [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-sm";
 
 const inlineClassNames = "[&_strong]:font-semibold [&_em]:italic [&_code]:bg-black/5 dark:[&_code]:bg-white/10 [&_code]:rounded [&_code]:px-1";
 

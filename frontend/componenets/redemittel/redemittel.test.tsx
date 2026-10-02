@@ -386,28 +386,31 @@ const hub = (over: Record<string, unknown> = {}) => ({
 const emptyPage = { items: [], page: 0, size: 12, totalElements: 0, totalPages: 0 };
 
 describe("Redemittel hub", () => {
-    it("recommends the review when some are due and offers all four actions", async () => {
+    it("recommends the review when some are due and offers the three steps", async () => {
         service.getRedemittelHub.mockReturnValue(ok(hub({ dueCount: 8, newToday: 3 })));
         service.getRedemittelPage.mockReturnValue(ok(emptyPage));
         withClient(<RedemittelPage />);
-        expect(await screen.findByText("8 Redemittel warten auf dich")).toBeTruthy();
-        expect(screen.getByText("8 zur Wiederholung")).toBeTruthy();
+        expect(await screen.findByText("8 Redemittel auffrischen")).toBeTruthy();
         expect(screen.getByText("3 neue Redemittel")).toBeTruthy();
+        expect(screen.getByText("Als Nächstes")).toBeTruthy(); // exactly one step is suggested
 
+        // the hero carries the same suggestion as one calm button
+        fireEvent.click(screen.getByRole("button", { name: "Wiederholen" }));
+        expect(push).toHaveBeenLastCalledWith("/dashboard/redemittel/review");
         fireEvent.click(screen.getByRole("button", { name: "Wiederholen – 8 fällig" }));
         expect(push).toHaveBeenLastCalledWith("/dashboard/redemittel/review");
         fireEvent.click(screen.getByRole("button", { name: "Lernen – 3 neue" }));
         expect(push).toHaveBeenLastCalledWith("/dashboard/redemittel/learn");
         fireEvent.click(screen.getByRole("button", { name: "Üben" }));
         expect(push).toHaveBeenLastCalledWith("/dashboard/redemittel/practice");
-        expect(screen.getByRole("button", { name: "Entdecken" })).toBeTruthy();
     });
 
     it("recommends learning when nothing is due", async () => {
         service.getRedemittelHub.mockReturnValue(ok(hub({ dueCount: 0, newToday: 1, learnedToday: 2 })));
         service.getRedemittelPage.mockReturnValue(ok(emptyPage));
         withClient(<RedemittelPage />);
-        expect(await screen.findByText("1 neues Redemittel wartet auf dich")).toBeTruthy();
+        expect(await screen.findByRole("button", { name: "Neue lernen" })).toBeTruthy();
+        expect(screen.getByText("1 neues Redemittel")).toBeTruthy();
         expect((screen.getByRole("button", { name: "Wiederholen – 0 fällig" }) as HTMLButtonElement).disabled).toBe(true);
     });
 
@@ -415,38 +418,44 @@ describe("Redemittel hub", () => {
         service.getRedemittelHub.mockReturnValue(ok(hub()));
         service.getRedemittelPage.mockReturnValue(ok(emptyPage));
         withClient(<RedemittelPage />);
-        expect(await screen.findByText("Alles erledigt für heute")).toBeTruthy();
-        expect(screen.getByText("Keine Wiederholungen")).toBeTruthy();
+        expect(await screen.findByText("Alles erledigt für heute – gut gemacht!")).toBeTruthy();
+        expect(screen.getByText("Nichts offen")).toBeTruthy();
         expect(screen.getByText("Heute alles gelernt")).toBeTruthy();
     });
 
-    it("is one continuous card: hero, progress, today's cards and Entdecken share one container", async () => {
+    it("keeps the hero apart from the content: today's steps and Entdecken are their own white panels", async () => {
         service.getRedemittelHub.mockReturnValue(ok(hub({ newToday: 2, learnedToday: 1 })));
         service.getRedemittelPage.mockReturnValue(ok({ ...emptyPage, items: [redemittel()], totalElements: 1, totalPages: 1 }));
         service.getTodaysRedemittel.mockReturnValue(ok([redemittel({ id: "t1", phrase: "Heute neu 1" })]));
         withClient(<RedemittelPage />);
-        const panel = await screen.findByRole("region", { name: "Dein Lernstand" });
+        const heading = await screen.findByRole("heading", { level: 1, name: "Redemittel" });
+        const hero = heading.closest("header") as HTMLElement;
+        const day = await screen.findByRole("region", { name: "Heute für dich" });
         const today = await screen.findByRole("region", { name: "Heute neu" });
         const explore = screen.getByRole("region", { name: "Entdecken" });
-        const card = panel.closest(".rounded-3xl");
-        expect(card).not.toBeNull();
-        expect(card!.contains(today)).toBe(true);
-        expect(card!.contains(explore)).toBe(true);
-        // only one bordered card holds them all; Entdecken has its title inside it and no card chrome of its own
+        // three separate surfaces: nothing from the content lives inside the hero
+        expect(hero.contains(day)).toBe(false);
+        expect(hero.contains(explore)).toBe(false);
+        expect(day.contains(explore)).toBe(false);
+        expect(day.contains(today)).toBe(true); // today's cards belong to the day panel
+        expect(day.className).toMatch(/rounded-\[10px\]/);
+        expect(explore.firstElementChild?.className).toMatch(/rounded-\[10px\]/);
         expect(within(explore).getByRole("heading", { level: 2, name: "Entdecken" })).toBeTruthy();
-        expect(explore.className).not.toMatch(/shadow-card/);
-        expect(explore.querySelector(".bg-gradient-to-b")).toBeNull(); // plain white filter area, no blue tint
+        expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     });
 
-    it("is one clean white surface: no tinted background zones", async () => {
+    it("the hero is the only tinted area; the content panels are plain white", async () => {
         service.getRedemittelHub.mockReturnValue(ok(hub({ newToday: 2, learnedToday: 1 })));
         service.getRedemittelPage.mockReturnValue(ok({ ...emptyPage, items: [redemittel()], totalElements: 1, totalPages: 1 }));
         withClient(<RedemittelPage />);
-        await screen.findByRole("img", { name: /Tagesziel/ });
-        const card = screen.getByRole("region", { name: "Dein Lernstand" }).closest(".rounded-3xl") as HTMLElement;
-        expect(card.querySelector("[class*='bg-gradient']")).toBeNull();
-        expect(card.querySelector("[class*='bg-accent/30']")).toBeNull();
-        expect(card.querySelector("[class*='bg-accent/20']")).toBeNull();
+        const heading = await screen.findByRole("heading", { level: 1, name: "Redemittel" });
+        expect((heading.closest("header") as HTMLElement).className).toMatch(/bg-gradient/);
+        const day = await screen.findByRole("region", { name: "Heute für dich" });
+        const explore = screen.getByRole("region", { name: "Entdecken" });
+        [day, explore].forEach((panel) => {
+            expect(panel.querySelector("[class*='bg-gradient']")).toBeNull();
+            expect(panel.querySelector("[class*='bg-accent/30']")).toBeNull();
+        });
     });
 
     it("the goal ring is a button that continues with the next step", async () => {
@@ -463,28 +472,37 @@ describe("Redemittel hub", () => {
         expect(push).toHaveBeenLastCalledWith("/dashboard/redemittel/practice");
     });
 
-    it("puts title, goal ring, actions and the progress tiles into one container", async () => {
+    it("puts title, next step and progress into the hero, the goal ring and steps into the day panel, and the filters into Entdecken", async () => {
         service.getRedemittelHub.mockReturnValue(ok(hub({ newToday: 2, learnedToday: 1 })));
         service.getRedemittelPage.mockReturnValue(ok({ ...emptyPage, items: [redemittel()], totalElements: 1, totalPages: 1 }));
         withClient(<RedemittelPage />);
-        const panel = await screen.findByRole("region", { name: "Dein Lernstand" });
-        expect(within(panel).getByRole("heading", { level: 1, name: "Redemittel" })).toBeTruthy();
-        expect(await within(panel).findByRole("img", { name: /Tagesziel/ })).toBeTruthy();
-        expect(within(panel).getByRole("group", { name: "Aktionen" })).toBeTruthy();
-        expect(within(panel).getByRole("button", { name: /Überrasch mich/ })).toBeTruthy();
-        expect(within(panel).getByRole("group", { name: "Nach Lernstatus filtern" })).toBeTruthy();
-        // no separate hero banner any more: exactly one level-1 heading on the page
-        expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+        const hero = (await screen.findByRole("heading", { level: 1, name: "Redemittel" })).closest("header") as HTMLElement;
+        expect(await within(hero).findByRole("img", { name: /Sicher: 18/ })).toBeTruthy();
+        expect(within(hero).getByRole("button", { name: "Neue lernen" })).toBeTruthy();
+        // no filters in the hero
+        expect(within(hero).queryByRole("group", { name: "Nach Lernstatus filtern" })).toBeNull();
+        expect(within(hero).queryByRole("group", { name: "Niveau" })).toBeNull();
+        expect(within(hero).queryByRole("button", { name: /Überrasch mich/ })).toBeNull();
+
+        const day = await screen.findByRole("region", { name: "Heute für dich" });
+        expect(await within(day).findByRole("img", { name: /Tagesziel/ })).toBeTruthy();
+        expect(within(day).getByRole("group", { name: "Aktionen" })).toBeTruthy();
+
+        const explore = screen.getByRole("region", { name: "Entdecken" });
+        expect(within(explore).getByRole("group", { name: "Nach Lernstatus filtern" })).toBeTruthy();
+        expect(within(explore).getByRole("group", { name: "Niveau" })).toBeTruthy();
+        expect(within(explore).getByRole("button", { name: /Überrasch mich/ })).toBeTruthy();
     });
 
     it("shows placeholders instead of zeros while the numbers load", async () => {
         service.getRedemittelHub.mockReturnValue(new Promise(() => {}));
         service.getRedemittelPage.mockReturnValue(ok(emptyPage));
         withClient(<RedemittelPage />);
-        const panel = await screen.findByRole("region", { name: "Dein Lernstand" });
-        expect(within(panel).queryByRole("group", { name: "Nach Lernstatus filtern" })).toBeNull();
-        expect(within(panel).queryByText("Alles erledigt für heute")).toBeNull();
-        expect((within(panel).getByRole("button", { name: "Üben" }) as HTMLButtonElement).disabled).toBe(true);
+        const day = await screen.findByRole("region", { name: "Heute für dich" });
+        expect(screen.queryByRole("group", { name: "Nach Lernstatus filtern" })).toBeNull();
+        expect(within(day).queryByText(/Alles erledigt für heute/)).toBeNull();
+        expect(screen.queryByRole("img", { name: /Sicher:/ })).toBeNull();
+        expect((within(day).getByRole("button", { name: "Üben" }) as HTMLButtonElement).disabled).toBe(true);
     });
 
     it("shows the daily goal and a progress bar from the real numbers", async () => {
@@ -492,23 +510,21 @@ describe("Redemittel hub", () => {
         service.getRedemittelPage.mockReturnValue(ok(emptyPage));
         withClient(<RedemittelPage />);
         expect(await screen.findByRole("img", { name: "Tagesziel: 2 von 3 neuen Redemitteln gelernt" })).toBeTruthy();
-        expect(screen.getByText("42 von 47 gelernt · 89%")).toBeTruthy();
-        expect(screen.getByRole("progressbar", { name: "Gelernte Redemittel" }).getAttribute("aria-valuenow")).toBe("89");
+        expect(screen.getByRole("img", { name: "Sicher: 18, Wiederholen: 12, Lernen: 7, Neu: 5" })).toBeTruthy();
     });
 
     it("shows the real progress numbers as filter chips, and the categories come from the backend", async () => {
         service.getRedemittelHub.mockReturnValue(ok(hub()));
         service.getRedemittelPage.mockReturnValue(ok(emptyPage));
         withClient(<RedemittelPage />);
-        await screen.findByText("Meine Redemittel");
-        const chips = screen.getByRole("group", { name: "Nach Lernstatus filtern" });
+        const chips = await screen.findByRole("group", { name: "Nach Lernstatus filtern" });
         const text = (label: string) => Array.from(chips.querySelectorAll("button")).find((b) => b.textContent?.includes(label))?.textContent;
         const order = Array.from(chips.querySelectorAll("button")).map((b) => b.textContent);
-        expect(order).toEqual(["Neu5 Redemittel", "Lernen7 Redemittel", "Wiederholen12 Redemittel", "Sicher18 Redemittel"]); // the learning journey, in order
-        expect(text("Sicher")).toBe("Sicher18 Redemittel");
-        expect(text("Wiederholen")).toBe("Wiederholen12 Redemittel");
-        expect(text("Lernen")).toBe("Lernen7 Redemittel");
-        expect(text("Neu")).toBe("Neu5 Redemittel");
+        expect(order).toEqual(["Neu5", "Lernen7", "Wiederholen12", "Sicher18"]); // the learning journey, in order
+        expect(text("Sicher")).toBe("Sicher18");
+        expect(text("Wiederholen")).toBe("Wiederholen12");
+        expect(text("Lernen")).toBe("Lernen7");
+        expect(text("Neu")).toBe("Neu5");
         expect(screen.queryByText("Kategorien")).toBeNull();
         fireEvent.click(screen.getByRole("button", { name: /Funktion wählen/ }));
         const panel = screen.getByRole("group", { name: "Funktion" });
@@ -547,7 +563,7 @@ describe("Redemittel hub", () => {
         service.getRedemittelHub.mockReturnValue(ok(hub()));
         service.getRedemittelPage.mockReturnValue(ok(emptyPage));
         withClient(<RedemittelPage />);
-        await screen.findByText("Meine Redemittel");
+        await screen.findByLabelText("Redemittel suchen");
         fireEvent.change(screen.getByLabelText("Redemittel suchen"), { target: { value: "zustimmen" } });
         await waitFor(() => expect(service.getRedemittelPage).toHaveBeenLastCalledWith(0, 12, expect.objectContaining({ search: "zustimmen" })));
     });
@@ -584,7 +600,7 @@ describe("visual hub elements", () => {
         service.getRedemittelHub.mockReturnValue(ok(hub()));
         service.getRedemittelPage.mockReturnValue(ok(emptyPage));
         withClient(<RedemittelPage />);
-        await screen.findByText("Alles erledigt für heute");
+        await screen.findByText("Alles erledigt für heute – gut gemacht!");
         expect(screen.queryByText("Heute neu für dich")).toBeNull();
     });
 
@@ -630,7 +646,7 @@ describe("explorer toolbar", () => {
     it("picks a function from the grid, shows it as a removable tag and closes the panel", async () => {
         withItems();
         withClient(<RedemittelPage />);
-        expect(await screen.findAllByRole("listitem")).toHaveLength(1);
+        expect(await within(screen.getByRole("region", { name: "Entdecken" })).findAllByRole("listitem")).toHaveLength(1);
         const trigger = await screen.findByRole("button", { name: "Funktion wählen, aktuell: Alle Funktionen" });
         expect(trigger.getAttribute("aria-expanded")).toBe("false");
         expect(screen.queryByRole("group", { name: "Funktion" })).toBeNull();
@@ -670,10 +686,10 @@ describe("explorer toolbar", () => {
         withItems([redemittel(), redemittel({ id: "r2", phrase: "Da bin ich ganz deiner Meinung." })]);
         withClient(<RedemittelPage />);
         const search = await screen.findByLabelText("Redemittel suchen");
-        const rows = await screen.findAllByRole("listitem");
+        const rows = await within(screen.getByRole("region", { name: "Entdecken" })).findAllByRole("listitem");
         expect(rows).toHaveLength(2);
         // one shared container holds the search box and every row
-        const container = search.closest(".rounded-3xl");
+        const container = search.closest("section[aria-label='Entdecken']");
         expect(container).not.toBeNull();
         rows.forEach((row) => expect(container!.contains(row)).toBe(true));
         expect(within(rows[1]).getByRole("heading", { name: "Da bin ich ganz deiner Meinung." })).toBeTruthy();

@@ -11,7 +11,7 @@ interface PracticeSummaryProps {
 /** End-of-session screen: a gradient header, one accuracy ring per metric, and the next actions. */
 export default function PracticeSummary({ title, subtitle, rings, actions }: Readonly<PracticeSummaryProps>) {
     return (
-        <div className="anim-fade-up overflow-hidden rounded-3xl bg-card text-center shadow-card">
+        <div className="anim-fade-up overflow-hidden rounded-[10px] bg-card text-center shadow-card">
             <div className="bg-[linear-gradient(135deg,hsl(228_78%_44%),hsl(216_100%_62%))] px-6 py-8 text-white">
                 <h1 className="text-2xl font-bold">{title} 🎉</h1>
                 <p className="mt-1 text-sm text-white/80">{subtitle}</p>

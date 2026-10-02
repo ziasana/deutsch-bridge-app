@@ -66,7 +66,7 @@ export default function DailyWordLearningCard({
 
             <article
                 key={word.id}
-                className="anim-fade-up min-w-0 flex-1 rounded-3xl bg-card p-6 text-center shadow-card sm:p-8"
+                className="anim-fade-up min-w-0 flex-1 rounded-[10px] bg-card p-6 text-center shadow-card sm:p-8"
                 style={{ borderTop: `4px solid ${levelColor}` }}
             >
                 <div className="flex items-center justify-between">

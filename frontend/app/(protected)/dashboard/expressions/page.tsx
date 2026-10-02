@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
-import { ThumbsUp, MessageSquare, Play, ArrowRight, ChevronLeft, ChevronRight, Sparkles, Flame, Layers } from "lucide-react";
+import { ThumbsUp, MessageSquare, ArrowRight, ChevronLeft, ChevronRight, Flame, Layers } from "lucide-react";
 import {
     getExpressionCollectionSummary,
     getExpressionsPage,
@@ -18,6 +18,7 @@ import ExpressionCollectionSelector, {
     ExpressionCollectionOption,
 } from "@/componenets/expressions/ExpressionCollectionSelector";
 import ExpressionFilterSelect from "@/componenets/expressions/ExpressionFilterSelect";
+import ExpressionsHeader from "@/componenets/expressions/ExpressionsHeader";
 import ExpressionCard from "@/componenets/expressions/ExpressionCard";
 import ExpressionCardSkeleton from "@/componenets/expressions/ExpressionCardSkeleton";
 
@@ -177,35 +178,41 @@ export default function ExpressionsPage() {
     const practiceExpression = (expression: ExpressionListItem) =>
         router.push(`/dashboard/expressions/practice?expressionId=${expression.id}`);
 
+    // How many expressions are at each mastery level in this collection: one tiny count query per level (page size 1), cached.
+    const MASTERY_LEVELS: ExpressionMasteryLevel[] = ["NEW", "LEARNING", "FAMILIAR", "ACTIVE", "MASTERED"];
+    const masteryQueries = useQueries({
+        queries: MASTERY_LEVELS.map((level) => ({
+            queryKey: ["expressions", "mastery-count", collection, level],
+            queryFn: () =>
+                getExpressionsPage(collection, 0, 1, { level: "ALL", search: "", progress: level, bookmarked: false, sort: "recommended" }).then(
+                    (res) => res.data.totalElements,
+                ),
+            staleTime: 60 * 1000,
+        })),
+    });
+    const masteryCounts = masteryQueries.every((q) => q.data !== undefined)
+        ? (Object.fromEntries(MASTERY_LEVELS.map((level, i) => [level, masteryQueries[i].data as number])) as Record<ExpressionMasteryLevel, number>)
+        : null;
+
+    // Expressions floating in the header: the ones you have started (from the lists already loaded), topped up with others.
     const items = expressionPage?.items ?? [];
+    const showcase = (() => {
+        const pool = [...(continueLearning?.items ?? []), ...items];
+        const seen = new Set<string>();
+        const unique = pool.filter((e) => !seen.has(e.id) && seen.add(e.id));
+        const started = unique.filter((e) => e.masteryLevel !== "NEW");
+        const rest = unique.filter((e) => e.masteryLevel === "NEW");
+        const MIN_BUBBLES = 3;
+        const shown = started.length >= MIN_BUBBLES ? started : [...started, ...rest.slice(0, MIN_BUBBLES - started.length)];
+        return shown.slice(0, 6).map((e) => e.expression);
+    })();
     const currentPage = page + 1;
     const totalElements = expressionPage?.totalElements ?? 0;
 
     return (
         <div className="min-h-screen bg-background px-6 py-10" dir="ltr">
             <div className="max-w-4xl mx-auto">
-                <header className="flex items-start justify-between flex-wrap gap-4">
-                    <div className="flex items-start gap-4">
-                        <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-accent">
-                            <Sparkles className="size-6 text-primary" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold text-foreground">Active Expressions</h1>
-                            <p className="mt-1 text-sm text-foreground/60">
-                                Learn useful expressions, understand them in context, and use them yourself.
-                            </p>
-                        </div>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={() => router.push("/dashboard/expressions/practice")}
-                        className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
-                    >
-                        <Play className="size-3.5 fill-current" />
-                        Continue practicing
-                        <ArrowRight className="size-4" />
-                    </button>
-                </header>
+                <ExpressionsHeader counts={masteryCounts} words={showcase} onPractice={() => router.push("/dashboard/expressions/practice")} />
 
                 <ExpressionCollectionSelector
                     className="mt-8"
