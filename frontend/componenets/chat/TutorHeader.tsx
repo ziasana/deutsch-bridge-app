@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Sparkles, MoreVertical, Pencil, Trash2, Check, X } from "lucide-react";
+import { MoreVertical, Pencil, Trash2, Check, X } from "lucide-react";
 import { useI18n } from "@/componenets/I18nProvider";
 import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
+import TutorAvatar from "./TutorAvatar";
 
 interface TutorHeaderProps {
     title: string | null;
@@ -55,9 +56,9 @@ export default function TutorHeader({ title, onRename, onDelete }: Readonly<Tuto
     };
 
     return (
-        <div className="flex items-center justify-between gap-2 border-b border-border/60 px-4 py-3 sm:px-6">
-            <div className="flex min-w-0 items-center gap-2">
-                <Sparkles className="size-4 shrink-0 text-primary" />
+        <div className="flex items-center justify-between gap-2 bg-card/70 px-4 py-3 shadow-sm backdrop-blur sm:px-6">
+            <div className="flex min-w-0 items-center gap-3">
+                <TutorAvatar />
                 {renaming ? (
                     <form onSubmit={submitRename} className="flex items-center gap-1.5">
                         <input

@@ -153,8 +153,8 @@ export default function AITutorPage() {
     };
 
     return (
-        <div className="flex h-full overflow-hidden bg-background">
-            <div className="hidden md:flex md:w-[300px] md:shrink-0 md:border-r md:border-border/60">
+        <div className="dashboard-atmosphere flex h-full overflow-hidden">
+            <div className="relative z-10 hidden md:flex md:w-[300px] md:shrink-0 md:shadow-card">
                 <TutorSidebar
                     sessions={sessions}
                     selectedSessionId={sessionId}
@@ -185,7 +185,7 @@ export default function AITutorPage() {
             )}
 
             <div className="flex min-w-0 flex-1 flex-col">
-                <div className="flex items-center justify-between border-b border-border/60 px-4 py-3 md:hidden">
+                <div className="flex items-center justify-between bg-card/70 px-4 py-3 shadow-sm backdrop-blur md:hidden">
                     <button
                         type="button"
                         aria-label={t.chat.chatHistory}
@@ -223,7 +223,7 @@ export default function AITutorPage() {
                             <TutorHeader title={activeSession?.title ?? null} onRename={handleRename} onDelete={() => sessionId && handleDeleteSession(sessionId)} />
                         </div>
                         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 sm:px-6">
-                            <div className="mx-auto max-w-3xl space-y-4">
+                            <div className="mx-auto max-w-3xl space-y-5">
                                 {messages.map((m) =>
                                     m.role === "user" ? (
                                         <UserMessage key={m.id} message={m} />
