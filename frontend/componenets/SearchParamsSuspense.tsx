@@ -1,4 +1,5 @@
 import { Suspense, ReactNode } from "react";
+import Loading from "@/componenets/Loading";
 
 type Props = {
     children: ReactNode;
@@ -7,7 +8,7 @@ type Props = {
 
 export default function SearchParamsSuspense({
                                                  children,
-                                                 fallback = <div>Loading...</div>,
+                                                 fallback = <Loading />,
                                              }: Props) {
     return <Suspense fallback={fallback}>{children}</Suspense>;
 }

@@ -165,7 +165,7 @@ export default function AdminGrammarPage() {
         }
     }, [categoriesError]);
 
-    if (!hasHydrated || userProfile?.role !== "ADMIN") return null;
+    if (!hasHydrated || userProfile?.role !== "ADMIN") return <Loading />;
 
     const resetForm = () => {
         setForm(emptyForm);
@@ -903,7 +903,7 @@ export default function AdminGrammarPage() {
                         Existing lessons
                     </h2>
                     {isLoading ? (
-                        <div className="p-10 text-center text-gray-500 dark:text-gray-400">Loading lessons...</div>
+                        <Loading message="Loading lessons..." />
                     ) : (
                         <div className="px-6 pb-6">
                             <div className="flex flex-wrap items-center justify-between gap-4 mt-4 mb-3">

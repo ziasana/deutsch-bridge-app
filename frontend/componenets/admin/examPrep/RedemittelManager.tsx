@@ -457,7 +457,7 @@ export default function RedemittelManager() {
                 <div className={`${cardClass} mt-8 overflow-hidden`}>
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white px-6 pt-6">Existing entries</h2>
                     {isLoading ? (
-                        <div className="p-10 text-center text-gray-500 dark:text-gray-400">Loading entries...</div>
+                        <Loading message="Loading entries..." />
                     ) : (
                         <div className="px-6 pb-6">
                             <div className="mt-4 mb-3">

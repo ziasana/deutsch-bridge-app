@@ -2,6 +2,7 @@
 
 import { ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Loading from '@/componenets/Loading';
 import useAuthStore from '@/store/useAuthStore';
 
 interface ProtectedRouteProps {
@@ -19,7 +20,7 @@ export default function ProtectedRoute({ children }: Readonly<ProtectedRouteProp
     }, [isAuthenticated, router]);
 
     if (!isAuthenticated) {
-        return null; // or loading spinner
+        return <Loading />;
     }
 
     return <>{children}</>;

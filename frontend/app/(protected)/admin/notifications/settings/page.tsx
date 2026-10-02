@@ -101,7 +101,7 @@ export default function AdminNotificationsPage() {
         return Array.from(groups.entries());
     }, [templates]);
 
-    if (!hasHydrated || userProfile?.role !== "ADMIN") return null;
+    if (!hasHydrated || userProfile?.role !== "ADMIN") return <Loading />;
 
     const patchSettings = (patch: Partial<AdminNotificationSettings>) =>
         setSettings((prev) => (prev ? { ...prev, ...patch } : prev));
@@ -198,7 +198,7 @@ export default function AdminNotificationsPage() {
                 )}
 
                 {isLoading || !settings ? (
-                    <div className="mt-10 text-center text-foreground/50">Loading notification settings...</div>
+                    <Loading message="Loading notification settings..." />
                 ) : (
                     <div className="mt-8 space-y-8">
                         <Card>

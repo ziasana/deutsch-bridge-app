@@ -1237,7 +1237,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                     </div>
 
                     {isLoading ? (
-                        <div className="p-10 text-center text-gray-500 dark:text-gray-400">Loading exercises...</div>
+                        <Loading message="Loading exercises..." />
                     ) : (
                         <div className="overflow-x-auto mt-4">
                             <table className="w-full text-left">

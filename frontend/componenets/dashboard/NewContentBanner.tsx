@@ -19,7 +19,7 @@ export default function NewContentBanner({ data }: NewContentBannerProps) {
     ].filter(Boolean);
 
     return (
-        <div className="flex items-center gap-3 rounded-[10px] border border-primary/20 bg-primary/5 px-4 py-3">
+        <div className="flex items-center gap-3 rounded-full bg-primary/8 px-5 py-2.5">
             <Sparkles className="h-5 w-5 shrink-0 text-primary" />
             <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground">{n.summary(data.total)}</p>

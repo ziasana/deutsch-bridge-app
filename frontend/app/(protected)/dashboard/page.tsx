@@ -6,17 +6,15 @@ import { useRouter } from "next/navigation";
 import useAuthStore from "@/store/useAuthStore";
 import { useI18n } from "@/componenets/I18nProvider";
 import { getDashboard } from "@/services/dashboardService";
-import DashboardHeader from "@/componenets/dashboard/DashboardHeader";
+import DashboardHero from "@/componenets/dashboard/DashboardHero";
 import NewContentBanner from "@/componenets/dashboard/NewContentBanner";
-import ContinueLearningCard from "@/componenets/dashboard/ContinueLearningCard";
 import TodaysLearningPlan from "@/componenets/dashboard/TodaysLearningPlan";
 import ReviewNeededCard from "@/componenets/dashboard/ReviewNeededCard";
 import CurrentFocusCard from "@/componenets/dashboard/CurrentFocusCard";
-import WeeklyLearningSummary from "@/componenets/dashboard/WeeklyLearningSummary";
 import LearningMilestone from "@/componenets/dashboard/LearningMilestone";
 import ExamTimeInsightCard from "@/componenets/dashboard/ExamTimeInsightCard";
 import RedemittelDashboardCard from "@/componenets/dashboard/RedemittelDashboardCard";
-import DashboardSkeleton from "@/componenets/dashboard/DashboardSkeleton";
+import Loading from "@/componenets/Loading";
 import { Button } from "@/componenets/ui/button";
 
 // Cached for a minute so hopping between Dashboard and Your Progress (both read
@@ -50,13 +48,13 @@ const DashboardPage = () => {
         }
     }, [isAdmin, router]);
 
-    if (isAdmin) return null;
+    if (isAdmin) return <Loading />;
 
     const loading = !hasHydrated || isLoading;
 
     return (
         <div className="dashboard-atmosphere min-h-full px-4 py-8 sm:px-6 sm:py-10">
-            {loading && <DashboardSkeleton />}
+            {loading && <Loading />}
 
             {!loading && isError && (
                 <div className="text-center py-16">
@@ -68,32 +66,29 @@ const DashboardPage = () => {
             )}
 
             {!loading && !isError && dashboard && (
-                <div className="space-y-6">
-                    <DashboardHeader
+                <div className="mx-auto max-w-5xl space-y-8">
+                    <DashboardHero
                         displayName={dashboard.user.displayName || userProfile?.displayName || ""}
                         level={dashboard.user.learningLevel}
                         streak={dashboard.currentStreak}
+                        week={dashboard.week}
+                        next={dashboard.continueLearning}
                     />
 
                     {dashboard.newContent && <NewContentBanner data={dashboard.newContent} />}
 
-                    <ContinueLearningCard data={dashboard.continueLearning} />
+                    <TodaysLearningPlan data={dashboard.today} />
 
-                    <div className="grid gap-6 md:grid-cols-2">
-                        <TodaysLearningPlan data={dashboard.today} />
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-[repeat(auto-fit,minmax(16rem,1fr))]">
                         <ReviewNeededCard data={dashboard.review} />
-                    </div>
-
-                    <div className="grid gap-6 md:grid-cols-2">
+                        <RedemittelDashboardCard />
                         <CurrentFocusCard data={dashboard.focus} />
-                        <WeeklyLearningSummary data={dashboard.week} />
                     </div>
 
-                    <ExamTimeInsightCard />
-
-                    <RedemittelDashboardCard />
-
-                    {dashboard.milestone && <LearningMilestone data={dashboard.milestone} />}
+                    <div className="grid gap-6 border-t border-border/60 pt-6 md:grid-cols-2">
+                        {dashboard.milestone && <LearningMilestone data={dashboard.milestone} />}
+                        <ExamTimeInsightCard />
+                    </div>
                 </div>
             )}
         </div>

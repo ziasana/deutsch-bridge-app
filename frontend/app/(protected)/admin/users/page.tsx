@@ -245,7 +245,7 @@ export default function AdminUsersPage() {
             .finally(() => setIsSaving(false));
     };
 
-    if (!hasHydrated || userProfile?.role !== "ADMIN") return null;
+    if (!hasHydrated || userProfile?.role !== "ADMIN") return <Loading />;
 
     const totalUsers = users.length;
     const totalAdmins = users.filter((u) => u.role === "ADMIN").length;
@@ -401,7 +401,7 @@ export default function AdminUsersPage() {
 
                 <Card className="mt-8 py-0 overflow-hidden">
                     {isLoading ? (
-                        <div className="p-10 text-center text-foreground/50">Loading users...</div>
+                        <Loading message="Loading users..." />
                     ) : (
                         <div className="p-6">
                             <div className="flex flex-wrap items-center justify-between gap-4 mb-4">

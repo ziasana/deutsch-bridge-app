@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
 import { getReviewQueue, reviewWord } from "@/services/lexiconService";
-import ActionButtons from "@/componenets/ActionButtons";
-import Loading from "@/componenets/Loading";
+import { Check, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/componenets/ui/badge";
+import Loading from "@/componenets/Loading";
 import { UserWordProgress } from "@/types/reading";
 import { useI18n } from "@/componenets/I18nProvider";
 
@@ -61,106 +62,121 @@ export default function ReadingReviewPage() {
         loadQueue();
     };
 
+    const page = (children: React.ReactNode) => (
+        <div className="min-h-screen bg-background flex items-center justify-center p-6">{children}</div>
+    );
+
     if (loading) return <Loading />;
 
     if (queue.length === 0) {
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
-                <div className="flex flex-col items-center rounded-[10px] bg-white dark:bg-gray-800 px-10 py-8 shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] text-center max-w-sm">
-                    <span className="text-5xl">🎉</span>
-                    <h1 className="mt-4 text-2xl font-semibold text-gray-900 dark:text-white">
-                        {t.readingReview.nothingDue}
-                    </h1>
-                    <p className="mt-2 text-gray-500 dark:text-gray-400">{t.readingReview.nothingDueSubtitle}</p>
-                    <Link
-                        href="/dashboard/reading"
-                        className="mt-6 rounded-xl bg-blue-600 px-6 py-2.5 font-semibold text-white transition hover:bg-blue-700 active:scale-95"
-                    >
-                        {t.readingReview.goToReading}
-                    </Link>
-                </div>
-            </div>
+        return page(
+            <div className="rounded-2xl border border-border/60 bg-card p-10 text-center shadow-card max-w-md">
+                <h1 className="text-2xl font-bold text-foreground mb-2">{t.readingReview.nothingDue} 🎉</h1>
+                <p className="text-foreground/60 mb-6">{t.readingReview.nothingDueSubtitle}</p>
+                <Link
+                    href="/dashboard/reading"
+                    className="inline-block rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+                >
+                    {t.readingReview.goToReading}
+                </Link>
+            </div>,
         );
     }
 
     if (finished || !current) {
         const successRate = Math.round((correctCount * 100) / queue.length);
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
-                <div className="flex flex-col items-center rounded-[10px] bg-white dark:bg-gray-800 px-10 py-8 shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] text-center">
-                    <span className="text-5xl">✅</span>
-                    <h1 className="mt-4 text-2xl font-semibold text-gray-900 dark:text-white">
-                        {t.readingReview.sessionFinished}
-                    </h1>
-                    <p className="mt-2 text-gray-500 dark:text-gray-400">
-                        {t.readingReview.resultsSummary(correctCount, queue.length, successRate)}
-                    </p>
-                    <div className="mt-6 flex gap-3">
-                        <Link
-                            href="/dashboard/reading"
-                            className="rounded-xl border border-gray-300 dark:border-gray-600 px-6 py-2.5 font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-gray-50 dark:hover:bg-gray-700"
-                        >
-                            {t.readingReview.backToReading}
-                        </Link>
-                        <button
-                            onClick={startOver}
-                            className="rounded-xl bg-blue-600 px-6 py-2.5 font-semibold text-white transition hover:bg-blue-700 active:scale-95"
-                        >
-                            {t.readingReview.checkAgain}
-                        </button>
+        return page(
+            <div className="rounded-2xl border border-border/60 bg-card p-8 shadow-card max-w-lg w-full">
+                <h1 className="text-2xl font-bold text-foreground mb-1">{t.readingReview.sessionFinished} 🎉</h1>
+                <p className="text-foreground/60 mb-6">
+                    {t.readingReview.resultsSummary(correctCount, queue.length, successRate)}
+                </p>
+
+                <div className="grid grid-cols-2 gap-4 mb-8">
+                    <div className="rounded-xl bg-green-500/10 p-4 text-center">
+                        <p className="text-2xl font-bold text-green-700 dark:text-green-400">{correctCount}</p>
+                        <p className="text-xs text-foreground/55">{t.common.iKnow}</p>
+                    </div>
+                    <div className="rounded-xl bg-accent/50 p-4 text-center">
+                        <p className="text-2xl font-bold text-foreground">{successRate}%</p>
+                        <p className="text-xs text-foreground/55">{queue.length}</p>
                     </div>
                 </div>
-            </div>
+
+                <div className="flex gap-3">
+                    <button
+                        type="button"
+                        onClick={startOver}
+                        className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+                    >
+                        {t.readingReview.checkAgain}
+                    </button>
+                    <Link
+                        href="/dashboard/reading"
+                        className="flex-1 rounded-lg border border-border/60 bg-card px-4 py-2.5 text-center text-sm font-semibold text-foreground transition hover:bg-accent"
+                    >
+                        {t.readingReview.backToReading}
+                    </Link>
+                </div>
+            </div>,
         );
     }
 
-    return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
-            <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
-                {t.readingReview.cardOf(index + 1, queue.length)}
-            </p>
+    return page(
+        <div className="rounded-2xl border border-border/60 bg-card p-8 shadow-card max-w-xl w-full">
+            <div className="flex items-center justify-between mb-6">
+                <span className="text-sm text-foreground/55">{t.readingReview.cardOf(index + 1, queue.length)}</span>
+                <Badge variant="secondary">{TYPE_LABELS[current.type]}</Badge>
+            </div>
 
-            <div className="w-full max-w-md rounded-[10px] bg-white dark:bg-gray-800 p-6 shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)]">
-                <div className="flex items-center justify-between mb-4">
-                    <Badge variant="secondary">{TYPE_LABELS[current.type]}</Badge>
-                    <span className="text-xs text-gray-400 dark:text-gray-500">
-                        {t.readingReview.status}
-                        {current.status}
-                    </span>
-                </div>
+            <div className="mb-6 flex gap-1.5" role="progressbar" aria-valuenow={index + 1} aria-valuemin={1} aria-valuemax={queue.length}>
+                {queue.map((word, i) => (
+                    <div
+                        key={word.id}
+                        className={cn("h-1.5 flex-1 rounded-full transition-colors", i <= index ? "bg-primary" : "bg-foreground/10")}
+                    />
+                ))}
+            </div>
 
-                <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white">
-                    {current.lemma}
-                </h2>
-
+            <button
+                type="button"
+                onClick={() => setShowAnswer((v) => !v)}
+                aria-expanded={showAnswer}
+                className="w-full rounded-xl border border-border/60 bg-accent/40 p-8 text-center cursor-pointer transition hover:bg-accent/60 min-h-[220px] flex flex-col items-center justify-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+            >
+                <h2 className="text-3xl font-bold text-foreground break-words">{current.lemma}</h2>
                 {showAnswer ? (
-                    <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
-                        {current.translation && (
-                            <p className="text-gray-800 dark:text-gray-100">
-                                <strong>{t.readingReview.meaning}</strong> {current.translation}
-                            </p>
-                        )}
+                    <div className="space-y-2">
+                        {current.translation && <p className="text-lg font-medium text-foreground">{current.translation}</p>}
                         {current.firstSeenSentence && (
-                            <p className="italic text-gray-600 dark:text-gray-300">
-                                &quot;{current.firstSeenSentence}&quot;
-                            </p>
+                            <p className="text-sm italic text-foreground/65">&quot;{current.firstSeenSentence}&quot;</p>
                         )}
                     </div>
                 ) : (
-                    <button
-                        onClick={() => setShowAnswer(true)}
-                        className="mt-6 w-full rounded-xl bg-blue-600 py-2 font-semibold text-white hover:bg-blue-700"
-                    >
-                        {t.readingReview.showMeaning}
-                    </button>
+                    <p className="text-sm text-foreground/55">{t.readingReview.showMeaning}</p>
                 )}
-            </div>
+            </button>
 
             {showAnswer && (
-                <div className="w-full max-w-md">
-                    <ActionButtons onKnow={() => submitReview(true)} onDontKnow={() => submitReview(false)} />
+                <div className="mt-6 flex gap-3">
+                    <button
+                        type="button"
+                        onClick={() => submitReview(true)}
+                        className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-2.5 text-sm font-semibold text-green-700 dark:text-green-400 transition hover:bg-green-500/20"
+                    >
+                        <Check className="size-4" aria-hidden="true" />
+                        {t.common.iKnow}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => submitReview(false)}
+                        className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-700 dark:text-red-400 transition hover:bg-red-500/20"
+                    >
+                        <X className="size-4" aria-hidden="true" />
+                        {t.common.iDontKnow}
+                    </button>
                 </div>
             )}
-        </div>
+        </div>,
     );
 }

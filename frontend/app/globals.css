@@ -308,7 +308,14 @@
 .flip-inner[data-flipped="true"] { transform: rotateY(180deg); }
 .flip-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
 .flip-back { transform: rotateY(180deg); }
+/* Loading screen: an indeterminate bar that sweeps across its track. */
+@keyframes loading-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+.loading-sweep { animation: loading-sweep 1.3s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
 @media (prefers-reduced-motion: reduce) {
+  .loading-sweep { animation: none; transform: translateX(80%); }
   .anim-fade-up { animation: none; }
   .flip-inner { transition: none; }
   .animate-float, .animate-float-slow { animation: none; }

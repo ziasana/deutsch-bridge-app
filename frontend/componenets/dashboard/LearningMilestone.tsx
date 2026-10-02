@@ -2,27 +2,29 @@
 
 import { Trophy } from "lucide-react";
 import { useI18n } from "@/componenets/I18nProvider";
-import { Card } from "@/componenets/ui/card";
+import LearningProgressBar from "@/componenets/learning/LearningProgressBar";
 import { MilestoneDto } from "@/types/dashboard";
 
 interface LearningMilestoneProps {
     data: MilestoneDto;
 }
 
-export default function LearningMilestone({ data }: LearningMilestoneProps) {
+/** A slim progress row toward the next vocabulary milestone; deliberately not a card. */
+export default function LearningMilestone({ data }: Readonly<LearningMilestoneProps>) {
     const { t } = useI18n();
     const m = t.dashboard.milestone;
+    const percent = data.nextThreshold > 0 ? (data.wordsMastered / data.nextThreshold) * 100 : 0;
 
     return (
-        <Card className="p-6 flex items-center gap-4">
-            <div className="rounded-full bg-motivation/12 p-3 shrink-0">
-                <Trophy className="h-6 w-6 text-motivation" />
+        <div className="flex items-center gap-4">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-motivation/12">
+                <Trophy className="size-5 text-motivation" aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-foreground">{m.reached(data.wordsMastered)}</p>
+                <LearningProgressBar value={percent} className="mt-2 h-2" barClassName="bg-motivation" ariaLabel={m.title} />
+                <p className="mt-1.5 text-xs text-foreground/55">{m.next(data.nextThreshold)}</p>
             </div>
-            <div>
-                <h2 className="text-lg font-semibold text-foreground">{m.title}</h2>
-                <p className="text-foreground/80 text-sm mt-0.5">{m.reached(data.wordsMastered)}</p>
-                <p className="text-foreground/50 text-sm">{m.next(data.nextThreshold)}</p>
-            </div>
-        </Card>
+        </div>
     );
 }

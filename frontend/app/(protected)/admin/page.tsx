@@ -16,7 +16,7 @@ import ContentOverview from "@/componenets/admin/dashboard/ContentOverview";
 import LearningActivity from "@/componenets/admin/dashboard/LearningActivity";
 import RecentActivityFeed from "@/componenets/admin/dashboard/RecentActivityFeed";
 import QuickActions from "@/componenets/admin/dashboard/QuickActions";
-import DashboardSkeleton from "@/componenets/admin/dashboard/DashboardSkeleton";
+import Loading from "@/componenets/Loading";
 import LearnerActivitySection from "@/componenets/admin/dashboard/LearnerActivitySection";
 import FeatureUsageSection from "@/componenets/admin/dashboard/FeatureUsageSection";
 import AnalyticsFilters from "@/componenets/admin/dashboard/AnalyticsFilters";
@@ -59,7 +59,7 @@ export default function AdminDashboardPage() {
         }
     }, [hasHydrated, userProfile, router]);
 
-    if (!hasHydrated || userProfile?.role !== "ADMIN") return null;
+    if (!hasHydrated || userProfile?.role !== "ADMIN") return <Loading />;
 
     const loading = isLoading;
 
@@ -71,7 +71,7 @@ export default function AdminDashboardPage() {
                     <p className="text-foreground/60 mt-1">Platform overview and things that need attention.</p>
                 </div>
 
-                {loading && <DashboardSkeleton />}
+                {loading && <Loading />}
 
                 {!loading && isError && (
                     <div className="rounded-[10px] border border-border bg-card py-16 text-center">

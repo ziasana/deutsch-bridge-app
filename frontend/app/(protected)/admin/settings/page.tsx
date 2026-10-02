@@ -59,7 +59,7 @@ export default function AdminSettingsPage() {
         fetchAll();
     }, [hasHydrated, userProfile, router, fetchAll]);
 
-    if (!hasHydrated || userProfile?.role !== "ADMIN") return null;
+    if (!hasHydrated || userProfile?.role !== "ADMIN") return <Loading />;
 
     const togglePremium = (enabled: boolean) => {
         setIsSaving(true);
@@ -125,7 +125,7 @@ export default function AdminSettingsPage() {
                 </div>
 
                 {isLoading ? (
-                    <div className="mt-10 text-center text-foreground/50">Loading settings...</div>
+                    <Loading message="Loading settings..." />
                 ) : (
                     <div className="mt-8 space-y-8">
                         <Card>

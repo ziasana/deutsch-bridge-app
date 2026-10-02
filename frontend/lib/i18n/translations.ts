@@ -9,6 +9,7 @@ export interface Dictionary {
     common: {
         iKnow: string;
         iDontKnow: string;
+        loading: string;
     };
     nav: {
         adminDashboard: string;
@@ -667,6 +668,7 @@ const en: Dictionary = {
     common: {
         iKnow: "I know",
         iDontKnow: "I don't know",
+        loading: "Loading...",
     },
     nav: {
         adminDashboard: "Admin Dashboard",
@@ -1428,6 +1430,7 @@ const fa: Dictionary = {
     common: {
         iKnow: "بلدم",
         iDontKnow: "بلد نیستم",
+        loading: "در حال بارگذاری...",
     },
     nav: {
         adminDashboard: "پنل مدیریت",

@@ -151,7 +151,7 @@ export default function ExamTimeSettings() {
                 </div>
 
                 {isLoading || !settings ? (
-                    <div className="mt-10 text-center text-foreground/50">Loading time settings...</div>
+                    <Loading message="Loading time settings..." />
                 ) : (
                     <div className="mt-8 space-y-8">
                         <Card>

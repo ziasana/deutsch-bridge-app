@@ -176,7 +176,7 @@ export default function AdminReadingPage() {
         }
     }, [articlesError]);
 
-    if (!hasHydrated || userProfile?.role !== "ADMIN") return null;
+    if (!hasHydrated || userProfile?.role !== "ADMIN") return <Loading />;
 
     const resetManualForm = () => {
         setManualForm(emptyManualForm);
@@ -1141,7 +1141,7 @@ export default function AdminReadingPage() {
                         Existing articles
                     </h2>
                     {isLoading ? (
-                        <div className="p-10 text-center text-gray-500 dark:text-gray-400">Loading articles...</div>
+                        <Loading message="Loading articles..." />
                     ) : (
                         <div className="px-6 pb-6">
                             {/* Table controls */}

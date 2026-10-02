@@ -71,7 +71,7 @@ export default function AdminExamTestformatInformationPage() {
         }
     }, [exercisesError]);
 
-    if (!hasHydrated || userProfile?.role !== "ADMIN") return null;
+    if (!hasHydrated || userProfile?.role !== "ADMIN") return <Loading />;
 
     const usedLevels = new Set(entries.map((e) => e.level));
     const availableLevelsForNew = LEVELS.filter((l) => !usedLevels.has(l));

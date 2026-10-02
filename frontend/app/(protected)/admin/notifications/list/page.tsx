@@ -143,7 +143,7 @@ export default function AdminNotificationsListPage() {
         return allUsers.filter((u) => u.email.toLowerCase().includes(q) || (u.displayName ?? "").toLowerCase().includes(q)).slice(0, 50);
     }, [allUsers, userSearch]);
 
-    if (!hasHydrated || userProfile?.role !== "ADMIN") return null;
+    if (!hasHydrated || userProfile?.role !== "ADMIN") return <Loading />;
 
     const invalidateBroadcasts = () => queryClient.invalidateQueries({ queryKey: ["admin", "notifications", "broadcasts"] });
 
@@ -459,7 +459,7 @@ export default function AdminNotificationsListPage() {
                     <CardContent className="p-6">
                         <h2 className="text-lg font-semibold text-foreground mb-4">Notifications</h2>
                         {isLoading ? (
-                            <div className="p-10 text-center text-foreground/50">Loading...</div>
+                            <Loading message="Loading..." />
                         ) : (
                             <>
                                 <Table>

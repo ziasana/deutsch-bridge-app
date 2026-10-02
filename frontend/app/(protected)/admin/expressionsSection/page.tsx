@@ -140,7 +140,7 @@ export default function AdminExpressionsPage() {
         }
     }, [entriesError]);
 
-    if (!hasHydrated || userProfile?.role !== "ADMIN") return null;
+    if (!hasHydrated || userProfile?.role !== "ADMIN") return <Loading />;
 
     const resetForm = () => {
         setForm({ ...emptyForm, examples: [{ ...emptyExample }], patterns: [], questions: [] });
@@ -948,7 +948,7 @@ export default function AdminExpressionsPage() {
                 <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] overflow-hidden">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white px-6 pt-6">Existing entries</h2>
                     {isLoading ? (
-                        <div className="p-10 text-center text-gray-500 dark:text-gray-400">Loading entries...</div>
+                        <Loading message="Loading entries..." />
                     ) : (
                         <div className="px-6 pb-6">
                             <div className="flex flex-wrap items-center justify-between gap-4 mt-4 mb-3">

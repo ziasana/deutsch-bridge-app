@@ -17,6 +17,7 @@ import DailyWordsStep from "@/componenets/onboarding/DailyWordsStep";
 import FocusAreasStep from "@/componenets/onboarding/FocusAreasStep";
 import ExamDetailsStep from "@/componenets/onboarding/ExamDetailsStep";
 import { OnboardingRequest } from "@/types/onboarding";
+import Loading from "@/componenets/Loading";
 
 const STEP_COMPONENTS: Record<OnboardingStepId, React.ComponentType> = {
     language: ExplanationLanguageStep,
@@ -142,7 +143,7 @@ export default function SignupOnboardingPage() {
         }
     };
 
-    if (!hasHydrated || !isLoggedIn || !isOwnerConfirmed) return null;
+    if (!hasHydrated || !isLoggedIn || !isOwnerConfirmed) return <Loading />;
 
     if (completed) {
         return (

@@ -3,6 +3,7 @@
 import {ReactNode, useEffect, useRef} from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import useAuthStore from '@/store/useAuthStore';
+import Loading from '@/componenets/Loading';
 import { getUserProfile } from '@/services/userService';
 interface ProtectedLayoutProps {
     children: ReactNode;
@@ -48,8 +49,8 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
     }, [hasHydrated, isLoggedIn, updateUserProfile]);
 
 
-    if (!hasHydrated) return null;
-    if (!isLoggedIn) return null; // hide protected page while redirecting
+    // Show the loader (not a blank page) while the session is restored and while redirecting to login.
+    if (!hasHydrated || !isLoggedIn) return <Loading />;
 
 
     return <>

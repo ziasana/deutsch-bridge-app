@@ -19,6 +19,7 @@ import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
 import GrammarSubNav from "@/componenets/admin/GrammarSubNav";
 import { isTranslatableLevel } from "@/lib/grammarLocalization";
 import { ArrowUp, ArrowDown, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import Loading from "@/componenets/Loading";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const PAGE_SIZE_OPTIONS = [5, 10, 25, 50];
@@ -78,7 +79,7 @@ export default function AdminGrammarCategoriesPage() {
         }
     }, [categoriesError]);
 
-    if (!hasHydrated || userProfile?.role !== "ADMIN") return null;
+    if (!hasHydrated || userProfile?.role !== "ADMIN") return <Loading />;
 
     const resetCategoryForm = () => {
         setCategoryForm(emptyCategoryForm);
