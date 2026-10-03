@@ -2,6 +2,7 @@
 
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
+import FieldMessage from "@/componenets/FieldMessage";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -13,7 +14,6 @@ import { loginUser } from "@/services/userService";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, LoginFormData } from "@/schema/loginSchema";
 import { useForm } from "react-hook-form";
-import { useFormErrorToast } from "@/hook/useFormErrorToast";
 
 export default function LoginClient() {
     const searchParams = useSearchParams();
@@ -32,7 +32,7 @@ export default function LoginClient() {
     const {
         register,
         handleSubmit,
-        formState: { errors, isSubmitted },
+        formState: { errors },
     } = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
         mode: "onSubmit",
@@ -57,12 +57,9 @@ export default function LoginClient() {
             })
             .catch((err) => {
                 toast.error(err?.response?.data?.message ?? "Login failed. Please check your credentials.");
-                console.error(err.message);
             })
             .finally(() => setIsLoading(false));
     };
-
-    useFormErrorToast(errors, isSubmitted);
 
     return (
         <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden flex items-center justify-center bg-gradient-to-b from-accent/60 to-background px-4 py-12">
@@ -100,7 +97,7 @@ export default function LoginClient() {
                     <span className="h-px flex-1 bg-border" />
                 </div>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
                     <div>
                         <label className="block text-foreground font-semibold mb-2 text-sm">
                             Email
@@ -109,7 +106,11 @@ export default function LoginClient() {
                             type="text"
                             {...register("email")}
                             placeholder="Email"
+                            autoComplete="email"
+                            aria-invalid={!!errors.email}
+                            aria-describedby="login-email-msg"
                         />
+                        <FieldMessage id="login-email-msg" error={errors.email?.message} hint="Use the email you registered with." />
                     </div>
 
                     <div>
@@ -120,7 +121,11 @@ export default function LoginClient() {
                             type="password"
                             {...register("password")}
                             placeholder="Password"
+                            autoComplete="current-password"
+                            aria-invalid={!!errors.password}
+                            aria-describedby="login-password-msg"
                         />
+                        <FieldMessage id="login-password-msg" error={errors.password?.message} hint="At least 6 characters." />
                     </div>
 
                     <div className="flex justify-end">

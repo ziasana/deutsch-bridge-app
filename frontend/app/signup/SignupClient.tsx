@@ -2,6 +2,7 @@
 
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
+import FieldMessage from "@/componenets/FieldMessage";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import {useEffect, useState} from "react";
@@ -12,7 +13,6 @@ import {useRouter, useSearchParams} from "next/navigation";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {signupSchema, SignupSchemaFormData} from "@/schema/signupSchema"
-import {useFormErrorToast} from "@/hook/useFormErrorToast";
 import useAuthStore from "@/store/useAuthStore";
 
 export default function SignupPage() {
@@ -30,7 +30,7 @@ export default function SignupPage() {
         register,
         handleSubmit,
         reset,
-        formState: { errors, isSubmitted },
+        formState: { errors },
     } = useForm<SignupSchemaFormData>({
         resolver: zodResolver(signupSchema),
         mode: "onSubmit", // validate on submit
@@ -52,11 +52,9 @@ export default function SignupPage() {
             })
             .catch((err) => {
                 toast.error(err?.response?.data?.message ?? "Registration failed. Please try again.")
-                console.error(err)
             })
             .finally(() => setIsLoading(false));
     };
-    useFormErrorToast(errors, isSubmitted);
 
     return (
         <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden flex items-center justify-center bg-gradient-to-b from-accent/60 to-background px-4 py-12">
@@ -94,20 +92,24 @@ export default function SignupPage() {
                     <span className="h-px flex-1 bg-border" />
                 </div>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         <div>
                             <label className="block text-foreground font-semibold mb-2 text-sm">
                                 Full Name
                             </label>
-                            <Input type="text" {...register("displayName")} placeholder="Full name" />
+                            <Input type="text" {...register("displayName")} placeholder="Full name"
+ aria-invalid={!!errors.displayName} aria-describedby="su-name-msg" />
+<FieldMessage id="su-name-msg" error={errors.displayName?.message} hint="3 to 30 characters." />
                         </div>
 
                         <div>
                             <label className="block text-foreground font-semibold mb-2 text-sm">
                                 Username
                             </label>
-                            <Input type="text" {...register("username")} placeholder="Username" />
+                            <Input type="text" {...register("username")} placeholder="Username"
+ aria-invalid={!!errors.username} aria-describedby="su-username-msg" />
+<FieldMessage id="su-username-msg" error={errors.username?.message} hint="At least 3 characters." />
                         </div>
                     </div>
 
@@ -115,7 +117,9 @@ export default function SignupPage() {
                         <label className="block text-foreground font-semibold mb-2 text-sm">
                             Email
                         </label>
-                        <Input type="email" {...register("email")} placeholder="Email" />
+                        <Input type="email" {...register("email")} placeholder="Email"
+ aria-invalid={!!errors.email} aria-describedby="su-email-msg" />
+<FieldMessage id="su-email-msg" error={errors.email?.message} hint="We'll send a confirmation link to this address." />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -123,7 +127,9 @@ export default function SignupPage() {
                             <label className="block text-foreground font-semibold mb-2 text-sm">
                                 Password
                             </label>
-                            <Input type="password" {...register("password")} placeholder="Password" />
+                            <Input type="password" {...register("password")} placeholder="Password"
+ aria-invalid={!!errors.password} aria-describedby="su-password-msg" />
+<FieldMessage id="su-password-msg" error={errors.password?.message} hint="At least 6 characters." />
                         </div>
 
                         <div>
@@ -135,7 +141,10 @@ export default function SignupPage() {
                                 required={false}
                                 {...register("password_confirmation")}
                                 placeholder="Confirm password"
+                                aria-invalid={!!errors.password_confirmation}
+                                aria-describedby="su-confirm-msg"
                             />
+                            <FieldMessage id="su-confirm-msg" error={errors.password_confirmation?.message} />
                         </div>
                     </div>
 

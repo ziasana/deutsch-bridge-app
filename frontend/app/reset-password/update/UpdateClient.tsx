@@ -2,6 +2,7 @@
 
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
+import FieldMessage from "@/componenets/FieldMessage";
 import Link from "next/link";
 import {useState} from "react";
 import { toast } from "@/lib/toast";
@@ -12,7 +13,6 @@ import {ResetPasswordType} from "@/types/user";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {UpdatePasswordFormData, updatePasswordSchema} from "@/schema/updatePasswordSchema";
-import {useFormErrorToast} from "@/hook/useFormErrorToast";
 
 export default function UpdateClient() {
     const [isLoading, setIsLoading] = useState(false);
@@ -22,7 +22,7 @@ export default function UpdateClient() {
         register,
         reset,
         handleSubmit,
-        formState: { errors, isSubmitted },
+        formState: { errors },
     } = useForm<UpdatePasswordFormData>({
         resolver: zodResolver(updatePasswordSchema),
         mode: "onSubmit", // validate on submit
@@ -42,12 +42,10 @@ export default function UpdateClient() {
                 }
             })
             .catch((err) => {
-                toast.error(err?.response.data.message)
-                console.error(err?.response)
+                toast.error(err?.response?.data?.message ?? "Couldn't reset your password. The link may have expired - please request a new one.");
             })
             .finally(() => setIsLoading(false));
     };
-    useFormErrorToast(errors, isSubmitted);
 
     return (
         <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-background px-4 py-12">
@@ -58,7 +56,7 @@ export default function UpdateClient() {
                 </h1>
                 {isLoading && <Loading message="Please wait..." />}
                 {/* Form */}
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
                     {/* Email */}
                     <div>
                         <label className="block text-foreground/70 mb-2 text-sm">
@@ -66,8 +64,11 @@ export default function UpdateClient() {
                             type="password"
                             {...register("password")}
                             placeholder="Enter your password."
+                            aria-invalid={!!errors.password}
+                            aria-describedby="up-password-msg"
                         />
                         </label>
+                        <FieldMessage id="up-password-msg" error={errors.password?.message} hint="6 to 20 characters." />
                     </div>
                     {/* Confirm Password */}
 
@@ -76,8 +77,11 @@ export default function UpdateClient() {
                             Confirm Password <Input
                             type="password"
                             {...register("password_confirmation")}
+                            aria-invalid={!!errors.password_confirmation}
+                            aria-describedby="up-confirm-msg"
                         />
                         </label>
+                        <FieldMessage id="up-confirm-msg" error={errors.password_confirmation?.message} />
                     </div>
 
                     {/* Submit */}

@@ -2,7 +2,10 @@ package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,8 +22,13 @@ public class AuthService {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(email, password)
             );
-        }catch (Exception e) {
-            throw new DataNotFoundException(e.getMessage());
+        } catch (DisabledException | LockedException e) {
+            throw new DataNotFoundException("Your account isn't active yet. Please verify your email first.");
+        } catch (AuthenticationException e) {
+            // Same message for unknown email and wrong password so we don't reveal which accounts exist.
+            throw new DataNotFoundException("Incorrect email or password.");
+        } catch (Exception e) {
+            throw new DataNotFoundException("Login failed. Please try again.");
         }
     }
 }

@@ -2,6 +2,8 @@
 
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
+import FieldMessage from "@/componenets/FieldMessage";
+import {z} from "zod";
 import {Suspense, useState} from "react";
 import {UserType} from "@/types/user";
 import { toast } from "@/lib/toast";
@@ -18,13 +20,18 @@ export default function ResetPasswordPage() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState<UserType>(initialFormState);
+  const [emailError, setEmailError] = useState<string>();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    setEmailError(undefined);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const email = form.email?.trim() ?? "";
+    if (!email) return setEmailError("Please enter your email address");
+    if (!z.email().safeParse(email).success) return setEmailError("Enter a valid email address, e.g. name@example.com");
     setIsLoading(true);
 
     forgotPassword(form)
@@ -35,8 +42,7 @@ export default function ResetPasswordPage() {
           }
         })
         .catch((err) => {
-          toast.error(err?.response?.data?.message ?? "Something went wrong. Please try again.");
-          console.error(err?.response ?? err);
+          toast.error(err?.response?.data?.message ?? "Couldn't send the reset link. Please try again.");
         })
         .finally(() => setIsLoading(false));
   };
@@ -51,7 +57,7 @@ export default function ResetPasswordPage() {
         </h1>
         {isLoading && <Loading message="Please wait..." />}
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} noValidate className="space-y-6">
           {/* Email */}
           <div>
             <label className="block text-foreground/70 mb-2 text-sm">
@@ -61,8 +67,11 @@ export default function ResetPasswordPage() {
               value={form.email}
               onChange={handleChange}
               placeholder="Enter your email."
+              aria-invalid={!!emailError}
+              aria-describedby="fp-email-msg"
             />
             </label>
+            <FieldMessage id="fp-email-msg" error={emailError} hint="We'll email you a link to reset your password." />
           </div>
 
           {/* Submit */}

@@ -13,7 +13,7 @@ export default function Input({
     <input
       type={type}
       required={required}
-      className="w-full mt-2 px-4 py-3 rounded-lg border border-border bg-muted text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
+      className="w-full mt-2 px-4 py-3 rounded-lg border border-border bg-muted text-foreground focus:ring-2 focus:ring-ring focus:outline-none aria-[invalid=true]:border-destructive aria-[invalid=true]:focus:ring-destructive/30"
       {...rest} // rest includes placeholder, disabled, etc.
     />
   );
