@@ -43,6 +43,7 @@ import {
     CheckCircle2,
     XCircle,
     Search,
+    Plus,
 } from "lucide-react";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
@@ -137,6 +138,8 @@ export default function AdminGrammarPage() {
     const [form, setForm] = useState(emptyForm);
     const [exercises, setExercises] = useState<QuizQuestion[]>([]);
     const [editingLesson, setEditingLesson] = useState<{ id: string; title: string } | null>(null);
+    // The form stays collapsed until the admin clicks "Add new lesson" or edits a row.
+    const [showForm, setShowForm] = useState(false);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
 
     const [showBulkImport, setShowBulkImport] = useState(false);
@@ -182,6 +185,7 @@ export default function AdminGrammarPage() {
         setForm(emptyForm);
         setExercises([]);
         setEditingLesson(null);
+        setShowForm(false);
     };
 
     const uploadInlineImage = async (file: File) => {
@@ -235,6 +239,11 @@ export default function AdminGrammarPage() {
     const removeExercise = (idx: number) => setExercises((prev) => prev.filter((_, i) => i !== idx));
     const addExercise = () => setExercises((prev) => [...prev, emptyExercise()]);
 
+    const openNewForm = () => {
+        resetForm();
+        setShowForm(true);
+    };
+
     const startEdit = async (row: GrammarLessonAdminRow) => {
         let lesson;
         try {
@@ -248,6 +257,7 @@ export default function AdminGrammarPage() {
             return;
         }
         setEditingLesson({ id: lesson.id, title: lesson.title });
+        setShowForm(true);
         setForm({
             title: lesson.title,
             level: lesson.level,
@@ -596,6 +606,20 @@ export default function AdminGrammarPage() {
                     </div>
                 )}
 
+                {!showForm && (
+                    <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
+                        <button
+                            type="button"
+                            onClick={openNewForm}
+                            className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-medium hover:underline"
+                        >
+                            <Plus className="size-4" />
+                            Add new lesson
+                        </button>
+                    </div>
+                )}
+
+                {showForm && (
                 <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
                     <form id="grammar-lesson-form" onSubmit={submitForm} className="space-y-6">
                         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -937,6 +961,7 @@ export default function AdminGrammarPage() {
                         </Button>
                     </form>
                 </div>
+                )}
 
                 <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Find lessons</h2>

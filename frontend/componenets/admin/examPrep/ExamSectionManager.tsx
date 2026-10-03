@@ -7,6 +7,8 @@ import { toast } from "@/lib/toast";
 import useAuthStore from "@/store/useAuthStore";
 import {
     getExamExercisesForAdmin,
+    getExamExerciseForAdmin,
+    ExamExerciseFilters,
     createExamExercise,
     updateExamExercise,
     deleteExamExercise,
@@ -14,7 +16,7 @@ import {
     uploadExamPassageAudio,
     getExamFieldPresets,
 } from "@/services/adminExamService";
-import { ExamExerciseResponse, ExamFieldPresetType, ExamPassage, ExamQuestion, ExamSection, ExamTaskType } from "@/types/exam";
+import { ExamExerciseAdminRow, ExamExerciseResponse, ExamFieldPresetType, ExamPassage, ExamQuestion, ExamSection, ExamTaskType } from "@/types/exam";
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
@@ -23,7 +25,8 @@ import { isEmptyTranscript } from "@/lib/transcriptFormat";
 import { Badge } from "@/componenets/ui/badge";
 import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
 import ExamFieldPresetManager, { examFieldPresetsQueryKey } from "@/componenets/admin/examPrep/ExamFieldPresetManager";
-import AdminTableControls from "@/componenets/admin/table/AdminTableControls";
+import AdminFilterCard, { adminFilterFieldClass } from "@/componenets/admin/AdminFilterCard";
+import AdminAddNewCard from "@/componenets/admin/AdminAddNewCard";
 import AdminTablePagination from "@/componenets/admin/table/AdminTablePagination";
 import SortableTh from "@/componenets/admin/table/SortableTh";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
@@ -118,7 +121,6 @@ const SECTION_META: Record<Exclude<ExamSection, "TESTFORMAT_INFORMATION">, { hea
     },
 };
 
-type PublishedFilter = "ALL" | "YES" | "NO";
 type ExerciseSortKey = "title" | "teil" | "level" | "questions";
 type SortDirection = "asc" | "desc";
 
@@ -210,17 +212,22 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
     const taskTypes = TASK_TYPES_BY_SECTION[section];
 
     // Shared across every exam-prep page: the admin endpoint returns all sections in one list.
-    const EXERCISES_KEY = ["admin", "exam", "exercises"];
+    const EXERCISES_KEY = ["admin", "exam", "exercises"] as const;
 
-    const { data: allExercises = [], isLoading, error: exercisesError } = useQuery({
-        queryKey: EXERCISES_KEY,
-        queryFn: () => getExamExercisesForAdmin().then((res) => res.data),
-        enabled: hasHydrated && userProfile?.role === "ADMIN",
+    // Nothing is fetched until the admin applies a filter (or searches with none set, to list everything
+    // in this section). Each distinct filter combination is cached under its own key.
+    const emptyFilters: ExamExerciseFilters = { level: "", partNumber: "", taskType: "", published: "", search: "" };
+    const [draftFilters, setDraftFilters] = useState<ExamExerciseFilters>(emptyFilters);
+    const [appliedFilters, setAppliedFilters] = useState<ExamExerciseFilters | null>(null);
+
+    const { data: exercises = [], isLoading, error: exercisesError } = useQuery({
+        queryKey: [...EXERCISES_KEY, section, appliedFilters],
+        queryFn: () => getExamExercisesForAdmin({ ...appliedFilters, section }).then((res) => res.data),
+        enabled: hasHydrated && userProfile?.role === "ADMIN" && appliedFilters !== null,
     });
-    const exercises = allExercises.filter((e) => e.section === section);
 
     const [isSaving, setIsSaving] = useState(false);
-    const [exerciseToDelete, setExerciseToDelete] = useState<ExamExerciseResponse | null>(null);
+    const [exerciseToDelete, setExerciseToDelete] = useState<ExamExerciseAdminRow | null>(null);
 
     const [form, setForm] = useState(() => makeEmptyForm(section));
     const [passages, setPassages] = useState<ExamPassage[]>([]);
@@ -230,6 +237,8 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
     const [answerOptionLabels, setAnswerOptionLabels] = useState<string[]>([]);
     const optionLabel = (idx: number) => answerOptionLabels[idx]?.trim() || defaultOptionLabel(idx);
     const [editingExercise, setEditingExercise] = useState<ExamExerciseResponse | null>(null);
+    // The form stays collapsed until the admin clicks "Add new exercise" or edits a row.
+    const [showForm, setShowForm] = useState(false);
     const [uploadingPassageImage, setUploadingPassageImage] = useState<number | null>(null);
     const [uploadingPassageAudio, setUploadingPassageAudio] = useState<number | null>(null);
     const [showPresetManager, setShowPresetManager] = useState(false);
@@ -247,13 +256,10 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
         if (preset) setForm((prev) => ({ ...prev, [field]: preset.value }));
     };
 
-    const [filterLevel, setFilterLevel] = useState<string>("ALL");
-    const [filterPublished, setFilterPublished] = useState<PublishedFilter>("ALL");
     const [sortKey, setSortKey] = useState<ExerciseSortKey>("title");
     const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
     const [exercisesPage, setExercisesPage] = useState(1);
     const [exercisesPageSize, setExercisesPageSize] = useState(10);
-    const [exerciseSearch, setExerciseSearch] = useState("");
 
     const invalidateExercises = () => queryClient.invalidateQueries({ queryKey: EXERCISES_KEY });
 
@@ -280,6 +286,12 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
         setAnswerOptions([]);
         setAnswerOptionLabels([]);
         setEditingExercise(null);
+        setShowForm(false);
+    };
+
+    const openNewForm = () => {
+        resetForm();
+        setShowForm(true);
     };
 
     const isDefaultTfnPool = (options: string[]) =>
@@ -392,8 +404,20 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
     const removeQuestion = (idx: number) => setQuestions((prev) => prev.filter((_, i) => i !== idx));
     const addQuestion = () => setQuestions((prev) => [...prev, emptyQuestion(form.taskType ?? "MULTIPLE_CHOICE")]);
 
-    const startEdit = (exercise: ExamExerciseResponse) => {
+    const startEdit = async (row: ExamExerciseAdminRow) => {
+        let exercise: ExamExerciseResponse;
+        try {
+            exercise = await queryClient.fetchQuery({
+                queryKey: [...EXERCISES_KEY, "detail", row.id],
+                queryFn: () => getExamExerciseForAdmin(row.id).then((res) => res.data),
+                staleTime: 0,
+            });
+        } catch (err) {
+            toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to load the exercise.");
+            return;
+        }
         setEditingExercise(exercise);
+        setShowForm(true);
         // Legacy Leseverstehen richtig/falsch/nicht exercises stored RICHTIG/FALSCH/NICHT_IM_TEXT with
         // no pool; show them in the new +/-/o answer-options format so they can be re-saved.
         const isLegacyTfn = exercise.taskType === "TRUE_FALSE_NOT_GIVEN" && !(exercise.answerOptions?.length);
@@ -519,8 +543,15 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
             .finally(() => setIsSaving(false));
     };
 
-    const changeExercisesFilter = (fn: () => void) => {
-        fn();
+    const applyFilters = (e: React.FormEvent) => {
+        e.preventDefault();
+        setExercisesPage(1);
+        setAppliedFilters({ ...draftFilters, search: (draftFilters.search ?? "").trim() });
+    };
+
+    const resetFilters = () => {
+        setDraftFilters(emptyFilters);
+        setAppliedFilters(null);
         setExercisesPage(1);
     };
 
@@ -534,11 +565,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
         setExercisesPage(1);
     };
 
-    const exerciseLevels = Array.from(new Set(exercises.map((e) => e.level).filter((lvl): lvl is string => lvl != null))).sort();
-
-    const exerciseSearchQuery = exerciseSearch.trim().toLowerCase();
-
-    const sortValueFor = (exercise: ExamExerciseResponse) => {
+    const sortValueFor = (exercise: ExamExerciseAdminRow) => {
         switch (sortKey) {
             case "title":
                 return exercise.title.toLowerCase();
@@ -547,14 +574,11 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
             case "level":
                 return exercise.level ?? "";
             case "questions":
-                return exercise.questions.length;
+                return exercise.questionCount;
         }
     };
 
     const filteredExercises = exercises
-        .filter((e) => filterLevel === "ALL" || e.level === filterLevel)
-        .filter((e) => filterPublished === "ALL" || (filterPublished === "YES" ? e.published : !e.published))
-        .filter((e) => !exerciseSearchQuery || e.title.toLowerCase().includes(exerciseSearchQuery))
         .slice()
         .sort((a, b) => {
             const dir = sortDirection === "asc" ? 1 : -1;
@@ -574,7 +598,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
         exercisesCurrentPage * exercisesPageSize
     );
 
-    const removeExercise = (exercise: ExamExerciseResponse) => setExerciseToDelete(exercise);
+    const removeExercise = (exercise: ExamExerciseAdminRow) => setExerciseToDelete(exercise);
 
     const confirmRemoveExercise = () => {
         const exercise = exerciseToDelete;
@@ -594,14 +618,26 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                 <h1 className="text-4xl font-bold text-gray-900 dark:text-white">{meta.heading}</h1>
                 <p className="text-gray-600 dark:text-gray-300 mt-2">{meta.description}</p>
 
+                {!showForm && <AdminAddNewCard label="Add new exercise" onClick={openNewForm} />}
+
+                {showForm && (
                 <form onSubmit={submit} className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-6">
-                    {editingExercise && (
-                        <p className="text-sm text-blue-600 dark:text-blue-400">
-                            Editing &quot;{editingExercise.title}&quot; —{" "}
-                            <button type="button" className="underline" onClick={resetForm}>
-                                cancel
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            {editingExercise ? "Edit exercise" : "New exercise"}
+                        </h2>
+                        <div className="flex items-center gap-3">
+                            <button type="button" className="text-sm text-gray-500 dark:text-gray-400 underline" onClick={resetForm}>
+                                Cancel
                             </button>
-                        </p>
+                            <Button variant="primary" type="submit" disabled={isSaving}>
+                                {isSaving ? "Saving..." : editingExercise ? "Save changes" : "Save exercise"}
+                            </Button>
+                        </div>
+                    </div>
+
+                    {editingExercise && (
+                        <p className="text-sm text-blue-600 dark:text-blue-400">Editing &quot;{editingExercise.title}&quot;</p>
                     )}
 
                     <div>
@@ -1192,51 +1228,112 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                         </div>
                     )}
 
-                    <Button variant="primary" type="submit" disabled={isSaving}>
-                        {isSaving ? "Saving..." : editingExercise ? "Save changes" : "Save exercise"}
-                    </Button>
                 </form>
+                )}
 
-                <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] overflow-hidden">
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white px-6 pt-6">Existing exercises</h2>
-
-                    <div className="px-6 pt-4 flex items-center gap-3 flex-wrap">
+                <AdminFilterCard title="Find exercises" noun="Exercises" onSubmit={applyFilters} onReset={resetFilters}>
+                    <label className="text-sm text-gray-700 dark:text-gray-300">
+                        Level
                         <select
-                            value={filterLevel}
-                            onChange={(e) => changeExercisesFilter(() => setFilterLevel(e.target.value))}
-                            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                            value={draftFilters.level}
+                            onChange={(e) => setDraftFilters({ ...draftFilters, level: e.target.value })}
+                            className={adminFilterFieldClass}
                         >
-                            <option value="ALL">All levels</option>
-                            {exerciseLevels.map((lvl) => (
+                            <option value="">All levels</option>
+                            {LEVELS.map((lvl) => (
                                 <option key={lvl} value={lvl}>
                                     {lvl}
                                 </option>
                             ))}
                         </select>
-
+                    </label>
+                    {TEIL_NUMBERS_BY_SECTION[section] && (
+                        <label className="text-sm text-gray-700 dark:text-gray-300">
+                            Teil
+                            <select
+                                value={draftFilters.partNumber}
+                                onChange={(e) => setDraftFilters({ ...draftFilters, partNumber: e.target.value })}
+                                className={adminFilterFieldClass}
+                            >
+                                <option value="">All Teile</option>
+                                {TEIL_NUMBERS_BY_SECTION[section]?.map((n) => (
+                                    <option key={n} value={String(n)}>
+                                        Teil {n}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                    )}
+                    {taskTypes.length > 1 && (
+                        <label className="text-sm text-gray-700 dark:text-gray-300">
+                            Task type
+                            <select
+                                value={draftFilters.taskType}
+                                onChange={(e) => setDraftFilters({ ...draftFilters, taskType: e.target.value })}
+                                className={adminFilterFieldClass}
+                            >
+                                <option value="">All task types</option>
+                                {taskTypes.map((t) => (
+                                    <option key={t} value={t}>
+                                        {taskTypeLabel(t)}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                    )}
+                    <label className="text-sm text-gray-700 dark:text-gray-300">
+                        Published
                         <select
-                            value={filterPublished}
-                            onChange={(e) => changeExercisesFilter(() => setFilterPublished(e.target.value as PublishedFilter))}
-                            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                            value={draftFilters.published}
+                            onChange={(e) => setDraftFilters({ ...draftFilters, published: e.target.value })}
+                            className={adminFilterFieldClass}
                         >
-                            <option value="ALL">Published: all</option>
-                            <option value="YES">Published: yes</option>
-                            <option value="NO">Published: no</option>
+                            <option value="">Any</option>
+                            <option value="true">Published</option>
+                            <option value="false">Draft</option>
                         </select>
-                    </div>
+                    </label>
+                    <label className="text-sm text-gray-700 dark:text-gray-300 !flex-[2] !min-w-[220px]">
+                        Title
+                        <input
+                            type="text"
+                            value={draftFilters.search}
+                            onChange={(e) => setDraftFilters({ ...draftFilters, search: e.target.value })}
+                            placeholder="Search by exercise title..."
+                            className={adminFilterFieldClass}
+                        />
+                    </label>
+                </AdminFilterCard>
+
+                <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] overflow-hidden">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white px-6 pt-6">Existing exercises</h2>
 
                     <div className="px-6 pt-4">
-                        <AdminTableControls
-                            pageSize={exercisesPageSize}
-                            onPageSizeChange={(size) => changeExercisesFilter(() => setExercisesPageSize(size))}
-                            pageSizeOptions={PAGE_SIZE_OPTIONS}
-                            search={exerciseSearch}
-                            onSearchChange={(value) => changeExercisesFilter(() => setExerciseSearch(value))}
-                            searchPlaceholder="Exercise title..."
-                        />
+                        <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                            Show
+                            <select
+                                value={exercisesPageSize}
+                                onChange={(e) => {
+                                    setExercisesPageSize(Number(e.target.value));
+                                    setExercisesPage(1);
+                                }}
+                                className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            >
+                                {PAGE_SIZE_OPTIONS.map((n) => (
+                                    <option key={n} value={n}>
+                                        {n}
+                                    </option>
+                                ))}
+                            </select>
+                            entries
+                        </label>
                     </div>
 
-                    {isLoading ? (
+                    {appliedFilters === null ? (
+                        <p className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                            Use the filters above and press Search to list exercises.
+                        </p>
+                    ) : isLoading ? (
                         <Loading message="Loading exercises..." />
                     ) : (
                         <div className="overflow-x-auto mt-4">
@@ -1286,7 +1383,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                                 <Badge variant="secondary">{exercise.level ?? "All levels"}</Badge>
                                             </td>
                                             <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                                                {exercise.questions.length}
+                                                {exercise.questionCount}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <Badge variant={exercise.published ? "default" : "outline"}>
@@ -1315,7 +1412,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                         </div>
                     )}
 
-                    {!isLoading && (
+                    {appliedFilters !== null && !isLoading && (
                         <div className="px-6 py-4">
                             <AdminTablePagination
                                 page={exercisesCurrentPage}

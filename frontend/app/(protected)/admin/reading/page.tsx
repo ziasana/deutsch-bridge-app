@@ -19,13 +19,15 @@ import {
     uploadReadingArticleThumbnail,
     bulkImportReadingArticles,
     getAdminReadingArticles,
+    getAdminReadingArticle,
+    ReadingArticleFilters,
     getAdminReadingCategories,
 } from "@/services/adminReadingService";
 import {
     Annotation,
     AnnotationType,
     KeyVocabularyItem,
-    ReadingArticle,
+    ReadingArticleAdminRow,
     ReadingArticleBulkImportResult,
     ReadingQuizQuestion,
     ReadingQuizQuestionType,
@@ -35,7 +37,6 @@ import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
 import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
-import AdminTableControls from "@/componenets/admin/table/AdminTableControls";
 import AdminTablePagination from "@/componenets/admin/table/AdminTablePagination";
 import SortableTh from "@/componenets/admin/table/SortableTh";
 import RichTextEditor from "@/componenets/RichTextEditor";
@@ -43,9 +44,12 @@ import ImageCropUpload from "@/componenets/admin/ImageCropUpload";
 import ReadingCategoriesPanel, { READING_CATEGORIES_KEY } from "@/componenets/admin/reading/ReadingCategoriesPanel";
 import { getArticleImageSrc } from "@/lib/readingImages";
 import { htmlToPlainText, plainTextToHtml } from "@/lib/richTextPlainText";
-import { Upload, CheckCircle2, XCircle, Trash2 } from "lucide-react";
+import { Upload, CheckCircle2, XCircle, Trash2, Search } from "lucide-react";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const emptyFilters: ReadingArticleFilters = { level: "", categoryId: "", search: "" };
+const filterFieldClass =
+    "mt-1.5 w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none";
 
 type SortKey = "title" | "level" | "vocabulary" | "annotations";
 type SortDirection = "asc" | "desc";
@@ -105,12 +109,17 @@ export default function AdminReadingPage() {
     const { userProfile, hasHydrated } = useAuthStore();
     const queryClient = useQueryClient();
 
-    const ARTICLES_KEY = ["admin", "reading", "articles"];
+    const ARTICLES_KEY = ["admin", "reading", "articles"] as const;
+
+    // Nothing is fetched until the admin applies a filter (or searches with none set, to list everything).
+    // Each distinct filter combination is cached under its own key, so flipping between them is instant.
+    const [draftFilters, setDraftFilters] = useState<ReadingArticleFilters>(emptyFilters);
+    const [appliedFilters, setAppliedFilters] = useState<ReadingArticleFilters | null>(null);
 
     const { data: articles = [], isLoading, error: articlesError } = useQuery({
-        queryKey: ARTICLES_KEY,
-        queryFn: () => getAdminReadingArticles().then((res) => res.data),
-        enabled: hasHydrated && userProfile?.role === "ADMIN",
+        queryKey: [...ARTICLES_KEY, appliedFilters],
+        queryFn: () => getAdminReadingArticles(appliedFilters ?? {}).then((res) => res.data),
+        enabled: hasHydrated && userProfile?.role === "ADMIN" && appliedFilters !== null,
     });
     // Shared with ReadingCategoriesPanel via the same query key - one fetch, one cache.
     const { data: categories = [] } = useQuery({
@@ -121,11 +130,10 @@ export default function AdminReadingPage() {
 
     const [pageTab, setPageTab] = useState<PageTab>("articles");
     const [isSaving, setIsSaving] = useState(false);
-    const [articleToDelete, setArticleToDelete] = useState<ReadingArticle | null>(null);
+    const [articleToDelete, setArticleToDelete] = useState<ReadingArticleAdminRow | null>(null);
     const [selectedArticleIds, setSelectedArticleIds] = useState<Set<string>>(new Set());
     const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
-    const [tableSearch, setTableSearch] = useState("");
     const [tablePageSize, setTablePageSize] = useState(10);
     const [tablePage, setTablePage] = useState(1);
     const [sortKey, setSortKey] = useState<SortKey>("title");
@@ -154,7 +162,7 @@ export default function AdminReadingPage() {
     const [isSuggestingAnnotations, setIsSuggestingAnnotations] = useState(false);
     const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
 
-    const [editingArticle, setEditingArticle] = useState<ReadingArticle | null>(null);
+    const [editingArticle, setEditingArticle] = useState<{ id: string; title: string } | null>(null);
 
     // Also drop the learner-side reading caches (list pages, level summary, opened articles) in this browser.
     const invalidateArticles = () => {
@@ -282,8 +290,19 @@ export default function AdminReadingPage() {
     const removeQuizQuestion = (idx: number) => setManualQuiz((prev) => prev.filter((_, i) => i !== idx));
     const addQuizQuestion = () => setManualQuiz((prev) => [...prev, emptyQuizQuestion()]);
 
-    const startEdit = (article: ReadingArticle) => {
-        setEditingArticle(article);
+    const startEdit = async (row: ReadingArticleAdminRow) => {
+        let article;
+        try {
+            article = await queryClient.fetchQuery({
+                queryKey: ["admin", "reading", "article", row.id],
+                queryFn: () => getAdminReadingArticle(row.id).then((res) => res.data),
+                staleTime: 0,
+            });
+        } catch (err: unknown) {
+            toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to load the article.");
+            return;
+        }
+        setEditingArticle({ id: article.id, title: article.title });
         setManualForm({
             title: article.title,
             categoryId: article.categoryId ?? "",
@@ -384,7 +403,7 @@ export default function AdminReadingPage() {
             .finally(() => setIsSaving(false));
     };
 
-    const removeArticle = (article: ReadingArticle) => setArticleToDelete(article);
+    const removeArticle = (article: ReadingArticleAdminRow) => setArticleToDelete(article);
 
     const confirmRemoveArticle = () => {
         const article = articleToDelete;
@@ -422,6 +441,19 @@ export default function AdminReadingPage() {
             .finally(() => setIsSaving(false));
     };
 
+    const applyFilters = (e: React.FormEvent) => {
+        e.preventDefault();
+        setTablePage(1);
+        setAppliedFilters({ ...draftFilters, search: (draftFilters.search ?? "").trim() });
+    };
+
+    const resetFilters = () => {
+        setDraftFilters(emptyFilters);
+        setAppliedFilters(null);
+        setTablePage(1);
+        setSelectedArticleIds(new Set());
+    };
+
     const toggleSort = (key: SortKey) => {
         if (sortKey === key) {
             setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -432,23 +464,18 @@ export default function AdminReadingPage() {
         setTablePage(1);
     };
 
-    const tableQuery = tableSearch.trim().toLowerCase();
-    const filteredArticles = tableQuery
-        ? articles.filter(
-              (a) => a.title.toLowerCase().includes(tableQuery) || (a.categoryTitle ?? "").toLowerCase().includes(tableQuery)
-          )
-        : articles;
+    const filteredArticles = articles;
 
-    const sortValueFor = (article: ReadingArticle) => {
+    const sortValueFor = (article: ReadingArticleAdminRow) => {
         switch (sortKey) {
             case "title":
                 return article.title.toLowerCase();
             case "level":
                 return article.level;
             case "vocabulary":
-                return article.keyVocabulary.length;
+                return article.vocabularyCount;
             case "annotations":
-                return article.annotations?.length ?? 0;
+                return article.annotationCount;
         }
     };
 
@@ -730,24 +757,24 @@ export default function AdminReadingPage() {
                         </form>
                     ) : (
                         <form onSubmit={submitManual} className="space-y-6">
-                            {editingArticle && (
-                                <div className="flex items-start justify-between gap-4">
-                                    <p className="text-sm text-blue-600 dark:text-blue-400">
-                                        Editing &quot;{editingArticle.title}&quot; —{" "}
-                                        <button type="button" className="underline" onClick={resetManualForm}>
-                                            cancel
-                                        </button>
-                                    </p>
-                                    <Button
-                                        variant="primary"
-                                        type="submit"
-                                        disabled={isSaving}
-                                        className="text-sm px-4 py-2 shrink-0"
-                                    >
-                                        {isSaving ? "Saving..." : "Save changes"}
-                                    </Button>
+                            <div className="flex items-center justify-between gap-4 flex-wrap">
+                                <div>
+                                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                        {editingArticle ? "Edit article" : "New article"}
+                                    </h2>
+                                    {editingArticle && (
+                                        <p className="text-sm text-blue-600 dark:text-blue-400">
+                                            Editing &quot;{editingArticle.title}&quot; —{" "}
+                                            <button type="button" className="underline" onClick={resetManualForm}>
+                                                cancel
+                                            </button>
+                                        </p>
+                                    )}
                                 </div>
-                            )}
+                                <Button variant="primary" type="submit" disabled={isSaving} className="shrink-0">
+                                    {isSaving ? "Saving..." : editingArticle ? "Save changes" : "Save article"}
+                                </Button>
+                            </div>
                             <div>
                                 <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Title</label>
                                 <Input
@@ -1136,30 +1163,100 @@ export default function AdminReadingPage() {
                     )}
                 </div>
 
+                <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Find articles</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Articles are only loaded once you search - pick any filters, or leave them empty to list everything.
+                    </p>
+                    <form
+                        onSubmit={applyFilters}
+                        className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_2fr_auto] items-end"
+                    >
+                        <label className="text-sm text-gray-700 dark:text-gray-300">
+                            Level
+                            <select
+                                value={draftFilters.level}
+                                onChange={(e) => setDraftFilters({ ...draftFilters, level: e.target.value })}
+                                className={filterFieldClass}
+                            >
+                                <option value="">All levels</option>
+                                {LEVELS.map((lvl) => (
+                                    <option key={lvl} value={lvl}>
+                                        {lvl}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <label className="text-sm text-gray-700 dark:text-gray-300">
+                            Category (Thema)
+                            <select
+                                value={draftFilters.categoryId}
+                                onChange={(e) => setDraftFilters({ ...draftFilters, categoryId: e.target.value })}
+                                className={filterFieldClass}
+                            >
+                                <option value="">All categories</option>
+                                <option value="none">No category</option>
+                                {categories.map((c) => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.title}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <label className="text-sm text-gray-700 dark:text-gray-300">
+                            Title
+                            <input
+                                type="text"
+                                value={draftFilters.search}
+                                onChange={(e) => setDraftFilters({ ...draftFilters, search: e.target.value })}
+                                placeholder="Search by title or category..."
+                                className={filterFieldClass}
+                            />
+                        </label>
+                        <div className="flex gap-2">
+                            <Button variant="primary" type="submit" className="flex items-center gap-2">
+                                <Search className="size-4" />
+                                Search
+                            </Button>
+                            <Button type="button" variant="secondary" onClick={resetFilters}>
+                                Reset
+                            </Button>
+                        </div>
+                    </form>
+                </div>
+
                 <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] overflow-hidden">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white px-6 pt-6">
                         Existing articles
                     </h2>
-                    {isLoading ? (
+                    {appliedFilters === null ? (
+                        <p className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                            Use the filters above and press Search to list articles.
+                        </p>
+                    ) : isLoading ? (
                         <Loading message="Loading articles..." />
                     ) : (
                         <div className="px-6 pb-6">
                             {/* Table controls */}
                             <div className="mt-4 mb-3">
-                                <AdminTableControls
-                                    pageSize={tablePageSize}
-                                    onPageSizeChange={(size) => {
-                                        setTablePageSize(size);
-                                        setTablePage(1);
-                                    }}
-                                    pageSizeOptions={PAGE_SIZE_OPTIONS}
-                                    search={tableSearch}
-                                    onSearchChange={(value) => {
-                                        setTableSearch(value);
-                                        setTablePage(1);
-                                    }}
-                                    searchPlaceholder="Title or category..."
-                                />
+                                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                    Show
+                                    <select
+                                        value={tablePageSize}
+                                        onChange={(e) => {
+                                            setTablePageSize(Number(e.target.value));
+                                            setTablePage(1);
+                                        }}
+                                        className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    >
+                                        {PAGE_SIZE_OPTIONS.map((n) => (
+                                            <option key={n} value={n}>
+                                                {n}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    entries
+                                </label>
                             </div>
 
                             <div className="overflow-x-auto">
@@ -1230,10 +1327,10 @@ export default function AdminReadingPage() {
                                                     <Badge variant="secondary">{article.level}</Badge>
                                                 </td>
                                                 <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                                                    {article.keyVocabulary.length} words
+                                                    {article.vocabularyCount} words
                                                 </td>
                                                 <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                                                    {article.annotations?.length ?? 0}
+                                                    {article.annotationCount}
                                                 </td>
                                                 <td className="px-6 py-4 space-x-2 whitespace-nowrap">
                                                     <Button

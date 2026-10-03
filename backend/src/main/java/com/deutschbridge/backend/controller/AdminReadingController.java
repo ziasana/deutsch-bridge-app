@@ -6,6 +6,7 @@ import com.deutschbridge.backend.model.dto.ImageUploadResponse;
 import com.deutschbridge.backend.model.dto.ReadingArticleBulkImportResult;
 import com.deutschbridge.backend.model.dto.ReadingArticleGenerateRequest;
 import com.deutschbridge.backend.model.dto.ReadingArticleManualRequest;
+import com.deutschbridge.backend.model.dto.ReadingArticleAdminRow;
 import com.deutschbridge.backend.model.dto.ReadingArticleResponse;
 import com.deutschbridge.backend.model.dto.SuggestAnnotationsRequest;
 import com.deutschbridge.backend.model.dto.SuggestVocabularyRequest;
@@ -36,8 +37,17 @@ public class AdminReadingController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ReadingArticleResponse>> getAll() {
-        return ResponseEntity.ok(readingArticleService.findAllForAdmin());
+    public ResponseEntity<List<ReadingArticleAdminRow>> getAll(
+            @RequestParam(required = false) String level,
+            @RequestParam(required = false) String categoryId,
+            @RequestParam(required = false) String search
+    ) {
+        return ResponseEntity.ok(readingArticleService.findAdminRows(level, categoryId, search));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ReadingArticleResponse> getById(@PathVariable String id) throws DataNotFoundException {
+        return ResponseEntity.ok(readingArticleService.findByIdForAdmin(id));
     }
 
     @PostMapping(value = "/upload-image", consumes = "multipart/form-data")

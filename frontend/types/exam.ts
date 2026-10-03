@@ -57,6 +57,18 @@ export interface ExamQuestion {
     commonMistake: string;
 }
 
+/** Admin list row - no passages/questions; fetch the exercise by id to edit it. */
+export interface ExamExerciseAdminRow {
+    id: string;
+    title: string;
+    section: ExamSection;
+    taskType: ExamTaskType | null;
+    level: string | null;
+    partNumber: number | null;
+    published: boolean;
+    questionCount: number;
+}
+
 export interface ExamExerciseResponse {
     id: string;
     title: string;

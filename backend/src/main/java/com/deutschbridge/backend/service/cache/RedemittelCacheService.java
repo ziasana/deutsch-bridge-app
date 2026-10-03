@@ -30,6 +30,7 @@ public class RedemittelCacheService {
 
     public static final String PHRASE_CACHE = "redemittelPhrase";
     public static final String LIST_CACHE = "redemittelListPage";
+    public static final String ADMIN_LIST_CACHE = "redemittelAdminList";
     public static final String HUB_CACHE = "redemittelHubContent";
     public static final String EXERCISE_CACHE = "redemittelExercises";
     public static final String FUNCTION_CACHE = "redemittelFunctionLabels";

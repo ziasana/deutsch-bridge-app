@@ -2,10 +2,13 @@ package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.AdminWritingGuideItemDto;
+import com.deutschbridge.backend.model.dto.AdminWritingGuideItemRow;
 import com.deutschbridge.backend.model.dto.AdminWritingPhraseDto;
+import com.deutschbridge.backend.model.dto.AdminWritingPhraseRow;
 import com.deutschbridge.backend.model.entity.WritingGuideItem;
 import com.deutschbridge.backend.model.entity.WritingPhrase;
 import com.deutschbridge.backend.model.enums.LearningLevel;
+import com.deutschbridge.backend.model.enums.WritingGuideKind;
 import com.deutschbridge.backend.repository.RedemittelExerciseRepository;
 import com.deutschbridge.backend.repository.RedemittelFunctionRepository;
 import com.deutschbridge.backend.repository.WritingGuideItemRepository;
@@ -14,11 +17,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.deutschbridge.backend.service.cache.RedemittelCacheService;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 /** Admin CRUD for the data-driven "Schreiben lernen" content (guide items and Redemittel). */
@@ -45,22 +51,39 @@ public class WritingContentAdminService {
 
     // ---- guide items ----
 
-    public List<AdminWritingGuideItemDto> listGuideItems(LearningLevel level) {
+    /**
+     * Light rows narrowed by any of the optional filters (null/blank = no filter; search matches the title).
+     * Cached per filter combination and cleared by every guide item write.
+     */
+    @Cacheable(cacheNames = "writingGuideAdminList", key = "{#level, #kind, #active, #search}")
+    public List<AdminWritingGuideItemRow> listGuideItemRows(LearningLevel level, WritingGuideKind kind, Boolean active, String search) {
+        String query = search == null ? "" : search.trim().toLowerCase();
         return guideRepository.findAll().stream()
-                .filter(i -> i.getLevel() == level)
+                .filter(i -> level == null || i.getLevel() == level)
+                .filter(i -> kind == null || i.getKind() == kind)
+                .filter(i -> active == null || i.isActive() == active)
+                .filter(i -> query.isEmpty() || (i.getTitle() != null && i.getTitle().toLowerCase().contains(query)))
                 .sorted(Comparator.comparing(WritingGuideItem::getKind).thenComparingInt(WritingGuideItem::getSortOrder))
-                .map(this::toDto).toList();
+                .map(i -> new AdminWritingGuideItemRow(i.getId(), i.getLevel(), i.getKind(), i.getTitle(), i.getSortOrder(), i.isActive()))
+                .toList();
     }
 
+    public AdminWritingGuideItemDto getGuideItem(String id) throws DataNotFoundException {
+        return toDto(guideRepository.findById(id).orElseThrow(() -> new DataNotFoundException("Guide item not found!")));
+    }
+
+    @CacheEvict(cacheNames = "writingGuideAdminList", allEntries = true)
     public AdminWritingGuideItemDto createGuideItem(AdminWritingGuideItemDto dto) {
         return toDto(guideRepository.save(apply(new WritingGuideItem(), dto)));
     }
 
+    @CacheEvict(cacheNames = "writingGuideAdminList", allEntries = true)
     public AdminWritingGuideItemDto updateGuideItem(String id, AdminWritingGuideItemDto dto) throws DataNotFoundException {
         WritingGuideItem item = guideRepository.findById(id).orElseThrow(() -> new DataNotFoundException("Guide item not found!"));
         return toDto(guideRepository.save(apply(item, dto)));
     }
 
+    @CacheEvict(cacheNames = "writingGuideAdminList", allEntries = true)
     public void deleteGuideItem(String id) throws DataNotFoundException {
         if (!guideRepository.existsById(id)) throw new DataNotFoundException("Guide item not found!");
         guideRepository.deleteById(id);
@@ -95,27 +118,48 @@ public class WritingContentAdminService {
 
     // ---- phrases ----
 
-    public List<AdminWritingPhraseDto> listPhrases(LearningLevel level) {
+    /**
+     * Light rows (with each phrase's exercise count) narrowed by any of the optional filters
+     * (null/blank = no filter; category is a Funktion id; search matches the phrase text). Cached per
+     * filter combination and cleared by every phrase or exercise write.
+     */
+    @Cacheable(cacheNames = RedemittelCacheService.ADMIN_LIST_CACHE, key = "{#level, #category, #active, #search}")
+    public List<AdminWritingPhraseRow> listPhraseRows(LearningLevel level, String category, Boolean active, String search) {
+        String query = search == null ? "" : search.trim().toLowerCase();
+        Map<String, Long> exerciseCounts = new HashMap<>();
+        for (Object[] row : exerciseRepository.countByPhrase()) exerciseCounts.put((String) row[0], (Long) row[1]);
         return phraseRepository.findAll().stream()
-                .filter(p -> p.getLevel() == level)
+                .filter(p -> level == null || p.getLevel() == level)
+                .filter(p -> category == null || category.isBlank() || category.equals(p.getCategory().getId()))
+                .filter(p -> active == null || p.isActive() == active)
+                .filter(p -> query.isEmpty() || (p.getPhrase() != null && p.getPhrase().toLowerCase().contains(query)))
                 .sorted(Comparator.comparingInt((WritingPhrase p) -> p.getCategory().getSortOrder())
                         .thenComparing(p -> p.getCategory().getLabel())
                         .thenComparingInt(WritingPhrase::getSortOrder))
-                .map(this::toDto).toList();
+                .map(p -> new AdminWritingPhraseRow(p.getId(), p.getLevel(), p.getCategory().getId(), p.getPhrase(),
+                        p.isActive(), p.getSortOrder(), exerciseCounts.getOrDefault(p.getId(), 0L)))
+                .toList();
     }
 
-    @CacheEvict(cacheNames = {RedemittelCacheService.PHRASE_CACHE, RedemittelCacheService.LIST_CACHE, RedemittelCacheService.HUB_CACHE, RedemittelCacheService.EXERCISE_CACHE}, allEntries = true)
+    public AdminWritingPhraseDto getPhrase(String id) throws DataNotFoundException {
+        return toDto(phraseRepository.findById(id).orElseThrow(() -> new DataNotFoundException("Phrase not found!")));
+    }
+
+    @CacheEvict(cacheNames = {RedemittelCacheService.PHRASE_CACHE, RedemittelCacheService.LIST_CACHE, RedemittelCacheService.HUB_CACHE, RedemittelCacheService.EXERCISE_CACHE,
+            RedemittelCacheService.ADMIN_LIST_CACHE}, allEntries = true)
     public AdminWritingPhraseDto createPhrase(AdminWritingPhraseDto dto) {
         return toDto(phraseRepository.save(apply(new WritingPhrase(), dto)));
     }
 
-    @CacheEvict(cacheNames = {RedemittelCacheService.PHRASE_CACHE, RedemittelCacheService.LIST_CACHE, RedemittelCacheService.HUB_CACHE, RedemittelCacheService.EXERCISE_CACHE}, allEntries = true)
+    @CacheEvict(cacheNames = {RedemittelCacheService.PHRASE_CACHE, RedemittelCacheService.LIST_CACHE, RedemittelCacheService.HUB_CACHE, RedemittelCacheService.EXERCISE_CACHE,
+            RedemittelCacheService.ADMIN_LIST_CACHE}, allEntries = true)
     public AdminWritingPhraseDto updatePhrase(String id, AdminWritingPhraseDto dto) throws DataNotFoundException {
         WritingPhrase phrase = phraseRepository.findById(id).orElseThrow(() -> new DataNotFoundException("Phrase not found!"));
         return toDto(phraseRepository.save(apply(phrase, dto)));
     }
 
-    @CacheEvict(cacheNames = {RedemittelCacheService.PHRASE_CACHE, RedemittelCacheService.LIST_CACHE, RedemittelCacheService.HUB_CACHE, RedemittelCacheService.EXERCISE_CACHE}, allEntries = true)
+    @CacheEvict(cacheNames = {RedemittelCacheService.PHRASE_CACHE, RedemittelCacheService.LIST_CACHE, RedemittelCacheService.HUB_CACHE, RedemittelCacheService.EXERCISE_CACHE,
+            RedemittelCacheService.ADMIN_LIST_CACHE}, allEntries = true)
     public void deletePhrase(String id) throws DataNotFoundException {
         if (!phraseRepository.existsById(id)) throw new DataNotFoundException("Phrase not found!");
         exerciseRepository.deleteByPhraseId(id);

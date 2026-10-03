@@ -4,7 +4,10 @@ import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.AdminRedemittelExerciseDto;
 import com.deutschbridge.backend.model.dto.AdminRedemittelFunctionDto;
 import com.deutschbridge.backend.model.dto.AdminWritingGuideItemDto;
+import com.deutschbridge.backend.model.dto.AdminWritingGuideItemRow;
+import com.deutschbridge.backend.model.enums.WritingGuideKind;
 import com.deutschbridge.backend.model.dto.AdminWritingPhraseDto;
+import com.deutschbridge.backend.model.dto.AdminWritingPhraseRow;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.model.dto.RedemittelBulkImportResult;
 import com.deutschbridge.backend.service.RedemittelBulkImportService;
@@ -82,8 +85,18 @@ public class AdminWritingContentController {
     }
 
     @GetMapping("/guide-items")
-    public ResponseEntity<List<AdminWritingGuideItemDto>> listGuideItems(@RequestParam LearningLevel level) {
-        return ResponseEntity.ok(service.listGuideItems(level));
+    public ResponseEntity<List<AdminWritingGuideItemRow>> listGuideItems(
+            @RequestParam(required = false) LearningLevel level,
+            @RequestParam(required = false) WritingGuideKind kind,
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) String search
+    ) {
+        return ResponseEntity.ok(service.listGuideItemRows(level, kind, active, search));
+    }
+
+    @GetMapping("/guide-items/{id}")
+    public ResponseEntity<AdminWritingGuideItemDto> getGuideItem(@PathVariable String id) throws DataNotFoundException {
+        return ResponseEntity.ok(service.getGuideItem(id));
     }
 
     @PostMapping("/guide-items")
@@ -103,8 +116,18 @@ public class AdminWritingContentController {
     }
 
     @GetMapping("/phrases")
-    public ResponseEntity<List<AdminWritingPhraseDto>> listPhrases(@RequestParam LearningLevel level) {
-        return ResponseEntity.ok(service.listPhrases(level));
+    public ResponseEntity<List<AdminWritingPhraseRow>> listPhrases(
+            @RequestParam(required = false) LearningLevel level,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) String search
+    ) {
+        return ResponseEntity.ok(service.listPhraseRows(level, category, active, search));
+    }
+
+    @GetMapping("/phrases/{id}")
+    public ResponseEntity<AdminWritingPhraseDto> getPhrase(@PathVariable String id) throws DataNotFoundException {
+        return ResponseEntity.ok(service.getPhrase(id));
     }
 
     @PostMapping("/phrases")

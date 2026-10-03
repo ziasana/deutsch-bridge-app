@@ -8,6 +8,7 @@ import com.deutschbridge.backend.model.dto.ReadingArticleManualRequest;
 import com.deutschbridge.backend.model.dto.ReadingArticleNavigationResponse;
 import com.deutschbridge.backend.model.dto.ReadingArticleNeighborResponse;
 import com.deutschbridge.backend.model.dto.ReadingArticlePageResponse;
+import com.deutschbridge.backend.model.dto.ReadingArticleAdminRow;
 import com.deutschbridge.backend.model.dto.ReadingArticleResponse;
 import com.deutschbridge.backend.model.dto.ReadingArticleSummaryResponse;
 import com.deutschbridge.backend.model.dto.ReadingLevelSummaryResponse;
@@ -50,6 +51,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -120,10 +122,38 @@ public class ReadingArticleService {
                 .orElseThrow(() -> new DataNotFoundException(NOT_FOUND_MSG));
     }
 
-    /** Admin table: every article's full content, without any per-user progress. */
-    public List<ReadingArticleResponse> findAllForAdmin() {
+    /** Admin edit form: one article's full content, without any per-user progress. */
+    public ReadingArticleResponse findByIdForAdmin(String id) throws DataNotFoundException {
+        return ReadingArticleMapper.mapToResponse(findById(id), null, Set.of());
+    }
+
+    /**
+     * Admin table: light rows narrowed by any of the optional filters (blank/null = no filter;
+     * categoryId "none" = uncategorized; search matches title or category). Filters the already
+     * cached full list ("readingArticles", evicted by every article write), so no extra cache to keep fresh.
+     */
+    public List<ReadingArticleAdminRow> findAdminRows(String level, String categoryId, String search) {
+        String query = search == null ? "" : search.trim().toLowerCase();
         return contentCacheService.getAllReadingArticles().stream()
-                .map(a -> ReadingArticleMapper.mapToResponse(a, null, Set.of()))
+                .filter(a -> level == null || level.isBlank()
+                        || (a.getLevel() != null && a.getLevel().getValue().equalsIgnoreCase(level)))
+                .filter(a -> categoryId == null || categoryId.isBlank()
+                        || ("none".equals(categoryId) ? a.getCategory() == null
+                        : a.getCategory() != null && categoryId.equals(a.getCategory().getId())))
+                .filter(a -> query.isEmpty()
+                        || (a.getTitle() != null && a.getTitle().toLowerCase().contains(query))
+                        || (a.getCategory() != null && a.getCategory().getTitle() != null
+                        && a.getCategory().getTitle().toLowerCase().contains(query)))
+                .sorted(Comparator.comparing(ReadingArticle::getTitle, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .map(a -> new ReadingArticleAdminRow(
+                        a.getId(),
+                        a.getTitle(),
+                        a.getLevel() != null ? a.getLevel().getValue() : null,
+                        a.getCategory() != null ? a.getCategory().getId() : null,
+                        a.getCategory() != null ? a.getCategory().getTitle() : null,
+                        a.getImageUrl(),
+                        a.getKeyVocabulary() != null ? a.getKeyVocabulary().size() : 0,
+                        a.getAnnotations() != null ? a.getAnnotations().size() : 0))
                 .toList();
     }
 

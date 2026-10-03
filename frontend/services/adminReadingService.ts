@@ -4,6 +4,7 @@ import {
     GenerateQuizRequest,
     KeyVocabularyItem,
     ReadingArticle,
+    ReadingArticleAdminRow,
     ReadingArticleBulkImportResult,
     ReadingArticleGenerateRequest,
     ReadingArticleManualRequest,
@@ -13,8 +14,18 @@ import {
     SuggestVocabularyRequest,
 } from "@/types/reading";
 
-export const getAdminReadingArticles = async () => {
-    return await api.get<ReadingArticle[]>("/admin/reading");
+export interface ReadingArticleFilters {
+    level?: string;
+    categoryId?: string;
+    search?: string;
+}
+
+export const getAdminReadingArticles = async (filters: ReadingArticleFilters = {}) => {
+    return await api.get<ReadingArticleAdminRow[]>("/admin/reading", { params: filters });
+};
+
+export const getAdminReadingArticle = async (id: string) => {
+    return await api.get<ReadingArticle>(`/admin/reading/${id}`);
 };
 
 export const uploadReadingArticleImage = async (file: File) => {

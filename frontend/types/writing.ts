@@ -135,6 +135,16 @@ export interface WritingAiFeedback {
 }
 
 /** Admin shapes: same fields as the learner content plus level/active, used for both reads and writes. */
+/** Admin list row - no content/data; fetch the item by id to edit it. */
+export interface AdminWritingGuideItemRow {
+    id: string;
+    level: string;
+    kind: WritingGuideKind;
+    title: string;
+    sortOrder: number;
+    active: boolean;
+}
+
 export interface AdminWritingGuideItem {
     id?: string;
     level: string;
@@ -144,6 +154,17 @@ export interface AdminWritingGuideItem {
     data: unknown;
     sortOrder: number;
     active: boolean;
+}
+
+/** Admin list row - no explanation/usage/meaning fields; fetch the phrase by id to edit it. */
+export interface AdminWritingPhraseRow {
+    id: string;
+    level: string;
+    category: WritingPhraseCategory;
+    phrase: string;
+    active: boolean;
+    sortOrder: number;
+    exerciseCount: number;
 }
 
 export interface AdminWritingPhrase {

@@ -22,7 +22,7 @@ function setup(existing: unknown[] = []) {
     service.saveAdminRedemittelExercises.mockImplementation((_id: string, list: unknown[]) => Promise.resolve({ data: list }));
     render(
         <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-            <RedemittelExerciseEditor phraseId="p1" level="B1" />
+            <RedemittelExerciseEditor phraseId="p1" />
         </QueryClientProvider>,
     );
 }

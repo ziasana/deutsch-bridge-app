@@ -10,23 +10,23 @@ import { htmlToPlainText } from "@/lib/richTextPlainText";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
 import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
-import AdminTableControls from "@/componenets/admin/table/AdminTableControls";
 import AdminTablePagination from "@/componenets/admin/table/AdminTablePagination";
 import SortableTh from "@/componenets/admin/table/SortableTh";
 import {
     createAdminWritingPhrase,
     deleteAdminWritingPhrase,
-    getAdminRedemittelExerciseCounts,
+    getAdminWritingPhrase,
+    AdminPhraseFilters,
     getAdminRedemittelFunctions,
     bulkImportRedemittel,
     getAdminWritingPhrases,
     updateAdminWritingPhrase,
 } from "@/services/adminWritingService";
-import { AdminWritingPhrase, WritingFormality } from "@/types/writing";
+import { AdminWritingPhrase, AdminWritingPhraseRow, WritingFormality } from "@/types/writing";
 import { FORMALITY_LABELS, WRITING_LEVELS } from "@/componenets/exam/writing/writingMeta";
 import { CONTEXT_LABELS } from "@/componenets/redemittel/redemittelMeta";
 import { RedemittelBulkImportResult, RedemittelContext } from "@/types/redemittel";
-import { CheckCircle2, Upload, XCircle } from "lucide-react";
+import { CheckCircle2, Plus, Search, Upload, XCircle } from "lucide-react";
 import RedemittelExerciseEditor from "./RedemittelExerciseEditor";
 
 export const FUNCTIONS_KEY = ["admin", "writing", "functions"];
@@ -39,6 +39,10 @@ const selectClass =
 const plainText = (html: string) => htmlToPlainText(html).trim();
 const cardClass =
     "bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)]";
+
+const emptyFilters: AdminPhraseFilters = { level: "", category: "", active: "", search: "" };
+const filterFieldClass =
+    "mt-1.5 w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none";
 
 type SortKey = "phrase" | "category" | "exercises" | "active";
 type SortDirection = "asc" | "desc";
@@ -53,46 +57,79 @@ const errorMessage = (err: unknown, fallback: string) => (err as { response?: { 
 /** Admin screen for the Redemittel learning module: the phrases of one level plus their practice exercises. */
 export default function RedemittelManager() {
     const queryClient = useQueryClient();
-    const [level, setLevel] = useState("B1");
-    const key = ["admin", "writing", "phrases", level];
+    const PHRASES_KEY = ["admin", "writing", "phrases"] as const;
 
-    const { data: phrases = [], isLoading } = useQuery({ queryKey: key, queryFn: () => getAdminWritingPhrases(level).then((r) => r.data) });
-    const { data: exerciseCounts = {} } = useQuery({
-        queryKey: ["admin", "writing", "exercise-counts", level],
-        queryFn: () => getAdminRedemittelExerciseCounts(level).then((r) => r.data),
+    // Nothing is fetched until the admin applies a filter (or searches with none set, to list everything).
+    // Each distinct filter combination is cached under its own key, so flipping between them is instant.
+    const [draftFilters, setDraftFilters] = useState<AdminPhraseFilters>(emptyFilters);
+    const [appliedFilters, setAppliedFilters] = useState<AdminPhraseFilters | null>(null);
+
+    const { data: phrases = [], isLoading } = useQuery({
+        queryKey: [...PHRASES_KEY, appliedFilters],
+        queryFn: () => getAdminWritingPhrases(appliedFilters ?? {}).then((r) => r.data),
+        enabled: appliedFilters !== null,
     });
 
     const { data: functions = [] } = useQuery({ queryKey: FUNCTIONS_KEY, queryFn: () => getAdminRedemittelFunctions().then((r) => r.data) });
     const functionLabel = (id: string) => functions.find((f) => f.id === id)?.label ?? id;
 
-    const [form, setForm] = useState<AdminWritingPhrase>(emptyPhrase(level));
+    const [form, setForm] = useState<AdminWritingPhrase>(emptyPhrase("B1"));
+    // The entry form stays collapsed until the admin clicks "Add new entry" or edits a row.
+    const [showForm, setShowForm] = useState(false);
     const [saving, setSaving] = useState(false);
     const [showBulkImport, setShowBulkImport] = useState(false);
     const [bulkText, setBulkText] = useState("");
     const [isBulkImporting, setIsBulkImporting] = useState(false);
     const [bulkResult, setBulkResult] = useState<RedemittelBulkImportResult | null>(null);
-    const [phraseToDelete, setPhraseToDelete] = useState<AdminWritingPhrase | null>(null);
+    const [phraseToDelete, setPhraseToDelete] = useState<AdminWritingPhraseRow | null>(null);
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
-    const [search, setSearch] = useState("");
     const [sortKey, setSortKey] = useState<SortKey>("phrase");
     const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
     const refresh = async () => {
-        await queryClient.invalidateQueries({ queryKey: key });
-        await queryClient.invalidateQueries({ queryKey: ["writing", "learn", level] });
+        await queryClient.invalidateQueries({ queryKey: PHRASES_KEY });
+        await queryClient.invalidateQueries({ queryKey: ["writing", "learn"] });
         await queryClient.invalidateQueries({ queryKey: ["redemittel"] });
     };
 
-    const changeLevel = (next: string) => {
-        setLevel(next);
-        setForm(emptyPhrase(next));
+    const applyFilters = (e: React.FormEvent) => {
+        e.preventDefault();
+        setPage(1);
+        setAppliedFilters({ ...draftFilters, search: (draftFilters.search ?? "").trim() });
+    };
+
+    const resetFilters = () => {
+        setDraftFilters(emptyFilters);
+        setAppliedFilters(null);
         setPage(1);
     };
 
-    const startEdit = (p: AdminWritingPhrase) => {
-        setForm(p);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+    const loadPhrase = (row: AdminWritingPhraseRow) =>
+        queryClient.fetchQuery({
+            queryKey: [...PHRASES_KEY, "detail", row.id],
+            queryFn: () => getAdminWritingPhrase(row.id).then((r) => r.data),
+            staleTime: 0,
+        });
+
+    const openNewForm = () => {
+        setForm(emptyPhrase(form.level));
+        setShowForm(true);
+    };
+
+    const closeForm = () => {
+        setForm(emptyPhrase(form.level));
+        setShowForm(false);
+    };
+
+    const startEdit = async (row: AdminWritingPhraseRow) => {
+        try {
+            setForm(await loadPhrase(row));
+            setShowForm(true);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch (err) {
+            toast.error(errorMessage(err, "Failed to load the entry."));
+        }
     };
 
     const save = async (e: React.FormEvent) => {
@@ -102,14 +139,13 @@ export default function RedemittelManager() {
             // An emptied rich-text field is "<p></p>", which should count as no content.
             const payload = {
                 ...form,
-                level,
                 explanation: plainText(form.explanation ?? "") ? form.explanation : null,
                 usageNote: plainText(form.usageNote ?? "") ? form.usageNote : null,
             };
             if (form.id) await updateAdminWritingPhrase(form.id, payload);
             else await createAdminWritingPhrase(payload);
             toast.success(form.id ? "Entry updated." : "Entry saved.");
-            setForm(emptyPhrase(level));
+            closeForm();
             await refresh();
         } catch (err) {
             toast.error(errorMessage(err, "Speichern fehlgeschlagen."));
@@ -118,9 +154,10 @@ export default function RedemittelManager() {
         }
     };
 
-    const toggleActive = async (p: AdminWritingPhrase) => {
+    const toggleActive = async (p: AdminWritingPhraseRow) => {
         try {
-            await updateAdminWritingPhrase(p.id!, { ...p, active: !p.active });
+            const full = await loadPhrase(p);
+            await updateAdminWritingPhrase(p.id, { ...full, active: !full.active });
             toast.success(p.active ? "Entry hidden from students." : "Entry shown to students.");
             await refresh();
         } catch (err) {
@@ -135,7 +172,7 @@ export default function RedemittelManager() {
         try {
             await deleteAdminWritingPhrase(phrase.id);
             toast.success("Entry deleted.");
-            if (form.id === phrase.id) setForm(emptyPhrase(level));
+            if (form.id === phrase.id) closeForm();
             await refresh();
         } catch (err) {
             toast.error(errorMessage(err, "Löschen fehlgeschlagen."));
@@ -200,13 +237,12 @@ export default function RedemittelManager() {
         setPage(1);
     };
 
-    const query = search.trim().toLowerCase();
-    const filtered = query ? phrases.filter((p) => p.phrase.toLowerCase().includes(query)) : phrases;
-    const valueFor = (p: AdminWritingPhrase): string | number => {
+    const filtered = phrases;
+    const valueFor = (p: AdminWritingPhraseRow): string | number => {
         switch (sortKey) {
             case "phrase": return p.phrase.toLowerCase();
             case "category": return functionLabel(p.category);
-            case "exercises": return p.id ? exerciseCounts[p.id] ?? 0 : 0;
+            case "exercises": return p.exerciseCount;
             case "active": return p.active ? 1 : 0;
         }
     };
@@ -239,15 +275,6 @@ export default function RedemittelManager() {
                         <Upload className="size-4" />
                         Bulk upload
                     </Button>
-                </div>
-
-                <div className={`${cardClass} mt-6 p-6`}>
-                    <div className="max-w-xs">
-                        <label className={labelClass}>Level</label>
-                        <select className={selectClass} value={level} onChange={(e) => changeLevel(e.target.value)} aria-label="Niveau">
-                            {LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
-                        </select>
-                    </div>
                 </div>
 
                 {showBulkImport && (
@@ -349,17 +376,44 @@ export default function RedemittelManager() {
                     </div>
                 )}
 
+                {!showForm && (
+                    <div className={`${cardClass} mt-8 p-6`}>
+                        <button
+                            type="button"
+                            onClick={openNewForm}
+                            className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-medium hover:underline"
+                        >
+                            <Plus className="size-4" />
+                            Add new entry
+                        </button>
+                    </div>
+                )}
+
+                {showForm && (
                 <form onSubmit={save} className={`${cardClass} mt-8 p-6 space-y-6`}>
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{form.id ? "Edit entry" : "New entry"}</h2>
+                        <div className="flex items-center gap-3">
+                            <button type="button" className="text-sm text-gray-500 dark:text-gray-400 underline" onClick={closeForm}>
+                                Cancel
+                            </button>
+                            <Button type="submit" disabled={saving}>{saving ? "Saving..." : form.id ? "Save changes" : "Save entry"}</Button>
+                        </div>
+                    </div>
+
                     {form.id && (
                         <p className="text-sm text-blue-600 dark:text-blue-400">
-                            Editing &quot;{plainText(form.phrase)}&quot; —{" "}
-                            <button type="button" className="underline" onClick={() => setForm(emptyPhrase(level))}>
-                                cancel
-                            </button>
+                            Editing &quot;{plainText(form.phrase)}&quot;
                         </p>
                     )}
 
                     <div className="flex gap-4 flex-wrap">
+                        <div className="flex-1 min-w-[120px]">
+                            <label className={labelClass}>Level</label>
+                            <select className={selectClass} value={form.level} onChange={(e) => setForm({ ...form, level: e.target.value })} aria-label="Niveau">
+                                {LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
+                            </select>
+                        </div>
                         <div className="flex-1 min-w-[200px]">
                             <label className={labelClass}>Funktion</label>
                             <select className={selectClass} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} required>
@@ -447,27 +501,84 @@ export default function RedemittelManager() {
                     </label>
                     <Button type="submit" disabled={saving}>{saving ? "Saving..." : form.id ? "Save changes" : "Save entry"}</Button>
                 </form>
+                )}
 
-                {form.id && (
+                {showForm && form.id && (
                     <div className={`${cardClass} mt-6 p-6`}>
-                        <RedemittelExerciseEditor key={form.id} phraseId={form.id} level={level} />
+                        <RedemittelExerciseEditor key={form.id} phraseId={form.id} />
                     </div>
                 )}
 
+                <div className={`${cardClass} mt-8 p-6`}>
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Find entries</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Entries are only loaded once you search - pick any filters, or leave them empty to list everything.
+                    </p>
+                    <form onSubmit={applyFilters} className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_1.4fr_1fr_2fr_auto] items-end">
+                        <label className="text-sm text-gray-700 dark:text-gray-300">
+                            Level
+                            <select className={filterFieldClass} value={draftFilters.level} onChange={(e) => setDraftFilters({ ...draftFilters, level: e.target.value })}>
+                                <option value="">All levels</option>
+                                {LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
+                            </select>
+                        </label>
+                        <label className="text-sm text-gray-700 dark:text-gray-300">
+                            Funktion
+                            <select className={filterFieldClass} value={draftFilters.category} onChange={(e) => setDraftFilters({ ...draftFilters, category: e.target.value })}>
+                                <option value="">All Funktionen</option>
+                                {functions.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
+                            </select>
+                        </label>
+                        <label className="text-sm text-gray-700 dark:text-gray-300">
+                            Status
+                            <select className={filterFieldClass} value={draftFilters.active} onChange={(e) => setDraftFilters({ ...draftFilters, active: e.target.value })}>
+                                <option value="">Any status</option>
+                                <option value="true">Active</option>
+                                <option value="false">Inactive</option>
+                            </select>
+                        </label>
+                        <label className="text-sm text-gray-700 dark:text-gray-300">
+                            Redemittel
+                            <input
+                                type="text"
+                                value={draftFilters.search}
+                                onChange={(e) => setDraftFilters({ ...draftFilters, search: e.target.value })}
+                                placeholder="Search by phrase..."
+                                className={filterFieldClass}
+                            />
+                        </label>
+                        <div className="flex gap-2">
+                            <Button type="submit" className="flex items-center gap-2">
+                                <Search className="size-4" />
+                                Search
+                            </Button>
+                            <Button type="button" variant="secondary" onClick={resetFilters}>Reset</Button>
+                        </div>
+                    </form>
+                </div>
+
                 <div className={`${cardClass} mt-8 overflow-hidden`}>
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white px-6 pt-6">Existing entries</h2>
-                    {isLoading ? (
+                    {appliedFilters === null ? (
+                        <p className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                            Use the filters above and press Search to list entries.
+                        </p>
+                    ) : isLoading ? (
                         <Loading message="Loading entries..." />
                     ) : (
                         <div className="px-6 pb-6">
                             <div className="mt-4 mb-3">
-                                <AdminTableControls
-                                    pageSize={pageSize}
-                                    onPageSizeChange={(n) => { setPageSize(n); setPage(1); }}
-                                    search={search}
-                                    onSearchChange={(v) => { setSearch(v); setPage(1); }}
-                                    searchPlaceholder="Redemittel..."
-                                />
+                                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                    Show
+                                    <select
+                                        value={pageSize}
+                                        onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                                        className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    >
+                                        {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
+                                    </select>
+                                    entries
+                                </label>
                             </div>
 
                             <div className="overflow-x-auto">
@@ -483,7 +594,7 @@ export default function RedemittelManager() {
                                     </thead>
                                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                                         {paginated.map((p) => {
-                                            const count = p.id ? exerciseCounts[p.id] ?? 0 : 0;
+                                            const count = p.exerciseCount;
                                             return (
                                                 <tr key={p.id}>
                                                     <td className="px-6 py-4 text-gray-900 dark:text-white">{p.phrase}</td>

@@ -7,6 +7,8 @@ import { toast } from "@/lib/toast";
 import useAuthStore from "@/store/useAuthStore";
 import {
     getExpressionsAdmin,
+    getExpressionAdmin,
+    ExpressionFilters,
     createExpression,
     updateExpression,
     deleteExpression,
@@ -16,7 +18,7 @@ import {
 import { getExpressionImageSrc } from "@/lib/expressionImages";
 import ImageCropUpload from "@/componenets/admin/ImageCropUpload";
 import {
-    Expression,
+    ExpressionAdminRow,
     ExpressionBulkImportResult,
     ExpressionManualRequest,
     ExpressionType,
@@ -46,6 +48,8 @@ import {
     Upload,
     CheckCircle2,
     XCircle,
+    Search,
+    Plus,
 } from "lucide-react";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
@@ -60,6 +64,9 @@ const QUESTION_TYPE_LABEL: Record<ExpressionQuestionType, string> = {
     TRANSFORMATION: "Transformation (rewrite the sentence)",
 };
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const emptyFilters: ExpressionFilters = { type: "", level: "", status: "", search: "" };
+const filterFieldClass =
+    "mt-1.5 w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none";
 
 type EntrySortKey = "expression" | "type" | "level" | "status";
 type SortDirection = "asc" | "desc";
@@ -101,23 +108,29 @@ export default function AdminExpressionsPage() {
     const { userProfile, hasHydrated } = useAuthStore();
     const queryClient = useQueryClient();
 
-    const ENTRIES_KEY = ["admin", "expressions"];
+    const ENTRIES_KEY = ["admin", "expressions"] as const;
+
+    // Nothing is fetched until the admin applies a filter (or searches with none set, to list everything).
+    // Each distinct filter combination is cached under its own key, so flipping between them is instant.
+    const [draftFilters, setDraftFilters] = useState<ExpressionFilters>(emptyFilters);
+    const [appliedFilters, setAppliedFilters] = useState<ExpressionFilters | null>(null);
 
     const { data: entries = [], isLoading, error: entriesError } = useQuery({
-        queryKey: ENTRIES_KEY,
-        queryFn: () => getExpressionsAdmin().then((res) => res.data),
-        enabled: hasHydrated && userProfile?.role === "ADMIN",
+        queryKey: [...ENTRIES_KEY, "list", appliedFilters],
+        queryFn: () => getExpressionsAdmin(appliedFilters ?? {}).then((res) => res.data),
+        enabled: hasHydrated && userProfile?.role === "ADMIN" && appliedFilters !== null,
     });
     const [isSaving, setIsSaving] = useState(false);
-    const [entryToDelete, setEntryToDelete] = useState<Expression | null>(null);
+    const [entryToDelete, setEntryToDelete] = useState<ExpressionAdminRow | null>(null);
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
-    const [entrySearch, setEntrySearch] = useState("");
     const [sortKey, setSortKey] = useState<EntrySortKey>("expression");
     const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
     const [form, setForm] = useState<ExpressionManualRequest>(emptyForm);
-    const [editingEntry, setEditingEntry] = useState<Expression | null>(null);
+    const [editingEntry, setEditingEntry] = useState<{ id: string; expression: string } | null>(null);
+    // The form stays collapsed until the admin clicks "Add new entry" or edits a row.
+    const [showForm, setShowForm] = useState(false);
 
     const [showBulkImport, setShowBulkImport] = useState(false);
     const [bulkText, setBulkText] = useState("");
@@ -145,10 +158,28 @@ export default function AdminExpressionsPage() {
     const resetForm = () => {
         setForm({ ...emptyForm, examples: [{ ...emptyExample }], patterns: [], questions: [] });
         setEditingEntry(null);
+        setShowForm(false);
     };
 
-    const startEdit = (entry: Expression) => {
-        setEditingEntry(entry);
+    const openNewForm = () => {
+        resetForm();
+        setShowForm(true);
+    };
+
+    const startEdit = async (row: ExpressionAdminRow) => {
+        let entry;
+        try {
+            entry = await queryClient.fetchQuery({
+                queryKey: [...ENTRIES_KEY, "detail", row.id],
+                queryFn: () => getExpressionAdmin(row.id).then((res) => res.data),
+                staleTime: 0,
+            });
+        } catch (err: unknown) {
+            toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to load the entry.");
+            return;
+        }
+        setEditingEntry({ id: entry.id, expression: entry.expression });
+        setShowForm(true);
         setForm({
             expression: entry.expression,
             type: entry.type,
@@ -258,7 +289,7 @@ export default function AdminExpressionsPage() {
         setBulkResult(null);
     };
 
-    const removeEntry = (entry: Expression) => setEntryToDelete(entry);
+    const removeEntry = (entry: ExpressionAdminRow) => setEntryToDelete(entry);
 
     const confirmRemoveEntry = () => {
         const entry = entryToDelete;
@@ -272,7 +303,7 @@ export default function AdminExpressionsPage() {
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to delete entry."));
     };
 
-    const toggleVisibility = (entry: Expression) => {
+    const toggleVisibility = (entry: ExpressionAdminRow) => {
         const nextStatus: ExpressionStatus = entry.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
         updateExpression(entry.id, { status: nextStatus })
             .then(() => {
@@ -322,6 +353,18 @@ export default function AdminExpressionsPage() {
         }));
     };
 
+    const applyFilters = (e: React.FormEvent) => {
+        e.preventDefault();
+        setPage(1);
+        setAppliedFilters({ ...draftFilters, search: (draftFilters.search ?? "").trim() });
+    };
+
+    const resetFilters = () => {
+        setDraftFilters(emptyFilters);
+        setAppliedFilters(null);
+        setPage(1);
+    };
+
     const toggleEntrySort = (key: EntrySortKey) => {
         if (sortKey === key) {
             setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -337,12 +380,9 @@ export default function AdminExpressionsPage() {
         return sortDirection === "asc" ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />;
     };
 
-    const entrySearchQuery = entrySearch.trim().toLowerCase();
-    const filteredEntries = entrySearchQuery
-        ? entries.filter((e) => e.expression.toLowerCase().includes(entrySearchQuery))
-        : entries;
+    const filteredEntries = entries;
 
-    const entryValueFor = (e: Expression) => {
+    const entryValueFor = (e: ExpressionAdminRow) => {
         switch (sortKey) {
             case "expression":
                 return e.expression.toLowerCase();
@@ -509,8 +549,31 @@ export default function AdminExpressionsPage() {
                     </div>
                 )}
 
+                {!showForm && (
+                    <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
+                        <button
+                            type="button"
+                            onClick={openNewForm}
+                            className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-medium hover:underline"
+                        >
+                            <Plus className="size-4" />
+                            Add new entry
+                        </button>
+                    </div>
+                )}
+
+                {showForm && (
                 <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
-                    <form onSubmit={submitForm} className="space-y-6">
+                    <form id="expression-form" onSubmit={submitForm} className="space-y-6">
+                        <div className="flex items-center justify-between gap-4 flex-wrap">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                {editingEntry ? "Edit entry" : "New entry"}
+                            </h2>
+                            <Button variant="primary" type="submit" disabled={isSaving}>
+                                {isSaving ? "Saving..." : editingEntry ? "Save changes" : "Save entry"}
+                            </Button>
+                        </div>
+
                         {editingEntry && (
                             <p className="text-sm text-blue-600 dark:text-blue-400">
                                 Editing &quot;{editingEntry.expression}&quot; —{" "}
@@ -944,10 +1007,91 @@ export default function AdminExpressionsPage() {
                         </Button>
                     </form>
                 </div>
+                )}
+
+                <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Find entries</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Entries are only loaded once you search - pick any filters, or leave them empty to list everything.
+                    </p>
+                    <form
+                        onSubmit={applyFilters}
+                        className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_2fr_auto] items-end"
+                    >
+                        <label className="text-sm text-gray-700 dark:text-gray-300">
+                            Type
+                            <select
+                                value={draftFilters.type}
+                                onChange={(e) => setDraftFilters({ ...draftFilters, type: e.target.value })}
+                                className={filterFieldClass}
+                            >
+                                <option value="">All types</option>
+                                {TYPES.map((t) => (
+                                    <option key={t} value={t}>
+                                        {t}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <label className="text-sm text-gray-700 dark:text-gray-300">
+                            Level
+                            <select
+                                value={draftFilters.level}
+                                onChange={(e) => setDraftFilters({ ...draftFilters, level: e.target.value })}
+                                className={filterFieldClass}
+                            >
+                                <option value="">All levels</option>
+                                {LEVELS.map((lvl) => (
+                                    <option key={lvl} value={lvl}>
+                                        {lvl}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <label className="text-sm text-gray-700 dark:text-gray-300">
+                            Status
+                            <select
+                                value={draftFilters.status}
+                                onChange={(e) => setDraftFilters({ ...draftFilters, status: e.target.value })}
+                                className={filterFieldClass}
+                            >
+                                <option value="">Any status</option>
+                                {STATUSES.map((s) => (
+                                    <option key={s} value={s}>
+                                        {s}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <label className="text-sm text-gray-700 dark:text-gray-300">
+                            Expression
+                            <input
+                                type="text"
+                                value={draftFilters.search}
+                                onChange={(e) => setDraftFilters({ ...draftFilters, search: e.target.value })}
+                                placeholder="Search expression or meaning..."
+                                className={filterFieldClass}
+                            />
+                        </label>
+                        <div className="flex gap-2">
+                            <Button variant="primary" type="submit" className="flex items-center gap-2">
+                                <Search className="size-4" />
+                                Search
+                            </Button>
+                            <Button type="button" variant="secondary" onClick={resetFilters}>
+                                Reset
+                            </Button>
+                        </div>
+                    </form>
+                </div>
 
                 <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] overflow-hidden">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white px-6 pt-6">Existing entries</h2>
-                    {isLoading ? (
+                    {appliedFilters === null ? (
+                        <p className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                            Use the filters above and press Search to list entries.
+                        </p>
+                    ) : isLoading ? (
                         <Loading message="Loading entries..." />
                     ) : (
                         <div className="px-6 pb-6">
@@ -971,19 +1115,6 @@ export default function AdminExpressionsPage() {
                                     entries
                                 </label>
 
-                                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                                    Search:
-                                    <input
-                                        type="text"
-                                        value={entrySearch}
-                                        onChange={(e) => {
-                                            setEntrySearch(e.target.value);
-                                            setPage(1);
-                                        }}
-                                        placeholder="Expression..."
-                                        className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                    />
-                                </label>
                             </div>
 
                             <div className="overflow-x-auto">

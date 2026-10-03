@@ -1,5 +1,5 @@
 import api from "./api";
-import { ExamExerciseManualRequest, ExamExerciseResponse, ExamFieldPreset, ExamFieldPresetRequest, ExamSection } from "@/types/exam";
+import { ExamExerciseAdminRow, ExamExerciseManualRequest, ExamExerciseResponse, ExamFieldPreset, ExamFieldPresetRequest, ExamSection } from "@/types/exam";
 
 export const uploadExamPassageImage = async (file: File) => {
     const formData = new FormData();
@@ -17,8 +17,17 @@ export const uploadExamPassageAudio = async (file: File) => {
     });
 };
 
-export const getExamExercisesForAdmin = async () => {
-    return await api.get<ExamExerciseResponse[]>("/admin/exam");
+export interface ExamExerciseFilters {
+    section?: ExamSection;
+    level?: string;
+    taskType?: string;
+    partNumber?: string;
+    published?: string;
+    search?: string;
+}
+
+export const getExamExercisesForAdmin = async (filters: ExamExerciseFilters = {}) => {
+    return await api.get<ExamExerciseAdminRow[]>("/admin/exam", { params: filters });
 };
 
 export const getExamExerciseForAdmin = async (id: string) => {

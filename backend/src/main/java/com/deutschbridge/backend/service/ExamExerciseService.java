@@ -2,6 +2,7 @@ package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.exception.DataNotFoundException;
+import com.deutschbridge.backend.model.dto.ExamExerciseAdminRow;
 import com.deutschbridge.backend.model.dto.ExamExerciseManualRequest;
 import com.deutschbridge.backend.model.dto.ExamExercisePublicResponse;
 import com.deutschbridge.backend.model.dto.ExamExerciseResponse;
@@ -23,11 +24,13 @@ import com.deutschbridge.backend.util.ExamExerciseMapper;
 import com.deutschbridge.backend.util.UploadUrlExtractor;
 import jakarta.transaction.Transactional;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -133,8 +136,40 @@ public class ExamExerciseService {
                 .ifPresent(examExerciseCompletionRepository::delete);
     }
 
-    public List<ExamExerciseResponse> findAllForAdmin() {
-        return examExerciseRepository.findAll().stream().map(ExamExerciseMapper::mapToResponse).toList();
+    /**
+     * Admin list as light rows, narrowed by any of the optional filters (null/blank = no filter;
+     * partNumber matches the effective Teil - Sprachbausteine's Teil follows its task type; search
+     * matches the title). Cached per filter combination, cleared by every exam exercise write.
+     */
+    @Cacheable(cacheNames = "examAdminList", key = "{#section, #level, #taskType, #partNumber, #published, #search}")
+    public List<ExamExerciseAdminRow> findAdminRows(ExamSection section, String level, ExamTaskType taskType,
+                                                    Integer partNumber, Boolean published, String search) {
+        String query = search == null ? "" : search.trim().toLowerCase();
+        return examExerciseRepository.findAll().stream()
+                .filter(e -> section == null || e.getSection() == section)
+                .filter(e -> level == null || level.isBlank() || (e.getLevel() != null && e.getLevel().getValue().equalsIgnoreCase(level)))
+                .filter(e -> taskType == null || e.getTaskType() == taskType)
+                .filter(e -> partNumber == null || partNumber.equals(effectivePartNumber(e)))
+                .filter(e -> published == null || e.isPublished() == published)
+                .filter(e -> query.isEmpty() || (e.getTitle() != null && e.getTitle().toLowerCase().contains(query)))
+                .sorted(Comparator.comparing(ExamExercise::getTitle, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .map(e -> new ExamExerciseAdminRow(
+                        e.getId(),
+                        e.getTitle(),
+                        e.getSection() != null ? e.getSection().name() : null,
+                        e.getTaskType() != null ? e.getTaskType().name() : null,
+                        e.getLevel() != null ? e.getLevel().getValue() : null,
+                        e.getPartNumber(),
+                        e.isPublished(),
+                        e.getQuestions() != null ? e.getQuestions().size() : 0))
+                .toList();
+    }
+
+    private static Integer effectivePartNumber(ExamExercise e) {
+        if (e.getSection() == ExamSection.SPRACHBAUSTEINE && e.getTaskType() != null) {
+            return e.getTaskType() == ExamTaskType.WORD_BANK_CLOZE ? 2 : 1;
+        }
+        return e.getPartNumber();
     }
 
     public ExamExerciseResponse getForAdmin(String id) throws DataNotFoundException {
@@ -143,6 +178,7 @@ public class ExamExerciseService {
 
     @Caching(evict = {
             @CacheEvict(cacheNames = "examExercises", allEntries = true),
+            @CacheEvict(cacheNames = "examAdminList", allEntries = true),
             @CacheEvict(cacheNames = "examLevelSummary", allEntries = true)
     })
     public ExamExerciseResponse createManual(ExamExerciseManualRequest request) {
@@ -154,6 +190,7 @@ public class ExamExerciseService {
 
     @Caching(evict = {
             @CacheEvict(cacheNames = "examExercises", allEntries = true),
+            @CacheEvict(cacheNames = "examAdminList", allEntries = true),
             @CacheEvict(cacheNames = "examLevelSummary", allEntries = true)
     })
     public ExamExerciseResponse update(String id, ExamExerciseManualRequest request) throws DataNotFoundException {
@@ -210,6 +247,7 @@ public class ExamExerciseService {
     @Transactional
     @Caching(evict = {
             @CacheEvict(cacheNames = "examExercises", allEntries = true),
+            @CacheEvict(cacheNames = "examAdminList", allEntries = true),
             @CacheEvict(cacheNames = "examLevelSummary", allEntries = true)
     })
     public void delete(String id) throws DataNotFoundException {

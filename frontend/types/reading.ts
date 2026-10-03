@@ -68,6 +68,18 @@ export interface ArticleToken {
     isWord: boolean;
 }
 
+/** Admin list row - no content/annotations/quiz; fetch the article by id to edit it. */
+export interface ReadingArticleAdminRow {
+    id: string;
+    title: string;
+    level: string;
+    categoryId: string | null;
+    categoryTitle: string | null;
+    imageUrl: string | null;
+    vocabularyCount: number;
+    annotationCount: number;
+}
+
 export interface ReadingArticle {
     id: string;
     title: string;

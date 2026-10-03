@@ -1,7 +1,10 @@
 package com.deutschbridge.backend.controller;
 
 import com.deutschbridge.backend.exception.DataNotFoundException;
+import com.deutschbridge.backend.model.dto.ExamExerciseAdminRow;
 import com.deutschbridge.backend.model.dto.ExamExerciseManualRequest;
+import com.deutschbridge.backend.model.enums.ExamSection;
+import com.deutschbridge.backend.model.enums.ExamTaskType;
 import com.deutschbridge.backend.model.dto.ExamExerciseResponse;
 import com.deutschbridge.backend.model.dto.ImageUploadResponse;
 import com.deutschbridge.backend.service.ExamExerciseService;
@@ -37,8 +40,15 @@ public class AdminExamController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ExamExerciseResponse>> getAll() {
-        return ResponseEntity.ok(examExerciseService.findAllForAdmin());
+    public ResponseEntity<List<ExamExerciseAdminRow>> getAll(
+            @RequestParam(required = false) ExamSection section,
+            @RequestParam(required = false) String level,
+            @RequestParam(required = false) ExamTaskType taskType,
+            @RequestParam(required = false) Integer partNumber,
+            @RequestParam(required = false) Boolean published,
+            @RequestParam(required = false) String search
+    ) {
+        return ResponseEntity.ok(examExerciseService.findAdminRows(section, level, taskType, partNumber, published, search));
     }
 
     @GetMapping("/{id}")

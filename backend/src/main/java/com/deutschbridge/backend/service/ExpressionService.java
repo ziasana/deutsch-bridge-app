@@ -13,6 +13,7 @@ import com.deutschbridge.backend.model.dto.ExpressionPageResponse;
 import com.deutschbridge.backend.model.dto.ExpressionPatternRequest;
 import com.deutschbridge.backend.model.dto.ExpressionQuestionOptionRequest;
 import com.deutschbridge.backend.model.dto.ExpressionQuestionRequest;
+import com.deutschbridge.backend.model.dto.ExpressionAdminRow;
 import com.deutschbridge.backend.model.dto.ExpressionResponse;
 import com.deutschbridge.backend.model.entity.Expression;
 import com.deutschbridge.backend.model.entity.ExpressionBookmark;
@@ -38,6 +39,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -45,6 +48,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -229,9 +233,29 @@ public class ExpressionService {
         return mapWithCurrentUserProgress(List.of(expression)).get(0);
     }
 
-    public List<ExpressionResponse> findAllForAdmin() {
+    /**
+     * Admin-only: entries regardless of status as light rows for the management list, narrowed by any
+     * of the optional filters (blank/null = no filter; search matches expression or German meaning).
+     * Cached per filter combination and cleared by every expression write.
+     */
+    @Cacheable(cacheNames = "expressionAdminList", key = "{#type, #level, #status, #search}")
+    public List<ExpressionAdminRow> findAdminRows(String type, String level, String status, String search) {
+        String query = search == null ? "" : search.trim().toLowerCase();
         return expressionRepository.findAll().stream()
-                .map(ExpressionMapper::mapToAdminResponse)
+                .filter(e -> type == null || type.isBlank() || (e.getType() != null && e.getType().name().equalsIgnoreCase(type)))
+                .filter(e -> level == null || level.isBlank() || (e.getLevel() != null && e.getLevel().getValue().equalsIgnoreCase(level)))
+                .filter(e -> status == null || status.isBlank() || (e.getStatus() != null && e.getStatus().name().equalsIgnoreCase(status)))
+                .filter(e -> query.isEmpty()
+                        || (e.getExpression() != null && e.getExpression().toLowerCase().contains(query))
+                        || (e.getMeaningDe() != null && e.getMeaningDe().toLowerCase().contains(query)))
+                .sorted(Comparator.comparing(Expression::getExpression, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .map(e -> new ExpressionAdminRow(
+                        e.getId(),
+                        e.getExpression(),
+                        e.getType() != null ? e.getType().name() : null,
+                        e.getLevel() != null ? e.getLevel().getValue() : null,
+                        e.getStatus() != null ? e.getStatus().name() : null,
+                        e.getMeaningDe()))
                 .toList();
     }
 
@@ -239,7 +263,10 @@ public class ExpressionService {
         return ExpressionMapper.mapToAdminResponse(findEntityById(id));
     }
 
-    @CacheEvict(cacheNames = "expressionCollectionSummary", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "expressionCollectionSummary", allEntries = true),
+            @CacheEvict(cacheNames = "expressionAdminList", allEntries = true)
+    })
     public ExpressionResponse createManual(ExpressionManualRequest request) {
         Expression expression = new Expression();
         applyRequest(expression, request);
@@ -255,7 +282,10 @@ public class ExpressionService {
      * single unparseable row surfaces as one failed row instead of rejecting the whole request at
      * the HTTP deserialization layer.
      */
-    @CacheEvict(cacheNames = "expressionCollectionSummary", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "expressionCollectionSummary", allEntries = true),
+            @CacheEvict(cacheNames = "expressionAdminList", allEntries = true)
+    })
     public ExpressionBulkImportResult bulkImport(List<JsonNode> rows) {
         List<ExpressionBulkImportRowResult> results = new ArrayList<>();
         Set<ExpressionType> affectedTypes = new HashSet<>();
@@ -322,7 +352,10 @@ public class ExpressionService {
         return !sb.isEmpty() ? sb.toString() : "a field";
     }
 
-    @CacheEvict(cacheNames = "expressionCollectionSummary", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "expressionCollectionSummary", allEntries = true),
+            @CacheEvict(cacheNames = "expressionAdminList", allEntries = true)
+    })
     public ExpressionResponse updateManual(String id, ExpressionManualRequest request) throws DataNotFoundException {
         Expression existing = findEntityById(id);
         String previousImageUrl = existing.getImageUrl();
@@ -349,7 +382,10 @@ public class ExpressionService {
         return response;
     }
 
-    @CacheEvict(cacheNames = "expressionCollectionSummary", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "expressionCollectionSummary", allEntries = true),
+            @CacheEvict(cacheNames = "expressionAdminList", allEntries = true)
+    })
     public void deleteById(String id) throws DataNotFoundException {
         Expression existing = findEntityById(id);
         fileStorageService.deleteFile(existing.getImageUrl());

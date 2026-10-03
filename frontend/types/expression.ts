@@ -79,6 +79,16 @@ export interface ExpressionProgress {
   nextReviewAt: string | null;
 }
 
+/** Admin list row - no examples/patterns/questions; fetch the entry by id to edit it. */
+export interface ExpressionAdminRow {
+    id: string;
+    expression: string;
+    type: ExpressionType;
+    level: string;
+    status: ExpressionStatus;
+    meaningDe: string | null;
+}
+
 export interface Expression {
   id: string;
   type: ExpressionType;

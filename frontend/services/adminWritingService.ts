@@ -1,15 +1,30 @@
 import api from "./api";
-import { AdminWritingGuideItem, AdminWritingPhrase } from "@/types/writing";
+import { AdminWritingGuideItem, AdminWritingGuideItemRow, AdminWritingPhrase, AdminWritingPhraseRow } from "@/types/writing";
 import { AdminRedemittelExercise, AdminRedemittelFunction, RedemittelBulkImportResult } from "@/types/redemittel";
 
-export const getAdminWritingGuideItems = (level: string) =>
-    api.get<AdminWritingGuideItem[]>("/admin/writing/guide-items", { params: { level } });
+export interface AdminGuideItemFilters {
+    level?: string;
+    kind?: string;
+    active?: string;
+    search?: string;
+}
+export const getAdminWritingGuideItems = (filters: AdminGuideItemFilters = {}) =>
+    api.get<AdminWritingGuideItemRow[]>("/admin/writing/guide-items", { params: filters });
+export const getAdminWritingGuideItem = (id: string) => api.get<AdminWritingGuideItem>(`/admin/writing/guide-items/${id}`);
 export const createAdminWritingGuideItem = (item: AdminWritingGuideItem) => api.post<AdminWritingGuideItem>("/admin/writing/guide-items", item);
 export const updateAdminWritingGuideItem = (id: string, item: AdminWritingGuideItem) =>
     api.put<AdminWritingGuideItem>(`/admin/writing/guide-items/${id}`, item);
 export const deleteAdminWritingGuideItem = (id: string) => api.delete(`/admin/writing/guide-items/${id}`);
 
-export const getAdminWritingPhrases = (level: string) => api.get<AdminWritingPhrase[]>("/admin/writing/phrases", { params: { level } });
+export interface AdminPhraseFilters {
+    level?: string;
+    category?: string;
+    active?: string;
+    search?: string;
+}
+export const getAdminWritingPhrases = (filters: AdminPhraseFilters = {}) =>
+    api.get<AdminWritingPhraseRow[]>("/admin/writing/phrases", { params: filters });
+export const getAdminWritingPhrase = (id: string) => api.get<AdminWritingPhrase>(`/admin/writing/phrases/${id}`);
 export const createAdminWritingPhrase = (p: AdminWritingPhrase) => api.post<AdminWritingPhrase>("/admin/writing/phrases", p);
 export const updateAdminWritingPhrase = (id: string, p: AdminWritingPhrase) => api.put<AdminWritingPhrase>(`/admin/writing/phrases/${id}`, p);
 export const deleteAdminWritingPhrase = (id: string) => api.delete(`/admin/writing/phrases/${id}`);

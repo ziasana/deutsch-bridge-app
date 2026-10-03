@@ -24,7 +24,7 @@ const emptyExercise = (type: AuthoredExerciseType, sortOrder: number): AdminRede
 const errorMessage = (err: unknown, fallback: string) => (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
 
 /** Editor for the practice exercises of one Redemittel; the whole set is saved at once. */
-export default function RedemittelExerciseEditor({ phraseId, level }: Readonly<{ phraseId: string; level: string }>) {
+export default function RedemittelExerciseEditor({ phraseId }: Readonly<{ phraseId: string }>) {
     const queryClient = useQueryClient();
     const { data, isLoading } = useQuery({
         queryKey: ["admin", "writing", "exercises", phraseId],
@@ -43,7 +43,7 @@ export default function RedemittelExerciseEditor({ phraseId, level }: Readonly<{
         try {
             const saved = await saveAdminRedemittelExercises(phraseId, items.map((e, i) => ({ ...e, sortOrder: i }))).then((r) => r.data);
             queryClient.setQueryData(["admin", "writing", "exercises", phraseId], saved);
-            await queryClient.invalidateQueries({ queryKey: ["admin", "writing", "exercise-counts", level] });
+            await queryClient.invalidateQueries({ queryKey: ["admin", "writing", "phrases"] });
             setDraft(null);
             toast.success("Übungen gespeichert.");
         } catch (err) {

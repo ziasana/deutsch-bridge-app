@@ -1,8 +1,19 @@
 import api from "./api";
-import { Expression, ExpressionBulkImportResult, ExpressionManualRequest } from "@/types/expression";
+import { Expression, ExpressionAdminRow, ExpressionBulkImportResult, ExpressionManualRequest } from "@/types/expression";
 
-export const getExpressionsAdmin = async () => {
-  return await api.get<Expression[]>("/admin/expressions");
+export interface ExpressionFilters {
+  type?: string;
+  level?: string;
+  status?: string;
+  search?: string;
+}
+
+export const getExpressionsAdmin = async (filters: ExpressionFilters = {}) => {
+  return await api.get<ExpressionAdminRow[]>("/admin/expressions", { params: filters });
+};
+
+export const getExpressionAdmin = async (id: string) => {
+  return await api.get<Expression>(`/admin/expressions/${id}`);
 };
 
 export const createExpression = async (request: ExpressionManualRequest) => {

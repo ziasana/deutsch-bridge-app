@@ -8,16 +8,19 @@ import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
 import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
-import AdminTableControls from "@/componenets/admin/table/AdminTableControls";
+import AdminFilterCard, { adminFilterFieldClass } from "@/componenets/admin/AdminFilterCard";
+import AdminAddNewCard from "@/componenets/admin/AdminAddNewCard";
 import AdminTablePagination from "@/componenets/admin/table/AdminTablePagination";
 import SortableTh from "@/componenets/admin/table/SortableTh";
 import {
     createAdminWritingGuideItem,
     deleteAdminWritingGuideItem,
     getAdminWritingGuideItems,
+    getAdminWritingGuideItem,
+    AdminGuideItemFilters,
     updateAdminWritingGuideItem,
 } from "@/services/adminWritingService";
-import { AdminWritingGuideItem, WritingGuideKind } from "@/types/writing";
+import { AdminWritingGuideItem, AdminWritingGuideItemRow, WritingGuideKind } from "@/types/writing";
 import { WRITING_LEVELS } from "@/componenets/exam/writing/writingMeta";
 
 const LEVELS = ["A1", ...WRITING_LEVELS] as string[];
@@ -48,8 +51,7 @@ const cardClass =
 const labelClass = "block text-gray-700 dark:text-gray-300 mb-2 text-sm";
 const fieldClass =
     "w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none";
-const filterSelectClass =
-    "rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none";
+const emptyFilters: AdminGuideItemFilters = { level: "", kind: "", active: "", search: "" };
 
 type SortKey = "title" | "kind" | "sortOrder" | "active";
 type SortDirection = "asc" | "desc";
@@ -61,43 +63,76 @@ const errorMessage = (err: unknown, fallback: string) => (err as { response?: { 
 /** Admin screen for "Schreiben lernen": the guide items (format, strategy, structure, examples, patterns, mistakes, checklist) per level. */
 export default function WritingContentManager() {
     const queryClient = useQueryClient();
-    const [level, setLevel] = useState("B1");
-    const key = ["admin", "writing", "items", level];
+    const ITEMS_KEY = ["admin", "writing", "items"] as const;
 
-    const { data: items = [], isLoading } = useQuery({ queryKey: key, queryFn: () => getAdminWritingGuideItems(level).then((r) => r.data) });
+    // Nothing is fetched until the admin applies a filter (or searches with none set, to list everything).
+    // Each distinct filter combination is cached under its own key, so flipping between them is instant.
+    const [draftFilters, setDraftFilters] = useState<AdminGuideItemFilters>(emptyFilters);
+    const [appliedFilters, setAppliedFilters] = useState<AdminGuideItemFilters | null>(null);
 
-    const [form, setForm] = useState<AdminWritingGuideItem>(emptyItem(level));
+    const { data: items = [], isLoading } = useQuery({
+        queryKey: [...ITEMS_KEY, appliedFilters],
+        queryFn: () => getAdminWritingGuideItems(appliedFilters ?? {}).then((r) => r.data),
+        enabled: appliedFilters !== null,
+    });
+
+    const [form, setForm] = useState<AdminWritingGuideItem>(emptyItem("B1"));
+    // The form stays collapsed until the admin clicks "Add new entry" or edits a row.
+    const [showForm, setShowForm] = useState(false);
     const [dataText, setDataText] = useState("");
     const [saving, setSaving] = useState(false);
-    const [itemToDelete, setItemToDelete] = useState<AdminWritingGuideItem | null>(null);
-    const [kindFilter, setKindFilter] = useState<WritingGuideKind | "">("");
+    const [itemToDelete, setItemToDelete] = useState<AdminWritingGuideItemRow | null>(null);
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
-    const [search, setSearch] = useState("");
     const [sortKey, setSortKey] = useState<SortKey>("kind");
     const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
     const refresh = async () => {
-        await queryClient.invalidateQueries({ queryKey: key });
-        await queryClient.invalidateQueries({ queryKey: ["writing", "learn", level] });
+        await queryClient.invalidateQueries({ queryKey: ITEMS_KEY });
+        await queryClient.invalidateQueries({ queryKey: ["writing", "learn"] });
     };
 
     const reset = () => {
-        setForm(emptyItem(level));
+        setForm(emptyItem(form.level));
         setDataText("");
+        setShowForm(false);
     };
 
-    const changeLevel = (next: string) => {
-        setLevel(next);
-        setForm(emptyItem(next));
+    const openNewForm = () => {
+        setForm(emptyItem(form.level));
         setDataText("");
+        setShowForm(true);
+    };
+
+    const applyFilters = (e: React.FormEvent) => {
+        e.preventDefault();
+        setPage(1);
+        setAppliedFilters({ ...draftFilters, search: (draftFilters.search ?? "").trim() });
+    };
+
+    const resetFilters = () => {
+        setDraftFilters(emptyFilters);
+        setAppliedFilters(null);
         setPage(1);
     };
 
-    const startEdit = (item: AdminWritingGuideItem) => {
-        setForm(item);
-        setDataText(item.data ? JSON.stringify(item.data, null, 2) : "");
-        window.scrollTo({ top: 0, behavior: "smooth" });
+    const loadItem = (row: AdminWritingGuideItemRow) =>
+        queryClient.fetchQuery({
+            queryKey: [...ITEMS_KEY, "detail", row.id],
+            queryFn: () => getAdminWritingGuideItem(row.id).then((r) => r.data),
+            staleTime: 0,
+        });
+
+    const startEdit = async (row: AdminWritingGuideItemRow) => {
+        try {
+            const item = await loadItem(row);
+            setForm(item);
+            setDataText(item.data ? JSON.stringify(item.data, null, 2) : "");
+            setShowForm(true);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch (err) {
+            toast.error(errorMessage(err, "Failed to load the entry."));
+        }
     };
 
     const save = async (e: React.FormEvent) => {
@@ -113,7 +148,7 @@ export default function WritingContentManager() {
         }
         setSaving(true);
         try {
-            const payload = { ...form, level, data };
+            const payload = { ...form, data };
             if (form.id) await updateAdminWritingGuideItem(form.id, payload);
             else await createAdminWritingGuideItem(payload);
             toast.success(form.id ? "Entry updated." : "Entry saved.");
@@ -126,9 +161,10 @@ export default function WritingContentManager() {
         }
     };
 
-    const toggleActive = async (item: AdminWritingGuideItem) => {
+    const toggleActive = async (row: AdminWritingGuideItemRow) => {
         try {
-            await updateAdminWritingGuideItem(item.id!, { ...item, active: !item.active });
+            const item = await loadItem(row);
+            await updateAdminWritingGuideItem(row.id, { ...item, active: !item.active });
             toast.success(item.active ? "Entry hidden from students." : "Entry shown to students.");
             await refresh();
         } catch (err) {
@@ -138,7 +174,7 @@ export default function WritingContentManager() {
 
     const confirmRemove = async () => {
         const item = itemToDelete;
-        if (!item?.id) return;
+        if (!item) return;
         setItemToDelete(null);
         try {
             await deleteAdminWritingGuideItem(item.id);
@@ -159,11 +195,8 @@ export default function WritingContentManager() {
         setPage(1);
     };
 
-    const query = search.trim().toLowerCase();
-    const filtered = items
-        .filter((i) => !kindFilter || i.kind === kindFilter)
-        .filter((i) => !query || i.title.toLowerCase().includes(query));
-    const valueFor = (i: AdminWritingGuideItem): string | number => {
+    const filtered = items;
+    const valueFor = (i: AdminWritingGuideItemRow): string | number => {
         switch (sortKey) {
             case "title": return i.title.toLowerCase();
             case "kind": return KIND_LABELS[i.kind];
@@ -196,26 +229,31 @@ export default function WritingContentManager() {
                     </p>
                 </div>
 
-                <div className={`${cardClass} mt-6 p-6`}>
-                    <div className="max-w-xs">
-                        <label className={labelClass}>Level</label>
-                        <select className={fieldClass} value={level} onChange={(e) => changeLevel(e.target.value)} aria-label="Niveau">
-                            {LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
-                        </select>
-                    </div>
-                </div>
+                {!showForm && <AdminAddNewCard label="Add new entry" onClick={openNewForm} />}
 
+                {showForm && (
                 <form onSubmit={save} className={`${cardClass} mt-8 p-6 space-y-6`}>
-                    {form.id && (
-                        <p className="text-sm text-blue-600 dark:text-blue-400">
-                            Editing &quot;{form.title}&quot; —{" "}
-                            <button type="button" className="underline" onClick={reset}>
-                                cancel
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{form.id ? "Edit entry" : "New entry"}</h2>
+                        <div className="flex items-center gap-3">
+                            <button type="button" className="text-sm text-gray-500 dark:text-gray-400 underline" onClick={reset}>
+                                Cancel
                             </button>
-                        </p>
+                            <Button type="submit" disabled={saving}>{saving ? "Saving..." : form.id ? "Save changes" : "Save entry"}</Button>
+                        </div>
+                    </div>
+
+                    {form.id && (
+                        <p className="text-sm text-blue-600 dark:text-blue-400">Editing &quot;{form.title}&quot;</p>
                     )}
 
                     <div className="flex gap-4 flex-wrap">
+                        <div className="flex-1 min-w-[120px]">
+                            <label className={labelClass}>Level</label>
+                            <select className={fieldClass} value={form.level} onChange={(e) => setForm({ ...form, level: e.target.value })} aria-label="Niveau">
+                                {LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
+                            </select>
+                        </div>
                         <div className="flex-1 min-w-[220px]">
                             <label className={labelClass}>Art</label>
                             <select
@@ -260,37 +298,68 @@ export default function WritingContentManager() {
                     <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                         <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} /> Aktiv (für Lernende sichtbar)
                     </label>
-                    <Button type="submit" disabled={saving}>{saving ? "Saving..." : form.id ? "Save changes" : "Save entry"}</Button>
                 </form>
+                )}
+
+                <AdminFilterCard title="Find entries" noun="Entries" onSubmit={applyFilters} onReset={resetFilters}>
+                    <label className="text-sm text-gray-700 dark:text-gray-300">
+                        Level
+                        <select className={adminFilterFieldClass} value={draftFilters.level} onChange={(e) => setDraftFilters({ ...draftFilters, level: e.target.value })}>
+                            <option value="">All levels</option>
+                            {LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
+                        </select>
+                    </label>
+                    <label className="text-sm text-gray-700 dark:text-gray-300">
+                        Art
+                        <select className={adminFilterFieldClass} value={draftFilters.kind} onChange={(e) => setDraftFilters({ ...draftFilters, kind: e.target.value })}>
+                            <option value="">Alle</option>
+                            {(Object.keys(KIND_LABELS) as WritingGuideKind[]).map((k) => (
+                                <option key={k} value={k}>{KIND_LABELS[k]}</option>
+                            ))}
+                        </select>
+                    </label>
+                    <label className="text-sm text-gray-700 dark:text-gray-300">
+                        Status
+                        <select className={adminFilterFieldClass} value={draftFilters.active} onChange={(e) => setDraftFilters({ ...draftFilters, active: e.target.value })}>
+                            <option value="">Any status</option>
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
+                        </select>
+                    </label>
+                    <label className="text-sm text-gray-700 dark:text-gray-300 !flex-[2] !min-w-[220px]">
+                        Titel
+                        <input
+                            type="text"
+                            value={draftFilters.search}
+                            onChange={(e) => setDraftFilters({ ...draftFilters, search: e.target.value })}
+                            placeholder="Search by title..."
+                            className={adminFilterFieldClass}
+                        />
+                    </label>
+                </AdminFilterCard>
 
                 <div className={`${cardClass} mt-8 overflow-hidden`}>
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white px-6 pt-6">Existing entries ({level})</h2>
-                    {isLoading ? (
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white px-6 pt-6">Existing entries</h2>
+                    {appliedFilters === null ? (
+                        <p className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                            Use the filters above and press Search to list entries.
+                        </p>
+                    ) : isLoading ? (
                         <Loading message="Loading entries..." />
                     ) : (
                         <div className="px-6 pb-6">
-                            <div className="mt-4 mb-3 space-y-3">
+                            <div className="mt-4 mb-3">
                                 <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                                    Art
+                                    Show
                                     <select
-                                        className={filterSelectClass}
-                                        value={kindFilter}
-                                        onChange={(e) => { setKindFilter(e.target.value as WritingGuideKind | ""); setPage(1); }}
-                                        aria-label="Art filtern"
+                                        value={pageSize}
+                                        onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                                        className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     >
-                                        <option value="">Alle</option>
-                                        {(Object.keys(KIND_LABELS) as WritingGuideKind[]).map((k) => (
-                                            <option key={k} value={k}>{KIND_LABELS[k]}</option>
-                                        ))}
+                                        {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
                                     </select>
+                                    entries
                                 </label>
-                                <AdminTableControls
-                                    pageSize={pageSize}
-                                    onPageSizeChange={(n) => { setPageSize(n); setPage(1); }}
-                                    search={search}
-                                    onSearchChange={(v) => { setSearch(v); setPage(1); }}
-                                    searchPlaceholder="Titel..."
-                                />
                             </div>
 
                             <div className="overflow-x-auto">

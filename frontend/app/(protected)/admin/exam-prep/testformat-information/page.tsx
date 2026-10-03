@@ -7,18 +7,20 @@ import { toast } from "@/lib/toast";
 import useAuthStore from "@/store/useAuthStore";
 import {
     getExamExercisesForAdmin,
+    getExamExerciseForAdmin,
     createExamExercise,
     updateExamExercise,
     deleteExamExercise,
     uploadExamPassageImage,
 } from "@/services/adminExamService";
-import { ExamExerciseResponse } from "@/types/exam";
+import { ExamExerciseAdminRow, ExamExerciseResponse } from "@/types/exam";
 import Button from "@/componenets/Button";
 import Loading from "@/componenets/Loading";
 import RichTextEditor from "@/componenets/RichTextEditor";
 import { uploadEmbeddedRichTextImages } from "@/lib/richTextImages";
 import { Badge } from "@/componenets/ui/badge";
 import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
+import AdminAddNewCard from "@/componenets/admin/AdminAddNewCard";
 
 const TITLE = "Testformat Information";
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
@@ -37,23 +39,24 @@ export default function AdminExamTestformatInformationPage() {
     const { userProfile, hasHydrated } = useAuthStore();
     const queryClient = useQueryClient();
 
-    // Shared across every exam-prep page: the admin endpoint returns all sections in one list.
-    const EXERCISES_KEY = ["admin", "exam", "exercises"];
+    const EXERCISES_KEY = ["admin", "exam", "exercises"] as const;
 
-    const { data: allExercises = [], isLoading, error: exercisesError } = useQuery({
-        queryKey: EXERCISES_KEY,
-        queryFn: () => getExamExercisesForAdmin().then((res) => res.data),
+    // At most one row per level (six in all), and the form needs the full set to know which levels are
+    // still free - so unlike the other exam-prep lists this one loads on open (cached on the backend).
+    const { data: allEntries = [], isLoading, error: exercisesError } = useQuery({
+        queryKey: [...EXERCISES_KEY, "TESTFORMAT_INFORMATION"],
+        queryFn: () => getExamExercisesForAdmin({ section: "TESTFORMAT_INFORMATION" }).then((res) => res.data),
         enabled: hasHydrated && userProfile?.role === "ADMIN",
     });
-    const entries = allExercises
-        .filter((e) => e.section === "TESTFORMAT_INFORMATION")
-        .sort((a, b) => (a.level ?? "").localeCompare(b.level ?? ""));
+    const entries = allEntries.slice().sort((a, b) => (a.level ?? "").localeCompare(b.level ?? ""));
 
     const [isSaving, setIsSaving] = useState(false);
-    const [exerciseToDelete, setExerciseToDelete] = useState<ExamExerciseResponse | null>(null);
+    const [exerciseToDelete, setExerciseToDelete] = useState<ExamExerciseAdminRow | null>(null);
 
     const [form, setForm] = useState(makeEmptyForm);
     const [editingExercise, setEditingExercise] = useState<ExamExerciseResponse | null>(null);
+    // The form stays collapsed until the admin clicks "Add new content" or edits a row.
+    const [showForm, setShowForm] = useState(false);
 
     const invalidateExercises = () => queryClient.invalidateQueries({ queryKey: EXERCISES_KEY });
 
@@ -79,10 +82,28 @@ export default function AdminExamTestformatInformationPage() {
     const resetForm = () => {
         setForm({ ...makeEmptyForm(), level: availableLevelsForNew[0] ?? "" });
         setEditingExercise(null);
+        setShowForm(false);
     };
 
-    const startEdit = (exercise: ExamExerciseResponse) => {
+    const openNewForm = () => {
+        resetForm();
+        setShowForm(true);
+    };
+
+    const startEdit = async (row: ExamExerciseAdminRow) => {
+        let exercise: ExamExerciseResponse;
+        try {
+            exercise = await queryClient.fetchQuery({
+                queryKey: [...EXERCISES_KEY, "detail", row.id],
+                queryFn: () => getExamExerciseForAdmin(row.id).then((res) => res.data),
+                staleTime: 0,
+            });
+        } catch (err) {
+            toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to load the content.");
+            return;
+        }
         setEditingExercise(exercise);
+        setShowForm(true);
         setForm({
             level: exercise.level ?? "",
             content: exercise.passages[0]?.content ?? "",
@@ -153,7 +174,7 @@ export default function AdminExamTestformatInformationPage() {
             .finally(() => setIsSaving(false));
     };
 
-    const removeExercise = (exercise: ExamExerciseResponse) => setExerciseToDelete(exercise);
+    const removeExercise = (exercise: ExamExerciseAdminRow) => setExerciseToDelete(exercise);
 
     const confirmRemoveExercise = () => {
         const exercise = exerciseToDelete;
@@ -177,17 +198,33 @@ export default function AdminExamTestformatInformationPage() {
                     practicing.
                 </p>
 
+                {!showForm && <AdminAddNewCard label="Add new content" onClick={openNewForm} />}
+
+                {showForm && (
                 <form
                     onSubmit={submit}
                     className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6 space-y-6"
                 >
-                    {editingExercise && (
-                        <p className="text-sm text-blue-600 dark:text-blue-400">
-                            Editing &quot;{editingExercise.level}&quot; —{" "}
-                            <button type="button" className="underline" onClick={resetForm}>
-                                cancel
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            {editingExercise ? "Edit content" : "New content"}
+                        </h2>
+                        <div className="flex items-center gap-3">
+                            <button type="button" className="text-sm text-gray-500 dark:text-gray-400 underline" onClick={resetForm}>
+                                Cancel
                             </button>
-                        </p>
+                            <Button
+                                variant="primary"
+                                type="submit"
+                                disabled={isSaving || (!editingExercise && availableLevelsForNew.length === 0)}
+                            >
+                                {isSaving ? "Saving..." : editingExercise ? "Save changes" : "Save content"}
+                            </Button>
+                        </div>
+                    </div>
+
+                    {editingExercise && (
+                        <p className="text-sm text-blue-600 dark:text-blue-400">Editing &quot;{editingExercise.level}&quot;</p>
                     )}
 
                     <div className="flex gap-4 flex-wrap">
@@ -230,14 +267,8 @@ export default function AdminExamTestformatInformationPage() {
                         />
                     </div>
 
-                    <Button
-                        variant="primary"
-                        type="submit"
-                        disabled={isSaving || (!editingExercise && availableLevelsForNew.length === 0)}
-                    >
-                        {isSaving ? "Saving..." : editingExercise ? "Save changes" : "Save content"}
-                    </Button>
                 </form>
+                )}
 
                 <div className="mt-8 bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] overflow-hidden">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white px-6 pt-6 pb-4">

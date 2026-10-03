@@ -26,10 +26,10 @@ public class CacheConfig {
     public CacheManager cacheManager() {
         CaffeineCacheManager cacheManager = new CaffeineCacheManager(
                 "grammarLessons", "grammarLevelContent", "grammarLessonDetail", "grammarCategoryDetail",
-                "grammarLevelSummary", "grammarAdminList", "examExercises", "examLevelSummary", "readingArticles",
+                "grammarLevelSummary", "grammarAdminList", "examExercises", "examAdminList", "writingGuideAdminList", "examLevelSummary", "readingArticles",
                 "readingArticleList", "readingArticleDetail", "readingLevelSummary",
-                "expressionCollectionSummary", "expressionListPage", "expressionDetail",
-                "redemittelPhrase", "redemittelListPage", "redemittelHubContent", "redemittelExercises", "redemittelFunctionLabels");
+                "expressionCollectionSummary", "expressionAdminList", "expressionListPage", "expressionDetail",
+                "redemittelPhrase", "redemittelAdminList", "redemittelListPage", "redemittelHubContent", "redemittelExercises", "redemittelFunctionLabels");
         cacheManager.setCaffeine(Caffeine.newBuilder()
                 .maximumSize(500)
                 .expireAfterWrite(30, TimeUnit.MINUTES));

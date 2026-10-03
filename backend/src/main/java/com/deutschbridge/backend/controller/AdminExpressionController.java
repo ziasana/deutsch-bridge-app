@@ -3,6 +3,7 @@ package com.deutschbridge.backend.controller;
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.ExpressionBulkImportResult;
 import com.deutschbridge.backend.model.dto.ExpressionManualRequest;
+import com.deutschbridge.backend.model.dto.ExpressionAdminRow;
 import com.deutschbridge.backend.model.dto.ExpressionResponse;
 import com.deutschbridge.backend.model.dto.ImageUploadResponse;
 import com.deutschbridge.backend.service.ExpressionService;
@@ -29,8 +30,13 @@ public class AdminExpressionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ExpressionResponse>> getAll() {
-        return ResponseEntity.ok(expressionService.findAllForAdmin());
+    public ResponseEntity<List<ExpressionAdminRow>> getAll(
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String level,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search
+    ) {
+        return ResponseEntity.ok(expressionService.findAdminRows(type, level, status, search));
     }
 
     @PostMapping(value = "/upload-image", consumes = "multipart/form-data")
