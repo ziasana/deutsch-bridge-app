@@ -1,6 +1,7 @@
 package com.deutschbridge.backend.controller;
 
 import com.deutschbridge.backend.exception.DataNotFoundException;
+import com.deutschbridge.backend.model.dto.GrammarLessonAdminRow;
 import com.deutschbridge.backend.model.dto.GrammarLessonManualRequest;
 import com.deutschbridge.backend.model.dto.GrammarLessonResponse;
 import com.deutschbridge.backend.model.dto.ImageUploadResponse;
@@ -27,8 +28,13 @@ public class AdminGrammarController {
     }
 
     @GetMapping
-    public ResponseEntity<List<GrammarLessonResponse>> getAll() {
-        return ResponseEntity.ok(grammarService.findAllForAdmin());
+    public ResponseEntity<List<GrammarLessonAdminRow>> getAll(
+            @RequestParam(required = false) String level,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String categoryId,
+            @RequestParam(required = false) String search
+    ) {
+        return ResponseEntity.ok(grammarService.findAdminRows(level, status, categoryId, search));
     }
 
     @GetMapping("/{id}")

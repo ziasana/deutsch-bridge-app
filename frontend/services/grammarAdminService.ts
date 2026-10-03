@@ -1,8 +1,19 @@
 import api from "./api";
-import { GrammarCategory, GrammarCategoryManualRequest, GrammarLesson, GrammarLessonManualRequest } from "@/types/grammar";
+import { GrammarCategory, GrammarCategoryManualRequest, GrammarLesson, GrammarLessonAdminRow, GrammarLessonManualRequest } from "@/types/grammar";
 
-export const getGrammarLessonsAdmin = async () => {
-    return await api.get<GrammarLesson[]>("/admin/grammar");
+export interface GrammarLessonFilters {
+    level?: string;
+    status?: string;
+    categoryId?: string;
+    search?: string;
+}
+
+export const getGrammarLessonsAdmin = async (filters: GrammarLessonFilters = {}) => {
+    return await api.get<GrammarLessonAdminRow[]>("/admin/grammar", { params: filters });
+};
+
+export const getGrammarLessonAdmin = async (id: string) => {
+    return await api.get<GrammarLesson>(`/admin/grammar/${id}`);
 };
 
 export const uploadGrammarLessonImage = async (file: File) => {

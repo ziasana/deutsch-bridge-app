@@ -2,6 +2,7 @@ package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.exception.DataNotFoundException;
+import com.deutschbridge.backend.model.dto.GrammarLessonAdminRow;
 import com.deutschbridge.backend.model.dto.GrammarLessonManualRequest;
 import com.deutschbridge.backend.model.dto.GrammarLessonResponse;
 import com.deutschbridge.backend.model.dto.GrammarLevelSummaryResponse;
@@ -20,6 +21,7 @@ import com.deutschbridge.backend.service.cache.EvictGrammarCaches;
 import com.deutschbridge.backend.service.cache.GrammarProgressCacheService;
 import com.deutschbridge.backend.util.GrammarLessonMapper;
 import jakarta.transaction.Transactional;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -72,16 +74,41 @@ public class GrammarService {
         return grammarRepository.findAll();
     }
 
-    /** Admin-only: every lesson regardless of status, for the admin management list. */
-    public List<GrammarLessonResponse> findAllForAdmin() {
+    /**
+     * Admin-only: lessons regardless of status as light rows for the management list, narrowed by any
+     * of the optional filters (blank/null = no filter; categoryId "none" = uncategorized). Cached per
+     * filter combination and cleared by every grammar write via @EvictGrammarCaches.
+     */
+    @Cacheable(cacheNames = "grammarAdminList", key = "{#level, #status, #categoryId, #search}")
+    @Transactional
+    public List<GrammarLessonAdminRow> findAdminRows(String level, String status, String categoryId, String search) {
+        String query = search == null ? "" : search.trim().toLowerCase();
         return grammarRepository.findAll().stream()
+                .filter(l -> isBlank(level) || (l.getLevel() != null && l.getLevel().name().equalsIgnoreCase(level)))
+                .filter(l -> isBlank(status) || (l.getStatus() != null ? l.getStatus() : GrammarLessonStatus.DRAFT).name().equalsIgnoreCase(status))
+                .filter(l -> isBlank(categoryId)
+                        || ("none".equals(categoryId) ? l.getCategory() == null
+                        : l.getCategory() != null && categoryId.equals(l.getCategory().getId())))
+                .filter(l -> query.isEmpty() || (l.getTitle() != null && l.getTitle().toLowerCase().contains(query)))
                 .sorted(Comparator
                         .comparing((GrammarLesson l) -> l.getCategory() != null ? l.getCategory().getTitle() : "",
                                 Comparator.nullsLast(Comparator.naturalOrder()))
                         .thenComparing(l -> l.getSortOrder() != null ? l.getSortOrder() : 0)
                         .thenComparing(GrammarLesson::getTitle))
-                .map(GrammarLessonMapper::mapToAdminResponse)
+                .map(l -> new GrammarLessonAdminRow(
+                        l.getId(),
+                        l.getTitle(),
+                        l.getLevel() != null ? l.getLevel().name() : null,
+                        (l.getStatus() != null ? l.getStatus() : GrammarLessonStatus.DRAFT).name(),
+                        l.getCategory() != null ? l.getCategory().getId() : null,
+                        l.getCategory() != null ? l.getCategory().getTitle() : null,
+                        l.getSortOrder(),
+                        l.getQuiz() != null ? l.getQuiz().size() : 0))
                 .toList();
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.isBlank();
     }
 
     public GrammarLessonResponse findByIdForAdmin(String id) throws DataNotFoundException {

@@ -107,6 +107,18 @@ export interface GrammarCategoryWithLessons {
     testStatus: CategoryTestStatus;
 }
 
+/** Admin list row - no content/examples/quiz; fetch the lesson by id to edit it. */
+export interface GrammarLessonAdminRow {
+    id: string;
+    title: string;
+    level: string;
+    status: GrammarLessonStatus;
+    categoryId: string | null;
+    categoryTitle: string | null;
+    sortOrder: number | null;
+    quizCount: number;
+}
+
 /** Lightweight list row - no content/examples/usage tips/quiz; fetch the lesson by id for those. */
 export interface GrammarLessonSummary {
     id: string;

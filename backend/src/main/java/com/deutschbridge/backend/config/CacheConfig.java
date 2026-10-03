@@ -26,7 +26,7 @@ public class CacheConfig {
     public CacheManager cacheManager() {
         CaffeineCacheManager cacheManager = new CaffeineCacheManager(
                 "grammarLessons", "grammarLevelContent", "grammarLessonDetail", "grammarCategoryDetail",
-                "grammarLevelSummary", "examExercises", "examLevelSummary", "readingArticles",
+                "grammarLevelSummary", "grammarAdminList", "examExercises", "examLevelSummary", "readingArticles",
                 "readingArticleList", "readingArticleDetail", "readingLevelSummary",
                 "expressionCollectionSummary", "expressionListPage", "expressionDetail",
                 "redemittelPhrase", "redemittelListPage", "redemittelHubContent", "redemittelExercises", "redemittelFunctionLabels");

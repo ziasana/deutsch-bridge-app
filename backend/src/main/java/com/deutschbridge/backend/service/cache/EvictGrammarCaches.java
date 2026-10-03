@@ -21,7 +21,8 @@ import java.lang.annotation.Target;
         @CacheEvict(cacheNames = "grammarLevelContent", allEntries = true),
         @CacheEvict(cacheNames = "grammarLessonDetail", allEntries = true),
         @CacheEvict(cacheNames = "grammarCategoryDetail", allEntries = true),
-        @CacheEvict(cacheNames = "grammarLevelSummary", allEntries = true)
+        @CacheEvict(cacheNames = "grammarLevelSummary", allEntries = true),
+        @CacheEvict(cacheNames = "grammarAdminList", allEntries = true)
 })
 public @interface EvictGrammarCaches {
 }
