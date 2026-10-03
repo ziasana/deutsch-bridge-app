@@ -8,12 +8,14 @@ import com.deutschbridge.backend.model.dto.GrammarLessonResponse;
 import com.deutschbridge.backend.model.dto.GrammarLevelSummaryResponse;
 import com.deutschbridge.backend.model.entity.GrammarCategory;
 import com.deutschbridge.backend.model.entity.GrammarLesson;
+import com.deutschbridge.backend.model.entity.GrammarLessonBookmark;
 import com.deutschbridge.backend.model.entity.LearningProgress;
 import com.deutschbridge.backend.model.entity.QuizQuestion;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.enums.GrammarLessonStatus;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.GrammarCategoryRepository;
+import com.deutschbridge.backend.repository.GrammarLessonBookmarkRepository;
 import com.deutschbridge.backend.repository.GrammarLessonRepository;
 import com.deutschbridge.backend.repository.LearningProgressRepository;
 import com.deutschbridge.backend.service.cache.ContentCacheService;
@@ -38,12 +40,14 @@ public class GrammarService {
     private final GrammarCategoryRepository grammarCategoryRepository;
     private final UserService userService;
     private final RequestContext requestContext;
+    private final GrammarLessonBookmarkRepository bookmarkRepository;
     private final ContentCacheService contentCacheService;
     private final GrammarProgressCacheService grammarProgressCacheService;
     private static final String NOT_FOUND_MSG= "Grammar lesson not found!";
 
     public GrammarService(GrammarLessonRepository grammarRepository,
                            LearningProgressRepository learningProgressRepository,
+                           GrammarLessonBookmarkRepository bookmarkRepository,
                            GrammarCategoryRepository grammarCategoryRepository,
                            UserService userService,
                            RequestContext requestContext,
@@ -51,6 +55,7 @@ public class GrammarService {
                            GrammarProgressCacheService grammarProgressCacheService) {
         this.grammarRepository = grammarRepository;
         this.learningProgressRepository = learningProgressRepository;
+        this.bookmarkRepository = bookmarkRepository;
         this.grammarCategoryRepository = grammarCategoryRepository;
         this.userService = userService;
         this.requestContext = requestContext;
@@ -134,9 +139,38 @@ public class GrammarService {
         Map<String, LearningProgress> progressByLessonId = progresses.stream()
                 .collect(Collectors.toMap(p -> p.getLesson().getId(), p -> p, (first, second) -> first));
 
+        Set<String> bookmarkedIds = bookmarkRepository
+                .findByUserAndLesson_IdIn(user, lessons.stream().map(GrammarLesson::getId).toList()).stream()
+                .map(b -> b.getLesson().getId())
+                .collect(Collectors.toSet());
+
         return lessons.stream()
-                .map(l -> GrammarLessonMapper.mapToResponse(l, progressByLessonId.get(l.getId())))
+                .map(l -> GrammarLessonMapper.mapToResponse(l, progressByLessonId.get(l.getId()), bookmarkedIds.contains(l.getId())))
                 .toList();
+    }
+
+    /** Adds the current user's bookmark on a published lesson (idempotent - re-bookmarking is a no-op). */
+    @Transactional
+    public GrammarLessonResponse addBookmark(String id) throws DataNotFoundException {
+        GrammarLesson lesson = grammarRepository.findByIdAndStatus(id, GrammarLessonStatus.PUBLISHED)
+                .orElseThrow(() -> new DataNotFoundException(NOT_FOUND_MSG));
+        User user = userService.findByEmail(requestContext.getUserEmail());
+        if (!bookmarkRepository.existsByUserAndLesson(user, lesson)) {
+            GrammarLessonBookmark bookmark = new GrammarLessonBookmark();
+            bookmark.setUser(user);
+            bookmark.setLesson(lesson);
+            bookmarkRepository.save(bookmark);
+        }
+        return mapWithCurrentUserProgress(List.of(lesson)).get(0);
+    }
+
+    @Transactional
+    public GrammarLessonResponse removeBookmark(String id) throws DataNotFoundException {
+        GrammarLesson lesson = grammarRepository.findByIdAndStatus(id, GrammarLessonStatus.PUBLISHED)
+                .orElseThrow(() -> new DataNotFoundException(NOT_FOUND_MSG));
+        User user = userService.findByEmail(requestContext.getUserEmail());
+        bookmarkRepository.deleteByUserAndLesson(user, lesson);
+        return mapWithCurrentUserProgress(List.of(lesson)).get(0);
     }
 
     @Transactional
@@ -167,6 +201,7 @@ public class GrammarService {
         GrammarLesson lesson = grammarRepository.findById(id)
                 .orElseThrow(()->new DataNotFoundException(NOT_FOUND_MSG));
         learningProgressRepository.deleteByLesson(lesson);
+        bookmarkRepository.deleteByLesson(lesson);
         grammarRepository.deleteById(id);
         return true;
     }

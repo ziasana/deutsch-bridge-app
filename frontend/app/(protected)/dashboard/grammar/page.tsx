@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
-import { BookOpen, ChevronLeft, ChevronRight, RotateCw, ArrowRight } from "lucide-react";
+import { BookOpen, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, RotateCw, ArrowRight } from "lucide-react";
 import { getGrammarLevelSummary, getGrammarLevelView } from "@/services/grammarService";
 import { GrammarLessonSummary } from "@/types/grammar";
 import Loading from "@/componenets/Loading";
@@ -15,6 +15,8 @@ import { CategoryAccordionCard, ContentItemRow } from "@/componenets/CategoryAcc
 import { useI18n } from "@/componenets/I18nProvider";
 import { localizedLessonHeading } from "@/lib/grammarLocalization";
 import useAuthStore from "@/store/useAuthStore";
+import { useGrammarBookmark } from "@/hook/useGrammarBookmark";
+import { cn } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -24,6 +26,8 @@ export default function GrammarLessonsPage() {
     const { userProfile } = useAuthStore();
     const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
     const [search, setSearch] = useState("");
+    const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
+    const { toggle: toggleBookmark, pendingId: bookmarkPendingId } = useGrammarBookmark();
     const [page, setPage] = useState(1);
     const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
@@ -62,11 +66,12 @@ export default function GrammarLessonsPage() {
 
     const searchTerm = search.trim().toLowerCase();
     const matchesSearch = (lesson: GrammarLessonSummary) =>
+        (!bookmarkedOnly || lesson.bookmarked) &&
         localizedLessonHeading(lesson, language).title.toLowerCase().includes(searchTerm);
 
     const visibleCategories = (levelView?.categories ?? [])
         .map((c) => ({ ...c, lessons: c.lessons.filter(matchesSearch) }))
-        .filter((c) => c.lessons.length > 0 || searchTerm === "");
+        .filter((c) => c.lessons.length > 0 || (searchTerm === "" && !bookmarkedOnly));
 
     const uncategorized = (levelView?.uncategorized ?? []).filter(matchesSearch);
 
@@ -90,7 +95,22 @@ export default function GrammarLessonsPage() {
                 dir={localized.dir}
                 onClick={() => router.push(`/dashboard/grammar/lesson?id=${lesson.id}`)}
                 actions={
-                    hasQuiz && (
+                    <>
+                    <button
+                        type="button"
+                        disabled={bookmarkPendingId === lesson.id}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            toggleBookmark(lesson.id, lesson.bookmarked);
+                        }}
+                        aria-pressed={lesson.bookmarked}
+                        aria-label={lesson.bookmarked ? t.grammar.unbookmark : t.grammar.bookmark}
+                        title={lesson.bookmarked ? t.grammar.unbookmark : t.grammar.bookmark}
+                        className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-foreground/45 transition hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        {lesson.bookmarked ? <BookmarkCheck className="size-4 text-primary" /> : <Bookmark className="size-4" />}
+                    </button>
+                    {hasQuiz && (
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -110,7 +130,8 @@ export default function GrammarLessonsPage() {
                                 </>
                             )}
                         </button>
-                    )
+                    )}
+                    </>
                 }
             />
         );
@@ -136,15 +157,41 @@ export default function GrammarLessonsPage() {
                     ariaLabel={t.grammar.level}
                 />
 
-                <LearningSearch
-                    className="mt-4"
-                    value={search}
-                    onChange={(value) => {
-                        setSearch(value);
-                        setPage(1);
-                    }}
-                    placeholder={t.grammar.searchPlaceholder}
-                />
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <LearningSearch
+                        className="min-w-[220px] flex-1"
+                        value={search}
+                        onChange={(value) => {
+                            setSearch(value);
+                            setPage(1);
+                        }}
+                        placeholder={t.grammar.searchPlaceholder}
+                    />
+                    <div
+                        role="tablist"
+                        aria-label={t.grammar.bookmarkedFilter}
+                        className="inline-flex shrink-0 rounded-[10px] border border-border/60 bg-card p-1 shadow-card"
+                    >
+                        {[false, true].map((onlyBookmarked) => (
+                            <button
+                                key={String(onlyBookmarked)}
+                                type="button"
+                                role="tab"
+                                aria-selected={bookmarkedOnly === onlyBookmarked}
+                                onClick={() => {
+                                    setBookmarkedOnly(onlyBookmarked);
+                                    setPage(1);
+                                }}
+                                className={cn(
+                                    "rounded-lg px-3 py-1.5 text-sm font-medium transition",
+                                    bookmarkedOnly === onlyBookmarked ? "bg-primary text-primary-foreground" : "text-foreground/60 hover:text-foreground"
+                                )}
+                            >
+                                {onlyBookmarked ? t.grammar.bookmarkedFilter : t.grammar.showAll}
+                            </button>
+                        ))}
+                    </div>
+                </div>
 
                 <div className="mt-6 space-y-4">
                     {visibleCategories.map((category) => {
@@ -199,7 +246,9 @@ export default function GrammarLessonsPage() {
                     {paginated.map((lesson) => renderLessonRow(lesson))}
 
                     {levelView && visibleCategories.length === 0 && uncategorized.length === 0 && (
-                        <div className="text-center text-foreground/50 py-10">{t.grammar.notFound}</div>
+                        <div className="text-center text-foreground/50 py-10">
+                            {bookmarkedOnly && searchTerm === "" ? t.grammar.noBookmarks : t.grammar.notFound}
+                        </div>
                     )}
                 </div>
 

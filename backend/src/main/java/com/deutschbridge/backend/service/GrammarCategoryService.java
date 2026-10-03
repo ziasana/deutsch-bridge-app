@@ -19,6 +19,7 @@ import com.deutschbridge.backend.model.enums.LearningActivityType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.model.enums.LearningModule;
 import com.deutschbridge.backend.repository.GrammarCategoryRepository;
+import com.deutschbridge.backend.repository.GrammarLessonBookmarkRepository;
 import com.deutschbridge.backend.repository.GrammarCategoryTestAttemptRepository;
 import com.deutschbridge.backend.repository.GrammarLessonRepository;
 import com.deutschbridge.backend.repository.LearningProgressRepository;
@@ -47,11 +48,13 @@ public class GrammarCategoryService {
     private final RequestContext requestContext;
     private final ContentCacheService contentCacheService;
     private final LearningActivityService learningActivityService;
+    private final GrammarLessonBookmarkRepository bookmarkRepository;
 
     public GrammarCategoryService(GrammarCategoryRepository categoryRepository,
                                    GrammarLessonRepository lessonRepository,
                                    GrammarCategoryTestAttemptRepository attemptRepository,
                                    LearningProgressRepository learningProgressRepository,
+                                   GrammarLessonBookmarkRepository bookmarkRepository,
                                    UserService userService,
                                    RequestContext requestContext,
                                    ContentCacheService contentCacheService,
@@ -60,6 +63,7 @@ public class GrammarCategoryService {
         this.lessonRepository = lessonRepository;
         this.attemptRepository = attemptRepository;
         this.learningProgressRepository = learningProgressRepository;
+        this.bookmarkRepository = bookmarkRepository;
         this.userService = userService;
         this.requestContext = requestContext;
         this.contentCacheService = contentCacheService;
@@ -147,6 +151,12 @@ public class GrammarCategoryService {
                 .map(p -> p.getLesson().getId())
                 .collect(Collectors.toSet());
 
+        Set<String> bookmarkedIds = lessonIds.isEmpty()
+                ? Set.of()
+                : bookmarkRepository.findByUserAndLesson_IdIn(user, lessonIds).stream()
+                .map(b -> b.getLesson().getId())
+                .collect(Collectors.toSet());
+
         List<String> categoryIds = content.categories().stream().map(ContentCacheService.GrammarCategoryEntry::id).toList();
         Map<String, GrammarCategoryTestAttempt> attemptByCategoryId = categoryIds.isEmpty()
                 ? Map.of()
@@ -161,11 +171,11 @@ public class GrammarCategoryService {
                         c.level() != null ? c.level().getValue() : null,
                         c.sortOrder(),
                         c.passThreshold(),
-                        c.lessons().stream().map(l -> toSummary(l, learnedIds)).toList(),
+                        c.lessons().stream().map(l -> toSummary(l, learnedIds, bookmarkedIds)).toList(),
                         testStatus(attemptByCategoryId.get(c.id()), c.passThreshold())))
                 .toList();
         List<GrammarLessonSummaryResponse> uncategorized = content.uncategorized().stream()
-                .map(l -> toSummary(l, learnedIds))
+                .map(l -> toSummary(l, learnedIds, bookmarkedIds))
                 .toList();
         return new GrammarLevelViewResponse(level.getValue(), categories, uncategorized);
     }
@@ -200,7 +210,8 @@ public class GrammarCategoryService {
         );
     }
 
-    private static GrammarLessonSummaryResponse toSummary(ContentCacheService.GrammarLessonEntry lesson, Set<String> learnedIds) {
+    private static GrammarLessonSummaryResponse toSummary(ContentCacheService.GrammarLessonEntry lesson, Set<String> learnedIds,
+                                                          Set<String> bookmarkedIds) {
         return new GrammarLessonSummaryResponse(
                 lesson.id(),
                 lesson.title(),
@@ -209,7 +220,8 @@ public class GrammarCategoryService {
                 lesson.summaryFa(),
                 lesson.level() != null ? lesson.level().getValue() : null,
                 lesson.quizCount(),
-                learnedIds.contains(lesson.id()));
+                learnedIds.contains(lesson.id()),
+                bookmarkedIds.contains(lesson.id()));
     }
 
     private static CategoryTestStatusResponse testStatus(GrammarCategoryTestAttempt attempt, int passThreshold) {

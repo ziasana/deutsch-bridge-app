@@ -41,6 +41,7 @@ export interface GrammarLesson {
     categoryId: string | null;
     categoryTitle: string | null;
     sortOrder: number;
+    bookmarked: boolean;
 }
 
 export interface GrammarLessonManualRequest {
@@ -129,6 +130,7 @@ export interface GrammarLessonSummary {
     level: string;
     quizCount: number;
     learned: boolean;
+    bookmarked: boolean;
 }
 
 export interface GrammarCategorySummary {

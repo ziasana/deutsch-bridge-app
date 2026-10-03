@@ -18,6 +18,10 @@ public class GrammarLessonMapper {
      * collection here, as it holds every user's progress.
      */
     public static GrammarLessonResponse mapToResponse(GrammarLesson lesson, LearningProgress userProgress) {
+        return mapToResponse(lesson, userProgress, false);
+    }
+
+    public static GrammarLessonResponse mapToResponse(GrammarLesson lesson, LearningProgress userProgress, boolean bookmarked) {
         return new GrammarLessonResponse(
                 lesson.getId(),
                 lesson.getTitle(),
@@ -41,7 +45,8 @@ public class GrammarLessonMapper {
                 lesson.getUpdatedAt(),
                 lesson.getCategory() != null ? lesson.getCategory().getId() : null,
                 lesson.getCategory() != null ? lesson.getCategory().getTitle() : null,
-                lesson.getSortOrder()
+                lesson.getSortOrder(),
+                bookmarked
         );
     }
 

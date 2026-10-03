@@ -467,6 +467,14 @@ export interface Dictionary {
         markNotLearned: string;
         markedLearned: string;
         markedNotLearned: string;
+        showAll: string;
+        bookmarkedFilter: string;
+        bookmark: string;
+        unbookmark: string;
+        bookmarkAdded: string;
+        bookmarkRemoved: string;
+        bookmarkFailed: string;
+        noBookmarks: string;
         saving: string;
         watchVideo: string;
         exercises: string;
@@ -1172,6 +1180,14 @@ const en: Dictionary = {
         markNotLearned: "Mark as not learned",
         markedLearned: "Marked as learned!",
         markedNotLearned: "Marked as not learned.",
+        showAll: "All lessons",
+        bookmarkedFilter: "Bookmarked",
+        bookmark: "Bookmark this lesson",
+        unbookmark: "Remove bookmark",
+        bookmarkAdded: "Lesson bookmarked.",
+        bookmarkRemoved: "Bookmark removed.",
+        bookmarkFailed: "Failed to update bookmark.",
+        noBookmarks: "No bookmarked lessons here yet. Tap the bookmark icon on a lesson to save it.",
         saving: "Saving...",
         watchVideo: "▶ Watch explainer video",
         exercises: "Exercises",
@@ -1939,6 +1955,14 @@ const fa: Dictionary = {
         markNotLearned: "علامت‌گذاری به‌عنوان نیاموخته",
         markedLearned: "به‌عنوان آموخته‌شده علامت‌گذاری شد!",
         markedNotLearned: "به‌عنوان نیاموخته علامت‌گذاری شد.",
+        showAll: "همه درس‌ها",
+        bookmarkedFilter: "نشان‌شده‌ها",
+        bookmark: "نشان کردن این درس",
+        unbookmark: "حذف نشان",
+        bookmarkAdded: "درس نشان‌گذاری شد.",
+        bookmarkRemoved: "نشان حذف شد.",
+        bookmarkFailed: "به‌روزرسانی نشان ناموفق بود.",
+        noBookmarks: "هنوز درس نشان‌شده‌ای اینجا نیست. برای ذخیره یک درس روی آیکن نشان بزنید.",
         saving: "در حال ذخیره...",
         watchVideo: "▶ مشاهده ویدیوی آموزشی",
         exercises: "تمرین‌ها",

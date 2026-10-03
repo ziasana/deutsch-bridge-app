@@ -8,12 +8,14 @@ import { toast } from "@/lib/toast";
 import { getGrammarLessonById, setLearningProgress } from "@/services/grammarService";
 import { grammarLessonQueryKey, markLessonLearnedInCache } from "@/lib/grammarQueryCache";
 import Loading from "@/componenets/Loading";
-import { BookOpen, Check, Lightbulb, MessageSquareQuote, PlayCircle } from "lucide-react";
+import { BookOpen, Bookmark, BookmarkCheck, Check, Lightbulb, MessageSquareQuote, PlayCircle } from "lucide-react";
 import LearningPageHero from "@/componenets/learning/LearningPageHero";
 import GrammarQuizSection from "@/componenets/GrammarQuizSection";
 import { useI18n } from "@/componenets/I18nProvider";
 import LessonMarkdown from "@/componenets/LessonMarkdown";
 import { isTranslatableLevel, localizedLessonText } from "@/lib/grammarLocalization";
+import { useGrammarBookmark } from "@/hook/useGrammarBookmark";
+import { cn } from "@/lib/utils";
 
 export default function GrammarLessonDetailPage() {
     return (
@@ -29,6 +31,7 @@ function GrammarLessonDetailContent() {
     const { language, t } = useI18n();
     const queryClient = useQueryClient();
     const [updatingLearned, setUpdatingLearned] = useState(false);
+    const { toggle: toggleBookmark, pendingId: bookmarkPendingId } = useGrammarBookmark();
 
     // Full lesson (content, examples, quiz) is only fetched here, once per lesson, and shared with
     // the practice page through the same cache entry.
@@ -105,7 +108,25 @@ function GrammarLessonDetailContent() {
                     }
                 />
 
-                <article className="space-y-6 rounded-[10px] bg-card p-6 shadow-card sm:p-8" dir={localized.dir}>
+                <article className="relative space-y-6 rounded-[10px] bg-card p-6 shadow-card sm:p-8" dir={localized.dir}>
+                    {/* The card is white, so the button gets its own tint (and a solid fill once saved) to stay visible. */}
+                    <button
+                        type="button"
+                        disabled={bookmarkPendingId === lesson.id}
+                        onClick={() => toggleBookmark(lesson.id, lesson.bookmarked)}
+                        aria-pressed={lesson.bookmarked}
+                        aria-label={lesson.bookmarked ? t.grammar.unbookmark : t.grammar.bookmark}
+                        title={lesson.bookmarked ? t.grammar.unbookmark : t.grammar.bookmark}
+                        className={cn(
+                            "absolute end-4 top-4 flex size-10 cursor-pointer items-center justify-center rounded-full border transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-60 sm:end-6 sm:top-6",
+                            lesson.bookmarked
+                                ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                                : "border-primary/30 bg-primary/10 text-primary hover:bg-primary/20"
+                        )}
+                    >
+                        {lesson.bookmarked ? <BookmarkCheck className="size-5" /> : <Bookmark className="size-5" />}
+                    </button>
+
                     <LessonMarkdown content={localized.content} className="text-foreground/85" />
 
                     {lesson.videoLink && (

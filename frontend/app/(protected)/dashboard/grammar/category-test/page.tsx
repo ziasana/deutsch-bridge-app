@@ -8,7 +8,8 @@ import { toast } from "@/lib/toast";
 import { getGrammarCategoryById } from "@/services/grammarService";
 import { CategoryTestStatus, GrammarCategoryWithLessons } from "@/types/grammar";
 import Loading from "@/componenets/Loading";
-import { Badge } from "@/componenets/ui/badge";
+import { ClipboardCheck } from "lucide-react";
+import LearningPageHero from "@/componenets/learning/LearningPageHero";
 import CategoryTestSection from "@/componenets/CategoryTestSection";
 import { useI18n } from "@/componenets/I18nProvider";
 
@@ -51,10 +52,10 @@ function CategoryTestContent() {
 
     if (!categoryId) {
         return (
-            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10" dir={dir}>
-                <div className="max-w-3xl mx-auto text-center text-gray-500 dark:text-gray-400 py-20">
-                    {t.grammar.categoryNotFound}{" "}
-                    <Link href="/dashboard/grammar" className="underline">
+            <div className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10" dir={dir}>
+                <div className="mx-auto max-w-3xl rounded-[10px] bg-card p-10 text-center shadow-card">
+                    <p className="text-foreground/65">{t.grammar.categoryNotFound}</p>
+                    <Link href="/dashboard/grammar" className="mt-3 inline-block font-semibold text-primary hover:underline">
                         {t.grammar.back}
                     </Link>
                 </div>
@@ -66,10 +67,10 @@ function CategoryTestContent() {
 
     if (!category) {
         return (
-            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10" dir={dir}>
-                <div className="max-w-3xl mx-auto text-center text-gray-500 dark:text-gray-400 py-20">
-                    {t.grammar.categoryNotFound}{" "}
-                    <Link href="/dashboard/grammar" className="underline">
+            <div className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10" dir={dir}>
+                <div className="mx-auto max-w-3xl rounded-[10px] bg-card p-10 text-center shadow-card">
+                    <p className="text-foreground/65">{t.grammar.categoryNotFound}</p>
+                    <Link href="/dashboard/grammar" className="mt-3 inline-block font-semibold text-primary hover:underline">
                         {t.grammar.back}
                     </Link>
                 </div>
@@ -79,22 +80,23 @@ function CategoryTestContent() {
 
     const title = (language === "fa" && category.titleFa) || category.title;
 
+    const chip = "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold";
+
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-6 py-10" dir={dir}>
-            <div className="max-w-3xl mx-auto space-y-4">
-                <Link href="/dashboard/grammar" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+        <div className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10" dir={dir}>
+            <div className="mx-auto max-w-4xl space-y-6">
+                <Link href="/dashboard/grammar" className="inline-block text-sm font-medium text-foreground/60 transition hover:text-foreground">
                     {t.grammar.back}
                 </Link>
 
-                <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h1>
-                    <Badge variant="secondary">{category.level}</Badge>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                    {t.grammar.topicsInBlock(category.lessons.length)}
-                </p>
+                <LearningPageHero
+                    icon={ClipboardCheck}
+                    title={title}
+                    subtitle={t.grammar.topicsInBlock(category.lessons.length)}
+                    meta={<span className={`${chip} bg-primary/10 text-primary`}>{category.level}</span>}
+                />
 
-                <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)] p-6">
+                <div className="rounded-[10px] bg-card p-6 shadow-card sm:p-8">
                     <CategoryTestSection
                         categoryId={category.id}
                         lessons={category.lessons}

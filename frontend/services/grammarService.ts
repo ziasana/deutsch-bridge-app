@@ -23,6 +23,14 @@ export const getGrammarLessonById = async (id: string) => {
     return await api.get<GrammarLesson>(`/grammar/${id}`);
 };
 
+export const addGrammarLessonBookmark = async (id: string) => {
+    return await api.post<GrammarLesson>(`/grammar/${id}/bookmark`);
+};
+
+export const removeGrammarLessonBookmark = async (id: string) => {
+    return await api.delete<GrammarLesson>(`/grammar/${id}/bookmark`);
+};
+
 export const setLearningProgress = async (request: LearningProgressRequest) => {
     return await api.post("/learning-progress", request);
 };

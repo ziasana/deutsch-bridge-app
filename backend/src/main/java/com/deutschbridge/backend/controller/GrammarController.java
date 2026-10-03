@@ -37,6 +37,16 @@ public class GrammarController {
         return new ResponseEntity<>(grammarService.getLevelSummary(), HttpStatus.OK);
     }
 
+    @PostMapping("/{id}/bookmark")
+    public ResponseEntity<GrammarLessonResponse> addBookmark(@PathVariable String id) throws DataNotFoundException {
+        return new ResponseEntity<>(grammarService.addBookmark(id), HttpStatus.OK);
+    }
+
+    @DeleteMapping("/{id}/bookmark")
+    public ResponseEntity<GrammarLessonResponse> removeBookmark(@PathVariable String id) throws DataNotFoundException {
+        return new ResponseEntity<>(grammarService.removeBookmark(id), HttpStatus.OK);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<GrammarLessonResponse> getById(@PathVariable String id) throws DataNotFoundException {
         return new ResponseEntity<>(grammarService.findByIdWithLearningProgress(id), HttpStatus.OK);

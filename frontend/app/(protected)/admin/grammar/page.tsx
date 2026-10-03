@@ -31,6 +31,7 @@ import RichTextEditor from "@/componenets/RichTextEditor";
 import { uploadEmbeddedRichTextImages } from "@/lib/richTextImages";
 import GrammarSubNav from "@/componenets/admin/GrammarSubNav";
 import { isTranslatableLevel } from "@/lib/grammarLocalization";
+import { isPlayableQuestion } from "@/lib/grammarQuiz";
 import {
     ArrowUp,
     ArrowDown,
@@ -285,6 +286,21 @@ export default function AdminGrammarPage() {
         e.preventDefault();
         if (!form.title.trim() || !form.content.trim()) {
             toast.error("Title and description are required.");
+            return;
+        }
+
+        // A question the learner can't answer (no options, or no correct answer) would show up broken in
+        // the lesson quiz and the category test, so it has to be completed or removed before saving.
+        const incomplete = exercises
+            .map((ex, idx) => ({ ex, idx }))
+            .filter(({ ex }) => ex.question.trim())
+            .find(({ ex }) => !isPlayableQuestion({ ...ex, options: ex.type === "mcq" ? (ex.options ?? []).map((o) => o.trim()).filter(Boolean) : [] }));
+        if (incomplete) {
+            toast.error(
+                incomplete.ex.type === "mcq"
+                    ? `Exercise ${incomplete.idx + 1}: add at least two options and pick the correct one.`
+                    : `Exercise ${incomplete.idx + 1} is incomplete.`
+            );
             return;
         }
 

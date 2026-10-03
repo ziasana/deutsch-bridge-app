@@ -25,6 +25,8 @@ public record GrammarLessonResponse(
         java.time.LocalDateTime updatedAt,
         String categoryId,
         String categoryTitle,
-        Integer sortOrder
+        Integer sortOrder,
+        /** Whether the current user bookmarked this lesson; always false on admin responses. */
+        boolean bookmarked
 ) {
 }
