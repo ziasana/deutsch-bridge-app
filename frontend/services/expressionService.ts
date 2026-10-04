@@ -3,6 +3,7 @@ import {
   Expression,
   ExpressionCollectionSummary,
   ExpressionContinueLearning,
+  ExpressionNavigation,
   ExpressionPage,
   ExpressionType,
 } from "@/types/expression";
@@ -45,6 +46,11 @@ export const getContinueLearningExpressions = async (type: ExpressionType) => {
 
 export const getDifficultExpressions = async () => {
   return await api.get<Expression[]>("/expressions/difficult");
+};
+
+/** The previous/next expression of the same collection and level, in the list's default order. */
+export const getExpressionNavigation = async (id: string) => {
+  return await api.get<ExpressionNavigation>(`/expressions/${id}/navigation`);
 };
 
 export const getExpressionById = async (id: string) => {

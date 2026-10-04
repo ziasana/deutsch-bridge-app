@@ -136,6 +136,17 @@ export interface ExpressionListItem {
   bookmarked: boolean;
 }
 
+/** One adjacent expression in a collection's list order - enough to render a Previous/Next link. */
+export interface ExpressionNeighbor {
+    id: string;
+    expression: string;
+}
+
+export interface ExpressionNavigation {
+    previous: ExpressionNeighbor | null;
+    next: ExpressionNeighbor | null;
+}
+
 export interface ExpressionPage {
   items: ExpressionListItem[];
   page: number;

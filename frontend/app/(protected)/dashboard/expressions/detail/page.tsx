@@ -1,12 +1,13 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { getExpressionById, markExpressionViewed } from "@/services/expressionService";
-import { Expression } from "@/types/expression";
+import { useQuery } from "@tanstack/react-query";
+import { getExpressionById, getExpressionNavigation, markExpressionViewed } from "@/services/expressionService";
+import { Expression, ExpressionNeighbor } from "@/types/expression";
 import Loading from "@/componenets/Loading";
-import { ArrowLeft, Lightbulb, Play, TriangleAlert } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Lightbulb, Play, TriangleAlert } from "lucide-react";
 import { getExpressionImageSrc } from "@/lib/expressionImages";
 import { getIllustrationFor } from "@/componenets/expressions/illustrations";
 
@@ -21,13 +22,52 @@ const CONTEXT_LABEL: Record<string, string> = {
     EXAM: "Prüfung",
 };
 
-function ExpressionDetailContent() {
+/**
+ * Previous/Next within the collection and level, in the list's default order. Never gated on
+ * progress or practice - a learner is always free to move on.
+ */
+function ExpressionNavRow({
+    previous,
+    next,
+    onNavigate,
+}: Readonly<{
+    previous: ExpressionNeighbor | null | undefined;
+    next: ExpressionNeighbor | null | undefined;
+    onNavigate: (id: string) => void;
+}>) {
+    if (!previous && !next) return null;
+
+    const navButton =
+        "flex min-w-0 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground/80 shadow-sm transition hover:text-primary hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:pointer-events-none disabled:opacity-0";
+
+    return (
+        <nav aria-label="Vorheriger / nächster Ausdruck" className="flex items-center justify-between gap-3">
+            <button type="button" disabled={!previous} onClick={() => previous && onNavigate(previous.id)} title={previous?.expression} className={navButton}>
+                <ChevronLeft className="size-4 shrink-0" aria-hidden="true" />
+                <span className="truncate">Vorheriger Ausdruck</span>
+            </button>
+            <button type="button" disabled={!next} onClick={() => next && onNavigate(next.id)} title={next?.expression} className={navButton}>
+                <span className="truncate">Nächster Ausdruck</span>
+                <ChevronRight className="size-4 shrink-0" aria-hidden="true" />
+            </button>
+        </nav>
+    );
+}
+
+function ExpressionDetailContent({ id }: Readonly<{ id: string | null }>) {
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const id = searchParams.get("id");
 
     const [expression, setExpression] = useState<Expression | null>(null);
     const [loading, setLoading] = useState(true);
+    const viewedFor = useRef<string | null>(null);
+
+    // Previous/Next in the collection's list order - lightweight, so it's fine to always fetch.
+    const { data: navigation } = useQuery({
+        queryKey: ["expressions", "navigation", id],
+        queryFn: () => getExpressionNavigation(id!).then((res) => res.data),
+        enabled: !!id,
+    });
+    const goToExpression = (expressionId: string) => router.push(`/dashboard/expressions/detail?id=${expressionId}`);
 
     useEffect(() => {
         if (!id) return;
@@ -35,8 +75,16 @@ function ExpressionDetailContent() {
             .then((res) => setExpression(res.data))
             .catch((err) => console.error(err))
             .finally(() => setLoading(false));
-        // Fire-and-forget: records the first view for the recognition score without blocking the page.
-        markExpressionViewed(id).catch((err) => console.error(err));
+    }, [id]);
+
+    // Fire-and-forget: records the first view for the recognition score without blocking the page. The ref
+    // keeps React's dev-mode double effect from sending one open twice (two simultaneous first views).
+    useEffect(() => {
+        if (!id || viewedFor.current === id) return;
+        viewedFor.current = id;
+        markExpressionViewed(id).catch(() => {
+            // Cosmetic score bump - never surface a failure (or the dev error overlay) for it.
+        });
     }, [id]);
 
     if (loading) return <Loading />;
@@ -71,6 +119,10 @@ function ExpressionDetailContent() {
                     <ArrowLeft className="size-4" aria-hidden="true" />
                     Zurück zur Übersicht
                 </Link>
+
+                <div className="mt-4">
+                    <ExpressionNavRow previous={navigation?.previous} next={navigation?.next} onNavigate={goToExpression} />
+                </div>
 
                 <article className="mt-4 overflow-hidden rounded-[10px] bg-card shadow-card">
                     {hasVisual && (
@@ -208,15 +260,28 @@ function ExpressionDetailContent() {
                         </button>
                     </div>
                 </article>
+
+                <div className="mt-4">
+                    <ExpressionNavRow previous={navigation?.previous} next={navigation?.next} onNavigate={goToExpression} />
+                </div>
             </div>
         </div>
     );
 }
 
+/**
+ * Reads the id from the URL and keys the content by it, so Previous/Next - which push a new id onto
+ * this same route - fully remount the page instead of briefly showing the old expression.
+ */
+function ExpressionDetailRouter() {
+    const id = useSearchParams().get("id");
+    return <ExpressionDetailContent key={id ?? ""} id={id} />;
+}
+
 export default function ExpressionDetailPage() {
     return (
         <Suspense fallback={<Loading />}>
-            <ExpressionDetailContent />
+            <ExpressionDetailRouter />
         </Suspense>
     );
 }

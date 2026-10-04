@@ -8,6 +8,8 @@ import com.deutschbridge.backend.model.dto.ExpressionCollectionSummaryResponse;
 import com.deutschbridge.backend.model.dto.ExpressionContinueLearningResponse;
 import com.deutschbridge.backend.model.dto.ExpressionExampleRequest;
 import com.deutschbridge.backend.model.dto.ExpressionListEntryResponse;
+import com.deutschbridge.backend.model.dto.ExpressionNavigationResponse;
+import com.deutschbridge.backend.model.dto.ExpressionNeighborResponse;
 import com.deutschbridge.backend.model.dto.ExpressionManualRequest;
 import com.deutschbridge.backend.model.dto.ExpressionPageResponse;
 import com.deutschbridge.backend.model.dto.ExpressionPatternRequest;
@@ -29,6 +31,7 @@ import com.deutschbridge.backend.model.enums.ExpressionType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.ExpressionBookmarkRepository;
 import com.deutschbridge.backend.repository.ExpressionListForUserProjection;
+import com.deutschbridge.backend.repository.ExpressionNeighborProjection;
 import com.deutschbridge.backend.repository.ExpressionProgressRepository;
 import com.deutschbridge.backend.repository.ExpressionRepository;
 import com.deutschbridge.backend.repository.ExpressionTypeCountProjection;
@@ -38,6 +41,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -174,6 +178,34 @@ public class ExpressionService {
     }
 
     /**
+     * The previous/next published expression of the same collection and level, in the collection list's
+     * default order (see ExpressionRepository.findListPage) - a lightweight sibling lookup for the detail
+     * page's Previous/Next controls. The list itself can be sorted/filtered in many ways the detail page
+     * doesn't know about, so this uses the one fixed order; not user-scoped.
+     */
+    public ExpressionNavigationResponse findNavigation(String id) throws DataNotFoundException {
+        Expression expression = contentCacheService.getExpressionDetail(id)
+                .filter(e -> e.getStatus() != ExpressionStatus.DRAFT)
+                .orElseThrow(() -> new DataNotFoundException(NOT_FOUND_MSG));
+        if (expression.getType() == null || expression.getLevel() == null) {
+            return new ExpressionNavigationResponse(null, null);
+        }
+
+        Pageable oneRow = PageRequest.of(0, 1);
+        ExpressionNeighborResponse previous = expressionRepository
+                .findPreviousInCollection(expression.getType(), expression.getLevel(), expression.getCreatedAt(), expression.getId(), oneRow)
+                .stream().findFirst().map(ExpressionService::toNeighbor).orElse(null);
+        ExpressionNeighborResponse next = expressionRepository
+                .findNextInCollection(expression.getType(), expression.getLevel(), expression.getCreatedAt(), expression.getId(), oneRow)
+                .stream().findFirst().map(ExpressionService::toNeighbor).orElse(null);
+        return new ExpressionNavigationResponse(previous, next);
+    }
+
+    private static ExpressionNeighborResponse toNeighbor(ExpressionNeighborProjection row) {
+        return new ExpressionNeighborResponse(row.getId(), row.getExpression());
+    }
+
+    /**
      * Records that the current user has read this expression's full detail page - the "recognition"
      * axis of mastery (spec section 6/14/15). Only the first view counts, so re-opening the page
      * doesn't inflate the score; recognition alone can't push mastery past LEARNING (see
@@ -194,7 +226,14 @@ public class ExpressionService {
         if (progress.getRecognitionScore() == 0) {
             progress.setRecognitionScore(50);
             progress.setMasteryLevel(ExpressionMapper.computeMasteryLevel(progress));
-            expressionProgressRepository.save(progress);
+            try {
+                expressionProgressRepository.save(progress);
+            } catch (DataIntegrityViolationException e) {
+                // A concurrent request (the page fires this on every open, twice under React's dev
+                // double-effect) inserted the first-view row between our lookup and save. That row
+                // already carries the same recognition score, so just use it instead of failing with a 409.
+                progress = expressionProgressRepository.findByUserAndExpression(user, expression).orElseThrow(() -> e);
+            }
         }
 
         boolean bookmarked = expressionBookmarkRepository.existsByUserAndExpression(user, expression);

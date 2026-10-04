@@ -3,6 +3,7 @@ package com.deutschbridge.backend.controller;
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.ExpressionCollectionSummaryResponse;
 import com.deutschbridge.backend.model.dto.ExpressionContinueLearningResponse;
+import com.deutschbridge.backend.model.dto.ExpressionNavigationResponse;
 import com.deutschbridge.backend.model.dto.ExpressionPageResponse;
 import com.deutschbridge.backend.model.dto.ExpressionResponse;
 import com.deutschbridge.backend.model.enums.ExpressionMasteryLevel;
@@ -63,6 +64,12 @@ public class ExpressionController {
     @GetMapping("/{id}")
     public ResponseEntity<ExpressionResponse> getById(@PathVariable String id) throws DataNotFoundException {
         return ResponseEntity.ok(expressionService.findByIdForStudent(id));
+    }
+
+    /** The previous/next expression of the same collection and level, for the detail page's Previous/Next controls. */
+    @GetMapping("/{id}/navigation")
+    public ResponseEntity<ExpressionNavigationResponse> getNavigation(@PathVariable String id) throws DataNotFoundException {
+        return ResponseEntity.ok(expressionService.findNavigation(id));
     }
 
     @PostMapping("/{id}/view")

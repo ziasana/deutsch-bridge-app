@@ -211,4 +211,38 @@ public interface ExpressionRepository extends JpaRepository<Expression, String> 
                   <> com.deutschbridge.backend.model.enums.ExpressionMasteryLevel.MASTERED
             """)
     long countReadyForUser(@Param("type") ExpressionType type, @Param("userId") String userId);
+
+    /**
+     * The published expression right after this one in the collection's default list order (see
+     * {@link #findListPage}'s ORDER BY createdAt DESC, id ASC) within the same type and level - i.e. the
+     * next older one, tie-broken by a larger id. Pass a single-row Pageable; empty at the last expression.
+     */
+    @Query("""
+            SELECT e.id AS id, e.expression AS expression
+            FROM expressions e
+            WHERE e.status = com.deutschbridge.backend.model.enums.ExpressionStatus.PUBLISHED
+              AND e.type = :type AND e.level = :level
+              AND (e.createdAt < :createdAt OR (e.createdAt = :createdAt AND e.id > :id))
+            ORDER BY e.createdAt DESC, e.id ASC
+            """)
+    List<ExpressionNeighborProjection> findNextInCollection(@Param("type") ExpressionType type,
+                                                            @Param("level") LearningLevel level,
+                                                            @Param("createdAt") LocalDateTime createdAt,
+                                                            @Param("id") String id,
+                                                            Pageable pageable);
+
+    /** Mirror of {@link #findNextInCollection} - the previous (next newer) expression in the same order. */
+    @Query("""
+            SELECT e.id AS id, e.expression AS expression
+            FROM expressions e
+            WHERE e.status = com.deutschbridge.backend.model.enums.ExpressionStatus.PUBLISHED
+              AND e.type = :type AND e.level = :level
+              AND (e.createdAt > :createdAt OR (e.createdAt = :createdAt AND e.id < :id))
+            ORDER BY e.createdAt ASC, e.id DESC
+            """)
+    List<ExpressionNeighborProjection> findPreviousInCollection(@Param("type") ExpressionType type,
+                                                                @Param("level") LearningLevel level,
+                                                                @Param("createdAt") LocalDateTime createdAt,
+                                                                @Param("id") String id,
+                                                                Pageable pageable);
 }
