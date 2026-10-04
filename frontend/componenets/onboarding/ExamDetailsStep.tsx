@@ -1,5 +1,6 @@
 "use client";
 
+import { GraduationCap } from "lucide-react";
 import StepHeader from "@/componenets/onboarding/StepHeader";
 import SelectionCard from "@/componenets/onboarding/SelectionCard";
 import useOnboardingStore from "@/store/useOnboardingStore";
@@ -20,7 +21,7 @@ export default function ExamDetailsStep() {
 
     return (
         <div>
-            <StepHeader title="Which exam are you preparing for?" subtitle="This lets us tailor practice to your exam's format." />
+            <StepHeader icon={GraduationCap} title="Which exam are you preparing for?" subtitle="This lets us tailor practice to your exam's format." />
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
                 {EXAM_TYPE_OPTIONS.map((opt) => {
                     const active = examType === opt.value;

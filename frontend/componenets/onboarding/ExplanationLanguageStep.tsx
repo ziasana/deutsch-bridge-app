@@ -1,5 +1,6 @@
 "use client";
 
+import { Languages } from "lucide-react";
 import StepHeader from "@/componenets/onboarding/StepHeader";
 import SelectionCard from "@/componenets/onboarding/SelectionCard";
 import useOnboardingStore from "@/store/useOnboardingStore";
@@ -10,6 +11,7 @@ export default function ExplanationLanguageStep() {
     return (
         <div>
             <StepHeader
+                icon={Languages}
                 title="How would you like us to explain German?"
                 subtitle="Choose the language that feels most comfortable for explanations and translations."
             />

@@ -1,5 +1,6 @@
 "use client";
 
+import { Target } from "lucide-react";
 import StepHeader from "@/componenets/onboarding/StepHeader";
 import useOnboardingStore from "@/store/useOnboardingStore";
 import { DAILY_WORD_OPTIONS } from "@/componenets/onboarding/onboardingOptions";
@@ -10,7 +11,7 @@ export default function DailyWordsStep() {
 
     return (
         <div>
-            <StepHeader title="How many new words would you like to learn each day?" subtitle="Choose a pace that feels realistic for you." />
+            <StepHeader icon={Target} title="How many new words would you like to learn each day?" subtitle="Choose a pace that feels realistic for you." />
             <div className="grid grid-cols-2 gap-3">
                 {DAILY_WORD_OPTIONS.map((opt) => {
                     const active = dailyGoalWords === opt.value;

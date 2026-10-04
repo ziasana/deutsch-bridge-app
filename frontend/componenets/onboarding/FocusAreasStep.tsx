@@ -1,5 +1,6 @@
 "use client";
 
+import { Sparkles } from "lucide-react";
 import StepHeader from "@/componenets/onboarding/StepHeader";
 import SelectionCard from "@/componenets/onboarding/SelectionCard";
 import useOnboardingStore from "@/store/useOnboardingStore";
@@ -10,7 +11,7 @@ export default function FocusAreasStep() {
 
     return (
         <div>
-            <StepHeader title="What would you like to improve?" subtitle="Choose up to 3 areas you'd like to focus on." />
+            <StepHeader icon={Sparkles} title="What would you like to improve?" subtitle="Choose up to 3 areas you'd like to focus on." />
             <div className="space-y-3">
                 {FOCUS_AREA_OPTIONS.map((opt) => {
                     const active = focusAreas.includes(opt.value);

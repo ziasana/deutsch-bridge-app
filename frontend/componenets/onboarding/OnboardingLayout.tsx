@@ -31,41 +31,39 @@ export default function OnboardingLayout({
     children,
 }: OnboardingLayoutProps) {
     return (
-        <div className="min-h-[calc(100vh-4rem)] bg-background px-4 py-10 flex items-start justify-center">
-            <div className="w-full max-w-xl">
+        <div className="min-h-[calc(100vh-4rem)] bg-background px-4 py-10 sm:px-6">
+            <div className="mx-auto w-full max-w-2xl">
                 {banner && <div className="mb-4">{banner}</div>}
 
-                <div className="flex items-center justify-between mb-3">
+                <div className="mb-3 flex items-center justify-between">
                     <span className="text-lg font-bold text-foreground">DeutschBridge</span>
-                    <span className="text-sm text-foreground/50">
+                    <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
                         Step {stepIndex + 1} of {totalSteps}
                     </span>
                 </div>
 
-                <OnboardingProgress stepIndex={stepIndex} totalSteps={totalSteps} className="mb-8" />
+                <OnboardingProgress stepIndex={stepIndex} totalSteps={totalSteps} className="mb-6" />
 
-                <div className="bg-card rounded-2xl shadow-card border border-border/60 p-6 sm:p-8">
-                    {children}
+                {children}
 
-                    <div className="mt-8 flex items-center justify-between gap-3">
-                        {onBack ? (
-                            <Button type="button" variant="ghost" onClick={onBack} className="gap-1.5">
-                                <ArrowLeft className="size-4" />
-                                Back
-                            </Button>
-                        ) : (
-                            <span />
-                        )}
-                        <Button
-                            type="button"
-                            onClick={onContinue}
-                            disabled={continueDisabled || continueLoading}
-                            className="gap-1.5"
-                        >
-                            {continueLoading ? "Saving..." : continueLabel}
-                            {!continueLoading && <ArrowRight className="size-4" />}
+                <div className="mt-8 flex items-center justify-between gap-3">
+                    {onBack ? (
+                        <Button type="button" variant="ghost" onClick={onBack} className="gap-1.5">
+                            <ArrowLeft className="size-4" />
+                            Back
                         </Button>
-                    </div>
+                    ) : (
+                        <span />
+                    )}
+                    <Button
+                        type="button"
+                        onClick={onContinue}
+                        disabled={continueDisabled || continueLoading}
+                        className="gap-1.5 rounded-full px-6"
+                    >
+                        {continueLoading ? "Saving..." : continueLabel}
+                        {!continueLoading && <ArrowRight className="size-4" />}
+                    </Button>
                 </div>
 
                 {footer && <div className="mt-4 text-center">{footer}</div>}

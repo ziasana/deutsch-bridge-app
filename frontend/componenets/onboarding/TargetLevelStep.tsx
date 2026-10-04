@@ -1,5 +1,6 @@
 "use client";
 
+import { Flag } from "lucide-react";
 import StepHeader from "@/componenets/onboarding/StepHeader";
 import SelectionCard from "@/componenets/onboarding/SelectionCard";
 import useOnboardingStore from "@/store/useOnboardingStore";
@@ -11,7 +12,7 @@ export default function TargetLevelStep() {
 
     return (
         <div>
-            <StepHeader title="What level do you want to reach?" subtitle="We'll use this goal to guide your learning path." />
+            <StepHeader icon={Flag} title="What level do you want to reach?" subtitle="We'll use this goal to guide your learning path." />
             <div className="space-y-3">
                 {CEFR_LEVELS.map((level) => {
                     const disabled = !currentLevelUnknown && CEFR_ORDER.indexOf(level.code) <= currentIndex;

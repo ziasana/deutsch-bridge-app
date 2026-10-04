@@ -35,12 +35,16 @@ export default function SignupOnboardingPage() {
     const state = useOnboardingStore();
     const [submitting, setSubmitting] = useState(false);
     const [completed, setCompleted] = useState(false);
+    // Dev-only design check: /signup/onboarding?preview skips the auth guards and never saves anything.
+    const [preview] = useState(
+        () => process.env.NODE_ENV !== "production" && typeof window !== "undefined" && new URLSearchParams(window.location.search).has("preview"),
+    );
 
     // This step only makes sense for an authenticated account with an incomplete profile.
     // An anonymous visitor goes back to /signup to create one; someone who already finished
     // their learning profile (this session or a prior one) has nothing left to do here.
     useEffect(() => {
-        if (!hasHydrated) return;
+        if (!hasHydrated || preview) return;
         if (!isLoggedIn) {
             router.replace("/signup");
             return;
@@ -57,12 +61,12 @@ export default function SignupOnboardingPage() {
     // step/answers a previous account left behind. Reset it the moment the logged-in email
     // doesn't match whoever the stored answers belong to.
     useEffect(() => {
-        if (!hasHydrated || !isLoggedIn) return;
+        if (!hasHydrated || !isLoggedIn || preview) return;
         state.ensureOwner(userProfile?.email);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [hasHydrated, isLoggedIn, userProfile?.email]);
 
-    const isOwnerConfirmed = state.ownerEmail === (userProfile?.email ?? null);
+    const isOwnerConfirmed = preview || state.ownerEmail === (userProfile?.email ?? null);
 
     const steps = useMemo<OnboardingStepId[]>(() => {
         return state.learningReasons.includes("EXAM") ? [...BASE_STEPS, "exam"] : BASE_STEPS;
@@ -127,6 +131,11 @@ export default function SignupOnboardingPage() {
             examDate: state.learningReasons.includes("EXAM") && state.hasExamDate ? state.examDate ?? null : null,
         };
 
+        if (preview) {
+            setCompleted(true);
+            return;
+        }
+
         setSubmitting(true);
         try {
             const res = await completeOnboarding(payload);
@@ -143,7 +152,7 @@ export default function SignupOnboardingPage() {
         }
     };
 
-    if (!hasHydrated || !isLoggedIn || !isOwnerConfirmed) return <Loading />;
+    if (!hasHydrated || (!preview && !isLoggedIn) || !isOwnerConfirmed) return <Loading />;
 
     if (completed) {
         return (

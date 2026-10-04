@@ -1,5 +1,6 @@
 "use client";
 
+import { Compass } from "lucide-react";
 import StepHeader from "@/componenets/onboarding/StepHeader";
 import SelectionCard from "@/componenets/onboarding/SelectionCard";
 import useOnboardingStore from "@/store/useOnboardingStore";
@@ -10,7 +11,7 @@ export default function LearningReasonStep() {
 
     return (
         <div>
-            <StepHeader title="Why are you learning German?" subtitle="Your goal helps us personalize your learning experience." />
+            <StepHeader icon={Compass} title="Why are you learning German?" subtitle="Your goal helps us personalize your learning experience." />
             <div className="space-y-3">
                 {LEARNING_REASON_OPTIONS.map((opt) => (
                     <SelectionCard

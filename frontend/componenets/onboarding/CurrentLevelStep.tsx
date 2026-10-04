@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BarChart3 } from "lucide-react";
 import StepHeader from "@/componenets/onboarding/StepHeader";
 import SelectionCard from "@/componenets/onboarding/SelectionCard";
 import useOnboardingStore from "@/store/useOnboardingStore";
@@ -13,7 +14,7 @@ export default function CurrentLevelStep() {
 
     return (
         <div>
-            <StepHeader title="What is your current German level?" subtitle="Choose the level that best describes your German today." />
+            <StepHeader icon={BarChart3} title="What is your current German level?" subtitle="Choose the level that best describes your German today." />
             <div className="space-y-3">
                 {CEFR_LEVELS.map((level) => (
                     <SelectionCard
