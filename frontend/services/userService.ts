@@ -6,6 +6,9 @@ import {OnboardingRequest} from "@/types/onboarding";
 export const registerUser = async (user: UserType) => {
     return await api.post("/auth/register", user);
 }
+export const googleLogin = async (idToken: string) => {
+    return await api.post("/auth/google", { idToken });
+}
 export const loginUser = async (user: UserType) => {
     return await api.post("/auth/login", user);
 }

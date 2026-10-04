@@ -145,6 +145,7 @@ export default function Navbar() {
                       {t.nav.yourProgress}
                     </Link>
                   </MenuItem>
+                  {userProfile?.authProvider !== "GOOGLE" && (
                   <MenuItem>
                     <button
                         type="button"
@@ -154,6 +155,7 @@ export default function Navbar() {
                       {t.nav.updatePassword}
                     </button>
                   </MenuItem>
+                  )}
 
                   <MenuItem>
                     <a

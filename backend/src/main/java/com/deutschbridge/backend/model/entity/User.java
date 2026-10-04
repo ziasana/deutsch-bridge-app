@@ -2,6 +2,7 @@ package com.deutschbridge.backend.model.entity;
 
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import com.deutschbridge.backend.model.enums.AccountType;
+import com.deutschbridge.backend.model.enums.AuthProvider;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
@@ -36,6 +37,15 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(name = "account_type", nullable = false)
     private AccountType accountType = AccountType.BASIC;
+
+    /** How the account was created. GOOGLE accounts have no password and never sign in with one. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_provider", nullable = false)
+    private AuthProvider authProvider = AuthProvider.LOCAL;
+
+    /** Google's stable account id (the ID token's "sub"); set once a Google account is linked. */
+    @Column(name = "google_id", unique = true)
+    private String googleId;
 
     private int accessTokenFlag = 0;
     private String resetToken;

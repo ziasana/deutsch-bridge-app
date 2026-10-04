@@ -11,6 +11,7 @@ import com.deutschbridge.backend.model.dto.UserRegistrationRequest;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.entity.UserProfile;
 import com.deutschbridge.backend.model.enums.AccountType;
+import com.deutschbridge.backend.model.enums.AuthProvider;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.UserProfileRepository;
 import com.deutschbridge.backend.repository.UserRepository;
@@ -131,6 +132,11 @@ public class UserService {
             throw new UserVerificationException("User is not verified!");
         }
 
+        // Google accounts have no password to reset; stay silent so we don't reveal how the account was made.
+        if (existingUser.getAuthProvider() == AuthProvider.GOOGLE) {
+            return true;
+        }
+
         String resetToken = jwtUtil.generateVerificationToken(email);
         existingUser.setResetToken(resetToken);
         userRepository.save(existingUser);
@@ -169,6 +175,9 @@ public class UserService {
     public boolean changePassword(String id, String currentPassword, String newPassword) throws DataNotFoundException, UserVerificationException {
         User existing = userRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException(NOT_FOUND));
+        if (existing.getAuthProvider() == AuthProvider.GOOGLE) {
+            throw new UserVerificationException("You signed in with Google, so there is no password to change.");
+        }
         if (currentPassword == null || !passwordEncoder.matches(currentPassword, existing.getPassword())) {
             throw new UserVerificationException("Current password is incorrect");
         }

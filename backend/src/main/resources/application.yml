@@ -91,6 +91,9 @@ jwt:
 
 frontend_url: ${FRONTEND_URI}
 
+google:
+  client-id: ${GOOGLE_CLIENT_ID:}
+
 notifications:
   scheduler:
     enabled: true

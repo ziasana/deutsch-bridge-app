@@ -20,3 +20,8 @@ spring:
           auth: ${MAIL_SMTP_AUTH:false}
           starttls:
             enable: ${MAIL_SMTP_STARTTLS:false}
+
+# The Google OAuth client id is public (it is also in the frontend bundle), so dev can default to it.
+# IntelliJ's run configuration doesn't read backend/.env; set GOOGLE_CLIENT_ID to override.
+google:
+  client-id: ${GOOGLE_CLIENT_ID:346941864191-7gstpe3g5p2tr81n1gomsa5q35fbli7p.apps.googleusercontent.com}

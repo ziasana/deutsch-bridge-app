@@ -23,6 +23,7 @@ public record UserProfileResponse(
          List<String> focusAreas,
          String examType,
          String examLevel,
-         LocalDate examDate
+         LocalDate examDate,
+         String authProvider
 ) {
 }

@@ -6,6 +6,7 @@ import com.deutschbridge.backend.model.dto.*;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.service.AuthService;
 import com.deutschbridge.backend.service.CookieService;
+import com.deutschbridge.backend.service.GoogleAuthService;
 import com.deutschbridge.backend.service.UserProfileService;
 import com.deutschbridge.backend.service.UserService;
 import com.deutschbridge.backend.util.JWTUtil;
@@ -26,13 +27,15 @@ public class AuthController {
     private  final JWTUtil jwtUtil;
     private final CookieService cookieService;
     private final UserProfileService userProfileService;
+    private final GoogleAuthService googleAuthService;
 
-    public AuthController( AuthService authService, UserService userService, JWTUtil jwtUtil, CookieService cookieService, UserProfileService userProfileService) {
+    public AuthController( AuthService authService, UserService userService, JWTUtil jwtUtil, CookieService cookieService, UserProfileService userProfileService, GoogleAuthService googleAuthService) {
         this.authService = authService;
         this.userService = userService;
         this.jwtUtil = jwtUtil;
         this.cookieService = cookieService;
         this.userProfileService = userProfileService;
+        this.googleAuthService = googleAuthService;
     }
 
     @PostMapping("/login")
@@ -55,6 +58,24 @@ public class AuthController {
         User user = userService.findByEmail(email);
         UserProfileResponse userResponse = userProfileService.getUserProfileResponse(user);
         return new ResponseEntity<>(new ApiResponse<>("Login successful!", userResponse), HttpStatus.OK);
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> googleLogin(@RequestBody @Valid GoogleLoginRequest request, HttpServletResponse response) throws UserVerificationException {
+        GoogleAuthService.Result result = googleAuthService.authenticate(request.idToken());
+        User user = result.user();
+
+        String email = user.getEmail();
+        String token = jwtUtil.generateAccessToken(email);
+        String refreshToken = jwtUtil.generateRefreshToken(email);
+        userService.saveRefreshToken(email, refreshToken);
+        response.addCookie(cookieService.createAccessToken(token));
+        response.addCookie(cookieService.createRefreshToken(refreshToken));
+
+        UserProfileResponse userResponse = userProfileService.getUserProfileResponse(user);
+        return new ResponseEntity<>(
+                new ApiResponse<>(result.newUser() ? "Account created" : "Login successful!", userResponse),
+                result.newUser() ? HttpStatus.CREATED : HttpStatus.OK);
     }
 
     @GetMapping("/refresh")

@@ -101,11 +101,13 @@ export default function AppTopbar({ collapsed, onToggleCollapsed, onOpenMobileSi
                             {t.nav.yourProgress}
                         </Link>
                     </MenuItem>
+                    {userProfile?.authProvider !== "GOOGLE" && (
                     <MenuItem>
                         <button type="button" onClick={() => setPasswordOpen(true)} className="block w-full cursor-pointer px-4 py-2 text-start text-sm text-foreground/80 data-focus:bg-accent data-focus:text-accent-foreground outline-none">
                             {t.nav.updatePassword}
                         </button>
                     </MenuItem>
+                    )}
                     <MenuItem>
                         <a href="#" onClick={logout} className="block px-4 py-2 text-sm text-foreground/80 data-focus:bg-accent data-focus:text-accent-foreground outline-none">
                             {t.nav.signOut}

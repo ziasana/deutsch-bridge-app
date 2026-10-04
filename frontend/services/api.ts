@@ -53,7 +53,10 @@ api.interceptors.response.use(
             error.isFeatureLimitError = true;
         }
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // A 401 from a sign-in call is the answer itself; refreshing a session that doesn't exist yet would only loop.
+        const isSignInCall = /^\/auth\/(login|register|google)/.test(originalRequest?.url ?? "");
+
+        if (error.response?.status === 401 && !originalRequest._retry && !isSignInCall) {
             if (isRefreshing) {
                 // If refresh is already running, queue the request
                 return new Promise((resolve, reject) => {

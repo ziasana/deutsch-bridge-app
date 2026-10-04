@@ -28,4 +28,5 @@ export interface UserProfileType{
     examType?: string | null
     examLevel?: string | null
     examDate?: string | null
+    authProvider?: "LOCAL" | "GOOGLE"
 }

@@ -108,7 +108,8 @@ class UserProfileServiceTest {
                 java.util.List.of(),
                 null,
                 null,
-                null
+                null,
+                "LOCAL"
 
         );
 

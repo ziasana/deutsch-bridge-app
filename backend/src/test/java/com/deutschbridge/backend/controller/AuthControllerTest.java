@@ -102,7 +102,7 @@ class AuthControllerTest {
         when(cookieService.createRefreshToken("refresh-token")).thenReturn(new Cookie("refresh_token", "refresh-token"));
         when(userProfileService.getUserProfileResponse(any(User.class))).thenReturn(new UserProfileResponse(
                 "John", "john@example.com", null, null, false, null, "STUDENT", null, null,
-                false, java.util.List.of(), false, null, java.util.List.of(), null, null, null
+                false, java.util.List.of(), false, null, java.util.List.of(), null, null, null, "LOCAL"
         ));
 
         mockMvc.perform(post("/api/auth/register")

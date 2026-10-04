@@ -140,7 +140,8 @@ public class UserProfileService {
                 profile != null ? profile.getFocusAreas().stream().map(Enum::name).collect(Collectors.toList()) : List.of(),
                 profile != null && profile.getExamType() != null ? profile.getExamType().name() : null,
                 profile != null && profile.getExamLevel() != null ? profile.getExamLevel().getValue() : null,
-                profile != null ? profile.getExamDate() : null
+                profile != null ? profile.getExamDate() : null,
+                user.getAuthProvider() != null ? user.getAuthProvider().name() : "LOCAL"
         );
     }
 }
