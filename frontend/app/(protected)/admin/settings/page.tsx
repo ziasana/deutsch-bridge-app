@@ -23,11 +23,12 @@ import { ArrowLeft, Sparkles } from "lucide-react";
 const FEATURE_LABELS: Record<FeatureType, string> = {
     AI_CHAT: "AI Chat",
     AI_CORRECTION: "AI Correction",
+    AI_WRITING_FEEDBACK: "AI Writing Feedback (Schreiben)",
     AI_EXAMPLE: "AI Examples",
     AI_SYNONYM: "AI Synonyms",
 };
 
-const FEATURE_ORDER: FeatureType[] = ["AI_CHAT", "AI_CORRECTION", "AI_EXAMPLE", "AI_SYNONYM"];
+const FEATURE_ORDER: FeatureType[] = ["AI_CHAT", "AI_CORRECTION", "AI_WRITING_FEEDBACK", "AI_EXAMPLE", "AI_SYNONYM"];
 
 export default function AdminSettingsPage() {
     const router = useRouter();

@@ -4,6 +4,7 @@ package com.deutschbridge.backend.model.enums;
 public enum FeatureType {
     AI_CHAT,
     AI_CORRECTION,
+    AI_WRITING_FEEDBACK,
     AI_EXAMPLE,
     AI_SYNONYM
 }

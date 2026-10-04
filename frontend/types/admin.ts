@@ -39,7 +39,7 @@ export interface AdminUpdateUserPayload {
     verified?: boolean;
 }
 
-export type FeatureType = "AI_CHAT" | "AI_CORRECTION" | "AI_EXAMPLE" | "AI_SYNONYM";
+export type FeatureType = "AI_CHAT" | "AI_CORRECTION" | "AI_WRITING_FEEDBACK" | "AI_EXAMPLE" | "AI_SYNONYM";
 
 export interface PremiumSetting {
     enabled: boolean;

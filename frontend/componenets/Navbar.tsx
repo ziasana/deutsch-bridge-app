@@ -5,12 +5,20 @@ import useAuthStore from "@/store/useAuthStore";
 import { useI18n } from "./I18nProvider";
 import {  Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import { GraduationCap, Menu as MenuIcon, X } from "lucide-react";
-import Image from "next/image";
+import { resolveUploadUrl } from "@/lib/backendOrigin";
 import ChangePasswordDialog from "@/componenets/profile/ChangePasswordDialog";
 
 export default function Navbar() {
   const {userProfile, isLoggedIn} = useAuthStore();
   const logout = useAuthStore((state) => state.logout);
+  const avatarSrc = resolveUploadUrl(userProfile?.avatarUrl);
+  const initials = (userProfile?.displayName ?? userProfile?.email ?? "?")
+      .trim()
+      .split(/\s+/)
+      .map((part) => part[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase();
 
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -87,7 +95,7 @@ export default function Navbar() {
               <>
                 <Link
                     href="/login"
-                    className="font-semibold text-foreground/70 hover:text-primary transition-colors"
+                    className="font-medium text-foreground/70 hover:text-primary transition-colors"
                 >
                   {t.nav.login}
                 </Link>
@@ -103,13 +111,18 @@ export default function Navbar() {
                 <MenuButton className="relative flex rounded-full focus-visible:outline-2 focus-visible:outline-offset-2">
                   <span className="absolute -inset-1.5"/>
                   <span className="sr-only">Open user menu</span>
-                  <Image
-                      alt=""
-                      src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                      className="size-8 rounded-full bg-muted outline -outline-offset-1 outline-border"
-                      width={50}
-                      height={50}
-                  />
+                  {avatarSrc ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                          alt=""
+                          src={avatarSrc}
+                          className="size-8 rounded-full bg-muted object-cover outline -outline-offset-1 outline-border"
+                      />
+                  ) : (
+                      <span className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                          {initials}
+                      </span>
+                  )}
                 </MenuButton>
 
                 <MenuItems

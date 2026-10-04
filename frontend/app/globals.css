@@ -187,7 +187,7 @@
 
 /* Reusable navbar text styles */
 .nav-link {
-  @apply relative text-base md:text-lg font-semibold text-foreground/80 hover:text-primary hover:-translate-y-0.5 transition-all inline-block;
+  @apply relative text-base md:text-lg font-medium text-foreground/80 hover:text-primary hover:-translate-y-0.5 transition-all inline-block;
 }
 
 .nav-link::after {
@@ -200,7 +200,7 @@
 }
 
 .mobile-link {
-  @apply block px-6 py-3 text-lg font-semibold text-foreground/80 hover:bg-accent hover:text-accent-foreground;
+  @apply block px-6 py-3 text-lg font-medium text-foreground/80 hover:bg-accent hover:text-accent-foreground;
 }
 
 /* Buttons */

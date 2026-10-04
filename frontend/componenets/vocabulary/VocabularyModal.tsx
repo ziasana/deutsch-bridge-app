@@ -66,8 +66,8 @@ function VocabularyModalForm({
         generateAiExample(form.word.trim())
             .then((example) => setForm((f) => ({ ...f, example })))
             .catch((err) => {
-                console.error(err);
                 if (!err?.isFeatureLimitError) {
+                    console.error(err);
                     toast.error(err?.response?.data?.message ?? t.vocabulary.modal.generateExampleFailed);
                 }
             })

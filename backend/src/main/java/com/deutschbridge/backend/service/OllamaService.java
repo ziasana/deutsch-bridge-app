@@ -161,7 +161,7 @@ public class OllamaService {
     }
 
     public String evaluateWriting(LearningLevel level, String taskText, List<String> leitpunkte, String learnerText) {
-        entitlementService.consume(requestContext.getUserId(), FeatureType.AI_CORRECTION);
+        entitlementService.consume(requestContext.getUserId(), FeatureType.AI_WRITING_FEEDBACK);
         List<OllamaMessage> messages = List.of(
                 new OllamaMessage("system", PromptLibrary.evaluateWriting(level.name(), taskText, leitpunkte, learnerText)),
                 new OllamaMessage("user", "Bitte bewerte den Text.")

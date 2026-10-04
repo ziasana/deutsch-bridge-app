@@ -21,11 +21,13 @@ public class FeatureLimitService {
     static {
         DEFAULT_BASIC_LIMITS.put(FeatureType.AI_CHAT, 5);
         DEFAULT_BASIC_LIMITS.put(FeatureType.AI_CORRECTION, 3);
+        DEFAULT_BASIC_LIMITS.put(FeatureType.AI_WRITING_FEEDBACK, 2);
         DEFAULT_BASIC_LIMITS.put(FeatureType.AI_EXAMPLE, 5);
         DEFAULT_BASIC_LIMITS.put(FeatureType.AI_SYNONYM, 5);
 
         DEFAULT_PREMIUM_LIMITS.put(FeatureType.AI_CHAT, 100);
         DEFAULT_PREMIUM_LIMITS.put(FeatureType.AI_CORRECTION, 50);
+        DEFAULT_PREMIUM_LIMITS.put(FeatureType.AI_WRITING_FEEDBACK, 20);
         DEFAULT_PREMIUM_LIMITS.put(FeatureType.AI_EXAMPLE, 100);
         DEFAULT_PREMIUM_LIMITS.put(FeatureType.AI_SYNONYM, 100);
     }

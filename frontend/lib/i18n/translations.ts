@@ -49,6 +49,21 @@ export interface Dictionary {
         settings: string;
         monetization: string;
     };
+    upsell: {
+        badge: string;
+        title: string;
+        subtitle: string;
+        perksTitle: string;
+        perkLimits: string;
+        perkLimitsHint: string;
+        perkFeedback: string;
+        perkFeedbackHint: string;
+        perkPriority: string;
+        perkPriorityHint: string;
+        resetNote: string;
+        later: string;
+        upgrade: string;
+    };
     profile: {
         title: string;
         edit: string;
@@ -737,6 +752,21 @@ const en: Dictionary = {
         manageNotifications: "Manage Notifications",
         settings: "Settings",
         monetization: "Monetization & Limits",
+    },
+    upsell: {
+        badge: "Premium",
+        title: "You've reached today's limit",
+        subtitle: "Great work, you've used all your free AI requests for this feature today. They reset tomorrow, or you can keep going right now with Premium.",
+        perksTitle: "Keep learning with Premium",
+        perkLimits: "20x more AI requests every day",
+        perkLimitsHint: "Chat, corrections, examples and synonyms",
+        perkFeedback: "Schreiben feedback on every text",
+        perkFeedbackHint: "Improve your writing after each attempt",
+        perkPriority: "Priority access at peak times",
+        perkPriorityHint: "Faster answers when the app is busy",
+        resetNote: "Your free limit resets tomorrow.",
+        later: "Maybe later",
+        upgrade: "Upgrade to Premium",
     },
     profile: {
         title: "Profile",
@@ -1531,6 +1561,21 @@ const fa: Dictionary = {
         manageNotifications: "مدیریت اعلان‌ها",
         settings: "تنظیمات",
         monetization: "درآمدزایی و محدودیت‌ها",
+    },
+    upsell: {
+        badge: "پریمیوم",
+        title: "به سقف امروز رسیدی",
+        subtitle: "آفرین! امروز همه درخواست‌های رایگان هوش مصنوعی این بخش را استفاده کردی. فردا دوباره شارژ می‌شود، یا همین حالا با پریمیوم ادامه بده.",
+        perksTitle: "با پریمیوم یادگیری را ادامه بده",
+        perkLimits: "۲۰ برابر درخواست هوش مصنوعی در روز",
+        perkLimitsHint: "چت، اصلاح، مثال و مترادف",
+        perkFeedback: "بازخورد Schreiben برای هر متن",
+        perkFeedbackHint: "بعد از هر تلاش، نوشتنت را بهتر کن",
+        perkPriority: "دسترسی اولویت‌دار در ساعات شلوغ",
+        perkPriorityHint: "پاسخ سریع‌تر وقتی برنامه شلوغ است",
+        resetNote: "سقف رایگان تو فردا دوباره شارژ می‌شود.",
+        later: "بعداً",
+        upgrade: "ارتقا به پریمیوم",
     },
     profile: {
         title: "پروفایل",

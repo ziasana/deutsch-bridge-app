@@ -144,9 +144,10 @@ export default function AITutorPage() {
                 }
             })
             .catch((err) => {
-                console.error(err);
                 setThinking(false);
+                // A daily-limit 429 is expected: the global upgrade modal already handles it.
                 if (!err?.isFeatureLimitError) {
+                    console.error(err);
                     toast.error(err?.response?.data?.message ?? "Something went wrong.");
                 }
             });

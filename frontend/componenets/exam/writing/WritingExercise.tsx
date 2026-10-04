@@ -82,8 +82,9 @@ export default function WritingExercise({ exerciseId, level, requiresPlanning, l
             const res = await requestWritingAiFeedback(attemptId);
             queryClient.setQueryData<WritingAttempt[]>(attemptsKey, (old = []) => old.map((a) => (a.id === res.data.id ? res.data : a)));
         } catch (err) {
-            const e = err as { response?: { data?: { message?: string } } };
-            toast.error(e?.response?.data?.message ?? "KI-Feedback ist gerade nicht verfügbar.");
+            // A daily-limit 429 already opens the global upgrade modal (see services/api.ts) - no extra toast.
+            const e = err as { isFeatureLimitError?: boolean; response?: { data?: { message?: string } } };
+            if (!e?.isFeatureLimitError) toast.error(e?.response?.data?.message ?? "KI-Feedback ist gerade nicht verfügbar.");
         } finally {
             setAiLoading(false);
         }
