@@ -87,6 +87,10 @@ public class FileStorageService {
         return storeImage(file, "exam-passages", PRESERVE_DIMENSIONS, DETAIL_QUALITY);
     }
 
+    public String storeBlogImage(MultipartFile file) {
+        return storeImage(file, "blog", DETAIL_MAX_WIDTH, DETAIL_QUALITY);
+    }
+
     public String storeGrammarLessonImage(MultipartFile file) {
         return storeImage(file, "grammar-lessons", DETAIL_MAX_WIDTH, DETAIL_QUALITY);
     }

@@ -5,7 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
 import { ChevronDown, Play, Quote, Star } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useI18n } from "@/componenets/I18nProvider";
+import BlogCard from "@/componenets/blog/BlogCard";
+import BlogCardSkeleton from "@/componenets/blog/BlogCardSkeleton";
+import { getHomeBlogPosts } from "@/services/blogService";
 
 const HERO_IMAGE =
     "/images/deutsch-hero.png";
@@ -16,12 +20,6 @@ const TESTIMONIAL_IMAGES = [
     "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
     "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80",
 ];
-const BLOG_IMAGES = [
-    "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=600&q=80",
-];
-
 function useCountUp(target: number, active: boolean) {
     const [value, setValue] = useState(0);
 
@@ -76,6 +74,11 @@ function StatCounter({ value, suffix, label }: Readonly<{ value: number; suffix:
 export default function HomePage() {
     const { t } = useI18n();
     const [activeTestimonial, setActiveTestimonial] = useState(0);
+    const { data: blogPosts, isPending: blogPending } = useQuery({
+        queryKey: ["blog", "latest"],
+        queryFn: () => getHomeBlogPosts(3).then((res) => res.data),
+        staleTime: 5 * 60 * 1000,
+    });
 
     return (
         <main className="bg-background transition-colors duration-300">
@@ -351,7 +354,8 @@ export default function HomePage() {
                 </div>
             </section>
 
-            {/* Blog / News Section */}
+            {/* Blog / News Section - admin-managed (see /admin/blog); hidden until there is something published */}
+            {(blogPending || (blogPosts?.length ?? 0) > 0) && (
             <section id="blog" className="scroll-mt-24 container mx-auto px-6 py-20">
                 <div className="max-w-xl mx-auto text-center flex flex-col items-center gap-3 mb-12">
                     <span className="w-fit rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-accent-foreground">
@@ -362,27 +366,18 @@ export default function HomePage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {t.home.blog.posts.map((post, index) => (
-                        <article
-                            key={post.title}
-                            className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-card hover:shadow-lg transition"
-                        >
-                            <div className="relative h-48 w-full">
-                                <Image src={BLOG_IMAGES[index]} alt={post.title} fill className="object-cover" />
-                                <span className="absolute left-4 top-4 rounded-full bg-card px-3 py-1 text-xs font-semibold text-primary shadow-card">
-                                    {post.category}
-                                </span>
-                            </div>
-                            <div className="flex flex-col gap-3 p-6">
-                                <h3 className="text-lg font-semibold text-foreground leading-snug">{post.title}</h3>
-                                <p className="text-sm text-foreground/60">
-                                    {post.author} · {post.date}
-                                </p>
-                            </div>
-                        </article>
-                    ))}
+                    {blogPending
+                        ? [0, 1, 2].map((i) => <BlogCardSkeleton key={i} />)
+                        : blogPosts?.map((post) => <BlogCard key={post.slug} post={post} />)}
+                </div>
+
+                <div className="mt-12 flex justify-center">
+                    <Link href="/blog" className="btn-primary rounded-xl px-6 py-3 text-base">
+                        {t.home.blog.viewAll}
+                    </Link>
                 </div>
             </section>
+            )}
         </main>
     );
 }

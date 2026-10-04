@@ -38,6 +38,7 @@ export interface Dictionary {
         darkMode: string;
         lightMode: string;
         manageReading: string;
+        manageBlog: string;
         manageExamPrep: string;
         manageGrammar: string;
         manageExpressions: string;
@@ -592,8 +593,33 @@ export interface Dictionary {
             badge: string;
             title: string;
             subtitle: string;
-            posts: { category: string; title: string; author: string; date: string }[];
+            viewAll: string;
         };
+    };
+    blogPage: {
+        indexBadge: string;
+        indexTitle: string;
+        indexSubtitle: string;
+        allCategories: string;
+        emptyTitle: string;
+        emptyText: string;
+        loadError: string;
+        retry: string;
+        readMore: string;
+        minRead: (minutes: number) => string;
+        by: string;
+        previous: string;
+        next: string;
+        backToAll: string;
+        related: string;
+        shareLabel: string;
+        copyLink: string;
+        linkCopied: string;
+        notFoundTitle: string;
+        notFoundText: string;
+        ctaTitle: string;
+        ctaText: string;
+        ctaButton: string;
     };
     footer: {
         about: string;
@@ -742,6 +768,7 @@ const en: Dictionary = {
         darkMode: "Dark Mode 🌙",
         lightMode: "Light Mode ☀️",
         manageReading: "Manage Reading",
+        manageBlog: "Manage Blog",
         manageExamPrep: "Manage Exam Prep",
         manageGrammar: "Manage Grammar",
         manageExpressions: "Manage Expressions",
@@ -1382,27 +1409,33 @@ const en: Dictionary = {
             badge: "News & Blogs",
             title: "Our Latest Learning Tips",
             subtitle: "Guides, grammar tips, and study strategies from the DeutschBridge team.",
-            posts: [
-                {
-                    category: "Grammar",
-                    title: "5 Common Mistakes German Learners Make (and How to Fix Them)",
-                    author: "Admin",
-                    date: "12 March, 2025",
-                },
-                {
-                    category: "Study Tips",
-                    title: "How to Build a Daily German Habit That Actually Sticks",
-                    author: "Admin",
-                    date: "2 April, 2025",
-                },
-                {
-                    category: "Exam Prep",
-                    title: "A Complete Guide to Passing Your Goethe B1 Exam",
-                    author: "Admin",
-                    date: "18 May, 2025",
-                },
-            ],
+            viewAll: "View all articles",
         },
+    },
+    blogPage: {
+        indexBadge: "DeutschBridge Blog",
+        indexTitle: "Learn German, one article at a time",
+        indexSubtitle: "Guides, grammar tips, exam strategies, and study habits from the DeutschBridge team.",
+        allCategories: "All",
+        emptyTitle: "No articles yet",
+        emptyText: "We're writing our first posts. Check back soon!",
+        loadError: "We couldn't load the articles. Please try again.",
+        retry: "Try again",
+        readMore: "Read article",
+        minRead: (minutes) => `${minutes} min read`,
+        by: "By",
+        previous: "Previous",
+        next: "Next",
+        backToAll: "All articles",
+        related: "Keep reading",
+        shareLabel: "Share this article",
+        copyLink: "Copy link",
+        linkCopied: "Link copied!",
+        notFoundTitle: "Article not found",
+        notFoundText: "This article doesn't exist or is no longer available.",
+        ctaTitle: "Ready to put it into practice?",
+        ctaText: "Join DeutschBridge for structured lessons, real exam practice, and an AI tutor whenever you need it.",
+        ctaButton: "Start learning free",
     },
     footer: {
         about: "DeutschBridge helps you learn German the smart way — structured lessons, real practice, and an AI tutor whenever you need it.",
@@ -1551,6 +1584,7 @@ const fa: Dictionary = {
         darkMode: "حالت تاریک 🌙",
         lightMode: "حالت روشن ☀️",
         manageReading: "مدیریت مطالب خواندن",
+        manageBlog: "مدیریت وبلاگ",
         manageExamPrep: "مدیریت آمادگی آزمون",
         manageGrammar: "مدیریت دستور زبان",
         manageExpressions: "مدیریت عبارات",
@@ -2186,27 +2220,33 @@ const fa: Dictionary = {
             badge: "اخبار و مقالات",
             title: "آخرین نکات یادگیری ما",
             subtitle: "راهنماها، نکات گرامری و استراتژی‌های مطالعه از تیم دویچ‌بریج.",
-            posts: [
-                {
-                    category: "گرامر",
-                    title: "۵ اشتباه رایج زبان‌آموزان آلمانی (و راه رفع آن‌ها)",
-                    author: "ادمین",
-                    date: "۲۱ اسفند ۱۴۰۳",
-                },
-                {
-                    category: "نکات مطالعه",
-                    title: "چگونه یک عادت روزانهٔ یادگیری آلمانی بسازیم که واقعاً دوام بیاورد",
-                    author: "ادمین",
-                    date: "۱۳ فروردین ۱۴۰۴",
-                },
-                {
-                    category: "آمادگی آزمون",
-                    title: "راهنمای کامل قبولی در آزمون گوته B1",
-                    author: "ادمین",
-                    date: "۲۸ اردیبهشت ۱۴۰۴",
-                },
-            ],
+            viewAll: "مشاهده همهٔ مقالات",
         },
+    },
+    blogPage: {
+        indexBadge: "وبلاگ دویچ‌بریج",
+        indexTitle: "آلمانی را مقاله‌به‌مقاله یاد بگیرید",
+        indexSubtitle: "راهنماها، نکات گرامری، استراتژی‌های آزمون و عادت‌های مطالعه از تیم دویچ‌بریج.",
+        allCategories: "همه",
+        emptyTitle: "هنوز مقاله‌ای نیست",
+        emptyText: "در حال نوشتن اولین مطالب هستیم. به‌زودی دوباره سر بزنید!",
+        loadError: "بارگذاری مقالات انجام نشد. لطفاً دوباره تلاش کنید.",
+        retry: "تلاش دوباره",
+        readMore: "خواندن مقاله",
+        minRead: (minutes) => `${minutes} دقیقه مطالعه`,
+        by: "نوشتهٔ",
+        previous: "قبلی",
+        next: "بعدی",
+        backToAll: "همهٔ مقالات",
+        related: "ادامهٔ مطالعه",
+        shareLabel: "اشتراک‌گذاری مقاله",
+        copyLink: "کپی پیوند",
+        linkCopied: "پیوند کپی شد!",
+        notFoundTitle: "مقاله پیدا نشد",
+        notFoundText: "این مقاله وجود ندارد یا دیگر در دسترس نیست.",
+        ctaTitle: "آمادهٔ تمرین عملی هستید؟",
+        ctaText: "به دویچ‌بریج بپیوندید و از درس‌های ساختاریافته، تمرین واقعی آزمون و معلم هوش مصنوعی هر زمان که نیاز داشتید بهره ببرید.",
+        ctaButton: "شروع رایگان یادگیری",
     },
     footer: {
         about: "دویچ‌بریج به شما کمک می‌کند آلمانی را هوشمندانه یاد بگیرید — دروس ساختاریافته، تمرین واقعی و مربی هوش مصنوعی هر وقت نیاز داشتید.",

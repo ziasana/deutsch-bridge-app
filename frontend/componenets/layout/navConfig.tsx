@@ -14,6 +14,7 @@ import {
     MessagesSquare,
     Newspaper,
     PenLine,
+    PenSquare,
     Settings,
     Sparkles,
     SpellCheck,
@@ -53,6 +54,7 @@ export function getAdminNavItems(t: Dictionary): NavItem[] {
         { href: "/admin", label: t.nav.dashboard, icon: LayoutDashboard },
         { href: "/admin/users", label: t.nav.manageUsers, icon: Users },
         { href: "/admin/reading", label: t.nav.manageReading, icon: Newspaper },
+        { href: "/admin/blog", label: t.nav.manageBlog, icon: PenSquare },
         {
             label: t.nav.manageExamPrep,
             icon: GraduationCap,

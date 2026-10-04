@@ -63,7 +63,7 @@ export default function Navbar() {
           <Link href="/#about" className="nav-link">
             {t.nav.about}
           </Link>
-          <Link href="/#blog" className="nav-link">
+          <Link href="/blog" className="nav-link">
             {t.nav.blog}
           </Link>
           <Link href="/contact" className="nav-link">
@@ -191,7 +191,7 @@ export default function Navbar() {
           <Link href="/#about" className="mobile-link">
             {t.nav.about}
           </Link>
-          <Link href="/#blog" className="mobile-link">
+          <Link href="/blog" className="mobile-link">
             {t.nav.blog}
           </Link>
           <Link href="/contact" className="mobile-link">
