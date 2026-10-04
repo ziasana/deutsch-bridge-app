@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import Cropper, { Area } from "react-easy-crop";
 import { toast } from "@/lib/toast";
-import { getCroppedImageBlob } from "@/lib/cropImage";
+import ImageCropDialog from "@/componenets/ImageCropDialog";
 
 interface ImageCropUploadProps {
     /** Resolved, absolute preview src for the currently stored image (or a default/fallback), or null/undefined for no image. */
@@ -40,10 +39,6 @@ export default function ImageCropUpload({
 }: Readonly<ImageCropUploadProps>) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
-    const [crop, setCrop] = useState({ x: 0, y: 0 });
-    const [zoom, setZoom] = useState(1);
-    const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
-    const [isUploading, setIsUploading] = useState(false);
 
     const onFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -51,9 +46,6 @@ export default function ImageCropUpload({
         if (!file) return;
 
         setSelectedImageSrc(URL.createObjectURL(file));
-        setCrop({ x: 0, y: 0 });
-        setZoom(1);
-        setCroppedAreaPixels(null);
     };
 
     const closeCropper = useCallback(() => {
@@ -61,13 +53,8 @@ export default function ImageCropUpload({
         setSelectedImageSrc(null);
     }, [selectedImageSrc]);
 
-    const confirmCrop = async () => {
-        if (!selectedImageSrc || !croppedAreaPixels) return;
-
-        setIsUploading(true);
+    const confirmCrop = async (file: File) => {
         try {
-            const blob = await getCroppedImageBlob(selectedImageSrc, croppedAreaPixels);
-            const file = new File([blob], "cropped-image.png", { type: "image/png" });
             const res = await onUpload(file);
             onUploaded(res.data.url);
             toast.success("Image uploaded.");
@@ -77,8 +64,7 @@ export default function ImageCropUpload({
                 (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
                 "Failed to upload image.";
             toast.error(message);
-        } finally {
-            setIsUploading(false);
+            throw err;
         }
     };
 
@@ -114,53 +100,12 @@ export default function ImageCropUpload({
             </div>
 
             {selectedImageSrc && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-                    <div className="w-full max-w-lg rounded-2xl border border-border/60 bg-card p-6 shadow-lg">
-                        <h2 className="text-base font-semibold text-foreground">Crop image</h2>
-                        <div className="relative mt-4 h-80 w-full overflow-hidden rounded-lg bg-black/80">
-                            <Cropper
-                                image={selectedImageSrc}
-                                crop={crop}
-                                zoom={zoom}
-                                aspect={aspectRatio}
-                                onCropChange={setCrop}
-                                onZoomChange={setZoom}
-                                onCropComplete={(_, areaPixels) => setCroppedAreaPixels(areaPixels)}
-                            />
-                        </div>
-                        <div className="mt-4 flex items-center gap-3">
-                            <span className="text-xs text-foreground/60 shrink-0">Zoom</span>
-                            <input
-                                type="range"
-                                min={1}
-                                max={3}
-                                step={0.05}
-                                value={zoom}
-                                onChange={(e) => setZoom(Number(e.target.value))}
-                                className="w-full"
-                            />
-                        </div>
-
-                        <div className="mt-5 flex justify-end gap-3">
-                            <button
-                                type="button"
-                                onClick={closeCropper}
-                                disabled={isUploading}
-                                className="rounded-lg border border-border/60 bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:bg-accent disabled:opacity-50"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={confirmCrop}
-                                disabled={isUploading || !croppedAreaPixels}
-                                className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:opacity-50"
-                            >
-                                {isUploading ? "Uploading..." : "Use this crop"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <ImageCropDialog
+                    imageSrc={selectedImageSrc}
+                    aspectRatio={aspectRatio}
+                    onConfirm={confirmCrop}
+                    onCancel={closeCropper}
+                />
             )}
         </>
     );

@@ -12,6 +12,7 @@ import { useI18n } from "@/componenets/I18nProvider";
 import NotificationSettingsCard from "@/componenets/notifications/NotificationSettingsCard";
 import { Bell, Calendar, Camera, Sparkles, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ImageCropDialog from "@/componenets/ImageCropDialog";
 
 const FIELD_CLASS =
     "w-full rounded-lg border border-border bg-background px-3.5 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:bg-foreground/[0.04] disabled:text-foreground/55";
@@ -81,7 +82,7 @@ export default function UserProfile() {
     const levels: string[] = ["A1", "A2", "B1", "B2", "C1", "C2"];
     const WORD_GOALS = [5, 10, 15, 20];
     const [isLoading, setIsLoading] = useState(false);
-    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [avatarCropSrc, setAvatarCropSrc] = useState<string | null>(null);
         const [activeSection, setActiveSection] = useState<(typeof NAV)[number]["id"]>("account");
     const avatarInputRef = useRef<HTMLInputElement>(null);
     const { userProfile, updateUserProfile } = useAuthStore();
@@ -152,24 +153,30 @@ export default function UserProfile() {
 
     const discardChanges = () => setDraft({});
 
+    const closeAvatarCropper = () => {
+        if (avatarCropSrc) URL.revokeObjectURL(avatarCropSrc);
+        setAvatarCropSrc(null);
+    };
+
     const handleAvatarSelected = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         e.target.value = "";
-        if (!file) return;
+        if (file) setAvatarCropSrc(URL.createObjectURL(file));
+    };
 
-        setUploadingAvatar(true);
-        uploadAvatar(file)
-            .then((res) => {
-                const avatarUrl = res.data.data;
-                // The photo is saved by the upload itself; only it goes into the store, never your unsaved edits.
-                updateUserProfile({ ...userProfile, avatarUrl });
-                toast.success(t.profile.avatarUpdated);
-            })
-            .catch((err) => {
-                toast.error(err?.response?.data?.message ?? t.profile.avatarUploadFailed);
-                console.error(err);
-            })
-            .finally(() => setUploadingAvatar(false));
+    // The server stores the new photo and deletes the previous one from disk.
+    const handleAvatarCropped = async (file: File) => {
+        try {
+            const res = await uploadAvatar(file);
+            const avatarUrl = res.data.data;
+            // The photo is saved by the upload itself; only it goes into the store, never your unsaved edits.
+            updateUserProfile({ ...userProfile, avatarUrl });
+            toast.success(t.profile.avatarUpdated);
+            closeAvatarCropper();
+        } catch (err) {
+            toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? t.profile.avatarUploadFailed);
+            throw err;
+        }
     };
 
     const initials = getInitials(profile.displayName, profile.email);
@@ -199,6 +206,20 @@ export default function UserProfile() {
     return (
         <div className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-10">
             {isLoading && <Loading />}
+            {avatarCropSrc && (
+                <ImageCropDialog
+                    imageSrc={avatarCropSrc}
+                    aspectRatio={1}
+                    cropShape="round"
+                    title={t.profile.cropPhoto}
+                    zoomLabel={t.profile.cropZoom}
+                    cancelLabel={t.profile.cancel}
+                    confirmLabel={t.profile.cropUse}
+                    busyLabel={t.profile.cropUploading}
+                    onConfirm={handleAvatarCropped}
+                    onCancel={closeAvatarCropper}
+                />
+            )}
             
             <div className="mx-auto max-w-5xl">
                 <h1 className="text-2xl font-bold text-foreground">{t.profile.title}</h1>
@@ -244,7 +265,6 @@ export default function UserProfile() {
                                             <button
                                                 type="button"
                                                 onClick={() => avatarInputRef.current?.click()}
-                                                disabled={uploadingAvatar}
                                                 className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-60"
                                             >
                                                 <Camera className="size-4" aria-hidden="true" />

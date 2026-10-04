@@ -249,14 +249,14 @@ export default function VocabularyPage() {
                         </section>
 
                         <section id="all-vocabulary" className="mt-10 scroll-mt-6">
-                            <div className="flex items-end justify-between gap-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent">
-                                        <Layers className="size-5 text-primary" />
-                                    </div>
-                                    <h2 className="text-lg font-semibold text-foreground">{t.vocabulary.allWords.title}</h2>
+                            <div className="flex items-center gap-3">
+                                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent">
+                                    <Layers className="size-5 text-primary" />
                                 </div>
-                                <span className="text-sm text-foreground/55">{t.vocabulary.allWords.count(filtered.length)}</span>
+                                <h2 className="text-lg font-semibold text-foreground">{t.vocabulary.allWords.title}</h2>
+                                <span className="rounded-full bg-foreground/[0.06] px-2.5 py-0.5 text-xs font-medium text-foreground/60">
+                                    {t.vocabulary.allWords.count(filtered.length)}
+                                </span>
                             </div>
 
                             {paginated.length > 0 ? (

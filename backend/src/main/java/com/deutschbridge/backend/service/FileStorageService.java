@@ -41,6 +41,8 @@ public class FileStorageService {
     private static final String IMAGE_OUTPUT_EXTENSION = ".webp";
     private static final int DETAIL_MAX_WIDTH = 1400;
     private static final int THUMBNAIL_MAX_WIDTH = 480;
+    /** Avatars are shown at most ~100px (2x for retina), so a 512px square is plenty. */
+    private static final int AVATAR_MAX_WIDTH = 512;
     private static final float DETAIL_QUALITY = 0.82f;
     private static final float THUMBNAIL_QUALITY = 0.75f;
     /** For images that must keep their original width/height (no crop, no resize) - only the WebP re-encode compresses them. */
@@ -98,7 +100,7 @@ public class FileStorageService {
     }
 
     public String storeUserAvatar(MultipartFile file) {
-        return storeImage(file, "avatars", DETAIL_MAX_WIDTH, DETAIL_QUALITY);
+        return storeImage(file, "avatars", AVATAR_MAX_WIDTH, THUMBNAIL_QUALITY);
     }
 
     /**

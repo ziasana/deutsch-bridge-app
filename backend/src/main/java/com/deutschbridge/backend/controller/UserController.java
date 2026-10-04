@@ -82,8 +82,15 @@ public class UserController {
 
         String oldAvatarUrl = user.getAvatarUrl();
         String avatarUrl = fileStorageService.storeUserAvatar(file);
-        user.setAvatarUrl(avatarUrl);
-        userService.save(user);
+        try {
+            user.setAvatarUrl(avatarUrl);
+            userService.save(user);
+        } catch (RuntimeException e) {
+            // The new file never got referenced; don't leave it orphaned on disk.
+            fileStorageService.deleteFile(avatarUrl);
+            throw e;
+        }
+        // Only now that the new avatar is persisted, remove the previous one (no-op for external URLs).
         fileStorageService.deleteFile(oldAvatarUrl);
 
         return new ResponseEntity<>(

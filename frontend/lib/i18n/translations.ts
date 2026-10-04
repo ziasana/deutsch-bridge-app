@@ -68,6 +68,10 @@ export interface Dictionary {
         changePhoto: string;
         avatarUpdated: string;
         avatarUploadFailed: string;
+        cropPhoto: string;
+        cropZoom: string;
+        cropUse: string;
+        cropUploading: string;
         accountInfo: string;
     };
     dashboard: {
@@ -753,6 +757,10 @@ const en: Dictionary = {
         changePhoto: "Change photo",
         avatarUpdated: "Avatar updated!",
         avatarUploadFailed: "Couldn't upload avatar",
+        cropPhoto: "Crop your photo",
+        cropZoom: "Zoom",
+        cropUse: "Use this photo",
+        cropUploading: "Uploading...",
         accountInfo: "Account Information",
     },
     dashboard: {
@@ -1017,7 +1025,7 @@ const en: Dictionary = {
             subtitleCaughtUp: "You're all caught up!",
             seeAll: "See all",
         },
-        allWords: { title: "All vocabulary", count: (n: number) => `${n} words` },
+        allWords: { title: "All vocabulary", count: (n: number) => `${n} ${n === 1 ? "word" : "words"}` },
         empty: { title: "No vocabulary found", subtitle: "Try changing your search or filters." },
         card: {
             recall: "Erkennen",
@@ -1543,6 +1551,10 @@ const fa: Dictionary = {
         changePhoto: "تغییر عکس",
         avatarUpdated: "عکس پروفایل به‌روزرسانی شد!",
         avatarUploadFailed: "بارگذاری عکس ناموفق بود",
+        cropPhoto: "برش عکس",
+        cropZoom: "بزرگنمایی",
+        cropUse: "استفاده از این عکس",
+        cropUploading: "در حال بارگذاری...",
         accountInfo: "اطلاعات حساب کاربری",
     },
     dashboard: {
