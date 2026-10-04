@@ -128,6 +128,14 @@ export interface ReadingArticleSummary {
     bookmarked: boolean;
 }
 
+/** A bookmarked article the user hasn't learned yet (the "saved for later" strip), from any level. */
+export interface ReadingPendingBookmark {
+    id: string;
+    title: string;
+    level: string;
+    bookmarkedAt: string;
+}
+
 /** One server-side page of a level's list. page is zero-based. */
 export interface ReadingArticlePage {
     items: ReadingArticleSummary[];

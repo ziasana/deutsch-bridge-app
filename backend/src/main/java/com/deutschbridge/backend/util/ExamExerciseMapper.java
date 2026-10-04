@@ -47,10 +47,11 @@ public class ExamExerciseMapper {
      * start-attempt flow) is fetched directly, so passages/questions must never leak answers here.
      */
     public static ExamExercisePublicResponse mapToPublicResponse(ExamExercise exercise) {
-        return mapToPublicResponse(exercise, Map.of());
+        return mapToPublicResponse(exercise, Map.of(), false);
     }
 
-    public static ExamExercisePublicResponse mapToPublicResponse(ExamExercise exercise, Map<String, ExamExerciseCompletion> completionsByExerciseId) {
+    public static ExamExercisePublicResponse mapToPublicResponse(ExamExercise exercise, Map<String, ExamExerciseCompletion> completionsByExerciseId,
+                                                                 boolean bookmarked) {
         List<ExamPassage> passages = exercise.getPassages() != null ? exercise.getPassages() : List.of();
         List<ExamQuestion> questions = exercise.getQuestions() != null ? exercise.getQuestions() : List.of();
         ExamExerciseCompletion completion = completionsByExerciseId.get(exercise.getId());
@@ -74,7 +75,8 @@ public class ExamExerciseMapper {
                 completion != null,
                 completion != null ? completion.getLastScore() : null,
                 exercise.isRequiresPlanning(),
-                exercise.getLeitpunkte()
+                exercise.getLeitpunkte(),
+                bookmarked
         );
     }
 
@@ -82,7 +84,8 @@ public class ExamExerciseMapper {
      * Navigation/summary shape - deliberately omits passages/questions/answerOptions so browsing
      * (section tabs, level selector, Teil listings) never pays for an exercise's full content.
      */
-    public static ExamExerciseSummaryResponse mapToSummaryResponse(ExamExercise exercise, Map<String, ExamExerciseCompletion> completionsByExerciseId) {
+    public static ExamExerciseSummaryResponse mapToSummaryResponse(ExamExercise exercise, Map<String, ExamExerciseCompletion> completionsByExerciseId,
+                                                                    boolean bookmarked) {
         ExamExerciseCompletion completion = completionsByExerciseId.get(exercise.getId());
         List<ExamQuestion> questions = exercise.getQuestions();
 
@@ -97,7 +100,8 @@ public class ExamExerciseMapper {
                 exercise.getTeilDescription(),
                 questions != null ? questions.size() : 0,
                 completion != null,
-                completion != null ? completion.getLastScore() : null
+                completion != null ? completion.getLastScore() : null,
+                bookmarked
         );
     }
 

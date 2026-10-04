@@ -3,6 +3,7 @@
 import { ArrowRight, Library, Play, Plus } from "lucide-react";
 import { VocabularyMasteryLevel } from "@/types/vocabulary";
 import { useI18n } from "@/componenets/I18nProvider";
+import CurrentLevelChip from "@/componenets/learning/CurrentLevelChip";
 import RisingBubbles from "@/componenets/learning/RisingBubbles";
 import RisingWords from "@/componenets/learning/RisingWords";
 import MasteryBar from "@/componenets/learning/MasteryBar";
@@ -47,7 +48,10 @@ export default function VocabularyHeader({ counts, showcase, onAdd, onPractice }
                         <Library className="size-6" aria-hidden="true" />
                     </span>
                     <div className="min-w-0">
-                        <h1 className="text-xl font-bold text-foreground sm:text-2xl">{t.vocabulary.title}</h1>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <h1 className="text-xl font-bold text-foreground sm:text-2xl">{t.vocabulary.title}</h1>
+                            <CurrentLevelChip />
+                        </div>
                         <p className="text-sm text-foreground/60">{t.vocabulary.subtitle}</p>
                     </div>
                 </div>

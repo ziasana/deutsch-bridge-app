@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight, Play, Sparkles } from "lucide-react";
+import CurrentLevelChip from "@/componenets/learning/CurrentLevelChip";
 import { ExpressionMasteryLevel } from "@/types/expression";
 import RisingBubbles from "@/componenets/learning/RisingBubbles";
 import RisingWords from "@/componenets/learning/RisingWords";
@@ -47,7 +48,10 @@ export default function ExpressionsHeader({ counts, words, onPractice }: Readonl
                         <Sparkles className="size-6" aria-hidden="true" />
                     </span>
                     <div className="min-w-0">
-                        <h1 className="text-xl font-bold text-foreground sm:text-2xl">Active Expressions</h1>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <h1 className="text-xl font-bold text-foreground sm:text-2xl">Active Expressions</h1>
+                            <CurrentLevelChip />
+                        </div>
                         <p className="text-sm text-foreground/60">Learn useful expressions, understand them in context, and use them yourself.</p>
                     </div>
                 </div>

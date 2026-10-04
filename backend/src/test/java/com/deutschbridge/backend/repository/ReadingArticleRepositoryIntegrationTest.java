@@ -3,6 +3,7 @@ package com.deutschbridge.backend.repository;
 import com.deutschbridge.backend.model.entity.Annotation;
 import com.deutschbridge.backend.model.entity.LearningProgress;
 import com.deutschbridge.backend.model.entity.ReadingArticle;
+import com.deutschbridge.backend.model.entity.ReadingArticleBookmark;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import jakarta.persistence.EntityManager;
@@ -36,6 +37,7 @@ class ReadingArticleRepositoryIntegrationTest {
     @Autowired private ReadingArticleRepository readingArticleRepository;
     @Autowired private LearningProgressRepository learningProgressRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private ReadingArticleBookmarkRepository bookmarkRepository;
     @Autowired private EntityManager entityManager;
 
     private ReadingArticle article(String title, LearningLevel level, LocalDateTime createdAt, String... lemmas) {
@@ -123,6 +125,39 @@ class ReadingArticleRepositoryIntegrationTest {
 
         assertEquals(2L, readingArticleRepository.findViewCountById(article.getId()).orElseThrow());
         assertEquals(0, readingArticleRepository.incrementViewCount("missing"));
+    }
+
+    @Test
+    @DisplayName("findPending -> should return only this user's unlearned bookmarks, oldest first, across levels")
+    void findPending_shouldReturnUnlearnedBookmarksOldestFirst() throws InterruptedException {
+        User learner = userRepository.save(new User("Learner", "reading-pending-" + System.nanoTime() + "@test.local", "x"));
+        User other = userRepository.save(new User("Other", "reading-pending-other-" + System.nanoTime() + "@test.local", "x"));
+        LocalDateTime now = LocalDateTime.now();
+        ReadingArticle first = article("First", LearningLevel.B2, now);
+        ReadingArticle second = article("Second", LearningLevel.A1, now);
+        ReadingArticle learnedOne = article("Learned", LearningLevel.A2, now);
+        ReadingArticle othersOnly = article("Others", LearningLevel.A2, now);
+
+        bookmark(learner, first);
+        Thread.sleep(5);
+        bookmark(learner, second);
+        bookmark(learner, learnedOne);
+        bookmark(other, othersOnly);
+        learned(learner, learnedOne, true);
+        learned(other, first, true); // someone else learning it must not hide it from this user
+
+        List<String> pendingTitles = bookmarkRepository.findPending(learner).stream()
+                .map(PendingReadingBookmarkProjection::getTitle)
+                .toList();
+
+        assertEquals(List.of("First", "Second"), pendingTitles);
+    }
+
+    private void bookmark(User user, ReadingArticle article) {
+        ReadingArticleBookmark bookmark = new ReadingArticleBookmark();
+        bookmark.setUser(user);
+        bookmark.setArticle(article);
+        bookmarkRepository.save(bookmark);
     }
 
     private void learned(User user, ReadingArticle article, boolean learned) {

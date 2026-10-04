@@ -16,6 +16,7 @@ import {
     removeReadingArticleBookmark,
 } from "@/services/readingService";
 import { setLearningProgress } from "@/services/grammarService";
+import { invalidatePendingReadingBookmarks } from "@/lib/readingQueryCache";
 import { saveToLexicon } from "@/services/lexiconService";
 import { startAttempt, submitAnswer, completeAttempt } from "@/services/readingAttemptService";
 import {
@@ -708,6 +709,7 @@ function ReadingArticleDetailContent({ articleId }: Readonly<{ articleId: string
                 // Learned counts/flags changed - refresh the level cards and list pages next time they're shown.
                 queryClient.invalidateQueries({ queryKey: ["reading", "level-summary"] });
                 queryClient.invalidateQueries({ queryKey: ["reading", "list"] });
+                invalidatePendingReadingBookmarks(queryClient);
                 toast.success(!learned ? t.readingArticle.markedLearned : t.readingArticle.markedNotLearned);
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to update progress."))
@@ -722,6 +724,7 @@ function ReadingArticleDetailContent({ articleId }: Readonly<{ articleId: string
             .then((res) => {
                 queryClient.setQueryData<ReadingArticle>(articleQueryKey, () => res.data);
                 queryClient.invalidateQueries({ queryKey: ["reading", "list"] });
+                invalidatePendingReadingBookmarks(queryClient);
                 toast.success(bookmarked ? t.readingArticle.bookmarkRemoved : t.readingArticle.bookmarkAdded);
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to update bookmark."))

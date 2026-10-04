@@ -8,7 +8,9 @@ import com.deutschbridge.backend.model.dto.ExamExercisePublicResponse;
 import com.deutschbridge.backend.model.dto.ExamExerciseResponse;
 import com.deutschbridge.backend.model.dto.ExamExerciseSummaryResponse;
 import com.deutschbridge.backend.model.dto.ExamLevelSummaryResponse;
+import com.deutschbridge.backend.model.dto.ExamPendingBookmarkResponse;
 import com.deutschbridge.backend.model.entity.ExamExercise;
+import com.deutschbridge.backend.model.entity.ExamExerciseBookmark;
 import com.deutschbridge.backend.model.entity.ExamExerciseCompletion;
 import com.deutschbridge.backend.model.entity.ExamPassage;
 import com.deutschbridge.backend.model.entity.ExamQuestion;
@@ -16,6 +18,7 @@ import com.deutschbridge.backend.model.enums.ExamSection;
 import com.deutschbridge.backend.model.enums.ExamTaskType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.ExamAttemptRepository;
+import com.deutschbridge.backend.repository.ExamExerciseBookmarkRepository;
 import com.deutschbridge.backend.repository.ExamExerciseCompletionRepository;
 import com.deutschbridge.backend.repository.ExamExerciseRepository;
 import com.deutschbridge.backend.service.cache.ContentCacheService;
@@ -46,6 +49,7 @@ public class ExamExerciseService {
     private final ExamExerciseRepository examExerciseRepository;
     private final ExamExerciseCompletionRepository examExerciseCompletionRepository;
     private final ExamAttemptRepository examAttemptRepository;
+    private final ExamExerciseBookmarkRepository examExerciseBookmarkRepository;
     private final RequestContext requestContext;
     private final ContentCacheService contentCacheService;
     private final ExamProgressCacheService examProgressCacheService;
@@ -54,6 +58,7 @@ public class ExamExerciseService {
     public ExamExerciseService(ExamExerciseRepository examExerciseRepository,
                                 ExamExerciseCompletionRepository examExerciseCompletionRepository,
                                 ExamAttemptRepository examAttemptRepository,
+                                ExamExerciseBookmarkRepository examExerciseBookmarkRepository,
                                 RequestContext requestContext,
                                 ContentCacheService contentCacheService,
                                 ExamProgressCacheService examProgressCacheService,
@@ -61,6 +66,7 @@ public class ExamExerciseService {
         this.examExerciseRepository = examExerciseRepository;
         this.examExerciseCompletionRepository = examExerciseCompletionRepository;
         this.examAttemptRepository = examAttemptRepository;
+        this.examExerciseBookmarkRepository = examExerciseBookmarkRepository;
         this.requestContext = requestContext;
         this.contentCacheService = contentCacheService;
         this.examProgressCacheService = examProgressCacheService;
@@ -79,8 +85,10 @@ public class ExamExerciseService {
         Map<String, ExamExerciseCompletion> completionsByExerciseId = examExerciseCompletionRepository.findByUserId(requestContext.getUserId()).stream()
                 .collect(Collectors.toMap(ExamExerciseCompletion::getExerciseId, completion -> completion));
 
+        Set<String> bookmarkedIds = bookmarkedExerciseIds();
+
         return exercises.stream()
-                .map(exercise -> ExamExerciseMapper.mapToSummaryResponse(exercise, completionsByExerciseId))
+                .map(exercise -> ExamExerciseMapper.mapToSummaryResponse(exercise, completionsByExerciseId, bookmarkedIds.contains(exercise.getId())))
                 .toList();
     }
 
@@ -95,7 +103,53 @@ public class ExamExerciseService {
                 .findByUserIdAndExerciseId(requestContext.getUserId(), id)
                 .map(completion -> Map.of(id, completion))
                 .orElseGet(Map::of);
-        return ExamExerciseMapper.mapToPublicResponse(exercise, completions);
+        boolean bookmarked = examExerciseBookmarkRepository.existsByUserIdAndExerciseId(requestContext.getUserId(), id);
+        return ExamExerciseMapper.mapToPublicResponse(exercise, completions, bookmarked);
+    }
+
+    private Set<String> bookmarkedExerciseIds() {
+        return examExerciseBookmarkRepository.findByUserId(requestContext.getUserId()).stream()
+                .map(ExamExerciseBookmark::getExerciseId)
+                .collect(Collectors.toSet());
+    }
+
+    /** Bookmarked-but-not-mastered exercises across all levels, oldest bookmark first (the "saved for later" strip). */
+    public List<ExamPendingBookmarkResponse> getPendingBookmarks() {
+        return examExerciseBookmarkRepository.findPending(requestContext.getUserId()).stream()
+                .map(p -> new ExamPendingBookmarkResponse(
+                        p.getId(), p.getTitle(),
+                        p.getSection() != null ? p.getSection().name() : null,
+                        p.getLevel() != null ? p.getLevel().getValue() : null,
+                        p.getBookmarkedAt()))
+                .toList();
+    }
+
+    /** Adds the current user's bookmark on a published exercise (idempotent - re-bookmarking is a no-op). */
+    public ExamExerciseSummaryResponse addBookmark(String exerciseId) throws DataNotFoundException {
+        ExamExercise exercise = findById(exerciseId);
+        if (!exercise.isPublished()) throw new DataNotFoundException(NOT_FOUND_MSG);
+        String userId = requestContext.getUserId();
+        if (!examExerciseBookmarkRepository.existsByUserIdAndExerciseId(userId, exerciseId)) {
+            ExamExerciseBookmark bookmark = new ExamExerciseBookmark();
+            bookmark.setUserId(userId);
+            bookmark.setExerciseId(exerciseId);
+            examExerciseBookmarkRepository.save(bookmark);
+        }
+        return summaryFor(exercise, true);
+    }
+
+    public ExamExerciseSummaryResponse removeBookmark(String exerciseId) throws DataNotFoundException {
+        ExamExercise exercise = findById(exerciseId);
+        examExerciseBookmarkRepository.deleteByUserIdAndExerciseId(requestContext.getUserId(), exerciseId);
+        return summaryFor(exercise, false);
+    }
+
+    private ExamExerciseSummaryResponse summaryFor(ExamExercise exercise, boolean bookmarked) {
+        Map<String, ExamExerciseCompletion> completions = examExerciseCompletionRepository
+                .findByUserIdAndExerciseId(requestContext.getUserId(), exercise.getId())
+                .map(completion -> Map.of(exercise.getId(), completion))
+                .orElseGet(Map::of);
+        return ExamExerciseMapper.mapToSummaryResponse(exercise, completions, bookmarked);
     }
 
     @CacheEvict(cacheNames = "examLevelSummary", key = "@requestContext.getUserId()")
@@ -255,6 +309,7 @@ public class ExamExerciseService {
         collectUploadUrls(exercise).forEach(fileStorageService::deleteFile);
         examAttemptRepository.deleteByExercise(exercise);
         examExerciseCompletionRepository.deleteByExerciseId(id);
+        examExerciseBookmarkRepository.deleteByExerciseId(id);
         examExerciseRepository.deleteById(id);
     }
 

@@ -20,6 +20,7 @@ public record ExamExerciseSummaryResponse(
         int questionsCount,
         boolean completed,
         /** Percentage (0-100) from the most recent completed attempt, or null if never attempted. */
-        Double lastScore
+        Double lastScore,
+        boolean bookmarked
 ) {
 }

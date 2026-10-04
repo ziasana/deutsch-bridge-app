@@ -10,6 +10,7 @@ import com.deutschbridge.backend.model.dto.ReadingArticleNeighborResponse;
 import com.deutschbridge.backend.model.dto.ReadingArticlePageResponse;
 import com.deutschbridge.backend.model.dto.ReadingArticleAdminRow;
 import com.deutschbridge.backend.model.dto.ReadingArticleResponse;
+import com.deutschbridge.backend.model.dto.ReadingPendingBookmarkResponse;
 import com.deutschbridge.backend.model.dto.ReadingArticleSummaryResponse;
 import com.deutschbridge.backend.model.dto.ReadingLevelSummaryResponse;
 import com.deutschbridge.backend.model.dto.ReadingViewCountResponse;
@@ -333,6 +334,15 @@ public class ReadingArticleService {
                 .map(n -> new ReadingArticleNeighborResponse(n.getId(), n.getTitle()))
                 .orElse(null);
         return new ReadingArticleNavigationResponse(previous, next);
+    }
+
+    /** Bookmarked-but-not-learned articles across all levels, oldest bookmark first (the "saved for later" strip). */
+    public List<ReadingPendingBookmarkResponse> getPendingBookmarks() {
+        User user = userService.findByEmail(requestContext.getUserEmail());
+        return readingArticleBookmarkRepository.findPending(user).stream()
+                .map(p -> new ReadingPendingBookmarkResponse(
+                        p.getId(), p.getTitle(), p.getLevel() != null ? p.getLevel().getValue() : null, p.getBookmarkedAt()))
+                .toList();
     }
 
     /** Adds the current user's bookmark on this article (idempotent - re-bookmarking is a no-op). */

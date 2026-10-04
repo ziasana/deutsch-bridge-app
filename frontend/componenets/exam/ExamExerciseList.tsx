@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, ChevronLeft, ChevronRight, Circle, RotateCw } from "lucide-react";
+import { Bookmark, BookmarkCheck, CheckCircle2, ChevronLeft, ChevronRight, Circle, RotateCw } from "lucide-react";
 import { ExamExerciseSummaryResponse } from "@/types/exam";
 import { effectiveScore } from "./examData";
 import { cn } from "@/lib/utils";
 import { formatClock } from "@/lib/examTime";
 import { ExamExerciseLastTime } from "@/types/examTime";
+import { useExamBookmark } from "@/hooks/exam/useExamBookmark";
 
 type StatusFilter = "ALL" | "OPEN" | "COMPLETED";
 const PAGE_SIZE = 10;
@@ -29,6 +30,7 @@ interface ExamExerciseListProps {
 /** Status-filterable, paginated list of exercises (title, progress, click-through) shared by the Teil page and Schriftlicher Ausdruck. */
 export default function ExamExerciseList({ items, color, className, lastTimes }: Readonly<ExamExerciseListProps>) {
     const router = useRouter();
+    const { toggle: toggleBookmark, pendingId: bookmarkPendingId } = useExamBookmark();
     const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
     const [page, setPage] = useState(1);
 
@@ -62,11 +64,15 @@ export default function ExamExerciseList({ items, color, className, lastTimes }:
 
             <div className="mt-4 space-y-2">
                 {pageItems.map((item) => (
-                    <button
+                    <div
                         key={item.id}
-                        type="button"
+                        role="button"
+                        tabIndex={0}
                         onClick={() => router.push(`/dashboard/exam-prep/exercise?id=${item.id}`)}
-                        className="w-full flex items-center gap-3 rounded-[10px] bg-card p-4 text-left transition hover:bg-accent/40"
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") router.push(`/dashboard/exam-prep/exercise?id=${item.id}`);
+                        }}
+                        className="w-full flex cursor-pointer items-center gap-3 rounded-[10px] bg-card p-4 text-left transition hover:bg-accent/40"
                     >
                         {item.completed ? (
                             <CheckCircle2 className="size-6 shrink-0" style={{ color }} strokeWidth={2.5} />
@@ -101,8 +107,23 @@ export default function ExamExerciseList({ items, color, className, lastTimes }:
                                 )}
                             </span>
                         )}
+                        <button
+                            type="button"
+                            disabled={bookmarkPendingId === item.id}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                toggleBookmark(item.id, item.bookmarked);
+                            }}
+                            onKeyDown={(e) => e.stopPropagation()}
+                            aria-pressed={item.bookmarked}
+                            aria-label={item.bookmarked ? "Merkzeichen entfernen" : "Aufgabe merken"}
+                            title={item.bookmarked ? "Merkzeichen entfernen" : "Aufgabe merken"}
+                            className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-foreground/45 transition hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            {item.bookmarked ? <BookmarkCheck className="size-4 text-primary" /> : <Bookmark className="size-4" />}
+                        </button>
                         <ChevronRight className="size-4 text-foreground/30 shrink-0" />
-                    </button>
+                    </div>
                 ))}
                 {pageItems.length === 0 && (
                     <div className="text-center text-foreground/50 py-10 text-sm">Keine Übungen für diesen Filter gefunden.</div>

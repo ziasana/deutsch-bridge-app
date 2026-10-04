@@ -5,15 +5,30 @@ import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-quer
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { Newspaper, CheckCircle2, Circle, ChevronRight, RotateCw, ArrowRight } from "lucide-react";
-import { getReadingArticlesPage, getReadingCategories, getReadingLevelSummary } from "@/services/readingService";
+import {
+    getReadingArticlesPage,
+    getReadingCategories,
+    getReadingLevelSummary,
+    removeReadingArticleBookmark,
+} from "@/services/readingService";
 import Loading from "@/componenets/Loading";
 import { getArticleImageSrc } from "@/lib/readingImages";
-import { LearningLevelOption, LearningLevelSelector, LearningSearch } from "@/componenets/learning";
+import {
+    CurrentLevelChip,
+    LearningLevelOption,
+    LearningLevelSelector,
+    LearningSearch,
+    SavedItemsButton,
+    SavedItemsLabels,
+    SavedItemsPanel,
+} from "@/componenets/learning";
 import { getLevelMeta } from "@/componenets/learning/levelMeta";
 import LearningPageHero from "@/componenets/learning/LearningPageHero";
 import { useI18n } from "@/componenets/I18nProvider";
 import useAuthStore from "@/store/useAuthStore";
 import { cn } from "@/lib/utils";
+import { usePendingReadingBookmarks } from "@/hook/usePendingReadingBookmarks";
+import { removePendingReadingBookmark } from "@/lib/readingQueryCache";
 
 const ITEMS_PER_PAGE = 8;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -44,6 +59,9 @@ export default function ReadingPage() {
     const [categoryId, setCategoryId] = useState("");
     // Zero-based, matching the backend.
     const [page, setPage] = useState(0);
+    const { data: pendingBookmarks = [] } = usePendingReadingBookmarks();
+    const [savedOpen, setSavedOpen] = useState(false);
+    const [removingId, setRemovingId] = useState<string | null>(null);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -118,10 +136,63 @@ export default function ReadingPage() {
     const currentPage = page + 1;
     const openArticle = (id: string) => router.push(`/dashboard/reading/article?id=${id}`);
 
+    const savedLabels: SavedItemsLabels = {
+        title: t.reading.savedTitle,
+        subtitle: t.reading.savedSubtitle,
+        waiting: t.reading.savedWaiting,
+        more: t.reading.savedMore,
+        remove: t.reading.unbookmark,
+    };
+
+    const removeSaved = (id: string) => {
+        setRemovingId(id);
+        removeReadingArticleBookmark(id)
+            .then(() => {
+                removePendingReadingBookmark(queryClient, id);
+                toast.success(t.readingArticle.bookmarkRemoved);
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to update bookmark."))
+            .finally(() => setRemovingId(null));
+    };
+
     return (
         <div className="min-h-screen bg-background px-6 py-10">
             <div className="max-w-4xl mx-auto">
-                <LearningPageHero icon={Newspaper} title={t.reading.title} subtitle={t.reading.subtitle} bubbles />
+                <LearningPageHero
+                    icon={Newspaper}
+                    title={t.reading.title}
+                    subtitle={t.reading.subtitle}
+                    bubbles
+                    meta={
+                        <CurrentLevelChip
+                            onSelect={(level) => {
+                                setSelectedLevel(level);
+                                setPage(0);
+                            }}
+                        />
+                    }
+                    actionsBelow
+                    actions={
+                        pendingBookmarks.length > 0 && (
+                            <SavedItemsButton
+                                items={pendingBookmarks}
+                                labels={savedLabels}
+                                open={savedOpen}
+                                onToggle={() => setSavedOpen((v) => !v)}
+                                onOpen={openArticle}
+                            />
+                        )
+                    }
+                />
+                {savedOpen && pendingBookmarks.length > 0 && (
+                    <SavedItemsPanel
+                        items={pendingBookmarks}
+                        labels={savedLabels}
+                        onOpen={openArticle}
+                        onRemove={removeSaved}
+                        removingId={removingId}
+                    />
+                )}
 
                 {(summaryLoading || listLoading) && <Loading />}
 

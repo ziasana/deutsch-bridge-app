@@ -1,5 +1,12 @@
 import api from "./api";
-import { ExamExercisePublicResponse, ExamExerciseSummaryResponse, ExamLevelSummaryResponse, ExamSection, ExamTaskType } from "@/types/exam";
+import {
+    ExamExercisePublicResponse,
+    ExamExerciseSummaryResponse,
+    ExamLevelSummaryResponse,
+    ExamPendingBookmark,
+    ExamSection,
+    ExamTaskType,
+} from "@/types/exam";
 
 /** Lightweight navigation shape - no passages/questions/answerOptions. Use for lists/summaries only. */
 export const getExamExercisesSummary = async (section?: ExamSection, level?: string, taskType?: ExamTaskType) => {
@@ -15,4 +22,17 @@ export const getExamLevelSummary = async () => {
 
 export const getExamExerciseById = async (id: string) => {
     return await api.get<ExamExercisePublicResponse>(`/exam/${id}`);
+};
+
+/** Bookmarked-but-not-mastered exercises across all levels, oldest bookmark first. */
+export const getPendingExamBookmarks = async () => {
+    return await api.get<ExamPendingBookmark[]>("/exam/bookmarks/pending");
+};
+
+export const addExamExerciseBookmark = async (id: string) => {
+    return await api.post<ExamExerciseSummaryResponse>(`/exam/${id}/bookmark`);
+};
+
+export const removeExamExerciseBookmark = async (id: string) => {
+    return await api.delete<ExamExerciseSummaryResponse>(`/exam/${id}/bookmark`);
 };

@@ -17,7 +17,7 @@ import { localizedLessonHeading } from "@/lib/grammarLocalization";
 import useAuthStore from "@/store/useAuthStore";
 import { useGrammarBookmark } from "@/hook/useGrammarBookmark";
 import { usePendingGrammarBookmarks } from "@/hook/usePendingGrammarBookmarks";
-import { SavedLessonsButton, SavedLessonsPanel } from "@/componenets/grammar/SavedLessons";
+import { CurrentLevelChip, SavedItemsButton, SavedItemsPanel, SavedItemsLabels } from "@/componenets/learning";
 import { cn } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 10;
@@ -82,6 +82,22 @@ export default function GrammarLessonsPage() {
     const totalPages = Math.max(1, Math.ceil(uncategorized.length / ITEMS_PER_PAGE));
     const currentPage = Math.min(page, totalPages);
     const paginated = uncategorized.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+    const savedItems = pendingBookmarks.map((l) => ({
+        id: l.id,
+        level: l.level,
+        bookmarkedAt: l.bookmarkedAt,
+        title: localizedLessonHeading(l, language).title,
+        dir: localizedLessonHeading(l, language).dir,
+    }));
+    const savedLabels: SavedItemsLabels = {
+        title: t.grammar.savedTitle,
+        subtitle: t.grammar.savedSubtitle,
+        waiting: t.grammar.savedWaiting,
+        more: t.grammar.savedMore,
+        remove: t.grammar.unbookmark,
+    };
+    const openSavedLesson = (id: string) => router.push(`/dashboard/grammar/lesson?id=${id}`);
 
     const toggleCollapsed = (id: string) => setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }));
 
@@ -149,17 +165,33 @@ export default function GrammarLessonsPage() {
                     title={t.grammar.title}
                     subtitle={t.grammar.subtitle}
                     bubbles
+                    meta={
+                        <CurrentLevelChip
+                            onSelect={(level) => {
+                                setSelectedLevel(level);
+                                setPage(1);
+                            }}
+                        />
+                    }
                     actionsBelow
                     actions={
                         pendingBookmarks.length > 0 && (
-                            <SavedLessonsButton lessons={pendingBookmarks} open={savedOpen} onToggle={() => setSavedOpen((v) => !v)} />
+                            <SavedItemsButton
+                                items={savedItems}
+                                labels={savedLabels}
+                                open={savedOpen}
+                                onToggle={() => setSavedOpen((v) => !v)}
+                                onOpen={openSavedLesson}
+                            />
                         )
                     }
                 />
                 {savedOpen && pendingBookmarks.length > 0 && (
-                    <SavedLessonsPanel
-                        lessons={pendingBookmarks}
-                        onRemoveBookmark={(id) => toggleBookmark(id, true)}
+                    <SavedItemsPanel
+                        items={savedItems}
+                        labels={savedLabels}
+                        onOpen={openSavedLesson}
+                        onRemove={(id) => toggleBookmark(id, true)}
                         removingId={bookmarkPendingId}
                     />
                 )}

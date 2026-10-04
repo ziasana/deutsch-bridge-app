@@ -27,6 +27,7 @@ public record ExamExercisePublicResponse(
         /** Percentage (0-100) from the most recent completed attempt, or null if never attempted. */
         Double lastScore,
         boolean requiresPlanning,
-        List<String> leitpunkte
+        List<String> leitpunkte,
+        boolean bookmarked
 ) {
 }

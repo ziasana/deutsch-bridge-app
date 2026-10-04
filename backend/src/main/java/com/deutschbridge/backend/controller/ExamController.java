@@ -4,6 +4,7 @@ import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.ExamExercisePublicResponse;
 import com.deutschbridge.backend.model.dto.ExamExerciseSummaryResponse;
 import com.deutschbridge.backend.model.dto.ExamLevelSummaryResponse;
+import com.deutschbridge.backend.model.dto.ExamPendingBookmarkResponse;
 import com.deutschbridge.backend.model.enums.ExamSection;
 import com.deutschbridge.backend.model.enums.ExamTaskType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
@@ -38,6 +39,22 @@ public class ExamController {
     @GetMapping("/level-summary")
     public ResponseEntity<List<ExamLevelSummaryResponse>> getLevelSummary() {
         return new ResponseEntity<>(examExerciseService.findLevelSummary(), HttpStatus.OK);
+    }
+
+    /** Bookmarked exercises the user hasn't mastered yet, across all levels, oldest bookmark first. */
+    @GetMapping("/bookmarks/pending")
+    public ResponseEntity<List<ExamPendingBookmarkResponse>> getPendingBookmarks() {
+        return new ResponseEntity<>(examExerciseService.getPendingBookmarks(), HttpStatus.OK);
+    }
+
+    @PostMapping("/{id}/bookmark")
+    public ResponseEntity<ExamExerciseSummaryResponse> addBookmark(@PathVariable String id) throws DataNotFoundException {
+        return new ResponseEntity<>(examExerciseService.addBookmark(id), HttpStatus.OK);
+    }
+
+    @DeleteMapping("/{id}/bookmark")
+    public ResponseEntity<ExamExerciseSummaryResponse> removeBookmark(@PathVariable String id) throws DataNotFoundException {
+        return new ResponseEntity<>(examExerciseService.removeBookmark(id), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")

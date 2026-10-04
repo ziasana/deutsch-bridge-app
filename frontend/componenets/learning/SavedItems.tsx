@@ -1,13 +1,27 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Bookmark, ChevronDown, X } from "lucide-react";
-import { getLevelMeta } from "@/componenets/learning/levelMeta";
-import { useI18n } from "@/componenets/I18nProvider";
-import { localizedLessonHeading } from "@/lib/grammarLocalization";
+import { getLevelMeta } from "./levelMeta";
 import { cn } from "@/lib/utils";
-import { GrammarPendingBookmark } from "@/types/grammar";
+
+/** One saved (bookmarked, not yet learned) lesson or article, already localized for display. */
+export interface SavedItem {
+    id: string;
+    title: string;
+    level: string;
+    /** ISO timestamp of when it was bookmarked - drives the "waiting N days" note. */
+    bookmarkedAt: string;
+    dir?: "ltr" | "rtl";
+}
+
+export interface SavedItemsLabels {
+    title: string;
+    subtitle: (count: number) => string;
+    waiting: (days: number) => string;
+    more: (count: number) => string;
+    remove: string;
+}
 
 const CHIP_MIN_WIDTH = 112;
 const CHIP_GAP = 24;
@@ -22,19 +36,19 @@ function chipsThatFit(width: number, total: number) {
     return Math.max(1, Math.min(fit(width - MORE_LINK_WIDTH - CHIP_GAP), MAX_PREVIEW));
 }
 
-interface SavedLessonsButtonProps {
-    lessons: GrammarPendingBookmark[];
+interface SavedItemsButtonProps {
+    items: SavedItem[];
+    labels: SavedItemsLabels;
     open: boolean;
     onToggle: () => void;
+    onOpen: (id: string) => void;
 }
 
 /**
- * Hero card: "Saved for later" with a count, as many of the oldest lessons as fit on one row, and a compact "+N"
- * link. The header toggles the full list under the hero (which then replaces the previews).
+ * Hero block shared by the grammar and reading pages: "Saved for later" with a count, as many of the oldest
+ * items as fit on one row, and a compact "+N" link. The header toggles the full list under the hero (which then replaces the previews).
  */
-export function SavedLessonsButton({ lessons, open, onToggle }: Readonly<SavedLessonsButtonProps>) {
-    const router = useRouter();
-    const { language, t } = useI18n();
+export function SavedItemsButton({ items, labels, open, onToggle, onOpen }: Readonly<SavedItemsButtonProps>) {
     const rowRef = useRef<HTMLDivElement>(null);
     const [fitCount, setFitCount] = useState(2);
 
@@ -42,15 +56,15 @@ export function SavedLessonsButton({ lessons, open, onToggle }: Readonly<SavedLe
     useEffect(() => {
         const row = rowRef.current;
         if (!row) return;
-        const update = () => setFitCount(chipsThatFit(row.clientWidth, lessons.length));
+        const update = () => setFitCount(chipsThatFit(row.clientWidth, items.length));
         update();
         const observer = new ResizeObserver(update);
         observer.observe(row);
         return () => observer.disconnect();
-    }, [lessons.length, open]);
+    }, [items.length, open]);
 
-    const preview = lessons.slice(0, fitCount);
-    const moreCount = lessons.length - preview.length;
+    const preview = items.slice(0, fitCount);
+    const moreCount = items.length - preview.length;
 
     return (
         <div className="mt-2 w-full">
@@ -65,33 +79,32 @@ export function SavedLessonsButton({ lessons, open, onToggle }: Readonly<SavedLe
                     <span className="relative inline-flex size-3 rounded-full bg-learning-expression ring-2 ring-card" />
                 </span>
                 <Bookmark className="size-4" aria-hidden="true" />
-                <span>{t.grammar.savedTitle}</span>
+                <span>{labels.title}</span>
                 <span className="flex min-w-6 items-center justify-center rounded-full bg-primary-foreground/20 px-1.5 py-0.5 text-xs font-semibold">
-                    {lessons.length}
+                    {items.length}
                 </span>
                 <ChevronDown className={cn("size-4 opacity-80 transition-transform", open && "rotate-180")} aria-hidden="true" />
             </button>
 
             {!open && (
                 <div ref={rowRef} className="mt-2 flex items-center gap-6">
-                    {preview.map((lesson) => {
-                        const { title, dir } = localizedLessonHeading(lesson, language);
-                        const levelColor = getLevelMeta(lesson.level).color;
+                    {preview.map((item) => {
+                        const levelColor = getLevelMeta(item.level).color;
                         return (
                             <button
-                                key={lesson.id}
+                                key={item.id}
                                 type="button"
-                                dir={dir}
-                                onClick={() => router.push(`/dashboard/grammar/lesson?id=${lesson.id}`)}
+                                dir={item.dir}
+                                onClick={() => onOpen(item.id)}
                                 className="group flex min-w-0 flex-1 basis-0 cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left transition hover:bg-primary/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                             >
                                 <span
                                     className="shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-semibold leading-none"
                                     style={{ backgroundColor: `${levelColor}1a`, color: levelColor }}
                                 >
-                                    {lesson.level}
+                                    {item.level}
                                 </span>
-                                <span className="min-w-0 flex-1 truncate text-sm text-foreground/85 group-hover:text-primary">{title}</span>
+                                <span className="min-w-0 flex-1 truncate text-sm text-foreground/85 group-hover:text-primary">{item.title}</span>
                             </button>
                         );
                     })}
@@ -99,8 +112,8 @@ export function SavedLessonsButton({ lessons, open, onToggle }: Readonly<SavedLe
                         <button
                             type="button"
                             onClick={onToggle}
-                            aria-label={t.grammar.savedMore(moreCount)}
-                            title={t.grammar.savedMore(moreCount)}
+                            aria-label={labels.more(moreCount)}
+                            title={labels.more(moreCount)}
                             className="shrink-0 cursor-pointer rounded-lg px-2 py-1.5 text-xs font-medium text-primary hover:underline"
                         >
                             +{moreCount}
@@ -115,52 +128,51 @@ export function SavedLessonsButton({ lessons, open, onToggle }: Readonly<SavedLe
 const STALE_AFTER_DAYS = 7;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-interface SavedLessonsPanelProps {
-    lessons: GrammarPendingBookmark[];
-    onRemoveBookmark: (lessonId: string) => void;
+interface SavedItemsPanelProps {
+    items: SavedItem[];
+    labels: SavedItemsLabels;
+    onOpen: (id: string) => void;
+    onRemove: (id: string) => void;
     removingId: string | null;
 }
 
-/** Slim list of the saved lessons still to finish, oldest first. Scrolls instead of growing past ~5 rows. */
-export function SavedLessonsPanel({ lessons, onRemoveBookmark, removingId }: Readonly<SavedLessonsPanelProps>) {
-    const router = useRouter();
-    const { language, t } = useI18n();
+/** Slim list of every saved item still to finish, oldest first. Scrolls instead of growing past ~5 rows. */
+export function SavedItemsPanel({ items, labels, onOpen, onRemove, removingId }: Readonly<SavedItemsPanelProps>) {
     // Captured once so every row is measured against the same moment (and render stays pure).
     const [now] = useState(() => Date.now());
 
     return (
-        <section aria-label={t.grammar.savedTitle} className="mt-3 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-card">
-            <p className="px-4 pb-1 pt-3 text-xs text-foreground/55">{t.grammar.savedSubtitle(lessons.length)}</p>
+        <section aria-label={labels.title} className="mt-3 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-card">
+            <p className="px-4 pb-1 pt-3 text-xs text-foreground/55">{labels.subtitle(items.length)}</p>
             <ul className="max-h-72 divide-y divide-border/50 overflow-y-auto">
-                {lessons.map((lesson) => {
-                    const { title, dir } = localizedLessonHeading(lesson, language);
-                    const levelColor = getLevelMeta(lesson.level).color;
-                    const waitingDays = Math.floor((now - new Date(lesson.bookmarkedAt).getTime()) / DAY_MS);
+                {items.map((item) => {
+                    const levelColor = getLevelMeta(item.level).color;
+                    const waitingDays = Math.floor((now - new Date(item.bookmarkedAt).getTime()) / DAY_MS);
                     return (
-                        <li key={lesson.id} className="flex items-center gap-1 pr-2 transition-colors hover:bg-primary/5">
+                        <li key={item.id} className="flex items-center gap-1 pr-2 transition-colors hover:bg-primary/5">
                             <button
                                 type="button"
-                                dir={dir}
-                                onClick={() => router.push(`/dashboard/grammar/lesson?id=${lesson.id}`)}
+                                dir={item.dir}
+                                onClick={() => onOpen(item.id)}
                                 className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50"
                             >
                                 <span
                                     className="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
                                     style={{ backgroundColor: `${levelColor}1a`, color: levelColor }}
                                 >
-                                    {lesson.level}
+                                    {item.level}
                                 </span>
-                                <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{title}</span>
+                                <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{item.title}</span>
                                 {waitingDays >= STALE_AFTER_DAYS && (
-                                    <span className="shrink-0 text-xs text-learning-review">{t.grammar.savedWaiting(waitingDays)}</span>
+                                    <span className="shrink-0 text-xs text-learning-review">{labels.waiting(waitingDays)}</span>
                                 )}
                             </button>
                             <button
                                 type="button"
-                                disabled={removingId === lesson.id}
-                                onClick={() => onRemoveBookmark(lesson.id)}
-                                aria-label={t.grammar.unbookmark}
-                                title={t.grammar.unbookmark}
+                                disabled={removingId === item.id}
+                                onClick={() => onRemove(item.id)}
+                                aria-label={labels.remove}
+                                title={labels.remove}
                                 className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-foreground/35 transition hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <X className="size-4" />

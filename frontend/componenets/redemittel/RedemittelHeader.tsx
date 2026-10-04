@@ -5,6 +5,7 @@ import { RedemittelHub } from "@/types/redemittel";
 import RisingBubbles from "@/componenets/learning/RisingBubbles";
 import RisingWords from "@/componenets/learning/RisingWords";
 import MasteryBar from "@/componenets/learning/MasteryBar";
+import CurrentLevelChip from "@/componenets/learning/CurrentLevelChip";
 
 // Sample phrases floating up the hero: a taste of what Redemittel are.
 const SAMPLE_PHRASES = ["Meiner Meinung nach …", "Da stimme ich dir zu!", "Wie wäre es mit …?", "Ich möchte mich entschuldigen", "Darf ich Sie kurz stören?", "Vielen Dank im Voraus"];
@@ -46,7 +47,10 @@ export default function RedemittelHeader({ hub, onNavigate, onDiscover }: Readon
                         <MessagesSquare className="size-6" aria-hidden="true" />
                     </span>
                     <div className="min-w-0">
-                        <h1 className="text-xl font-bold text-foreground sm:text-2xl">Redemittel</h1>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <h1 className="text-xl font-bold text-foreground sm:text-2xl">Redemittel</h1>
+                            <CurrentLevelChip title="Dein aktuelles Niveau" />
+                        </div>
                         <p className="text-sm text-foreground/60">Ausdrücke für Schreiben, Sprechen und Alltag.</p>
                     </div>
                 </div>

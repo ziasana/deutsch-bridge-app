@@ -7,6 +7,7 @@ import com.deutschbridge.backend.model.dto.ExamExercisePublicResponse;
 import com.deutschbridge.backend.model.dto.ExamExerciseSummaryResponse;
 import com.deutschbridge.backend.model.dto.ExamLevelSummaryResponse;
 import com.deutschbridge.backend.model.entity.ExamExercise;
+import com.deutschbridge.backend.model.entity.ExamExerciseBookmark;
 import com.deutschbridge.backend.model.entity.ExamExerciseCompletion;
 import com.deutschbridge.backend.model.entity.ExamPassage;
 import com.deutschbridge.backend.model.entity.ExamQuestion;
@@ -14,6 +15,7 @@ import com.deutschbridge.backend.model.enums.ExamSection;
 import com.deutschbridge.backend.model.enums.ExamTaskType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.ExamAttemptRepository;
+import com.deutschbridge.backend.repository.ExamExerciseBookmarkRepository;
 import com.deutschbridge.backend.repository.ExamExerciseCompletionRepository;
 import com.deutschbridge.backend.repository.ExamExerciseRepository;
 import com.deutschbridge.backend.service.cache.ContentCacheService;
@@ -42,6 +44,9 @@ class ExamExerciseServiceTest {
 
     @Mock
     private ExamAttemptRepository examAttemptRepository;
+
+    @Mock
+    private ExamExerciseBookmarkRepository examExerciseBookmarkRepository;
 
     @Mock
     private RequestContext requestContext;
@@ -157,6 +162,38 @@ class ExamExerciseServiceTest {
 
         assertTrue(result.get(0).completed());
         assertEquals(75.0, result.get(0).lastScore());
+    }
+
+    @Test
+    @DisplayName("findSummary -> should flag the exercises the user bookmarked")
+    void findSummary_shouldFlagBookmarkedExercises() {
+        ExamExercise exercise = hoerverstehenExercise();
+        ExamExerciseBookmark bookmark = new ExamExerciseBookmark();
+        bookmark.setUserId("u1");
+        bookmark.setExerciseId("ex1");
+
+        when(contentCacheService.getPublishedExamExercises(ExamSection.HOERVERSTEHEN, null, null)).thenReturn(List.of(exercise));
+        when(requestContext.getUserId()).thenReturn("u1");
+        when(examExerciseCompletionRepository.findByUserId("u1")).thenReturn(List.of());
+        when(examExerciseBookmarkRepository.findByUserId("u1")).thenReturn(List.of(bookmark));
+
+        assertTrue(service.findSummary(ExamSection.HOERVERSTEHEN, null, null).get(0).bookmarked());
+    }
+
+    @Test
+    @DisplayName("addBookmark -> should save once and be a no-op when already bookmarked; unpublished is not found")
+    void addBookmark_shouldBeIdempotentAndRejectUnpublished() throws DataNotFoundException {
+        ExamExercise exercise = hoerverstehenExercise();
+        when(examExerciseRepository.findById("ex1")).thenReturn(Optional.of(exercise));
+        when(requestContext.getUserId()).thenReturn("u1");
+        when(examExerciseBookmarkRepository.existsByUserIdAndExerciseId("u1", "ex1")).thenReturn(false, true);
+
+        assertTrue(service.addBookmark("ex1").bookmarked());
+        assertTrue(service.addBookmark("ex1").bookmarked());
+        verify(examExerciseBookmarkRepository, times(1)).save(any(ExamExerciseBookmark.class));
+
+        exercise.setPublished(false);
+        assertThrows(DataNotFoundException.class, () -> service.addBookmark("ex1"));
     }
 
     @Test

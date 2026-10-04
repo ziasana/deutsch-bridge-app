@@ -27,11 +27,12 @@ import { resolveUploadUrl } from "@/lib/backendOrigin";
 import TranscriptModal from "@/componenets/exam/TranscriptModal";
 import TranscriptContent from "@/componenets/exam/TranscriptContent";
 import { isEmptyTranscript } from "@/lib/transcriptFormat";
-import { ArrowLeft, ArrowRight, Check, FileText, Play, RotateCw, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Bookmark, BookmarkCheck, Check, FileText, Play, RotateCw, X } from "lucide-react";
 import CircularProgress from "@/componenets/CircularProgress";
 import LearningPageHero from "@/componenets/learning/LearningPageHero";
 import { EXAM_TYPE_META } from "@/componenets/exam";
 import { cn } from "@/lib/utils";
+import { useExamBookmark } from "@/hooks/exam/useExamBookmark";
 import ExamExerciseTimer, { useStopExerciseTimer } from "@/componenets/exam/ExamExerciseTimer";
 import useExamTimerStore from "@/store/useExamTimerStore";
 import ExamTimeSummary from "@/componenets/exam/ExamTimeSummary";
@@ -951,6 +952,7 @@ function HoerenListQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRes
 
 function ExamExerciseContent() {
     const router = useRouter();
+    const { toggle: toggleBookmark, pendingId: bookmarkPendingId } = useExamBookmark();
     const searchParams = useSearchParams();
     const exerciseId = searchParams.get("id") ?? "";
     const {
@@ -1014,6 +1016,23 @@ function ExamExerciseContent() {
                     title={exercise.title}
                     subtitle={sectionMeta?.label ?? "Prüfungsvorbereitung"}
                     meta={<span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">{exercise.level ?? "Alle Niveaus"}</span>}
+                    actions={
+                        <button
+                            type="button"
+                            disabled={bookmarkPendingId === exercise.id}
+                            onClick={() => toggleBookmark(exercise.id, exercise.bookmarked)}
+                            aria-pressed={exercise.bookmarked}
+                            className={cn(
+                                "inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-60",
+                                exercise.bookmarked
+                                    ? "bg-primary/10 text-primary hover:bg-primary/20"
+                                    : "bg-primary text-primary-foreground hover:bg-primary/90",
+                            )}
+                        >
+                            {exercise.bookmarked ? <BookmarkCheck className="size-4" aria-hidden="true" /> : <Bookmark className="size-4" aria-hidden="true" />}
+                            {exercise.bookmarked ? "Gemerkt" : "Merken"}
+                        </button>
+                    }
                 />
 
                 <ExamExerciseTimer exercise={exercise} />

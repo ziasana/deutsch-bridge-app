@@ -143,6 +143,7 @@ export interface ExamExercisePublicResponse {
     completed: boolean;
     /** Percentage (0-100) from the most recent completed attempt, or null if never attempted. */
     lastScore: number | null;
+    bookmarked: boolean;
 }
 
 /**
@@ -164,6 +165,16 @@ export interface ExamExerciseSummaryResponse {
     questionsCount: number;
     completed: boolean;
     lastScore: number | null;
+    bookmarked: boolean;
+}
+
+/** A bookmarked exercise the user hasn't mastered yet (the "saved for later" strip), from any level. */
+export interface ExamPendingBookmark {
+    id: string;
+    title: string;
+    section: ExamSection;
+    level: string | null;
+    bookmarkedAt: string;
 }
 
 /** Per-level aggregate progress across every practicable section, for the level selector. */

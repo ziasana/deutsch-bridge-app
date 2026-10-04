@@ -6,6 +6,7 @@ import com.deutschbridge.backend.model.dto.ReadingArticlePageResponse;
 import com.deutschbridge.backend.model.dto.ReadingArticleResponse;
 import com.deutschbridge.backend.model.dto.ReadingCategoryResponse;
 import com.deutschbridge.backend.model.dto.ReadingLevelSummaryResponse;
+import com.deutschbridge.backend.model.dto.ReadingPendingBookmarkResponse;
 import com.deutschbridge.backend.model.dto.ReadingViewCountResponse;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.service.ReadingArticleService;
@@ -52,6 +53,12 @@ public class ReadingController {
     @GetMapping("/categories")
     public ResponseEntity<List<ReadingCategoryResponse>> getCategories() {
         return new ResponseEntity<>(readingCategoryService.findAllPublic(), HttpStatus.OK);
+    }
+
+    /** Bookmarked articles the user hasn't learned yet, across all levels, oldest bookmark first. */
+    @GetMapping("/bookmarks/pending")
+    public ResponseEntity<List<ReadingPendingBookmarkResponse>> getPendingBookmarks() {
+        return new ResponseEntity<>(readingArticleService.getPendingBookmarks(), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")

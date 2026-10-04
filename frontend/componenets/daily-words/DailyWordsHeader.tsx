@@ -1,6 +1,7 @@
 import { Check, SpellCheck } from "lucide-react";
 import { DailyWord } from "@/types/dailyWord";
 import { useI18n } from "@/componenets/I18nProvider";
+import CurrentLevelChip from "@/componenets/learning/CurrentLevelChip";
 import { cn } from "@/lib/utils";
 
 interface DailyWordsHeaderProps {
@@ -31,7 +32,10 @@ export default function DailyWordsHeader({ words, currentIndex, onSelect }: Read
                         <SpellCheck className="size-6" aria-hidden="true" />
                     </span>
                     <div className="min-w-0">
-                        <h1 className="truncate text-xl font-bold text-foreground sm:text-2xl">{t.dailyWords.title}</h1>
+                        <div className="flex items-center gap-2">
+                            <h1 className="truncate text-xl font-bold text-foreground sm:text-2xl">{t.dailyWords.title}</h1>
+                            <CurrentLevelChip />
+                        </div>
                         <p className="truncate text-sm text-foreground/60">{t.dailyWords.subtitle(total)}</p>
                     </div>
                 </div>

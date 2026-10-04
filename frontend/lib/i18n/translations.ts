@@ -191,6 +191,11 @@ export interface Dictionary {
         bookmarkedFilter: string;
         category: string;
         allCategories: string;
+        savedTitle: string;
+        savedSubtitle: (count: number) => string;
+        savedWaiting: (days: number) => string;
+        savedMore: (count: number) => string;
+        unbookmark: string;
     };
     dailyWords: {
         title: string;
@@ -893,6 +898,12 @@ const en: Dictionary = {
         bookmarkedFilter: "Bookmarked",
         category: "Category",
         allCategories: "All categories",
+        savedTitle: "Saved for later",
+        savedSubtitle: (count: number) =>
+            `${count} bookmarked article${count > 1 ? "s" : ""} still to finish. Finish these before starting something new.`,
+        savedWaiting: (days: number) => `Waiting ${days} days`,
+        savedMore: (count: number) => `+${count} more`,
+        unbookmark: "Remove bookmark",
     },
     dailyWords: {
         title: "Daily Words",
@@ -1675,6 +1686,11 @@ const fa: Dictionary = {
         bookmarkedFilter: "نشان‌شده‌ها",
         category: "دسته‌بندی",
         allCategories: "همه دسته‌بندی‌ها",
+        savedTitle: "ذخیره‌شده برای بعد",
+        savedSubtitle: (count: number) => `${count} مقاله نشان‌شده هنوز تمام نشده است. اول این‌ها را تمام کنید، بعد سراغ مقاله جدید بروید.`,
+        savedWaiting: (days: number) => `${days} روز در انتظار`,
+        savedMore: (count: number) => `${count} مقاله دیگر`,
+        unbookmark: "حذف نشان",
     },
     dailyWords: {
         title: "واژه‌های روزانه",

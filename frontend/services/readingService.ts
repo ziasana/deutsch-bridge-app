@@ -5,6 +5,7 @@ import {
     ReadingArticlePage,
     ReadingCategory,
     ReadingLevelSummary,
+    ReadingPendingBookmark,
 } from "@/types/reading";
 
 /** Lightweight list shape for one level - never the full articles. page is zero-based. */
@@ -36,6 +37,11 @@ export const getReadingLevelSummary = async () => {
 /** Every category ("Thema"), for the reading list's filter dropdown. */
 export const getReadingCategories = async () => {
     return await api.get<ReadingCategory[]>("/reading/categories");
+};
+
+/** Bookmarked-but-not-learned articles across all levels, oldest bookmark first. */
+export const getPendingReadingBookmarks = async () => {
+    return await api.get<ReadingPendingBookmark[]>("/reading/bookmarks/pending");
 };
 
 export const getReadingArticleById = async (id: string) => {

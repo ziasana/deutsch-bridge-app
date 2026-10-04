@@ -5,11 +5,19 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "@/lib/toast";
-import { BarChart3, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { getExamExercisesSummary, getExamLevelSummary } from "@/services/examService";
 import { ExamSection } from "@/types/exam";
 import Loading from "@/componenets/Loading";
-import { LearningLevelOption, LearningLevelSelector, LearningSearch } from "@/componenets/learning";
+import {
+    CurrentLevelChip,
+    LearningLevelOption,
+    LearningLevelSelector,
+    LearningSearch,
+    SavedItemsButton,
+    SavedItemsLabels,
+    SavedItemsPanel,
+} from "@/componenets/learning";
 import LearningPageHero from "@/componenets/learning/LearningPageHero";
 import {
     ContinueLearningCard,
@@ -28,6 +36,17 @@ import { ContentItemRow } from "@/componenets/CategoryAccordion";
 import useAuthStore from "@/store/useAuthStore";
 import TeilTimeCard from "@/componenets/exam/TeilTimeCard";
 import { useExerciseLastTimes } from "@/hooks/exam/useExerciseLastTimes";
+import { usePendingExamBookmarks } from "@/hooks/exam/usePendingExamBookmarks";
+import { useExamBookmark } from "@/hooks/exam/useExamBookmark";
+
+const SAVED_LABELS: SavedItemsLabels = {
+    title: "Für später gemerkt",
+    subtitle: (count) =>
+        `${count} gemerkte ${count === 1 ? "Aufgabe wartet" : "Aufgaben warten"} noch. Schließe sie ab, bevor du etwas Neues beginnst.`,
+    waiting: (days) => `Seit ${days} Tagen offen`,
+    more: (count) => `+${count} weitere`,
+    remove: "Merkzeichen entfernen",
+};
 
 const VALID_SECTIONS = new Set<string>(EXAM_TYPE_ORDER);
 
@@ -51,6 +70,9 @@ function ExamPrepContent() {
         initialSection && VALID_SECTIONS.has(initialSection) ? (initialSection as ExamSection) : "LESEVERSTEHEN",
     );
     const [search, setSearch] = useState("");
+    const { data: pendingBookmarks = [] } = usePendingExamBookmarks();
+    const { toggle: toggleBookmark, pendingId: bookmarkPendingId } = useExamBookmark();
+    const [savedOpen, setSavedOpen] = useState(false);
 
     // Keep the picked section/level in the URL (replacing, not adding a history entry), so that
     // "Zurück" from an exercise reopens this same view instead of the default one.
@@ -150,6 +172,14 @@ function ExamPrepContent() {
         }
     };
 
+    const savedItems = pendingBookmarks.map((b) => ({
+        id: b.id,
+        level: b.level ?? "",
+        bookmarkedAt: b.bookmarkedAt,
+        title: `${EXAM_TYPE_META[b.section]?.label ?? b.section}: ${b.title}`,
+    }));
+    const openSaved = (id: string) => router.push(`/dashboard/exam-prep/exercise?id=${id}`);
+
     return (
         <div className="min-h-screen bg-background px-6 py-10" dir="ltr">
             <div className="max-w-4xl mx-auto">
@@ -158,20 +188,30 @@ function ExamPrepContent() {
                     title="Prüfungsvorbereitung"
                     subtitle="Bereite dich Schritt für Schritt auf die Deutschprüfung vor."
                     bubbles
-                    meta={
-                        profileLevel && (
-                            <button
-                                type="button"
-                                onClick={() => chooseLevel(profileLevel)}
-                                title="Dein aktuelles Niveau"
-                                className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary transition hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-                            >
-                                <BarChart3 className="size-3" aria-hidden="true" />
-                                {profileLevel}
-                            </button>
+                    actionsBelow
+                    actions={
+                        savedItems.length > 0 && (
+                            <SavedItemsButton
+                                items={savedItems}
+                                labels={SAVED_LABELS}
+                                open={savedOpen}
+                                onToggle={() => setSavedOpen((v) => !v)}
+                                onOpen={openSaved}
+                            />
                         )
                     }
+                    meta={<CurrentLevelChip onSelect={chooseLevel} title="Dein aktuelles Niveau" />}
                 />
+
+                {savedOpen && savedItems.length > 0 && (
+                    <SavedItemsPanel
+                        items={savedItems}
+                        labels={SAVED_LABELS}
+                        onOpen={openSaved}
+                        onRemove={(id) => toggleBookmark(id, true)}
+                        removingId={bookmarkPendingId}
+                    />
+                )}
 
                 <ExamTypeSelector
                     className="mt-6"
