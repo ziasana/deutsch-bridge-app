@@ -4,6 +4,7 @@ import {
     CategoryTestSubmitRequest,
     GrammarCategoryWithLessons,
     GrammarLesson,
+    GrammarLessonNavigation,
     GrammarLevelSummary,
     GrammarLevelView,
     GrammarPendingBookmark,
@@ -27,6 +28,11 @@ export const getPendingGrammarBookmarks = async () => {
 
 export const getGrammarLessonById = async (id: string) => {
     return await api.get<GrammarLesson>(`/grammar/${id}`);
+};
+
+/** The previous/next lesson in the lesson's level, in the same order as the list. */
+export const getGrammarLessonNavigation = async (id: string) => {
+    return await api.get<GrammarLessonNavigation>(`/grammar/${id}/navigation`);
 };
 
 export const addGrammarLessonBookmark = async (id: string) => {

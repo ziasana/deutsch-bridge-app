@@ -2,32 +2,76 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
-import { getGrammarLessonById, setLearningProgress } from "@/services/grammarService";
+import { getGrammarLessonById, getGrammarLessonNavigation, setLearningProgress } from "@/services/grammarService";
 import { grammarLessonQueryKey, markLessonLearnedInCache } from "@/lib/grammarQueryCache";
 import Loading from "@/componenets/Loading";
-import { BookOpen, Bookmark, BookmarkCheck, Check, Lightbulb, MessageSquareQuote, PlayCircle } from "lucide-react";
+import { BookOpen, Bookmark, BookmarkCheck, Check, ChevronLeft, ChevronRight, Lightbulb, MessageSquareQuote, PlayCircle } from "lucide-react";
 import LearningPageHero from "@/componenets/learning/LearningPageHero";
 import GrammarQuizSection from "@/componenets/GrammarQuizSection";
 import { useI18n } from "@/componenets/I18nProvider";
 import LessonMarkdown from "@/componenets/LessonMarkdown";
-import { isTranslatableLevel, localizedLessonText } from "@/lib/grammarLocalization";
+import { isTranslatableLevel, localizedLessonHeading, localizedLessonText } from "@/lib/grammarLocalization";
+import { GrammarLessonNeighbor } from "@/types/grammar";
 import { useGrammarBookmark } from "@/hook/useGrammarBookmark";
 import { cn } from "@/lib/utils";
+
+/**
+ * Previous/Next within the level's list order. Never gated on the quiz or on "learned" - a learner is
+ * always free to move on, whether skimming or studying deeply.
+ */
+function LessonNavRow({
+    previous,
+    next,
+    onNavigate,
+}: Readonly<{
+    previous: GrammarLessonNeighbor | null | undefined;
+    next: GrammarLessonNeighbor | null | undefined;
+    onNavigate: (id: string) => void;
+}>) {
+    const { language, t } = useI18n();
+    if (!previous && !next) return null;
+
+    const titleOf = (lesson: GrammarLessonNeighbor) =>
+        localizedLessonHeading({ ...lesson, summary: "", summaryFa: null }, language).title;
+    const navButton =
+        "flex min-w-0 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground/80 shadow-sm transition hover:text-primary hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:pointer-events-none disabled:opacity-0";
+
+    return (
+        <nav aria-label={`${t.grammar.previousLesson} / ${t.grammar.nextLesson}`} dir={language === "fa" ? "rtl" : "ltr"} className="flex items-center justify-between gap-3">
+            <button type="button" disabled={!previous} onClick={() => previous && onNavigate(previous.id)} title={previous ? titleOf(previous) : undefined} className={navButton}>
+                <ChevronLeft className="size-4 shrink-0 rtl:rotate-180" aria-hidden="true" />
+                <span className="truncate">{t.grammar.previousLesson}</span>
+            </button>
+            <button type="button" disabled={!next} onClick={() => next && onNavigate(next.id)} title={next ? titleOf(next) : undefined} className={navButton}>
+                <span className="truncate">{t.grammar.nextLesson}</span>
+                <ChevronRight className="size-4 shrink-0 rtl:rotate-180" aria-hidden="true" />
+            </button>
+        </nav>
+    );
+}
 
 export default function GrammarLessonDetailPage() {
     return (
         <Suspense fallback={<Loading />}>
-            <GrammarLessonDetailContent />
+            <GrammarLessonDetailRouter />
         </Suspense>
     );
 }
 
-function GrammarLessonDetailContent() {
-    const searchParams = useSearchParams();
-    const lessonId = searchParams.get("id") ?? "";
+/**
+ * Keys the content by lesson id, so Previous/Next - which push a new id onto this same route - fully
+ * remount the page: the quiz answers and the in-flight button states never leak into the next lesson.
+ */
+function GrammarLessonDetailRouter() {
+    const lessonId = useSearchParams().get("id") ?? "";
+    return <GrammarLessonDetailContent key={lessonId} lessonId={lessonId} />;
+}
+
+function GrammarLessonDetailContent({ lessonId }: Readonly<{ lessonId: string }>) {
+    const router = useRouter();
     const { language, t } = useI18n();
     const queryClient = useQueryClient();
     const [updatingLearned, setUpdatingLearned] = useState(false);
@@ -40,6 +84,24 @@ function GrammarLessonDetailContent() {
         queryFn: () => getGrammarLessonById(lessonId).then((res) => res.data),
         enabled: !!lessonId,
     });
+
+    // Previous/Next in the level's list order - lightweight and cached server-side, so always fetch.
+    const { data: navigation } = useQuery({
+        queryKey: ["grammar", "navigation", lessonId],
+        queryFn: () => getGrammarLessonNavigation(lessonId).then((res) => res.data),
+        enabled: !!lessonId,
+    });
+    const goToLesson = (id: string) => router.push(`/dashboard/grammar/lesson?id=${id}`);
+
+    // Warm the next lesson so "Next" opens instantly.
+    const nextLessonId = navigation?.next?.id;
+    useEffect(() => {
+        if (!nextLessonId) return;
+        queryClient.prefetchQuery({
+            queryKey: grammarLessonQueryKey(nextLessonId),
+            queryFn: () => getGrammarLessonById(nextLessonId).then((res) => res.data),
+        });
+    }, [nextLessonId, queryClient]);
 
     useEffect(() => {
         if (lessonError) {
@@ -107,6 +169,8 @@ function GrammarLessonDetailContent() {
                         </>
                     }
                 />
+
+                <LessonNavRow previous={navigation?.previous} next={navigation?.next} onNavigate={goToLesson} />
 
                 <article className="relative space-y-6 rounded-[10px] bg-card p-6 shadow-card sm:p-8" dir={localized.dir}>
                     {/* The card is white, so the button gets its own tint (and a solid fill once saved) to stay visible. */}
@@ -179,6 +243,8 @@ function GrammarLessonDetailContent() {
                 </article>
 
                 <GrammarQuizSection quiz={lesson.quiz ?? []} lessonId={lesson.id} lessonLevel={lesson.level} language={language} />
+
+                <LessonNavRow previous={navigation?.previous} next={navigation?.next} onNavigate={goToLesson} />
             </div>
         </div>
     );

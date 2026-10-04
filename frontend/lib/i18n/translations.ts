@@ -486,6 +486,8 @@ export interface Dictionary {
         savedMore: (count: number) => string;
         savedChip: (count: number) => string;
         savedChipCta: string;
+        previousLesson: string;
+        nextLesson: string;
         saving: string;
         watchVideo: string;
         exercises: string;
@@ -1212,6 +1214,8 @@ const en: Dictionary = {
         savedMore: (count: number) => `+${count} more`,
         savedChip: (count: number) => `${count} saved grammar lesson${count > 1 ? "s" : ""} waiting for you`,
         savedChipCta: "Finish them",
+        previousLesson: "Previous lesson",
+        nextLesson: "Next lesson",
         saving: "Saving...",
         watchVideo: "▶ Watch explainer video",
         exercises: "Exercises",
@@ -1998,6 +2002,8 @@ const fa: Dictionary = {
         savedMore: (count: number) => `${count} درس دیگر`,
         savedChip: (count: number) => `${count} درس دستور زبان ذخیره‌شده منتظر شماست`,
         savedChipCta: "تمامشان کنید",
+        previousLesson: "درس قبلی",
+        nextLesson: "درس بعدی",
         saving: "در حال ذخیره...",
         watchVideo: "▶ مشاهده ویدیوی آموزشی",
         exercises: "تمرین‌ها",

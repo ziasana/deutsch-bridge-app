@@ -2,6 +2,7 @@ package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.exception.DataNotFoundException;
+import com.deutschbridge.backend.model.dto.GrammarLessonNavigationResponse;
 import com.deutschbridge.backend.model.dto.GrammarLevelViewResponse;
 import com.deutschbridge.backend.model.entity.GrammarCategory;
 import com.deutschbridge.backend.model.entity.GrammarCategoryTestAttempt;
@@ -191,5 +192,55 @@ class GrammarLearnerViewTest {
         when(contentCacheService.getGrammarCategoryWithPublishedLessons("missing")).thenReturn(Optional.empty());
 
         assertThrows(DataNotFoundException.class, () -> service.findByIdForLearner("missing"));
+    }
+
+    private static ContentCacheService.GrammarLessonEntry entry(String id, LearningLevel level) {
+        return new ContentCacheService.GrammarLessonEntry(id, "Lesson " + id, "درس " + id, "summary", null, level, 0);
+    }
+
+    @Test
+    @DisplayName("findNavigation -> should walk categories in order, then uncategorized, and be null at both ends")
+    void findNavigation_shouldFollowListOrder() throws Exception {
+        GrammarService service = new GrammarService(lessonRepository, learningProgressRepository, bookmarkRepository, categoryRepository,
+                userService, requestContext, contentCacheService, grammarProgressCacheService);
+        ContentCacheService.GrammarCategoryEntry first = new ContentCacheService.GrammarCategoryEntry(
+                "c1", "Block 1", null, LearningLevel.A1, 0, 70, List.of(entry("a", LearningLevel.A1), entry("b", LearningLevel.A1)));
+        ContentCacheService.GrammarCategoryEntry empty = new ContentCacheService.GrammarCategoryEntry(
+                "c2", "Block 2", null, LearningLevel.A1, 1, 70, List.of());
+        ContentCacheService.GrammarCategoryEntry third = new ContentCacheService.GrammarCategoryEntry(
+                "c3", "Block 3", null, LearningLevel.A1, 2, 70, List.of(entry("c", LearningLevel.A1)));
+        when(contentCacheService.getGrammarLevelContent(LearningLevel.A1)).thenReturn(
+                new ContentCacheService.GrammarLevelContent(List.of(first, empty, third), List.of(entry("u", LearningLevel.A1))));
+        for (String id : List.of("a", "b", "c", "u")) {
+            GrammarLesson lesson = publishedLesson(id);
+            lesson.setLevel(LearningLevel.A1);
+            when(contentCacheService.getPublishedGrammarLesson(id)).thenReturn(Optional.of(lesson));
+        }
+
+        GrammarLessonNavigationResponse atFirst = service.findNavigation("a");
+        assertNull(atFirst.previous());
+        assertEquals("b", atFirst.next().id());
+
+        GrammarLessonNavigationResponse crossingCategories = service.findNavigation("b");
+        assertEquals("a", crossingCategories.previous().id());
+        assertEquals("c", crossingCategories.next().id());
+        assertEquals("درس c", crossingCategories.next().titleFa());
+
+        GrammarLessonNavigationResponse intoUncategorized = service.findNavigation("c");
+        assertEquals("u", intoUncategorized.next().id());
+
+        GrammarLessonNavigationResponse atLast = service.findNavigation("u");
+        assertEquals("c", atLast.previous().id());
+        assertNull(atLast.next());
+    }
+
+    @Test
+    @DisplayName("findNavigation -> should throw DataNotFoundException for a missing or draft lesson")
+    void findNavigation_shouldThrowWhenNotPublished() {
+        GrammarService service = new GrammarService(lessonRepository, learningProgressRepository, bookmarkRepository, categoryRepository,
+                userService, requestContext, contentCacheService, grammarProgressCacheService);
+        when(contentCacheService.getPublishedGrammarLesson("missing")).thenReturn(Optional.empty());
+
+        assertThrows(DataNotFoundException.class, () -> service.findNavigation("missing"));
     }
 }

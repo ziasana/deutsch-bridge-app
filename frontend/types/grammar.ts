@@ -133,6 +133,19 @@ export interface GrammarLessonSummary {
     bookmarked: boolean;
 }
 
+/** One adjacent lesson in a level's list order - enough to render a Previous/Next link. */
+export interface GrammarLessonNeighbor {
+    id: string;
+    title: string;
+    titleFa: string | null;
+    level: string;
+}
+
+export interface GrammarLessonNavigation {
+    previous: GrammarLessonNeighbor | null;
+    next: GrammarLessonNeighbor | null;
+}
+
 /** A bookmarked lesson the user hasn't learned yet (the "saved for later" card), from any level. */
 export interface GrammarPendingBookmark {
     id: string;

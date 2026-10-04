@@ -4,6 +4,8 @@ import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.GrammarLessonAdminRow;
 import com.deutschbridge.backend.model.dto.GrammarLessonManualRequest;
+import com.deutschbridge.backend.model.dto.GrammarLessonNavigationResponse;
+import com.deutschbridge.backend.model.dto.GrammarLessonNeighborResponse;
 import com.deutschbridge.backend.model.dto.GrammarLessonResponse;
 import com.deutschbridge.backend.model.dto.GrammarPendingBookmarkResponse;
 import com.deutschbridge.backend.model.dto.GrammarLevelSummaryResponse;
@@ -148,6 +150,43 @@ public class GrammarService {
         return lessons.stream()
                 .map(l -> GrammarLessonMapper.mapToResponse(l, progressByLessonId.get(l.getId()), bookmarkedIds.contains(l.getId())))
                 .toList();
+    }
+
+    /**
+     * The previous/next published lesson in the lesson's level, in the same order the learner list
+     * shows them: categories in order with their lessons, then the uncategorized lessons. Reads the
+     * cached level content, so it costs no extra queries.
+     */
+    public GrammarLessonNavigationResponse findNavigation(String id) throws DataNotFoundException {
+        GrammarLesson lesson = contentCacheService.getPublishedGrammarLesson(id)
+                .orElseThrow(() -> new DataNotFoundException(NOT_FOUND_MSG));
+        if (lesson.getLevel() == null) {
+            return new GrammarLessonNavigationResponse(null, null);
+        }
+
+        ContentCacheService.GrammarLevelContent content = contentCacheService.getGrammarLevelContent(lesson.getLevel());
+        List<ContentCacheService.GrammarLessonEntry> ordered = new ArrayList<>();
+        content.categories().forEach(category -> ordered.addAll(category.lessons()));
+        ordered.addAll(content.uncategorized());
+
+        int index = -1;
+        for (int i = 0; i < ordered.size(); i++) {
+            if (ordered.get(i).id().equals(id)) {
+                index = i;
+                break;
+            }
+        }
+        if (index == -1) {
+            return new GrammarLessonNavigationResponse(null, null);
+        }
+        return new GrammarLessonNavigationResponse(
+                index > 0 ? toNeighbor(ordered.get(index - 1)) : null,
+                index < ordered.size() - 1 ? toNeighbor(ordered.get(index + 1)) : null);
+    }
+
+    private static GrammarLessonNeighborResponse toNeighbor(ContentCacheService.GrammarLessonEntry entry) {
+        return new GrammarLessonNeighborResponse(entry.id(), entry.title(), entry.titleFa(),
+                entry.level() != null ? entry.level().getValue() : null);
     }
 
     /** Bookmarked-but-not-learned lessons across all levels, oldest bookmark first (the "saved for later" card). */

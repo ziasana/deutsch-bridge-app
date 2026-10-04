@@ -1,6 +1,7 @@
 package com.deutschbridge.backend.controller;
 
 import com.deutschbridge.backend.exception.DataNotFoundException;
+import com.deutschbridge.backend.model.dto.GrammarLessonNavigationResponse;
 import com.deutschbridge.backend.model.dto.GrammarLessonResponse;
 import com.deutschbridge.backend.model.dto.GrammarPendingBookmarkResponse;
 import com.deutschbridge.backend.model.dto.GrammarLevelSummaryResponse;
@@ -52,6 +53,12 @@ public class GrammarController {
     @DeleteMapping("/{id}/bookmark")
     public ResponseEntity<GrammarLessonResponse> removeBookmark(@PathVariable String id) throws DataNotFoundException {
         return new ResponseEntity<>(grammarService.removeBookmark(id), HttpStatus.OK);
+    }
+
+    /** The previous/next lesson in the same level's list order, for the lesson page's Previous/Next controls. */
+    @GetMapping("/{id}/navigation")
+    public ResponseEntity<GrammarLessonNavigationResponse> getNavigation(@PathVariable String id) throws DataNotFoundException {
+        return new ResponseEntity<>(grammarService.findNavigation(id), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
