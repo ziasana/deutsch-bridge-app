@@ -1,5 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
-import { GrammarLesson, GrammarLevelView } from "@/types/grammar";
+import { GrammarLesson, GrammarLevelView, GrammarPendingBookmark } from "@/types/grammar";
+
+export const pendingBookmarksQueryKey = ["grammar", "pending-bookmarks"];
 
 export const grammarLessonQueryKey = (lessonId: string) => ["grammar", "lesson", lessonId];
 
@@ -13,6 +15,8 @@ export function markLessonLearnedInCache(queryClient: QueryClient, lessonId: str
     );
     queryClient.invalidateQueries({ queryKey: ["grammar", "level-summary"] });
     queryClient.invalidateQueries({ queryKey: ["grammar", "level"] });
+    // Learned lessons leave the "saved for later" card; un-learning one may bring it back.
+    queryClient.invalidateQueries({ queryKey: pendingBookmarksQueryKey });
 }
 
 /**
@@ -31,4 +35,10 @@ export function markLessonBookmarkedInCache(queryClient: QueryClient, lessonId: 
             uncategorized: patch(prev.uncategorized),
         };
     });
+    // Removing is instant; adding needs the server's row (bookmark date, unlearned check), so refetch.
+    if (bookmarked) {
+        queryClient.invalidateQueries({ queryKey: pendingBookmarksQueryKey });
+    } else {
+        queryClient.setQueryData<GrammarPendingBookmark[]>(pendingBookmarksQueryKey, (prev) => prev?.filter((l) => l.id !== lessonId));
+    }
 }

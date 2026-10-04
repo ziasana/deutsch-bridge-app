@@ -2,6 +2,7 @@ package com.deutschbridge.backend.repository;
 
 import com.deutschbridge.backend.model.entity.GrammarCategory;
 import com.deutschbridge.backend.model.entity.GrammarLesson;
+import com.deutschbridge.backend.model.entity.GrammarLessonBookmark;
 import com.deutschbridge.backend.model.entity.LearningProgress;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.enums.GrammarLessonStatus;
@@ -17,6 +18,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,6 +39,7 @@ class GrammarLessonRepositoryIntegrationTest {
     @Autowired private GrammarCategoryRepository categoryRepository;
     @Autowired private LearningProgressRepository learningProgressRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private GrammarLessonBookmarkRepository bookmarkRepository;
     @Autowired private ContentCacheService contentCacheService;
     @Autowired private GrammarService grammarService;
     @Autowired private CacheManager cacheManager;
@@ -135,6 +138,40 @@ class GrammarLessonRepositoryIntegrationTest {
         grammarService.saveLesson(lesson(LearningLevel.A2, null, GrammarLessonStatus.PUBLISHED));
 
         assertNull(cacheManager.getCache("grammarLevelContent").get(LearningLevel.A2));
+    }
+
+    @Test
+    @DisplayName("findPending -> should return only this user's unlearned, published bookmarks, oldest first, across levels")
+    void findPending_shouldReturnUnlearnedPublishedBookmarksOldestFirst() throws InterruptedException {
+        User learner = userRepository.save(new User("Learner", "pending-" + System.nanoTime() + "@test.local", "x"));
+        User other = userRepository.save(new User("Other", "pending-other-" + System.nanoTime() + "@test.local", "x"));
+        GrammarLesson first = lesson(LearningLevel.B2, null, GrammarLessonStatus.PUBLISHED);
+        GrammarLesson second = lesson(LearningLevel.A1, null, GrammarLessonStatus.PUBLISHED);
+        GrammarLesson learnedOne = lesson(LearningLevel.A2, null, GrammarLessonStatus.PUBLISHED);
+        GrammarLesson draft = lesson(LearningLevel.A2, null, GrammarLessonStatus.DRAFT);
+        GrammarLesson othersOnly = lesson(LearningLevel.A2, null, GrammarLessonStatus.PUBLISHED);
+
+        bookmark(learner, first);
+        Thread.sleep(5);
+        bookmark(learner, second);
+        bookmark(learner, learnedOne);
+        bookmark(learner, draft);
+        bookmark(other, othersOnly);
+        learned(learner, learnedOne);
+        learned(other, first); // someone else learning it must not hide it from this user
+
+        List<String> pendingIds = bookmarkRepository.findPending(learner, GrammarLessonStatus.PUBLISHED).stream()
+                .map(b -> b.getLesson().getId())
+                .toList();
+
+        assertEquals(List.of(first.getId(), second.getId()), pendingIds);
+    }
+
+    private void bookmark(User user, GrammarLesson lesson) {
+        GrammarLessonBookmark bookmark = new GrammarLessonBookmark();
+        bookmark.setUser(user);
+        bookmark.setLesson(lesson);
+        bookmarkRepository.save(bookmark);
     }
 
     private void learned(User user, GrammarLesson lesson) {

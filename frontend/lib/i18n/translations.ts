@@ -475,6 +475,12 @@ export interface Dictionary {
         bookmarkRemoved: string;
         bookmarkFailed: string;
         noBookmarks: string;
+        savedTitle: string;
+        savedSubtitle: (count: number) => string;
+        savedWaiting: (days: number) => string;
+        savedMore: (count: number) => string;
+        savedChip: (count: number) => string;
+        savedChipCta: string;
         saving: string;
         watchVideo: string;
         exercises: string;
@@ -1188,6 +1194,13 @@ const en: Dictionary = {
         bookmarkRemoved: "Bookmark removed.",
         bookmarkFailed: "Failed to update bookmark.",
         noBookmarks: "No bookmarked lessons here yet. Tap the bookmark icon on a lesson to save it.",
+        savedTitle: "Saved for later",
+        savedSubtitle: (count: number) =>
+            `${count} bookmarked lesson${count > 1 ? "s" : ""} still to finish. Finish these before starting something new.`,
+        savedWaiting: (days: number) => `Waiting ${days} days`,
+        savedMore: (count: number) => `+${count} more`,
+        savedChip: (count: number) => `${count} saved grammar lesson${count > 1 ? "s" : ""} waiting for you`,
+        savedChipCta: "Finish them",
         saving: "Saving...",
         watchVideo: "▶ Watch explainer video",
         exercises: "Exercises",
@@ -1963,6 +1976,12 @@ const fa: Dictionary = {
         bookmarkRemoved: "نشان حذف شد.",
         bookmarkFailed: "به‌روزرسانی نشان ناموفق بود.",
         noBookmarks: "هنوز درس نشان‌شده‌ای اینجا نیست. برای ذخیره یک درس روی آیکن نشان بزنید.",
+        savedTitle: "ذخیره‌شده برای بعد",
+        savedSubtitle: (count: number) => `${count} درس نشان‌شده هنوز تمام نشده است. اول این‌ها را تمام کنید، بعد سراغ درس جدید بروید.`,
+        savedWaiting: (days: number) => `${days} روز در انتظار`,
+        savedMore: (count: number) => `${count} درس دیگر`,
+        savedChip: (count: number) => `${count} درس دستور زبان ذخیره‌شده منتظر شماست`,
+        savedChipCta: "تمامشان کنید",
         saving: "در حال ذخیره...",
         watchVideo: "▶ مشاهده ویدیوی آموزشی",
         exercises: "تمرین‌ها",

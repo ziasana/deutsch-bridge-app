@@ -14,10 +14,12 @@ interface LearningPageHeroProps {
     bubbles?: boolean;
     /** Buttons on the right edge of the hero (above the bubbles). */
     actions?: ReactNode;
+    /** Put the actions on their own full-width line under the title instead of at the right edge. */
+    actionsBelow?: boolean;
 }
 
 /** The title block shared by the learning pages: soft tinted panel, two faint circles, icon tile, title and subtitle. */
-export default function LearningPageHero({ icon: Icon, title, subtitle, meta, dir, bubbles = false, actions }: Readonly<LearningPageHeroProps>) {
+export default function LearningPageHero({ icon: Icon, title, subtitle, meta, dir, bubbles = false, actions, actionsBelow = false }: Readonly<LearningPageHeroProps>) {
     return (
         <header className={cn("relative overflow-hidden rounded-3xl border border-primary/10 bg-gradient-to-br from-primary/[0.03] via-card to-card p-5 sm:p-6", bubbles && "sm:py-9 md:min-h-40 md:flex md:items-center")}>
             <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-12 size-44 rounded-full bg-primary/[0.06]" />
@@ -38,7 +40,7 @@ export default function LearningPageHero({ icon: Icon, title, subtitle, meta, di
                     <p className="mt-0.5 text-sm text-foreground/60">{subtitle}</p>
                 </div>
             </div>
-            {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+            {actions && <div className={cn("flex items-center gap-2", actionsBelow ? "w-full" : "shrink-0")}>{actions}</div>}
             </div>
         </header>
     );

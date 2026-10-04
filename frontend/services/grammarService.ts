@@ -6,6 +6,7 @@ import {
     GrammarLesson,
     GrammarLevelSummary,
     GrammarLevelView,
+    GrammarPendingBookmark,
     LearningProgressRequest,
 } from "@/types/grammar";
 
@@ -17,6 +18,11 @@ export const getGrammarLevelView = async (level: string) => {
 /** Per-level published totals and the current user's learned counts, for the level selector. */
 export const getGrammarLevelSummary = async () => {
     return await api.get<GrammarLevelSummary[]>("/grammar/level-summary");
+};
+
+/** Bookmarked-but-not-learned lessons across all levels, oldest bookmark first. */
+export const getPendingGrammarBookmarks = async () => {
+    return await api.get<GrammarPendingBookmark[]>("/grammar/bookmarks/pending");
 };
 
 export const getGrammarLessonById = async (id: string) => {

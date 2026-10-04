@@ -9,6 +9,7 @@ import { getDashboard } from "@/services/dashboardService";
 import DashboardHero from "@/componenets/dashboard/DashboardHero";
 import NewContentBanner from "@/componenets/dashboard/NewContentBanner";
 import TodaysLearningPlan from "@/componenets/dashboard/TodaysLearningPlan";
+import SavedLessonsChip from "@/componenets/dashboard/SavedLessonsChip";
 import ReviewNeededCard from "@/componenets/dashboard/ReviewNeededCard";
 import CurrentFocusCard from "@/componenets/dashboard/CurrentFocusCard";
 import LearningMilestone from "@/componenets/dashboard/LearningMilestone";
@@ -76,6 +77,8 @@ const DashboardPage = () => {
                     />
 
                     {dashboard.newContent && <NewContentBanner data={dashboard.newContent} />}
+
+                    <SavedLessonsChip />
 
                     <TodaysLearningPlan data={dashboard.today} />
 

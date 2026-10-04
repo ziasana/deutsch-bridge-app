@@ -5,6 +5,7 @@ import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.GrammarLessonAdminRow;
 import com.deutschbridge.backend.model.dto.GrammarLessonManualRequest;
 import com.deutschbridge.backend.model.dto.GrammarLessonResponse;
+import com.deutschbridge.backend.model.dto.GrammarPendingBookmarkResponse;
 import com.deutschbridge.backend.model.dto.GrammarLevelSummaryResponse;
 import com.deutschbridge.backend.model.entity.GrammarCategory;
 import com.deutschbridge.backend.model.entity.GrammarLesson;
@@ -146,6 +147,22 @@ public class GrammarService {
 
         return lessons.stream()
                 .map(l -> GrammarLessonMapper.mapToResponse(l, progressByLessonId.get(l.getId()), bookmarkedIds.contains(l.getId())))
+                .toList();
+    }
+
+    /** Bookmarked-but-not-learned lessons across all levels, oldest bookmark first (the "saved for later" card). */
+    @Transactional
+    public List<GrammarPendingBookmarkResponse> getPendingBookmarks() {
+        User user = userService.findByEmail(requestContext.getUserEmail());
+        return bookmarkRepository.findPending(user, GrammarLessonStatus.PUBLISHED).stream()
+                .map(b -> {
+                    GrammarLesson l = b.getLesson();
+                    return new GrammarPendingBookmarkResponse(
+                            l.getId(), l.getTitle(), l.getTitleFa(), l.getSummary(), l.getSummaryFa(),
+                            l.getLevel() != null ? l.getLevel().getValue() : null,
+                            l.getQuiz() != null ? l.getQuiz().size() : 0,
+                            b.getCreatedAt());
+                })
                 .toList();
     }
 

@@ -133,6 +133,18 @@ export interface GrammarLessonSummary {
     bookmarked: boolean;
 }
 
+/** A bookmarked lesson the user hasn't learned yet (the "saved for later" card), from any level. */
+export interface GrammarPendingBookmark {
+    id: string;
+    title: string;
+    titleFa: string | null;
+    summary: string;
+    summaryFa: string | null;
+    level: string;
+    quizCount: number;
+    bookmarkedAt: string;
+}
+
 export interface GrammarCategorySummary {
     id: string;
     title: string;

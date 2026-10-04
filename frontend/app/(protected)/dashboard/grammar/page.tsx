@@ -16,6 +16,8 @@ import { useI18n } from "@/componenets/I18nProvider";
 import { localizedLessonHeading } from "@/lib/grammarLocalization";
 import useAuthStore from "@/store/useAuthStore";
 import { useGrammarBookmark } from "@/hook/useGrammarBookmark";
+import { usePendingGrammarBookmarks } from "@/hook/usePendingGrammarBookmarks";
+import { SavedLessonsButton, SavedLessonsPanel } from "@/componenets/grammar/SavedLessons";
 import { cn } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 10;
@@ -28,6 +30,8 @@ export default function GrammarLessonsPage() {
     const [search, setSearch] = useState("");
     const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
     const { toggle: toggleBookmark, pendingId: bookmarkPendingId } = useGrammarBookmark();
+    const { data: pendingBookmarks = [] } = usePendingGrammarBookmarks();
+    const [savedOpen, setSavedOpen] = useState(false);
     const [page, setPage] = useState(1);
     const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
@@ -140,7 +144,25 @@ export default function GrammarLessonsPage() {
     return (
         <div className="min-h-screen bg-background px-6 py-10">
             <div className="max-w-4xl mx-auto">
-                <LearningPageHero icon={BookOpen} title={t.grammar.title} subtitle={t.grammar.subtitle} bubbles />
+                <LearningPageHero
+                    icon={BookOpen}
+                    title={t.grammar.title}
+                    subtitle={t.grammar.subtitle}
+                    bubbles
+                    actionsBelow
+                    actions={
+                        pendingBookmarks.length > 0 && (
+                            <SavedLessonsButton lessons={pendingBookmarks} open={savedOpen} onToggle={() => setSavedOpen((v) => !v)} />
+                        )
+                    }
+                />
+                {savedOpen && pendingBookmarks.length > 0 && (
+                    <SavedLessonsPanel
+                        lessons={pendingBookmarks}
+                        onRemoveBookmark={(id) => toggleBookmark(id, true)}
+                        removingId={bookmarkPendingId}
+                    />
+                )}
 
                 {(summaryLoading || levelLoading) && <Loading />}
 

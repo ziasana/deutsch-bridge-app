@@ -2,6 +2,7 @@ package com.deutschbridge.backend.controller;
 
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.GrammarLessonResponse;
+import com.deutschbridge.backend.model.dto.GrammarPendingBookmarkResponse;
 import com.deutschbridge.backend.model.dto.GrammarLevelSummaryResponse;
 import com.deutschbridge.backend.model.dto.GrammarLevelViewResponse;
 import com.deutschbridge.backend.model.enums.LearningLevel;
@@ -35,6 +36,12 @@ public class GrammarController {
     @GetMapping("/level-summary")
     public ResponseEntity<List<GrammarLevelSummaryResponse>> getLevelSummary() {
         return new ResponseEntity<>(grammarService.getLevelSummary(), HttpStatus.OK);
+    }
+
+    /** Bookmarked lessons the user hasn't learned yet, across all levels, oldest bookmark first. */
+    @GetMapping("/bookmarks/pending")
+    public ResponseEntity<List<GrammarPendingBookmarkResponse>> getPendingBookmarks() {
+        return new ResponseEntity<>(grammarService.getPendingBookmarks(), HttpStatus.OK);
     }
 
     @PostMapping("/{id}/bookmark")
