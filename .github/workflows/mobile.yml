@@ -1,0 +1,48 @@
+name: Mobile CI
+
+on:
+  push:
+    branches: [ "main" ]
+    paths: [ "mobile/**", ".github/workflows/mobile.yml" ]
+  pull_request:
+    branches: [ "main" ]
+    paths: [ "mobile/**", ".github/workflows/mobile.yml" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: mobile
+
+    env:
+      EXPO_PUBLIC_API_URL: https://api.example.com
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+
+      - name: Check Expo dependencies
+        run: npx expo-doctor
+
+      - name: Verify the app bundles (iOS and Android)
+        run: npx expo export --platform ios --platform android

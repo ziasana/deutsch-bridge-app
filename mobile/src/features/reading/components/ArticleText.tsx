@@ -1,0 +1,77 @@
+import { Platform, StyleSheet, Text } from 'react-native';
+import { colors } from '@/theme';
+import type { Annotation } from '@/types/reading';
+import type { Segment } from '../segments';
+
+type Props = {
+  segments: Segment[];
+  fontSize: number;
+  activeAnnotationId: string | null;
+  tappedLemmas: string[];
+  onAnnotation: (annotation: Annotation) => void;
+  onWord: (lemma: string) => void;
+};
+
+const HIGHLIGHT: Record<Annotation['type'], object> = {
+  WORD: { backgroundColor: colors.warningSoft, textDecorationLine: 'underline' },
+  NOMEN_VERB_VERBINDUNG: { backgroundColor: colors.accent, textDecorationLine: 'underline' },
+  REDEWENDUNG: { backgroundColor: '#FFE9DB', textDecorationLine: 'underline' },
+};
+
+// Different underline styles back up the colours on iOS (Android renders solid only).
+const DECORATION: Record<Annotation['type'], 'dotted' | 'solid' | 'dashed'> = {
+  WORD: 'dotted',
+  NOMEN_VERB_VERBINDUNG: 'solid',
+  REDEWENDUNG: 'dashed',
+};
+
+/** The article body: one selectable text flow where annotated phrases and every word are tappable. */
+export function ArticleText({
+  segments,
+  fontSize,
+  activeAnnotationId,
+  tappedLemmas,
+  onAnnotation,
+  onWord,
+}: Props) {
+  const lineHeight = Math.round(fontSize * 1.65);
+  return (
+    <Text style={[styles.body, { fontSize, lineHeight }]} selectable={false}>
+      {segments.map((seg, i) => {
+        if (seg.kind === 'plain') return seg.text;
+        if (seg.kind === 'word') {
+          return (
+            <Text key={i} onPress={() => onWord(seg.lemma)} accessibilityRole="button">
+              {seg.text}
+            </Text>
+          );
+        }
+        const a = seg.annotation;
+        const active = a.id === activeAnnotationId;
+        const seen = tappedLemmas.includes(a.lemma);
+        return (
+          <Text
+            key={i}
+            onPress={() => onAnnotation(a)}
+            accessibilityRole="button"
+            accessibilityHint="Zeigt die Bedeutung"
+            style={[
+              HIGHLIGHT[a.type],
+              Platform.OS === 'ios' && { textDecorationStyle: DECORATION[a.type] },
+              seen && styles.seen,
+              active && styles.active,
+            ]}
+          >
+            {seg.text}
+          </Text>
+        );
+      })}
+    </Text>
+  );
+}
+
+const styles = StyleSheet.create({
+  body: { color: colors.foreground },
+  seen: { backgroundColor: colors.muted },
+  active: { backgroundColor: '#C9DEFF' },
+});

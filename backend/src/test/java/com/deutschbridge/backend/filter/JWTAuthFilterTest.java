@@ -200,4 +200,35 @@ class JWTAuthFilterTest {
         assert(SecurityContextHolder.getContext().getAuthentication() == null);
     }
 
+
+    @DisplayName("doFilterInternal -> should authenticate from Bearer header when no cookie is present")
+    @Test
+    void testDoFilterInternal_shouldAuthenticateFromBearerHeader() throws Exception {
+        when(request.getRequestURI()).thenReturn("/api/protected/resource");
+        when(cookieService.extractAccessToken(request)).thenReturn(null);
+        when(request.getHeader("Authorization")).thenReturn("Bearer mobile-token");
+        when(jwtUtil.extractEmail("mobile-token")).thenReturn("user@example.com");
+
+        UserDetails userDetails = mock(UserDetails.class);
+        when(userDetails.getAuthorities()).thenReturn(null);
+        when(userDetails.isEnabled()).thenReturn(true);
+        when(userDetailsService.loadUserByUsername("user@example.com")).thenReturn(userDetails);
+        when(jwtUtil.validateToken("user@example.com", userDetails, "mobile-token")).thenReturn(true);
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        verify(filterChain, times(1)).doFilter(request, response);
+        assert(SecurityContextHolder.getContext().getAuthentication() != null);
+    }
+
+    @DisplayName("doFilterInternal -> should skip filter for mobile auth paths")
+    @Test
+    void testDoFilterInternal_shouldSkipFilterForMobileAuthPaths() throws Exception {
+        when(request.getRequestURI()).thenReturn("/api/auth/mobile/login");
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        verify(filterChain, times(1)).doFilter(request, response);
+        verifyNoInteractions(jwtUtil, userDetailsService, cookieService);
+    }
 }
