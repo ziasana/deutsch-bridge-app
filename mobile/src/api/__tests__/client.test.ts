@@ -25,6 +25,19 @@ describe('api client', () => {
     expect(init.headers['Accept-Language']).toBe('FA');
   });
 
+  it('repeats array query params and leaves multipart bodies to fetch', async () => {
+    fetchMock.mockImplementation(() => json(200, {}));
+    await request('/notifications', { query: { page: 0, category: ['LEARNING', 'REMINDER'], gone: undefined } });
+    expect(String(fetchMock.mock.calls[0][0])).toMatch(/\?page=0&category=LEARNING&category=REMINDER$/);
+
+    const form = new FormData();
+    form.append('file', { uri: 'file:///a.jpg', name: 'a.jpg', type: 'image/jpeg' } as unknown as Blob);
+    await api.upload('/user/avatar', form);
+    const init = fetchMock.mock.calls[1][1];
+    expect(init.body).toBe(form); // not JSON-stringified
+    expect(init.headers['Content-Type']).toBeUndefined(); // fetch adds the multipart boundary itself
+  });
+
   it('gives AI endpoints a longer timeout than normal requests', async () => {
     jest.useFakeTimers();
     try {

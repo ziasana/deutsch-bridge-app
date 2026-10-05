@@ -1,5 +1,5 @@
-import { ComingSoon } from '@/features/navigation/ComingSoon';
+import { ProgressScreen } from '@/features/progress/ProgressScreen';
 
-export default function Placeholder() {
-  return <ComingSoon title="Progress" subtitle="Dein Lernfortschritt" />;
+export default function ProgressRoute() {
+  return <ProgressScreen />;
 }

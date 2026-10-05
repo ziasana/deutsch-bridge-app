@@ -151,5 +151,20 @@ Modes: Lernen (all help), Üben (tip + Redemittel), Prüfung (no help). The draf
 
 Differences from web: the web saves a word by selecting text inside the answer (floating button). React Native has no hook into the native selection menu, so mobile has a "💾 Wort speichern" action under each answer that opens a sheet where the learner types or pastes the word. The same 90 s AI timeout now also applies to the writing AI feedback and the expression transformation/production judging. `/ollama/generate-example` and `/generate-synonym` (used by the vocabulary editor on web) are not used yet.
 
+## Profile, Settings, Progress, Notifications (existing, no backend change)
+| Endpoint | Notes |
+|---|---|
+| `PUT /user/update-profile {displayName?, learningLevel?, dailyGoalWords?, preferredLanguage?}` | only the fields sent change; mobile sends just what the learner edited and merges it into the session profile (replacing it would drop onboarding state/role). Level/language/goal change what other screens show, so cached queries are refreshed afterwards. Explanation language offers English and Persian (`EN`/`PR`), as on web |
+| `PUT /user/update-password {currentPassword, password}` | password ≥ 6 chars; the server's message is shown for a wrong current password |
+| `POST /user/avatar` (multipart `file`) | → relative `/uploads/avatars/…`; picked with `expo-image-picker` (square crop, JPG/PNG/WebP). `api.upload` sends `FormData` without a JSON Content-Type so fetch adds the multipart boundary |
+| `GET /learning-progress/overview`, `GET /learning-progress/stats` | Progress screen: totals, per-area tiles, vocabulary/expression mastery bars, grammar, reading, exam average, milestone ladder; the streak comes from `GET /dashboard` |
+| `GET /notifications?page=&size=&unread=&category=…` | zero-based pages of 20, infinite scroll; categories are **repeated** params (`category=LEARNING&category=REMINDER`) — the client turns array query values into repeats. Tabs: Alle / Lernen (LEARNING+REMINDER) / Fortschritt (PROGRESS) / System (SYSTEM+PREMIUM) |
+| `GET /notifications/unread-count` | badge on the Profile tab's Notifications row and the inbox header |
+| `POST /notifications/{id}/click` | on tap: marks read and returns `actionUrl`; the destination is a *web* path mapped with `toMobileHref`, only in-app paths (`/…`, not `//…`) are followed, unknown ones stay on the inbox |
+| `POST /notifications/read-all` | "Alle als gelesen markieren" |
+| `GET/PUT /notification-preferences` | toggles save immediately and optimistically (rolled back on error); times are `HH:mm` text fields that save once valid; the master switch (`learningRemindersEnabled`) also mirrors into `profile.notificationsEnabled`; the device timezone is reported once when the backend has none |
+
+Signing out also clears what the device keeps locally (writing drafts, the exam timer). Push delivery (device-token registration) is Phase 13; opening a push notification would reuse the same click/deep-link path.
+
 ## Gaps
 Push device registration (Phase 13); AI usage/remaining endpoint (optional); (daily-words completion: resolved, uses `POST /learning-progress`).

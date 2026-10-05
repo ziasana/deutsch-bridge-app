@@ -1,5 +1,5 @@
-import { ComingSoon } from '@/features/navigation/ComingSoon';
+import { AccountScreen } from '@/features/profile/AccountScreen';
 
-export default function Placeholder() {
-  return <ComingSoon title="Account" subtitle="Profil und Passwort" />;
+export default function AccountRoute() {
+  return <AccountScreen />;
 }

@@ -37,7 +37,15 @@
       "expo-font",
       "expo-asset",
       "expo-image",
-      "expo-audio"
+      "expo-audio",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Deutsch Bridge braucht Zugriff auf deine Fotos, damit du ein Profilbild auswählen kannst.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ]
     ],
     "scheme": "deutschbridge",
     "experiments": {

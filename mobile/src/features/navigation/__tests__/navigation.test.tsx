@@ -4,6 +4,7 @@ import { authApi } from '@/api/authApi';
 import { dashboardApi } from '@/api/dashboardApi';
 import { chatApi } from '@/api/chatApi';
 import { examApi } from '@/api/examApi';
+import { notificationApi } from '@/api/notificationApi';
 import { readingApi } from '@/api/readingApi';
 import { baseDashboard } from '@/features/dashboard/testing/fixtures';
 import { tokenStorage } from '@/api/tokenStorage';
@@ -15,6 +16,7 @@ jest.mock('@/api/dashboardApi');
 jest.mock('@/api/readingApi');
 jest.mock('@/api/examApi');
 jest.mock('@/api/chatApi');
+jest.mock('@/api/notificationApi');
 jest.mock('expo-splash-screen', () => ({
   preventAutoHideAsync: jest.fn(() => Promise.resolve(true)),
   hideAsync: jest.fn(() => Promise.resolve()),
@@ -33,6 +35,7 @@ describe('app navigation', () => {
     (authApi.getProfile as jest.Mock).mockResolvedValue(profile);
     (dashboardApi.get as jest.Mock).mockResolvedValue(baseDashboard);
     (readingApi.levelSummary as jest.Mock).mockResolvedValue([{ level: 'B1', total: 0, learned: 0 }]);
+    (notificationApi.unreadCount as jest.Mock).mockResolvedValue({ count: 3 });
     (chatApi.sessions as jest.Mock).mockResolvedValue([]);
     (examApi.levelSummary as jest.Mock).mockResolvedValue([]);
     (examApi.pendingBookmarks as jest.Mock).mockResolvedValue([]);
@@ -70,6 +73,7 @@ describe('app navigation', () => {
     await fireEvent.press(screen.getByRole('button', { name: /Profile/ }));
     expect(await screen.findByText('ali@example.com')).toBeTruthy();
     expect(screen.getByText('Niveau: B1')).toBeTruthy();
+    expect(await screen.findByText('3 ungelesen')).toBeTruthy(); // unread badge on the Notifications row
     expect(screen.getByText('Erklärsprache: Persian')).toBeTruthy();
 
     // Logout asks for confirmation, then the guard returns to login.

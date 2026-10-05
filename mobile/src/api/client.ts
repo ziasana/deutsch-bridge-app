@@ -21,7 +21,8 @@ export function configureApiClient(next: Partial<Hooks>): void {
 export type RequestOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
-  query?: Record<string, string | number | boolean | null | undefined>;
+  /** Array values become repeated params (`category=a&category=b`), which is how Spring binds a List. */
+  query?: Record<string, string | number | boolean | string[] | null | undefined>;
   /** Skip the Authorization header and 401 refresh handling (login, register, refresh…). */
   auth?: boolean;
   signal?: AbortSignal;
@@ -68,7 +69,8 @@ function buildUrl(path: string, query?: RequestOptions['query']): string {
   const url = new URL(env.apiBaseUrl + path);
   if (query) {
     for (const [key, value] of Object.entries(query)) {
-      if (value !== undefined && value !== null) url.searchParams.set(key, String(value));
+      if (Array.isArray(value)) value.forEach((v) => url.searchParams.append(key, v));
+      else if (value !== undefined && value !== null) url.searchParams.set(key, String(value));
     }
   }
   return url.toString();
@@ -94,7 +96,9 @@ function messageFrom(body: unknown): string | null {
 
 async function send(path: string, options: RequestOptions): Promise<Response> {
   const headers: Record<string, string> = { Accept: 'application/json' };
-  if (options.body !== undefined) headers['Content-Type'] = 'application/json';
+  // FormData sets its own multipart Content-Type (with the boundary); never override it.
+  const isForm = typeof FormData !== 'undefined' && options.body instanceof FormData;
+  if (options.body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
 
   const language = hooks.getLanguage();
   if (language) headers['Accept-Language'] = language.toUpperCase();
@@ -112,7 +116,7 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
     return await fetch(buildUrl(path, options.query), {
       method: options.method ?? 'GET',
       headers,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: options.body === undefined ? undefined : isForm ? (options.body as FormData) : JSON.stringify(options.body),
       signal: controller.signal,
     });
   } catch {
@@ -162,6 +166,9 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 export const api = {
   get: <T>(path: string, query?: RequestOptions['query']) => request<T>(path, { query }),
   post: <T>(path: string, body?: unknown) => request<T>(path, { method: 'POST', body }),
+  /** Multipart upload: pass a FormData. Gets the AI-length timeout because uploads can be slow on mobile data. */
+  upload: <T>(path: string, form: FormData) =>
+    request<T>(path, { method: 'POST', body: form, timeoutMs: env.aiRequestTimeoutMs }),
   /** POST to an AI-backed endpoint: waits up to `env.aiRequestTimeoutMs`. */
   postAi: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: 'POST', body, timeoutMs: env.aiRequestTimeoutMs }),

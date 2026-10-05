@@ -1,5 +1,5 @@
-import { ComingSoon } from '@/features/navigation/ComingSoon';
+import { NotificationsScreen } from '@/features/notifications/NotificationsScreen';
 
-export default function Placeholder() {
-  return <ComingSoon title="Notifications" subtitle="Erinnerungen verwalten" />;
+export default function NotificationsRoute() {
+  return <NotificationsScreen />;
 }

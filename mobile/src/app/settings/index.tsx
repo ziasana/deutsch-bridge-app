@@ -1,5 +1,5 @@
-import { ComingSoon } from '@/features/navigation/ComingSoon';
+import { SettingsScreen } from '@/features/profile/SettingsScreen';
 
-export default function Placeholder() {
-  return <ComingSoon title="Settings" subtitle="Sprache, Niveau, Tagesziel" />;
+export default function SettingsRoute() {
+  return <SettingsScreen />;
 }
