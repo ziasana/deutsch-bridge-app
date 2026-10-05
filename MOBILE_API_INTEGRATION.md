@@ -20,8 +20,13 @@ Errors: HTTP status drives the client's `ApiError.kind` (401 unauthorized, 403 f
 
 `JWTAuthFilter` now accepts `Authorization: Bearer` when no `access_token` cookie is present.
 
-## Dashboard (existing)
-`GET /dashboard` → `DashboardResponse` (see `frontend/types/dashboard.ts`). `route` fields are web paths; the app maps them to Expo Router paths.
+## Dashboard (existing, no backend change)
+`GET /dashboard` → `DashboardResponse` directly (not wrapped in `ApiResponse`); types in `mobile/src/types/dashboard.ts`.
+- `continueLearning.type` ∈ DAILY_WORDS | VOCAB_REVIEW | GRAMMAR | READING | EXPRESSIONS | EXAM | START (START = new learner).
+- `route` fields are **web paths** (`/dashboard/...`); `features/dashboard/routes.ts` maps them to mobile routes, unknown → `/learn`.
+- `week.days` is a **rolling last-7-days array, oldest → today** (not Mon–Sun). No minutes-learned data exists, so the UI does not show learning time.
+- `focus.area` may be null (nothing to suggest → card hidden); `milestone` / `newContent` may be null. `newContent` is not shown on mobile.
+- Loading this endpoint generates today's daily words server-side.
 
 ## Gaps
 Push device registration (Phase 13); AI usage/remaining endpoint (optional); daily-words completion endpoint (verify in Phase 5).

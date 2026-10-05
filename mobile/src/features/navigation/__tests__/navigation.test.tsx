@@ -1,11 +1,14 @@
 import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 import { Alert } from 'react-native';
 import { authApi } from '@/api/authApi';
+import { dashboardApi } from '@/api/dashboardApi';
+import { baseDashboard } from '@/features/dashboard/testing/fixtures';
 import { tokenStorage } from '@/api/tokenStorage';
 import { useAuthStore } from '@/stores/authStore';
 import type { UserProfile } from '@/types/user';
 
 jest.mock('@/api/authApi');
+jest.mock('@/api/dashboardApi');
 jest.mock('expo-splash-screen', () => ({
   preventAutoHideAsync: jest.fn(() => Promise.resolve(true)),
   hideAsync: jest.fn(() => Promise.resolve()),
@@ -22,6 +25,7 @@ describe('app navigation', () => {
   beforeEach(async () => {
     jest.restoreAllMocks();
     (authApi.getProfile as jest.Mock).mockResolvedValue(profile);
+    (dashboardApi.get as jest.Mock).mockResolvedValue(baseDashboard);
     useAuthStore.setState({ status: 'loading', profile: null, error: null });
     await tokenStorage.clear();
   });
@@ -35,7 +39,7 @@ describe('app navigation', () => {
     await tokenStorage.setTokens('a', 'r');
     await renderRouter('./src/app', { initialUrl: '/' });
 
-    expect(await screen.findByText('Hallo, Ali 👋')).toBeTruthy();
+    expect(await screen.findByText('Perfekt')).toBeTruthy(); // dashboard loaded on Home
 
     await fireEvent.press(screen.getByRole('button', { name: /Learn/ }));
     expect(await screen.findByText('Active Expressions')).toBeTruthy();
