@@ -1,5 +1,6 @@
 import type { QuizQuestion } from '@/types/grammar';
-import { buildRows, learnedIn, pickInitialLevel } from '../GrammarListScreen';
+import { pickInitialLevel } from '@/utils/levels';
+import { buildRows, learnedIn } from '../GrammarListScreen';
 import {
   isCorrectAnswer,
   isLessonLearned,

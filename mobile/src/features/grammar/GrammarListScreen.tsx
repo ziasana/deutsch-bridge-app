@@ -19,8 +19,8 @@ import { colors, spacing } from '@/theme';
 import type {
   GrammarCategorySummary,
   GrammarLessonSummary,
-  GrammarLevelSummary,
 } from '@/types/grammar';
+import { pickInitialLevel } from '@/utils/levels';
 import { useLevelSummary, useLevelView } from './hooks';
 import { localizedHeading } from './quiz';
 
@@ -54,16 +54,6 @@ export function buildRows(
 
 export const learnedIn = (lessons: GrammarLessonSummary[]) =>
   lessons.filter((l) => l.learned).length;
-
-/** The level to show first: the learner's own level when available, else the first with content. */
-export function pickInitialLevel(
-  profileLevel: string | null | undefined,
-  summaries: GrammarLevelSummary[],
-): string | null {
-  const valid = profileLevel && profileLevel !== 'null' ? profileLevel : null;
-  if (valid && summaries.some((s) => s.level === valid)) return valid;
-  return summaries.find((s) => s.total > 0)?.level ?? summaries[0]?.level ?? valid;
-}
 
 function ListSkeleton() {
   return (

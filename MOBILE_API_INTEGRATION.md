@@ -82,5 +82,24 @@ Two collections: `REDEWENDUNG` and `NOMEN_VERB_VERBINDUNG`. (`/redemittel` is a 
 
 Steps per expression: optional *discover* (skipped when coming from the detail screen), the server's warm-up steps, then always *production*. A step counts as right when the AI says the expression was used **and** the grammar is correct. On an AI error/limit the learner can skip the step. `GET /expressions/difficult` is not used yet.
 
+## Reading (existing, no backend change)
+| Endpoint | Notes |
+|---|---|
+| `GET /reading/level-summary` | `[{level, total, learned}]` – level chips; the list opens on the profile level when it has texts |
+| `GET /reading/categories` | `[{id, title}]` – topic filter |
+| `GET /reading?level=&page=&size=&search=&bookmarked=&categoryId=` | zero-based pages, 10 per page via infinite scroll; empty filters are omitted so the backend can serve its cached list |
+| `GET /reading/{id}` | full text: `content`, server `tokens` (concatenated they reproduce `content`), `annotations` with character `spans`, `keyVocabulary`, `bookmarked`, `quizCompleted`, `learningProgresses` |
+| `GET /reading/{id}/navigation` | previous/next text |
+| `POST /reading/{id}/view` | called on every open (separate from the cacheable article fetch); failures are ignored |
+| `POST/DELETE /reading/{id}/bookmark` | toggle bookmark, returns the article |
+| `POST /learning-progress {readingId, learned}` | "Als gelesen markieren" |
+| `POST /lexicon {lemma,type,articleId,sentence,translation}` | "Zur Wiederholung speichern" from a highlighted word |
+| `GET /dictionary/{lemma}` | lookup for any tapped word; 404 → friendly "no entry" |
+| `POST /reading/{articleId}/attempts` | starts the quiz → `{attemptId, questions}` |
+| `POST /reading/attempts/{id}/answers {questionId,answer}` | feedback incl. `relatedLemma`, which the app saves to the review list (as web does) |
+| `POST /reading/attempts/{id}/complete {wordsTapped,wordsSaved}` | scores + next-text recommendation; the reader and quiz share tapped/saved words through `readingSessionStore` |
+
+Rendering: the app builds text segments from `tokens` + annotation `spans` (`features/reading/segments.ts`) so highlighted phrases and every word are tappable in one selectable text flow. Not in mobile yet: admin features, reading-time tracking.
+
 ## Gaps
 Push device registration (Phase 13); AI usage/remaining endpoint (optional); (daily-words completion: resolved, uses `POST /learning-progress`).

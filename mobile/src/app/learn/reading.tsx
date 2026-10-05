@@ -1,5 +1,5 @@
-import { ComingSoon } from '@/features/navigation/ComingSoon';
+import { ReadingListScreen } from '@/features/reading/ReadingListScreen';
 
-export default function Placeholder() {
-  return <ComingSoon title="Reading" subtitle="Texte lesen und verstehen" />;
+export default function ReadingRoute() {
+  return <ReadingListScreen />;
 }

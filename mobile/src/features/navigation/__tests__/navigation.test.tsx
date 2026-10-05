@@ -2,6 +2,7 @@ import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-librar
 import { Alert } from 'react-native';
 import { authApi } from '@/api/authApi';
 import { dashboardApi } from '@/api/dashboardApi';
+import { readingApi } from '@/api/readingApi';
 import { baseDashboard } from '@/features/dashboard/testing/fixtures';
 import { tokenStorage } from '@/api/tokenStorage';
 import { useAuthStore } from '@/stores/authStore';
@@ -9,6 +10,7 @@ import type { UserProfile } from '@/types/user';
 
 jest.mock('@/api/authApi');
 jest.mock('@/api/dashboardApi');
+jest.mock('@/api/readingApi');
 jest.mock('expo-splash-screen', () => ({
   preventAutoHideAsync: jest.fn(() => Promise.resolve(true)),
   hideAsync: jest.fn(() => Promise.resolve()),
@@ -26,6 +28,9 @@ describe('app navigation', () => {
     jest.restoreAllMocks();
     (authApi.getProfile as jest.Mock).mockResolvedValue(profile);
     (dashboardApi.get as jest.Mock).mockResolvedValue(baseDashboard);
+    (readingApi.levelSummary as jest.Mock).mockResolvedValue([{ level: 'B1', total: 0, learned: 0 }]);
+    (readingApi.categories as jest.Mock).mockResolvedValue([]);
+    (readingApi.page as jest.Mock).mockResolvedValue({ items: [], page: 0, size: 10, totalElements: 0, totalPages: 0 });
     useAuthStore.setState({ status: 'loading', profile: null, error: null });
     await tokenStorage.clear();
   });
@@ -45,8 +50,7 @@ describe('app navigation', () => {
     expect(await screen.findByText('Active Expressions')).toBeTruthy();
 
     await fireEvent.press(screen.getByText('Reading'));
-    expect(await screen.findByText('Bald verfügbar')).toBeTruthy();
-    expect(screen.getByText('Bald verfügbar')).toBeTruthy();
+    expect(await screen.findByText('Lies Texte auf deinem Niveau')).toBeTruthy();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Zurück' }));
     expect(await screen.findByText('Active Expressions')).toBeTruthy();

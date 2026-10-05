@@ -12,3 +12,4 @@ export * from './Skeleton';
 export * from './states';
 export * from './TextField';
 export * from './Header';
+export * from './BottomSheet';
