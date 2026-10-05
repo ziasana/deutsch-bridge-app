@@ -11,9 +11,11 @@ type Props = {
   keyboardAware?: boolean;
   refreshControl?: React.ReactElement<RefreshControlProps>;
   padded?: boolean;
+  /** Reserve the bottom safe area. Tab screens pass false because the tab bar already does. */
+  bottomInset?: boolean;
 };
 
-export function Screen({ children, scroll = true, keyboardAware, refreshControl, padded = true }: Props) {
+export function Screen({ children, scroll = true, keyboardAware, refreshControl, padded = true, bottomInset = true }: Props) {
   const content = scroll ? (
     <ScrollView
       contentContainerStyle={[styles.content, padded && styles.padded]}
@@ -28,7 +30,7 @@ export function Screen({ children, scroll = true, keyboardAware, refreshControl,
   );
 
   return (
-    <SafeAreaView style={styles.flex} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.flex} edges={bottomInset ? ['top', 'left', 'right', 'bottom'] : ['top', 'left', 'right']}>
       {keyboardAware ? (
         <KeyboardAvoidingView
           style={styles.flex}

@@ -124,11 +124,18 @@ public class AuthController {
 
     @PostMapping("/mobile/refresh")
     public ResponseEntity<ApiResponse<MobileRefreshResponse>> mobileRefresh(@RequestBody @Valid MobileRefreshRequest request) {
-        String token = request.refreshToken();
-        if (!jwtUtil.validateToken(token)) {
-            throw new AuthenticationCredentialsNotFoundException("Invalid token");
+        String email;
+        try {
+            String token = request.refreshToken();
+            // The JWT library throws on malformed/expired tokens; for clients that is "session over" (401), not a 500.
+            if (!jwtUtil.validateToken(token)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            email = jwtUtil.extractEmail(token);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        User user = userService.findByEmail(jwtUtil.extractEmail(token));
+        User user = userService.findByEmail(email);
         if (!user.isEnabled() || user.isDeleted()) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
