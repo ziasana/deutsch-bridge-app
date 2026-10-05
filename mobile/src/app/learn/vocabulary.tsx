@@ -1,5 +1,5 @@
-import { ComingSoon } from '@/features/navigation/ComingSoon';
+import { VocabularyTrainerScreen } from '@/features/vocabulary/VocabularyTrainerScreen';
 
-export default function Placeholder() {
-  return <ComingSoon title="Vocabulary" subtitle="Wortschatz trainieren" />;
+export default function VocabularyRoute() {
+  return <VocabularyTrainerScreen />;
 }

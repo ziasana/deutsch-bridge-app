@@ -8,7 +8,11 @@ import { DASHBOARD_KEY } from '@/features/dashboard/hooks';
 export const DAILY_WORDS_KEY = ['daily-words'] as const;
 
 export function useDailyWords() {
-  return useQuery({ queryKey: DAILY_WORDS_KEY, queryFn: dailyWordsApi.getToday, staleTime: 5 * 60_000 });
+  return useQuery({
+    queryKey: DAILY_WORDS_KEY,
+    queryFn: dailyWordsApi.getToday,
+    staleTime: 5 * 60_000,
+  });
 }
 
 /** Marks a word learned, updates the cached list, and refreshes the dashboard's plan/progress. */
@@ -53,7 +57,10 @@ export function useSaveToVocabulary() {
       }
     },
     onSuccess: (_d, word) => {
-      queryClient.setQueryData(['vocabulary-exists', word.word], { exists: true, vocabularyItemId: null });
+      queryClient.setQueryData(['vocabulary-exists', word.word], {
+        exists: true,
+        vocabularyItemId: null,
+      });
     },
   });
 }

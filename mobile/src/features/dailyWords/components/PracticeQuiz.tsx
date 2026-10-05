@@ -38,7 +38,11 @@ export function PracticeQuiz({ questions, onComplete }: Props) {
         <AppText variant="subheading">
           Frage {index + 1} von {questions.length}
         </AppText>
-        <ProgressBar value={index + (answered ? 1 : 0)} max={questions.length} label="Quiz-Fortschritt" />
+        <ProgressBar
+          value={index + (answered ? 1 : 0)}
+          max={questions.length}
+          label="Quiz-Fortschritt"
+        />
       </View>
 
       <Card style={styles.gap}>
@@ -53,7 +57,13 @@ export function PracticeQuiz({ questions, onComplete }: Props) {
           const isAnswer = option === q.answer;
           const isPicked = option === selected;
           // Result is conveyed by an icon and text as well as color.
-          const mark = answered ? (isAnswer ? '✓' : isPicked ? '✕' : String.fromCharCode(65 + i)) : String.fromCharCode(65 + i);
+          const mark = answered
+            ? isAnswer
+              ? '✓'
+              : isPicked
+                ? '✕'
+                : String.fromCharCode(65 + i)
+            : String.fromCharCode(65 + i);
           return (
             <Pressable
               key={option}
@@ -81,7 +91,11 @@ export function PracticeQuiz({ questions, onComplete }: Props) {
 
       {answered ? (
         <View style={styles.gap}>
-          <AppText variant="subheading" color={correct ? '#1B7A55' : colors.destructive} accessibilityRole="alert">
+          <AppText
+            variant="subheading"
+            color={correct ? '#1B7A55' : colors.destructive}
+            accessibilityRole="alert"
+          >
             {correct ? '✓ Richtig!' : `✕ Nicht richtig – richtig ist „${q.answer}“.`}
           </AppText>
           <Button label={isLast ? 'Ergebnis ansehen' : 'Nächste Frage'} onPress={next} />

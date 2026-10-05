@@ -1,5 +1,6 @@
 import { allLearned, firstUnlearnedIndex, learnedCount, nextIndex, splitSynonyms } from '../flow';
-import { buildQuestions, resultTitle, shuffle } from '../practice';
+import { resultTitle } from '@/utils/feedback';
+import { buildQuestions, shuffle } from '../practice';
 import { makeWords } from '../testing/fixtures';
 
 describe('flow helpers', () => {
@@ -26,6 +27,15 @@ describe('flow helpers', () => {
     expect(splitSynonyms('a, b; c ')).toEqual(['a', 'b', 'c']);
     expect(splitSynonyms(null)).toEqual([]);
   });
+
+  it('also splits AI-style synonyms given one per line, bulleted or numbered', () => {
+    expect(splitSynonyms('Bushalt\nHaltestelle\n- Busstopp\n3. Busstation')).toEqual([
+      'Bushalt',
+      'Haltestelle',
+      'Busstopp',
+      'Busstation',
+    ]);
+  });
 });
 
 describe('quiz', () => {
@@ -44,7 +54,8 @@ describe('quiz', () => {
 
   it('uses the Persian meaning only when preferred and provided', () => {
     const fa = words.map((w, i) => (i === 0 ? { ...w, meaningFa: 'معنی' } : w));
-    const prompts = (preferPersian: boolean) => buildQuestions(fa, preferPersian, () => 0.1).map((q) => q.prompt);
+    const prompts = (preferPersian: boolean) =>
+      buildQuestions(fa, preferPersian, () => 0.1).map((q) => q.prompt);
     expect(prompts(true)).toContain('معنی');
     expect(prompts(false)).not.toContain('معنی');
     expect(prompts(true)).toContain(`meaning of ${words[1].word}`); // falls back per word

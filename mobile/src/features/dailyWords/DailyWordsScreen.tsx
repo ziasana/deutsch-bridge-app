@@ -1,14 +1,29 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
-import { Card, EmptyState, ErrorState, Header, LearningCelebration, Screen, Skeleton } from '@/components/ui';
+import {
+  Button,
+  Card,
+  EmptyState,
+  ErrorState,
+  Header,
+  LearningCelebration,
+  Screen,
+  Skeleton,
+} from '@/components/ui';
 import { useAuthStore } from '@/stores/authStore';
 import { spacing } from '@/theme';
 import { PracticeQuiz } from './components/PracticeQuiz';
 import { WordCard } from './components/WordCard';
 import { allLearned, firstUnlearnedIndex, learnedCount, nextIndex } from './flow';
-import { useDailyWords, useMarkWordLearned, useSaveToVocabulary, useVocabularyExists } from './hooks';
-import { buildQuestions, resultTitle } from './practice';
+import {
+  useDailyWords,
+  useMarkWordLearned,
+  useSaveToVocabulary,
+  useVocabularyExists,
+} from './hooks';
+import { resultTitle } from '@/utils/feedback';
+import { buildQuestions, type PracticeQuestion } from './practice';
 
 type Stage = 'learning' | 'celebrate' | 'practice' | 'result';
 
@@ -38,6 +53,7 @@ export function DailyWordsScreen() {
   const [stageOverride, setStage] = useState<Stage | null>(null);
   const [indexOverride, setIndex] = useState<number | null>(null);
   const [score, setScore] = useState(0);
+  const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
   const [quizRound, setQuizRound] = useState(0);
 
   const list = useMemo(() => words ?? [], [words]);
@@ -48,29 +64,44 @@ export function DailyWordsScreen() {
   const { data: existing } = useVocabularyExists(current?.word ?? '');
   const isSaved = !!existing?.exists || (save.isSuccess && save.variables?.id === current?.id);
 
-  // Quiz questions are fixed per round so re-renders don't reshuffle them mid-quiz.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const questions = useMemo(() => buildQuestions(list, preferPersian), [list, preferPersian, quizRound]);
+  // Questions are generated when a round starts, so re-renders never reshuffle them mid-quiz.
+  const startQuiz = () => {
+    setQuestions(buildQuestions(list, preferPersian));
+    setQuizRound((r) => r + 1);
+    setStage('practice');
+  };
 
   const goToDashboard = () => router.navigate('/home');
 
-  const advance = (updated: typeof list) => {
-    if (allLearned(updated)) {
+  // `justMarked`: this tap completed a word. Finishing the last open word celebrates immediately;
+  // when merely browsing already-learned words, "Weiter" steps through them and celebrates at the end.
+  const advance = (updated: typeof list, justMarked: boolean) => {
+    if (justMarked && allLearned(updated)) {
       setStage('celebrate');
       return;
     }
     const next = nextIndex(updated, index);
-    setIndex(next ?? firstUnlearnedIndex(updated));
+    if (next !== null) {
+      setIndex(next);
+    } else if (allLearned(updated)) {
+      setStage('celebrate');
+    } else {
+      setIndex(firstUnlearnedIndex(updated));
+    }
   };
 
   const onContinue = () => {
     if (!current) return;
     if (current.learned) {
-      advance(list);
+      advance(list, false);
       return;
     }
     mark.mutate(current, {
-      onSuccess: () => advance(list.map((w) => (w.id === current.id ? { ...w, learned: true } : w))),
+      onSuccess: () =>
+        advance(
+          list.map((w) => (w.id === current.id ? { ...w, learned: true } : w)),
+          true,
+        ),
     });
   };
 
@@ -91,15 +122,25 @@ export function DailyWordsScreen() {
     );
   } else if (stage === 'celebrate') {
     body = (
-      <LearningCelebration
-        title="Sehr gut!"
-        subtitle="Daily Words abgeschlossen"
-        progress={{ value: learnedCount(list), max: list.length }}
-        progressLabel={`${learnedCount(list)} / ${list.length} Wörter gelernt`}
-        encouragement="Ein kurzes Quiz festigt, was du gerade gelernt hast."
-        primaryAction={{ label: 'Quiz starten', onPress: () => setStage('practice') }}
-        secondaryAction={{ label: 'Zum Dashboard', onPress: goToDashboard }}
-      />
+      <View style={{ gap: spacing.md }}>
+        <LearningCelebration
+          title="Sehr gut!"
+          subtitle="Daily Words abgeschlossen"
+          progress={{ value: learnedCount(list), max: list.length }}
+          progressLabel={`${learnedCount(list)} / ${list.length} Wörter gelernt`}
+          encouragement="Ein kurzes Quiz festigt, was du gerade gelernt hast."
+          primaryAction={{ label: 'Quiz starten', onPress: startQuiz }}
+          secondaryAction={{ label: 'Zum Dashboard', onPress: goToDashboard }}
+        />
+        <Button
+          label="Wörter noch einmal ansehen"
+          variant="ghost"
+          onPress={() => {
+            setIndex(0);
+            setStage('learning');
+          }}
+        />
+      </View>
     );
   } else if (stage === 'practice') {
     body = (
@@ -121,10 +162,7 @@ export function DailyWordsScreen() {
         progressLabel={`${score} von ${questions.length} richtig`}
         primaryAction={{
           label: 'Noch einmal üben',
-          onPress: () => {
-            setQuizRound((r) => r + 1);
-            setStage('practice');
-          },
+          onPress: startQuiz,
         }}
         secondaryAction={{ label: 'Zum Dashboard', onPress: goToDashboard }}
       />

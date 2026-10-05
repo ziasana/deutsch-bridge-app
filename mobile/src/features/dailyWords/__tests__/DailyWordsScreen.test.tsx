@@ -19,14 +19,23 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 const getToday = dailyWordsApi.getToday as jest.MockedFunction<typeof dailyWordsApi.getToday>;
-const markLearned = dailyWordsApi.markLearned as jest.MockedFunction<typeof dailyWordsApi.markLearned>;
+const markLearned = dailyWordsApi.markLearned as jest.MockedFunction<
+  typeof dailyWordsApi.markLearned
+>;
 const exists = vocabularyApi.exists as jest.MockedFunction<typeof vocabularyApi.exists>;
 const create = vocabularyApi.create as jest.MockedFunction<typeof vocabularyApi.create>;
 
 const renderScreen = () =>
   render(
     <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } } })}
+      client={
+        new QueryClient({
+          defaultOptions: {
+            queries: { retry: false, gcTime: Infinity },
+            mutations: { gcTime: Infinity },
+          },
+        })
+      }
     >
       <DailyWordsScreen />
     </QueryClientProvider>,
@@ -54,7 +63,9 @@ describe('DailyWordsScreen', () => {
   it('speaks the word in German', async () => {
     getToday.mockResolvedValue(makeWords());
     await renderScreen();
-    await fireEvent.press(await screen.findByRole('button', { name: 'Aussprache von berücksichtigen anhören' }));
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Aussprache von berücksichtigen anhören' }),
+    );
     expect(Speech.speak).toHaveBeenCalledWith('berücksichtigen', { language: 'de-DE' });
   });
 
@@ -80,7 +91,9 @@ describe('DailyWordsScreen', () => {
       await screen.findByText(`Frage ${i} von 5`);
       const options = screen.getAllByRole('radio');
       await fireEvent.press(options[0]);
-      await fireEvent.press(screen.getByRole('button', { name: i === 5 ? 'Ergebnis ansehen' : 'Nächste Frage' }));
+      await fireEvent.press(
+        screen.getByRole('button', { name: i === 5 ? 'Ergebnis ansehen' : 'Nächste Frage' }),
+      );
     }
     expect(await screen.findByText('Daily Words – Quiz')).toBeTruthy();
     expect(screen.getByText(/von 5 richtig/)).toBeTruthy();
@@ -100,11 +113,36 @@ describe('DailyWordsScreen', () => {
     getToday.mockResolvedValue(makeWords([true, true, true, true, true]));
     await renderScreen();
     expect(await screen.findByText('Daily Words abgeschlossen')).toBeTruthy();
+    // ...and the words can still be browsed again
+    await fireEvent.press(screen.getByRole('button', { name: 'Wörter noch einmal ansehen' }));
+    expect(await screen.findByText('1 / 5')).toBeTruthy();
+    expect(screen.getByText('berücksichtigen')).toBeTruthy();
+    // "Weiter" steps through learned words (it must not jump back to the celebration)...
+    await fireEvent.press(screen.getByRole('button', { name: 'Weiter' }));
+    expect(await screen.findByText('2 / 5')).toBeTruthy();
+    expect(markLearned).not.toHaveBeenCalled(); // browsing never re-marks words
+  });
+
+  it('celebrates after stepping past the last learned word when browsing again', async () => {
+    getToday.mockResolvedValue(makeWords([true, true, true, true, true]));
+    await renderScreen();
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Wörter noch einmal ansehen' }),
+    );
+    for (let i = 1; i <= 4; i++) {
+      await screen.findByText(`${i} / 5`);
+      await fireEvent.press(screen.getByRole('button', { name: 'Weiter' }));
+    }
+    await screen.findByText('5 / 5');
+    await fireEvent.press(screen.getByRole('button', { name: 'Fertig' }));
+    expect(await screen.findByText('Daily Words abgeschlossen')).toBeTruthy();
   });
 
   it('keeps the word and shows the error when marking fails, then succeeds on retry', async () => {
     getToday.mockResolvedValue(makeWords());
-    markLearned.mockRejectedValueOnce(new ApiError('server', 'Der Server ist gerade nicht erreichbar.'));
+    markLearned.mockRejectedValueOnce(
+      new ApiError('server', 'Der Server ist gerade nicht erreichbar.'),
+    );
     await renderScreen();
     await fireEvent.press(await screen.findByRole('button', { name: 'Gelernt · Weiter' }));
     expect(await screen.findByText('Der Server ist gerade nicht erreichbar.')).toBeTruthy();
@@ -116,7 +154,9 @@ describe('DailyWordsScreen', () => {
 
   it('saves to vocabulary and treats "already exists" as saved', async () => {
     getToday.mockResolvedValue(makeWords());
-    create.mockRejectedValueOnce(new ApiError('validation', 'Vocabulary already exists for this word/language.', 400));
+    create.mockRejectedValueOnce(
+      new ApiError('validation', 'Vocabulary already exists for this word/language.', 400),
+    );
     await renderScreen();
     await fireEvent.press(await screen.findByRole('button', { name: 'Zu Vocabulary hinzufügen' }));
     expect(await screen.findByRole('button', { name: '✓ In Vocabulary gespeichert' })).toBeTruthy();

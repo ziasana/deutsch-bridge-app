@@ -38,5 +38,13 @@ Errors: HTTP status drives the client's `ApiError.kind` (401 unauthorized, 403 f
 
 The quiz after the words is built client-side from the same five words (as on web); there is no quiz endpoint.
 
+## Vocabulary trainer (existing, no backend change)
+| Endpoint | Request | Response | Notes |
+|---|---|---|---|
+| `GET /vocabulary/practice/session[?vocabularyItemId=]` | – | `{items: PracticeVocabularyItem[], newCount, reviewCount}` | Server picks new + due words. Each item has `contextQuestion` (cloze or context multiple choice, 2–4 options `{key,text}`) or `null` when the learner has < 4 saved words (flashcard-only). Never cached |
+| `POST /vocabulary/practice/round` | `{vocabularyItemId, flashcardKnewIt, contextSelectedKey \| null}` | `{flashcardCorrect, contextCorrect \| null, correctContextKey \| null, progress}` | One call per word, after both steps. `progress.masteryLevel` ∈ NEW/LEARNING/FAMILIAR/MASTERED. Invalidates the dashboard (review counts) |
+
+`/learn/vocabulary` and `/learn/review` both open this trainer. Saved words are lower-cased by the backend and carry no article when saved from Daily Words (same as web). `audioUrl` is ignored; pronunciation uses on-device German TTS.
+
 ## Gaps
 Push device registration (Phase 13); AI usage/remaining endpoint (optional); (daily-words completion: resolved, uses `POST /learning-progress`).

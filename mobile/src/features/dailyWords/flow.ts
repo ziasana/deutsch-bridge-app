@@ -18,9 +18,13 @@ export function nextIndex(words: DailyWord[], from: number): number | null {
 
 export const normalizeWord = (word: string) => word.trim().toLowerCase();
 
+/**
+ * Synonyms come as a delimited string: Daily Words use commas/semicolons, while AI-generated ones on
+ * saved vocabulary are often one per line (sometimes bulleted or numbered).
+ */
 export function splitSynonyms(synonyms: string | null): string[] {
   return (synonyms ?? '')
-    .split(/[,;]/)
-    .map((s) => s.trim())
+    .split(/[,;\n]/)
+    .map((s) => s.replace(/^\s*(?:[-•*]|\d+[.)])\s*/, '').trim())
     .filter(Boolean);
 }

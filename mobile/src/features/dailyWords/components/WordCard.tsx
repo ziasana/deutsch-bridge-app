@@ -52,7 +52,11 @@ export function WordCard({
 
   return (
     <View style={styles.gap}>
-      <View accessible accessibilityLabel={`${learnedCount} von ${total} Wörtern gelernt`} style={styles.gap}>
+      <View
+        accessible
+        accessibilityLabel={`${learnedCount} von ${total} Wörtern gelernt`}
+        style={styles.gap}
+      >
         <View style={styles.rowBetween}>
           <AppText variant="subheading">
             {index + 1} / {total}
@@ -132,7 +136,9 @@ export function WordCard({
         disabled={isSaved}
         onPress={onSave}
       />
-      {canGoPrevious ? <Button label="‹ Vorheriges Wort" variant="ghost" onPress={onPrevious} /> : null}
+      {canGoPrevious ? (
+        <Button label="‹ Vorheriges Wort" variant="ghost" onPress={onPrevious} />
+      ) : null}
     </View>
   );
 }
@@ -141,8 +147,21 @@ const styles = StyleSheet.create({
   gap: { gap: spacing.md },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   card: { gap: spacing.md, padding: spacing.xl },
-  wordRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.md, flexWrap: 'wrap' },
-  word: { fontSize: 34, lineHeight: 42, fontWeight: '700', color: colors.foreground, textAlign: 'center', flexShrink: 1 },
+  wordRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    flexWrap: 'wrap',
+  },
+  word: {
+    fontSize: 34,
+    lineHeight: 42,
+    fontWeight: '700',
+    color: colors.foreground,
+    textAlign: 'center',
+    flexShrink: 1,
+  },
   speak: {
     width: MIN_TOUCH,
     height: MIN_TOUCH,
