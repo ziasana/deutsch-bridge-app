@@ -1,6 +1,7 @@
 import { allLearned, firstUnlearnedIndex, learnedCount, nextIndex, splitSynonyms } from '../flow';
 import { resultTitle } from '@/utils/feedback';
-import { buildQuestions, shuffle } from '../practice';
+import { shuffle } from '@/utils/random';
+import { buildQuestions } from '../practice';
 import { makeWords } from '../testing/fixtures';
 
 describe('flow helpers', () => {

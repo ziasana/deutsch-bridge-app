@@ -44,7 +44,7 @@ describe('app navigation', () => {
     await fireEvent.press(screen.getByRole('button', { name: /Learn/ }));
     expect(await screen.findByText('Active Expressions')).toBeTruthy();
 
-    await fireEvent.press(screen.getByText('Grammar'));
+    await fireEvent.press(screen.getByText('Reading'));
     expect(await screen.findByText('Bald verfügbar')).toBeTruthy();
     expect(screen.getByText('Bald verfügbar')).toBeTruthy();
 

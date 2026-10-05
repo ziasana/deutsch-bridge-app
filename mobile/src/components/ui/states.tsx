@@ -6,7 +6,12 @@ import { colors, spacing } from '@/theme';
 
 export function LoadingState({ label = 'Lädt …' }: { label?: string }) {
   return (
-    <View style={styles.center} accessible accessibilityRole="progressbar" accessibilityLabel={label}>
+    <View
+      style={styles.center}
+      accessible
+      accessibilityRole="progressbar"
+      accessibilityLabel={label}
+    >
       <ActivityIndicator color={colors.primary} />
       <AppText variant="small" color={colors.mutedForeground}>
         {label}
@@ -15,7 +20,13 @@ export function LoadingState({ label = 'Lädt …' }: { label?: string }) {
   );
 }
 
-type EmptyProps = { emoji?: string; title: string; message?: string; actionLabel?: string; onAction?: () => void };
+type EmptyProps = {
+  emoji?: string;
+  title: string;
+  message?: string;
+  actionLabel?: string;
+  onAction?: () => void;
+};
 
 export function EmptyState({ emoji = '🎉', title, message, actionLabel, onAction }: EmptyProps) {
   return (

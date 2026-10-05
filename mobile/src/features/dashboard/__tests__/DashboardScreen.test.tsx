@@ -19,7 +19,9 @@ const get = dashboardApi.get as jest.MockedFunction<typeof dashboardApi.get>;
 
 const renderScreen = () =>
   render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } })}>
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } })}
+    >
       <DashboardScreen />
     </QueryClientProvider>,
   );
@@ -49,7 +51,10 @@ describe('DashboardScreen', () => {
     expect(screen.getByText('🏆 60 Wörter gemeistert')).toBeTruthy();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Weiterlernen' }));
-    expect(mockPush).toHaveBeenCalledWith('/learn/grammar');
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/grammar/[lessonId]',
+      params: { lessonId: '1' },
+    });
 
     await fireEvent.press(screen.getByRole('button', { name: 'Jetzt wiederholen' }));
     expect(mockPush).toHaveBeenCalledWith('/learn/review');
@@ -62,7 +67,14 @@ describe('DashboardScreen', () => {
     get.mockResolvedValue(
       withOverrides({
         currentStreak: 0,
-        continueLearning: { type: 'START', title: null, progressPercent: null, completed: 0, total: 0, route: '/dashboard/daily-words' },
+        continueLearning: {
+          type: 'START',
+          title: null,
+          progressPercent: null,
+          completed: 0,
+          total: 0,
+          route: '/dashboard/daily-words',
+        },
         today: { completed: 0, total: 0, activities: [] },
         focus: { area: null, route: null },
         milestone: null,
@@ -81,13 +93,20 @@ describe('DashboardScreen', () => {
   it('shows an intentional empty state when nothing is due for review', async () => {
     get.mockResolvedValue(baseDashboard);
     await renderScreen();
-    expect(await screen.findByText('🎉 Du hast momentan keine Wörter zur Wiederholung.')).toBeTruthy();
+    expect(
+      await screen.findByText('🎉 Du hast momentan keine Wörter zur Wiederholung.'),
+    ).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Neue Wörter lernen' }));
     expect(mockPush).toHaveBeenCalledWith('/learn/daily-words');
   });
 
   it('shows a friendly error with retry for network failures', async () => {
-    get.mockRejectedValueOnce(new ApiError('network', 'Keine Verbindung. Bitte überprüfe dein Internet und versuche es erneut.'));
+    get.mockRejectedValueOnce(
+      new ApiError(
+        'network',
+        'Keine Verbindung. Bitte überprüfe dein Internet und versuche es erneut.',
+      ),
+    );
     await renderScreen();
     expect(await screen.findByText(/Keine Verbindung/)).toBeTruthy();
     get.mockResolvedValueOnce(baseDashboard);

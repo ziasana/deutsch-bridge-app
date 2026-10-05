@@ -3,7 +3,14 @@ import type { DashboardResponse } from '@/types/dashboard';
 export const baseDashboard: DashboardResponse = {
   user: { displayName: 'Ali', learningLevel: 'B1' },
   currentStreak: 6,
-  continueLearning: { type: 'GRAMMAR', title: 'Perfekt', progressPercent: 70, completed: 7, total: 10, route: '/dashboard/grammar/lesson?id=1' },
+  continueLearning: {
+    type: 'GRAMMAR',
+    title: 'Perfekt',
+    progressPercent: 70,
+    completed: 7,
+    total: 10,
+    route: '/dashboard/grammar/lesson?id=1',
+  },
   today: {
     completed: 0,
     total: 3,
@@ -20,4 +27,7 @@ export const baseDashboard: DashboardResponse = {
   newContent: null,
 };
 
-export const withOverrides = (o: Partial<DashboardResponse>): DashboardResponse => ({ ...baseDashboard, ...o });
+export const withOverrides = (o: Partial<DashboardResponse>): DashboardResponse => ({
+  ...baseDashboard,
+  ...o,
+});

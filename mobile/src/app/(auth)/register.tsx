@@ -19,7 +19,10 @@ export default function RegisterScreen() {
   );
 
   return (
-    <AuthFrame title="Konto erstellen" subtitle="Starte deine Deutsch-Lernroutine in wenigen Sekunden.">
+    <AuthFrame
+      title="Konto erstellen"
+      subtitle="Starte deine Deutsch-Lernroutine in wenigen Sekunden."
+    >
       <Controller
         control={control}
         name="displayName"

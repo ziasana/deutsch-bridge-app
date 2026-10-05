@@ -17,17 +17,28 @@ jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-const getSession = vocabularyPracticeApi.getSession as jest.MockedFunction<typeof vocabularyPracticeApi.getSession>;
-const submitRound = vocabularyPracticeApi.submitRound as jest.MockedFunction<typeof vocabularyPracticeApi.submitRound>;
+const getSession = vocabularyPracticeApi.getSession as jest.MockedFunction<
+  typeof vocabularyPracticeApi.getSession
+>;
+const submitRound = vocabularyPracticeApi.submitRound as jest.MockedFunction<
+  typeof vocabularyPracticeApi.submitRound
+>;
 
 const renderScreen = () =>
   render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { gcTime: Infinity } } })}>
+    <QueryClientProvider
+      client={
+        new QueryClient({
+          defaultOptions: { queries: { retry: false }, mutations: { gcTime: Infinity } },
+        })
+      }
+    >
       <VocabularyTrainerScreen />
     </QueryClientProvider>,
   );
 
-const start = async () => fireEvent.press(await screen.findByRole('button', { name: 'Training starten' }));
+const start = async () =>
+  fireEvent.press(await screen.findByRole('button', { name: 'Training starten' }));
 const flip = async () => fireEvent.press(screen.getByRole('button', { name: /Karte umdrehen/ }));
 
 describe('VocabularyTrainerScreen', () => {
@@ -47,7 +58,9 @@ describe('VocabularyTrainerScreen', () => {
     getSession.mockResolvedValue(makeSession(2));
     submitRound
       .mockResolvedValueOnce(makeRound({ correctContextKey: 'k1a' }))
-      .mockResolvedValueOnce(makeRound({ flashcardCorrect: false, contextCorrect: false, correctContextKey: 'k2b' }));
+      .mockResolvedValueOnce(
+        makeRound({ flashcardCorrect: false, contextCorrect: false, correctContextKey: 'k2b' }),
+      );
     await renderScreen();
     await start();
 
@@ -61,7 +74,11 @@ describe('VocabularyTrainerScreen', () => {
     await fireEvent.press(screen.getByRole('radio', { name: 'Option A1' }));
     expect(await screen.findByText(/✓ Gewusst · ✓ Kontext richtig/)).toBeTruthy();
     expect(screen.getByText('Stufe: Am Lernen')).toBeTruthy();
-    expect(submitRound).toHaveBeenCalledWith({ vocabularyItemId: 'v1', flashcardKnewIt: true, contextSelectedKey: 'k1a' });
+    expect(submitRound).toHaveBeenCalledWith({
+      vocabularyItemId: 'v1',
+      flashcardKnewIt: true,
+      contextSelectedKey: 'k1a',
+    });
     await fireEvent.press(screen.getByRole('button', { name: 'Weiter' }));
 
     // Word 2: "Nicht gewusst", wrong option
@@ -89,12 +106,18 @@ describe('VocabularyTrainerScreen', () => {
     await flip();
     await fireEvent.press(screen.getByRole('button', { name: 'Gewusst' }));
     expect(await screen.findByText('✓ Gewusst')).toBeTruthy();
-    expect(submitRound).toHaveBeenCalledWith({ vocabularyItemId: 'v1', flashcardKnewIt: true, contextSelectedKey: null });
+    expect(submitRound).toHaveBeenCalledWith({
+      vocabularyItemId: 'v1',
+      flashcardKnewIt: true,
+      contextSelectedKey: null,
+    });
   });
 
   it('keeps the answer and lets the learner retry when submitting fails', async () => {
     getSession.mockResolvedValue(makeSession(1));
-    submitRound.mockRejectedValueOnce(new ApiError('network', 'Keine Verbindung.')).mockResolvedValueOnce(makeRound());
+    submitRound
+      .mockRejectedValueOnce(new ApiError('network', 'Keine Verbindung.'))
+      .mockResolvedValueOnce(makeRound());
     await renderScreen();
     await start();
     await flip();

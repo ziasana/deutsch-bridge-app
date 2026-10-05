@@ -24,5 +24,10 @@ export function Badge({ label, tone = 'neutral' }: { label: string; tone?: Tone 
 }
 
 const styles = StyleSheet.create({
-  badge: { alignSelf: 'flex-start', paddingHorizontal: spacing.sm + 2, paddingVertical: 3, borderRadius: radius.pill },
+  badge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+  },
 });

@@ -1,10 +1,25 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
-import { AppText, Badge, Button, Card, ListItem, ProgressBar, SectionHeader } from '@/components/ui';
+import {
+  AppText,
+  Badge,
+  Button,
+  Card,
+  ListItem,
+  ProgressBar,
+  SectionHeader,
+} from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 import type { DashboardResponse } from '@/types/dashboard';
 import { toMobileHref } from '../routes';
-import { PLAN_LABEL, continueCopy, focusCopy, isNewLearner, reviewSummary, weekDays } from '../viewModel';
+import {
+  PLAN_LABEL,
+  continueCopy,
+  focusCopy,
+  isNewLearner,
+  reviewSummary,
+  weekDays,
+} from '../viewModel';
 
 type Props = { data: DashboardResponse };
 
@@ -29,13 +44,21 @@ export function ContinueCard({ data }: Props) {
       </View>
       {c.progressPercent != null ? (
         <View style={styles.gap}>
-          <ProgressBar value={c.progressPercent} label={`${Math.round(c.progressPercent)} Prozent abgeschlossen`} />
+          <ProgressBar
+            value={c.progressPercent}
+            label={`${Math.round(c.progressPercent)} Prozent abgeschlossen`}
+          />
           <AppText variant="small" color={colors.mutedForeground}>
             {Math.round(c.progressPercent)}% abgeschlossen
           </AppText>
         </View>
       ) : null}
-      <Button label={copy.cta} onPress={() => router.push(toMobileHref(c.route, isStart ? '/learn/daily-words' : '/learn'))} />
+      <Button
+        label={copy.cta}
+        onPress={() =>
+          router.push(toMobileHref(c.route, isStart ? '/learn/daily-words' : '/learn'))
+        }
+      />
     </Card>
   );
 }
@@ -51,13 +74,22 @@ export function TodayPlanCard({ data }: Props) {
       <AppText variant="small" color={colors.mutedForeground}>
         {completed} / {total} abgeschlossen
       </AppText>
-      <ProgressBar value={completed} max={total} label={`${completed} von ${total} Aktivitäten abgeschlossen`} />
+      <ProgressBar
+        value={completed}
+        max={total}
+        label={`${completed} von ${total} Aktivitäten abgeschlossen`}
+      />
       {activities.map((a) => (
         <ListItem
           key={a.type}
           title={PLAN_LABEL[a.type]}
           leading={<AppText style={styles.mark}>{a.completed ? '✓' : '○'}</AppText>}
-          trailing={<Badge label={a.completed ? 'Erledigt' : 'Offen'} tone={a.completed ? 'success' : 'neutral'} />}
+          trailing={
+            <Badge
+              label={a.completed ? 'Erledigt' : 'Offen'}
+              tone={a.completed ? 'success' : 'neutral'}
+            />
+          }
           onPress={() => router.push(toMobileHref(a.route))}
         />
       ))}
@@ -82,13 +114,21 @@ export function ReviewCard({ data }: Props) {
       {due > 0 ? (
         <>
           <AppText variant="subheading">{reviewSummary(wordsDue, expressionsDue)}</AppText>
-          <AppText color={colors.mutedForeground}>Diese Inhalte sind bereit für eine Wiederholung.</AppText>
+          <AppText color={colors.mutedForeground}>
+            Diese Inhalte sind bereit für eine Wiederholung.
+          </AppText>
           <Button label="Jetzt wiederholen" onPress={() => router.push('/learn/review')} />
         </>
       ) : (
         <>
-          <AppText color={colors.mutedForeground}>🎉 Du hast momentan keine Wörter zur Wiederholung.</AppText>
-          <Button label="Neue Wörter lernen" variant="secondary" onPress={() => router.push('/learn/daily-words')} />
+          <AppText color={colors.mutedForeground}>
+            🎉 Du hast momentan keine Wörter zur Wiederholung.
+          </AppText>
+          <Button
+            label="Neue Wörter lernen"
+            variant="secondary"
+            onPress={() => router.push('/learn/daily-words')}
+          />
         </>
       )}
     </Card>
@@ -104,7 +144,11 @@ export function FocusCard({ data }: Props) {
       <SectionHeader title="🎯 Dein aktueller Fokus" />
       <AppText variant="subheading">{copy.area}</AppText>
       <AppText color={colors.mutedForeground}>{copy.text}</AppText>
-      <Button label={copy.cta} variant="secondary" onPress={() => router.push(toMobileHref(data.focus.route))} />
+      <Button
+        label={copy.cta}
+        variant="secondary"
+        onPress={() => router.push(toMobileHref(data.focus.route))}
+      />
     </Card>
   );
 }
@@ -124,7 +168,11 @@ export function WeekCard({ data, today = new Date() }: Props & { today?: Date })
             </AppText>
             {/* Learned = filled with a check; not learned = hollow. Never color alone. */}
             <View style={[styles.dot, d.learned && styles.dotOn, d.isToday && styles.dotToday]}>
-              {d.learned ? <AppText variant="caption" color={colors.primaryForeground}>✓</AppText> : null}
+              {d.learned ? (
+                <AppText variant="caption" color={colors.primaryForeground}>
+                  ✓
+                </AppText>
+              ) : null}
             </View>
           </View>
         ))}
@@ -132,7 +180,11 @@ export function WeekCard({ data, today = new Date() }: Props & { today?: Date })
       <AppText variant="small" color={colors.mutedForeground}>
         {learningDays} / {totalDays} Lerntage
       </AppText>
-      <Button label="Fortschritt ansehen" variant="ghost" onPress={() => router.push('/progress')} />
+      <Button
+        label="Fortschritt ansehen"
+        variant="ghost"
+        onPress={() => router.push('/progress')}
+      />
     </Card>
   );
 }
@@ -143,7 +195,11 @@ export function MilestoneCard({ data }: Props) {
   return (
     <Card tone="accent">
       <AppText variant="subheading">🏆 {m.wordsMastered} Wörter gemeistert</AppText>
-      <ProgressBar value={m.wordsMastered} max={m.nextThreshold} label={`Nächstes Ziel: ${m.nextThreshold} Wörter`} />
+      <ProgressBar
+        value={m.wordsMastered}
+        max={m.nextThreshold}
+        label={`Nächstes Ziel: ${m.nextThreshold} Wörter`}
+      />
       <AppText variant="small" color={colors.mutedForeground}>
         Nächstes Ziel: {m.nextThreshold} Wörter
       </AppText>

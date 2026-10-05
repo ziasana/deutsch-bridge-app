@@ -15,11 +15,19 @@ describe('auth schemas', () => {
   });
 
   it('enforces the backend registration rules (name 3–30, password ≥ 6, match)', () => {
-    const base = { displayName: 'Ali', email: 'a@b.de', password: 'secret1', passwordConfirmation: 'secret1' };
+    const base = {
+      displayName: 'Ali',
+      email: 'a@b.de',
+      password: 'secret1',
+      passwordConfirmation: 'secret1',
+    };
     expect(registerSchema.safeParse(base).success).toBe(true);
     expect(registerSchema.safeParse({ ...base, displayName: 'Al' }).success).toBe(false);
     expect(registerSchema.safeParse({ ...base, displayName: 'x'.repeat(31) }).success).toBe(false);
-    expect(registerSchema.safeParse({ ...base, password: '12345', passwordConfirmation: '12345' }).success).toBe(false);
+    expect(
+      registerSchema.safeParse({ ...base, password: '12345', passwordConfirmation: '12345' })
+        .success,
+    ).toBe(false);
     const mismatch = registerSchema.safeParse({ ...base, passwordConfirmation: 'other' });
     expect(mismatch.error?.issues[0].path).toEqual(['passwordConfirmation']);
   });

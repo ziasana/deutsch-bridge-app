@@ -1,10 +1,21 @@
 import { toMobileHref } from '../routes';
-import { continueCopy, focusCopy, getMode, greeting, headline, reviewSummary, statusMessage, weekDays } from '../viewModel';
+import {
+  continueCopy,
+  focusCopy,
+  getMode,
+  greeting,
+  headline,
+  reviewSummary,
+  statusMessage,
+  weekDays,
+} from '../viewModel';
 import { baseDashboard, withOverrides } from '../testing/fixtures';
 
 describe('getMode / statusMessage', () => {
   it('new learner when the backend recommends START', () => {
-    const d = withOverrides({ continueLearning: { ...baseDashboard.continueLearning, type: 'START', progressPercent: null } });
+    const d = withOverrides({
+      continueLearning: { ...baseDashboard.continueLearning, type: 'START', progressPercent: null },
+    });
     expect(getMode(d)).toBe('new');
     expect(headline(d, 9)).toBe('Willkommen 👋');
     expect(statusMessage(d)).toContain('Lernroutine');
@@ -14,7 +25,14 @@ describe('getMode / statusMessage', () => {
     const d = withOverrides({
       currentStreak: 0,
       week: { days: Array(7).fill(false), learningDays: 0, totalDays: 7 },
-      continueLearning: { type: 'DAILY_WORDS', title: null, progressPercent: 0, completed: 0, total: 5, route: '/dashboard/daily-words' },
+      continueLearning: {
+        type: 'DAILY_WORDS',
+        title: null,
+        progressPercent: 0,
+        completed: 0,
+        total: 5,
+        route: '/dashboard/daily-words',
+      },
       today: { ...baseDashboard.today, completed: 1, total: 4 },
     });
     expect(getMode(d)).toBe('new');
@@ -23,7 +41,13 @@ describe('getMode / statusMessage', () => {
   });
 
   it('exam-focused learner', () => {
-    const d = withOverrides({ continueLearning: { ...baseDashboard.continueLearning, type: 'EXAM', title: 'Lesen – Teil 2' } });
+    const d = withOverrides({
+      continueLearning: {
+        ...baseDashboard.continueLearning,
+        type: 'EXAM',
+        title: 'Lesen – Teil 2',
+      },
+    });
     expect(getMode(d)).toBe('exam');
     expect(statusMessage(d)).toBe('Dein aktueller Fokus: Lesen – Teil 2');
   });
@@ -31,8 +55,12 @@ describe('getMode / statusMessage', () => {
   it('unfinished plan', () => {
     const d = withOverrides({ today: { ...baseDashboard.today, completed: 2, total: 4 } });
     expect(getMode(d)).toBe('planInProgress');
-    expect(statusMessage(d)).toBe('Du bist heute schon halb fertig. 2 von 4 Aktivitäten abgeschlossen.');
-    expect(statusMessage(withOverrides({ today: { ...baseDashboard.today, completed: 1, total: 4 } }))).toContain('schon angefangen');
+    expect(statusMessage(d)).toBe(
+      'Du bist heute schon halb fertig. 2 von 4 Aktivitäten abgeschlossen.',
+    );
+    expect(
+      statusMessage(withOverrides({ today: { ...baseDashboard.today, completed: 1, total: 4 } })),
+    ).toContain('schon angefangen');
   });
 
   it('returning learner with reviews due', () => {
@@ -59,14 +87,21 @@ describe('copy helpers', () => {
 
   it('uses the backend title and counts, never invented numbers', () => {
     expect(continueCopy(baseDashboard.continueLearning).title).toBe('Perfekt');
-    expect(continueCopy({ ...baseDashboard.continueLearning, type: 'VOCAB_REVIEW', total: 8 }).description).toBe('8 Wörter warten auf dich.');
+    expect(
+      continueCopy({ ...baseDashboard.continueLearning, type: 'VOCAB_REVIEW', total: 8 })
+        .description,
+    ).toBe('8 Wörter warten auf dich.');
   });
 
   it('focus is encouraging, null when nothing to suggest', () => {
     expect(focusCopy({ area: 'VOCABULARY', route: null })?.area).toBe('Wortschatz');
-    expect(focusCopy({ area: 'WRITING', route: null, detail: 'FORM' })?.text).toContain('Form und Anrede');
+    expect(focusCopy({ area: 'WRITING', route: null, detail: 'FORM' })?.text).toContain(
+      'Form und Anrede',
+    );
     expect(focusCopy({ area: null, route: null })).toBeNull();
-    expect(JSON.stringify(focusCopy({ area: 'GRAMMAR', route: null }))).not.toMatch(/schwäch|weak/i);
+    expect(JSON.stringify(focusCopy({ area: 'GRAMMAR', route: null }))).not.toMatch(
+      /schwäch|weak/i,
+    );
   });
 
   it('maps the rolling 7-day window oldest → today', () => {
@@ -81,13 +116,21 @@ describe('toMobileHref', () => {
   it.each([
     ['/dashboard/daily-words', '/learn/daily-words'],
     ['/dashboard/vocabulary/practice', '/learn/vocabulary'],
-    ['/dashboard/grammar/lesson?id=5', '/learn/grammar'],
+    ['/dashboard/grammar', '/learn/grammar'],
     ['/dashboard/reading/article?id=9', '/learn/reading'],
     ['/dashboard/expressions', '/learn/expressions'],
     ['/dashboard/exam-prep/exercise?id=3', '/exam'],
     ['/dashboard/exam-prep/schreiben/fortschritt', '/exam'],
     ['/dashboard', '/home'],
   ])('%s → %s', (web, mobile) => expect(toMobileHref(web)).toBe(mobile));
+
+  it('deep-links a grammar lesson by id', () => {
+    expect(toMobileHref('/dashboard/grammar/lesson?id=abc')).toEqual({
+      pathname: '/grammar/[lessonId]',
+      params: { lessonId: 'abc' },
+    });
+    expect(toMobileHref('/dashboard/grammar/lesson')).toBe('/learn/grammar');
+  });
 
   it('falls back safely for unknown or missing routes', () => {
     expect(toMobileHref('/something/else')).toBe('/learn');

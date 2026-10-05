@@ -26,7 +26,8 @@ export default function ProfileTab() {
         <View style={{ height: 4 }} />
         <AppText>Niveau: {profile?.learningLevel ?? '–'}</AppText>
         <AppText>
-          Erklärsprache: {profile?.preferredLanguage ? LANGUAGE_LABEL[profile.preferredLanguage] : 'English'}
+          Erklärsprache:{' '}
+          {profile?.preferredLanguage ? LANGUAGE_LABEL[profile.preferredLanguage] : 'English'}
         </AppText>
       </Card>
       <DestinationList items={PROFILE_DESTINATIONS} />

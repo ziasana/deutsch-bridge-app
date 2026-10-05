@@ -1,11 +1,5 @@
 export type ContinueLearningType =
-  | "DAILY_WORDS"
-  | "VOCAB_REVIEW"
-  | "GRAMMAR"
-  | "READING"
-  | "EXPRESSIONS"
-  | "EXAM"
-  | "START";
+  'DAILY_WORDS' | 'VOCAB_REVIEW' | 'GRAMMAR' | 'READING' | 'EXPRESSIONS' | 'EXAM' | 'START';
 
 export interface ContinueLearningDto {
   type: ContinueLearningType;
@@ -16,7 +10,7 @@ export interface ContinueLearningDto {
   route: string;
 }
 
-export type PlanActivityType = "DAILY_WORDS" | "VOCAB_REVIEW" | "GRAMMAR" | "READING";
+export type PlanActivityType = 'DAILY_WORDS' | 'VOCAB_REVIEW' | 'GRAMMAR' | 'READING';
 
 export interface PlanActivityDto {
   type: PlanActivityType;
@@ -35,7 +29,7 @@ export interface ReviewNeededDto {
   expressionsDue: number;
 }
 
-export type FocusArea = "VOCABULARY" | "GRAMMAR" | "READING" | "EXPRESSIONS" | "WRITING" | null;
+export type FocusArea = 'VOCABULARY' | 'GRAMMAR' | 'READING' | 'EXPRESSIONS' | 'WRITING' | null;
 
 export interface CurrentFocusDto {
   area: FocusArea;

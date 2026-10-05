@@ -52,7 +52,5 @@ export function isRetryable(error: unknown): boolean {
 }
 
 export function toApiError(error: unknown): ApiError {
-  return error instanceof ApiError
-    ? error
-    : new ApiError('unknown', fallbackMessage('unknown'));
+  return error instanceof ApiError ? error : new ApiError('unknown', fallbackMessage('unknown'));
 }

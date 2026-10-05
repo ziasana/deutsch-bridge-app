@@ -17,7 +17,10 @@ export default function ForgotPasswordScreen() {
   const submit = handleSubmit(({ email }) => forgot.mutate(email.trim()));
 
   return (
-    <AuthFrame title="Passwort vergessen?" subtitle="Wir senden dir einen Link zum Zurücksetzen per E-Mail.">
+    <AuthFrame
+      title="Passwort vergessen?"
+      subtitle="Wir senden dir einen Link zum Zurücksetzen per E-Mail."
+    >
       {forgot.isSuccess ? (
         <Card tone="accent">
           <AppText variant="subheading">E-Mail gesendet ✉️</AppText>

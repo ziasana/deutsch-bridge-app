@@ -27,7 +27,8 @@ describe('api client', () => {
 
   it('refreshes once for concurrent 401s and retries both requests', async () => {
     fetchMock.mockImplementation((url: string, init: { headers: Record<string, string> }) => {
-      if (url.endsWith('/auth/mobile/refresh')) return json(200, { data: { accessToken: 'new-access' } });
+      if (url.endsWith('/auth/mobile/refresh'))
+        return json(200, { data: { accessToken: 'new-access' } });
       return init.headers.Authorization === 'Bearer new-access' ? json(200, { ok: 1 }) : json(401);
     });
 
@@ -35,13 +36,17 @@ describe('api client', () => {
 
     expect(a).toEqual({ ok: 1 });
     expect(b).toEqual({ ok: 1 });
-    const refreshCalls = fetchMock.mock.calls.filter(([u]) => String(u).endsWith('/auth/mobile/refresh'));
+    const refreshCalls = fetchMock.mock.calls.filter(([u]) =>
+      String(u).endsWith('/auth/mobile/refresh'),
+    );
     expect(refreshCalls).toHaveLength(1);
     expect(await tokenStorage.getAccess()).toBe('new-access');
   });
 
   it('clears the session when the refresh token is rejected', async () => {
-    fetchMock.mockImplementation((url: string) => json(String(url).endsWith('/refresh') ? 403 : 401));
+    fetchMock.mockImplementation((url: string) =>
+      json(String(url).endsWith('/refresh') ? 403 : 401),
+    );
     await expect(request('/a')).rejects.toMatchObject({ kind: 'unauthorized' });
     expect(onSessionExpired).toHaveBeenCalledTimes(1);
     expect(await tokenStorage.getAccess()).toBeNull();

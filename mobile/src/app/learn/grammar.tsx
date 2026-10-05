@@ -1,5 +1,5 @@
-import { ComingSoon } from '@/features/navigation/ComingSoon';
+import { GrammarListScreen } from '@/features/grammar/GrammarListScreen';
 
-export default function Placeholder() {
-  return <ComingSoon title="Grammar" subtitle="Von A1 bis C1" />;
+export default function GrammarRoute() {
+  return <GrammarListScreen />;
 }

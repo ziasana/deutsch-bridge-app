@@ -2,7 +2,14 @@ import { RefreshControl, StyleSheet, View } from 'react-native';
 import { AppText, Badge, ErrorState, Screen } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 import { DashboardSkeleton } from './components/DashboardSkeleton';
-import { ContinueCard, FocusCard, MilestoneCard, ReviewCard, TodayPlanCard, WeekCard } from './components/DashboardCards';
+import {
+  ContinueCard,
+  FocusCard,
+  MilestoneCard,
+  ReviewCard,
+  TodayPlanCard,
+  WeekCard,
+} from './components/DashboardCards';
 import { useDashboard } from './hooks';
 import { headline, statusMessage } from './viewModel';
 
@@ -12,7 +19,9 @@ export function DashboardScreen() {
   return (
     <Screen
       bottomInset={false}
-      refreshControl={<RefreshControl refreshing={isRefetching && !isPending} onRefresh={() => void refetch()} />}
+      refreshControl={
+        <RefreshControl refreshing={isRefetching && !isPending} onRefresh={() => void refetch()} />
+      }
     >
       {isPending ? <DashboardSkeleton /> : null}
       {isError && !data ? <ErrorState error={error} onRetry={() => void refetch()} /> : null}
@@ -24,7 +33,12 @@ export function DashboardScreen() {
             </AppText>
             <AppText color={colors.mutedForeground}>{statusMessage(data)}</AppText>
             <View style={styles.chips}>
-              {data.currentStreak > 0 ? <Badge tone="warning" label={`🔥 ${data.currentStreak} ${data.currentStreak === 1 ? 'Tag' : 'Tage'}`} /> : null}
+              {data.currentStreak > 0 ? (
+                <Badge
+                  tone="warning"
+                  label={`🔥 ${data.currentStreak} ${data.currentStreak === 1 ? 'Tag' : 'Tage'}`}
+                />
+              ) : null}
               <Badge tone="primary" label={data.user.learningLevel} />
             </View>
           </View>

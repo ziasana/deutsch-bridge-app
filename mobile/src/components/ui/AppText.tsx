@@ -9,7 +9,13 @@ type Props = TextProps & {
   center?: boolean;
 };
 
-export function AppText({ variant = 'body', color = colors.foreground, center, style, ...rest }: Props) {
+export function AppText({
+  variant = 'body',
+  color = colors.foreground,
+  center,
+  style,
+  ...rest
+}: Props) {
   return (
     <Text
       {...rest}

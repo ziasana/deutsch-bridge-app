@@ -16,7 +16,10 @@ export default function LoginScreen() {
   });
 
   return (
-    <AuthFrame title="Willkommen zurück 👋" subtitle="Melde dich an und lerne dort weiter, wo du aufgehört hast.">
+    <AuthFrame
+      title="Willkommen zurück 👋"
+      subtitle="Melde dich an und lerne dort weiter, wo du aufgehört hast."
+    >
       <Controller
         control={control}
         name="email"
@@ -80,4 +83,6 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({ links: { alignItems: 'center', gap: spacing.lg, paddingTop: spacing.sm } });
+const styles = StyleSheet.create({
+  links: { alignItems: 'center', gap: spacing.lg, paddingTop: spacing.sm },
+});

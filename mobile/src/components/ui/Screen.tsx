@@ -1,5 +1,12 @@
 import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, type RefreshControlProps } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
+  type RefreshControlProps,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing } from '@/theme';
 
@@ -15,7 +22,14 @@ type Props = {
   bottomInset?: boolean;
 };
 
-export function Screen({ children, scroll = true, keyboardAware, refreshControl, padded = true, bottomInset = true }: Props) {
+export function Screen({
+  children,
+  scroll = true,
+  keyboardAware,
+  refreshControl,
+  padded = true,
+  bottomInset = true,
+}: Props) {
   const content = scroll ? (
     <ScrollView
       contentContainerStyle={[styles.content, padded && styles.padded]}
@@ -30,7 +44,10 @@ export function Screen({ children, scroll = true, keyboardAware, refreshControl,
   );
 
   return (
-    <SafeAreaView style={styles.flex} edges={bottomInset ? ['top', 'left', 'right', 'bottom'] : ['top', 'left', 'right']}>
+    <SafeAreaView
+      style={styles.flex}
+      edges={bottomInset ? ['top', 'left', 'right', 'bottom'] : ['top', 'left', 'right']}
+    >
       {keyboardAware ? (
         <KeyboardAvoidingView
           style={styles.flex}

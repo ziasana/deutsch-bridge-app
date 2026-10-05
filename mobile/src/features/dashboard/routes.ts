@@ -14,6 +14,11 @@ const RULES: [RegExp, Href][] = [
 
 export function toMobileHref(webRoute: string | null | undefined, fallback: Href = '/learn'): Href {
   if (!webRoute) return fallback;
-  const path = webRoute.split('?')[0];
+  const [path, query] = webRoute.split('?');
+  // Deep link to one grammar lesson: /dashboard/grammar/lesson?id=<id>
+  if (path === '/dashboard/grammar/lesson') {
+    const id = new URLSearchParams(query).get('id');
+    if (id) return { pathname: '/grammar/[lessonId]', params: { lessonId: id } };
+  }
   return RULES.find(([re]) => re.test(path))?.[1] ?? fallback;
 }

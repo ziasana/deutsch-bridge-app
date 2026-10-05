@@ -5,9 +5,7 @@ import { colors, radius, shadow, spacing } from '@/theme';
 type Props = { children: ReactNode; style?: ViewStyle; tone?: 'default' | 'accent' };
 
 export function Card({ children, style, tone = 'default' }: Props) {
-  return (
-    <View style={[styles.card, tone === 'accent' && styles.accent, style]}>{children}</View>
-  );
+  return <View style={[styles.card, tone === 'accent' && styles.accent, style]}>{children}</View>;
 }
 
 const styles = StyleSheet.create({

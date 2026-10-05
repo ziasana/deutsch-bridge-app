@@ -6,7 +6,9 @@ import { useAuthStore } from '@/stores/authStore';
 import LoginScreen from '@/app/(auth)/login';
 
 jest.mock('@/api/authApi');
-jest.mock('expo-router', () => ({ Link: ({ children }: { children: React.ReactNode }) => children }));
+jest.mock('expo-router', () => ({
+  Link: ({ children }: { children: React.ReactNode }) => children,
+}));
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children }: { children: React.ReactNode }) => children,
 }));

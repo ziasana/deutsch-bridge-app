@@ -46,5 +46,21 @@ The quiz after the words is built client-side from the same five words (as on we
 
 `/learn/vocabulary` and `/learn/review` both open this trainer. Saved words are lower-cased by the backend and carry no article when saved from Daily Words (same as web). `audioUrl` is ignored; pronunciation uses on-device German TTS.
 
+## Grammar (existing, no backend change)
+| Endpoint | Response / notes |
+|---|---|
+| `GET /grammar/level-summary` | `[{level, total, learned}]` – level chips |
+| `GET /grammar?level=A1` | `{level, categories:[{id,title,titleFa,passThreshold,lessons:[summary rows],testStatus}], uncategorized:[summary rows]}` – light rows, no content/quiz |
+| `GET /grammar/{id}` | full lesson: `content`/`example`/`usageTips` are **Markdown and/or rich-text HTML** (rendered natively by `components/content`), `quiz[]` (mcq / fill / truefalse; `answer` is included and checked on the device), `learningProgresses`, `bookmarked`, `*Fa` Persian fields (A1–B1 only) |
+| `GET /grammar/{id}/navigation` | `{previous, next}` neighbours in list order |
+| `POST/DELETE /grammar/{id}/bookmark` | toggle bookmark; returns the lesson |
+| `POST /learning-progress` | `{lessonId, learned}` – mark/unmark learned |
+| `GET /exercise-progress`, `POST /exercise-progress {questionKey, correct}`, `DELETE /exercise-progress [keys]` | per-question quiz results, key = `<lessonId>:<questionIndex>` (index in the original `quiz[]`) |
+| `GET /grammar/categories/{id}` | category + all lessons with quizzes (feeds the category test) |
+| `POST /grammar/categories/{id}/test-result {score,total}` | records the attempt; backend computes pass/fail vs `passThreshold` → `CategoryTestStatus` |
+| `POST /grammar/categories/{id}/test-result/complete` | marks a passed category completed |
+
+Rules mirrored from web: quiz answers compare case-insensitively; broken questions are skipped; all-correct lesson quiz marks the lesson learned; the category test draws up to 15 random playable questions. Persian (preferredLanguage `PR`) applies only to A1–B1 and only when a `*Fa` value exists. Not in mobile yet: "saved for later" bookmark list, search.
+
 ## Gaps
 Push device registration (Phase 13); AI usage/remaining endpoint (optional); (daily-words completion: resolved, uses `POST /learning-progress`).

@@ -35,6 +35,12 @@ export function ListItem({ title, subtitle, leading, trailing, onPress }: Props)
 }
 
 const styles = StyleSheet.create({
-  row: { minHeight: MIN_TOUCH, flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm },
+  row: {
+    minHeight: MIN_TOUCH,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
   text: { flex: 1, gap: 2 },
 });

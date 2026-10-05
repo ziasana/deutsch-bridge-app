@@ -19,6 +19,11 @@ export function ProgressBar({ value, max = 100, label = 'Fortschritt' }: Props) 
 }
 
 const styles = StyleSheet.create({
-  track: { height: 8, borderRadius: radius.pill, backgroundColor: colors.secondary, overflow: 'hidden' },
+  track: {
+    height: 8,
+    borderRadius: radius.pill,
+    backgroundColor: colors.secondary,
+    overflow: 'hidden',
+  },
   fill: { height: '100%', borderRadius: radius.pill, backgroundColor: colors.primary },
 });

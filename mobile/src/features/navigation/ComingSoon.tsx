@@ -7,7 +7,11 @@ export function ComingSoon({ title, subtitle, back = true, emoji = '🛠️' }: 
   return (
     <Screen bottomInset={back}>
       <Header title={title} subtitle={subtitle} back={back} />
-      <EmptyState emoji={emoji} title="Bald verfügbar" message="Dieser Bereich wird in Kürze freigeschaltet." />
+      <EmptyState
+        emoji={emoji}
+        title="Bald verfügbar"
+        message="Dieser Bereich wird in Kürze freigeschaltet."
+      />
     </Screen>
   );
 }

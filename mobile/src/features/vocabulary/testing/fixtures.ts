@@ -1,4 +1,8 @@
-import type { PracticeVocabularyItem, PracticeVocabularySession, VocabularyRoundResponse } from '@/types/vocabulary';
+import type {
+  PracticeVocabularyItem,
+  PracticeVocabularySession,
+  VocabularyRoundResponse,
+} from '@/types/vocabulary';
 
 export const makeItem = (n: number, withContext = true): PracticeVocabularyItem => ({
   vocabularyItemId: `v${n}`,
@@ -30,7 +34,9 @@ export const makeSession = (count = 2, withContext = true): PracticeVocabularySe
   reviewCount: 0,
 });
 
-export const makeRound = (over: Partial<VocabularyRoundResponse> = {}): VocabularyRoundResponse => ({
+export const makeRound = (
+  over: Partial<VocabularyRoundResponse> = {},
+): VocabularyRoundResponse => ({
   flashcardCorrect: true,
   contextCorrect: true,
   correctContextKey: 'k1a',

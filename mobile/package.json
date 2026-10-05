@@ -10,12 +10,15 @@
     "expo-asset": "~57.0.18",
     "expo-constants": "~57.0.20",
     "expo-font": "~57.0.4",
+    "expo-image": "~57.0.5",
     "expo-linking": "~57.0.11",
     "expo-router": "~57.0.24",
     "expo-secure-store": "~57.0.4",
     "expo-speech": "~57.0.3",
     "expo-splash-screen": "~57.0.9",
     "expo-status-bar": "~57.0.1",
+    "htmlparser2": "^12.0.0",
+    "marked": "^18.0.14",
     "react": "19.2.3",
     "react-dom": "^19.2.3",
     "react-hook-form": "^7.89.0",
@@ -58,6 +61,11 @@
     ],
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/src/$1"
-    }
+    },
+    "transformIgnorePatterns": [
+      "/node_modules/(?!(.pnpm|react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|react-navigation|@react-navigation|@sentry/react-native|native-base|standard-navigation|marked|htmlparser2|domhandler|domutils|domelementtype|dom-serializer|entities))",
+      "/node_modules/react-native-reanimated/plugin/",
+      "/node_modules/@react-native/babel-preset/"
+    ]
   }
 }
