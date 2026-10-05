@@ -6,3 +6,5 @@ jest.mock('expo-secure-store', () => {
     deleteItemAsync: jest.fn(async (key: string) => void store.delete(key)),
   };
 });
+
+jest.mock('expo-speech', () => ({ speak: jest.fn(), stop: jest.fn() }));

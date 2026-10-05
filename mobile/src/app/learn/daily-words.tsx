@@ -1,5 +1,5 @@
-import { ComingSoon } from '@/features/navigation/ComingSoon';
+import { DailyWordsScreen } from '@/features/dailyWords/DailyWordsScreen';
 
-export default function Placeholder() {
-  return <ComingSoon title="Daily Words" subtitle="Deine 5 Wörter für heute" />;
+export default function DailyWordsRoute() {
+  return <DailyWordsScreen />;
 }

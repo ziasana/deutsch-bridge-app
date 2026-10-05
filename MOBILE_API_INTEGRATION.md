@@ -28,5 +28,15 @@ Errors: HTTP status drives the client's `ApiError.kind` (401 unauthorized, 403 f
 - `focus.area` may be null (nothing to suggest → card hidden); `milestone` / `newContent` may be null. `newContent` is not shown on mobile.
 - Loading this endpoint generates today's daily words server-side.
 
+## Daily Words (existing, no backend change)
+| Endpoint | Request | Response | Notes |
+|---|---|---|---|
+| `GET /daily-words` | – | `DailyWord[]` (`id, word, meaning, example, synonyms, level, learned, meaningFa, exampleFa`) | Generates today's words on first call. `meaningFa`/`exampleFa` only for A1–B1 learners with language PR |
+| `POST /learning-progress` | `{dailyWordId, learned: true}` | 201 `ApiResponse<String>` | Marks a word learned; the dashboard plan/streak update from this |
+| `GET /vocabulary/exists?word=` | – | `{exists, vocabularyItemId}` | Drives the "saved" state of the save button |
+| `POST /vocabulary` | `{word, article, meaning, language:'EN', example, level}` | `VocabularyItem` | Backend generates synonyms via Ollama (can hit the AI daily limit → 429). Duplicate → 400 "Vocabulary already exists…", treated as saved |
+
+The quiz after the words is built client-side from the same five words (as on web); there is no quiz endpoint.
+
 ## Gaps
-Push device registration (Phase 13); AI usage/remaining endpoint (optional); daily-words completion endpoint (verify in Phase 5).
+Push device registration (Phase 13); AI usage/remaining endpoint (optional); (daily-words completion: resolved, uses `POST /learning-progress`).
