@@ -2,9 +2,24 @@ import type { ContinueLearningType, CurrentFocusDto, DashboardResponse } from '@
 
 export type DashboardMode = 'new' | 'exam' | 'planInProgress' | 'reviewDue' | 'default';
 
+/**
+ * Never studied: the backend says START, or there is no streak and no learning day yet. The second
+ * rule matters because the plan counts an empty Word Review as "done", which would otherwise make a
+ * brand-new account look half finished.
+ */
+export function isNewLearner(d: DashboardResponse): boolean {
+  return (
+    d.continueLearning.type === 'START' ||
+    (d.currentStreak === 0 &&
+      d.week.learningDays === 0 &&
+      d.review.wordsDue + d.review.expressionsDue === 0 &&
+      d.continueLearning.completed === 0)
+  );
+}
+
 /** Which of the plan's dashboard states applies. Order matters: first match wins. */
 export function getMode(d: DashboardResponse): DashboardMode {
-  if (d.continueLearning.type === 'START') return 'new';
+  if (isNewLearner(d)) return 'new';
   if (d.continueLearning.type === 'EXAM') return 'exam';
   if (d.today.completed > 0 && d.today.completed < d.today.total) return 'planInProgress';
   if (d.review.wordsDue + d.review.expressionsDue > 0) return 'reviewDue';
@@ -44,7 +59,10 @@ export function statusMessage(d: DashboardResponse): string {
       return `Dein aktueller Fokus: ${d.continueLearning.title ?? 'Prüfungsvorbereitung'}`;
     case 'planInProgress': {
       const { completed, total } = d.today;
-      const lead = completed * 2 >= total ? 'Du bist heute schon halb fertig.' : 'Du hast heute schon angefangen.';
+      const lead =
+        completed * 2 >= total
+          ? 'Du bist heute schon halb fertig.'
+          : 'Du hast heute schon angefangen.';
       return `${lead} ${completed} von ${total} Aktivitäten abgeschlossen.`;
     }
     case 'reviewDue':
@@ -57,16 +75,54 @@ export function statusMessage(d: DashboardResponse): string {
 type ContinueCopy = { emoji: string; title: string; description: string; cta: string };
 
 /** Card copy per recommendation type. Nothing here is computed; counts come from the backend. */
-export function continueCopy(c: DashboardResponse['continueLearning']): ContinueCopy {
+export function continueCopy(
+  c: DashboardResponse['continueLearning'],
+  isNew = false,
+): ContinueCopy {
   const started = c.completed > 0;
   const map: Record<ContinueLearningType, ContinueCopy> = {
-    START: { emoji: '🌱', title: 'Erste 5 Wörter lernen', description: 'Ein kleiner Start für deine Lernroutine.', cta: 'Jetzt starten' },
-    DAILY_WORDS: { emoji: '🌱', title: 'Daily Words', description: 'Deine Wörter für heute.', cta: started ? 'Weiterlernen' : 'Jetzt starten' },
-    VOCAB_REVIEW: { emoji: '🔄', title: 'Vocabulary Review', description: `${plural(c.total, 'Wort wartet', 'Wörter warten')} auf dich.`, cta: 'Jetzt starten' },
-    GRAMMAR: { emoji: '🧩', title: c.title ?? 'Grammatik', description: 'Mach mit deiner Grammatik weiter.', cta: 'Weiterlernen' },
-    READING: { emoji: '📖', title: c.title ?? 'Reading', description: 'Lies weiter und verstehe mehr.', cta: 'Weiterlernen' },
-    EXPRESSIONS: { emoji: '💬', title: 'Active Expressions', description: 'Aktive Wendungen festigen.', cta: 'Weiterlernen' },
-    EXAM: { emoji: '🎯', title: c.title ?? 'Prüfungsvorbereitung', description: 'Bleib im Prüfungsrhythmus.', cta: 'Weiterüben' },
+    START: {
+      emoji: '🌱',
+      title: 'Erste 5 Wörter lernen',
+      description: 'Ein kleiner Start für deine Lernroutine.',
+      cta: 'Jetzt starten',
+    },
+    DAILY_WORDS: {
+      emoji: '🌱',
+      title: isNew ? 'Erste 5 Wörter lernen' : 'Daily Words',
+      description: isNew ? 'Ein kleiner Start für deine Lernroutine.' : 'Deine Wörter für heute.',
+      cta: started ? 'Weiterlernen' : 'Jetzt starten',
+    },
+    VOCAB_REVIEW: {
+      emoji: '🔄',
+      title: 'Vocabulary Review',
+      description: `${plural(c.total, 'Wort wartet', 'Wörter warten')} auf dich.`,
+      cta: 'Jetzt starten',
+    },
+    GRAMMAR: {
+      emoji: '🧩',
+      title: c.title ?? 'Grammatik',
+      description: 'Mach mit deiner Grammatik weiter.',
+      cta: 'Weiterlernen',
+    },
+    READING: {
+      emoji: '📖',
+      title: c.title ?? 'Reading',
+      description: 'Lies weiter und verstehe mehr.',
+      cta: 'Weiterlernen',
+    },
+    EXPRESSIONS: {
+      emoji: '💬',
+      title: 'Active Expressions',
+      description: 'Aktive Wendungen festigen.',
+      cta: 'Weiterlernen',
+    },
+    EXAM: {
+      emoji: '🎯',
+      title: c.title ?? 'Prüfungsvorbereitung',
+      description: 'Bleib im Prüfungsrhythmus.',
+      cta: 'Weiterüben',
+    },
   };
   return map[c.type];
 }
@@ -84,13 +140,29 @@ type FocusCopy = { area: string; text: string; cta: string };
 export function focusCopy(focus: CurrentFocusDto): FocusCopy | null {
   switch (focus.area) {
     case 'VOCABULARY':
-      return { area: 'Wortschatz', text: 'Ein wenig mehr Wortschatz-Wiederholung könnte dein Lernen stärken.', cta: 'Wortschatz üben' };
+      return {
+        area: 'Wortschatz',
+        text: 'Ein wenig mehr Wortschatz-Wiederholung könnte dein Lernen stärken.',
+        cta: 'Wortschatz üben',
+      };
     case 'GRAMMAR':
-      return { area: 'Grammatik', text: 'Mit etwas mehr Grammatik-Praxis festigst du dein Fundament.', cta: 'Grammatik üben' };
+      return {
+        area: 'Grammatik',
+        text: 'Mit etwas mehr Grammatik-Praxis festigst du dein Fundament.',
+        cta: 'Grammatik üben',
+      };
     case 'READING':
-      return { area: 'Lesen', text: 'Ein weiterer Text hilft dir, sicherer im Leseverstehen zu werden.', cta: 'Lesen üben' };
+      return {
+        area: 'Lesen',
+        text: 'Ein weiterer Text hilft dir, sicherer im Leseverstehen zu werden.',
+        cta: 'Lesen üben',
+      };
     case 'EXPRESSIONS':
-      return { area: 'Redewendungen', text: 'Aktive Wendungen machen deine Sprache natürlicher.', cta: 'Redewendungen üben' };
+      return {
+        area: 'Redewendungen',
+        text: 'Aktive Wendungen machen deine Sprache natürlicher.',
+        cta: 'Redewendungen üben',
+      };
     case 'WRITING': {
       const detail: Record<string, string> = {
         TASK: 'die Aufgabenstellung',
@@ -112,7 +184,10 @@ export function focusCopy(focus: CurrentFocusDto): FocusCopy | null {
 const WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 
 /** The backend sends the last 7 days oldest → today (a rolling window, not Mon–Sun). */
-export function weekDays(days: boolean[], today: Date): { label: string; learned: boolean; isToday: boolean }[] {
+export function weekDays(
+  days: boolean[],
+  today: Date,
+): { label: string; learned: boolean; isToday: boolean }[] {
   return days.map((learned, i) => {
     const date = new Date(today);
     date.setDate(today.getDate() - (days.length - 1 - i));

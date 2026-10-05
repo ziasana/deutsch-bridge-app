@@ -10,6 +10,18 @@ describe('getMode / statusMessage', () => {
     expect(statusMessage(d)).toContain('Lernroutine');
   });
 
+  it('a never-studied account is "new" even though the backend counts an empty review as done', () => {
+    const d = withOverrides({
+      currentStreak: 0,
+      week: { days: Array(7).fill(false), learningDays: 0, totalDays: 7 },
+      continueLearning: { type: 'DAILY_WORDS', title: null, progressPercent: 0, completed: 0, total: 5, route: '/dashboard/daily-words' },
+      today: { ...baseDashboard.today, completed: 1, total: 4 },
+    });
+    expect(getMode(d)).toBe('new');
+    expect(statusMessage(d)).toContain('Lernroutine');
+    expect(continueCopy(d.continueLearning, true).title).toBe('Erste 5 Wörter lernen');
+  });
+
   it('exam-focused learner', () => {
     const d = withOverrides({ continueLearning: { ...baseDashboard.continueLearning, type: 'EXAM', title: 'Lesen – Teil 2' } });
     expect(getMode(d)).toBe('exam');

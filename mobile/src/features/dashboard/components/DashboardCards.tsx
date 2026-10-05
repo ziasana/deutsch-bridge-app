@@ -4,15 +4,15 @@ import { AppText, Badge, Button, Card, ListItem, ProgressBar, SectionHeader } fr
 import { colors, radius, spacing } from '@/theme';
 import type { DashboardResponse } from '@/types/dashboard';
 import { toMobileHref } from '../routes';
-import { PLAN_LABEL, continueCopy, focusCopy, reviewSummary, weekDays } from '../viewModel';
+import { PLAN_LABEL, continueCopy, focusCopy, isNewLearner, reviewSummary, weekDays } from '../viewModel';
 
 type Props = { data: DashboardResponse };
 
 export function ContinueCard({ data }: Props) {
   const router = useRouter();
   const c = data.continueLearning;
-  const copy = continueCopy(c);
-  const isStart = c.type === 'START';
+  const isStart = isNewLearner(data);
+  const copy = continueCopy(c, isStart);
   return (
     <Card tone="accent" style={styles.hero}>
       <AppText variant="caption" color={colors.primaryDark}>
