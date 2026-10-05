@@ -6,10 +6,15 @@ import { useEffect } from 'react';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { queryClient } from '@/api/queryClient';
+import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { ErrorState } from '@/components/ui';
+import { OfflineBanner } from '@/features/offline/OfflineBanner';
+import { useConnectivity } from '@/features/offline/useConnectivity';
 import { configurePushHandler } from '@/features/notifications/push';
 import { initSession, useAuthStore } from '@/stores/authStore';
 import { colors } from '@/theme';
+
+export { AppErrorBoundary as ErrorBoundary };
 
 void SplashScreen.preventAutoHideAsync();
 initSession();
@@ -53,12 +58,18 @@ function RootNavigator() {
   );
 }
 
+function ConnectivityNotice() {
+  const { offline } = useConnectivity();
+  return <OfflineBanner visible={offline} />;
+}
+
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <StatusBar style="dark" />
         <RootNavigator />
+        <ConnectivityNotice />
       </QueryClientProvider>
     </SafeAreaProvider>
   );
