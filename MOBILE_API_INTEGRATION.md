@@ -14,6 +14,10 @@ Errors: HTTP status drives the client's `ApiError.kind` (401 unauthorized, 403 f
 | `POST /auth/forgot-password` | none | `ForgotPasswordRequest` | `ApiResponse<Void>` | existing |
 | `GET /user/profile` | bearer | – | `ApiResponse<UserProfileResponse>` | session restore |
 
+**Error quirk:** wrong credentials / inactive account return **HTTP 404** with `{message}` (`DataNotFoundException`), not 401. The mobile login screen shows that message as-is. Validation failures (`@Valid`) return 400 with a field-error map (no `message`); the app validates client-side first.
+
+`PreferredLanguage` is `EN | DE | PR` and is sent upper-case as `Accept-Language`.
+
 `JWTAuthFilter` now accepts `Authorization: Bearer` when no `access_token` cookie is present.
 
 ## Dashboard (existing)
