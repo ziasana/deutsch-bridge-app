@@ -107,6 +107,43 @@ public class AuthController {
         return new ResponseEntity<>(new ApiResponse<>("Account created", userResponse), HttpStatus.CREATED);
     }
 
+    // ---- Mobile (token-in-body) variants. The web cookie endpoints above are unchanged. ----
+
+    @PostMapping("/mobile/login")
+    public ResponseEntity<ApiResponse<MobileAuthResponse>> mobileLogin(@RequestBody @Valid LoginRequest request) throws DataNotFoundException {
+        String email = request.getEmail();
+        authService.login(email, request.getPassword());
+        return ResponseEntity.ok(new ApiResponse<>("Login successful!", issueMobileTokens(userService.findByEmail(email))));
+    }
+
+    @PostMapping("/mobile/register")
+    public ResponseEntity<ApiResponse<MobileAuthResponse>> mobileRegister(@RequestBody @Valid UserRegistrationRequest request) throws UserVerificationException {
+        User user = userService.registerUser(request);
+        return new ResponseEntity<>(new ApiResponse<>("Account created", issueMobileTokens(user)), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/mobile/refresh")
+    public ResponseEntity<ApiResponse<MobileRefreshResponse>> mobileRefresh(@RequestBody @Valid MobileRefreshRequest request) {
+        String token = request.refreshToken();
+        if (!jwtUtil.validateToken(token)) {
+            throw new AuthenticationCredentialsNotFoundException("Invalid token");
+        }
+        User user = userService.findByEmail(jwtUtil.extractEmail(token));
+        if (!user.isEnabled() || user.isDeleted()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(new ApiResponse<>("successfully refreshed",
+                new MobileRefreshResponse(jwtUtil.generateAccessToken(user.getEmail()))));
+    }
+
+    private MobileAuthResponse issueMobileTokens(User user) {
+        String email = user.getEmail();
+        String refreshToken = jwtUtil.generateRefreshToken(email);
+        userService.saveRefreshToken(email, refreshToken);
+        return new MobileAuthResponse(jwtUtil.generateAccessToken(email), refreshToken,
+                userProfileService.getUserProfileResponse(user));
+    }
+
     @PostMapping("/forgot-password")
     public ResponseEntity <ApiResponse<Void>> forgotReset(@RequestBody @Valid ForgotPasswordRequest request) throws UserVerificationException, DataNotFoundException {
        String message=  userService.sendResetLink(request.email()) ?

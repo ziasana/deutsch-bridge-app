@@ -46,6 +46,7 @@ public class JWTAuthFilter extends OncePerRequestFilter {
                 || path.startsWith("/api/auth/reset-password")
                 || path.startsWith("/req/reset-password")
                 || path.startsWith("/api/auth/register")
+                || path.startsWith("/api/auth/mobile/")
                 || path.startsWith("/api/public/")
                 || path.startsWith("/uploads/")
                 || path.startsWith("/api/test/")) {
@@ -55,6 +56,10 @@ public class JWTAuthFilter extends OncePerRequestFilter {
         }
 
         String token= cookieService.extractAccessToken(request);
+        if (token == null) {
+            // Native clients can't use the browser cookie jar; they send the access token as a Bearer header.
+            token = extractBearerToken(request);
+        }
         if (token == null) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401
             return; // stop filter chain
@@ -91,6 +96,15 @@ public class JWTAuthFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private static String extractBearerToken(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        if (header != null && header.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            String value = header.substring(7).trim();
+            return value.isEmpty() ? null : value;
+        }
+        return null;
     }
 
     private static void extractLanguage(HttpServletRequest request) {
