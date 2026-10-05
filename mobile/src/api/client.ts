@@ -25,6 +25,8 @@ export type RequestOptions = {
   /** Skip the Authorization header and 401 refresh handling (login, register, refresh…). */
   auth?: boolean;
   signal?: AbortSignal;
+  /** Overrides the default request timeout (AI endpoints are slow). */
+  timeoutMs?: number;
 };
 
 // ---- refresh lock: concurrent 401s share a single refresh request ----
@@ -103,7 +105,7 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), env.requestTimeoutMs);
+  const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? env.requestTimeoutMs);
   options.signal?.addEventListener('abort', () => controller.abort());
 
   try {
@@ -160,6 +162,9 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 export const api = {
   get: <T>(path: string, query?: RequestOptions['query']) => request<T>(path, { query }),
   post: <T>(path: string, body?: unknown) => request<T>(path, { method: 'POST', body }),
+  /** POST to an AI-backed endpoint: waits up to `env.aiRequestTimeoutMs`. */
+  postAi: <T>(path: string, body?: unknown) =>
+    request<T>(path, { method: 'POST', body, timeoutMs: env.aiRequestTimeoutMs }),
   put: <T>(path: string, body?: unknown) => request<T>(path, { method: 'PUT', body }),
   patch: <T>(path: string, body?: unknown) => request<T>(path, { method: 'PATCH', body }),
   delete: <T>(path: string, body?: unknown) => request<T>(path, { method: 'DELETE', body }),

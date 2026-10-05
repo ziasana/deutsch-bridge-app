@@ -53,13 +53,13 @@ export const expressionPracticeApi = {
     }),
   // The two sentence steps are judged by the backend's AI and count against the daily AI limit.
   transformation: (expressionId: string, questionId: string, sentence: string) =>
-    api.post<TransformationAnswerResponse>('/expressions/practice/transformation', {
+    api.postAi<TransformationAnswerResponse>('/expressions/practice/transformation', {
       expressionId,
       questionId,
       sentence,
     }),
   production: (expressionId: string, sentence: string) =>
-    api.post<ProductionAnswerResponse>('/expressions/practice/production', {
+    api.postAi<ProductionAnswerResponse>('/expressions/practice/production', {
       expressionId,
       sentence,
     }),

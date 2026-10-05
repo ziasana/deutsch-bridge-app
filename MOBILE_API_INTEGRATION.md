@@ -139,5 +139,17 @@ The clock is derived from stored timestamps (never counted), persisted in AsyncS
 
 Modes: Lernen (all help), Üben (tip + Redemittel), Prüfung (no help). The draft (text, plan, mode) autosaves to the device (debounced) and is removed on submit and on sign-out. Not in mobile yet: the Schreiben "Lernen" game path, the Schreiben progress page, opening a Redemittel's detail dialog from the phrase list.
 
+## AI Tutor (existing, no backend change)
+| Endpoint | Notes |
+|---|---|
+| `POST /ollama/chat {question, sessionId?}` | → `{sessionId, content, sessionTitle?}`. An empty/unknown `sessionId` creates a session; `sessionTitle` (AI-generated) is set only on that first reply. **AI**: counts against the daily chat limit → 429 shows the server's message. Slow: mobile waits up to 90 s (`api.postAi`, `env.aiRequestTimeoutMs`) instead of the usual 20 s |
+| `GET /ollama/user-sessions` | `[{id, title, createdAt}]`, newest first; grouped Heute / Gestern / Früher on the device |
+| `GET /ollama/message/{sessionId}` | `[{id, role, content, timestamp}]`; only `user`/`assistant` rows are shown |
+| `PUT /ollama/session-title/{id} {title}` | rename |
+| `DELETE /ollama/session/{id}` | 204; asks for confirmation first |
+| `POST /vocabulary/classify-selection {selectedText, contextText}` → `GET /vocabulary/exists?word=` → `POST /vocabulary/from-chat` | "Wort speichern" under an answer: **AI** classify (normalised form, meaning, example), skip duplicates, save with `sourceChatId` |
+
+Differences from web: the web saves a word by selecting text inside the answer (floating button). React Native has no hook into the native selection menu, so mobile has a "💾 Wort speichern" action under each answer that opens a sheet where the learner types or pastes the word. The same 90 s AI timeout now also applies to the writing AI feedback and the expression transformation/production judging. `/ollama/generate-example` and `/generate-synonym` (used by the vocabulary editor on web) are not used yet.
+
 ## Gaps
 Push device registration (Phase 13); AI usage/remaining endpoint (optional); (daily-words completion: resolved, uses `POST /learning-progress`).

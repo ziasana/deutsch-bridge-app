@@ -2,6 +2,7 @@ import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-librar
 import { Alert } from 'react-native';
 import { authApi } from '@/api/authApi';
 import { dashboardApi } from '@/api/dashboardApi';
+import { chatApi } from '@/api/chatApi';
 import { examApi } from '@/api/examApi';
 import { readingApi } from '@/api/readingApi';
 import { baseDashboard } from '@/features/dashboard/testing/fixtures';
@@ -13,6 +14,7 @@ jest.mock('@/api/authApi');
 jest.mock('@/api/dashboardApi');
 jest.mock('@/api/readingApi');
 jest.mock('@/api/examApi');
+jest.mock('@/api/chatApi');
 jest.mock('expo-splash-screen', () => ({
   preventAutoHideAsync: jest.fn(() => Promise.resolve(true)),
   hideAsync: jest.fn(() => Promise.resolve()),
@@ -31,6 +33,7 @@ describe('app navigation', () => {
     (authApi.getProfile as jest.Mock).mockResolvedValue(profile);
     (dashboardApi.get as jest.Mock).mockResolvedValue(baseDashboard);
     (readingApi.levelSummary as jest.Mock).mockResolvedValue([{ level: 'B1', total: 0, learned: 0 }]);
+    (chatApi.sessions as jest.Mock).mockResolvedValue([]);
     (examApi.levelSummary as jest.Mock).mockResolvedValue([]);
     (examApi.pendingBookmarks as jest.Mock).mockResolvedValue([]);
     (readingApi.categories as jest.Mock).mockResolvedValue([]);

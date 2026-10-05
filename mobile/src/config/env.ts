@@ -10,4 +10,6 @@ export const env = {
   apiOrigin: origin,
   apiBaseUrl: `${origin}/api`,
   requestTimeoutMs: 20_000,
+  /** AI-backed endpoints (chat, feedback, judging) can take much longer than normal requests. */
+  aiRequestTimeoutMs: 90_000,
 } as const;

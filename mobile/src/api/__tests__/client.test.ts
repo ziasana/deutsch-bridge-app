@@ -1,4 +1,4 @@
-import { configureApiClient, request } from '../client';
+import { api, configureApiClient, request } from '../client';
 import { ApiError } from '../errors';
 import { tokenStorage } from '../tokenStorage';
 
@@ -23,6 +23,32 @@ describe('api client', () => {
     const init = fetchMock.mock.calls[0][1];
     expect(init.headers.Authorization).toBe('Bearer old-access');
     expect(init.headers['Accept-Language']).toBe('FA');
+  });
+
+  it('gives AI endpoints a longer timeout than normal requests', async () => {
+    jest.useFakeTimers();
+    try {
+      // Never resolves on its own; resolves (as an abort) only when the signal fires.
+      fetchMock.mockImplementation(
+        (_url: string, init: { signal: AbortSignal }) =>
+          new Promise((_resolve, reject) => init.signal.addEventListener('abort', () => reject(new Error('aborted')))),
+      );
+      const normal = request('/slow').catch((e: ApiError) => e);
+      await jest.advanceTimersByTimeAsync(20_001);
+      expect(await normal).toMatchObject({ kind: 'network' });
+
+      let settled = false;
+      const ai = api.postAi('/ollama/chat', { question: 'Hallo' }).catch((e: ApiError) => {
+        settled = true;
+        return e;
+      });
+      await jest.advanceTimersByTimeAsync(60_000);
+      expect(settled).toBe(false); // still waiting after 60 s
+      await jest.advanceTimersByTimeAsync(30_001);
+      expect(await ai).toMatchObject({ kind: 'network' });
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('refreshes once for concurrent 401s and retries both requests', async () => {
