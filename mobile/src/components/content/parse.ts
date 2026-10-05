@@ -1,7 +1,7 @@
 import { parseDocument } from 'htmlparser2';
 import type { ChildNode, Element } from 'domhandler';
 import { marked } from 'marked';
-import { env } from '@/config/env';
+import { resolveUploadUrl as resolveUpload } from '@/utils/urls';
 
 /**
  * Lesson text is Markdown (GFM tables included), rich-text HTML from the admin editor, or a mix.
@@ -71,9 +71,8 @@ export function normalizeLessonMarkdown(text: string): string {
     .replace(/\s+(-\s\*\*)/g, '\n$1');
 }
 
-/** Backend-relative "/uploads/..." paths become absolute so images load on a device. */
 export function resolveUploadUrl(url: string): string {
-  return url.startsWith('/uploads/') ? `${env.apiOrigin}${url}` : url;
+  return resolveUpload(url) ?? url;
 }
 
 const isSafeUrl = (url: string) => /^(https?:\/\/|mailto:)/i.test(url);

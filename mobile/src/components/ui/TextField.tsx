@@ -26,7 +26,7 @@ export const TextField = forwardRef<TextInput, Props>(function TextField(
           accessibilityLabel={label}
           placeholderTextColor={colors.mutedForeground}
           secureTextEntry={secret && hidden}
-          style={styles.input}
+          style={[styles.input, input.multiline && styles.multiline]}
           {...input}
         />
         {secret ? (
@@ -67,5 +67,11 @@ const styles = StyleSheet.create({
   },
   fieldError: { borderColor: colors.destructive, borderWidth: 2 },
   input: { flex: 1, minHeight: MIN_TOUCH, fontSize: 16, color: colors.foreground },
+  multiline: {
+    minHeight: 110,
+    paddingTop: spacing.md,
+    paddingRight: spacing.md,
+    textAlignVertical: 'top',
+  },
   toggle: { minHeight: MIN_TOUCH, paddingHorizontal: spacing.lg, justifyContent: 'center' },
 });

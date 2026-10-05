@@ -1,7 +1,5 @@
-import { ComingSoon } from '@/features/navigation/ComingSoon';
+import { ExpressionsHubScreen } from '@/features/expressions/ExpressionsHubScreen';
 
-export default function Placeholder() {
-  return (
-    <ComingSoon title="Active Expressions" subtitle="Redewendungen und Nomen-Verb-Verbindungen" />
-  );
+export default function ExpressionsRoute() {
+  return <ExpressionsHubScreen />;
 }

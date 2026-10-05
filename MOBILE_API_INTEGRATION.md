@@ -62,5 +62,25 @@ The quiz after the words is built client-side from the same five words (as on we
 
 Rules mirrored from web: quiz answers compare case-insensitively; broken questions are skipped; all-correct lesson quiz marks the lesson learned; the category test draws up to 15 random playable questions. Persian (preferredLanguage `PR`) applies only to A1–B1 and only when a `*Fa` value exists. Not in mobile yet: "saved for later" bookmark list, search.
 
+## Active Expressions (existing, no backend change)
+Two collections: `REDEWENDUNG` and `NOMEN_VERB_VERBINDUNG`. (`/redemittel` is a separate speaking/writing-phrase feature and is not part of the mobile scope yet.)
+
+| Endpoint | Notes |
+|---|---|
+| `GET /expressions/collection-summary` | `[{type, total}]` – hub counts |
+| `GET /expressions/continue-learning?type=` | `{items: list rows, readyCount}` – "Weiter lernen" shortlist on the hub |
+| `GET /expressions?type=&page=&size=&level=&progress=&bookmarked=&search=&sort=` | zero-based pages; `sort` ∈ recommended / progress / alphabetical; mobile loads 20 per page via infinite scroll; "ALL" filters are omitted so the backend can serve its cached list |
+| `GET /expressions/{id}` | full entry (meanings DE/EN/FA, literal/figurative, patterns, examples with EN/FA translations, notes, `progress`, `bookmarked`; `imageUrl` only shown for REDEWENDUNG) |
+| `GET /expressions/{id}/navigation` | previous/next in the same collection and level |
+| `POST /expressions/{id}/view` | called once when a detail screen opens (counts as seen) |
+| `POST/DELETE /expressions/{id}/bookmark` | toggle bookmark |
+| `GET /expressions/practice/session[?expressionId=]` | server-picked new + due items; each has `warmupSteps` (RECALL/CONTEXT/COMPLETION/TRANSFORMATION) and the questions for them; never cached |
+| `POST /expressions/practice/recall {expressionId,userAnswer}` | `{correct, correctAnswer, progress}` |
+| `POST /expressions/practice/question {expressionId,questionId,selectedOptionId}` | `{correct, correctOptionId, explanation, progress}` |
+| `POST /expressions/practice/transformation {expressionId,questionId,sentence}` | **AI-judged** (`usedExpression`, `grammarCorrect`, `meaningPreserved`, `feedback`, `c1Suggestion`); counts against the AI daily limit → may return 429 |
+| `POST /expressions/practice/production {expressionId,sentence}` | **AI-judged**, same limit rules |
+
+Steps per expression: optional *discover* (skipped when coming from the detail screen), the server's warm-up steps, then always *production*. A step counts as right when the AI says the expression was used **and** the grammar is correct. On an AI error/limit the learner can skip the step. `GET /expressions/difficult` is not used yet.
+
 ## Gaps
 Push device registration (Phase 13); AI usage/remaining endpoint (optional); (daily-words completion: resolved, uses `POST /learning-progress`).
