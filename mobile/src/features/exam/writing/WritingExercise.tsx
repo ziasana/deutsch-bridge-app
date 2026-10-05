@@ -1,3 +1,4 @@
+import { AiUsageHint } from '@/features/aiUsage/AiUsageHint';
 import { useState } from 'react';
 import { Alert, View } from 'react-native';
 import { RichContent } from '@/components/content/RichContent';
@@ -133,6 +134,7 @@ export function WritingExercise({ exercise, onSubmitted, timeResult }: Props) {
                   {ai.error.message}
                 </AppText>
               ) : null}
+              <AiUsageHint feature="AI_WRITING_FEEDBACK" />
               <Button
                 label="🤖 KI-Feedback anfordern"
                 variant="secondary"

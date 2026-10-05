@@ -178,5 +178,12 @@ Signing out also clears what the device keeps locally (writing drafts, the exam 
 
 **Needed to receive real pushes** (not code): run `eas init` so `extra.eas.projectId` exists in `app.json`, set up APNs/FCM credentials (`eas credentials`), use a development build (Expo Go on Android has no remote push), and set `PUSH_ENABLED=true` on the backend. Without a project id the push card stays hidden.
 
+## AI usage (new backend endpoint)
+| Endpoint | Notes |
+|---|---|
+| `GET /ai-usage` | → `{enforced, features: {AI_CHAT: {limit, used, remaining, enabled}, AI_CORRECTION, AI_WRITING_FEEDBACK, AI_EXAMPLE, AI_SYNONYM}}` for today, using the learner's effective account type. `enforced` is false (and `features` empty) while the backend's global Premium switch is off: no limits then, so mobile shows no counter. Read-only; never consumes usage |
+
+Mobile shows "Noch N von M heute" above the Tutor input (`AI_CHAT`) and above "KI-Feedback anfordern" (`AI_WRITING_FEEDBACK`); it turns red on the last use and explains an exhausted or disabled feature. The counter refreshes after every AI request, successful or not. Not yet shown for expression judging/transformation (`AI_CORRECTION`).
+
 ## Gaps
-AI usage/remaining endpoint (optional); (daily-words completion: resolved, uses `POST /learning-progress`).
+(daily-words completion: resolved, uses `POST /learning-progress`).

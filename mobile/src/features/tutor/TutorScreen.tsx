@@ -1,3 +1,4 @@
+import { AiUsageHint } from '@/features/aiUsage/AiUsageHint';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -172,6 +173,9 @@ export function TutorScreen() {
           />
         )}
 
+        <View style={{ paddingHorizontal: spacing.lg }}>
+          <AiUsageHint feature="AI_CHAT" />
+        </View>
         <View style={styles.composer}>
           <TextInput
             accessibilityLabel="Nachricht"
