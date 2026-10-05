@@ -99,6 +99,9 @@ notifications:
     reminder-window-seconds: 300
   broadcast-scheduler:
     dispatch-interval-ms: 60000            # check for due admin broadcasts every minute
+  push:
+    enabled: ${PUSH_ENABLED:false}          # send notifications to registered mobile devices via Expo
+    access-token: ${EXPO_ACCESS_TOKEN:}     # optional; only needed if enhanced push security is on
 
 app:
   upload:

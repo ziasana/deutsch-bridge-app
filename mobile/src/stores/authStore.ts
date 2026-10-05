@@ -5,6 +5,7 @@ import { ApiError } from '@/api/errors';
 import { queryClient } from '@/api/queryClient';
 import { tokenStorage } from '@/api/tokenStorage';
 import { clearExamLocalData } from '@/features/exam/localData';
+import { unregisterPush } from '@/features/notifications/push';
 import type { MobileAuthData, UserProfile } from '@/types/user';
 
 /**
@@ -55,6 +56,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   async signOut() {
+    // While the tokens still work: this device must stop receiving the account's notifications.
+    await unregisterPush();
     await tokenStorage.clear();
     // Drop all cached server data so the next account never sees the previous one's content.
     queryClient.clear();

@@ -3,6 +3,7 @@ package com.deutschbridge.backend.config;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.time.Clock;
@@ -12,6 +13,7 @@ import java.time.Clock;
  * Set notifications.scheduler.enabled=false to switch the jobs off, e.g. on extra instances.
  */
 @Configuration
+@EnableAsync
 public class SchedulingConfig {
 
     @Bean

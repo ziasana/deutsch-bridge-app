@@ -3,7 +3,6 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText, Chip, EmptyState, ErrorState, Header, Skeleton } from '@/components/ui';
-import { toMobileHref } from '@/features/dashboard/routes';
 import { MIN_TOUCH, colors, spacing } from '@/theme';
 import type { NotificationItem } from '@/types/notification';
 import {
@@ -13,6 +12,7 @@ import {
   useUnreadCount,
   type Tab,
 } from './hooks';
+import { inAppHref } from './destination';
 import { BUCKET_LABEL, dayBucket, relativeTimeDe, type DayBucket } from './time';
 
 const TABS: { key: Tab; label: string }[] = [
@@ -35,9 +35,6 @@ export function buildRows(items: NotificationItem[], now = new Date()): Row[] {
   }
   return rows;
 }
-
-// An unknown destination resolves to this very screen, which means "stay here".
-const NO_DESTINATION = '/settings/notifications' as const;
 
 function NotificationRow({ item, onPress }: { item: NotificationItem; onPress: () => void }) {
   return (
@@ -74,10 +71,8 @@ export function NotificationsScreen() {
 
   const handleOpen = async (item: NotificationItem) => {
     const web = await open.mutateAsync(item);
-    // Only in-app paths are followed (a guard against anything else the server might send).
-    if (!web || !web.startsWith('/') || web.startsWith('//')) return;
-    const href = toMobileHref(web, NO_DESTINATION);
-    if (href !== NO_DESTINATION) router.push(href);
+    const href = inAppHref(web);
+    if (href) router.push(href);
   };
 
   let empty = null;

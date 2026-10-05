@@ -164,7 +164,19 @@ Differences from web: the web saves a word by selecting text inside the answer (
 | `POST /notifications/read-all` | "Alle als gelesen markieren" |
 | `GET/PUT /notification-preferences` | toggles save immediately and optimistically (rolled back on error); times are `HH:mm` text fields that save once valid; the master switch (`learningRemindersEnabled`) also mirrors into `profile.notificationsEnabled`; the device timezone is reported once when the backend has none |
 
-Signing out also clears what the device keeps locally (writing drafts, the exam timer). Push delivery (device-token registration) is Phase 13; opening a push notification would reuse the same click/deep-link path.
+Signing out also clears what the device keeps locally (writing drafts, the exam timer) and unregisters the device from push.
+
+## Push notifications (Phase 13, new backend endpoints)
+| Endpoint | Notes |
+|---|---|
+| `POST /notifications/devices {token, platform}` | `token` = Expo push token (`ExponentPushToken[…]`), `platform` = `ios`/`android` → 204. Idempotent upsert keyed by token: a token already known (another account used the device) moves to the signed-in learner. Table `push_devices` (migration V27) |
+| `DELETE /notifications/devices?token=` | → 204. Only removes the caller's own registration. The token is a query param because it contains brackets |
+
+**Delivery.** Every in-app notification the backend creates (rule-engine dispatch and admin broadcasts) publishes a `NotificationsCreatedEvent`; `PushNotificationService` sends it after the transaction commits, asynchronously, to Expo's push API (batches of 100). The push carries `data: {notificationId, actionUrl}`. Tokens Expo reports as `DeviceNotRegistered` are deleted. A failed push never affects the in-app notification. Preferences, quiet hours and daily limits are already applied when the notification is created, so push follows the same rules. Config: `notifications.push.enabled` (`PUSH_ENABLED`, default **false**), optional `EXPO_ACCESS_TOKEN`.
+
+**Mobile.** `usePushNotifications` (mounted in the signed-in layout) silently re-registers when permission was already granted — it never prompts. The permission prompt only happens from the "Push aktivieren" button on the Erinnerungen screen (denied → opens system settings). A tap (also one that launches the app) calls `POST /notifications/{id}/click`, then follows the destination through the same `inAppHref` guard as the inbox; unknown destinations open the inbox. Foreground arrivals show a banner and refresh the unread count. Sign-out unregisters the token first.
+
+**Needed to receive real pushes** (not code): run `eas init` so `extra.eas.projectId` exists in `app.json`, set up APNs/FCM credentials (`eas credentials`), use a development build (Expo Go on Android has no remote push), and set `PUSH_ENABLED=true` on the backend. Without a project id the push card stays hidden.
 
 ## Gaps
-Push device registration (Phase 13); AI usage/remaining endpoint (optional); (daily-words completion: resolved, uses `POST /learning-progress`).
+AI usage/remaining endpoint (optional); (daily-words completion: resolved, uses `POST /learning-progress`).

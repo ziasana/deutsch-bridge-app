@@ -18,6 +18,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -44,6 +45,7 @@ class NotificationDispatchServiceTest {
     @Mock private LearningRecommendationService recommendationService;
     @Mock private NotificationEventTracker events;
     @Mock private UserRepository userRepository;
+    @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private Clock clock;
 
     @InjectMocks

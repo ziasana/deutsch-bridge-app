@@ -9,6 +9,8 @@ import com.deutschbridge.backend.model.enums.NotificationStatus;
 import com.deutschbridge.backend.repository.NotificationRepository;
 import com.deutschbridge.backend.repository.UserRepository;
 import com.deutschbridge.backend.service.LearningRecommendationService;
+import com.deutschbridge.backend.service.push.NotificationsCreatedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,6 +62,7 @@ public class NotificationDispatchService {
     private final LearningRecommendationService recommendationService;
     private final NotificationEventTracker events;
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
     public NotificationDispatchService(NotificationRepository notificationRepository,
@@ -70,6 +73,7 @@ public class NotificationDispatchService {
                                        LearningRecommendationService recommendationService,
                                        NotificationEventTracker events,
                                        UserRepository userRepository,
+                                       ApplicationEventPublisher eventPublisher,
                                        Clock clock) {
         this.notificationRepository = notificationRepository;
         this.preferenceService = preferenceService;
@@ -79,6 +83,7 @@ public class NotificationDispatchService {
         this.recommendationService = recommendationService;
         this.events = events;
         this.userRepository = userRepository;
+        this.eventPublisher = eventPublisher;
         this.clock = clock;
     }
 
@@ -244,7 +249,7 @@ public class NotificationDispatchService {
         n.setParams(new HashMap<>(c.params()));
         n.setExpiresAt(c.expiresAt());
         n.setCreatedAt(now);
-        // In-app is the only channel today, so creating == delivering to the notification center.
+        // Creating == delivering to the notification center; the push to mobile devices follows the commit.
         n.setStatus(NotificationStatus.SENT);
         n.setScheduledAt(now);
         n.setSentAt(now);
@@ -252,6 +257,7 @@ public class NotificationDispatchService {
         Notification saved = notificationRepository.save(n);
         events.track(NotificationEventTracker.CREATED, saved);
         events.track(NotificationEventTracker.SENT, saved);
+        eventPublisher.publishEvent(NotificationsCreatedEvent.of(List.of(saved)));
     }
 
     /**

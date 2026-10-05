@@ -19,6 +19,11 @@ export const notificationApi = {
   markAllRead: () => api.post<unknown>('/notifications/read-all'),
   /** Records the click (which also marks it read) and returns the notification with its destination. */
   click: (id: string) => api.post<NotificationItem>(`/notifications/${id}/click`),
+  /** Registers this app install for push (idempotent; the token moves to the signed-in account). */
+  registerDevice: (token: string, platform: 'ios' | 'android') =>
+    api.post<unknown>('/notifications/devices', { token, platform }),
+  unregisterDevice: (token: string) =>
+    api.delete<unknown>(`/notifications/devices?token=${encodeURIComponent(token)}`),
   preferences: () => api.get<NotificationPreferences>('/notification-preferences'),
   updatePreferences: (patch: Partial<NotificationPreferences>) =>
     api.put<{ message: string; data: NotificationPreferences }>('/notification-preferences', patch),

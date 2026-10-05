@@ -3,6 +3,7 @@ import { StyleSheet, Switch, View } from 'react-native';
 import { AppText, Card, ErrorState, Header, LoadingState, Screen, TextField } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 import type { NotificationPreferences } from '@/types/notification';
+import { PushCard } from './PushCard';
 import { useNotificationPreferences, useUpdateNotificationPreferences } from './hooks';
 import { deviceTimezone, isValidTime } from './time';
 
@@ -109,6 +110,7 @@ export function PreferencesScreen() {
     const device = deviceTimezone();
     body = (
       <View style={{ gap: spacing.lg }}>
+        <PushCard />
         <Card style={{ gap: spacing.xs }}>
           <AppText variant="caption" color={colors.primaryDark}>
             LERNEN

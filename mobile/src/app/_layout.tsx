@@ -7,11 +7,13 @@ import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { queryClient } from '@/api/queryClient';
 import { ErrorState } from '@/components/ui';
+import { configurePushHandler } from '@/features/notifications/push';
 import { initSession, useAuthStore } from '@/stores/authStore';
 import { colors } from '@/theme';
 
 void SplashScreen.preventAutoHideAsync();
 initSession();
+configurePushHandler();
 
 function RootNavigator() {
   const status = useAuthStore((s) => s.status);

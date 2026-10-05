@@ -39,6 +39,13 @@
       "expo-image",
       "expo-audio",
       [
+        "expo-notifications",
+        {
+          "color": "#4D94FF",
+          "defaultChannel": "default"
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "Deutsch Bridge braucht Zugriff auf deine Fotos, damit du ein Profilbild auswählen kannst.",

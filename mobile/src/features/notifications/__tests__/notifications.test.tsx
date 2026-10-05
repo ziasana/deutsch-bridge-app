@@ -10,6 +10,7 @@ import { PreferencesScreen } from '../PreferencesScreen';
 import { dayBucket, isValidTime, relativeTimeDe } from '../time';
 
 jest.mock('@/api/notificationApi');
+jest.mock('../push', () => ({ getPushState: async () => 'unsupported', enablePush: jest.fn() }));
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, back: jest.fn() }) }));
 jest.mock('react-native-safe-area-context', () => ({
