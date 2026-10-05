@@ -118,7 +118,26 @@ Sections: `LESEVERSTEHEN`, `SPRACHBAUSTEINE`, `HOERVERSTEHEN`, `SCHRIFTLICHER_AU
 
 Quiz flows (as on web): MATCHING / MULTIPLE_CHOICE / TRUE_FALSE_NOT_GIVEN are one question at a time with immediate feedback; WORD_BANK_CLOZE and SITUATION_MATCHING (each ad usable once, `X` = no ad) are answered all at once; Hörverstehen lists every clip with its player and +/- answers, graded together. Answers are submitted one by one, then completed. Cloze gaps arrive in passage HTML as `<span data-exam-gap="N">`.
 
-**Not in mobile yet (Phase 10b):** Schreiben (`SCHRIFTLICHER_AUSDRUCK` – planner, editor, AI feedback, `/writing/*`) and exam timing (`/exam/practice-sessions*`, `/exam-time-configurations`, Zeitmanagement). The Schreiben section shows a notice and the task text.
+### Exam timing (Phase 10b)
+| Endpoint | Notes |
+|---|---|
+| `GET /exam-time-configurations?level=` | enabled Teil targets (`recommendedMinutes`); an empty list/missing Teil = no timing info, the exercise stays fully usable |
+| `POST /exam/practice-sessions {scope:"EXERCISE", mode:"TIME_TRAINING", exerciseId}` | → `{id, targetSeconds, …}`; started when a Lesen/Sprachbausteine/Schreiben exercise opens (Hören is paced by its audio and is not timed) |
+| `POST /exam/practice-sessions/{id}/complete {pausedSeconds}` | → Zeit-Check (`elapsedSeconds`, `targetSeconds`, `differenceSeconds`); called when the result appears or on "Stopp" |
+| `GET /exam/practice-sessions/last-times?section=&level=` | last finished time per exercise, shown in lists |
+| `GET /exam/practice-sessions/time-management?level=` | average time per Teil ("Mein Zeitmanagement") |
+
+The clock is derived from stored timestamps (never counted), persisted in AsyncStorage, paused when the screen is left or the app goes to the background, and resumed when the same exercise is opened again; a run older than 6 h is dropped. Warnings (80% / target / 125%) appear once each. The server keeps its own authoritative start.
+
+### Schreiben (Phase 10b)
+| Endpoint | Notes |
+|---|---|
+| `GET /writing/learn?level=` | help content (strategy, examples, Redemittel, typical mistakes), loaded only when the help sheet opens |
+| `GET /writing/attempts?exerciseId=` | the learner's attempts, oldest first |
+| `POST /writing/attempts {exerciseId, text, mode, planNotes, parentAttemptId}` | rule-based multi-dimension feedback (no overall score); a revision sends the previous attempt as `parentAttemptId` |
+| `POST /writing/attempts/{id}/ai-feedback` | **AI**, counts against the daily limit → 429 shows the server's message; stored after the first call |
+
+Modes: Lernen (all help), Üben (tip + Redemittel), Prüfung (no help). The draft (text, plan, mode) autosaves to the device (debounced) and is removed on submit and on sign-out. Not in mobile yet: the Schreiben "Lernen" game path, the Schreiben progress page, opening a Redemittel's detail dialog from the phrase list.
 
 ## Gaps
 Push device registration (Phase 13); AI usage/remaining endpoint (optional); (daily-words completion: resolved, uses `POST /learning-progress`).

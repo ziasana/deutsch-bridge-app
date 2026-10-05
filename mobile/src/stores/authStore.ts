@@ -4,6 +4,7 @@ import { configureApiClient } from '@/api/client';
 import { ApiError } from '@/api/errors';
 import { queryClient } from '@/api/queryClient';
 import { tokenStorage } from '@/api/tokenStorage';
+import { clearExamLocalData } from '@/features/exam/localData';
 import type { MobileAuthData, UserProfile } from '@/types/user';
 
 /**
@@ -57,6 +58,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await tokenStorage.clear();
     // Drop all cached server data so the next account never sees the previous one's content.
     queryClient.clear();
+    await clearExamLocalData();
     set({ status: 'unauthenticated', profile: null, error: null });
   },
 

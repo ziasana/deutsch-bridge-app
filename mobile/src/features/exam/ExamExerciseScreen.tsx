@@ -1,11 +1,16 @@
 import { useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AppText, Badge, Button, Card, ErrorState, Header, Screen, Skeleton } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 import type { ExamExercise } from '@/types/exam';
+import type { ExamPracticeSessionResult } from '@/types/examTime';
 import { AnswerPool, PassageBody, PassagesView } from './components/Passages';
 import { QuizRunner } from './components/QuizRunner';
 import { SECTION_META } from './examMeta';
+import { ExamExerciseTimer } from './time/ExamExerciseTimer';
+import { useStopExerciseTimer } from './time/hooks';
+import { WritingExercise } from './writing/WritingExercise';
 import { useExamExercise, useMarkExamCompleted, useToggleExamBookmark } from './hooks';
 
 /** Testformat pages are read-only information; finishing them is a manual "erledigt". */
@@ -34,8 +39,11 @@ function InfoBody({ exercise }: { exercise: ExamExercise }) {
   );
 }
 
-/** The writing flow (planner, editor, AI feedback) comes later; show the task so nothing is hidden. */
+/** Schreiben: the task text, then the write → feedback → revise flow. */
 function WritingBody({ exercise }: { exercise: ExamExercise }) {
+  const mark = useMarkExamCompleted(exercise.id);
+  const stopTimer = useStopExerciseTimer(exercise.id);
+  const [timeResult, setTimeResult] = useState<ExamPracticeSessionResult | null>(null);
   return (
     <View style={{ gap: spacing.lg }}>
       <Card style={{ gap: spacing.md }}>
@@ -43,13 +51,14 @@ function WritingBody({ exercise }: { exercise: ExamExercise }) {
           <PassageBody key={p.id} passage={p} />
         ))}
       </Card>
-      <Card tone="accent">
-        <AppText variant="subheading">✍️ Schreiben folgt</AppText>
-        <AppText>
-          Das Schreiben mit Planer und KI-Feedback ist in der App noch nicht verfügbar. Du kannst
-          diese Aufgabe in der Web-App bearbeiten.
-        </AppText>
-      </Card>
+      <WritingExercise
+        exercise={exercise}
+        timeResult={timeResult}
+        onSubmitted={() => {
+          if (!exercise.completed && !mark.isPending) mark.mutate();
+          void stopTimer().then(setTimeResult);
+        }}
+      />
     </View>
   );
 }
@@ -102,6 +111,8 @@ export function ExamExerciseScreen() {
         loading={bookmark.isPending}
         onPress={() => bookmark.mutate({ id: exercise.id, bookmarked: exercise.bookmarked })}
       />
+
+      <ExamExerciseTimer exercise={exercise} />
 
       {exercise.teilDescription ? (
         <Card tone="accent">

@@ -6,8 +6,6 @@ export type ExamSectionMeta = {
   description: string;
   /** Informational sections (Testformat) have no progress. */
   informational?: boolean;
-  /** Not available in the mobile app yet. */
-  comingSoon?: boolean;
 };
 
 export const SECTION_ORDER: ExamSection[] = [
@@ -45,7 +43,6 @@ export const SECTION_META: Record<ExamSection, ExamSectionMeta> = {
     label: 'Schreiben',
     emoji: '✍️',
     description: 'Übe das Schreiben im Prüfungsformat.',
-    comingSoon: true,
   },
   TESTFORMAT_INFORMATION: {
     label: 'Testformat',

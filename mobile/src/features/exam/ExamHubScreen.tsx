@@ -34,6 +34,8 @@ import {
   usePendingExamBookmarks,
   useToggleExamBookmark,
 } from './hooks';
+import { useExerciseLastTimes } from './time/hooks';
+import { TeilTimeCard } from './time/TeilTimeCard';
 
 export function ExamHubScreen() {
   const router = useRouter();
@@ -65,6 +67,12 @@ export function ExamHubScreen() {
       ),
     [items, section, term],
   );
+  // Schreiben has no Teile: its Übungen are listed directly.
+  const isFlat = section === 'SCHRIFTLICHER_AUSDRUCK';
+  const flatItems = isFlat
+    ? (groupIntoParts(items, section)[0]?.items ?? []).filter((i) => term === '' || i.title.toLowerCase().includes(term))
+    : [];
+  const lastTimes = useExerciseLastTimes(isFlat ? section : null, level);
   const infoItems = meta.informational
     ? items.filter((i) => term === '' || i.title.toLowerCase().includes(term))
     : [];
@@ -102,15 +110,31 @@ export function ExamHubScreen() {
         }}
       />
     );
-  } else if (meta.comingSoon) {
+  } else if (isFlat) {
     body = (
-      <Card tone="accent">
-        <AppText variant="subheading">{meta.emoji} Schreiben folgt</AppText>
-        <AppText>
-          Planer, Editor und KI-Feedback für den schriftlichen Ausdruck kommen in einer späteren
-          Version der App. Bis dahin kannst du in der Web-App schreiben.
-        </AppText>
-      </Card>
+      <View style={{ gap: spacing.md }}>
+        {level ? <TeilTimeCard section={section} level={level} teil={1} showLastResult={false} /> : null}
+        {flatItems.length > 0 ? (
+          <View>
+            {flatItems.map((item) => (
+              <ExerciseRow
+                key={item.id}
+                item={item}
+                onPress={() => openExercise(item.id)}
+                onToggleBookmark={() => bookmark.mutate({ id: item.id, bookmarked: item.bookmarked })}
+                bookmarkBusy={bookmark.isPending && bookmark.variables?.id === item.id}
+                lastTime={lastTimes[item.id]}
+              />
+            ))}
+          </View>
+        ) : (
+          <EmptyState
+            emoji="✍️"
+            title={term ? 'Nichts gefunden' : 'Noch keine Schreibaufgaben'}
+            message={term ? 'Passe die Suche an.' : 'Für dieses Niveau gibt es hier noch keine Aufgaben.'}
+          />
+        )}
+      </View>
     );
   } else if (meta.informational) {
     body =
@@ -251,7 +275,7 @@ export function ExamHubScreen() {
         </Card>
       ) : null}
 
-      {!meta.informational && !meta.comingSoon && stats.total > 0 ? (
+      {!meta.informational && stats.total > 0 ? (
         <View style={{ gap: spacing.xs }}>
           <View style={styles.between}>
             <AppText variant="subheading">{meta.label}</AppText>
@@ -266,6 +290,14 @@ export function ExamHubScreen() {
       ) : null}
 
       {body}
+
+      {level ? (
+        <Button
+          label="⏱ Mein Zeitmanagement"
+          variant="secondary"
+          onPress={() => router.push({ pathname: '/exam-prep/zeitmanagement', params: { level } })}
+        />
+      ) : null}
     </Screen>
   );
 }

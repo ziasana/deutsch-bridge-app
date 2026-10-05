@@ -5,7 +5,9 @@ import { RichContent } from '@/components/content/RichContent';
 import { AppText, BottomSheet, Button, Card, LearningCelebration } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 import type { ExamAnswerFeedback, ExamQuestionPublic, ExamTranscript } from '@/types/exam';
+import type { ExamPracticeSessionResult } from '@/types/examTime';
 import { isEmptyTranscript, isHtmlTranscript, plainParagraphs } from '../content';
+import { ExamTimeSummary } from '../time/ExamTimeSummary';
 
 export interface ResultItem {
   question: ExamQuestionPublic;
@@ -81,6 +83,8 @@ type ResultsProps = {
   defaultExplanation: string | null;
   defaultCommonMistake: string | null;
   formatAnswer?: (value: string) => string;
+  /** Zeit-Check of the run that just ended, when the exercise was timed. */
+  timeResult?: ExamPracticeSessionResult | null;
   onRetry: () => void;
 };
 
@@ -89,6 +93,7 @@ export function ResultsView({
   defaultExplanation,
   defaultCommonMistake,
   formatAnswer,
+  timeResult,
   onRetry,
 }: ResultsProps) {
   const router = useRouter();
@@ -106,6 +111,7 @@ export function ResultsView({
         progressLabel={`Ergebnis ${score}%`}
         primaryAction={{ label: 'Fertig', onPress: () => router.back() }}
       />
+      {timeResult ? <ExamTimeSummary result={timeResult} /> : null}
       <Button label="Erneut üben" variant="secondary" onPress={onRetry} />
 
       {hasTranscripts ? (

@@ -2,19 +2,26 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText, Badge } from '@/components/ui';
 import { MIN_TOUCH, colors, spacing } from '@/theme';
 import type { ExamExerciseSummary } from '@/types/exam';
+import type { ExamExerciseLastTime } from '@/types/examTime';
+import { formatClock } from '../time/examTime';
 
 type Props = {
   item: ExamExerciseSummary;
   onPress: () => void;
   onToggleBookmark: () => void;
   bookmarkBusy?: boolean;
+  /** Last finished time, shown under the title. */
+  lastTime?: ExamExerciseLastTime;
 };
 
-export function ExerciseRow({ item, onPress, onToggleBookmark, bookmarkBusy }: Props) {
+export function ExerciseRow({ item, onPress, onToggleBookmark, bookmarkBusy, lastTime }: Props) {
   const retry = item.completed && item.lastScore != null && item.lastScore < 100;
   const sub = [
     item.questionsCount > 0 ? `${item.questionsCount} ${item.questionsCount === 1 ? 'Frage' : 'Fragen'}` : null,
     item.lastScore != null ? `Letztes Ergebnis ${Math.round(item.lastScore)}%` : null,
+    lastTime
+      ? `Letzte Zeit ${formatClock(lastTime.elapsedSeconds)}${lastTime.targetSeconds != null ? ` von ${formatClock(lastTime.targetSeconds)}` : ''}`
+      : null,
   ]
     .filter(Boolean)
     .join(' · ');

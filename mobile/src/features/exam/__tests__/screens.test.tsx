@@ -1,8 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { setAudioModeAsync } from 'expo-audio';
+import { AppState } from 'react-native';
 import { ApiError } from '@/api/errors';
 import { examApi, examAttemptApi } from '@/api/examApi';
+import { examTimeApi } from '@/api/examTimeApi';
+import { useExamTimerStore } from '../time/timerStore';
 import { useAuthStore } from '@/stores/authStore';
 import type { UserProfile } from '@/types/user';
 import { ExamExerciseScreen } from '../ExamExerciseScreen';
@@ -11,6 +14,7 @@ import { ExamTeilScreen } from '../ExamTeilScreen';
 import { exercise, passage, question, summary } from '../testing/fixtures';
 
 jest.mock('@/api/examApi');
+jest.mock('@/api/examTimeApi');
 const mockPush = jest.fn();
 const mockBack = jest.fn();
 let mockParams: Record<string, string> = {};
@@ -31,6 +35,19 @@ jest.mock('expo-audio', () => ({
 
 const api = examApi as jest.Mocked<typeof examApi>;
 const attempts = examAttemptApi as jest.Mocked<typeof examAttemptApi>;
+const time = examTimeApi as jest.Mocked<typeof examTimeApi>;
+
+const SESSION = {
+  id: 'ps1',
+  scope: 'EXERCISE' as const,
+  mode: 'TIME_TRAINING' as const,
+  section: 'LESEVERSTEHEN' as const,
+  level: 'B1',
+  teil: 2,
+  exerciseId: 'e1',
+  startedAt: '2026-01-01T00:00:00Z',
+  targetSeconds: 600,
+};
 
 const wrap = (ui: React.ReactElement) =>
   render(
@@ -52,6 +69,11 @@ beforeEach(() => {
   jest.resetAllMocks();
   mockParams = {};
   (setAudioModeAsync as jest.Mock).mockResolvedValue(undefined);
+  jest.spyOn(AppState, 'addEventListener').mockReturnValue({ remove: jest.fn() } as never);
+  time.configurations.mockResolvedValue([]);
+  time.lastTimes.mockResolvedValue([]);
+  time.startSession.mockResolvedValue(SESSION);
+  useExamTimerStore.setState({ active: null, lastResult: null, hasHydrated: true });
   useAuthStore.setState({ profile: { learningLevel: 'B1', preferredLanguage: 'EN' } as UserProfile });
 });
 
@@ -65,6 +87,7 @@ describe('ExamHubScreen', () => {
     summary('a', { partNumber: 1, lastScore: 100, completed: true }),
     summary('b', { partNumber: 1 }),
     summary('c', { partNumber: 2, taskType: 'MULTIPLE_CHOICE', title: 'Einzel' }),
+    summary('w', { section: 'SCHRIFTLICHER_AUSDRUCK', taskType: 'WRITING_TASK', title: 'E-Mail an den Vermieter', teil: 1 }),
     summary('i', { section: 'TESTFORMAT_INFORMATION', taskType: null, title: 'Aufbau', teilDescription: 'So läuft die Prüfung' }),
   ];
 
@@ -103,13 +126,23 @@ describe('ExamHubScreen', () => {
     });
   });
 
-  it('lists Testformat info and explains that Schreiben is not available yet', async () => {
+  it('lists Testformat info and the Schreiben tasks directly', async () => {
     await wrap(<ExamHubScreen />);
     await screen.findByText('Weiterlernen · Lesen');
     await fireEvent.press(screen.getByRole('button', { name: /Testformat/ }));
     expect(await screen.findByText('So läuft die Prüfung')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: /Schreiben/ }));
-    expect(await screen.findByText(/Schreiben folgt/)).toBeTruthy();
+    expect(await screen.findByText('E-Mail an den Vermieter')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: /E-Mail an den Vermieter/ }));
+    expect(mockPush).toHaveBeenLastCalledWith({
+      pathname: '/exam-prep/exercise/[exerciseId]',
+      params: { exerciseId: 'w' },
+    });
+    await fireEvent.press(screen.getByRole('button', { name: '⏱ Mein Zeitmanagement' }));
+    expect(mockPush).toHaveBeenLastCalledWith({
+      pathname: '/exam-prep/zeitmanagement',
+      params: { level: 'B1' },
+    });
   });
 
   it('reloads when the level changes and filters by search', async () => {
@@ -317,14 +350,54 @@ describe('ExamExerciseScreen', () => {
     expect(await screen.findByRole('button', { name: 'Als erledigt markiert ✓' })).toBeTruthy();
   });
 
-  it('shows the writing task with a not-yet-available note, and bookmark toggling', async () => {
-    api.byId.mockResolvedValue(exercise({ section: 'SCHRIFTLICHER_AUSDRUCK', taskType: 'WRITING_TASK', questions: [] }));
+  it('toggles the bookmark on the exercise screen', async () => {
+    api.byId.mockResolvedValue(exercise({ section: 'TESTFORMAT_INFORMATION', taskType: null, questions: [] }));
     api.addBookmark.mockResolvedValue(summary('e1', { bookmarked: true }));
     await wrap(<ExamExerciseScreen />);
-    expect(await screen.findByText('✍️ Schreiben folgt')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: '☆ Merken' }));
+    await fireEvent.press(await screen.findByRole('button', { name: '☆ Merken' }));
     await waitFor(() => expect(api.addBookmark).toHaveBeenCalledWith('e1'));
     expect(await screen.findByRole('button', { name: '★ Gemerkt' })).toBeTruthy();
+  });
+
+  it('times a Lesen exercise and shows the Zeit-Check with the result', async () => {
+    api.byId.mockResolvedValue(exercise());
+    time.completeSession.mockResolvedValue({
+      id: 'ps1', scope: 'EXERCISE', mode: 'TIME_TRAINING', section: 'LESEVERSTEHEN', level: 'B1', teil: 2,
+      elapsedSeconds: 432, targetSeconds: 600, differenceSeconds: -168, questionsTotal: 1, questionsAnswered: 1, correctAnswers: 1, score: 100,
+    });
+    attempts.start.mockResolvedValue({
+      attemptId: 'at9', passages: [passage('p1')], questions: [question('q1')], answerOptions: null, answerOptionLabels: null,
+    });
+    attempts.answer.mockResolvedValue({ correct: true, correctAnswer: 'Ja', explanation: '', commonMistake: '', transcript: null });
+    attempts.complete.mockResolvedValue({ attemptId: 'at9', score: 100, transcripts: [] });
+    await wrap(<ExamExerciseScreen />);
+
+    expect(await screen.findByText('Zeit für diese Übung')).toBeTruthy();
+    expect(time.startSession).toHaveBeenCalledWith({ scope: 'EXERCISE', mode: 'TIME_TRAINING', exerciseId: 'e1' });
+    expect(screen.getByLabelText(/Verstrichene Zeit 00:00/)).toBeTruthy();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Zeit pausieren' }));
+    expect(await screen.findByText('Pausiert')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Zeit fortsetzen' }));
+
+    await fireEvent.press(await screen.findByRole('button', { name: 'Übung starten' }));
+    await fireEvent.press(await screen.findByRole('radio', { name: 'Ja' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Antwort prüfen' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Ergebnis anzeigen' }));
+
+    expect(await screen.findByText('07:12')).toBeTruthy();
+    expect(screen.getByText('✓ 2:48 unter der Vorgabe')).toBeTruthy();
+    expect(time.completeSession).toHaveBeenCalledWith('ps1', expect.any(Number));
+    expect(useExamTimerStore.getState().active).toBeNull();
+    expect(useExamTimerStore.getState().lastResult?.elapsedSeconds).toBe(432);
+  });
+
+  it('does not time Hörverstehen', async () => {
+    api.byId.mockResolvedValue(exercise({ section: 'HOERVERSTEHEN', taskType: 'TRUE_FALSE_NOT_GIVEN', passages: [] }));
+    await wrap(<ExamExerciseScreen />);
+    await screen.findByRole('button', { name: 'Übung starten' });
+    expect(time.startSession).not.toHaveBeenCalled();
+    expect(screen.queryByText('Zeit für diese Übung')).toBeNull();
   });
 
   it('shows an error state when the exercise fails to load', async () => {

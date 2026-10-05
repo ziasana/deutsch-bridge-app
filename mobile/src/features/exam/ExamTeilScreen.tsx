@@ -19,6 +19,9 @@ import { ExerciseRow } from './components/ExerciseRow';
 import { effectiveScore, findGroupByKey } from './examData';
 import { SECTION_META, SECTION_ORDER } from './examMeta';
 import { useExamExercises, useToggleExamBookmark } from './hooks';
+import { TIMED_SECTIONS } from './time/examTime';
+import { useExerciseLastTimes } from './time/hooks';
+import { TeilTimeCard } from './time/TeilTimeCard';
 
 type Filter = 'ALL' | 'OPEN' | 'DONE';
 const FILTERS: { value: Filter; label: string }[] = [
@@ -33,6 +36,7 @@ export function ExamTeilScreen() {
   const valid = SECTION_ORDER.includes(section as ExamSection);
   const query = useExamExercises(valid ? level : null);
   const bookmark = useToggleExamBookmark();
+  const lastTimes = useExerciseLastTimes(valid ? (section as ExamSection) : null, level);
   const [filter, setFilter] = useState<Filter>('ALL');
 
   const open = (id: string) =>
@@ -113,6 +117,10 @@ export function ExamTeilScreen() {
         <Button label={continueLabel} onPress={() => open(next.id)} />
       </Card>
 
+      {group.items[0]?.teil != null && TIMED_SECTIONS.includes(typed) ? (
+        <TeilTimeCard section={typed} level={level} teil={group.items[0].teil} />
+      ) : null}
+
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
         {FILTERS.map((f) => (
           <Chip key={f.value} label={f.label} selected={filter === f.value} onPress={() => setFilter(f.value)} />
@@ -127,6 +135,7 @@ export function ExamTeilScreen() {
             onPress={() => open(item.id)}
             onToggleBookmark={() => bookmark.mutate({ id: item.id, bookmarked: item.bookmarked })}
             bookmarkBusy={bookmark.isPending && bookmark.variables?.id === item.id}
+            lastTime={lastTimes[item.id]}
           />
         ))}
         {items.length === 0 ? (
