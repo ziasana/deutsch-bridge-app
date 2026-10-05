@@ -2,6 +2,7 @@ import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-librar
 import { Alert } from 'react-native';
 import { authApi } from '@/api/authApi';
 import { dashboardApi } from '@/api/dashboardApi';
+import { examApi } from '@/api/examApi';
 import { readingApi } from '@/api/readingApi';
 import { baseDashboard } from '@/features/dashboard/testing/fixtures';
 import { tokenStorage } from '@/api/tokenStorage';
@@ -11,6 +12,7 @@ import type { UserProfile } from '@/types/user';
 jest.mock('@/api/authApi');
 jest.mock('@/api/dashboardApi');
 jest.mock('@/api/readingApi');
+jest.mock('@/api/examApi');
 jest.mock('expo-splash-screen', () => ({
   preventAutoHideAsync: jest.fn(() => Promise.resolve(true)),
   hideAsync: jest.fn(() => Promise.resolve()),
@@ -29,6 +31,8 @@ describe('app navigation', () => {
     (authApi.getProfile as jest.Mock).mockResolvedValue(profile);
     (dashboardApi.get as jest.Mock).mockResolvedValue(baseDashboard);
     (readingApi.levelSummary as jest.Mock).mockResolvedValue([{ level: 'B1', total: 0, learned: 0 }]);
+    (examApi.levelSummary as jest.Mock).mockResolvedValue([]);
+    (examApi.pendingBookmarks as jest.Mock).mockResolvedValue([]);
     (readingApi.categories as jest.Mock).mockResolvedValue([]);
     (readingApi.page as jest.Mock).mockResolvedValue({ items: [], page: 0, size: 10, totalElements: 0, totalPages: 0 });
     useAuthStore.setState({ status: 'loading', profile: null, error: null });

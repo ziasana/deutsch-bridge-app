@@ -119,7 +119,6 @@ describe('toMobileHref', () => {
     ['/dashboard/grammar', '/learn/grammar'],
     ['/dashboard/reading/article?id=9', '/learn/reading'],
     ['/dashboard/expressions', '/learn/expressions'],
-    ['/dashboard/exam-prep/exercise?id=3', '/exam'],
     ['/dashboard/exam-prep/schreiben/fortschritt', '/exam'],
     ['/dashboard', '/home'],
   ])('%s → %s', (web, mobile) => expect(toMobileHref(web)).toBe(mobile));
@@ -130,6 +129,14 @@ describe('toMobileHref', () => {
       params: { lessonId: 'abc' },
     });
     expect(toMobileHref('/dashboard/grammar/lesson')).toBe('/learn/grammar');
+  });
+
+  it('deep-links an exam exercise by id', () => {
+    expect(toMobileHref('/dashboard/exam-prep/exercise?id=e9')).toEqual({
+      pathname: '/exam-prep/exercise/[exerciseId]',
+      params: { exerciseId: 'e9' },
+    });
+    expect(toMobileHref('/dashboard/exam-prep?section=HOERVERSTEHEN')).toBe('/exam');
   });
 
   it('falls back safely for unknown or missing routes', () => {

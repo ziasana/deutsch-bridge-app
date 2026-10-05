@@ -101,5 +101,24 @@ Steps per expression: optional *discover* (skipped when coming from the detail s
 
 Rendering: the app builds text segments from `tokens` + annotation `spans` (`features/reading/segments.ts`) so highlighted phrases and every word are tappable in one selectable text flow. Not in mobile yet: admin features, reading-time tracking.
 
+## Exam preparation (existing, no backend change)
+Sections: `LESEVERSTEHEN`, `SPRACHBAUSTEINE`, `HOERVERSTEHEN`, `SCHRIFTLICHER_AUSDRUCK`, `TESTFORMAT_INFORMATION`.
+
+| Endpoint | Notes |
+|---|---|
+| `GET /exam/level-summary` | `[{level, total, mastered, avgScore}]` – level chips |
+| `GET /exam?level=` | **not paged**; returns summaries of every section at one level (no passages/questions). Cached per level; switching section needs no new fetch. Teil cards are built client-side (`features/exam/examData.ts`, same grouping rules as web) |
+| `GET /exam/{id}` | public exercise (passages, questions, `answerOptions`, `teilDescription`, `completed`, `lastScore`, `bookmarked`) – correct answers are never included |
+| `GET /exam/bookmarks/pending` | "Für später gemerkt" strip |
+| `POST/DELETE /exam/{id}/bookmark` | toggle bookmark |
+| `POST /exam/{id}/attempts` | → `{attemptId, passages, questions, answerOptions, answerOptionLabels}` (Hören audio URLs are `/uploads/exam-audio/...`, resolved against the API origin) |
+| `POST /exam/attempts/{id}/answers {questionId, answer}` | → `{correct, correctAnswer, explanation, commonMistake, transcript}` |
+| `POST /exam/attempts/{id}/complete` | → `{score, transcripts}` |
+| `POST /exam/{id}/mark-completed` | called after every finished attempt (and manually for Testformat pages) |
+
+Quiz flows (as on web): MATCHING / MULTIPLE_CHOICE / TRUE_FALSE_NOT_GIVEN are one question at a time with immediate feedback; WORD_BANK_CLOZE and SITUATION_MATCHING (each ad usable once, `X` = no ad) are answered all at once; Hörverstehen lists every clip with its player and +/- answers, graded together. Answers are submitted one by one, then completed. Cloze gaps arrive in passage HTML as `<span data-exam-gap="N">`.
+
+**Not in mobile yet (Phase 10b):** Schreiben (`SCHRIFTLICHER_AUSDRUCK` – planner, editor, AI feedback, `/writing/*`) and exam timing (`/exam/practice-sessions*`, `/exam-time-configurations`, Zeitmanagement). The Schreiben section shows a notice and the task text.
+
 ## Gaps
 Push device registration (Phase 13); AI usage/remaining endpoint (optional); (daily-words completion: resolved, uses `POST /learning-progress`).

@@ -36,7 +36,8 @@
       ],
       "expo-font",
       "expo-asset",
-      "expo-image"
+      "expo-image",
+      "expo-audio"
     ],
     "scheme": "deutschbridge",
     "experiments": {

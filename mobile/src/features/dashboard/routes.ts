@@ -20,5 +20,10 @@ export function toMobileHref(webRoute: string | null | undefined, fallback: Href
     const id = new URLSearchParams(query).get('id');
     if (id) return { pathname: '/grammar/[lessonId]', params: { lessonId: id } };
   }
+  // Deep link to one exam exercise: /dashboard/exam-prep/exercise?id=<id>
+  if (path === '/dashboard/exam-prep/exercise') {
+    const id = new URLSearchParams(query).get('id');
+    if (id) return { pathname: '/exam-prep/exercise/[exerciseId]', params: { exerciseId: id } };
+  }
   return RULES.find(([re]) => re.test(path))?.[1] ?? fallback;
 }
