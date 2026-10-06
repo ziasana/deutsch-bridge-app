@@ -2,9 +2,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useState, type ReactNode } from 'react';
-import { ScrollView, StyleSheet, View, type RefreshControlProps } from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+  type RefreshControlProps,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from './AppText';
+import { useHeaderScroll } from './useHeaderScroll';
 import { colors, spacing } from '@/theme';
 
 type Props = {
@@ -80,15 +87,20 @@ export function FocusedLightStatusBar({ dark }: { dark?: boolean } = {}) {
  * accent. Used by the Learn tab; shares its look with the welcome and onboarding screens.
  */
 export function HeroScreen({ title, subtitle, sheetTitle, refreshControl, children }: Props) {
+  const { width } = useWindowDimensions();
+  const scroll = useHeaderScroll(width * 0.3);
   return (
     <View style={styles.root}>
-      <FocusedLightStatusBar />
-      <View style={styles.backdrop} />
+      <FocusedLightStatusBar dark={scroll.gone} />
       <ScrollView
         refreshControl={refreshControl}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
+        onScroll={scroll.onScroll}
+        scrollEventThrottle={scroll.scrollEventThrottle}
       >
+        {/* Inside the scroll content so the blue header scrolls away with it (and fills the bounce). */}
+        <View style={styles.backdrop} />
         <SafeAreaView edges={['top']} style={styles.hero}>
           <View style={styles.heroText}>
             <AppText style={styles.title} color="#FFFFFF" accessibilityRole="header">

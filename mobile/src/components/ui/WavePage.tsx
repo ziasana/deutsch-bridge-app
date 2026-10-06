@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from './AppText';
 import { FocusedLightStatusBar } from './HeroScreen';
+import { useHeaderScroll } from './useHeaderScroll';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 
 /**
@@ -86,10 +87,11 @@ type Props = {
 /** Pushed-page layout: wave header with a white back button and centred title, then the content. */
 export function WavePage({ title, variant = 'arc', header, children }: Props) {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const scroll = useHeaderScroll(width * 0.2);
   return (
     <View style={styles.root}>
-      <FocusedLightStatusBar />
-      <WaveBackdrop variant={variant} />
+      <FocusedLightStatusBar dark={scroll.gone} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -98,7 +100,11 @@ export function WavePage({ title, variant = 'arc', header, children }: Props) {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.scroll}
+          onScroll={scroll.onScroll}
+          scrollEventThrottle={scroll.scrollEventThrottle}
         >
+          {/* Inside the scroll content so the blue header scrolls away with it. */}
+          <WaveBackdrop variant={variant} />
           <SafeAreaView edges={['top']}>
             <View style={styles.topBar}>
               <Pressable

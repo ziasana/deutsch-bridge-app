@@ -1,18 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
-import { useState, type ComponentProps } from 'react';
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-  useWindowDimensions,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-} from 'react-native';
+import type { ComponentProps } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText, FocusedLightStatusBar, WaveBackdrop } from '@/components/ui';
+import { useHeaderScroll } from '@/components/ui/useHeaderScroll';
 import { totals, buildAchievements } from '@/features/achievements/model';
 import { useDashboard } from '@/features/dashboard/hooks';
 import { useUnreadCount } from '@/features/notifications/hooks';
@@ -78,12 +70,7 @@ function Stat({ value, label }: { value: string; label: string }) {
 export function ProfileScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  // Status-bar icons are light on the blue header and must turn dark once it has scrolled away.
-  const [headerGone, setHeaderGone] = useState(false);
-  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const gone = e.nativeEvent.contentOffset.y > width * 0.25;
-    setHeaderGone((prev) => (prev === gone ? prev : gone));
-  };
+  const header = useHeaderScroll(width * 0.25);
   const profile = useAuthStore((s) => s.profile);
   const signOut = useAuthStore((s) => s.signOut);
   const unread = useUnreadCount().data ?? 0;
@@ -138,12 +125,12 @@ export function ProfileScreen() {
 
   return (
     <View style={styles.root}>
-      <FocusedLightStatusBar dark={headerGone} />
+      <FocusedLightStatusBar dark={header.gone} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
-        onScroll={onScroll}
-        scrollEventThrottle={32}
+        onScroll={header.onScroll}
+        scrollEventThrottle={header.scrollEventThrottle}
       >
         {/* Inside the scroll content, so the blue header scrolls away with it. */}
         <WaveBackdrop variant="rise" />
