@@ -11,6 +11,8 @@ type Props = {
   loading?: boolean;
   disabled?: boolean;
   accessibilityHint?: string;
+  /** Fully rounded, taller — used on the auth screens. */
+  pill?: boolean;
 };
 
 const palette: Record<Variant, { bg: string; pressed: string; text: string; border?: string }> = {
@@ -31,6 +33,7 @@ export function Button({
   loading,
   disabled,
   accessibilityHint,
+  pill,
 }: Props) {
   const inactive = disabled || loading;
   const p = palette[variant];
@@ -45,6 +48,7 @@ export function Button({
       style={({ pressed }) => [
         styles.base,
         { backgroundColor: pressed ? p.pressed : p.bg, borderColor: p.border ?? 'transparent' },
+        pill && styles.pill,
         inactive && styles.inactive,
       ]}
     >
@@ -75,5 +79,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  pill: { minHeight: 56, borderRadius: radius.pill },
   inactive: { opacity: 0.55 },
 });

@@ -1,18 +1,19 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import {
+  AppText,
   Button,
   Card,
   EmptyState,
   ErrorState,
-  Header,
   LearningCelebration,
-  Screen,
+  ProgressRing,
   Skeleton,
 } from '@/components/ui';
 import { useAuthStore } from '@/stores/authStore';
-import { spacing } from '@/theme';
+import { colors, radius, spacing } from '@/theme';
+import { DAILY_COLOR, DailyHero, SunriseIllustration } from './components/DailyViz';
 import { PracticeQuiz } from './components/PracticeQuiz';
 import { WordCard } from './components/WordCard';
 import { allLearned, firstUnlearnedIndex, learnedCount, nextIndex } from './flow';
@@ -132,6 +133,27 @@ export function DailyWordsScreen() {
           primaryAction={{ label: 'Quiz starten', onPress: startQuiz }}
           secondaryAction={{ label: 'Zum Dashboard', onPress: goToDashboard }}
         />
+        <View style={styles.recap}>
+          <AppText variant="subheading">Heute gelernt</AppText>
+          <View style={styles.recapChips}>
+            {list.map((w, i) => (
+              <Pressable
+                key={w.id}
+                accessibilityRole="button"
+                accessibilityLabel={`${w.word} wiederholen`}
+                onPress={() => {
+                  setIndex(i);
+                  setStage('learning');
+                }}
+                style={styles.recapChip}
+              >
+                <AppText variant="small" color={colors.primaryDark} style={{ fontWeight: '700' }}>
+                  {w.word}
+                </AppText>
+              </Pressable>
+            ))}
+          </View>
+        </View>
         <Button
           label="Wörter noch einmal ansehen"
           variant="ghost"
@@ -171,6 +193,8 @@ export function DailyWordsScreen() {
     body = (
       <WordCard
         word={current}
+        words={list}
+        onJump={setIndex}
         index={index}
         total={list.length}
         learnedCount={learnedCount(list)}
@@ -187,10 +211,56 @@ export function DailyWordsScreen() {
     );
   }
 
+  const total = list.length;
+  const done = learnedCount(list);
+  const level = list[0]?.level;
+
   return (
-    <Screen>
-      <Header title="Daily Words" subtitle="Deine Wörter für heute" back />
-      {body}
-    </Screen>
+    <View style={styles.root}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+        <DailyHero
+          chip={`🌅 HEUTE${level ? ` · ${level}` : ''}`}
+          title="Daily Words"
+          subtitle={total > 0 ? `Deine ${total} Wörter für heute` : 'Deine Wörter für heute'}
+          right={
+            total > 0 ? (
+              <ProgressRing
+                value={(done / total) * 100}
+                size={80}
+                stroke={9}
+                color={DAILY_COLOR}
+                textSize={18}
+                trackColor="#FFFFFFCC"
+                label="Heute gelernt"
+              />
+            ) : (
+              <SunriseIllustration size={104} />
+            )
+          }
+        />
+        <View style={styles.body}>{body}</View>
+      </ScrollView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
+  scroll: { flexGrow: 1, paddingBottom: spacing.xxl },
+  body: { padding: spacing.lg },
+  recap: {
+    gap: spacing.sm,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  recapChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  recapChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accent,
+  },
+});

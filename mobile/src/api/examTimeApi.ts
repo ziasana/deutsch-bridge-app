@@ -10,6 +10,9 @@ import type {
 import { api } from './client';
 
 export const examTimeApi = {
+  /** How many timed exercises the learner finished this week (the Home nudge for TELC learners). */
+  weekSummary: () =>
+    api.get<{ timedExercisesThisWeek: number }>('/exam/practice-sessions/week-summary'),
   /** Enabled Teil targets for a level; an empty list means timing is not available for it. */
   configurations: (level: string) =>
     api.get<ExamTimeConfiguration[]>('/exam-time-configurations', { level }),

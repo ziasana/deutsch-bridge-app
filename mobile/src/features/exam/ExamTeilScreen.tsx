@@ -1,21 +1,22 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   AppText,
   Button,
-  Card,
   Chip,
   EmptyState,
   ErrorState,
   Header,
-  ProgressBar,
+  ProgressRing,
   Screen,
   Skeleton,
 } from '@/components/ui';
-import { colors, spacing } from '@/theme';
+import { colors, radius, spacing } from '@/theme';
 import type { ExamSection } from '@/types/exam';
 import { ExerciseRow } from './components/ExerciseRow';
+import { IconButton, StatTile, tint } from './components/kit';
 import { effectiveScore, findGroupByKey } from './examData';
 import { SECTION_META, SECTION_ORDER } from './examMeta';
 import { useExamExercises, useToggleExamBookmark } from './hooks';
@@ -56,7 +57,7 @@ export function ExamTeilScreen() {
         <Header title="Prüfungsteil" back />
         <View accessibilityLabel="Übungen werden geladen" style={{ gap: spacing.md }}>
           {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} height={56} />
+            <Skeleton key={i} height={72} />
           ))}
         </View>
       </Screen>
@@ -82,6 +83,8 @@ export function ExamTeilScreen() {
     );
   }
 
+  const meta = SECTION_META[typed];
+  const color = meta.color;
   const questions = group.items.reduce((sum, i) => sum + i.questionsCount, 0);
   const next = group.items.find((i) => effectiveScore(i) < 100) ?? group.items[0];
   const started = group.items.some((i) => i.completed);
@@ -94,61 +97,107 @@ export function ExamTeilScreen() {
   const items = group.items.filter(
     (i) => filter === 'ALL' || (filter === 'DONE' ? effectiveScore(i) === 100 : effectiveScore(i) < 100),
   );
+  const nextId = group.state === 'completed' ? null : next.id;
 
   return (
-    <Screen>
-      <Header
-        title={group.heading}
-        subtitle={`${group.subheading ? `${group.subheading} · ` : ''}${SECTION_META[typed].label}`}
-        back
-      />
-      <AppText color={colors.mutedForeground}>
-        {group.total} {group.total === 1 ? 'Übung' : 'Übungen'} · {questions} {questions === 1 ? 'Frage' : 'Fragen'}
-      </AppText>
-
-      <Card style={{ gap: spacing.md }}>
-        <View style={styles.between}>
-          <AppText variant="subheading">Dein Fortschritt</AppText>
-          <AppText color={colors.mutedForeground}>
-            {group.mastered} / {group.total}
-          </AppText>
+    <View style={styles.root}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+        <View style={[styles.hero, { backgroundColor: tint(color, '1F') }]}>
+          <SafeAreaView edges={['top']}>
+            <View style={styles.topRow}>
+              <IconButton name="arrow-back" label="Zurück" onPress={() => router.back()} />
+              <View style={[styles.chip, { backgroundColor: tint(color, '33') }]}>
+                <AppText variant="caption" color={colors.ink} style={{ fontWeight: '800' }}>
+                  {meta.emoji} {meta.label.toUpperCase()} · {level}
+                </AppText>
+              </View>
+            </View>
+            <View style={styles.heroMain}>
+              <View style={{ flex: 1, gap: 2 }}>
+                <AppText style={styles.title} accessibilityRole="header">
+                  {group.heading}
+                </AppText>
+                {group.subheading ? (
+                  <AppText color={colors.ink} style={{ fontWeight: '500' }}>
+                    {group.subheading}
+                  </AppText>
+                ) : null}
+              </View>
+              <ProgressRing
+                value={group.avgScore}
+                size={84}
+                stroke={9}
+                color={color}
+                textSize={20}
+                trackColor="#FFFFFFCC"
+                label="Dein Fortschritt"
+              />
+            </View>
+          </SafeAreaView>
         </View>
-        <ProgressBar value={group.avgScore} label="Dein Fortschritt" />
-        <Button label={continueLabel} onPress={() => open(next.id)} />
-      </Card>
 
-      {group.items[0]?.teil != null && TIMED_SECTIONS.includes(typed) ? (
-        <TeilTimeCard section={typed} level={level} teil={group.items[0].teil} />
-      ) : null}
+        <View style={styles.body}>
+          <View style={styles.tiles}>
+            <StatTile icon="albums-outline" label={group.total === 1 ? 'Übung' : 'Übungen'} value={String(group.total)} color={color} />
+            <StatTile icon="help-circle-outline" label={questions === 1 ? 'Frage' : 'Fragen'} value={String(questions)} color={color} />
+            <StatTile icon="checkmark-circle-outline" label="Gemeistert" value={`${group.mastered} / ${group.total}`} color={colors.success} />
+          </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        {FILTERS.map((f) => (
-          <Chip key={f.value} label={f.label} selected={filter === f.value} onPress={() => setFilter(f.value)} />
-        ))}
+          <Button pill label={continueLabel} onPress={() => open(next.id)} />
+
+          {group.items[0]?.teil != null && TIMED_SECTIONS.includes(typed) ? (
+            <TeilTimeCard section={typed} level={level} teil={group.items[0].teil} />
+          ) : null}
+
+          <View style={{ gap: spacing.sm }}>
+            <AppText variant="heading">Dein Lernpfad</AppText>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+              {FILTERS.map((f) => (
+                <Chip key={f.value} label={f.label} selected={filter === f.value} onPress={() => setFilter(f.value)} />
+              ))}
+            </ScrollView>
+          </View>
+
+          <View>
+            {items.map((item, i) => (
+              <ExerciseRow
+                key={item.id}
+                item={item}
+                color={color}
+                path={{ index: group.items.indexOf(item) + 1, last: i === items.length - 1 }}
+                next={item.id === nextId}
+                onPress={() => open(item.id)}
+                onToggleBookmark={() => bookmark.mutate({ id: item.id, bookmarked: item.bookmarked })}
+                bookmarkBusy={bookmark.isPending && bookmark.variables?.id === item.id}
+                lastTime={lastTimes[item.id]}
+              />
+            ))}
+            {items.length === 0 ? (
+              <AppText center color={colors.mutedForeground} style={{ paddingVertical: spacing.xl }}>
+                Keine Übungen für diesen Filter gefunden.
+              </AppText>
+            ) : null}
+          </View>
+        </View>
       </ScrollView>
-
-      <View>
-        {items.map((item) => (
-          <ExerciseRow
-            key={item.id}
-            item={item}
-            onPress={() => open(item.id)}
-            onToggleBookmark={() => bookmark.mutate({ id: item.id, bookmarked: item.bookmarked })}
-            bookmarkBusy={bookmark.isPending && bookmark.variables?.id === item.id}
-            lastTime={lastTimes[item.id]}
-          />
-        ))}
-        {items.length === 0 ? (
-          <AppText center color={colors.mutedForeground} style={{ paddingVertical: spacing.xl }}>
-            Keine Übungen für diesen Filter gefunden.
-          </AppText>
-        ) : null}
-      </View>
-    </Screen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  between: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  root: { flex: 1, backgroundColor: colors.background },
+  scroll: { flexGrow: 1, paddingBottom: spacing.xxl },
+  hero: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginLeft: -spacing.sm },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill },
+  heroMain: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, paddingTop: spacing.sm },
+  title: { fontSize: 32, lineHeight: 38, fontWeight: '800', color: colors.ink },
+  body: { padding: spacing.lg, gap: spacing.lg },
+  tiles: { flexDirection: 'row', gap: spacing.sm },
   chips: { gap: spacing.sm, paddingVertical: spacing.xs },
 });

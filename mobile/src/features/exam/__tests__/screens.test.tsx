@@ -1,11 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { setAudioModeAsync } from 'expo-audio';
+import * as Speech from 'expo-speech';
 import { AppState } from 'react-native';
 import { ApiError } from '@/api/errors';
 import { examApi, examAttemptApi } from '@/api/examApi';
 import { examTimeApi } from '@/api/examTimeApi';
 import { useExamTimerStore } from '../time/timerStore';
+import { useExamTextSize } from '../textScale';
 import { useAuthStore } from '@/stores/authStore';
 import type { UserProfile } from '@/types/user';
 import { ExamExerciseScreen } from '../ExamExerciseScreen';
@@ -17,10 +19,12 @@ jest.mock('@/api/examApi');
 jest.mock('@/api/examTimeApi');
 const mockPush = jest.fn();
 const mockBack = jest.fn();
+const mockReplace = jest.fn();
 let mockParams: Record<string, string> = {};
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: mockPush, replace: jest.fn(), back: mockBack }),
+  useRouter: () => ({ push: mockPush, replace: mockReplace, back: mockBack }),
   useLocalSearchParams: () => mockParams,
+  useFocusEffect: jest.fn(),
 }));
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children }: { children: React.ReactNode }) => children,
@@ -99,9 +103,9 @@ describe('ExamHubScreen', () => {
 
   it('opens on the profile level with Teile and a continue card', async () => {
     await wrap(<ExamHubScreen />);
-    expect(await screen.findByText('1. Teil 1 – Zuordnungsaufgaben')).toBeTruthy();
+    expect(await screen.findByRole('button', { name: /^Teil 1 – Zuordnungsaufgaben/ })).toBeTruthy();
     expect(api.exercisesForLevel).toHaveBeenCalledWith('B1');
-    expect(screen.getByText('B1 · 1/5')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'B1 · 1/5' }).props.accessibilityState.selected).toBe(true);
 
     // Teil 2 has a single exercise: opens it directly. Teil 1 has two: opens the Teil list.
     await fireEvent.press(screen.getByRole('button', { name: /^Teil 2/ }));
@@ -215,6 +219,7 @@ describe('ExamExerciseScreen', () => {
   beforeEach(() => {
     mockParams = { exerciseId: 'e1' };
     api.markCompleted.mockResolvedValue(undefined);
+    api.exercisesForLevel.mockResolvedValue([]);
   });
 
   it('runs a step quiz with feedback, results and mark-completed', async () => {
@@ -256,6 +261,46 @@ describe('ExamExerciseScreen', () => {
     expect(await screen.findByRole('button', { name: 'Übung starten' })).toBeTruthy();
   });
 
+  it('offers the next open exercise of the Teil and lets the learner review only mistakes', async () => {
+    api.byId.mockResolvedValue(exercise());
+    api.exercisesForLevel.mockResolvedValue([
+      summary('e1', { taskType: 'MULTIPLE_CHOICE', partNumber: 2, title: '1. Übung' }),
+      summary('e2', { taskType: 'MULTIPLE_CHOICE', partNumber: 2, title: '2. Übung' }),
+    ]);
+    attempts.start.mockResolvedValue({
+      attemptId: 'at9',
+      passages: [passage('p1')],
+      questions: [question('q1'), question('q2')],
+      answerOptions: null,
+      answerOptionLabels: null,
+    });
+    attempts.answer
+      .mockResolvedValueOnce({ correct: false, correctAnswer: 'Ja', explanation: 'Falsch gelesen.', commonMistake: '', transcript: null })
+      .mockResolvedValueOnce({ correct: true, correctAnswer: 'Nein', explanation: 'Gut erkannt.', commonMistake: '', transcript: null });
+    attempts.complete.mockResolvedValue({ attemptId: 'at9', score: 50, transcripts: [] });
+    await wrap(<ExamExerciseScreen />);
+
+    await fireEvent.press(await screen.findByRole('button', { name: 'Übung starten' }));
+    await fireEvent.press(await screen.findByRole('radio', { name: 'Nein' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Antwort prüfen' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Nächste Aufgabe' }));
+    await fireEvent.press(await screen.findByRole('radio', { name: 'Nein' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Antwort prüfen' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Ergebnis anzeigen' }));
+
+    // The mistake starts open, the correct answer folded away.
+    expect(await screen.findByText('💡 Falsch gelesen.')).toBeTruthy();
+    expect(screen.queryByText('💡 Gut erkannt.')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Fehler (1)' }));
+    expect(screen.queryByRole('button', { name: /Aufgabe 2.*richtig/ })).toBeNull();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Nächste Übung' }));
+    expect(mockReplace).toHaveBeenCalledWith({
+      pathname: '/exam-prep/exercise/[exerciseId]',
+      params: { exerciseId: 'e2' },
+    });
+  });
+
   it('answers a word-bank cloze all at once and shows ad labels for situation matching', async () => {
     api.byId.mockResolvedValue(
       exercise({
@@ -283,12 +328,12 @@ describe('ExamExerciseScreen', () => {
     await fireEvent.press(await screen.findByRole('button', { name: 'Übung starten' }));
     expect(screen.getByRole('button', { name: 'Antworten abgeben' })).toBeDisabled();
 
-    await fireEvent.press(await screen.findByRole('button', { name: 'Aufgabe 1' }));
-    await fireEvent.press(screen.getByRole('radio', { name: 'a' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Aufgabe 2' }));
-    // Ad "a" is already used by situation 1.
-    expect(screen.getByRole('radio', { name: 'a' })).toBeDisabled();
-    await fireEvent.press(screen.getByRole('radio', { name: 'x (keine Anzeige)' }));
+    await fireEvent.press(await screen.findByRole('radio', { name: 'Aufgabe 1: a' }));
+    // Ad "a" is already used by situation 1, so it is unavailable for situation 2.
+    expect(screen.getByRole('radio', { name: 'Aufgabe 2: a' })).toBeDisabled();
+    expect(screen.getByText('1 von 2 beantwortet')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('radio', { name: 'Aufgabe 2: x (keine Anzeige)' }));
+    expect(screen.getByText('✓ Alles beantwortet – bereit zum Abgeben')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Antworten abgeben' }));
 
     expect(await screen.findByText('Gut gemacht!')).toBeTruthy(); // 1 of 2 right → 50%
@@ -354,9 +399,9 @@ describe('ExamExerciseScreen', () => {
     api.byId.mockResolvedValue(exercise({ section: 'TESTFORMAT_INFORMATION', taskType: null, questions: [] }));
     api.addBookmark.mockResolvedValue(summary('e1', { bookmarked: true }));
     await wrap(<ExamExerciseScreen />);
-    await fireEvent.press(await screen.findByRole('button', { name: '☆ Merken' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Aufgabe merken' }));
     await waitFor(() => expect(api.addBookmark).toHaveBeenCalledWith('e1'));
-    expect(await screen.findByRole('button', { name: '★ Gemerkt' })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: 'Merkzeichen entfernen' })).toBeTruthy();
   });
 
   it('times a Lesen exercise and shows the Zeit-Check with the result', async () => {
@@ -372,6 +417,13 @@ describe('ExamExerciseScreen', () => {
     attempts.complete.mockResolvedValue({ attemptId: 'at9', score: 100, transcripts: [] });
     await wrap(<ExamExerciseScreen />);
 
+    // Opening the exercise does not start the clock; it waits for "Übung starten".
+    await screen.findByRole('button', { name: 'Übung starten' });
+    expect(screen.queryByText('Zeit für diese Übung')).toBeNull();
+    expect(screen.getByText(/Die Zeit startet mit/)).toBeTruthy();
+    expect(time.startSession).not.toHaveBeenCalled();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Übung starten' }));
     expect(await screen.findByText('Zeit für diese Übung')).toBeTruthy();
     expect(time.startSession).toHaveBeenCalledWith({ scope: 'EXERCISE', mode: 'TIME_TRAINING', exerciseId: 'e1' });
     expect(screen.getByLabelText(/Verstrichene Zeit 00:00/)).toBeTruthy();
@@ -380,7 +432,6 @@ describe('ExamExerciseScreen', () => {
     expect(await screen.findByText('Pausiert')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Zeit fortsetzen' }));
 
-    await fireEvent.press(await screen.findByRole('button', { name: 'Übung starten' }));
     await fireEvent.press(await screen.findByRole('radio', { name: 'Ja' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Antwort prüfen' }));
     await fireEvent.press(await screen.findByRole('button', { name: 'Ergebnis anzeigen' }));
@@ -390,6 +441,48 @@ describe('ExamExerciseScreen', () => {
     expect(time.completeSession).toHaveBeenCalledWith('ps1', expect.any(Number));
     expect(useExamTimerStore.getState().active).toBeNull();
     expect(useExamTimerStore.getState().lastResult?.elapsedSeconds).toBe(432);
+  });
+
+  it('lets the learner change the text size, and remembers it', async () => {
+    api.byId.mockResolvedValue(exercise());
+    useExamTextSize.setState({ index: 1 });
+    await wrap(<ExamExerciseScreen />);
+    await screen.findByRole('button', { name: 'Übung starten' });
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Schrift vergrößern' }));
+    expect(useExamTextSize.getState().index).toBe(2);
+    await fireEvent.press(screen.getByRole('button', { name: 'Schrift vergrößern' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Schrift vergrößern' }));
+    expect(useExamTextSize.getState().index).toBe(3);
+    expect(screen.getByRole('button', { name: 'Schrift vergrößern' })).toBeDisabled();
+    await fireEvent.press(screen.getByRole('button', { name: 'Schrift verkleinern' }));
+    expect(useExamTextSize.getState().index).toBe(2);
+  });
+
+  it('shows reading time, lets the learner mark paragraphs and read the text aloud', async () => {
+    api.byId.mockResolvedValue(exercise());
+    attempts.start.mockResolvedValue({
+      attemptId: 'at7',
+      passages: [passage('p1', { content: 'Erster Absatz.\n\nZweiter Absatz.' })],
+      questions: [question('q1')],
+      answerOptions: null,
+      answerOptionLabels: null,
+    });
+    await wrap(<ExamExerciseScreen />);
+    await fireEvent.press(await screen.findByRole('button', { name: 'Übung starten' }));
+
+    expect(await screen.findByText(/4 Wörter · ca\. 1 Min\. Lesezeit/)).toBeTruthy();
+    const paragraphs = screen.getAllByRole('button', { name: 'Absatz markieren' });
+    expect(paragraphs).toHaveLength(2);
+    await fireEvent.press(paragraphs[0]);
+    expect(screen.getAllByRole('button', { name: 'Markierung entfernen' })).toHaveLength(1);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Text vorlesen' }));
+    // Read paragraph by paragraph in German.
+    await waitFor(() =>
+      expect(Speech.speak).toHaveBeenCalledWith('Erster Absatz.', expect.objectContaining({ language: 'de-DE' })),
+    );
+    expect(screen.getByRole('button', { name: 'Vorlesen stoppen' })).toBeTruthy();
   });
 
   it('does not time Hörverstehen', async () => {

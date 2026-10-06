@@ -5,6 +5,7 @@ import { chatApi, chatVocabularyApi } from '@/api/chatApi';
 import { ApiError } from '@/api/errors';
 import { TutorScreen } from '../TutorScreen';
 
+jest.mock('expo-router', () => ({ useFocusEffect: jest.fn() }));
 jest.mock('@/api/chatApi');
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children }: { children: React.ReactNode }) => children,

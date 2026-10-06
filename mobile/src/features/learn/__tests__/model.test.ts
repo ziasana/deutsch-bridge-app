@@ -1,0 +1,35 @@
+import { baseDashboard } from '@/features/dashboard/testing/fixtures';
+import type { ProgressOverview } from '@/types/progress';
+import { featuredCards, topicCards } from '../model';
+
+const overview = {
+  dailyGoalWords: 10,
+  itemsLearnedToday: 4,
+  dailyWords: { learned: 30, total: 120 },
+  grammar: { learned: 5, total: 10 },
+  expressions: { learned: 0, total: 0 },
+  reading: { learned: 1, total: 3 },
+  totalLearned: 36,
+  totalAvailable: 133,
+} as ProgressOverview;
+
+describe('learn model', () => {
+  it('shows today’s goal and review count', () => {
+    const [daily, review] = featuredCards(overview, {
+      ...baseDashboard,
+      review: { wordsDue: 3, expressionsDue: 2 },
+    });
+    expect(daily.headline).toBe('4/10');
+    expect(review.headline).toBe('5');
+  });
+
+  it('falls back gracefully without data', () => {
+    expect(featuredCards()[0].headline).toBe('0/5');
+    expect(topicCards().every((t) => t.percent === 0)).toBe(true);
+  });
+
+  it('computes per-area percentages, guarding empty totals', () => {
+    const byKey = Object.fromEntries(topicCards(overview).map((t) => [t.key, t.percent]));
+    expect(byKey).toEqual({ vocabulary: 25, grammar: 50, expressions: 0, reading: 33 });
+  });
+});

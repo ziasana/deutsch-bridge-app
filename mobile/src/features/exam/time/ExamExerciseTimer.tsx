@@ -1,13 +1,14 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, StyleSheet, View } from 'react-native';
-import { AppText, Button, Card } from '@/components/ui';
+import { AppText } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 import type { ExamExercise } from '@/types/exam';
 import type { ExamPracticeSessionResult } from '@/types/examTime';
 import { ExamTimeSummary } from './ExamTimeSummary';
-import { ExamTimerBar } from './ExamTimerBar';
+import { ExamTimerBar, TimerPill } from './ExamTimerBar';
 import { TIMED_SECTIONS } from './examTime';
-import { useExamSession } from './hooks';
+import { useExamSession, useExamTimeConfiguration } from './hooks';
 import { useExamTimerStore } from './timerStore';
 
 /** True when this exercise gets a timer: a timed section with a resolved Teil. */
@@ -19,13 +20,25 @@ export const isTimedExercise = (e: Pick<ExamExercise, 'section' | 'teil'>) =>
  * learner leaves the screen or the app goes to the background, and continues from where it stopped
  * when the same exercise is opened again. Opening a different exercise starts a fresh run.
  */
-export function ExamExerciseTimer({ exercise }: { exercise: ExamExercise }) {
+export function ExamExerciseTimer({
+  exercise,
+  armed = true,
+  fresh = false,
+}: {
+  exercise: ExamExercise;
+  /** The clock only runs once armed: quizzes arm it when the learner taps "Übung starten". */
+  armed?: boolean;
+  /** Always begin a new run when armed instead of continuing this exercise's earlier one. */
+  fresh?: boolean;
+}) {
   const { active, hasHydrated, busy, start, finish } = useExamSession();
   const restartSignal = useExamTimerStore((s) => s.restartSignal);
   const [stoppedResult, setStoppedResult] = useState<ExamPracticeSessionResult | null>(null);
   const [startError, setStartError] = useState(false);
+  const [stoppedByHand, setStoppedByHand] = useState(false);
 
   const eligible = isTimedExercise(exercise);
+  const { minutes } = useExamTimeConfiguration(exercise.level, exercise.section, exercise.teil);
   const mounted = useRef(false);
   const starting = useRef(false);
   const seenRestart = useRef(restartSignal);
@@ -52,16 +65,17 @@ export function ExamExerciseTimer({ exercise }: { exercise: ExamExercise }) {
   const startByHand = () => {
     setStartError(false);
     setStoppedResult(null);
+    setStoppedByHand(false);
     void begin().then(onStarted);
   };
 
   // Open: continue this exercise's run if it is still the active one, else begin a new run.
   useEffect(() => {
     mounted.current = true;
-    if (!eligible || !hasHydrated) return;
+    if (!eligible || !hasHydrated || !armed) return;
 
     const current = useExamTimerStore.getState().active;
-    if (current?.scope === 'EXERCISE' && current.exerciseId === exercise.id) {
+    if (!fresh && current?.scope === 'EXERCISE' && current.exerciseId === exercise.id) {
       useExamTimerStore.getState().resume();
     } else {
       void begin().then(onStarted);
@@ -90,16 +104,30 @@ export function ExamExerciseTimer({ exercise }: { exercise: ExamExercise }) {
       sub.remove();
       if (isThisRun()) useExamTimerStore.getState().pause();
     };
-  }, [eligible, hasHydrated, exercise.id, begin, onStarted]);
+  }, [eligible, hasHydrated, armed, fresh, exercise.id, begin, onStarted]);
 
   // "Erneut üben": the previous run ended on the result screen, so begin a new one.
   useEffect(() => {
     if (restartSignal === seenRestart.current) return;
     seenRestart.current = restartSignal;
-    if (eligible && !useExamTimerStore.getState().active) void begin().then(onStarted);
-  }, [restartSignal, eligible, begin, onStarted]);
+    if (armed && eligible && !useExamTimerStore.getState().active) void begin().then(onStarted);
+  }, [restartSignal, armed, eligible, begin, onStarted]);
 
   if (!eligible || !hasHydrated) return null;
+
+  // Before the first question the clock waits; it starts with "Übung starten".
+  if (!armed) {
+    return (
+      <View style={styles.waiting}>
+        <Ionicons name="timer-outline" size={20} color={colors.mutedForeground} />
+        <AppText variant="small" color={colors.mutedForeground} style={{ flex: 1 }}>
+          {minutes != null
+            ? `Empfohlene Zeit: ${minutes} Min. Die Zeit startet mit „Übung starten“.`
+            : 'Die Zeit startet mit „Übung starten“.'}
+        </AppText>
+      </View>
+    );
+  }
 
   if (active?.scope === 'EXERCISE' && active.exerciseId === exercise.id) {
     return (
@@ -107,11 +135,12 @@ export function ExamExerciseTimer({ exercise }: { exercise: ExamExercise }) {
         active={active}
         title="Zeit für diese Übung"
         actions={
-          <Button
+          <TimerPill
             label="Stopp"
-            variant="secondary"
-            loading={busy}
+            text="Stopp"
+            busy={busy}
             onPress={async () => {
+              setStoppedByHand(true);
               const result = await finish();
               if (result) {
                 useExamTimerStore.getState().setLastResult(result);
@@ -124,19 +153,46 @@ export function ExamExerciseTimer({ exercise }: { exercise: ExamExercise }) {
     );
   }
 
+  // After a finished quiz the result screen carries the Zeit-Check; only a manual stop or a failed
+  // start needs the "start again" strip.
+  if (!stoppedByHand && !startError) return null;
+
   return (
-    <View style={{ gap: spacing.md }}>
-      {stoppedResult ? <ExamTimeSummary result={stoppedResult} /> : null}
-      <Card style={styles.stopped}>
+    <View>
+      {stoppedResult ? (
+        <View style={{ padding: spacing.lg, backgroundColor: colors.surface }}>
+          <ExamTimeSummary result={stoppedResult} />
+        </View>
+      ) : null}
+      <View style={styles.stopped}>
         <AppText variant="small" color={colors.mutedForeground} style={{ flex: 1 }}>
           {startError ? 'Die Zeitmessung konnte nicht gestartet werden.' : 'Die Zeitmessung ist gestoppt.'}
         </AppText>
-        <Button label="Zeit starten" variant="secondary" loading={busy} onPress={startByHand} />
-      </Card>
+        <TimerPill label="Zeit starten" text="Zeit starten" busy={busy} onPress={startByHand} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  stopped: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  waiting: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  stopped: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
 });

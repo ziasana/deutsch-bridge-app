@@ -6,8 +6,9 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { lexiconApi, readingApi, readingQuizApi, type ReadingListParams } from '@/api/readingApi';
+import { vocabularyApi } from '@/api/vocabularyApi';
 import { DASHBOARD_KEY } from '@/features/dashboard/hooks';
-import type { ReadingArticle } from '@/types/reading';
+import type { DictionaryEntry, ReadingArticle } from '@/types/reading';
 
 export const READING_PAGE_SIZE = 10;
 
@@ -105,6 +106,34 @@ export const useDictionaryEntry = (lemma: string | null) =>
     staleTime: 10 * 60_000,
     retry: false,
   });
+
+/**
+ * Adds a dictionary entry to the learner's vocabulary, or removes it again. Like the web app,
+ * unsaving looks up the vocabulary item created from this entry and deletes it by its own id.
+ */
+export function useToggleDictionarySave() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ entry }: { entry: DictionaryEntry; lookupKey: string }) => {
+      if (!entry.savedByCurrentUser) {
+        await vocabularyApi.addFromDictionary(entry.id);
+        return;
+      }
+      const items = await vocabularyApi.listFromDictionary();
+      const match = items.find((i) => i.dictionaryEntryId === entry.id);
+      if (match) await vocabularyApi.remove(match.id);
+    },
+    onSuccess: (_void, { entry, lookupKey }) => {
+      // The entry is cached under the word that was tapped, which can differ from its lemma.
+      queryClient.setQueryData<DictionaryEntry>(['dictionary', lookupKey], {
+        ...entry,
+        savedByCurrentUser: !entry.savedByCurrentUser,
+      });
+      void queryClient.invalidateQueries({ queryKey: DASHBOARD_KEY });
+      void queryClient.invalidateQueries({ queryKey: ['vocabulary-practice-session'] });
+    },
+  });
+}
 
 export const useStartQuiz = () =>
   useMutation({ mutationFn: (articleId: string) => readingQuizApi.start(articleId) });

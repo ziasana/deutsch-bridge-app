@@ -10,6 +10,8 @@ import type {
 import { api } from './client';
 
 export const grammarApi = {
+  /** Bookmarked lessons the learner hasn't finished yet (all levels). */
+  pendingBookmarks: () => api.get<{ id: string }[]>('/grammar/bookmarks/pending'),
   levelSummary: () => api.get<GrammarLevelSummary[]>('/grammar/level-summary'),
   levelView: (level: string) => api.get<GrammarLevelView>('/grammar', { level }),
   lesson: (id: string) => api.get<GrammarLesson>(`/grammar/${id}`),

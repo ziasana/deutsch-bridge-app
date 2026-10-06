@@ -36,6 +36,8 @@ export const useUnreadCount = () =>
     queryKey: notificationKeys.unread,
     queryFn: notificationApi.unreadCount,
     staleTime: 30_000,
+    // The tab bar badge relies on this, so keep it fresh while the app is open.
+    refetchInterval: 60_000,
     select: (d) => d.count,
   });
 

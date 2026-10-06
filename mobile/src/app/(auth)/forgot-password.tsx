@@ -35,6 +35,7 @@ export default function ForgotPasswordScreen() {
             name="email"
             render={({ field, fieldState }) => (
               <TextField
+                pill
                 label="E-Mail"
                 autoCapitalize="none"
                 autoComplete="email"
@@ -54,7 +55,7 @@ export default function ForgotPasswordScreen() {
               {forgot.error.message}
             </AppText>
           ) : null}
-          <Button label="Link senden" loading={forgot.isPending} onPress={submit} />
+          <Button pill label="Link senden" loading={forgot.isPending} onPress={submit} />
         </>
       )}
       <View style={styles.links}>

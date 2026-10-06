@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
 import { AppText, Card } from '@/components/ui';
 import { colors, spacing } from '@/theme';
@@ -26,9 +27,12 @@ export function TeilTimeCard({ section, level, teil, showLastResult = true }: Pr
 
   return (
     <Card style={{ gap: spacing.md }}>
-      <AppText variant="subheading">Zeit-Check</AppText>
+      <View style={styles.head}>
+        <Ionicons name="timer-outline" size={22} color={colors.primaryDark} />
+        <AppText variant="subheading">Zeit-Check</AppText>
+      </View>
       {minutes != null ? (
-        <AppText color={colors.mutedForeground}>
+        <AppText variant="small" color={colors.mutedForeground}>
           Empfohlene Zeit pro Übung: {minutes} Min. Die Zeit startet automatisch, sobald du eine Übung öffnest.
         </AppText>
       ) : null}
@@ -44,4 +48,7 @@ export function TeilTimeCard({ section, level, teil, showLastResult = true }: Pr
   );
 }
 
-const styles = StyleSheet.create({ last: { gap: spacing.xs } });
+const styles = StyleSheet.create({
+  head: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  last: { gap: spacing.xs },
+});

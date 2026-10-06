@@ -1,13 +1,32 @@
 import { Image } from 'expo-image';
-import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { createContext, useContext, useState } from 'react';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing } from '@/theme';
 import { parseBlocks, parseInline, type BlockNode, type InlineNode } from './parse';
 
 type Direction = 'ltr' | 'rtl';
 
+/** Text size multiplier for everything rendered below it (default 1). */
+export const ContentScale = createContext(1);
+
+/** Scales the font size and line height of a style (or style array) by the current multiplier. */
+function useScaled(base: object | object[]) {
+  const scale = useContext(ContentScale);
+  if (scale === 1) return base;
+  const flat = StyleSheet.flatten(base) as { fontSize?: number; lineHeight?: number };
+  return [
+    base,
+    {
+      fontSize: Math.round((flat.fontSize ?? 16) * scale),
+      lineHeight: Math.round((flat.lineHeight ?? (flat.fontSize ?? 16) * 1.5) * scale),
+    },
+  ];
+}
+
 function Inlines({ nodes, base }: { nodes: InlineNode[]; base: object }) {
+  const scaled = useScaled(base);
   return (
-    <Text style={base}>
+    <Text style={scaled}>
       {nodes.map((n, i) => {
         if (n.t === 'br') return '\n';
         return (
@@ -153,17 +172,59 @@ function Boldened({ blocks, dir }: { blocks: BlockNode[]; dir: Direction }) {
   return <Blocks blocks={bolded} dir={dir} />;
 }
 
+/** Renders already-parsed blocks, for screens that lay the content out in their own widgets. */
+export function RichBlocks({
+  blocks,
+  dir = 'ltr',
+  bold,
+}: {
+  blocks: BlockNode[];
+  dir?: Direction;
+  bold?: boolean;
+}) {
+  return bold ? <Boldened blocks={blocks} dir={dir} /> : <Blocks blocks={blocks} dir={dir} />;
+}
+
 /** Lesson content: Markdown and/or rich-text HTML, rendered natively. */
 export function RichContent({
   content,
   dir = 'ltr',
+  highlightable,
 }: {
   content: string | null | undefined;
   dir?: Direction;
+  /** Tapping a paragraph marks it like a highlighter pen (tap again to clear). */
+  highlightable?: boolean;
 }) {
+  const [marked, setMarked] = useState<ReadonlySet<number>>(new Set());
   const blocks = parseBlocks(content);
   if (blocks.length === 0) return null;
-  return <Blocks blocks={blocks} dir={dir} />;
+  if (!highlightable) return <Blocks blocks={blocks} dir={dir} />;
+  const toggle = (i: number) =>
+    setMarked((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(i)) next.add(i);
+      return next;
+    });
+  return (
+    <View style={styles.stack}>
+      {blocks.map((b, i) =>
+        b.t === 'p' ? (
+          <Pressable
+            key={i}
+            accessibilityRole="button"
+            accessibilityLabel={marked.has(i) ? 'Markierung entfernen' : 'Absatz markieren'}
+            onPress={() => toggle(i)}
+            style={[styles.para, marked.has(i) && styles.marked]}
+          >
+            <Blocks blocks={[b]} dir={dir} />
+          </Pressable>
+        ) : (
+          <Blocks key={i} blocks={[b]} dir={dir} />
+        ),
+      )}
+    </View>
+  );
 }
 
 /** One line with inline emphasis (quiz question, option, answer). */
@@ -183,6 +244,8 @@ export function InlineRich({
 
 const styles = StyleSheet.create({
   stack: { gap: spacing.sm },
+  para: { marginHorizontal: -spacing.sm, paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.sm },
+  marked: { backgroundColor: '#FFF0A6' },
   flex: { flex: 1 },
   body: { fontSize: 16, lineHeight: 25, color: colors.foreground },
   bold: { fontWeight: '700' },

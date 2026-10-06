@@ -1,11 +1,13 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { AppText, Badge, Button, Card, ErrorState, Header, Screen, Skeleton } from '@/components/ui';
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { AppText, Button, Card, ErrorState, Skeleton } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 import type { ExamExercise } from '@/types/exam';
 import type { ExamPracticeSessionResult } from '@/types/examTime';
-import { AnswerPool, PassageBody, PassagesView } from './components/Passages';
+import { RichContentScale } from './components/RichContentScale';
+import { ExerciseFrame, IconButton, QuizTopBar, TextSizeControl } from './components/kit';
+import { PassageBody } from './components/Passages';
 import { QuizRunner } from './components/QuizRunner';
 import { SECTION_META } from './examMeta';
 import { ExamExerciseTimer } from './time/ExamExerciseTimer';
@@ -17,25 +19,39 @@ import { useExamExercise, useMarkExamCompleted, useToggleExamBookmark } from './
 function InfoBody({ exercise }: { exercise: ExamExercise }) {
   const mark = useMarkExamCompleted(exercise.id);
   return (
-    <View style={{ gap: spacing.lg }}>
+    <ExerciseFrame
+      footer={
+        <>
+          {mark.error ? (
+            <AppText color={colors.destructive} accessibilityRole="alert">
+              {mark.error.message}
+            </AppText>
+          ) : null}
+          <Button
+            pill
+            label={exercise.completed ? 'Als erledigt markiert ✓' : 'Als erledigt markieren'}
+            variant={exercise.completed ? 'secondary' : 'primary'}
+            disabled={exercise.completed}
+            loading={mark.isPending}
+            onPress={() => mark.mutate()}
+          />
+        </>
+      }
+    >
+      <View style={styles.sizeRow}>
+        <TextSizeControl />
+      </View>
+      {exercise.teilDescription ? (
+        <Card tone="accent">
+          <AppText>{exercise.teilDescription}</AppText>
+        </Card>
+      ) : null}
       <Card style={{ gap: spacing.md }}>
         {exercise.passages.map((p) => (
           <PassageBody key={p.id} passage={p} />
         ))}
       </Card>
-      {mark.error ? (
-        <AppText color={colors.destructive} accessibilityRole="alert">
-          {mark.error.message}
-        </AppText>
-      ) : null}
-      <Button
-        label={exercise.completed ? 'Als erledigt markiert ✓' : 'Als erledigt markieren'}
-        variant={exercise.completed ? 'secondary' : 'primary'}
-        disabled={exercise.completed}
-        loading={mark.isPending}
-        onPress={() => mark.mutate()}
-      />
-    </View>
+    </ExerciseFrame>
   );
 }
 
@@ -45,47 +61,68 @@ function WritingBody({ exercise }: { exercise: ExamExercise }) {
   const stopTimer = useStopExerciseTimer(exercise.id);
   const [timeResult, setTimeResult] = useState<ExamPracticeSessionResult | null>(null);
   return (
-    <View style={{ gap: spacing.lg }}>
-      <Card style={{ gap: spacing.md }}>
-        {exercise.passages.map((p) => (
-          <PassageBody key={p.id} passage={p} />
-        ))}
-      </Card>
-      <WritingExercise
-        exercise={exercise}
-        timeResult={timeResult}
-        onSubmitted={() => {
-          if (!exercise.completed && !mark.isPending) mark.mutate();
-          void stopTimer().then(setTimeResult);
-        }}
-      />
-    </View>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ExerciseFrame>
+        <View style={styles.sizeRow}>
+          <TextSizeControl />
+        </View>
+        {exercise.teilDescription ? (
+          <Card tone="accent">
+            <AppText>{exercise.teilDescription}</AppText>
+          </Card>
+        ) : null}
+        <Card style={{ gap: spacing.md }}>
+          {exercise.passages.map((p) => (
+            <PassageBody key={p.id} passage={p} />
+          ))}
+        </Card>
+        <WritingExercise
+          exercise={exercise}
+          timeResult={timeResult}
+          onSubmitted={() => {
+            if (!exercise.completed && !mark.isPending) mark.mutate();
+            void stopTimer().then(setTimeResult);
+          }}
+        />
+      </ExerciseFrame>
+    </KeyboardAvoidingView>
   );
 }
 
+/**
+ * Focus mode: a slim top bar (close, title, bookmark), the timer strip, and a body that owns the
+ * rest of the screen: intro → questions → results, each with its action pinned at the bottom.
+ */
 export function ExamExerciseScreen() {
+  const router = useRouter();
   const { exerciseId } = useLocalSearchParams<{ exerciseId: string }>();
   const query = useExamExercise(exerciseId);
   const bookmark = useToggleExamBookmark();
+  const close = () => router.back();
+  // Quizzes time themselves from "Übung starten"; writing has no start button and runs from opening.
+  const [started, setStarted] = useState(false);
 
   if (query.isPending) {
     return (
-      <Screen>
-        <Header title="Übung" back />
-        <View accessibilityLabel="Übung wird geladen" style={{ gap: spacing.md }}>
+      <View style={styles.root}>
+        <QuizTopBar title="Übung" color={colors.primary} onClose={close} />
+        <View accessibilityLabel="Übung wird geladen" style={styles.loading}>
+          <Skeleton height={96} />
           <Skeleton width="70%" height={28} />
-          <Skeleton height={120} />
+          <Skeleton height={56} />
           <Skeleton height={56} />
         </View>
-      </Screen>
+      </View>
     );
   }
   if (query.isError || !query.data) {
     return (
-      <Screen>
-        <Header title="Übung" back />
-        <ErrorState error={query.error} onRetry={() => void query.refetch()} />
-      </Screen>
+      <View style={styles.root}>
+        <QuizTopBar title="Übung" color={colors.primary} onClose={close} />
+        <View style={styles.loading}>
+          <ErrorState error={query.error} onRetry={() => void query.refetch()} />
+        </View>
+      </View>
     );
   }
 
@@ -93,51 +130,37 @@ export function ExamExerciseScreen() {
   const meta = SECTION_META[exercise.section];
   const info = exercise.section === 'TESTFORMAT_INFORMATION';
   const writing = exercise.section === 'SCHRIFTLICHER_AUSDRUCK';
-  const listening = exercise.section === 'HOERVERSTEHEN';
-  // Listening clips (with their players) appear once the attempt starts, so they aren't shown here.
-  const showPassages = !info && !writing && !listening;
 
   return (
-    <Screen>
-      <Header title={exercise.title} subtitle={meta?.label} back />
-      <View style={styles.meta}>
-        <Badge tone="primary" label={exercise.level ?? 'Alle Niveaus'} />
-        {exercise.completed ? <Badge tone="success" label="✓ Erledigt" /> : null}
-        {exercise.lastScore != null ? <Badge label={`Letztes Ergebnis ${Math.round(exercise.lastScore)}%`} /> : null}
-      </View>
-      <Button
-        label={exercise.bookmarked ? '★ Gemerkt' : '☆ Merken'}
-        variant="secondary"
-        loading={bookmark.isPending}
-        onPress={() => bookmark.mutate({ id: exercise.id, bookmarked: exercise.bookmarked })}
+    <RichContentScale>
+    <View style={styles.root}>
+      <QuizTopBar
+        title={exercise.title}
+        subtitle={`${meta?.label ?? ''}${exercise.level ? ` · ${exercise.level}` : ''}`}
+        color={meta?.color ?? colors.primary}
+        onClose={close}
+        right={
+          <IconButton
+            name={exercise.bookmarked ? 'star' : 'star-outline'}
+            label={exercise.bookmarked ? 'Merkzeichen entfernen' : 'Aufgabe merken'}
+            color={exercise.bookmarked ? colors.warning : colors.mutedForeground}
+            selected={exercise.bookmarked}
+            busy={bookmark.isPending}
+            onPress={() => bookmark.mutate({ id: exercise.id, bookmarked: exercise.bookmarked })}
+          />
+        }
       />
-
-      <ExamExerciseTimer exercise={exercise} />
-
-      {exercise.teilDescription ? (
-        <Card tone="accent">
-          <AppText>{exercise.teilDescription}</AppText>
-        </Card>
-      ) : null}
-
-      {showPassages ? (
-        <>
-          {exercise.taskType === 'MATCHING' || exercise.taskType === 'WORD_BANK_CLOZE' ? (
-            <AnswerPool
-              answerOptions={exercise.answerOptions ?? []}
-              labels={exercise.answerOptionLabels}
-              taskType={exercise.taskType}
-            />
-          ) : null}
-          <PassagesView passages={exercise.passages} taskType={exercise.taskType} />
-        </>
-      ) : null}
-
-      {info ? <InfoBody exercise={exercise} /> : writing ? <WritingBody exercise={exercise} /> : <QuizRunner exercise={exercise} />}
-    </Screen>
+      <ExamExerciseTimer exercise={exercise} armed={writing || started} fresh={!writing} />
+      <View style={{ flex: 1 }}>
+        {info ? <InfoBody exercise={exercise} /> : writing ? <WritingBody exercise={exercise} /> : <QuizRunner exercise={exercise} onStarted={() => setStarted(true)} onReset={() => setStarted(false)} />}
+      </View>
+    </View>
+    </RichContentScale>
   );
 }
 
 const styles = StyleSheet.create({
-  meta: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
+  root: { flex: 1, backgroundColor: colors.background },
+  loading: { padding: spacing.lg, gap: spacing.md },
+  sizeRow: { alignItems: 'flex-end' },
 });

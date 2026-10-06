@@ -1,6 +1,7 @@
 import type {
   PracticeVocabularyItem,
   PracticeVocabularySession,
+  VocabularyItem,
   VocabularyRoundResponse,
 } from '@/types/vocabulary';
 
@@ -51,5 +52,23 @@ export const makeRound = (
     lastReviewedAt: null,
     nextReviewAt: null,
   },
+  ...over,
+});
+
+export const makeWord = (n: number, over: Partial<VocabularyItem> = {}): VocabularyItem => ({
+  id: `w${n}`,
+  source: 'CUSTOM',
+  word: `Wort${n}`,
+  article: null,
+  meaning: `meaning ${n}`,
+  language: 'EN',
+  example: null,
+  synonyms: null,
+  level: null,
+  audioUrl: null,
+  dictionaryEntryId: null,
+  createdAt: '2026-01-05T10:00:00Z',
+  progress: null,
+  bookmarked: false,
   ...over,
 });

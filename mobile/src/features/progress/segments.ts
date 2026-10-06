@@ -1,4 +1,8 @@
-import type { ExpressionMasteryBreakdown, MasteryBreakdown, MilestoneLadder } from '@/types/progress';
+import type {
+  ExpressionMasteryBreakdown,
+  MasteryBreakdown,
+  MilestoneLadder,
+} from '@/types/progress';
 
 export interface BarSegment {
   key: string;

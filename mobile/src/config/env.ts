@@ -6,7 +6,11 @@ if (!__DEV__ && !origin.startsWith('https://')) {
   throw new Error('EXPO_PUBLIC_API_URL must use https in production builds');
 }
 
+/** Dev-only design check: opens the onboarding wizard without an account and saves nothing. */
+const onboardingPreview = __DEV__ && process.env.EXPO_PUBLIC_ONBOARDING_PREVIEW === '1';
+
 export const env = {
+  onboardingPreview,
   apiOrigin: origin,
   apiBaseUrl: `${origin}/api`,
   requestTimeoutMs: 20_000,

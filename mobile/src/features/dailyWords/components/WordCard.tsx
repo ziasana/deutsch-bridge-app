@@ -1,13 +1,17 @@
+import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import { useEffect } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { AppText, Badge, Button, Card, ProgressBar } from '@/components/ui';
-import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
+import { StyleSheet, View } from 'react-native';
+import { AppText, Button } from '@/components/ui';
+import { PressableScale, tint } from '@/features/exam/components/kit';
+import { colors, radius, shadow, spacing } from '@/theme';
 import type { DailyWord } from '@/types/dailyWord';
 import { splitSynonyms } from '../flow';
+import { DAILY_COLOR, WordStepper } from './DailyViz';
 
 type Props = {
   word: DailyWord;
+  words: DailyWord[];
   index: number;
   total: number;
   learnedCount: number;
@@ -18,12 +22,36 @@ type Props = {
   error?: string;
   canGoPrevious: boolean;
   onPrevious: () => void;
+  onJump: (index: number) => void;
   onSave: () => void;
   onContinue: () => void;
 };
 
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** The example sentence with the word itself set in bold, so the eye finds it in context. */
+function ExampleLine({ example, word }: { example: string; word: string }) {
+  const parts = example.split(new RegExp(`(${escapeRegExp(word)})`, 'i'));
+  return (
+    <AppText style={styles.exampleText}>
+      „
+      {parts.map((part, i) =>
+        part.toLowerCase() === word.toLowerCase() ? (
+          <AppText key={i} style={styles.hit}>
+            {part}
+          </AppText>
+        ) : (
+          part
+        ),
+      )}
+      “
+    </AppText>
+  );
+}
+
 export function WordCard({
   word,
+  words,
   index,
   total,
   learnedCount,
@@ -34,6 +62,7 @@ export function WordCard({
   error,
   canGoPrevious,
   onPrevious,
+  onJump,
   onSave,
   onContinue,
 }: Props) {
@@ -65,20 +94,31 @@ export function WordCard({
             {learnedCount} gelernt
           </AppText>
         </View>
-        <ProgressBar value={learnedCount} max={total} label="Gelernte Wörter" />
       </View>
+      <WordStepper words={words} current={index} onJump={onJump} />
 
-      <Card style={styles.card}>
+      <View style={styles.card}>
         <View style={styles.rowBetween}>
-          <Badge tone="primary" label={word.level} />
-          {word.learned ? <Badge tone="success" label="✓ Gelernt" /> : null}
+          <View style={styles.level}>
+            <AppText variant="caption" color="#8A5A00" style={{ fontWeight: '800' }}>
+              {word.level}
+            </AppText>
+          </View>
+          {word.learned ? (
+            <View style={styles.learned}>
+              <Ionicons name="checkmark-circle" size={14} color="#1B7A55" />
+              <AppText variant="caption" color="#1B7A55" style={{ fontWeight: '800' }}>
+                ✓ Gelernt
+              </AppText>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.wordRow}>
           <AppText style={styles.word} accessibilityRole="header">
             {word.word}
           </AppText>
-          <Pressable
+          <PressableScale
             accessibilityRole="button"
             accessibilityLabel={`Aussprache von ${word.word} anhören`}
             onPress={() => {
@@ -87,27 +127,45 @@ export function WordCard({
             }}
             style={styles.speak}
           >
-            <AppText style={styles.speakIcon}>🔊</AppText>
-          </Pressable>
+            <Ionicons name="volume-high" size={26} color="#FFFFFF" />
+          </PressableScale>
         </View>
 
-        <AppText variant="heading" center>
-          {word.meaning}
-        </AppText>
+        <View style={styles.meaning}>
+          <AppText variant="caption" color="#8A5A00" style={{ fontWeight: '800' }}>
+            BEDEUTUNG
+          </AppText>
+          <AppText style={styles.meaningText}>{word.meaning}</AppText>
+        </View>
 
         {word.example ? (
           <View style={styles.example}>
-            <AppText variant="small" color={colors.mutedForeground} style={{ fontWeight: '600' }}>
-              Beispiel
+            <AppText variant="caption" color={colors.mutedForeground} style={{ fontWeight: '800' }}>
+              BEISPIEL
             </AppText>
-            <AppText style={styles.italic}>„{word.example}“</AppText>
+            <ExampleLine example={word.example} word={word.word} />
           </View>
         ) : null}
 
         {synonyms.length > 0 ? (
-          <AppText variant="small" color={colors.mutedForeground} center>
-            Ähnlich: {synonyms.join(' · ')}
-          </AppText>
+          <View style={{ gap: spacing.xs }}>
+            <AppText variant="caption" color={colors.mutedForeground} style={{ fontWeight: '800' }}>
+              ÄHNLICH
+            </AppText>
+            <View
+              style={styles.chips}
+              accessible
+              accessibilityLabel={`Ähnlich: ${synonyms.join(', ')}`}
+            >
+              {synonyms.map((s) => (
+                <View key={s} style={styles.chip}>
+                  <AppText variant="small" color={colors.primaryDark} style={{ fontWeight: '600' }}>
+                    {s}
+                  </AppText>
+                </View>
+              ))}
+            </View>
+          </View>
         ) : null}
 
         {word.meaningFa || word.exampleFa ? (
@@ -120,7 +178,7 @@ export function WordCard({
             ) : null}
           </View>
         ) : null}
-      </Card>
+      </View>
 
       {error ? (
         <AppText color={colors.destructive} accessibilityRole="alert">
@@ -128,8 +186,9 @@ export function WordCard({
         </AppText>
       ) : null}
 
-      <Button label={continueLabel} loading={isMarking} onPress={onContinue} />
+      <Button pill label={continueLabel} loading={isMarking} onPress={onContinue} />
       <Button
+        pill
         label={isSaved ? '✓ In Vocabulary gespeichert' : 'Zu Vocabulary hinzufügen'}
         variant="secondary"
         loading={isSaving}
@@ -137,7 +196,7 @@ export function WordCard({
         onPress={onSave}
       />
       {canGoPrevious ? (
-        <Button label="‹ Vorheriges Wort" variant="ghost" onPress={onPrevious} />
+        <Button pill label="‹ Vorheriges Wort" variant="ghost" onPress={onPrevious} />
       ) : null}
     </View>
   );
@@ -146,7 +205,30 @@ export function WordCard({
 const styles = StyleSheet.create({
   gap: { gap: spacing.md },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  card: { gap: spacing.md, padding: spacing.xl },
+  card: {
+    gap: spacing.lg,
+    padding: spacing.xl,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    ...shadow.card,
+  },
+  level: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+    backgroundColor: tint(DAILY_COLOR, '33'),
+  },
+  learned: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+    backgroundColor: colors.successSoft,
+  },
   wordRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -155,24 +237,44 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   word: {
-    fontSize: 34,
-    lineHeight: 42,
-    fontWeight: '700',
-    color: colors.foreground,
+    fontSize: 36,
+    lineHeight: 44,
+    fontWeight: '800',
+    color: colors.ink,
     textAlign: 'center',
     flexShrink: 1,
   },
   speak: {
-    width: MIN_TOUCH,
-    height: MIN_TOUCH,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accent,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: DAILY_COLOR,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  speakIcon: { fontSize: 22 },
-  example: { gap: 2, borderLeftWidth: 4, borderLeftColor: colors.accent, paddingLeft: spacing.md },
-  italic: { fontStyle: 'italic', color: colors.mutedForeground },
+  meaning: {
+    gap: 2,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: tint(DAILY_COLOR, '14'),
+  },
+  meaningText: { fontSize: 20, lineHeight: 28, fontWeight: '700', color: colors.foreground },
+  example: {
+    gap: 4,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    borderTopLeftRadius: 6,
+    backgroundColor: colors.accent,
+  },
+  exampleText: { fontStyle: 'italic', color: colors.ink },
+  hit: { fontWeight: '800', fontStyle: 'normal', color: colors.primaryDark },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accent,
+  },
   fa: { gap: spacing.xs, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.md },
   rtl: { writingDirection: 'rtl', textAlign: 'right' },
 });

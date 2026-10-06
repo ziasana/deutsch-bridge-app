@@ -42,5 +42,5 @@ const styles = StyleSheet.create({
   within: { backgroundColor: colors.successSoft },
   over: { backgroundColor: colors.warningSoft },
   plain: { backgroundColor: colors.accent },
-  big: { fontSize: 32, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  big: { fontSize: 26, lineHeight: 34, fontWeight: '700', fontVariant: ['tabular-nums'] },
 });

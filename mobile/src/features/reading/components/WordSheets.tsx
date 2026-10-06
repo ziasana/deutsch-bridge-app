@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { AppText, Badge, BottomSheet, Button, LoadingState } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 import type { Annotation } from '@/types/reading';
-import { useDictionaryEntry } from '../hooks';
+import { useDictionaryEntry, useToggleDictionarySave } from '../hooks';
 import { ANNOTATION_LABEL } from '../segments';
 
 const ARTICLE_TONE = { der: 'primary', die: 'warning', das: 'success' } as const;
@@ -78,11 +78,15 @@ export function AnnotationSheet({
 /** Dictionary lookup for any tapped word (unknown words get a friendly "not found"). */
 export function DictionarySheet({ lemma, onClose }: { lemma: string | null; onClose: () => void }) {
   const entry = useDictionaryEntry(lemma);
+  const save = useToggleDictionarySave();
   const data = entry.data;
   return (
     <BottomSheet
       visible={!!lemma}
-      onClose={onClose}
+      onClose={() => {
+        save.reset();
+        onClose();
+      }}
       title={data ? `${data.article ? `${data.article} ` : ''}${data.lemma}` : (lemma ?? '')}
     >
       {entry.isPending && lemma ? <LoadingState label="Wörterbuch …" /> : null}
@@ -111,6 +115,22 @@ export function DictionarySheet({ lemma, onClose }: { lemma: string | null; onCl
               ) : null}
             </View>
           ))}
+          {save.error ? (
+            <AppText color={colors.destructive} accessibilityRole="alert">
+              {save.error.message}
+            </AppText>
+          ) : null}
+          <Button
+            label={
+              data.savedByCurrentUser
+                ? '✓ Im Wortschatz – entfernen'
+                : '＋ Zum Wortschatz hinzufügen'
+            }
+            variant={data.savedByCurrentUser ? 'secondary' : 'primary'}
+            loading={save.isPending}
+            onPress={() => save.mutate({ entry: data, lookupKey: lemma! })}
+            accessibilityHint="Speichert das Wort in deinem Wortschatz"
+          />
           <Button
             label="🔊 Anhören"
             variant="secondary"

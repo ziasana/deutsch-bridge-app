@@ -38,6 +38,13 @@ export const LEARN_DESTINATIONS: Destination[] = [
     href: '/learn/expressions',
   },
   {
+    key: 'redemittel',
+    emoji: '🗣️',
+    title: 'Redemittel',
+    subtitle: 'Ausdrücke für Schreiben & Sprechen',
+    href: '/learn/redemittel',
+  },
+  {
     key: 'reading',
     emoji: '📖',
     title: 'Reading',
@@ -46,7 +53,7 @@ export const LEARN_DESTINATIONS: Destination[] = [
   },
   {
     key: 'review',
-    emoji: '🔄',
+    emoji: '🗂️',
     title: 'Review',
     subtitle: 'Gelerntes wiederholen',
     href: '/learn/review',
@@ -60,6 +67,13 @@ export const PROFILE_DESTINATIONS: Destination[] = [
     title: 'Progress',
     subtitle: 'Dein Lernfortschritt',
     href: '/progress',
+  },
+  {
+    key: 'achievements',
+    emoji: '🏆',
+    title: 'Erfolge',
+    subtitle: 'Deine gesammelten Sterne',
+    href: '/achievements',
   },
   {
     key: 'settings',

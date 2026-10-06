@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { AppText, Button, Card, ProgressBar } from '@/components/ui';
+import { AppText, Button, ProgressBar } from '@/components/ui';
+import { tint } from '@/features/exam/components/kit';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type { PracticeQuestion } from '../practice';
+import { DAILY_COLOR } from './DailyViz';
 
 type Props = { questions: PracticeQuestion[]; onComplete: (score: number) => void };
 
@@ -42,15 +44,16 @@ export function PracticeQuiz({ questions, onComplete }: Props) {
           value={index + (answered ? 1 : 0)}
           max={questions.length}
           label="Quiz-Fortschritt"
+          color={DAILY_COLOR}
         />
       </View>
 
-      <Card style={styles.gap}>
-        <AppText variant="small" color={colors.mutedForeground}>
-          Welches Wort passt zu dieser Bedeutung?
+      <View style={styles.prompt}>
+        <AppText variant="caption" color="#8A5A00" style={{ fontWeight: '800' }}>
+          WELCHES WORT PASST ZU DIESER BEDEUTUNG?
         </AppText>
-        <AppText variant="heading">{q.prompt}</AppText>
-      </Card>
+        <AppText style={styles.promptText}>{q.prompt}</AppText>
+      </View>
 
       <View style={styles.gap}>
         {q.options.map((option, i) => {
@@ -98,7 +101,7 @@ export function PracticeQuiz({ questions, onComplete }: Props) {
           >
             {correct ? '✓ Richtig!' : `✕ Nicht richtig – richtig ist „${q.answer}“.`}
           </AppText>
-          <Button label={isLast ? 'Ergebnis ansehen' : 'Nächste Frage'} onPress={next} />
+          <Button pill label={isLast ? 'Ergebnis ansehen' : 'Nächste Frage'} onPress={next} />
         </View>
       ) : null}
     </View>
@@ -107,13 +110,20 @@ export function PracticeQuiz({ questions, onComplete }: Props) {
 
 const styles = StyleSheet.create({
   gap: { gap: spacing.md },
+  prompt: {
+    gap: spacing.xs,
+    padding: spacing.xl,
+    borderRadius: radius.lg,
+    backgroundColor: tint(DAILY_COLOR, '14'),
+  },
+  promptText: { fontSize: 22, lineHeight: 30, fontWeight: '800', color: colors.ink },
   option: {
     minHeight: MIN_TOUCH + 8,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     padding: spacing.md,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 2,
     borderColor: colors.border,
     backgroundColor: colors.surface,

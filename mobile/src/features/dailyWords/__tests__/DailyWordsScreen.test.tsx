@@ -46,18 +46,19 @@ describe('DailyWordsScreen', () => {
     jest.resetAllMocks();
     exists.mockResolvedValue({ exists: false, vocabularyItemId: null });
     markLearned.mockResolvedValue({});
-    create.mockResolvedValue({});
+    create.mockResolvedValue({} as never);
   });
 
   it('shows a skeleton, then the first word with its details', async () => {
     getToday.mockResolvedValue(makeWords());
     await renderScreen();
     expect(screen.getByLabelText('Wörter werden geladen')).toBeTruthy();
-    expect(await screen.findByText('berücksichtigen')).toBeTruthy();
+    expect((await screen.findAllByText('berücksichtigen')).length).toBeGreaterThan(0); // word + highlighted in its example
     expect(screen.getByText('1 / 5')).toBeTruthy();
     expect(screen.getByText('meaning of berücksichtigen')).toBeTruthy();
     expect(screen.getByText('„Beispiel mit berücksichtigen.“')).toBeTruthy();
-    expect(screen.getByText('Ähnlich: beachten · bedenken')).toBeTruthy();
+    expect(screen.getByText('beachten')).toBeTruthy();
+    expect(screen.getByText('bedenken')).toBeTruthy();
   });
 
   it('speaks the word in German', async () => {
@@ -105,7 +106,7 @@ describe('DailyWordsScreen', () => {
   it('resumes on the first unlearned word', async () => {
     getToday.mockResolvedValue(makeWords([true, true, false, false, false]));
     await renderScreen();
-    expect(await screen.findByText('verbessern')).toBeTruthy();
+    expect((await screen.findAllByText('verbessern')).length).toBeGreaterThan(0); // word + highlighted in its example
     expect(screen.getByText('3 / 5')).toBeTruthy();
   });
 
@@ -116,7 +117,7 @@ describe('DailyWordsScreen', () => {
     // ...and the words can still be browsed again
     await fireEvent.press(screen.getByRole('button', { name: 'Wörter noch einmal ansehen' }));
     expect(await screen.findByText('1 / 5')).toBeTruthy();
-    expect(screen.getByText('berücksichtigen')).toBeTruthy();
+    expect(screen.getAllByText('berücksichtigen').length).toBeGreaterThan(0);
     // "Weiter" steps through learned words (it must not jump back to the celebration)...
     await fireEvent.press(screen.getByRole('button', { name: 'Weiter' }));
     expect(await screen.findByText('2 / 5')).toBeTruthy();
@@ -174,6 +175,6 @@ describe('DailyWordsScreen', () => {
     expect(await screen.findByText('Keine Verbindung.')).toBeTruthy();
     getToday.mockResolvedValueOnce(makeWords());
     await fireEvent.press(screen.getByRole('button', { name: 'Erneut versuchen' }));
-    expect(await screen.findByText('berücksichtigen')).toBeTruthy();
+    expect((await screen.findAllByText('berücksichtigen')).length).toBeGreaterThan(0); // word + highlighted in its example
   });
 });

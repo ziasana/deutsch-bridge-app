@@ -46,3 +46,10 @@ jest.mock('@react-native-community/netinfo', () => ({
   __esModule: true,
   default: { addEventListener: jest.fn(() => jest.fn()) },
 }));
+
+// Icon fonts load through expo-asset, which has no asset registry under Jest; render icons inert.
+jest.mock('@expo/vector-icons', () => {
+  const { createElement } = jest.requireActual('react');
+  const { Text } = jest.requireActual('react-native');
+  return { Ionicons: ({ name }: { name: string }) => createElement(Text, null, name) };
+});

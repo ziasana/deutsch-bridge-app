@@ -1,4 +1,5 @@
-import type { ApiResponse, PreferredLanguage } from '@/types/user';
+import type { OnboardingRequest } from '@/features/onboarding/plan';
+import type { ApiResponse, PreferredLanguage, UserProfile } from '@/types/user';
 import { api } from './client';
 
 export type ProfileUpdate = {
@@ -13,7 +14,11 @@ export type AvatarFile = { uri: string; name: string; type: string };
 
 export const userApi = {
   /** Fields left out stay unchanged on the server. */
-  updateProfile: (update: ProfileUpdate) => api.put<ApiResponse<null>>('/user/update-profile', update),
+  updateProfile: (update: ProfileUpdate) =>
+    api.put<ApiResponse<null>>('/user/update-profile', update),
+  /** Saves the learning plan and marks onboarding done; → the full updated profile. */
+  completeOnboarding: (request: OnboardingRequest) =>
+    api.put<ApiResponse<UserProfile>>('/user/onboarding', request).then((r) => r.data),
   updatePassword: (currentPassword: string, password: string) =>
     api.put<ApiResponse<null>>('/user/update-password', { currentPassword, password }),
   /** → the new relative avatar URL ("/uploads/..."). */

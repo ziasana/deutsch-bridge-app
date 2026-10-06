@@ -1,7 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { RichContent } from '@/components/content/RichContent';
 import { AppText } from '@/components/ui';
-import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
+import { colors, radius, spacing } from '@/theme';
 import type { ChatMessage } from '@/types/chat';
 
 type Props = { message: ChatMessage; onSaveWord?: (message: ChatMessage) => void };
@@ -21,7 +22,7 @@ export function MessageBubble({ message, onSaveWord }: Props) {
   return (
     <View style={styles.row}>
       <View style={styles.avatar} accessibilityElementsHidden>
-        <AppText>✨</AppText>
+        <Ionicons name="sparkles" size={16} color="#FFFFFF" />
       </View>
       <View style={{ flex: 1, gap: spacing.xs, alignItems: 'flex-start' }}>
         <View style={[styles.bubble, styles.tutor]} accessibilityLabel="Antwort des Tutors">
@@ -34,8 +35,9 @@ export function MessageBubble({ message, onSaveWord }: Props) {
             onPress={() => onSaveWord(message)}
             style={styles.save}
           >
-            <AppText variant="small" color={colors.primaryDark}>
-              💾 Wort speichern
+            <Ionicons name="bookmark-outline" size={16} color={colors.primaryDark} />
+            <AppText variant="small" color={colors.primaryDark} style={{ fontWeight: '600' }}>
+              Wort speichern
             </AppText>
           </Pressable>
         ) : null}
@@ -47,15 +49,23 @@ export function MessageBubble({ message, onSaveWord }: Props) {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
   avatar: {
-    width: 32,
-    height: 32,
+    width: 34,
+    height: 34,
     borderRadius: radius.pill,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.brand,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bubble: { borderRadius: radius.lg, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  user: { maxWidth: '85%', backgroundColor: colors.primary, borderTopRightRadius: radius.sm },
-  tutor: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderTopLeftRadius: radius.sm },
-  save: { minHeight: MIN_TOUCH - 8, justifyContent: 'center', paddingHorizontal: spacing.sm },
+  bubble: { borderRadius: 22, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  user: { maxWidth: '85%', backgroundColor: colors.brand, borderBottomRightRadius: 6 },
+  tutor: { backgroundColor: '#F1F5FB', borderTopLeftRadius: 6 },
+  save: {
+    minHeight: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accent,
+  },
 });

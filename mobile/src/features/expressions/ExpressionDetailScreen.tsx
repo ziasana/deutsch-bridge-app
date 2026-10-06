@@ -1,7 +1,8 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import {
   AppText,
   Badge,
@@ -13,8 +14,11 @@ import {
   Screen,
   Skeleton,
 } from '@/components/ui';
+import { IconButton, TextSizeControl, tint } from '@/features/exam/components/kit';
+import { scaledText, useExamTextScale } from '@/features/exam/textScale';
+import { ExpressionHero, MasteryDots, MasteryPath } from './components/ExpressionViz';
 import { useAuthStore } from '@/stores/authStore';
-import { colors, radius, spacing } from '@/theme';
+import { colors, radius, shadow, spacing } from '@/theme';
 import { resolveUploadUrl } from '@/utils/urls';
 import {
   useExpression,
@@ -22,14 +26,67 @@ import {
   useMarkViewed,
   useToggleExpressionBookmark,
 } from './hooks';
-import { CONTEXT_LABEL, MASTERY_LABEL, REGISTER_LABEL, TYPE_SINGULAR } from './labels';
+import { CONTEXT_LABEL, REGISTER_LABEL, TYPE_COLOR, TYPE_EMOJI, TYPE_SINGULAR } from './labels';
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+/** Body text that follows the learner's text size (the same setting as in the exam and lessons). */
+function Body({
+  small,
+  big,
+  bold,
+  semi,
+  italic,
+  color,
+  style,
+  children,
+}: {
+  small?: boolean;
+  big?: boolean;
+  bold?: boolean;
+  semi?: boolean;
+  italic?: boolean;
+  color?: string;
+  style?: object;
+  children: React.ReactNode;
+}) {
+  const scale = useExamTextScale();
+  const [size, line] = small ? [14, 20] : big ? [17, 25] : [16, 24];
   return (
-    <Card style={{ gap: spacing.sm }}>
-      <AppText variant="subheading">{title}</AppText>
+    <AppText
+      color={color}
+      style={[
+        scaledText(size, line, scale),
+        (bold || big) && { fontWeight: '700' },
+        semi && { fontWeight: '600' },
+        italic && { fontStyle: 'italic' },
+        style,
+      ]}
+    >
       {children}
-    </Card>
+    </AppText>
+  );
+}
+
+function Section({
+  title,
+  icon,
+  color,
+  children,
+}: {
+  title: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHead}>
+        <View style={[styles.sectionIcon, { backgroundColor: tint(color, '1F') }]}>
+          <Ionicons name={icon} size={18} color={color} />
+        </View>
+        <AppText variant="subheading">{title}</AppText>
+      </View>
+      {children}
+    </View>
   );
 }
 
@@ -107,164 +164,319 @@ export function ExpressionDetailScreen() {
     </View>
   );
 
+  const color = TYPE_COLOR[e.type];
+  const hasWordPair = e.type === 'REDEWENDUNG' && (e.literalMeaning || e.figurativeMeaning);
+
   return (
-    <Screen>
-      <Header title={e.expression} subtitle={e.meaningDe} back />
-      <View style={styles.meta}>
-        <Badge tone="primary" label={e.level} />
-        <Badge label={TYPE_SINGULAR[e.type]} />
-        {e.register ? <Badge label={REGISTER_LABEL[e.register]} /> : null}
-        {e.progress ? (
-          <Badge tone="success" label={MASTERY_LABEL[e.progress.masteryLevel]} />
-        ) : null}
-      </View>
+    <View style={styles.root}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+        <ExpressionHero
+          accent={color}
+          chip={`${TYPE_EMOJI[e.type]} ${TYPE_SINGULAR[e.type].toUpperCase()} · ${e.level}`}
+          title={e.expression}
+          trailing={
+            <IconButton
+              name={e.bookmarked ? 'star' : 'star-outline'}
+              label={e.bookmarked ? 'Gemerkt' : 'Merken'}
+              color={e.bookmarked ? colors.warning : colors.ink}
+              busy={bookmark.isPending}
+              onPress={() => bookmark.mutate(e.bookmarked)}
+            />
+          }
+        >
+          <View style={styles.heroMeta}>
+            {e.register ? <Badge label={REGISTER_LABEL[e.register]} /> : null}
+            {e.progress ? <MasteryDots level={e.progress.masteryLevel} /> : null}
+          </View>
+        </ExpressionHero>
 
-      {image ? (
-        <Image
-          source={{ uri: image }}
-          contentFit="cover"
-          style={styles.image}
-          accessibilityLabel={`Illustration: ${e.expression}`}
-        />
+        <View style={styles.block}>
+          {image ? (
+            <Image
+              source={{ uri: image }}
+              contentFit="cover"
+              style={styles.image}
+              accessibilityLabel={`Illustration: ${e.expression}`}
+            />
+          ) : null}
+
+          <View style={styles.actions}>
+            <View style={styles.flex}>
+              <Button
+                pill
+                label="Üben"
+                onPress={() =>
+                  router.push({
+                    pathname: '/expressions/practice',
+                    params: { expressionId: e.id, skipIntro: '1' },
+                  })
+                }
+              />
+            </View>
+            <View style={styles.flex}>
+              <Button
+                pill
+                label={e.bookmarked ? '★ Gemerkt' : '☆ Merken'}
+                variant="secondary"
+                loading={bookmark.isPending}
+                onPress={() => bookmark.mutate(e.bookmarked)}
+              />
+            </View>
+          </View>
+          {bookmark.error ? (
+            <AppText color={colors.destructive} accessibilityRole="alert">
+              {bookmark.error.message}
+            </AppText>
+          ) : null}
+
+          <View style={styles.sizeRow}>
+            <AppText variant="small" color={colors.mutedForeground} style={{ fontWeight: '600' }}>
+              Schriftgröße
+            </AppText>
+            <TextSizeControl />
+          </View>
+
+          <Section title="Bedeutung" icon="bulb-outline" color={color}>
+            <Body big>{e.meaningDe}</Body>
+            {e.meaningEn ? <Body color={colors.mutedForeground}>🇬🇧 {e.meaningEn}</Body> : null}
+            {persian && e.meaningFa ? (
+              <Body color={colors.mutedForeground} style={styles.rtl}>
+                🇮🇷 {e.meaningFa}
+              </Body>
+            ) : null}
+          </Section>
+
+          {hasWordPair ? (
+            <WordPair literal={e.literalMeaning} figurative={e.figurativeMeaning} color={color} />
+          ) : null}
+
+          {e.patterns.length > 0 ? (
+            <Section title="Muster" icon="construct-outline" color={color}>
+              {e.patterns.map((p) => (
+                <View key={p.id} style={[styles.pattern, { borderLeftColor: color }]}>
+                  <Body bold>{p.pattern}</Body>
+                  <View style={styles.tags}>
+                    {p.grammarCase ? (
+                      <Badge tone="primary" label={`Kasus: ${p.grammarCase}`} />
+                    ) : null}
+                    {p.preposition ? <Badge label={`Präposition: ${p.preposition}`} /> : null}
+                  </View>
+                  {p.example ? <Body italic>„{p.example}“</Body> : null}
+                </View>
+              ))}
+            </Section>
+          ) : null}
+
+          {e.examples.length > 0 ? (
+            <Section title="Beispiele" icon="chatbubbles-outline" color={color}>
+              {e.examples.map((x) => (
+                <View key={x.id} style={styles.bubble}>
+                  <Body semi>„{x.sentence}“</Body>
+                  {persian && x.translationFa ? (
+                    <Body small color={colors.mutedForeground} style={styles.rtl}>
+                      {x.translationFa}
+                    </Body>
+                  ) : x.translationEn ? (
+                    <Body small color={colors.mutedForeground}>
+                      {x.translationEn}
+                    </Body>
+                  ) : null}
+                  <Badge tone="primary" label={CONTEXT_LABEL[x.context] ?? x.context} />
+                </View>
+              ))}
+            </Section>
+          ) : null}
+
+          {e.grammarNote ? (
+            <Section title="Grammatik" icon="school-outline" color={color}>
+              <Body>{e.grammarNote}</Body>
+            </Section>
+          ) : null}
+          {e.usageNote ? (
+            <Section title="Verwendung" icon="information-circle-outline" color={color}>
+              <Body>{e.usageNote}</Body>
+            </Section>
+          ) : null}
+          {e.commonMistakes ? (
+            <View style={styles.mistakes}>
+              <View style={styles.sectionHead}>
+                <Ionicons name="warning-outline" size={20} color={colors.warning} />
+                <AppText variant="subheading">Häufige Fehler</AppText>
+              </View>
+              <Body>{e.commonMistakes}</Body>
+            </View>
+          ) : null}
+
+          {e.progress && e.progress.reviewCount > 0 ? (
+            <Section title="Dein Fortschritt" icon="trending-up-outline" color={color}>
+              <MasteryPath level={e.progress.masteryLevel} />
+              <ProgressBar
+                value={Math.round(e.progress.overallScore * 100)}
+                label="Gesamtfortschritt"
+              />
+              <View style={styles.stats}>
+                <StatPill
+                  icon="checkmark-circle"
+                  color={colors.success}
+                  text={`${e.progress.correctCount} richtig`}
+                />
+                <StatPill
+                  icon="close-circle"
+                  color={colors.destructive}
+                  text={`${e.progress.incorrectCount} falsch`}
+                />
+                <StatPill
+                  icon="repeat"
+                  color={colors.primary}
+                  text={`${e.progress.reviewCount}× geübt`}
+                />
+              </View>
+            </Section>
+          ) : null}
+
+          {nav}
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+/** Wörtlich ⇄ Übertragen: tap a tab to see the picture meaning or the real meaning. */
+function WordPair({
+  literal,
+  figurative,
+  color,
+}: {
+  literal: string;
+  figurative: string;
+  color: string;
+}) {
+  const tabs = [
+    literal ? { key: 'literal', label: 'Wörtlich', emoji: '🖼️', text: literal } : null,
+    figurative ? { key: 'figurative', label: 'Übertragen', emoji: '💡', text: figurative } : null,
+  ].filter((t): t is NonNullable<typeof t> => t !== null);
+  const [active, setActive] = useState(tabs[tabs.length - 1].key);
+  const current = tabs.find((t) => t.key === active) ?? tabs[0];
+  return (
+    <Section title="Wörtlich und übertragen" icon="swap-horizontal-outline" color={color}>
+      {tabs.length > 1 ? (
+        <View style={styles.segment}>
+          {tabs.map((t) => {
+            const on = t.key === current.key;
+            return (
+              <Pressable
+                key={t.key}
+                accessibilityRole="button"
+                accessibilityLabel={t.label}
+                accessibilityState={{ selected: on }}
+                onPress={() => setActive(t.key)}
+                style={[styles.segBtn, on && { backgroundColor: color }]}
+              >
+                <AppText
+                  variant="small"
+                  color={on ? '#FFFFFF' : colors.ink}
+                  style={{ fontWeight: '700' }}
+                >
+                  {t.emoji} {t.label}
+                </AppText>
+              </Pressable>
+            );
+          })}
+        </View>
       ) : null}
-
-      <View style={styles.actions}>
-        <View style={styles.flex}>
-          <Button
-            label="Üben"
-            onPress={() =>
-              router.push({
-                pathname: '/expressions/practice',
-                params: { expressionId: e.id, skipIntro: '1' },
-              })
-            }
-          />
-        </View>
-        <View style={styles.flex}>
-          <Button
-            label={e.bookmarked ? '★ Gemerkt' : '☆ Merken'}
-            variant="secondary"
-            loading={bookmark.isPending}
-            onPress={() => bookmark.mutate(e.bookmarked)}
-          />
-        </View>
-      </View>
-      {bookmark.error ? (
-        <AppText color={colors.destructive} accessibilityRole="alert">
-          {bookmark.error.message}
+      <View style={[styles.flip, { backgroundColor: tint(color, '14') }]}>
+        <AppText variant="caption" color={color} style={{ fontWeight: '800' }}>
+          {current.label.toUpperCase()}
         </AppText>
-      ) : null}
+        <Body big>{current.text}</Body>
+      </View>
+    </Section>
+  );
+}
 
-      {nav}
-
-      <Section title="Bedeutung">
-        <AppText>{e.meaningDe}</AppText>
-        {e.meaningEn ? <AppText color={colors.mutedForeground}>🇬🇧 {e.meaningEn}</AppText> : null}
-        {persian && e.meaningFa ? (
-          <AppText color={colors.mutedForeground} style={styles.rtl}>
-            🇮🇷 {e.meaningFa}
-          </AppText>
-        ) : null}
-      </Section>
-
-      {e.type === 'REDEWENDUNG' && (e.literalMeaning || e.figurativeMeaning) ? (
-        <Section title="Wörtlich und übertragen">
-          {e.literalMeaning ? (
-            <AppText>
-              <AppText style={styles.bold}>Wörtlich: </AppText>
-              {e.literalMeaning}
-            </AppText>
-          ) : null}
-          {e.figurativeMeaning ? (
-            <AppText>
-              <AppText style={styles.bold}>Übertragen: </AppText>
-              {e.figurativeMeaning}
-            </AppText>
-          ) : null}
-        </Section>
-      ) : null}
-
-      {e.patterns.length > 0 ? (
-        <Section title="Muster">
-          {e.patterns.map((p) => (
-            <View key={p.id} style={styles.pattern}>
-              <AppText style={styles.bold}>{p.pattern}</AppText>
-              <AppText variant="small" color={colors.mutedForeground}>
-                {[
-                  p.grammarCase && `Kasus: ${p.grammarCase}`,
-                  p.preposition && `Präposition: ${p.preposition}`,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </AppText>
-              {p.example ? <AppText style={{ fontStyle: 'italic' }}>„{p.example}“</AppText> : null}
-            </View>
-          ))}
-        </Section>
-      ) : null}
-
-      {e.examples.length > 0 ? (
-        <Section title="Beispiele">
-          {e.examples.map((x) => (
-            <View key={x.id} style={styles.example}>
-              <AppText>„{x.sentence}“</AppText>
-              {persian && x.translationFa ? (
-                <AppText variant="small" color={colors.mutedForeground} style={styles.rtl}>
-                  {x.translationFa}
-                </AppText>
-              ) : x.translationEn ? (
-                <AppText variant="small" color={colors.mutedForeground}>
-                  {x.translationEn}
-                </AppText>
-              ) : null}
-              <Badge label={CONTEXT_LABEL[x.context] ?? x.context} />
-            </View>
-          ))}
-        </Section>
-      ) : null}
-
-      {e.grammarNote ? (
-        <Section title="Grammatik">
-          <AppText>{e.grammarNote}</AppText>
-        </Section>
-      ) : null}
-      {e.usageNote ? (
-        <Section title="Verwendung">
-          <AppText>{e.usageNote}</AppText>
-        </Section>
-      ) : null}
-      {e.commonMistakes ? (
-        <Section title="Häufige Fehler">
-          <AppText>{e.commonMistakes}</AppText>
-        </Section>
-      ) : null}
-
-      {e.progress && e.progress.reviewCount > 0 ? (
-        <Section title="Dein Fortschritt">
-          <ProgressBar
-            value={Math.round(e.progress.overallScore * 100)}
-            label="Gesamtfortschritt"
-          />
-          <AppText variant="small" color={colors.mutedForeground}>
-            {e.progress.correctCount} richtig · {e.progress.incorrectCount} falsch ·{' '}
-            {e.progress.reviewCount}× geübt
-          </AppText>
-        </Section>
-      ) : null}
-
-      {nav}
-    </Screen>
+function StatPill({
+  icon,
+  color,
+  text,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  text: string;
+}) {
+  return (
+    <View style={styles.statPill}>
+      <Ionicons name={icon} size={16} color={color} />
+      <AppText variant="small" style={{ fontWeight: '600' }}>
+        {text}
+      </AppText>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  meta: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
+  root: { flex: 1, backgroundColor: colors.background },
+  scroll: { flexGrow: 1, paddingBottom: spacing.xxl },
+  block: { padding: spacing.lg, gap: spacing.lg },
+  heroMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+    flexWrap: 'wrap',
+  },
   actions: { flexDirection: 'row', gap: spacing.md },
   navRow: { flexDirection: 'row', gap: spacing.md },
   flex: { flex: 1 },
-  image: { width: '100%', height: 200, borderRadius: radius.md, backgroundColor: colors.muted },
+  image: { width: '100%', height: 200, borderRadius: radius.lg, backgroundColor: colors.muted },
+  section: {
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    ...shadow.card,
+  },
+  sectionHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  sectionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sizeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   bold: { fontWeight: '700' },
   rtl: { writingDirection: 'rtl', textAlign: 'right' },
-  pattern: { gap: 2, paddingBottom: spacing.sm },
-  example: { gap: spacing.xs, paddingBottom: spacing.sm },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  pattern: { gap: spacing.xs, paddingLeft: spacing.md, borderLeftWidth: 4 },
+  bubble: {
+    gap: spacing.xs,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderTopLeftRadius: 6,
+    backgroundColor: colors.accent,
+  },
+  segment: {
+    flexDirection: 'row',
+    padding: 4,
+    borderRadius: radius.pill,
+    backgroundColor: colors.secondary,
+  },
+  segBtn: {
+    flex: 1,
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.pill,
+  },
+  flip: { gap: spacing.xs, padding: spacing.lg, borderRadius: radius.lg },
+  mistakes: {
+    gap: spacing.sm,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.warningSoft,
+  },
+  stats: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  statPill: { flexDirection: 'row', alignItems: 'center', gap: 4 },
 });
