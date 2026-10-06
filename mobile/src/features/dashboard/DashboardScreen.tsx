@@ -21,7 +21,13 @@ export function DashboardScreen() {
 
   return (
     <HeroScreen
-      art={<HomeIllustration completed={data?.today.completed} total={data?.today.total} />}
+      art={
+        <HomeIllustration
+          completed={data?.today.completed}
+          total={data?.today.total}
+          streak={data?.currentStreak}
+        />
+      }
       title={
         data
           ? headline(data, new Date().getHours())

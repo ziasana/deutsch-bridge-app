@@ -47,9 +47,11 @@ function useHop() {
 export function HomeIllustration({
   completed = 0,
   total = 3,
+  streak = 0,
 }: {
   completed?: number;
   total?: number;
+  streak?: number;
 }) {
   const bob = useBob(1500);
   const [pop] = useState(() => new Animated.Value(1));
@@ -147,21 +149,31 @@ export function HomeIllustration({
             </G>
           ))}
         </Svg>
-        {/* streak flame */}
+        {/* streak flame with the real streak count; dimmed when there is no streak */}
         <Animated.View
-          style={[styles.flame, { transform: [{ scale: flame }] }]}
+          style={[
+            styles.flame,
+            { opacity: streak > 0 ? 1 : 0.5, transform: [{ scale: streak > 0 ? flame : 1 }] },
+          ]}
           pointerEvents="none"
         >
-          <Svg width={34} height={42} viewBox="0 0 34 42">
+          <Svg width={44} height={54} viewBox="0 0 34 42">
             <Path
               d="M17 2 C20 12 31 16 31 27 C31 36 24 41 17 41 C10 41 3 36 3 27 C3 20 8 17 10 11 C13 14 14 16 15 18 C17 14 17 8 17 2 Z"
-              fill="#F5762B"
+              fill={streak > 0 ? '#F5762B' : '#9AA3AE'}
             />
             <Path
               d="M17 20 C20 25 25 27 25 32 C25 36 21 38 17 38 C13 38 9 36 9 32 C9 27 14 25 17 20 Z"
-              fill="#FFC857"
+              fill={streak > 0 ? '#FFC857' : '#C9CED6'}
             />
           </Svg>
+          <AppText
+            style={styles.flameText}
+            color="#7A2E00"
+            accessibilityLabel={`Serie: ${streak} Tage`}
+          >
+            {streak}
+          </AppText>
         </Animated.View>
         {/* calendar page */}
         <Animated.View
@@ -295,7 +307,8 @@ export function LearnIllustration() {
 }
 
 const styles = StyleSheet.create({
-  flame: { position: 'absolute', left: 4, top: 8, width: 34, height: 42 },
+  flame: { position: 'absolute', left: 0, top: 4, width: 44, height: 54, alignItems: 'center' },
+  flameText: { position: 'absolute', bottom: 8, fontSize: 15, lineHeight: 18, fontWeight: '800' },
   calendar: {
     position: 'absolute',
     right: 0,
