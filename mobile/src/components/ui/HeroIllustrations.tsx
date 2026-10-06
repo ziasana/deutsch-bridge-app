@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
+import { AppText } from './AppText';
 import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 
 const W = 140;
@@ -99,7 +100,7 @@ export function HomeIllustration() {
   );
 }
 
-/** Learn: a stack of books with a glowing idea bulb. Tap to make the bulb pulse. */
+/** Learn: a student reading an open book, with letter tiles and an idea bulb. Tap to cheer. */
 export function LearnIllustration() {
   const bob = useBob(1700);
   const { v, hop } = useHop();
@@ -107,28 +108,91 @@ export function LearnIllustration() {
     bob.interpolate({ inputRange: [0, 1], outputRange: [0.55, 1] }),
     v.interpolate({ inputRange: [0, 1], outputRange: [0, 0.4] }),
   );
+  const tile = bob.interpolate({ inputRange: [0, 1], outputRange: [0, -6] });
+  const lift = v.interpolate({ inputRange: [0, 1], outputRange: [0, -10] });
   return (
     <View style={styles.box} accessible={false} importantForAccessibility="no-hide-descendants">
       <Pressable onPress={hop} style={styles.fill}>
-        <Svg width={W} height={H} viewBox="0 0 170 170">
+        <Svg width={W} height={H} viewBox="0 0 140 140">
+          {/* leaf-shaped backdrop */}
           <Path
-            d="M18 112 C8 66 44 24 90 26 C138 28 164 68 154 112 C146 148 100 164 60 156 C36 151 24 134 18 112 Z"
+            d="M12 112 C4 60 36 14 84 10 C118 8 136 30 130 66 C124 104 88 134 48 132 C28 131 16 124 12 112 Z"
             fill="#F2F4F5"
           />
-          <Stars />
-          {/* book stack */}
-          <Rect x="38" y="128" width="94" height="20" rx="4" fill="#2F6FDB" />
-          <Rect x="44" y="132" width="82" height="4" rx="2" fill="#BFD9FF" />
-          <Rect x="48" y="108" width="84" height="20" rx="4" fill="#2E8B57" />
-          <Rect x="54" y="112" width="72" height="4" rx="2" fill="#B6E4CB" />
-          <Rect x="42" y="88" width="80" height="20" rx="4" fill="#E8832E" />
-          <Rect x="48" y="92" width="68" height="4" rx="2" fill="#FBD3AE" />
-          {/* graduation cap on top */}
-          <Path d="M82 52 L120 66 L82 80 L44 66 Z" fill="#2B3A4A" />
-          <Path d="M62 74 L62 86 C72 92 92 92 102 86 L102 74 L82 81 Z" fill="#3C4F63" />
-          <Path d="M120 66 L120 84" stroke="#F5A524" strokeWidth="2.5" />
-          <Circle cx="120" cy="86" r="3.5" fill="#F5A524" />
+          <Circle cx="22" cy="36" r="2.5" fill="#FFFFFF" opacity="0.9" />
+          <Circle cx="128" cy="96" r="3" fill="#BFD9FF" />
+          {/* hair behind */}
+          <Ellipse cx="72" cy="58" rx="24" ry="27" fill="#6B3E2E" />
+          {/* torso */}
+          <Path d="M28 140 C30 104 50 90 72 90 C94 90 114 104 116 140 Z" fill="#E8832E" />
+          {/* neck + head */}
+          <Rect x="65" y="76" width="14" height="18" rx="6" fill="#F0B393" />
+          <Ellipse cx="72" cy="58" rx="19" ry="22" fill="#F0B393" />
+          {/* fringe */}
+          <Path
+            d="M53 56 C50 32 66 24 78 26 C94 28 98 44 92 58 C88 44 72 38 60 48 Z"
+            fill="#6B3E2E"
+          />
+          {/* face */}
+          <Circle cx="65" cy="60" r="2" fill="#2B3A4A" />
+          <Circle cx="80" cy="60" r="2" fill="#2B3A4A" />
+          <Path
+            d="M66 70 Q72 76 79 70"
+            stroke="#B5594A"
+            strokeWidth="2"
+            strokeLinecap="round"
+            fill="none"
+          />
+          <Ellipse cx="60" cy="67" rx="3.5" ry="2" fill="#F29C86" opacity="0.5" />
+          <Ellipse cx="85" cy="67" rx="3.5" ry="2" fill="#F29C86" opacity="0.5" />
+          {/* open book held in front */}
+          <Path d="M30 104 L70 98 L70 128 L30 134 Z" fill="#FFFFFF" />
+          <Path d="M114 104 L74 98 L74 128 L114 134 Z" fill="#F6F7F9" />
+          <Path d="M70 98 L74 98 L74 128 L70 128 Z" fill="#C9CED6" />
+          <Path
+            d="M38 110 L62 106 M38 116 L62 112 M38 122 L62 118 M82 106 L106 110 M82 112 L106 116"
+            stroke="#C9CED6"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <Path d="M28 103 L28 134" stroke="#2F6FDB" strokeWidth="3" strokeLinecap="round" />
+          <Path d="M116 103 L116 134" stroke="#2F6FDB" strokeWidth="3" strokeLinecap="round" />
+          {/* pencil behind ear */}
+          <Path d="M88 48 L100 40" stroke="#F5A524" strokeWidth="3" strokeLinecap="round" />
         </Svg>
+        {/* floating letter tiles */}
+        <Animated.View
+          style={[
+            styles.tile,
+            {
+              left: 0,
+              top: 22,
+              backgroundColor: '#2E8B57',
+              transform: [{ translateY: tile }, { rotate: '-10deg' }],
+            },
+          ]}
+          pointerEvents="none"
+        >
+          <AppText style={styles.tileText} color="#FFFFFF">
+            A
+          </AppText>
+        </Animated.View>
+        <Animated.View
+          style={[
+            styles.tile,
+            {
+              left: 6,
+              top: 62,
+              backgroundColor: '#E5654F',
+              transform: [{ translateY: lift }, { rotate: '8deg' }],
+            },
+          ]}
+          pointerEvents="none"
+        >
+          <AppText style={styles.tileText} color="#FFFFFF">
+            ä
+          </AppText>
+        </Animated.View>
         {/* idea bulb */}
         <Animated.View
           style={[styles.bulb, { opacity: glow, transform: [{ scale: glow }] }]}
@@ -150,6 +214,15 @@ export function LearnIllustration() {
 }
 
 const styles = StyleSheet.create({
+  tile: {
+    position: 'absolute',
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tileText: { fontSize: 16, lineHeight: 20, fontWeight: '800' },
   box: { width: W, height: H },
   fill: { position: 'absolute', left: 0, top: 0, width: W, height: H },
   bulb: { position: 'absolute', right: 2, top: 0, width: 36, height: 43 },
