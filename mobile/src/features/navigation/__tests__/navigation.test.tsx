@@ -39,6 +39,20 @@ describe('app navigation', () => {
     (authApi.getProfile as jest.Mock).mockResolvedValue(profile);
     (dashboardApi.get as jest.Mock).mockResolvedValue(baseDashboard);
     const none = { learned: 0, total: 10 };
+    (progressApi.stats as jest.Mock).mockResolvedValue({
+      milestones: { wordsMastered: 0, thresholds: [10], reached: [false], nextThreshold: 10 },
+      vocabulary: { newCount: 0, learning: 0, familiar: 0, mastered: 0, total: 0 },
+      expressions: { newCount: 0, learning: 0, familiar: 0, mastered: 0, total: 0, active: 0 },
+      grammar: {
+        lessonsLearned: 0,
+        lessonsTotal: 0,
+        categoriesPassed: 0,
+        categoriesAttempted: 0,
+        categoriesTotal: 0,
+      },
+      reading: { learned: 0, total: 0 },
+      examPerformance: { averageScore: null, attemptsCompleted: 0 },
+    });
     (progressApi.overview as jest.Mock).mockResolvedValue({
       dailyGoalWords: 5,
       itemsLearnedToday: 2,
@@ -105,9 +119,9 @@ describe('app navigation', () => {
 
     await fireEvent.press(screen.getByRole('button', { name: /Profile/ }));
     expect(await screen.findByText('ali@example.com')).toBeTruthy();
-    expect(screen.getByText('Niveau: B1')).toBeTruthy();
-    expect(await screen.findByText('3 ungelesen')).toBeTruthy(); // unread badge on the Notifications row
-    expect(screen.getByText('Erklärsprache: Persian')).toBeTruthy();
+    expect(screen.getByText('Niveau B1')).toBeTruthy();
+    expect(await screen.findByText('3 neu')).toBeTruthy(); // unread badge on the Notifications row
+    expect(screen.getByText('PR')).toBeTruthy(); // explanation-language stat
 
     // Logout asks for confirmation, then the guard returns to the welcome page.
     const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {

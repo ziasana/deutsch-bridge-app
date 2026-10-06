@@ -63,12 +63,8 @@ function HeroArt() {
   );
 }
 
-/**
- * Content-page layout: blue greeting hero on top, white rounded sheet below with a drag-handle
- * accent. Used by the Learn tab; shares its look with the welcome and onboarding screens.
- */
-export function HeroScreen({ title, subtitle, sheetTitle, refreshControl, children }: Props) {
-  // The tab screens stay mounted, so the light status bar must only apply while this one is visible.
+/** Light status bar for a blue header — only while the (always mounted) tab screen is focused. */
+export function FocusedLightStatusBar() {
   const [focused, setFocused] = useState(false);
   useFocusEffect(
     useCallback(() => {
@@ -76,10 +72,17 @@ export function HeroScreen({ title, subtitle, sheetTitle, refreshControl, childr
       return () => setFocused(false);
     }, []),
   );
+  return focused ? <StatusBar style="light" /> : null;
+}
 
+/**
+ * Content-page layout: blue greeting hero on top, white rounded sheet below with a drag-handle
+ * accent. Used by the Learn tab; shares its look with the welcome and onboarding screens.
+ */
+export function HeroScreen({ title, subtitle, sheetTitle, refreshControl, children }: Props) {
   return (
     <View style={styles.root}>
-      {focused ? <StatusBar style="light" /> : null}
+      <FocusedLightStatusBar />
       <View style={styles.backdrop} />
       <ScrollView
         refreshControl={refreshControl}
