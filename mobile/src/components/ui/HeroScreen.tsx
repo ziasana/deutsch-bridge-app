@@ -64,7 +64,7 @@ function HeroArt() {
 }
 
 /** Light status bar for a blue header — only while the (always mounted) tab screen is focused. */
-export function FocusedLightStatusBar() {
+export function FocusedLightStatusBar({ dark }: { dark?: boolean } = {}) {
   const [focused, setFocused] = useState(false);
   useFocusEffect(
     useCallback(() => {
@@ -72,7 +72,7 @@ export function FocusedLightStatusBar() {
       return () => setFocused(false);
     }, []),
   );
-  return focused ? <StatusBar style="light" /> : null;
+  return focused ? <StatusBar style={dark ? 'dark' : 'light'} /> : null;
 }
 
 /**

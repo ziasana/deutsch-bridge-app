@@ -22,13 +22,14 @@ import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
  */
 export type WaveVariant = 'rise' | 'fall' | 'arc';
 
-/** Blue header whose lower edge is carved by an oversized white disc. */
+/** Blue header whose lower edge is carved by an oversized white disc. Clipped to its own height. */
 export function WaveBackdrop({ variant }: { variant: WaveVariant }) {
   const { width: w } = useWindowDimensions();
   if (variant === 'arc') {
     const h = w * 0.33;
     return (
       <View
+        pointerEvents="none"
         style={{
           position: 'absolute',
           left: -w * 0.25,
@@ -47,17 +48,18 @@ export function WaveBackdrop({ variant }: { variant: WaveVariant }) {
       ? { size: w * 4.39, left: -w * 1.08, top: w * 0.224, blue: w * 0.6 }
       : { size: w * 2.368, left: -w * 1.184, top: w * 0.35, blue: w * 0.95 };
   return (
-    <>
-      <View
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: disc.blue,
-          backgroundColor: colors.brand,
-        }}
-      />
+    <View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: disc.blue,
+        overflow: 'hidden',
+        backgroundColor: colors.brand,
+      }}
+    >
       <View
         style={{
           position: 'absolute',
@@ -69,7 +71,7 @@ export function WaveBackdrop({ variant }: { variant: WaveVariant }) {
           backgroundColor: '#FFFFFF',
         }}
       />
-    </>
+    </View>
   );
 }
 

@@ -1,7 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
-import type { ComponentProps } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useState, type ComponentProps } from 'react';
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText, FocusedLightStatusBar, WaveBackdrop } from '@/components/ui';
 import { totals, buildAchievements } from '@/features/achievements/model';
@@ -34,7 +43,14 @@ function MenuRow({ row, onPress }: { row: Row; onPress: () => void }) {
       <View style={[styles.rowIcon, { backgroundColor: row.color }]}>
         <Ionicons name={row.icon} size={22} color="#FFFFFF" />
       </View>
-      <AppText style={styles.rowTitle}>{row.title}</AppText>
+      <AppText
+        style={styles.rowTitle}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.8}
+      >
+        {row.title}
+      </AppText>
       {row.badge ? (
         <View style={[styles.badge, { backgroundColor: row.badge.color }]}>
           <AppText variant="caption" color="#FFFFFF" style={styles.badgeText}>
@@ -61,6 +77,13 @@ function Stat({ value, label }: { value: string; label: string }) {
 /** Profile tab: wavy blue header with the learner card, quick stats, and the account menu. */
 export function ProfileScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  // Status-bar icons are light on the blue header and must turn dark once it has scrolled away.
+  const [headerGone, setHeaderGone] = useState(false);
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const gone = e.nativeEvent.contentOffset.y > width * 0.25;
+    setHeaderGone((prev) => (prev === gone ? prev : gone));
+  };
   const profile = useAuthStore((s) => s.profile);
   const signOut = useAuthStore((s) => s.signOut);
   const unread = useUnreadCount().data ?? 0;
@@ -115,9 +138,15 @@ export function ProfileScreen() {
 
   return (
     <View style={styles.root}>
-      <FocusedLightStatusBar />
-      <WaveBackdrop variant="rise" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <FocusedLightStatusBar dark={headerGone} />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}
+        onScroll={onScroll}
+        scrollEventThrottle={32}
+      >
+        {/* Inside the scroll content, so the blue header scrolls away with it. */}
+        <WaveBackdrop variant="rise" />
         <SafeAreaView edges={['top']}>
           <View style={styles.topBar}>
             <View style={styles.topSide} />
