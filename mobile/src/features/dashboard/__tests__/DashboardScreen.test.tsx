@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { dashboardApi } from '@/api/dashboardApi';
 import { examTimeApi } from '@/api/examTimeApi';
 import { grammarApi } from '@/api/grammarApi';
+import { redemittelApi } from '@/api/redemittelApi';
 import { useAuthStore } from '@/stores/authStore';
 import type { UserProfile } from '@/types/user';
 import { ApiError } from '@/api/errors';
@@ -12,6 +13,7 @@ import { baseDashboard, withOverrides } from '../testing/fixtures';
 jest.mock('@/api/dashboardApi');
 jest.mock('@/api/grammarApi');
 jest.mock('@/api/examTimeApi');
+jest.mock('@/api/redemittelApi');
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
@@ -36,6 +38,15 @@ describe('DashboardScreen', () => {
   beforeEach(() => {
     get.mockReset();
     mockPush.mockReset();
+    (redemittelApi.hub as jest.Mock).mockReset().mockResolvedValue({
+      dueCount: 0,
+      newToday: 0,
+      dailyTarget: 3,
+      learnedToday: 0,
+      savedCount: 0,
+      summary: { learned: 0, mastered: 0, review: 0, learning: 0, fresh: 0 },
+      categories: [],
+    });
     (grammarApi.pendingBookmarks as jest.Mock).mockReset().mockResolvedValue([]);
     (examTimeApi.weekSummary as jest.Mock)
       .mockReset()

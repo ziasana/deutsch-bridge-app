@@ -16,6 +16,7 @@ import {
   ExamInsightCard,
   NewContentBanner,
   QuickAccess,
+  RedemittelHomeCard,
   SavedLessonsBanner,
   StatsRow,
 } from './components/HomeExtras';
@@ -84,6 +85,9 @@ export function DashboardScreen() {
           </Reveal>
           <Reveal index={4}>
             <ReviewCard data={data} />
+          </Reveal>
+          <Reveal index={4}>
+            <RedemittelHomeCard />
           </Reveal>
           <Reveal index={4}>
             <FocusCard data={data} />

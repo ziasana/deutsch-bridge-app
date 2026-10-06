@@ -15,7 +15,7 @@ import { FocusedLightStatusBar } from './HeroScreen';
 import { useHeaderScroll } from './useHeaderScroll';
 import { colors, radius, spacing } from '@/theme';
 
-const SKY = '#58A6F5';
+const SKY = colors.brand; // same blue as the Home, Learn and Profile headers
 
 type Props = {
   title: string;

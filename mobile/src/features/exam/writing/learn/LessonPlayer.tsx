@@ -3,8 +3,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText, Button, ProgressBar } from '@/components/ui';
+import { AppTextScale } from '@/components/ui/AppText';
 import { colors, radius, spacing } from '@/theme';
-import { ExerciseFrame, IconButton, tint } from '../../components/kit';
+import { ExerciseFrame, IconButton, TextSizeControl, tint } from '../../components/kit';
+import { useExamTextScale } from '../../textScale';
 import { LEARN_SECTIONS, type LearnSectionId } from '../writingMeta';
 import type { LessonStep, Station, StationResult } from './types';
 import { Pop, WRITING_COLOR } from './ui';
@@ -17,7 +19,15 @@ function milestone(index: number, total: number): string | null {
 }
 
 /** Keeps the "already solved" flag as it was when the step opened, so a step does not flip mid-interaction. */
-function StepHost({ step, solved, onComplete }: { step: LessonStep; solved: boolean; onComplete: (correct?: boolean) => void }) {
+function StepHost({
+  step,
+  solved,
+  onComplete,
+}: {
+  step: LessonStep;
+  solved: boolean;
+  onComplete: (correct?: boolean) => void;
+}) {
   const [initiallySolved] = useState(solved);
   return <>{step.render({ solved: initiallySolved, complete: onComplete })}</>;
 }
@@ -45,6 +55,7 @@ function LessonShell({
   const [banner, setBanner] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const textScale = useExamTextScale();
   const step = steps[index];
   const isLast = index === steps.length - 1;
   const canContinue = !step.gated || !!done[step.id];
@@ -89,7 +100,12 @@ function LessonShell({
         <View style={styles.bar}>
           <IconButton name="close" label="Lektion verlassen" onPress={onExit} />
           <View style={{ flex: 1 }}>
-            <ProgressBar value={value} max={steps.length} color={WRITING_COLOR} label={`Schritt ${index + 1} von ${steps.length}`} />
+            <ProgressBar
+              value={value}
+              max={steps.length}
+              color={WRITING_COLOR}
+              label={`Schritt ${index + 1} von ${steps.length}`}
+            />
           </View>
           <AppText variant="small" color={colors.mutedForeground} style={styles.count}>
             {index + 1}/{steps.length}
@@ -99,20 +115,32 @@ function LessonShell({
       <ExerciseFrame
         scrollTopKey={step.id}
         header={
-          <View style={styles.bannerSlot}>
-            {banner ? (
-              <Pop>
-                <View style={[styles.banner, { backgroundColor: WRITING_COLOR }]}>
-                  <AppText variant="small" color="#FFFFFF" style={{ fontWeight: '800' }} accessibilityRole="alert">
-                    {banner}
-                  </AppText>
-                </View>
-              </Pop>
-            ) : (
-              <AppText variant="caption" color={colors.mutedForeground} style={{ fontWeight: '600' }}>
-                {emoji}  {title}
-              </AppText>
-            )}
+          <View style={styles.headerRow}>
+            <View style={styles.bannerSlot}>
+              {banner ? (
+                <Pop>
+                  <View style={[styles.banner, { backgroundColor: WRITING_COLOR }]}>
+                    <AppText
+                      variant="small"
+                      color="#FFFFFF"
+                      style={{ fontWeight: '800' }}
+                      accessibilityRole="alert"
+                    >
+                      {banner}
+                    </AppText>
+                  </View>
+                </Pop>
+              ) : (
+                <AppText
+                  variant="caption"
+                  color={colors.mutedForeground}
+                  style={{ fontWeight: '600' }}
+                >
+                  {emoji} {title}
+                </AppText>
+              )}
+            </View>
+            <TextSizeControl />
           </View>
         }
         footer={
@@ -125,7 +153,12 @@ function LessonShell({
                 onPress={() => setIndex((i) => Math.max(0, i - 1))}
               />
               <View style={{ flex: 1 }}>
-                <Button pill label={isLast ? 'Abschließen' : 'Weiter'} disabled={!canContinue} onPress={next} />
+                <Button
+                  pill
+                  label={isLast ? 'Abschließen' : 'Weiter'}
+                  disabled={!canContinue}
+                  onPress={next}
+                />
               </View>
             </View>
             {!canContinue ? (
@@ -136,9 +169,11 @@ function LessonShell({
           </>
         }
       >
-        <View key={step.id}>
-          <StepHost step={step} solved={!!done[step.id]} onComplete={complete(step.id)} />
-        </View>
+        <AppTextScale.Provider value={textScale}>
+          <View key={step.id}>
+            <StepHost step={step} solved={!!done[step.id]} onComplete={complete(step.id)} />
+          </View>
+        </AppTextScale.Provider>
       </ExerciseFrame>
     </View>
   );
@@ -164,12 +199,21 @@ function Celebration({
 }) {
   const ratio = total === 0 ? 1 : correct / total;
   const stars = ratio >= 0.8 ? 3 : ratio >= 0.5 ? 2 : 1;
-  const message = stars === 3 ? 'Ausgezeichnet!' : stars === 2 ? 'Gut gemacht!' : 'Geschafft – Übung macht den Meister!';
+  const message =
+    stars === 3
+      ? 'Ausgezeichnet!'
+      : stars === 2
+        ? 'Gut gemacht!'
+        : 'Geschafft – Übung macht den Meister!';
   return (
     <ExerciseFrame
       footer={
         <>
-          <Button pill label={nextLabel ? `Weiter: ${nextLabel}` : 'Jetzt Schreibaufgaben üben'} onPress={onNext} />
+          <Button
+            pill
+            label={nextLabel ? `Weiter: ${nextLabel}` : 'Jetzt Schreibaufgaben üben'}
+            onPress={onNext}
+          />
           <View style={styles.nav}>
             <View style={{ flex: 1 }}>
               <Button label="Noch einmal" variant="secondary" onPress={onRepeat} />
@@ -182,7 +226,11 @@ function Celebration({
       }
     >
       <View style={[styles.celebrate, { backgroundColor: tint(WRITING_COLOR, '14') }]}>
-        <View style={styles.stars} accessibilityRole="image" accessibilityLabel={`${stars} von 3 Sternen`}>
+        <View
+          style={styles.stars}
+          accessibilityRole="image"
+          accessibilityLabel={`${stars} von 3 Sternen`}
+        >
           {[1, 2, 3].map((n) => (
             <Pop key={n}>
               <Ionicons name="star" size={52} color={n <= stars ? '#F5B50A' : colors.border} />
@@ -267,12 +315,34 @@ export function LessonPlayer({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  bar: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.sm },
+  bar: {
+    minHeight: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.sm,
+  },
   count: { width: 44, textAlign: 'right', fontVariant: ['tabular-nums'], paddingRight: spacing.sm },
-  bannerSlot: { minHeight: 28, alignItems: 'center', justifyContent: 'center' },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  bannerSlot: { flex: 1, minHeight: 28, justifyContent: 'center' },
   banner: { paddingHorizontal: spacing.lg, paddingVertical: 4, borderRadius: radius.pill },
   nav: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  celebrate: { alignItems: 'center', gap: spacing.md, padding: spacing.xl, borderRadius: radius.lg },
+  celebrate: {
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.xl,
+    borderRadius: radius.lg,
+  },
   stars: { flexDirection: 'row', gap: spacing.xs },
-  score: { paddingHorizontal: spacing.lg, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: colors.surface },
+  score: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+  },
 });

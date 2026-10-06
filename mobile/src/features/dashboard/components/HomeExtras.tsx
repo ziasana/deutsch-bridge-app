@@ -6,6 +6,8 @@ import { PressableScale, tint } from '@/features/exam/components/kit';
 import { colors, radius, shadow, spacing } from '@/theme';
 import type { DashboardResponse } from '@/types/dashboard';
 import { useAuthStore } from '@/stores/authStore';
+import { useRedemittelHub, useTodayPreview } from '@/features/redemittel/hooks';
+import { REDEMITTEL_COLOR } from '@/features/redemittel/meta';
 import { useExamWeekSummary, usePendingBookmarkCount } from '../hooks';
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
@@ -189,6 +191,74 @@ export function StatsRow({ data }: { data: DashboardResponse }) {
   );
 }
 
+/**
+ * Redemittel tile: what is due and what is new, with a few new phrases visible. It renders nothing
+ * when there is nothing to do, so it never competes with a more urgent learning activity.
+ */
+export function RedemittelHomeCard() {
+  const router = useRouter();
+  const hub = useRedemittelHub().data;
+  const today = useTodayPreview(!!hub && hub.newToday > 0).data;
+  if (!hub || (hub.dueCount === 0 && hub.newToday === 0)) return null;
+  const due = hub.dueCount > 0;
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={`Redemittel: ${due ? 'Jetzt üben' : 'Jetzt lernen'}`}
+      onPress={() => router.push(due ? '/redemittel/review' : '/redemittel/learn')}
+      style={[
+        styles.redemittel,
+        {
+          backgroundColor: tint(REDEMITTEL_COLOR, '14'),
+          borderColor: tint(REDEMITTEL_COLOR, '33'),
+        },
+      ]}
+    >
+      <View style={styles.redemittelHead}>
+        <View style={[styles.examIcon, { backgroundColor: tint(REDEMITTEL_COLOR, '33') }]}>
+          <AppText style={{ fontSize: 24, lineHeight: 30 }}>🗣️</AppText>
+        </View>
+        <View style={{ flex: 1, gap: 2 }}>
+          <AppText style={{ fontSize: 20, lineHeight: 26, fontWeight: '700' }} color={colors.ink}>
+            Redemittel
+          </AppText>
+          {hub.dueCount > 0 ? (
+            <AppText variant="small" color={colors.ink}>
+              {hub.dueCount} zur Wiederholung
+            </AppText>
+          ) : null}
+          {hub.newToday > 0 ? (
+            <AppText variant="small" color={colors.ink}>
+              {hub.newToday} neue
+            </AppText>
+          ) : null}
+        </View>
+        <View style={styles.redemittelCta}>
+          <AppText variant="small" color="#FFFFFF" style={{ fontWeight: '800' }}>
+            {due ? 'Jetzt üben' : 'Jetzt lernen'}
+          </AppText>
+        </View>
+      </View>
+      {today && today.length > 0 ? (
+        <View style={styles.redemittelChips}>
+          {today.slice(0, 3).map((r) => (
+            <View key={r.id} style={styles.redemittelChip}>
+              <AppText
+                variant="caption"
+                style={{ fontWeight: '700' }}
+                color={colors.ink}
+                numberOfLines={1}
+              >
+                {r.phrase}
+              </AppText>
+            </View>
+          ))}
+        </View>
+      ) : null}
+    </PressableScale>
+  );
+}
+
 /** TELC learners: how many timed exam exercises they finished this week, linking to the time analysis. */
 export function ExamInsightCard() {
   const router = useRouter();
@@ -275,6 +345,22 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: '#FFFFFF',
     ...shadow.card,
+  },
+  redemittel: { gap: spacing.md, padding: spacing.lg, borderRadius: 28, borderWidth: 1.5 },
+  redemittelHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  redemittelCta: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    backgroundColor: REDEMITTEL_COLOR,
+  },
+  redemittelChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  redemittelChip: {
+    maxWidth: '100%',
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    backgroundColor: '#FFFFFFCC',
   },
   examIcon: {
     width: 52,

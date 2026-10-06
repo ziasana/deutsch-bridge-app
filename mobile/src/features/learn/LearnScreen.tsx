@@ -5,6 +5,8 @@ import { AppText, Button, HeroScreen, ProgressRing } from '@/components/ui';
 import { PressableScale, tint } from '@/features/exam/components/kit';
 import { LearnIllustration } from '@/components/ui/HeroIllustrations';
 import { useDashboard } from '@/features/dashboard/hooks';
+import { useRedemittelHub } from '@/features/redemittel/hooks';
+import { REDEMITTEL_COLOR } from '@/features/redemittel/meta';
 import { useProgressOverview } from '@/features/progress/hooks';
 import { useAuthStore } from '@/stores/authStore';
 import { colors, spacing } from '@/theme';
@@ -107,6 +109,44 @@ function Topic({ card, onPress }: { card: TopicCard; onPress: () => void }) {
   );
 }
 
+/** Redemittel entry: coral banner with what is due and new, so the learner sees it without hunting for it. */
+function RedemittelBanner({ onPress }: { onPress: () => void }) {
+  const hub = useRedemittelHub().data;
+  const detail = hub
+    ? [
+        hub.dueCount > 0 ? `${hub.dueCount} zur Wiederholung` : null,
+        hub.newToday > 0 ? `${hub.newToday} neue` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ') || 'Ausdrücke für Schreiben & Sprechen'
+    : 'Ausdrücke für Schreiben & Sprechen';
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={`Redemittel, ${detail}`}
+      onPress={onPress}
+      style={[
+        styles.redemittel,
+        {
+          backgroundColor: tint(REDEMITTEL_COLOR, '14'),
+          borderColor: tint(REDEMITTEL_COLOR, '33'),
+        },
+      ]}
+    >
+      <View style={[styles.redemittelIcon, { backgroundColor: tint(REDEMITTEL_COLOR, '33') }]}>
+        <AppText style={{ fontSize: 28, lineHeight: 34 }}>🗣️</AppText>
+      </View>
+      <View style={{ flex: 1, gap: 2 }}>
+        <AppText style={styles.topicTitle}>Redemittel</AppText>
+        <AppText variant="small" color={colors.mutedForeground}>
+          {detail}
+        </AppText>
+      </View>
+      <Ionicons name="arrow-forward-circle" size={26} color={REDEMITTEL_COLOR} />
+    </PressableScale>
+  );
+}
+
 /** Learn tab: greeting hero, today's highlights, and every learning area with its progress. */
 export function LearnScreen() {
   const router = useRouter();
@@ -145,6 +185,7 @@ export function LearnScreen() {
           <Topic key={c.key} card={c} onPress={() => router.push(c.href)} />
         ))}
       </View>
+      <RedemittelBanner onPress={() => router.push('/learn/redemittel')} />
       {overview.isError ? (
         <View style={styles.error}>
           <AppText variant="small" color={colors.mutedForeground} center>
@@ -210,5 +251,20 @@ const styles = StyleSheet.create({
   emoji: { fontSize: 28, lineHeight: 34 },
   topicTitle: { fontSize: 18, lineHeight: 24, fontWeight: '800', color: colors.ink },
   topicFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  redemittel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: 24,
+    borderWidth: 1.5,
+  },
+  redemittelIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   error: { gap: spacing.xs },
 });

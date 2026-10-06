@@ -38,6 +38,13 @@ export const LEARN_DESTINATIONS: Destination[] = [
     href: '/learn/expressions',
   },
   {
+    key: 'redemittel',
+    emoji: '🗣️',
+    title: 'Redemittel',
+    subtitle: 'Ausdrücke für Schreiben & Sprechen',
+    href: '/learn/redemittel',
+  },
+  {
     key: 'reading',
     emoji: '📖',
     title: 'Reading',

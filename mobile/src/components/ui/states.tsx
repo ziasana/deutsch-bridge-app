@@ -2,6 +2,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { AppText } from './AppText';
 import { Button } from './Button';
 import { ApiError, fallbackMessage, isRetryable } from '@/api/errors';
+import { NoConnectionIllustration, NotFoundIllustration } from './StateIllustrations';
 import { colors, spacing } from '@/theme';
 
 export function LoadingState({ label = 'Lädt …' }: { label?: string }) {
@@ -31,9 +32,14 @@ type EmptyProps = {
 export function EmptyState({ emoji = '🎉', title, message, actionLabel, onAction }: EmptyProps) {
   return (
     <View style={styles.center}>
-      <AppText style={styles.emoji} accessibilityElementsHidden>
-        {emoji}
-      </AppText>
+      {/* A search that found nothing gets the "not found" picture instead of an emoji. */}
+      {emoji === '🔍' ? (
+        <NotFoundIllustration width={230} />
+      ) : (
+        <AppText style={styles.emoji} accessibilityElementsHidden>
+          {emoji}
+        </AppText>
+      )}
       <AppText variant="heading" center>
         {title}
       </AppText>
@@ -42,27 +48,47 @@ export function EmptyState({ emoji = '🎉', title, message, actionLabel, onActi
           {message}
         </AppText>
       ) : null}
-      {actionLabel && onAction ? <Button label={actionLabel} onPress={onAction} /> : null}
+      {actionLabel && onAction ? <Button pill label={actionLabel} onPress={onAction} /> : null}
     </View>
   );
 }
 
 type ErrorProps = { error?: unknown; onRetry?: () => void };
 
-/** Consistent error UI: friendly message from the normalized ApiError, retry when it can help. */
+/**
+ * Consistent error UI: friendly message from the normalized ApiError, retry when it can help.
+ * No connection and "not found" get their own illustrated pages.
+ */
 export function ErrorState({ error, onRetry }: ErrorProps) {
   const message = error instanceof ApiError ? error.message : fallbackMessage('unknown');
+  const kind = error instanceof ApiError ? error.kind : null;
+  const canRetry = !!onRetry && (error === undefined || isRetryable(error));
+
+  if (kind === 'network' || kind === 'notFound') {
+    const offline = kind === 'network';
+    return (
+      <View style={styles.page} accessibilityRole="alert">
+        {offline ? <NoConnectionIllustration /> : <NotFoundIllustration />}
+        <AppText style={styles.pageTitle} center accessibilityRole="header">
+          {offline ? 'Nicht verbunden' : 'Nicht gefunden'}
+        </AppText>
+        <AppText color={colors.ink} center style={styles.pageText}>
+          {message}
+        </AppText>
+        {canRetry ? <Button pill label="Erneut versuchen" onPress={onRetry} /> : null}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.center} accessibilityRole="alert">
       <AppText style={styles.emoji} accessibilityElementsHidden>
-        {error instanceof ApiError && error.kind === 'network' ? '📡' : '⚠️'}
+        ⚠️
       </AppText>
       <AppText color={colors.mutedForeground} center>
         {message}
       </AppText>
-      {onRetry && (error === undefined || isRetryable(error)) ? (
-        <Button label="Erneut versuchen" onPress={onRetry} variant="secondary" />
-      ) : null}
+      {canRetry ? <Button label="Erneut versuchen" onPress={onRetry} variant="secondary" /> : null}
     </View>
   );
 }
@@ -70,4 +96,18 @@ export function ErrorState({ error, onRetry }: ErrorProps) {
 const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
   emoji: { fontSize: 40, lineHeight: 48 },
+  page: {
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.xl,
+  },
+  pageTitle: {
+    fontSize: 26,
+    lineHeight: 32,
+    fontWeight: '800',
+    color: '#000000',
+    marginTop: spacing.md,
+  },
+  pageText: { fontSize: 16, lineHeight: 24, marginBottom: spacing.md },
 });
