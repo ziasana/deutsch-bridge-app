@@ -2,6 +2,7 @@ package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.exception.FeatureLimitExceededException;
+import com.deutschbridge.backend.model.dto.AiUsageResponse;
 import com.deutschbridge.backend.model.entity.FeatureLimit;
 import com.deutschbridge.backend.model.entity.FeatureUsage;
 import com.deutschbridge.backend.model.entity.User;
@@ -12,6 +13,8 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.EnumMap;
+import java.util.Map;
 
 /**
  * Single place that decides whether a user may use a gated AI feature right now, and records the
@@ -77,6 +80,24 @@ public class EntitlementService {
 
         usage.setCount(usage.getCount() + 1);
         featureUsageRepository.save(usage);
+    }
+
+    /** Read-only view of {@link #consume}'s decision: today's limit and remaining uses per feature. */
+    public AiUsageResponse usageFor(String userId) {
+        Map<FeatureType, AiUsageResponse.FeatureUsageDto> features = new EnumMap<>(FeatureType.class);
+        if (!appSettingService.isPremiumEnabled()) {
+            return new AiUsageResponse(false, features);
+        }
+        AccountType accountType = resolveEffectiveAccountType(userId);
+        LocalDate today = LocalDate.now();
+        for (FeatureType type : FeatureType.values()) {
+            FeatureLimit limit = featureLimitService.get(type, accountType);
+            int used = featureUsageRepository.findByUserIdAndFeatureTypeAndUsageDate(userId, type, today)
+                    .map(FeatureUsage::getCount).orElse(0);
+            features.put(type, new AiUsageResponse.FeatureUsageDto(
+                    limit.getDailyLimit(), used, Math.max(0, limit.getDailyLimit() - used), limit.isEnabled()));
+        }
+        return new AiUsageResponse(true, features);
     }
 
     /** The account type whose limit applies to this user, once Premium is enabled. */

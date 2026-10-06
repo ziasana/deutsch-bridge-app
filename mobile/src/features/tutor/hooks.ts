@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 import { chatApi, chatVocabularyApi } from '@/api/chatApi';
 import { ApiError, toApiError } from '@/api/errors';
+import { useRefreshAiUsage } from '@/features/aiUsage/hooks';
 import type { ChatMessage, ChatSession } from '@/types/chat';
 
 export const SESSIONS_KEY = ['tutor', 'sessions'] as const;
@@ -18,6 +19,7 @@ const nextId = (suffix: string) => `local-${++localId}-${suffix}`;
  */
 export function useTutorChat() {
   const queryClient = useQueryClient();
+  const refreshAiUsage = useRefreshAiUsage();
   const [sessionId, setSessionId] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [thinking, setThinking] = useState(false);
@@ -88,10 +90,11 @@ export function useTutorChat() {
       } catch (e) {
         if (epoch.current === mine) setError({ error: toApiError(e), question: text });
       } finally {
+        refreshAiUsage(); // the server counted this request (or refused it) either way
         if (epoch.current === mine) setThinking(false);
       }
     },
-    [queryClient, sessionId, thinking],
+    [queryClient, refreshAiUsage, sessionId, thinking],
   );
 
   const rename = useMutation({

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { writingApi } from '@/api/writingApi';
+import { useRefreshAiUsage } from '@/features/aiUsage/hooks';
 import type { WritingAttempt, WritingAttemptRequest } from '@/types/writing';
 
 export const writingKeys = {
@@ -36,8 +37,10 @@ export function useSubmitWriting(exerciseId: string) {
 
 export function useRequestAiFeedback(exerciseId: string) {
   const queryClient = useQueryClient();
+  const refreshAiUsage = useRefreshAiUsage();
   return useMutation({
     mutationFn: (attemptId: string) => writingApi.aiFeedback(attemptId),
+    onSettled: refreshAiUsage,
     onSuccess: (updated) =>
       queryClient.setQueryData<WritingAttempt[]>(writingKeys.attempts(exerciseId), (old = []) =>
         old.map((a) => (a.id === updated.id ? updated : a)),
