@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { View } from 'react-native';
-import { AppText, Button, Card, Header, Screen, TextField } from '@/components/ui';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { AppText, Button, TextField, WavePage } from '@/components/ui';
 import { useAuthStore } from '@/stores/authStore';
 import { colors, spacing } from '@/theme';
 import { passwordStrength, strengthHint } from '@/features/auth/passwordStrength';
@@ -20,7 +21,8 @@ export function passwordProblem(current: string, next: string, confirm: string):
   return null;
 }
 
-function PhotoSection() {
+/** Centred avatar on the wave, with a pencil badge that opens the photo picker. */
+function Identity() {
   const profile = useAuthStore((s) => s.profile);
   const upload = useUploadAvatar();
   const [pickError, setPickError] = useState<string | null>(null);
@@ -36,29 +38,35 @@ function PhotoSection() {
   };
 
   return (
-    <Card style={{ gap: spacing.md }}>
-      <AppText variant="subheading">Profilbild</AppText>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.lg }}>
+    <View style={styles.identity}>
+      <View style={styles.avatarWrap}>
         <Avatar
           name={profile?.displayName}
           email={profile?.email}
           url={profile?.avatarUrl}
-          size={72}
+          size={124}
         />
-        <View style={{ flex: 1, gap: spacing.xs }}>
-          <Button
-            label="Foto ändern"
-            variant="secondary"
-            loading={upload.isPending}
-            onPress={() => void change()}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Foto ändern"
+          accessibilityHint="JPG, PNG oder WebP"
+          disabled={upload.isPending}
+          onPress={() => void change()}
+          style={styles.pencil}
+        >
+          <Ionicons
+            name={upload.isPending ? 'hourglass-outline' : 'pencil'}
+            size={18}
+            color="#FFFFFF"
           />
-          <AppText variant="caption" color={colors.mutedForeground}>
-            JPG, PNG oder WebP
-          </AppText>
-        </View>
+        </Pressable>
       </View>
+      <AppText style={styles.name}>{profile?.displayName}</AppText>
+      <AppText color={colors.mutedForeground}>
+        {profile?.learningLevel ? `Niveau ${profile.learningLevel}` : 'Neu dabei'}
+      </AppText>
       {pickError || upload.error ? (
-        <AppText color={colors.destructive} accessibilityRole="alert">
+        <AppText color={colors.destructive} accessibilityRole="alert" center>
           {pickError ?? upload.error?.message}
         </AppText>
       ) : null}
@@ -67,7 +75,7 @@ function PhotoSection() {
           ✓ Profilbild aktualisiert
         </AppText>
       ) : null}
-    </Card>
+    </View>
   );
 }
 
@@ -82,15 +90,16 @@ function NameSection() {
     : null;
 
   return (
-    <Card style={{ gap: spacing.md }}>
-      <AppText variant="subheading">Konto</AppText>
-      <TextField pill label="Name" value={value} onChangeText={setName} autoCorrect={false} />
-      <TextField pill label="E-Mail" value={profile?.email ?? ''} editable={false} />
-      {joined ? (
-        <AppText variant="small" color={colors.mutedForeground}>
-          Dabei seit {joined}
-        </AppText>
-      ) : null}
+    <View style={styles.section}>
+      <TextField
+        pill
+        neutral
+        label="Name"
+        value={value}
+        onChangeText={setName}
+        autoCorrect={false}
+      />
+      <TextField pill neutral label="E-Mail" value={profile?.email ?? ''} editable={false} />
       {update.error ? (
         <AppText color={colors.destructive} accessibilityRole="alert">
           {update.error.message}
@@ -111,7 +120,12 @@ function NameSection() {
           }
         />
       ) : null}
-    </Card>
+      {joined ? (
+        <AppText variant="small" color={colors.mutedForeground} style={styles.joined}>
+          Dabei seit {joined}
+        </AppText>
+      ) : null}
+    </View>
   );
 }
 
@@ -139,10 +153,11 @@ function PasswordSection() {
   };
 
   return (
-    <Card style={{ gap: spacing.md }}>
-      <AppText variant="subheading">Passwort ändern</AppText>
+    <View style={styles.section}>
+      <AppText style={styles.sectionTitle}>Passwort ändern</AppText>
       <TextField
         pill
+        neutral
         label="Aktuelles Passwort"
         value={current}
         onChangeText={setCurrent}
@@ -151,6 +166,7 @@ function PasswordSection() {
       />
       <TextField
         pill
+        neutral
         label="Neues Passwort"
         tint={next ? passwordStrength(next).color : undefined}
         hint={strengthHint(next)}
@@ -161,6 +177,7 @@ function PasswordSection() {
       />
       <TextField
         pill
+        neutral
         label="Neues Passwort wiederholen"
         value={confirm}
         onChangeText={setConfirm}
@@ -178,17 +195,53 @@ function PasswordSection() {
         </AppText>
       ) : null}
       <Button pill label="Passwort ändern" loading={change.isPending} onPress={submit} />
-    </Card>
+    </View>
   );
 }
 
 export function AccountScreen() {
   return (
-    <Screen keyboardAware>
-      <Header title="Account" subtitle="Profil und Passwort" back />
-      <PhotoSection />
+    <WavePage title="Konto" variant="fall" header={<Identity />}>
       <NameSection />
       <PasswordSection />
-    </Screen>
+    </WavePage>
   );
 }
+
+const styles = StyleSheet.create({
+  identity: { alignItems: 'center', gap: spacing.xs, marginTop: spacing.xl },
+  avatarWrap: {
+    borderRadius: 70,
+    borderWidth: 5,
+    borderColor: '#FFFFFF',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#1D2433',
+    shadowOpacity: 0.2,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
+  pencil: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#4C6EF5',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  name: {
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: '700',
+    color: colors.ink,
+    marginTop: spacing.sm,
+  },
+  section: { gap: spacing.lg },
+  sectionTitle: { fontSize: 20, lineHeight: 26, fontWeight: '700', color: colors.ink },
+  joined: { alignSelf: 'flex-end' },
+});

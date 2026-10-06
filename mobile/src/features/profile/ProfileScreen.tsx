@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
 import type { ComponentProps } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppText, FocusedLightStatusBar } from '@/components/ui';
+import { AppText, FocusedLightStatusBar, WaveBackdrop } from '@/components/ui';
 import { totals, buildAchievements } from '@/features/achievements/model';
 import { useDashboard } from '@/features/dashboard/hooks';
 import { useUnreadCount } from '@/features/notifications/hooks';
@@ -61,7 +61,6 @@ function Stat({ value, label }: { value: string; label: string }) {
 /** Profile tab: wavy blue header with the learner card, quick stats, and the account menu. */
 export function ProfileScreen() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
   const profile = useAuthStore((s) => s.profile);
   const signOut = useAuthStore((s) => s.signOut);
   const unread = useUnreadCount().data ?? 0;
@@ -117,19 +116,7 @@ export function ProfileScreen() {
   return (
     <View style={styles.root}>
       <FocusedLightStatusBar />
-      {/* Blue header; a huge white disc carves its lower edge into a soft wave (left low, right high). */}
-      <View style={[styles.blue, { height: width * 0.6 }]} />
-      <View
-        style={{
-          position: 'absolute',
-          width: width * 4.39,
-          height: width * 4.39,
-          borderRadius: width * 2.2,
-          left: -width * 1.08,
-          top: width * 0.224,
-          backgroundColor: '#FFFFFF',
-        }}
-      />
+      <WaveBackdrop variant="rise" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <SafeAreaView edges={['top']}>
           <View style={styles.topBar}>
@@ -229,7 +216,6 @@ export function ProfileScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#FFFFFF', overflow: 'hidden' },
-  blue: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: colors.brand },
   scroll: { paddingBottom: spacing.xxl, gap: spacing.xl },
   topBar: {
     flexDirection: 'row',

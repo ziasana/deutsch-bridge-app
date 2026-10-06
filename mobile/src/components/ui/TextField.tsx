@@ -11,6 +11,8 @@ type Props = Omit<TextInputProps, 'style'> & {
   secret?: boolean;
   /** Rounded auth-screen look: brand-blue label and outline, eye icon for the password toggle. */
   pill?: boolean;
+  /** With `pill`: dark label and grey outline (account/settings forms) instead of brand blue. */
+  neutral?: boolean;
   /** Keeps the label for screen readers only (the screen shows a heading instead). */
   hideLabel?: boolean;
   /** Centres the typed text (single-question onboarding steps). */
@@ -22,7 +24,7 @@ type Props = Omit<TextInputProps, 'style'> & {
 };
 
 export const TextField = forwardRef<TextInput, Props>(function TextField(
-  { label, error, secret, pill, hideLabel, centered, tint, hint, ...input },
+  { label, error, secret, pill, neutral, hideLabel, centered, tint, hint, ...input },
   ref,
 ) {
   const [hidden, setHidden] = useState(true);
@@ -31,7 +33,7 @@ export const TextField = forwardRef<TextInput, Props>(function TextField(
       {hideLabel ? null : (
         <AppText
           variant={pill ? 'subheading' : 'small'}
-          color={pill ? colors.primaryDark : undefined}
+          color={pill ? (neutral ? colors.ink : colors.primaryDark) : undefined}
           style={styles.label}
         >
           {label}
@@ -41,6 +43,7 @@ export const TextField = forwardRef<TextInput, Props>(function TextField(
         style={[
           styles.field,
           pill && styles.fieldPill,
+          pill && neutral && styles.fieldNeutral,
           !!tint && { borderColor: tint },
           !!error && styles.fieldError,
         ]}
@@ -108,6 +111,7 @@ const styles = StyleSheet.create({
     borderColor: colors.primaryDark,
     paddingLeft: spacing.xl,
   },
+  fieldNeutral: { borderColor: '#CFD3DA' },
   fieldError: { borderColor: colors.destructive, borderWidth: 2 },
   input: { flex: 1, minHeight: MIN_TOUCH, fontSize: 16, color: colors.foreground },
   centered: { textAlign: 'center' },
