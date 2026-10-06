@@ -11,29 +11,46 @@ type Props = Omit<TextInputProps, 'style'> & {
   secret?: boolean;
   /** Rounded auth-screen look: brand-blue label and outline, eye icon for the password toggle. */
   pill?: boolean;
+  /** Keeps the label for screen readers only (the screen shows a heading instead). */
+  hideLabel?: boolean;
+  /** Centres the typed text (single-question onboarding steps). */
+  centered?: boolean;
+  /** Outline + hint colour, e.g. the password-strength colour. */
+  tint?: string;
+  /** Helper text under the field, coloured with `tint`. */
+  hint?: string;
 };
 
 export const TextField = forwardRef<TextInput, Props>(function TextField(
-  { label, error, secret, pill, ...input },
+  { label, error, secret, pill, hideLabel, centered, tint, hint, ...input },
   ref,
 ) {
   const [hidden, setHidden] = useState(true);
   return (
     <View style={styles.wrap}>
-      <AppText
-        variant={pill ? 'subheading' : 'small'}
-        color={pill ? colors.primaryDark : undefined}
-        style={styles.label}
+      {hideLabel ? null : (
+        <AppText
+          variant={pill ? 'subheading' : 'small'}
+          color={pill ? colors.primaryDark : undefined}
+          style={styles.label}
+        >
+          {label}
+        </AppText>
+      )}
+      <View
+        style={[
+          styles.field,
+          pill && styles.fieldPill,
+          !!tint && { borderColor: tint },
+          !!error && styles.fieldError,
+        ]}
       >
-        {label}
-      </AppText>
-      <View style={[styles.field, pill && styles.fieldPill, !!error && styles.fieldError]}>
         <TextInput
           ref={ref}
           accessibilityLabel={label}
           placeholderTextColor={colors.mutedForeground}
           secureTextEntry={secret && hidden}
-          style={[styles.input, input.multiline && styles.multiline]}
+          style={[styles.input, input.multiline && styles.multiline, centered && styles.centered]}
           {...input}
         />
         {secret ? (
@@ -57,6 +74,11 @@ export const TextField = forwardRef<TextInput, Props>(function TextField(
           </Pressable>
         ) : null}
       </View>
+      {hint && !error ? (
+        <AppText variant="small" color={tint ?? colors.mutedForeground} style={styles.hint}>
+          {hint}
+        </AppText>
+      ) : null}
       {/* Error is text + border, never color alone. */}
       {error ? (
         <AppText variant="small" color={colors.destructive} accessibilityRole="alert">
@@ -88,6 +110,8 @@ const styles = StyleSheet.create({
   },
   fieldError: { borderColor: colors.destructive, borderWidth: 2 },
   input: { flex: 1, minHeight: MIN_TOUCH, fontSize: 16, color: colors.foreground },
+  centered: { textAlign: 'center' },
+  hint: { paddingLeft: spacing.lg },
   multiline: {
     minHeight: 110,
     paddingTop: spacing.md,

@@ -5,6 +5,7 @@ export const colors = {
   foreground: '#1D2433', // hsl(224 27% 15%)
   mutedForeground: '#687083', // hsl(222 12% 46%)
   primary: '#4D94FF', // hsl(216 100% 62%)
+  ink: '#2A3552', // headings on the onboarding / auth screens
   brand: '#3F86F0', // splash + welcome surfaces: white text on it stays legible at 3.7:1+
   primaryDark: '#2F6FDB', // pressed / text-on-light variant with AA contrast
   primaryForeground: '#FFFFFF',

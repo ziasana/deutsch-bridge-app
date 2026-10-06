@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { AppText, Button, Card, Header, Screen, TextField } from '@/components/ui';
 import { useAuthStore } from '@/stores/authStore';
 import { colors, spacing } from '@/theme';
+import { passwordStrength, strengthHint } from '@/features/auth/passwordStrength';
 import { Avatar } from './Avatar';
 import { pickAvatar } from './avatarPicker';
 import { useChangePassword, useUpdateProfile, useUploadAvatar } from './hooks';
@@ -12,7 +13,8 @@ const MIN_PASSWORD = 6;
 /** Pure so it can be tested: what is wrong with the password form, if anything. */
 export function passwordProblem(current: string, next: string, confirm: string): string | null {
   if (!current) return 'Bitte gib dein aktuelles Passwort ein.';
-  if (next.length < MIN_PASSWORD) return `Das neue Passwort braucht mindestens ${MIN_PASSWORD} Zeichen.`;
+  if (next.length < MIN_PASSWORD)
+    return `Das neue Passwort braucht mindestens ${MIN_PASSWORD} Zeichen.`;
   if (next !== confirm) return 'Die neuen Passwörter stimmen nicht überein.';
   if (next === current) return 'Das neue Passwort muss sich vom aktuellen unterscheiden.';
   return null;
@@ -37,9 +39,19 @@ function PhotoSection() {
     <Card style={{ gap: spacing.md }}>
       <AppText variant="subheading">Profilbild</AppText>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.lg }}>
-        <Avatar name={profile?.displayName} email={profile?.email} url={profile?.avatarUrl} size={72} />
+        <Avatar
+          name={profile?.displayName}
+          email={profile?.email}
+          url={profile?.avatarUrl}
+          size={72}
+        />
         <View style={{ flex: 1, gap: spacing.xs }}>
-          <Button label="Foto ändern" variant="secondary" loading={upload.isPending} onPress={() => void change()} />
+          <Button
+            label="Foto ändern"
+            variant="secondary"
+            loading={upload.isPending}
+            onPress={() => void change()}
+          />
           <AppText variant="caption" color={colors.mutedForeground}>
             JPG, PNG oder WebP
           </AppText>
@@ -72,8 +84,8 @@ function NameSection() {
   return (
     <Card style={{ gap: spacing.md }}>
       <AppText variant="subheading">Konto</AppText>
-      <TextField label="Name" value={value} onChangeText={setName} autoCorrect={false} />
-      <TextField label="E-Mail" value={profile?.email ?? ''} editable={false} />
+      <TextField pill label="Name" value={value} onChangeText={setName} autoCorrect={false} />
+      <TextField pill label="E-Mail" value={profile?.email ?? ''} editable={false} />
       {joined ? (
         <AppText variant="small" color={colors.mutedForeground}>
           Dabei seit {joined}
@@ -91,9 +103,12 @@ function NameSection() {
       ) : null}
       {dirty ? (
         <Button
+          pill
           label="Name speichern"
           loading={update.isPending}
-          onPress={() => update.mutate({ displayName: value.trim() }, { onSuccess: () => setName(null) })}
+          onPress={() =>
+            update.mutate({ displayName: value.trim() }, { onSuccess: () => setName(null) })
+          }
         />
       ) : null}
     </Card>
@@ -126,9 +141,32 @@ function PasswordSection() {
   return (
     <Card style={{ gap: spacing.md }}>
       <AppText variant="subheading">Passwort ändern</AppText>
-      <TextField label="Aktuelles Passwort" value={current} onChangeText={setCurrent} secret autoCapitalize="none" />
-      <TextField label="Neues Passwort" value={next} onChangeText={setNext} secret autoCapitalize="none" />
-      <TextField label="Neues Passwort wiederholen" value={confirm} onChangeText={setConfirm} secret autoCapitalize="none" />
+      <TextField
+        pill
+        label="Aktuelles Passwort"
+        value={current}
+        onChangeText={setCurrent}
+        secret
+        autoCapitalize="none"
+      />
+      <TextField
+        pill
+        label="Neues Passwort"
+        tint={next ? passwordStrength(next).color : undefined}
+        hint={strengthHint(next)}
+        value={next}
+        onChangeText={setNext}
+        secret
+        autoCapitalize="none"
+      />
+      <TextField
+        pill
+        label="Neues Passwort wiederholen"
+        value={confirm}
+        onChangeText={setConfirm}
+        secret
+        autoCapitalize="none"
+      />
       {problem || change.error ? (
         <AppText color={colors.destructive} accessibilityRole="alert">
           {problem ?? change.error?.message}
@@ -139,7 +177,7 @@ function PasswordSection() {
           ✓ Passwort geändert
         </AppText>
       ) : null}
-      <Button label="Passwort ändern" loading={change.isPending} onPress={submit} />
+      <Button pill label="Passwort ändern" loading={change.isPending} onPress={submit} />
     </Card>
   );
 }
