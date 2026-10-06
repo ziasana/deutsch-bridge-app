@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { AppText, Button, Card, ProgressBar } from '@/components/ui';
+import { StyleSheet, View } from 'react-native';
+import { AppText, Badge, Button } from '@/components/ui';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type {
   ExamAnswerFeedback,
@@ -9,10 +10,12 @@ import type {
   StartExamAttemptResponse,
 } from '@/types/exam';
 import { optionLabelFor } from '../content';
-import { TFN_OPTIONS } from '../examMeta';
+import { SECTION_META, TFN_OPTIONS } from '../examMeta';
 import { useCompleteExamAttempt, useSubmitExamAnswer } from '../hooks';
-import { PassageBody } from './Passages';
-import { FeedbackCard, type ResultItem, type ResultsState } from './Results';
+import { FeedbackPanel } from './FeedbackPanel';
+import { ExerciseFrame, PressableScale, SegmentedProgress, tint, type SegmentState } from './kit';
+import { ReadingCard } from './Passages';
+import type { ResultItem, ResultsState } from './Results';
 
 type Option = { value: string; label: string };
 
@@ -29,6 +32,12 @@ export function optionsFor(
   return (question.options ?? []).map((o) => ({ value: o, label: o }));
 }
 
+const TFN_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
+  RICHTIG: 'checkmark',
+  FALSCH: 'close',
+  NICHT_IM_TEXT: 'help',
+};
+
 type Props = {
   exercise: ExamExercise;
   attempt: StartExamAttemptResponse;
@@ -43,15 +52,24 @@ export function StepQuiz({ exercise, attempt, onFinish }: Props) {
   const [selected, setSelected] = useState('');
   const [feedback, setFeedback] = useState<ExamAnswerFeedback | null>(null);
   const [items, setItems] = useState<ResultItem[]>([]);
+  const color = SECTION_META[exercise.section].color;
 
   const total = attempt.questions.length;
   const question = attempt.questions[index];
   const isLast = index + 1 >= total;
-  const passage =
+  const matched =
     exercise.taskType === 'MATCHING' && question.sectionIndex != null
       ? attempt.passages[question.sectionIndex]
       : null;
+  // Matching shows the text of the current question; every other task shares one text (or none).
+  const shownPassages = matched ? [matched] : exercise.taskType === 'MATCHING' ? [] : attempt.passages;
   const options = optionsFor(question, exercise.taskType, attempt.answerOptions ?? [], attempt.answerOptionLabels);
+
+  const states: SegmentState[] = attempt.questions.map((_, i) => {
+    const r = items[i];
+    return r ? (r.feedback.correct ? 'correct' : 'wrong') : undefined;
+  });
+  const rightSoFar = items.filter((i) => i.feedback.correct).length;
 
   const check = () => {
     if (!selected || submit.isPending) return;
@@ -87,23 +105,67 @@ export function StepQuiz({ exercise, attempt, onFinish }: Props) {
       ? `Aufgabe ${number} (${index + 1} von ${total})`
       : `Aufgabe ${index + 1} von ${total}`;
 
-  return (
-    <View style={{ gap: spacing.lg }}>
-      <View style={{ gap: spacing.sm }}>
-        <AppText variant="subheading">
-          {heading}
-          {passage ? ` — ${passage.label}` : ''}
+  const footer = (
+    <>
+      {feedback ? <FeedbackPanel key={question.id} feedback={feedback} /> : null}
+      {submit.error ? (
+        <AppText color={colors.destructive} accessibilityRole="alert">
+          {submit.error.message}
         </AppText>
-        <ProgressBar value={index + (feedback ? 1 : 0)} max={total} label="Fortschritt der Übung" />
-      </View>
+      ) : null}
+      {complete.error ? (
+        <AppText color={colors.destructive} accessibilityRole="alert">
+          {complete.error.message}
+        </AppText>
+      ) : null}
+      {feedback ? (
+        <Button
+          pill
+          label={complete.isError ? 'Ergebnis erneut senden' : isLast ? 'Ergebnis anzeigen' : 'Nächste Aufgabe'}
+          loading={complete.isPending}
+          onPress={next}
+        />
+      ) : (
+        <Button pill label="Antwort prüfen" loading={submit.isPending} disabled={!selected} onPress={check} />
+      )}
+    </>
+  );
 
-      {passage ? (
-        <Card tone="accent" style={{ gap: spacing.sm }}>
-          <AppText variant="subheading">{passage.label}</AppText>
-          <PassageBody passage={passage} />
-        </Card>
+  return (
+    <ExerciseFrame
+      footer={footer}
+      footerTone={feedback ? (feedback.correct ? 'success' : 'danger') : undefined}
+      scrollToEndKey={feedback ? question.id : null}
+      scrollTopKey={question.id}
+      header={
+        <>
+          <SegmentedProgress total={total} current={index} states={states} color={color} />
+          <View style={styles.headRow}>
+            <AppText variant="small" style={{ fontWeight: '700' }} color={colors.ink}>
+              {heading}
+              {matched ? ` — ${matched.label}` : ''}
+            </AppText>
+            {rightSoFar > 0 ? <Badge tone="success" label={`✓ ${rightSoFar} richtig`} /> : null}
+          </View>
+        </>
+      }
+    >
+      {shownPassages.length > 0 ? (
+        <ReadingCard
+          key={matched?.id ?? 'shared'}
+          passages={shownPassages}
+          title={matched ? matched.label : undefined}
+          color={color}
+        />
       ) : null}
 
+      {question.gapNumber != null ? (
+        <View style={[styles.gap, { backgroundColor: tint(color, '1F') }]}>
+          <AppText variant="small" color={color} style={{ fontWeight: '800' }}>
+            Lücke {question.gapNumber}
+          </AppText>
+        </View>
+      ) : null}
       {question.prompt ? <AppText variant="heading">{question.prompt}</AppText> : null}
 
       <View style={{ gap: spacing.md }} accessibilityRole="radiogroup">
@@ -111,74 +173,76 @@ export function StepQuiz({ exercise, attempt, onFinish }: Props) {
           const picked = selected === option.value;
           const right = !!feedback && option.value === feedback.correctAnswer;
           const wrong = !!feedback && picked && !right;
+          const tfn = exercise.taskType === 'TRUE_FALSE_NOT_GIVEN' ? TFN_ICON[option.value] : undefined;
           return (
-            <Pressable
+            <PressableScale
               key={`${i}-${option.value}`}
               accessibilityRole="radio"
               accessibilityLabel={option.label}
               accessibilityState={{ selected: picked, disabled: !!feedback }}
               disabled={!!feedback}
               onPress={() => setSelected(option.value)}
-              style={[styles.option, !feedback && picked && styles.picked, right && styles.right, wrong && styles.wrong]}
+              style={[
+                styles.option,
+                !feedback && picked && { borderColor: color, backgroundColor: tint(color, '14') },
+                right && styles.right,
+                wrong && styles.wrong,
+              ]}
             >
-              <View style={styles.letter}>
-                <AppText variant="small" style={{ fontWeight: '700' }}>
-                  {right ? '✓' : wrong ? '✕' : String.fromCharCode(65 + i)}
-                </AppText>
+              <View
+                style={[
+                  styles.letter,
+                  !feedback && picked && { backgroundColor: color },
+                  right && { backgroundColor: colors.success },
+                  wrong && { backgroundColor: colors.destructive },
+                ]}
+              >
+                {right || wrong ? (
+                  <Ionicons name={right ? 'checkmark' : 'close'} size={20} color="#FFFFFF" />
+                ) : tfn ? (
+                  <Ionicons name={tfn} size={20} color={picked ? '#FFFFFF' : colors.mutedForeground} />
+                ) : (
+                  <AppText
+                    variant="small"
+                    style={{ fontWeight: '800' }}
+                    color={picked ? '#FFFFFF' : colors.mutedForeground}
+                  >
+                    {String.fromCharCode(65 + i)}
+                  </AppText>
+                )}
               </View>
               <AppText style={styles.optionText}>{option.label}</AppText>
-            </Pressable>
+            </PressableScale>
           );
         })}
       </View>
-
-      {submit.error ? (
-        <AppText color={colors.destructive} accessibilityRole="alert">
-          {submit.error.message}
-        </AppText>
-      ) : null}
-      {feedback ? <FeedbackCard feedback={feedback} /> : null}
-      {complete.error ? (
-        <AppText color={colors.destructive} accessibilityRole="alert">
-          {complete.error.message}
-        </AppText>
-      ) : null}
-
-      {feedback ? (
-        <Button
-          label={complete.isError ? 'Ergebnis erneut senden' : isLast ? 'Ergebnis anzeigen' : 'Nächste Aufgabe'}
-          loading={complete.isPending}
-          onPress={next}
-        />
-      ) : (
-        <Button label="Antwort prüfen" loading={submit.isPending} disabled={!selected} onPress={check} />
-      )}
-    </View>
+    </ExerciseFrame>
   );
 }
 
 const styles = StyleSheet.create({
+  headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  gap: { alignSelf: 'flex-start', paddingHorizontal: spacing.md, paddingVertical: 4, borderRadius: radius.pill },
   option: {
-    minHeight: MIN_TOUCH + 8,
+    minHeight: MIN_TOUCH + 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     padding: spacing.md,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 2,
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  picked: { borderColor: colors.primary, backgroundColor: colors.accent },
   right: { borderColor: colors.success, backgroundColor: colors.successSoft },
   wrong: { borderColor: colors.destructive, backgroundColor: colors.destructiveSoft },
   letter: {
-    width: 32,
-    height: 32,
+    width: 36,
+    height: 36,
     borderRadius: radius.pill,
     backgroundColor: colors.muted,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  optionText: { flex: 1, fontSize: 17 },
+  optionText: { flex: 1, fontSize: 17, lineHeight: 24 },
 });

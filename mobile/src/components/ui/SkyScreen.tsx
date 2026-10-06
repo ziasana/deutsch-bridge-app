@@ -19,7 +19,9 @@ const SKY = '#58A6F5';
 type Props = {
   title: string;
   subtitle: string;
-  search: { value: string; onChange: (text: string) => void; placeholder: string; label: string };
+  search?: { value: string; onChange: (text: string) => void; placeholder: string; label: string };
+  /** Replaces the search field in the floating slot (e.g. a summary card). */
+  floating?: ReactNode;
   refreshControl?: React.ReactElement<RefreshControlProps>;
   /** Lets the page scroll itself, e.g. to a section after a tap. */
   scrollRef?: React.Ref<ScrollView>;
@@ -50,7 +52,7 @@ function Cloud({ width, style }: { width: number; style: object }) {
  * Search-style page: light-blue sky header with clouds and a large title, a floating search card
  * overlapping its lower edge, then the content. The header scrolls away with the page.
  */
-export function SkyScreen({ title, subtitle, search, refreshControl, scrollRef, children }: Props) {
+export function SkyScreen({ title, subtitle, search, floating, refreshControl, scrollRef, children }: Props) {
   const { width } = useWindowDimensions();
   const scroll = useHeaderScroll(width * 0.25);
   return (
@@ -82,20 +84,23 @@ export function SkyScreen({ title, subtitle, search, refreshControl, scrollRef, 
         </View>
 
         <View style={styles.searchWrap}>
-          <View style={styles.search}>
-            <TextInput
-              accessibilityLabel={search.label}
-              placeholder={search.placeholder}
-              placeholderTextColor={colors.mutedForeground}
-              value={search.value}
-              onChangeText={search.onChange}
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="search"
-              style={styles.input}
-            />
-            <Ionicons name="search-outline" size={24} color={colors.mutedForeground} />
-          </View>
+          {floating ??
+            (search ? (
+              <View style={styles.search}>
+                <TextInput
+                  accessibilityLabel={search.label}
+                  placeholder={search.placeholder}
+                  placeholderTextColor={colors.mutedForeground}
+                  value={search.value}
+                  onChangeText={search.onChange}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="search"
+                  style={styles.input}
+                />
+                <Ionicons name="search-outline" size={24} color={colors.mutedForeground} />
+              </View>
+            ) : null)}
         </View>
 
         <View style={styles.content}>{children}</View>

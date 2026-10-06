@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { AppText, Card } from '@/components/ui';
+import { AppText } from '@/components/ui';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import { TIME_THRESHOLDS, formatClock } from './examTime';
 import { ExamTimeWarning } from './ExamTimeWarning';
@@ -23,7 +23,35 @@ function statusLabel(view: ReturnType<typeof useExamTimer>, mode: string) {
   return { text: 'Im Plan', dot: DOT[status] };
 }
 
-/** A quiet timer strip: elapsed time counts up, shown against the recommended time when there is one. */
+/** Small outlined action in the timer strip (pause / resume / stop). */
+export function TimerPill({
+  label,
+  text,
+  onPress,
+  busy,
+}: {
+  label: string;
+  text: string;
+  onPress: () => void;
+  busy?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ busy }}
+      disabled={busy}
+      onPress={onPress}
+      style={[styles.small, busy && { opacity: 0.5 }]}
+    >
+      <AppText variant="small" color={colors.primaryDark} style={{ fontWeight: '600' }}>
+        {text}
+      </AppText>
+    </Pressable>
+  );
+}
+
+/** A slim timer strip: elapsed time counts up against the recommended time, with a thin progress line. */
 export function ExamTimerBar({
   active,
   title,
@@ -35,11 +63,12 @@ export function ExamTimerBar({
 }) {
   const view = useExamTimer(active);
   const label = statusLabel(view, active.mode);
+  const dot = 'dot' in label ? label.dot : undefined;
+  const ratio = view.targetSeconds ? Math.min(1, view.elapsedSeconds / view.targetSeconds) : 0;
 
   return (
-    <Card style={{ gap: spacing.sm }}>
+    <View style={styles.strip}>
       <View style={styles.row}>
-        <AppText variant="subheading">{title}</AppText>
         <AppText
           style={styles.clock}
           accessibilityLabel={`Verstrichene Zeit ${formatClock(view.elapsedSeconds)}`}
@@ -49,28 +78,34 @@ export function ExamTimerBar({
             <AppText color={colors.mutedForeground}> / {formatClock(view.targetSeconds)}</AppText>
           ) : null}
         </AppText>
-      </View>
-      <View style={styles.row}>
-        <View style={styles.status}>
-          {'dot' in label && label.dot ? <View style={[styles.dot, { backgroundColor: label.dot }]} /> : null}
-          <AppText variant="small" color={colors.mutedForeground} style={{ flexShrink: 1 }}>
-            {label.text}
-          </AppText>
-        </View>
         <View style={styles.actions}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={view.isPaused ? 'Zeit fortsetzen' : 'Zeit pausieren'}
+          <TimerPill
+            label={view.isPaused ? 'Zeit fortsetzen' : 'Zeit pausieren'}
+            text={view.isPaused ? '▶ Fortsetzen' : '❚❚ Pause'}
             onPress={view.isPaused ? view.resume : view.pause}
-            style={styles.small}
-          >
-            <AppText variant="small" color={colors.primaryDark}>
-              {view.isPaused ? '▶ Fortsetzen' : '❚❚ Pause'}
-            </AppText>
-          </Pressable>
+          />
           {actions}
         </View>
       </View>
+      <View style={styles.status}>
+        <AppText variant="caption" color={colors.mutedForeground}>
+          {title}
+        </AppText>
+        {dot ? <View style={[styles.dot, { backgroundColor: dot }]} /> : null}
+        <AppText variant="caption" color={colors.mutedForeground} style={{ flexShrink: 1 }}>
+          {label.text}
+        </AppText>
+      </View>
+      {view.targetSeconds != null ? (
+        <View style={styles.line}>
+          <View
+            style={[
+              styles.lineFill,
+              { width: `${ratio * 100}%`, backgroundColor: dot ?? colors.primary },
+            ]}
+          />
+        </View>
+      ) : null}
       {view.targetSeconds != null && active.mode === 'TIME_TRAINING' && !view.isPaused ? (
         <ExamTimeWarning
           elapsedSeconds={view.elapsedSeconds}
@@ -79,14 +114,22 @@ export function ExamTimerBar({
           dismissed={active.dismissed}
         />
       ) : null}
-    </Card>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  strip: {
+    gap: 2,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
-  clock: { fontSize: 22, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  status: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flex: 1 },
+  clock: { fontSize: 22, lineHeight: 28, fontWeight: '800', fontVariant: ['tabular-nums'], color: colors.ink },
+  status: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingBottom: 2 },
   dot: { width: 8, height: 8, borderRadius: radius.pill },
   actions: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
   small: {
@@ -97,4 +140,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  line: { height: 3, marginBottom: 2, borderRadius: 2, backgroundColor: colors.muted, overflow: 'hidden' },
+  lineFill: { height: '100%', borderRadius: 2 },
 });

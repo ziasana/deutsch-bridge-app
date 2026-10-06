@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, StyleSheet, View } from 'react-native';
-import { AppText, Button, Card } from '@/components/ui';
+import { AppText } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 import type { ExamExercise } from '@/types/exam';
 import type { ExamPracticeSessionResult } from '@/types/examTime';
 import { ExamTimeSummary } from './ExamTimeSummary';
-import { ExamTimerBar } from './ExamTimerBar';
+import { ExamTimerBar, TimerPill } from './ExamTimerBar';
 import { TIMED_SECTIONS } from './examTime';
 import { useExamSession } from './hooks';
 import { useExamTimerStore } from './timerStore';
@@ -24,6 +24,7 @@ export function ExamExerciseTimer({ exercise }: { exercise: ExamExercise }) {
   const restartSignal = useExamTimerStore((s) => s.restartSignal);
   const [stoppedResult, setStoppedResult] = useState<ExamPracticeSessionResult | null>(null);
   const [startError, setStartError] = useState(false);
+  const [stoppedByHand, setStoppedByHand] = useState(false);
 
   const eligible = isTimedExercise(exercise);
   const mounted = useRef(false);
@@ -52,6 +53,7 @@ export function ExamExerciseTimer({ exercise }: { exercise: ExamExercise }) {
   const startByHand = () => {
     setStartError(false);
     setStoppedResult(null);
+    setStoppedByHand(false);
     void begin().then(onStarted);
   };
 
@@ -107,11 +109,12 @@ export function ExamExerciseTimer({ exercise }: { exercise: ExamExercise }) {
         active={active}
         title="Zeit für diese Übung"
         actions={
-          <Button
+          <TimerPill
             label="Stopp"
-            variant="secondary"
-            loading={busy}
+            text="Stopp"
+            busy={busy}
             onPress={async () => {
+              setStoppedByHand(true);
               const result = await finish();
               if (result) {
                 useExamTimerStore.getState().setLastResult(result);
@@ -124,19 +127,36 @@ export function ExamExerciseTimer({ exercise }: { exercise: ExamExercise }) {
     );
   }
 
+  // After a finished quiz the result screen carries the Zeit-Check; only a manual stop or a failed
+  // start needs the "start again" strip.
+  if (!stoppedByHand && !startError) return null;
+
   return (
-    <View style={{ gap: spacing.md }}>
-      {stoppedResult ? <ExamTimeSummary result={stoppedResult} /> : null}
-      <Card style={styles.stopped}>
+    <View>
+      {stoppedResult ? (
+        <View style={{ padding: spacing.lg, backgroundColor: colors.surface }}>
+          <ExamTimeSummary result={stoppedResult} />
+        </View>
+      ) : null}
+      <View style={styles.stopped}>
         <AppText variant="small" color={colors.mutedForeground} style={{ flex: 1 }}>
           {startError ? 'Die Zeitmessung konnte nicht gestartet werden.' : 'Die Zeitmessung ist gestoppt.'}
         </AppText>
-        <Button label="Zeit starten" variant="secondary" loading={busy} onPress={startByHand} />
-      </Card>
+        <TimerPill label="Zeit starten" text="Zeit starten" busy={busy} onPress={startByHand} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  stopped: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  stopped: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
 });

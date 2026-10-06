@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 import {
   AppText,
   Button,
@@ -19,6 +20,7 @@ import { colors, radius, spacing } from '@/theme';
 import type { ExamSection } from '@/types/exam';
 import { pickInitialLevel } from '@/utils/levels';
 import { ExerciseRow } from './components/ExerciseRow';
+import { PressableScale, tint } from './components/kit';
 import {
   averageScore,
   exercisesForSectionAndLevel,
@@ -36,52 +38,130 @@ import {
 import { useExerciseLastTimes } from './time/hooks';
 import { TeilTimeCard } from './time/TeilTimeCard';
 
-const SECTION_COLORS: Record<ExamSection, string> = {
-  LESEVERSTEHEN: '#3F86F0',
-  SPRACHBAUSTEINE: '#7B61D9',
-  HOERVERSTEHEN: '#E8832E',
-  SCHRIFTLICHER_AUSDRUCK: '#2E8B57',
-  TESTFORMAT_INFORMATION: '#64748B',
-};
+/** CEFR levels offered in the picker; levels without content stay visible so the learner sees the whole ladder. */
+const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1'];
 
-/** Equal-width level switcher: every level is visible at once, no sideways scrolling. */
-function LevelSwitch({
-  summaries,
+type LevelSummary = { level: string; mastered: number; total: number; avgScore: number };
+
+/** One level as a pill: big letter + number, a mini progress bar underneath. Empty levels are dimmed. */
+function LevelPill({
   level,
+  summary,
+  selected,
+  onPress,
+}: {
+  level: string;
+  summary?: LevelSummary;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const total = summary?.total ?? 0;
+  const mastered = summary?.mastered ?? 0;
+  const pct = total > 0 ? Math.round((mastered / total) * 100) : 0;
+  const empty = total === 0;
+  return (
+    <PressableScale
+      containerStyle={{ flex: 1 }}
+      accessibilityRole="button"
+      accessibilityLabel={`${level} · ${mastered}/${total}`}
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={[styles.pill, selected && styles.pillOn, empty && !selected && { opacity: 0.55 }]}
+    >
+      <AppText style={[styles.pillLevel, selected && { color: '#FFFFFF' }]}>{level}</AppText>
+      <View style={[styles.pillTrack, selected && { backgroundColor: 'rgba(255,255,255,0.35)' }]}>
+        <View
+          style={[
+            styles.pillFill,
+            { width: `${pct}%`, backgroundColor: selected ? '#FFFFFF' : colors.success },
+          ]}
+        />
+      </View>
+      <AppText variant="caption" color={selected ? '#FFFFFF' : colors.mutedForeground}>
+        {empty ? 'bald' : `${mastered}/${total}`}
+      </AppText>
+    </PressableScale>
+  );
+}
+
+/**
+ * The floating card at the top: first the exam level (always visible, A1–C1), then how far the
+ * learner is at that level. Picking a level re-scopes everything below, including the sections.
+ */
+function ReadinessCard({
+  level,
+  summaries,
+  loading,
   onPick,
 }: {
-  summaries: { level: string; mastered: number; total: number }[];
   level: string | null;
+  summaries: LevelSummary[];
+  loading: boolean;
   onPick: (level: string) => void;
 }) {
+  const current = summaries.find((s) => s.level === level);
+  const levels = [
+    ...CEFR_LEVELS,
+    ...summaries.map((s) => s.level).filter((l) => !CEFR_LEVELS.includes(l)),
+  ];
   return (
-    <View style={styles.switchTrack} accessibilityRole="tablist">
-      {summaries.map((s) => {
-        const on = s.level === level;
-        return (
-          <Pressable
-            key={s.level}
-            accessibilityRole="button"
-            accessibilityLabel={`${s.level} · ${s.mastered}/${s.total}`}
-            accessibilityState={{ selected: on }}
-            onPress={() => onPick(s.level)}
-            style={[styles.switchItem, on && styles.switchItemOn]}
-          >
-            <AppText style={[styles.switchLevel, on && { color: colors.primaryDark }]}>
-              {s.level}
+    <View style={styles.ready}>
+      <View style={styles.readyHead}>
+        <AppText style={styles.readyKicker}>PRÜFUNGSNIVEAU</AppText>
+        <AppText variant="caption" color={colors.mutedForeground}>
+          Wähle dein Niveau
+        </AppText>
+      </View>
+      <View style={styles.pills} accessibilityRole="tablist">
+        {levels.map((l) => (
+          <LevelPill
+            key={l}
+            level={l}
+            summary={summaries.find((s) => s.level === l)}
+            selected={l === level}
+            onPress={() => onPick(l)}
+          />
+        ))}
+      </View>
+      <View style={styles.readyDivider} />
+      {loading ? (
+        <Skeleton height={72} />
+      ) : (
+        <View style={styles.readyTop}>
+          <ProgressRing
+            value={current?.avgScore ?? 0}
+            size={72}
+            stroke={8}
+            color={colors.primary}
+            textSize={17}
+            label={`Stand ${level ?? ''}`}
+          />
+          <View style={{ flex: 1, gap: 2 }}>
+            <AppText style={styles.readyTitle}>
+              {level ?? '–'} · {current?.mastered ?? 0} von {current?.total ?? 0} gemeistert
             </AppText>
-            <AppText variant="caption" color={on ? colors.primaryDark : colors.mutedForeground}>
-              {s.mastered}/{s.total}
+            <AppText variant="small" color={colors.mutedForeground}>
+              {current && current.total > 0
+                ? `Ø Ergebnis ${current.avgScore}% – Ziel: alles auf 100%.`
+                : 'Für dieses Niveau gibt es noch keine Übungen.'}
             </AppText>
-          </Pressable>
-        );
-      })}
+          </View>
+        </View>
+      )}
     </View>
   );
 }
 
-/** Big tappable exam-section card: icon, name, progress ring and task count. */
-function SectionCard({
+/** Long section names break at a soft hyphen instead of being cut off. */
+const BUBBLE_LABEL: Partial<Record<ExamSection, string>> = {
+  SPRACHBAUSTEINE: 'Sprach\u00ADbausteine',
+};
+
+const BUBBLE = 64;
+const BUBBLE_STROKE = 5;
+
+/** A section as a round bubble: the progress arc runs around the icon; the label sits underneath. */
+function SectionBubble({
   section,
   mastered,
   total,
@@ -95,19 +175,16 @@ function SectionCard({
   onPress: () => void;
 }) {
   const meta = SECTION_META[section];
-  const color = SECTION_COLORS[section];
+  const color = meta.color;
   const [scale] = useState(() => new Animated.Value(1));
   const spring = (to: number) =>
-    Animated.spring(scale, {
-      toValue: to,
-      friction: 7,
-      tension: 220,
-      useNativeDriver: true,
-    }).start();
-  const pct = total > 0 ? Math.round((mastered / total) * 100) : 0;
-  const wide = !!meta.informational;
+    Animated.spring(scale, { toValue: to, friction: 7, tension: 220, useNativeDriver: true }).start();
+  const pct = total > 0 ? Math.min(100, Math.round((mastered / total) * 100)) : 0;
+  const r = (BUBBLE - BUBBLE_STROKE) / 2;
+  const c = 2 * Math.PI * r;
+  const done = !meta.informational && total > 0 && mastered === total;
   return (
-    <Animated.View style={[wide ? styles.cardWide : styles.cardHalf, { transform: [{ scale }] }]}>
+    <Animated.View style={{ transform: [{ scale }] }}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={
@@ -117,83 +194,72 @@ function SectionCard({
         }
         accessibilityState={{ selected }}
         onPress={onPress}
-        onPressIn={() => spring(0.96)}
+        onPressIn={() => spring(0.93)}
         onPressOut={() => spring(1)}
-        style={[
-          styles.sectionCard,
-          wide && styles.sectionCardWide,
-          {
-            borderColor: selected ? color : colors.border,
-            backgroundColor: selected ? `${color}14` : '#FFFFFF',
-          },
-        ]}
+        style={[styles.bubbleWrap, selected && { backgroundColor: tint(color, '14') }]}
       >
-        {wide ? (
-          <>
-            <View
-              style={[styles.sectionIcon, { backgroundColor: selected ? color : `${color}22` }]}
-            >
-              <AppText style={styles.sectionEmoji}>{meta.emoji}</AppText>
-            </View>
-            <View style={styles.sectionText}>
-              <AppText style={styles.sectionName}>{meta.label}</AppText>
-              <AppText variant="caption" color={colors.mutedForeground}>
-                So läuft die Prüfung ab
-              </AppText>
-            </View>
-            <Ionicons name="information-circle-outline" size={28} color={color} />
-          </>
-        ) : (
-          <>
-            <View style={styles.sectionTop}>
-              <View
-                style={[styles.sectionIcon, { backgroundColor: selected ? color : `${color}22` }]}
-              >
-                <AppText style={styles.sectionEmoji}>{meta.emoji}</AppText>
-              </View>
-              <ProgressRing
-                value={pct}
-                size={48}
-                stroke={5}
-                color={color}
-                textSize={11}
-                label={`${meta.label} Fortschritt`}
+        <View style={{ width: BUBBLE, height: BUBBLE }}>
+          <Svg width={BUBBLE} height={BUBBLE} style={StyleSheet.absoluteFill}>
+            <Circle
+              cx={BUBBLE / 2}
+              cy={BUBBLE / 2}
+              r={r}
+              stroke={meta.informational ? colors.border : tint(color, '33')}
+              strokeWidth={BUBBLE_STROKE}
+              fill={selected ? tint(color, '1F') : '#FFFFFF'}
+            />
+            {!meta.informational && pct > 0 ? (
+              <Circle
+                cx={BUBBLE / 2}
+                cy={BUBBLE / 2}
+                r={r}
+                stroke={color}
+                strokeWidth={BUBBLE_STROKE}
+                fill="none"
+                strokeLinecap="round"
+                strokeDasharray={`${c} ${c}`}
+                strokeDashoffset={c * (1 - pct / 100)}
+                transform={`rotate(-90 ${BUBBLE / 2} ${BUBBLE / 2})`}
               />
+            ) : null}
+          </Svg>
+          <View style={styles.bubbleIcon}>
+            <AppText style={styles.bubbleEmoji}>{meta.emoji}</AppText>
+          </View>
+          {done ? (
+            <View style={styles.bubbleCheck}>
+              <Ionicons name="checkmark" size={12} color="#FFFFFF" />
             </View>
-            <View style={styles.sectionText}>
-              <AppText
-                style={styles.sectionName}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.75}
-              >
-                {meta.label}
-              </AppText>
-              <AppText variant="caption" color={colors.mutedForeground} numberOfLines={1}>
-                {mastered} von {total} Aufgaben
-              </AppText>
-            </View>
-          </>
-        )}
+          ) : null}
+        </View>
+        <AppText
+          style={[styles.bubbleLabel, selected && { color: colors.ink, fontWeight: '800' }]}
+          numberOfLines={2}
+        >
+          {BUBBLE_LABEL[section] ?? meta.label}
+        </AppText>
+        <AppText variant="caption" color={colors.mutedForeground} numberOfLines={1}>
+          {meta.informational ? 'Info' : `${mastered}/${total}`}
+        </AppText>
       </Pressable>
     </Animated.View>
   );
 }
 
-/** One exam part: outlined card with icon, title, progress line and a chevron / check. */
+/** One exam part: numbered node, title, progress bar in the section colour, chevron / check. */
 function PartCard({
-  index,
-  label,
   emoji,
+  label,
+  color,
   done,
   mastered,
   total,
   avg,
   onPress,
 }: {
-  index: number;
-  label: string;
   emoji: string;
+  label: string;
+  color: string;
   done: boolean;
   mastered: number;
   total: number;
@@ -205,25 +271,24 @@ function PartCard({
       accessibilityRole="button"
       accessibilityLabel={`${label}, ${mastered} von ${total} Aufgaben gemeistert`}
       onPress={onPress}
-      style={({ pressed }) => [styles.part, pressed && { backgroundColor: colors.accent }]}
+      style={({ pressed }) => [styles.part, pressed && { backgroundColor: tint(color, '14') }]}
     >
-      <View style={styles.partIcon}>
+      <View style={[styles.partNode, { backgroundColor: tint(color, '1F') }]}>
         <AppText style={styles.partEmoji}>{emoji}</AppText>
+        {done ? (
+          <View style={styles.partCheck}>
+            <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+          </View>
+        ) : null}
       </View>
       <View style={styles.partBody}>
-        <AppText style={styles.partTitle}>
-          {index}. {label}
-        </AppText>
+        <AppText style={styles.partTitle}>{label}</AppText>
         <AppText variant="small" color={colors.mutedForeground}>
           {mastered} / {total} {total === 1 ? 'Übung' : 'Übungen'} · Ø {avg}%
         </AppText>
-        <ProgressBar value={avg} label={`${label} Fortschritt`} />
+        <ProgressBar value={avg} color={done ? colors.success : color} label={`${label} Fortschritt`} />
       </View>
-      {done ? (
-        <Ionicons name="checkmark-circle" size={26} color={colors.success} />
-      ) : (
-        <Ionicons name="chevron-forward" size={24} color={colors.mutedForeground} />
-      )}
+      <Ionicons name="chevron-forward" size={24} color={colors.mutedForeground} />
     </Pressable>
   );
 }
@@ -243,6 +308,7 @@ export function ExamHubScreen() {
   const exercises = useExamExercises(level);
 
   const meta = SECTION_META[section];
+  const color = meta.color;
   const term = search.trim().toLowerCase();
   const items = useMemo(
     () =>
@@ -337,6 +403,7 @@ export function ExamHubScreen() {
               <ExerciseRow
                 key={item.id}
                 item={item}
+                color={color}
                 onPress={() => openExercise(item.id)}
                 onToggleBookmark={() =>
                   bookmark.mutate({ id: item.id, bookmarked: item.bookmarked })
@@ -397,12 +464,12 @@ export function ExamHubScreen() {
   } else {
     body = (
       <View style={{ gap: spacing.md }}>
-        {groups.map((g, i) => (
+        {groups.map((g) => (
           <PartCard
             key={g.key}
-            index={i + 1}
-            label={g.label}
+            color={color}
             emoji={meta.emoji}
+            label={g.label}
             done={g.state === 'completed'}
             mastered={g.mastered}
             total={g.total}
@@ -415,26 +482,42 @@ export function ExamHubScreen() {
   }
 
   const saved = pending.data ?? [];
+  const bookmarksCount = saved.length;
 
   return (
     <SkyScreen
       scrollRef={scrollRef}
       title="Prüfung üben"
       subtitle="Bereite dich Schritt für Schritt vor."
-      search={{
-        value: search,
-        onChange: setSearch,
-        placeholder: 'Prüfungsteil oder Aufgabe suchen …',
-        label: 'Suche nach Prüfungsteil oder Aufgabe',
-      }}
+      floating={
+        <ReadinessCard
+          level={level}
+          summaries={summaries}
+          loading={summary.isPending}
+          onPick={setPickedLevel}
+        />
+      }
     >
       {target ? (
-        <Card tone="accent" style={{ gap: spacing.sm }}>
-          <AppText variant="small" color={colors.primaryDark}>
-            Weiterlernen · {SECTION_META[target.section].label}
-          </AppText>
-          <AppText variant="subheading">{target.partLabel}</AppText>
-          <ProgressBar value={target.avgScore} label="Fortschritt im Prüfungsteil" />
+        <View style={[styles.cont, { backgroundColor: tint(SECTION_META[target.section].color, '14') }]}>
+          <View style={styles.contTop}>
+            <View style={[styles.contIcon, { backgroundColor: tint(SECTION_META[target.section].color, '33') }]}>
+              <AppText style={{ fontSize: 28, lineHeight: 36 }}>{SECTION_META[target.section].emoji}</AppText>
+            </View>
+            <View style={{ flex: 1, gap: 4 }}>
+              <AppText variant="small" color={colors.ink} style={{ fontWeight: '700' }}>
+                Weiterlernen · {SECTION_META[target.section].label}
+              </AppText>
+              <AppText style={styles.contTitle} numberOfLines={2}>
+                {target.partLabel}
+              </AppText>
+            </View>
+          </View>
+          <ProgressBar
+            value={target.avgScore}
+            color={SECTION_META[target.section].color}
+            label="Fortschritt im Prüfungsteil"
+          />
           <Button
             pill
             label={
@@ -446,15 +529,6 @@ export function ExamHubScreen() {
             }
             onPress={() => openExercise(target.exerciseId)}
           />
-        </Card>
-      ) : null}
-
-      {summaries.length > 1 ? (
-        <View style={{ gap: spacing.sm }}>
-          <AppText style={styles.heading} accessibilityRole="header">
-            Niveau
-          </AppText>
-          <LevelSwitch summaries={summaries} level={level} onPick={setPickedLevel} />
         </View>
       ) : null}
 
@@ -462,16 +536,16 @@ export function ExamHubScreen() {
         <AppText style={styles.heading} accessibilityRole="header">
           Was möchtest du üben?
         </AppText>
-        {summaries.length === 1 && level ? (
-          <AppText variant="small" color={colors.mutedForeground}>
-            Prüfungsniveau {level} · {summaries[0].mastered}/{summaries[0].total} gemeistert
-          </AppText>
-        ) : null}
-        <View style={styles.cardGrid}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.bubbles}
+          style={styles.bubblesScroll}
+        >
           {SECTION_ORDER.map((sec) => {
             const st = sectionStats(sec);
             return (
-              <SectionCard
+              <SectionBubble
                 key={sec}
                 section={sec}
                 mastered={st.mastered}
@@ -481,129 +555,230 @@ export function ExamHubScreen() {
               />
             );
           })}
-        </View>
+        </ScrollView>
       </View>
 
-      {saved.length > 0 ? (
-        <Card style={{ gap: spacing.xs }}>
-          <AppText variant="subheading">Für später gemerkt</AppText>
-          <AppText variant="small" color={colors.mutedForeground}>
-            {saved.length} gemerkte {saved.length === 1 ? 'Aufgabe wartet' : 'Aufgaben warten'}{' '}
-            noch.
-          </AppText>
-          {saved.slice(0, 3).map((b) => (
-            <ExerciseRow
-              key={b.id}
-              item={{
-                id: b.id,
-                title: `${SECTION_META[b.section]?.label ?? b.section}: ${b.title}`,
-                section: b.section,
-                taskType: null,
-                level: b.level,
-                partNumber: null,
-                teil: null,
-                teilDescription: null,
-                questionsCount: 0,
-                completed: false,
-                lastScore: null,
-                bookmarked: true,
-              }}
-              onPress={() => openExercise(b.id)}
-              onToggleBookmark={() => bookmark.mutate({ id: b.id, bookmarked: true })}
-              bookmarkBusy={bookmark.isPending && bookmark.variables?.id === b.id}
+      <View ref={partsRef} collapsable={false} style={{ gap: spacing.md }}>
+        <View style={[styles.panel, { backgroundColor: tint(color, '14') }]}>
+          <View style={[styles.panelIcon, { backgroundColor: tint(color, '33') }]}>
+            <AppText style={{ fontSize: 30, lineHeight: 38 }}>{meta.emoji}</AppText>
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <View style={styles.panelTitleRow}>
+              <AppText style={styles.panelTitle} accessibilityRole="header">
+                {meta.label}
+              </AppText>
+              {level ? (
+                <View style={[styles.levelTag, { backgroundColor: color }]}>
+                  <AppText variant="caption" color="#FFFFFF" style={{ fontWeight: '800' }}>
+                    {level}
+                  </AppText>
+                </View>
+              ) : null}
+            </View>
+            <AppText variant="small" color={colors.ink}>
+              {meta.informational || stats.total === 0
+                ? meta.description
+                : `${stats.mastered} / ${stats.total} Aufgaben · Ø ${stats.avg}% – ${meta.description}`}
+            </AppText>
+          </View>
+        </View>
+
+        {!meta.informational ? (
+          <View style={styles.search}>
+            <Ionicons name="search-outline" size={20} color={colors.mutedForeground} />
+            <TextInput
+              accessibilityLabel="Suche nach Prüfungsteil oder Aufgabe"
+              placeholder="Prüfungsteil oder Aufgabe suchen …"
+              placeholderTextColor={colors.mutedForeground}
+              value={search}
+              onChangeText={setSearch}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="search"
+              style={styles.searchInput}
             />
-          ))}
-          {saved.length > 3 ? (
+            {search ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Suche löschen"
+                hitSlop={spacing.sm}
+                onPress={() => setSearch('')}
+              >
+                <Ionicons name="close-circle" size={20} color={colors.mutedForeground} />
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
+
+        {body}
+      </View>
+
+      {bookmarksCount > 0 ? (
+        <Card style={{ gap: spacing.xs }}>
+          <View style={styles.savedHead}>
+            <Ionicons name="star" size={20} color={colors.warning} />
+            <AppText variant="subheading">Für später gemerkt</AppText>
+          </View>
+          <AppText variant="small" color={colors.mutedForeground}>
+            {bookmarksCount} gemerkte {bookmarksCount === 1 ? 'Aufgabe wartet' : 'Aufgaben warten'} noch.
+          </AppText>
+          <View style={{ marginTop: spacing.sm }}>
+            {saved.slice(0, 3).map((b) => (
+              <ExerciseRow
+                key={b.id}
+                color={SECTION_META[b.section]?.color}
+                item={{
+                  id: b.id,
+                  title: `${SECTION_META[b.section]?.label ?? b.section}: ${b.title}`,
+                  section: b.section,
+                  taskType: null,
+                  level: b.level,
+                  partNumber: null,
+                  teil: null,
+                  teilDescription: null,
+                  questionsCount: 0,
+                  completed: false,
+                  lastScore: null,
+                  bookmarked: true,
+                }}
+                onPress={() => openExercise(b.id)}
+                onToggleBookmark={() => bookmark.mutate({ id: b.id, bookmarked: true })}
+                bookmarkBusy={bookmark.isPending && bookmark.variables?.id === b.id}
+              />
+            ))}
+          </View>
+          {bookmarksCount > 3 ? (
             <AppText variant="small" color={colors.mutedForeground}>
-              +{saved.length - 3} weitere
+              +{bookmarksCount - 3} weitere
             </AppText>
           ) : null}
         </Card>
       ) : null}
 
-      <View ref={partsRef} collapsable={false} style={{ gap: 2 }}>
-        <AppText style={styles.heading} accessibilityRole="header">
-          {meta.emoji} {meta.label}
-        </AppText>
-        <AppText variant="small" color={colors.mutedForeground}>
-          {meta.informational || stats.total === 0
-            ? meta.description
-            : `${stats.mastered} / ${stats.total} Aufgaben · Ø ${stats.avg}% – ${meta.description}`}
-        </AppText>
-      </View>
-
-      {body}
-
       {level ? (
-        <Button
-          pill
-          label="⏱ Mein Zeitmanagement"
-          variant="secondary"
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="⏱ Mein Zeitmanagement"
           onPress={() => router.push({ pathname: '/exam-prep/zeitmanagement', params: { level } })}
-        />
+          style={({ pressed }) => [styles.timeTile, pressed && { backgroundColor: colors.accent }]}
+        >
+          <View style={styles.timeIcon}>
+            <Ionicons name="timer-outline" size={26} color={colors.primaryDark} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <AppText variant="subheading">Mein Zeitmanagement</AppText>
+            <AppText variant="small" color={colors.mutedForeground}>
+              Deine Zeit pro Teil im Vergleich zur Vorgabe
+            </AppText>
+          </View>
+          <Ionicons name="chevron-forward" size={22} color={colors.mutedForeground} />
+        </Pressable>
       ) : null}
     </SkyScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  between: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
   heading: { fontSize: 22, lineHeight: 28, fontWeight: '700', color: colors.ink },
-  switchTrack: {
-    flexDirection: 'row',
-    padding: 4,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accent,
-  },
-  switchItem: {
-    flex: 1,
-    minHeight: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.pill,
-  },
-  switchItemOn: {
+
+  ready: {
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
     backgroundColor: '#FFFFFF',
     shadowColor: '#1D2433',
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
   },
-  switchLevel: { fontSize: 16, lineHeight: 20, fontWeight: '800', color: colors.ink },
-  cardGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  cardHalf: { width: '48%', flexGrow: 1 },
-  cardWide: { width: '100%' },
-  sectionCard: {
-    minHeight: 132,
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    padding: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: 2,
-  },
-  sectionCardWide: {
-    minHeight: 0,
-    flexDirection: 'row',
+  readyHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  readyKicker: { fontSize: 13, lineHeight: 18, fontWeight: '800', letterSpacing: 0.8, color: colors.primaryDark },
+  readyDivider: { height: 1, backgroundColor: colors.border },
+  readyTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
+  readyTitle: { fontSize: 17, lineHeight: 23, fontWeight: '800', color: colors.ink },
+  pills: { flexDirection: 'row', gap: spacing.xs },
+  pill: {
+    minHeight: 76,
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: 4,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.accent,
   },
-  sectionTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sectionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  pillOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  pillLevel: { fontSize: 20, lineHeight: 24, fontWeight: '800', color: colors.ink },
+  pillTrack: { width: '70%', height: 4, borderRadius: 2, backgroundColor: colors.border, overflow: 'hidden' },
+  pillFill: { height: '100%', borderRadius: 2 },
+
+  cont: { gap: spacing.md, padding: spacing.lg, borderRadius: radius.lg },
+  contTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  contIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  contTitle: { fontSize: 17, lineHeight: 22, fontWeight: '800', color: colors.ink },
+
+  // Bleeds to the screen edges so the row scrolls under the page padding.
+  bubblesScroll: { marginHorizontal: -spacing.xl },
+  bubbles: { gap: spacing.xs, paddingHorizontal: spacing.lg },
+  bubbleWrap: {
+    width: 92,
+    alignItems: 'center',
+    gap: 2,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.lg,
+  },
+  bubbleIcon: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
+  bubbleEmoji: { fontSize: 28, lineHeight: 36 },
+  bubbleCheck: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.success,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sectionEmoji: { fontSize: 22, lineHeight: 28 },
-  sectionText: { flex: 1, gap: 2 },
-  sectionName: { fontSize: 16, lineHeight: 22, fontWeight: '700', color: colors.ink },
+  bubbleLabel: {
+    height: 36,
+    textAlign: 'center',
+    fontSize: 12.5,
+    lineHeight: 17,
+    fontWeight: '600',
+    color: colors.mutedForeground,
+    marginTop: 4,
+  },
+
+  panel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+  },
+  panelIcon: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center' },
+  panelTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  levelTag: { paddingHorizontal: spacing.sm + 2, paddingVertical: 3, borderRadius: radius.pill },
+  panelTitle: { fontSize: 24, lineHeight: 30, fontWeight: '800', color: colors.ink },
+
+  search: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    backgroundColor: colors.muted,
+  },
+  searchInput: { flex: 1, minHeight: 44, fontSize: 16, color: colors.foreground },
+
   part: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -614,15 +789,41 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: '#FFFFFF',
   },
-  partIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  partNode: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  partEmoji: { fontSize: 28, lineHeight: 36 },
+  partCheck: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.success,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  partBody: { flex: 1, gap: 4 },
+  partTitle: { fontSize: 18, lineHeight: 24, fontWeight: '700', color: colors.ink },
+
+  savedHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  timeTile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: '#FFFFFF',
+  },
+  timeIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  partEmoji: { fontSize: 28, lineHeight: 36 },
-  partBody: { flex: 1, gap: 4 },
-  partTitle: { fontSize: 19, lineHeight: 25, fontWeight: '600', color: colors.ink },
 });
