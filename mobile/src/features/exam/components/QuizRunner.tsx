@@ -10,9 +10,10 @@ import { exercisesForSectionAndLevel, groupIntoParts } from '../examData';
 import { HOEREN_HOWTO, SECTION_META, TASK_HOWTO } from '../examMeta';
 import { useExamExercises, useMarkExamCompleted, useStartExamAttempt } from '../hooks';
 import { useStopExerciseTimer } from '../time/hooks';
+import { BODY_LINE, BODY_SIZE, scaledText, useExamTextScale } from '../textScale';
 import { useExamTimerStore } from '../time/timerStore';
 import { BatchQuiz, type BatchVariant } from './BatchQuiz';
-import { ExerciseFrame, tint } from './kit';
+import { ExerciseFrame, TextSizeControl, tint } from './kit';
 import { ResultsView, type ResultsState } from './Results';
 import { StepQuiz } from './StepQuiz';
 
@@ -45,12 +46,13 @@ function useNextExercise(exercise: ExamExercise) {
 }
 
 function Step({ icon, text, color }: { icon: keyof typeof Ionicons.glyphMap; text: string; color: string }) {
+  const scale = useExamTextScale();
   return (
     <View style={styles.step}>
       <View style={[styles.stepIcon, { backgroundColor: tint(color, '1F') }]}>
         <Ionicons name={icon} size={20} color={color} />
       </View>
-      <AppText style={{ flex: 1 }}>{text}</AppText>
+      <AppText style={[{ flex: 1 }, scaledText(BODY_SIZE, BODY_LINE, scale)]}>{text}</AppText>
     </View>
   );
 }
@@ -75,6 +77,7 @@ function StartCard({
   const count = exercise.questions.length;
   const howTo = kind === 'hoeren' ? HOEREN_HOWTO : exercise.taskType ? TASK_HOWTO[exercise.taskType] : null;
   const instantFeedback = kind === 'step';
+  const scale = useExamTextScale();
   return (
     <ExerciseFrame
       footer={
@@ -85,6 +88,9 @@ function StartCard({
         )
       }
     >
+      <View style={styles.sizeRow}>
+        <TextSizeControl />
+      </View>
       <View style={[styles.hero, { backgroundColor: tint(meta.color, '14') }]}>
         <View style={[styles.heroIcon, { backgroundColor: tint(meta.color, '33') }]}>
           <AppText style={{ fontSize: 40, lineHeight: 50 }} accessibilityElementsHidden>
@@ -116,7 +122,7 @@ function StartCard({
 
       {exercise.teilDescription ? (
         <View style={styles.desc}>
-          <AppText>{exercise.teilDescription}</AppText>
+          <AppText style={scaledText(BODY_SIZE, BODY_LINE, scale)}>{exercise.teilDescription}</AppText>
         </View>
       ) : null}
 
@@ -143,7 +149,17 @@ function StartCard({
 }
 
 /** Start card → attempt → results. Finishing counts as completing the exercise, whatever the score. */
-export function QuizRunner({ exercise }: { exercise: ExamExercise }) {
+export function QuizRunner({
+  exercise,
+  onStarted,
+  onReset,
+}: {
+  exercise: ExamExercise;
+  /** The first question is on screen: time to start the clock. */
+  onStarted?: () => void;
+  /** Back to the start card ("Erneut üben"): the clock waits again. */
+  onReset?: () => void;
+}) {
   const start = useStartExamAttempt();
   const markCompleted = useMarkExamCompleted(exercise.id);
   const stopTimer = useStopExerciseTimer(exercise.id);
@@ -154,11 +170,18 @@ export function QuizRunner({ exercise }: { exercise: ExamExercise }) {
   const kind = quizKindFor(exercise);
   const color = SECTION_META[exercise.section].color;
 
-  const begin = () => start.mutate(exercise.id, { onSuccess: setAttempt });
+  const begin = () =>
+    start.mutate(exercise.id, {
+      onSuccess: (a) => {
+        setAttempt(a);
+        onStarted?.();
+      },
+    });
   const retry = () => {
     setResults(null);
     setAttempt(null);
     setTimeResult(null);
+    onReset?.();
     // A new run starts with the next attempt (the exercise timer listens for this).
     useExamTimerStore.getState().requestRestart();
   };
@@ -217,6 +240,7 @@ export function QuizRunner({ exercise }: { exercise: ExamExercise }) {
 }
 
 const styles = StyleSheet.create({
+  sizeRow: { alignItems: 'flex-end' },
   hero: {
     flexDirection: 'row',
     alignItems: 'center',

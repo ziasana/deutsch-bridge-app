@@ -8,6 +8,7 @@ import { colors, radius, spacing } from '@/theme';
 import type { ExamAnswerFeedback, ExamQuestionPublic, ExamTranscript } from '@/types/exam';
 import type { ExamPracticeSessionResult } from '@/types/examTime';
 import { isEmptyTranscript, isHtmlTranscript, plainParagraphs } from '../content';
+import { BODY_LINE, BODY_SIZE, scaledText, useExamTextScale } from '../textScale';
 import { ExamTimeSummary } from '../time/ExamTimeSummary';
 import { ExerciseFrame, StatTile, tint } from './kit';
 
@@ -43,6 +44,7 @@ export function FeedbackCard({
   formatAnswer?: (value: string) => string;
   showTranscript?: boolean;
 }) {
+  const body = scaledText(BODY_SIZE, BODY_LINE, useExamTextScale());
   const ok = feedback.correct;
   return (
     <View style={{ gap: spacing.sm }}>
@@ -54,16 +56,16 @@ export function FeedbackCard({
         {ok ? '✓ Richtig' : '✕ Falsch'}
       </AppText>
       {!ok ? (
-        <AppText>
+        <AppText style={body}>
           Richtige Antwort:{' '}
           <AppText style={{ fontWeight: '700' }}>
             {formatAnswer ? formatAnswer(feedback.correctAnswer) : feedback.correctAnswer}
           </AppText>
         </AppText>
       ) : null}
-      {feedback.explanation ? <AppText>💡 {feedback.explanation}</AppText> : null}
+      {feedback.explanation ? <AppText style={body}>💡 {feedback.explanation}</AppText> : null}
       {feedback.commonMistake ? (
-        <AppText style={{ fontStyle: 'italic' }}>⚠️ Häufiger Fehler: {feedback.commonMistake}</AppText>
+        <AppText style={[body, { fontStyle: 'italic' }]}>⚠️ Häufiger Fehler: {feedback.commonMistake}</AppText>
       ) : null}
       {showTranscript && !isEmptyTranscript(feedback.transcript) ? (
         <View style={{ gap: spacing.xs }}>

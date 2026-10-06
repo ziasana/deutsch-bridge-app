@@ -1,11 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { setAudioModeAsync } from 'expo-audio';
+import * as Speech from 'expo-speech';
 import { AppState } from 'react-native';
 import { ApiError } from '@/api/errors';
 import { examApi, examAttemptApi } from '@/api/examApi';
 import { examTimeApi } from '@/api/examTimeApi';
 import { useExamTimerStore } from '../time/timerStore';
+import { useExamTextSize } from '../textScale';
 import { useAuthStore } from '@/stores/authStore';
 import type { UserProfile } from '@/types/user';
 import { ExamExerciseScreen } from '../ExamExerciseScreen';
@@ -415,6 +417,13 @@ describe('ExamExerciseScreen', () => {
     attempts.complete.mockResolvedValue({ attemptId: 'at9', score: 100, transcripts: [] });
     await wrap(<ExamExerciseScreen />);
 
+    // Opening the exercise does not start the clock; it waits for "Übung starten".
+    await screen.findByRole('button', { name: 'Übung starten' });
+    expect(screen.queryByText('Zeit für diese Übung')).toBeNull();
+    expect(screen.getByText(/Die Zeit startet mit/)).toBeTruthy();
+    expect(time.startSession).not.toHaveBeenCalled();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Übung starten' }));
     expect(await screen.findByText('Zeit für diese Übung')).toBeTruthy();
     expect(time.startSession).toHaveBeenCalledWith({ scope: 'EXERCISE', mode: 'TIME_TRAINING', exerciseId: 'e1' });
     expect(screen.getByLabelText(/Verstrichene Zeit 00:00/)).toBeTruthy();
@@ -423,7 +432,6 @@ describe('ExamExerciseScreen', () => {
     expect(await screen.findByText('Pausiert')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Zeit fortsetzen' }));
 
-    await fireEvent.press(await screen.findByRole('button', { name: 'Übung starten' }));
     await fireEvent.press(await screen.findByRole('radio', { name: 'Ja' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Antwort prüfen' }));
     await fireEvent.press(await screen.findByRole('button', { name: 'Ergebnis anzeigen' }));
@@ -433,6 +441,48 @@ describe('ExamExerciseScreen', () => {
     expect(time.completeSession).toHaveBeenCalledWith('ps1', expect.any(Number));
     expect(useExamTimerStore.getState().active).toBeNull();
     expect(useExamTimerStore.getState().lastResult?.elapsedSeconds).toBe(432);
+  });
+
+  it('lets the learner change the text size, and remembers it', async () => {
+    api.byId.mockResolvedValue(exercise());
+    useExamTextSize.setState({ index: 1 });
+    await wrap(<ExamExerciseScreen />);
+    await screen.findByRole('button', { name: 'Übung starten' });
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Schrift vergrößern' }));
+    expect(useExamTextSize.getState().index).toBe(2);
+    await fireEvent.press(screen.getByRole('button', { name: 'Schrift vergrößern' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Schrift vergrößern' }));
+    expect(useExamTextSize.getState().index).toBe(3);
+    expect(screen.getByRole('button', { name: 'Schrift vergrößern' })).toBeDisabled();
+    await fireEvent.press(screen.getByRole('button', { name: 'Schrift verkleinern' }));
+    expect(useExamTextSize.getState().index).toBe(2);
+  });
+
+  it('shows reading time, lets the learner mark paragraphs and read the text aloud', async () => {
+    api.byId.mockResolvedValue(exercise());
+    attempts.start.mockResolvedValue({
+      attemptId: 'at7',
+      passages: [passage('p1', { content: 'Erster Absatz.\n\nZweiter Absatz.' })],
+      questions: [question('q1')],
+      answerOptions: null,
+      answerOptionLabels: null,
+    });
+    await wrap(<ExamExerciseScreen />);
+    await fireEvent.press(await screen.findByRole('button', { name: 'Übung starten' }));
+
+    expect(await screen.findByText(/4 Wörter · ca\. 1 Min\. Lesezeit/)).toBeTruthy();
+    const paragraphs = screen.getAllByRole('button', { name: 'Absatz markieren' });
+    expect(paragraphs).toHaveLength(2);
+    await fireEvent.press(paragraphs[0]);
+    expect(screen.getAllByRole('button', { name: 'Markierung entfernen' })).toHaveLength(1);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Text vorlesen' }));
+    // Read paragraph by paragraph in German.
+    await waitFor(() =>
+      expect(Speech.speak).toHaveBeenCalledWith('Erster Absatz.', expect.objectContaining({ language: 'de-DE' })),
+    );
+    expect(screen.getByRole('button', { name: 'Vorlesen stoppen' })).toBeTruthy();
   });
 
   it('does not time Hörverstehen', async () => {

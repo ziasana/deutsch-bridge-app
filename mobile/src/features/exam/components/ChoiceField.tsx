@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText, BottomSheet } from '@/components/ui';
+import { BODY_LINE, BODY_SIZE, scaledText, useExamTextScale } from '../textScale';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 
 export type Choice = { value: string; label: string; disabled?: boolean };
@@ -28,6 +29,7 @@ export function ChoiceField({
   color = colors.primary,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const scale = useExamTextScale();
   const selected = choices.find((c) => c.value === value);
   return (
     <>
@@ -44,7 +46,7 @@ export function ChoiceField({
         ]}
       >
         <AppText
-          style={{ flex: 1, fontWeight: selected ? '600' : '400' }}
+          style={[{ flex: 1, fontWeight: selected ? '600' : '400' }, scaledText(BODY_SIZE, BODY_LINE, scale)]}
           color={selected ? colors.foreground : colors.mutedForeground}
         >
           {selected?.label ?? placeholder}

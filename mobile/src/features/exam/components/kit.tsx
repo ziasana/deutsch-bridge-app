@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/ui';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
+import { TEXT_SCALES, useExamTextSize } from '../textScale';
 
 /** Section colour at a given opacity (hex alpha), for soft tinted backgrounds. */
 export const tint = (color: string, alpha: '14' | '1F' | '33' = '1F') => `${color}${alpha}`;
@@ -183,6 +184,51 @@ export function IconButton({
   );
 }
 
+/**
+ * Text size as a little slider: small "A", four dots showing the current step, large "A".
+ * Tap either A to step down / up; the choice is remembered for every exercise.
+ */
+export function TextSizeControl() {
+  const index = useExamTextSize((s) => s.index);
+  const larger = useExamTextSize((s) => s.larger);
+  const smaller = useExamTextSize((s) => s.smaller);
+  const last = TEXT_SCALES.length - 1;
+  return (
+    <View style={styles.sizeRow} accessibilityRole="adjustable" accessibilityLabel="Schriftgröße">
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Schrift verkleinern"
+        accessibilityState={{ disabled: index === 0 }}
+        disabled={index === 0}
+        onPress={smaller}
+        hitSlop={spacing.sm}
+        style={[styles.sizeBtn, index === 0 && { opacity: 0.35 }]}
+      >
+        <AppText style={[styles.sizeA, { fontSize: 13, lineHeight: 18 }]}>A</AppText>
+      </Pressable>
+      <View style={styles.sizeDots} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        {TEXT_SCALES.map((_, i) => (
+          <View
+            key={i}
+            style={[styles.sizeDot, { width: 5 + i * 2, height: 5 + i * 2 }, i <= index && styles.sizeDotOn]}
+          />
+        ))}
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Schrift vergrößern"
+        accessibilityState={{ disabled: index === last }}
+        disabled={index === last}
+        onPress={larger}
+        hitSlop={spacing.sm}
+        style={[styles.sizeBtn, index === last && { opacity: 0.35 }]}
+      >
+        <AppText style={[styles.sizeA, { fontSize: 21, lineHeight: 26 }]}>A</AppText>
+      </Pressable>
+    </View>
+  );
+}
+
 /** Focus-mode top bar: close, what you are practising, bookmark. No tab bar, no big title. */
 export function QuizTopBar({
   title,
@@ -282,7 +328,21 @@ const styles = StyleSheet.create({
   },
   topTitle: { flex: 1, alignItems: 'center' },
   topName: { fontSize: 17, lineHeight: 22, fontWeight: '700', color: colors.ink },
-  topRight: { width: MIN_TOUCH, alignItems: 'center' },
+  topRight: { flexDirection: 'row', alignItems: 'center' },
+  sizeRow: {
+    height: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: 2,
+    borderRadius: radius.pill,
+    backgroundColor: colors.muted,
+  },
+  sizeBtn: { width: 34, height: 36, alignItems: 'center', justifyContent: 'center' },
+  sizeA: { fontWeight: '800', color: colors.ink },
+  sizeDots: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  sizeDot: { borderRadius: 6, backgroundColor: colors.border },
+  sizeDotOn: { backgroundColor: colors.primary },
 
   tile: {
     flex: 1,

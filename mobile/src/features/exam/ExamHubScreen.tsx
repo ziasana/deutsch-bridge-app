@@ -21,6 +21,7 @@ import type { ExamSection } from '@/types/exam';
 import { pickInitialLevel } from '@/utils/levels';
 import { ExerciseRow } from './components/ExerciseRow';
 import { PressableScale, tint } from './components/kit';
+import { WritingLearnCard } from './writing/WritingLearnCard';
 import {
   averageScore,
   exercisesForSectionAndLevel,
@@ -394,6 +395,10 @@ export function ExamHubScreen() {
   } else if (isFlat) {
     body = (
       <View style={{ gap: spacing.md }}>
+        {level ? <WritingLearnCard level={level} /> : null}
+        <AppText style={styles.heading} accessibilityRole="header">
+          ✍️ Schreibaufgaben
+        </AppText>
         {level ? (
           <TeilTimeCard section={section} level={level} teil={1} showLastResult={false} />
         ) : null}

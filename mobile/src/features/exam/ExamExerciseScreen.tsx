@@ -5,7 +5,8 @@ import { AppText, Button, Card, ErrorState, Skeleton } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 import type { ExamExercise } from '@/types/exam';
 import type { ExamPracticeSessionResult } from '@/types/examTime';
-import { ExerciseFrame, IconButton, QuizTopBar } from './components/kit';
+import { RichContentScale } from './components/RichContentScale';
+import { ExerciseFrame, IconButton, QuizTopBar, TextSizeControl } from './components/kit';
 import { PassageBody } from './components/Passages';
 import { QuizRunner } from './components/QuizRunner';
 import { SECTION_META } from './examMeta';
@@ -37,6 +38,9 @@ function InfoBody({ exercise }: { exercise: ExamExercise }) {
         </>
       }
     >
+      <View style={styles.sizeRow}>
+        <TextSizeControl />
+      </View>
       {exercise.teilDescription ? (
         <Card tone="accent">
           <AppText>{exercise.teilDescription}</AppText>
@@ -59,6 +63,9 @@ function WritingBody({ exercise }: { exercise: ExamExercise }) {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ExerciseFrame>
+        <View style={styles.sizeRow}>
+          <TextSizeControl />
+        </View>
         {exercise.teilDescription ? (
           <Card tone="accent">
             <AppText>{exercise.teilDescription}</AppText>
@@ -92,6 +99,8 @@ export function ExamExerciseScreen() {
   const query = useExamExercise(exerciseId);
   const bookmark = useToggleExamBookmark();
   const close = () => router.back();
+  // Quizzes time themselves from "Übung starten"; writing has no start button and runs from opening.
+  const [started, setStarted] = useState(false);
 
   if (query.isPending) {
     return (
@@ -123,6 +132,7 @@ export function ExamExerciseScreen() {
   const writing = exercise.section === 'SCHRIFTLICHER_AUSDRUCK';
 
   return (
+    <RichContentScale>
     <View style={styles.root}>
       <QuizTopBar
         title={exercise.title}
@@ -140,15 +150,17 @@ export function ExamExerciseScreen() {
           />
         }
       />
-      <ExamExerciseTimer exercise={exercise} />
+      <ExamExerciseTimer exercise={exercise} armed={writing || started} fresh={!writing} />
       <View style={{ flex: 1 }}>
-        {info ? <InfoBody exercise={exercise} /> : writing ? <WritingBody exercise={exercise} /> : <QuizRunner exercise={exercise} />}
+        {info ? <InfoBody exercise={exercise} /> : writing ? <WritingBody exercise={exercise} /> : <QuizRunner exercise={exercise} onStarted={() => setStarted(true)} onReset={() => setStarted(false)} />}
       </View>
     </View>
+    </RichContentScale>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   loading: { padding: spacing.lg, gap: spacing.md },
+  sizeRow: { alignItems: 'flex-end' },
 });

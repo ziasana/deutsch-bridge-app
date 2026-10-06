@@ -89,4 +89,4 @@ export const TASK_HOWTO: Record<ExamTaskType, string> = {
   WRITING_TASK: 'Schreibe deinen Text und erhalte Feedback.',
 };
 
-export const HOEREN_HOWTO = 'Höre jeden Text und entscheide, ob die Aussage richtig (+) oder falsch (−) ist.';
+export const HOEREN_HOWTO = 'Höre jeden Text und entscheide, ob die Aussage richtig oder falsch ist.';

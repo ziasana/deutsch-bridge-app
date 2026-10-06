@@ -11,9 +11,17 @@ import type {
 } from '@/types/exam';
 import { optionLabelFor } from '../content';
 import { SECTION_META, TFN_OPTIONS } from '../examMeta';
+import { BODY_LINE, BODY_SIZE, scaledText, useExamTextScale } from '../textScale';
 import { useCompleteExamAttempt, useSubmitExamAnswer } from '../hooks';
 import { FeedbackPanel } from './FeedbackPanel';
-import { ExerciseFrame, PressableScale, SegmentedProgress, tint, type SegmentState } from './kit';
+import {
+  ExerciseFrame,
+  PressableScale,
+  SegmentedProgress,
+  TextSizeControl,
+  tint,
+  type SegmentState,
+} from './kit';
 import { ReadingCard } from './Passages';
 import type { ResultItem, ResultsState } from './Results';
 
@@ -53,6 +61,7 @@ export function StepQuiz({ exercise, attempt, onFinish }: Props) {
   const [feedback, setFeedback] = useState<ExamAnswerFeedback | null>(null);
   const [items, setItems] = useState<ResultItem[]>([]);
   const color = SECTION_META[exercise.section].color;
+  const scale = useExamTextScale();
 
   const total = attempt.questions.length;
   const question = attempt.questions[index];
@@ -141,11 +150,14 @@ export function StepQuiz({ exercise, attempt, onFinish }: Props) {
         <>
           <SegmentedProgress total={total} current={index} states={states} color={color} />
           <View style={styles.headRow}>
-            <AppText variant="small" style={{ fontWeight: '700' }} color={colors.ink}>
-              {heading}
-              {matched ? ` — ${matched.label}` : ''}
-            </AppText>
-            {rightSoFar > 0 ? <Badge tone="success" label={`✓ ${rightSoFar} richtig`} /> : null}
+            <View style={{ flex: 1, gap: 4 }}>
+              <AppText variant="small" style={{ fontWeight: '700' }} color={colors.ink}>
+                {heading}
+                {matched ? ` — ${matched.label}` : ''}
+              </AppText>
+              {rightSoFar > 0 ? <Badge tone="success" label={`✓ ${rightSoFar} richtig`} /> : null}
+            </View>
+            <TextSizeControl />
           </View>
         </>
       }
@@ -166,7 +178,11 @@ export function StepQuiz({ exercise, attempt, onFinish }: Props) {
           </AppText>
         </View>
       ) : null}
-      {question.prompt ? <AppText variant="heading">{question.prompt}</AppText> : null}
+      {question.prompt ? (
+        <AppText style={[scaledText(BODY_SIZE, BODY_LINE, scale), styles.prompt]}>
+          {question.prompt}
+        </AppText>
+      ) : null}
 
       <View style={{ gap: spacing.md }} accessibilityRole="radiogroup">
         {options.map((option, i) => {
@@ -211,7 +227,7 @@ export function StepQuiz({ exercise, attempt, onFinish }: Props) {
                   </AppText>
                 )}
               </View>
-              <AppText style={styles.optionText}>{option.label}</AppText>
+              <AppText style={[styles.optionText, scaledText(BODY_SIZE, BODY_LINE, scale)]}>{option.label}</AppText>
             </PressableScale>
           );
         })}
@@ -221,7 +237,7 @@ export function StepQuiz({ exercise, attempt, onFinish }: Props) {
 }
 
 const styles = StyleSheet.create({
-  headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   gap: { alignSelf: 'flex-start', paddingHorizontal: spacing.md, paddingVertical: 4, borderRadius: radius.pill },
   option: {
     minHeight: MIN_TOUCH + 12,
@@ -244,5 +260,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  optionText: { flex: 1, fontSize: 17, lineHeight: 24 },
+  optionText: { flex: 1 },
+  prompt: { fontWeight: '700', color: colors.ink },
 });

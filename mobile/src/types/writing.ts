@@ -9,6 +9,25 @@ export type WritingGuideKind =
 
 export type WritingFormality = 'INFORMAL' | 'NEUTRAL' | 'FORMAL';
 
+export interface WritingFormatData {
+  time?: string;
+  requirements?: string[];
+}
+export interface WritingStructureData {
+  examples?: string[];
+  phrases?: string[];
+}
+export interface WritingSentencePatternData {
+  examples?: string[];
+}
+
+/** How far the learner got in one "Schreiben lernen" station. */
+export interface WritingStationProgress {
+  station: string;
+  correct: number;
+  total: number;
+}
+
 export interface WritingStrategyData {
   tips?: string[];
 }

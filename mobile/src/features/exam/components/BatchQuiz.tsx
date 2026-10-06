@@ -6,9 +6,17 @@ import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type { ExamExercise, ExamQuestionPublic, StartExamAttemptResponse } from '@/types/exam';
 import { NO_AD_ANSWER } from '../content';
 import { HOEREN_HOWTO, SECTION_META } from '../examMeta';
+import { BODY_LINE, BODY_SIZE, scaledText, useExamTextScale } from '../textScale';
 import { useCompleteExamAttempt, useSubmitExamAnswer } from '../hooks';
 import { ChoiceField, type Choice } from './ChoiceField';
-import { ExerciseFrame, PressableScale, SegmentedProgress, tint, type SegmentState } from './kit';
+import {
+  ExerciseFrame,
+  PressableScale,
+  SegmentedProgress,
+  TextSizeControl,
+  tint,
+  type SegmentState,
+} from './kit';
 import { PassageBody, ReadingCard, WordBank } from './Passages';
 import type { ResultItem, ResultsState } from './Results';
 import { optionsFor } from './StepQuiz';
@@ -22,8 +30,14 @@ type Props = {
   onFinish: (results: ResultsState) => void;
 };
 
-/** "+" / "-" read as words on the big answer buttons. */
-const SIGN_WORD: Record<string, string> = { '+': 'Richtig', '-': 'Falsch', '−': 'Falsch' };
+/** "+" / "-" / "R" / "F" read as words on the answer buttons. */
+const SIGN_WORD: Record<string, string> = {
+  '+': 'Richtig',
+  '-': 'Falsch',
+  '−': 'Falsch',
+  R: 'Richtig',
+  F: 'Falsch',
+};
 
 function Hint({ icon, children, color }: { icon: keyof typeof Ionicons.glyphMap; children: string; color: string }) {
   return (
@@ -64,6 +78,7 @@ export function BatchQuiz({ variant, exercise, attempt, onFinish }: Props) {
   const isSituation = exercise.taskType === 'SITUATION_MATCHING';
   const isCloze = exercise.taskType === 'WORD_BANK_CLOZE';
   const color = SECTION_META[exercise.section].color;
+  const scale = useExamTextScale();
 
   const set = (id: string, value: string) => setAnswers((prev) => ({ ...prev, [id]: value }));
   const total = attempt.questions.length;
@@ -116,9 +131,12 @@ export function BatchQuiz({ variant, exercise, attempt, onFinish }: Props) {
         color={color}
         label="Beantwortete Aufgaben"
       />
-      <AppText variant="small" style={{ fontWeight: '700' }} color={colors.ink}>
-        {allAnswered ? '✓ Alles beantwortet – bereit zum Abgeben' : `${answered} von ${total} beantwortet`}
-      </AppText>
+      <View style={styles.headRow}>
+        <AppText variant="small" style={{ fontWeight: '700', flex: 1 }} color={colors.ink}>
+          {allAnswered ? '✓ Alles beantwortet – bereit zum Abgeben' : `${answered} von ${total} beantwortet`}
+        </AppText>
+        <TextSizeControl />
+      </View>
     </>
   );
 
@@ -140,10 +158,10 @@ export function BatchQuiz({ variant, exercise, attempt, onFinish }: Props) {
           const passage = q.sectionIndex != null ? attempt.passages[q.sectionIndex] : null;
           const n = q.questionNumber ?? i + 1;
           return (
-            <View key={q.id} style={styles.qCard}>
+            <View key={q.id} style={[styles.qCard, !!answers[q.id] && { borderColor: tint(color, '33') }]}>
               <View style={styles.qHead}>
                 <NumberBadge n={n} done={!!answers[q.id]} color={color} />
-                <AppText style={styles.qPrompt}>
+                <AppText style={[styles.qPrompt, scaledText(BODY_SIZE, BODY_LINE, scale)]}>
                   {showLabels && passage ? `${passage.label}: ` : ''}
                   {q.prompt}
                 </AppText>
@@ -151,6 +169,9 @@ export function BatchQuiz({ variant, exercise, attempt, onFinish }: Props) {
               <View style={styles.signs} accessibilityRole="radiogroup">
                 {pool.map((option) => {
                   const picked = answers[q.id] === option;
+                  const word = SIGN_WORD[option.toUpperCase()] ?? SIGN_WORD[option];
+                  const yes = word === 'Richtig';
+                  const fg = picked ? '#FFFFFF' : colors.ink;
                   return (
                     <PressableScale
                       key={option}
@@ -162,14 +183,14 @@ export function BatchQuiz({ variant, exercise, attempt, onFinish }: Props) {
                       onPress={() => set(q.id, option)}
                       style={[styles.sign, picked && { backgroundColor: color, borderColor: color }]}
                     >
-                      <AppText style={styles.signGlyph} color={picked ? '#FFFFFF' : colors.foreground}>
-                        {option}
-                      </AppText>
-                      {SIGN_WORD[option] ? (
-                        <AppText variant="small" color={picked ? '#FFFFFF' : colors.mutedForeground}>
-                          {SIGN_WORD[option]}
-                        </AppText>
-                      ) : null}
+                      <View style={[styles.signIcon, { backgroundColor: picked ? 'rgba(255,255,255,0.25)' : tint(color, '1F') }]}>
+                        <Ionicons
+                          name={word ? (yes ? 'checkmark' : 'close') : 'ellipse'}
+                          size={16}
+                          color={picked ? '#FFFFFF' : color}
+                        />
+                      </View>
+                      <AppText style={[styles.signText, { color: fg }]}>{word ?? option}</AppText>
                     </PressableScale>
                   );
                 })}
@@ -229,7 +250,7 @@ export function BatchQuiz({ variant, exercise, attempt, onFinish }: Props) {
           <View key={q.id} style={styles.qCard}>
             <View style={styles.qHead}>
               <NumberBadge n={n} done={!!answers[q.id]} color={color} />
-              <AppText style={styles.qPrompt}>
+              <AppText style={[styles.qPrompt, scaledText(BODY_SIZE, BODY_LINE, scale)]}>
                 {isCloze ? `Lücke ${q.gapNumber ?? n}` : ''}
                 {ref ? `${ref.label}: ` : ''}
                 {isCloze ? '' : q.prompt}
@@ -281,6 +302,7 @@ export function BatchQuiz({ variant, exercise, attempt, onFinish }: Props) {
 }
 
 const styles = StyleSheet.create({
+  headRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   hint: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -308,17 +330,19 @@ const styles = StyleSheet.create({
   badge: { width: 32, height: 32, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   signs: { flexDirection: 'row', gap: spacing.md },
   sign: {
-    minHeight: MIN_TOUCH + 12,
-    gap: 0,
-    borderRadius: radius.lg,
+    minHeight: 52,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    borderRadius: radius.pill,
     borderWidth: 2,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
-  signGlyph: { fontWeight: '800', fontSize: 24, lineHeight: 30 },
+  signIcon: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  signText: { fontSize: 15, lineHeight: 20, fontWeight: '700' },
   adRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   ad: {
     minWidth: MIN_TOUCH,

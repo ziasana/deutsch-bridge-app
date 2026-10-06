@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/ui';
@@ -7,7 +8,7 @@ import type { ExamPracticeSessionResult } from '@/types/examTime';
 import { ExamTimeSummary } from './ExamTimeSummary';
 import { ExamTimerBar, TimerPill } from './ExamTimerBar';
 import { TIMED_SECTIONS } from './examTime';
-import { useExamSession } from './hooks';
+import { useExamSession, useExamTimeConfiguration } from './hooks';
 import { useExamTimerStore } from './timerStore';
 
 /** True when this exercise gets a timer: a timed section with a resolved Teil. */
@@ -19,7 +20,17 @@ export const isTimedExercise = (e: Pick<ExamExercise, 'section' | 'teil'>) =>
  * learner leaves the screen or the app goes to the background, and continues from where it stopped
  * when the same exercise is opened again. Opening a different exercise starts a fresh run.
  */
-export function ExamExerciseTimer({ exercise }: { exercise: ExamExercise }) {
+export function ExamExerciseTimer({
+  exercise,
+  armed = true,
+  fresh = false,
+}: {
+  exercise: ExamExercise;
+  /** The clock only runs once armed: quizzes arm it when the learner taps "Übung starten". */
+  armed?: boolean;
+  /** Always begin a new run when armed instead of continuing this exercise's earlier one. */
+  fresh?: boolean;
+}) {
   const { active, hasHydrated, busy, start, finish } = useExamSession();
   const restartSignal = useExamTimerStore((s) => s.restartSignal);
   const [stoppedResult, setStoppedResult] = useState<ExamPracticeSessionResult | null>(null);
@@ -27,6 +38,7 @@ export function ExamExerciseTimer({ exercise }: { exercise: ExamExercise }) {
   const [stoppedByHand, setStoppedByHand] = useState(false);
 
   const eligible = isTimedExercise(exercise);
+  const { minutes } = useExamTimeConfiguration(exercise.level, exercise.section, exercise.teil);
   const mounted = useRef(false);
   const starting = useRef(false);
   const seenRestart = useRef(restartSignal);
@@ -60,10 +72,10 @@ export function ExamExerciseTimer({ exercise }: { exercise: ExamExercise }) {
   // Open: continue this exercise's run if it is still the active one, else begin a new run.
   useEffect(() => {
     mounted.current = true;
-    if (!eligible || !hasHydrated) return;
+    if (!eligible || !hasHydrated || !armed) return;
 
     const current = useExamTimerStore.getState().active;
-    if (current?.scope === 'EXERCISE' && current.exerciseId === exercise.id) {
+    if (!fresh && current?.scope === 'EXERCISE' && current.exerciseId === exercise.id) {
       useExamTimerStore.getState().resume();
     } else {
       void begin().then(onStarted);
@@ -92,16 +104,30 @@ export function ExamExerciseTimer({ exercise }: { exercise: ExamExercise }) {
       sub.remove();
       if (isThisRun()) useExamTimerStore.getState().pause();
     };
-  }, [eligible, hasHydrated, exercise.id, begin, onStarted]);
+  }, [eligible, hasHydrated, armed, fresh, exercise.id, begin, onStarted]);
 
   // "Erneut üben": the previous run ended on the result screen, so begin a new one.
   useEffect(() => {
     if (restartSignal === seenRestart.current) return;
     seenRestart.current = restartSignal;
-    if (eligible && !useExamTimerStore.getState().active) void begin().then(onStarted);
-  }, [restartSignal, eligible, begin, onStarted]);
+    if (armed && eligible && !useExamTimerStore.getState().active) void begin().then(onStarted);
+  }, [restartSignal, armed, eligible, begin, onStarted]);
 
   if (!eligible || !hasHydrated) return null;
+
+  // Before the first question the clock waits; it starts with "Übung starten".
+  if (!armed) {
+    return (
+      <View style={styles.waiting}>
+        <Ionicons name="timer-outline" size={20} color={colors.mutedForeground} />
+        <AppText variant="small" color={colors.mutedForeground} style={{ flex: 1 }}>
+          {minutes != null
+            ? `Empfohlene Zeit: ${minutes} Min. Die Zeit startet mit „Übung starten“.`
+            : 'Die Zeit startet mit „Übung starten“.'}
+        </AppText>
+      </View>
+    );
+  }
 
   if (active?.scope === 'EXERCISE' && active.exerciseId === exercise.id) {
     return (
@@ -149,6 +175,16 @@ export function ExamExerciseTimer({ exercise }: { exercise: ExamExercise }) {
 }
 
 const styles = StyleSheet.create({
+  waiting: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
   stopped: {
     flexDirection: 'row',
     alignItems: 'center',

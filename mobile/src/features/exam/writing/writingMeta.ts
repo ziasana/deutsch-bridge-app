@@ -73,3 +73,17 @@ export function helpTabHasContent(data: WritingLearningResponse, tab: WritingHel
       return itemsOfKind(data, 'MISTAKE').length > 0;
   }
 }
+
+/** Learning stations in display order. */
+export const LEARN_SECTIONS = [
+  { id: 'format', label: 'Prüfungsformat', emoji: '🎯', hint: 'Was erwartet dich in der Prüfung?' },
+  { id: 'strategie', label: 'Schreibstrategie', emoji: '🧠', hint: 'In 6 Schritten zum Text.' },
+  { id: 'aufbau', label: 'Textaufbau', emoji: '🧱', hint: 'Anrede, Einleitung, Hauptteil, Schluss.' },
+  { id: 'beispiele', label: 'Beispiele & Mustertexte', emoji: '📖', hint: 'Mustertexte Schritt für Schritt analysieren.' },
+  { id: 'redemittel', label: 'Redemittel', emoji: '💬', hint: 'Passende Ausdrücke nach Funktion.' },
+  { id: 'satzbausteine', label: 'Satzbausteine', emoji: '🧩', hint: 'Muster, die du anpassen kannst.' },
+  { id: 'fehler', label: 'Typische Fehler', emoji: '⚠️', hint: 'Diese Fehler solltest du vermeiden.' },
+  { id: 'checkliste', label: 'Checkliste', emoji: '✅', hint: 'Kontrolliere deinen Text vor dem Abgeben.' },
+] as const;
+
+export type LearnSectionId = (typeof LEARN_SECTIONS)[number]['id'];
