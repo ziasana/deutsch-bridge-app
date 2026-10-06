@@ -1,18 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { AppText } from '@/components/ui';
+import { AppText, DirectionalIcon } from '@/components/ui';
 import { PressableScale } from '@/features/exam/components/kit';
+import { useI18n } from '@/i18n';
 import { colors, radius, shadow, spacing } from '@/theme';
 import type { VocabularyItem } from '@/types/vocabulary';
 import { playWordAudio } from '../audio';
-import {
-  ARTICLE_COLOR,
-  MASTERY_COLOR,
-  SOURCE_ICON,
-  SOURCE_LABEL,
-  masteryOf,
-  wordLabel,
-} from '../listLogic';
+import { ARTICLE_COLOR, MASTERY_COLOR, SOURCE_ICON, masteryOf, wordLabel } from '../listLogic';
 import { MasteryDots } from './VocabularyViz';
 
 type Props = {
@@ -57,6 +51,8 @@ function IconAction({
 
 /** One word as a card: article-coloured edge, word, meaning, example, mastery and quick actions. */
 export function WordCard({ item, onOpen, onPractice, onToggleBookmark, onEdit, onDelete }: Props) {
+  const { t } = useI18n();
+  const v = t.vocabulary;
   const mastery = masteryOf(item);
   const edge = item.article
     ? (ARTICLE_COLOR[item.article] ?? MASTERY_COLOR[mastery])
@@ -81,14 +77,14 @@ export function WordCard({ item, onOpen, onPractice, onToggleBookmark, onEdit, o
           <View style={styles.source}>
             <Ionicons name={SOURCE_ICON[item.source]} size={12} color={colors.mutedForeground} />
             <AppText variant="caption" color={colors.mutedForeground}>
-              {SOURCE_LABEL[item.source]}
+              {v.sources[item.source]}
             </AppText>
           </View>
         </View>
         <MasteryDots level={mastery} />
       </View>
 
-      <View style={{ gap: 2 }}>
+      <View style={{ gap: 2, alignItems: 'flex-start' }}>
         <AppText style={styles.word}>{wordLabel(item)}</AppText>
         <AppText color={colors.mutedForeground}>{item.meaning}</AppText>
       </View>
@@ -104,33 +100,33 @@ export function WordCard({ item, onOpen, onPractice, onToggleBookmark, onEdit, o
       <View style={styles.actions}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${wordLabel(item)} üben`}
+          accessibilityLabel={v.practiseItem(wordLabel(item))}
           onPress={onPractice}
           style={styles.practice}
         >
           <AppText variant="small" color={colors.primaryDark} style={{ fontWeight: '800' }}>
-            Üben
+            {v.practiceShort}
           </AppText>
-          <Ionicons name="arrow-forward" size={14} color={colors.primaryDark} />
+          <DirectionalIcon name="arrow-forward" size={14} color={colors.primaryDark} />
         </Pressable>
         <IconAction
           name="volume-high-outline"
-          label={`${wordLabel(item)} anhören`}
+          label={v.listenItem(wordLabel(item))}
           color={colors.primaryDark}
           onPress={() => playWordAudio(item.audioUrl, item.word)}
         />
         <IconAction
           name={item.bookmarked ? 'star' : 'star-outline'}
-          label={item.bookmarked ? 'Gemerkt' : 'Merken'}
+          label={item.bookmarked ? v.saved : v.save}
           color={item.bookmarked ? colors.warning : colors.mutedForeground}
           active={item.bookmarked}
           onPress={onToggleBookmark}
         />
-        {onEdit ? <IconAction name="create-outline" label="Bearbeiten" onPress={onEdit} /> : null}
+        {onEdit ? <IconAction name="create-outline" label={v.edit} onPress={onEdit} /> : null}
         {onDelete ? (
           <IconAction
             name="trash-outline"
-            label="Löschen"
+            label={v.delete}
             color={colors.destructive}
             onPress={onDelete}
           />
@@ -144,7 +140,7 @@ const styles = StyleSheet.create({
   card: {
     gap: spacing.md,
     padding: spacing.lg,
-    paddingLeft: spacing.lg + 4,
+    paddingStart: spacing.lg + 4,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
@@ -152,7 +148,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...shadow.card,
   },
-  edge: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 5 },
+  edge: { position: 'absolute', start: 0, top: 0, bottom: 0, width: 5 },
   head: {
     flexDirection: 'row',
     alignItems: 'center',

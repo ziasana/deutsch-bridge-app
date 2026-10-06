@@ -2,6 +2,7 @@ import * as Speech from 'expo-speech';
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText, Badge, Card } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type { PracticeVocabularyItem } from '@/types/vocabulary';
 import { splitSynonyms } from '@/features/dailyWords/flow';
@@ -16,6 +17,8 @@ const ARTICLE_TONE: Record<string, 'primary' | 'warning' | 'success'> = {
 };
 
 export function Flashcard({ item, flipped, onFlip }: Props) {
+  const { t } = useI18n();
+  const tr = t.vocabulary.trainer;
   const label = item.article ? `${item.article} ${item.word}` : item.word;
   const synonyms = splitSynonyms(item.synonyms);
 
@@ -24,11 +27,7 @@ export function Flashcard({ item, flipped, onFlip }: Props) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={
-        flipped
-          ? `${label}: ${item.meaning}. Karte zurückdrehen`
-          : `${label}. Karte umdrehen, um die Bedeutung zu sehen`
-      }
+      accessibilityLabel={flipped ? tr.flipBack(label, item.meaning) : tr.flip(label)}
       onPress={onFlip}
     >
       <Card tone={flipped ? 'accent' : 'default'} style={styles.card}>
@@ -44,7 +43,7 @@ export function Flashcard({ item, flipped, onFlip }: Props) {
               <AppText style={styles.word}>{item.word}</AppText>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Aussprache von ${label} anhören`}
+                accessibilityLabel={t.vocabulary.listenItem(label)}
                 onPress={() => {
                   void Speech.stop();
                   Speech.speak(label, { language: 'de-DE' });
@@ -55,7 +54,7 @@ export function Flashcard({ item, flipped, onFlip }: Props) {
               </Pressable>
             </View>
             <AppText variant="small" color={colors.mutedForeground}>
-              Tippe auf die Karte, um die Bedeutung zu sehen
+              {tr.tapToFlip}
             </AppText>
           </>
         ) : (
@@ -68,12 +67,12 @@ export function Flashcard({ item, flipped, onFlip }: Props) {
             </AppText>
             {item.example ? (
               <AppText color={colors.mutedForeground} center style={{ fontStyle: 'italic' }}>
-                „{item.example}“
+                “{item.example}”
               </AppText>
             ) : null}
             {synonyms.length > 0 ? (
               <AppText variant="small" color={colors.mutedForeground} center>
-                Ähnlich: {synonyms.join(' · ')}
+                {tr.similar(synonyms.join(' · '))}
               </AppText>
             ) : null}
           </>

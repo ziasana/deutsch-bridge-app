@@ -8,7 +8,7 @@ import { IconButton, tint } from '@/features/exam/components/kit';
 import { colors, radius, spacing } from '@/theme';
 import type { VocabularyMasteryLevel } from '@/types/vocabulary';
 import { MASTERY_COLOR, MASTERY_ORDER } from '../listLogic';
-import { MASTERY_LABEL } from '../trainerLogic';
+import { useI18n } from '@/i18n';
 
 /** Two stacked flash cards with an "A" and a tick — decoration only. */
 export function CardsIllustration({ size = 112 }: { size?: number }) {
@@ -73,11 +73,12 @@ export function VocabularyHero({
   children?: ReactNode;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   return (
     <View style={[styles.hero, { backgroundColor: tint(colors.primary, '1F') }]}>
       <SafeAreaView edges={['top']}>
         <View style={styles.topRow}>
-          <IconButton name="arrow-back" label="Zurück" onPress={() => router.back()} />
+          <IconButton name="arrow-back" label={t.common.back} onPress={() => router.back()} />
           {trailing ?? (
             <View style={[styles.chip, { backgroundColor: tint(colors.primary, '33') }]}>
               <AppText variant="caption" color={colors.ink} style={{ fontWeight: '800' }}>
@@ -125,10 +126,12 @@ export function MasteryDots({
   level: VocabularyMasteryLevel;
   showLabel?: boolean;
 }) {
+  const { t } = useI18n();
+  const label = t.vocabulary.mastery[level];
   const filled = MASTERY_ORDER.indexOf(level) + 1;
   const color = MASTERY_COLOR[level];
   return (
-    <View style={styles.dotsRow} accessible accessibilityLabel={`Stand: ${MASTERY_LABEL[level]}`}>
+    <View style={styles.dotsRow} accessible accessibilityLabel={t.vocabulary.state(label)}>
       <View style={styles.dots}>
         {MASTERY_ORDER.map((m, i) => (
           <View
@@ -139,7 +142,7 @@ export function MasteryDots({
       </View>
       {showLabel ? (
         <AppText variant="caption" color={color} style={{ fontWeight: '800' }}>
-          {MASTERY_LABEL[level]}
+          {label}
         </AppText>
       ) : null}
     </View>
@@ -178,7 +181,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginHorizontal: -spacing.sm,
-    paddingRight: spacing.sm,
+    paddingEnd: spacing.sm,
   },
   chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill },
   heroMain: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingTop: spacing.sm },

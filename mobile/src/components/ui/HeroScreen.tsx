@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
     paddingTop: spacing.lg,
   },
-  heroText: { flex: 1, gap: spacing.sm, paddingRight: spacing.sm },
+  heroText: { flex: 1, gap: spacing.sm, paddingEnd: spacing.sm },
   title: { fontSize: 30, lineHeight: 38, fontWeight: '800' },
   subtitle: { fontSize: 17, lineHeight: 24, fontWeight: '500' },
   art: { width: 130, height: 130, alignItems: 'center', justifyContent: 'center' },

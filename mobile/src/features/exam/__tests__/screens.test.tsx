@@ -449,13 +449,13 @@ describe('ExamExerciseScreen', () => {
     await wrap(<ExamExerciseScreen />);
     await screen.findByRole('button', { name: 'Übung starten' });
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Schrift vergrößern' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Larger text' }));
     expect(useExamTextSize.getState().index).toBe(2);
-    await fireEvent.press(screen.getByRole('button', { name: 'Schrift vergrößern' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Schrift vergrößern' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Larger text' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Larger text' }));
     expect(useExamTextSize.getState().index).toBe(3);
-    expect(screen.getByRole('button', { name: 'Schrift vergrößern' })).toBeDisabled();
-    await fireEvent.press(screen.getByRole('button', { name: 'Schrift verkleinern' }));
+    expect(screen.getByRole('button', { name: 'Larger text' })).toBeDisabled();
+    await fireEvent.press(screen.getByRole('button', { name: 'Smaller text' }));
     expect(useExamTextSize.getState().index).toBe(2);
   });
 

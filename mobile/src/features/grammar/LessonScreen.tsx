@@ -19,7 +19,10 @@ import {
 } from '@/components/ui';
 import { IconButton, StatTile, TextSizeControl, tint } from '@/features/exam/components/kit';
 import { RichContentScale } from '@/features/exam/components/RichContentScale';
+import { rtlText } from '@/i18n/direction';
+import { useI18n } from '@/i18n';
 import { useAuthStore } from '@/stores/authStore';
+import { HorizontalScroll } from '@/components/ui/HorizontalScroll';
 import { colors, radius, spacing } from '@/theme';
 import { useLesson, useLessonNavigation, useSetLessonLearned, useToggleBookmark } from './hooks';
 import {
@@ -42,8 +45,9 @@ import {
 } from './quiz';
 
 function LessonSkeleton() {
+  const { t } = useI18n();
   return (
-    <View accessibilityLabel="Lektion wird geladen" style={{ gap: spacing.md }}>
+    <View accessibilityLabel={t.grammar.lessonLoading} style={{ gap: spacing.md }}>
       <Skeleton width="70%" height={32} />
       <Skeleton height={16} />
       <Card style={{ gap: spacing.sm }}>
@@ -57,6 +61,7 @@ function LessonSkeleton() {
 
 /** "Das lernst du": the lesson summary as a goal card, clamped to two lines until expanded. */
 function GoalCard({ summary, dir }: { summary: string; dir: 'ltr' | 'rtl' }) {
+  const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
   const long = summary.length > 90;
   return (
@@ -66,26 +71,26 @@ function GoalCard({ summary, dir }: { summary: string; dir: 'ltr' | 'rtl' }) {
           <AppText style={{ fontSize: 18, lineHeight: 24 }}>🎯</AppText>
         </View>
         <AppText variant="subheading" style={{ flex: 1 }}>
-          Das lernst du
+          {t.grammar.goalTitle}
         </AppText>
         <TextSizeControl />
       </View>
       <AppText
         color={colors.ink}
         numberOfLines={expanded || !long ? undefined : 2}
-        style={dir === 'rtl' ? { textAlign: 'right', writingDirection: 'rtl' } : undefined}
+        style={dir === 'rtl' ? rtlText : undefined}
       >
         {summary}
       </AppText>
       {long ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={expanded ? 'Weniger anzeigen' : 'Mehr anzeigen'}
+          accessibilityLabel={expanded ? t.grammar.showLess : t.grammar.showMore}
           onPress={() => setExpanded((v) => !v)}
           hitSlop={spacing.sm}
         >
           <AppText variant="small" color={colors.primaryDark} style={{ fontWeight: '700' }}>
-            {expanded ? 'Weniger ▲' : 'Mehr ▼'}
+            {expanded ? t.grammar.less : t.grammar.more}
           </AppText>
         </Pressable>
       ) : null}
@@ -97,6 +102,8 @@ type AnchorKey = 'learn' | 'example' | 'tip' | 'practice';
 
 export function LessonScreen() {
   const router = useRouter();
+  const { t } = useI18n();
+  const g = t.grammar;
   const { lessonId } = useLocalSearchParams<{ lessonId: string }>();
   const persian = useAuthStore((s) => s.profile?.preferredLanguage === 'PR');
   const lessonQuery = useLesson(lessonId);
@@ -120,7 +127,7 @@ export function LessonScreen() {
   if (lessonQuery.isPending) {
     return (
       <Screen>
-        <Header title="Lektion" back />
+        <Header title={g.lesson} back />
         <LessonSkeleton />
       </Screen>
     );
@@ -128,7 +135,7 @@ export function LessonScreen() {
   if (lessonQuery.isError || !lesson) {
     return (
       <Screen>
-        <Header title="Lektion" back />
+        <Header title={g.lesson} back />
         <ErrorState error={lessonQuery.error} onRetry={() => void lessonQuery.refetch()} />
       </Screen>
     );
@@ -172,10 +179,10 @@ export function LessonScreen() {
     });
 
   const steps: { key: AnchorKey; label: string; show: boolean }[] = [
-    { key: 'learn', label: 'Lernen', show: sections.length > 0 },
-    { key: 'example', label: 'Beispiele', show: examples.length > 0 },
-    { key: 'tip', label: 'Tipp', show: !!text.usageTips },
-    { key: 'practice', label: 'Üben', show: quizCount > 0 || !!quick },
+    { key: 'learn', label: g.stepLearn, show: sections.length > 0 },
+    { key: 'example', label: g.stepExamples, show: examples.length > 0 },
+    { key: 'tip', label: g.stepTip, show: !!text.usageTips },
+    { key: 'practice', label: g.stepPractise, show: quizCount > 0 || !!quick },
   ];
 
   const renderBlocks = (blocks: ReturnType<typeof parseBlocks>) =>
@@ -198,10 +205,10 @@ export function LessonScreen() {
           <View style={[styles.hero, { backgroundColor: tint(colors.primary, '1F') }]}>
             <SafeAreaView edges={['top']}>
               <View style={styles.topRow}>
-                <IconButton name="arrow-back" label="Zurück" onPress={() => router.back()} />
+                <IconButton name="arrow-back" label={t.common.back} onPress={() => router.back()} />
                 <IconButton
                   name={lesson.bookmarked ? 'star' : 'star-outline'}
-                  label={lesson.bookmarked ? '★ Gemerkt – entfernen' : '☆ Für später merken'}
+                  label={lesson.bookmarked ? g.unbookmark : g.bookmark}
                   color={lesson.bookmarked ? colors.warning : colors.ink}
                   busy={bookmarkMutation.isPending}
                   onPress={() => bookmarkMutation.mutate(lesson.bookmarked)}
@@ -216,9 +223,9 @@ export function LessonScreen() {
                         {lesson.categoryTitle ? ` · ${lesson.categoryTitle}`.toUpperCase() : ''}
                       </AppText>
                     </View>
-                    {learned ? <Badge tone="success" label="✓ Gelernt" /> : null}
+                    {learned ? <Badge tone="success" label={g.learnedBadge} /> : null}
                     {persian && !isTranslatableLevel(lesson.level) ? (
-                      <Badge label="Nur auf Deutsch" />
+                      <Badge label={g.germanOnly} />
                     ) : null}
                   </View>
                   <AppText style={styles.title} accessibilityRole="header">
@@ -232,7 +239,7 @@ export function LessonScreen() {
                   color={colors.primary}
                   textSize={18}
                   trackColor="#FFFFFFCC"
-                  label="Dein Fortschritt in dieser Lektion"
+                  label={g.lessonProgress}
                 />
               </View>
             </SafeAreaView>
@@ -247,25 +254,25 @@ export function LessonScreen() {
           <View style={styles.tiles}>
             <StatTile
               icon="layers-outline"
-              label="Schritte"
+              label={g.steps}
               value={String(sections.length)}
               color={colors.primary}
             />
             <StatTile
               icon="chatbubbles-outline"
-              label="Beispiele"
+              label={g.examples}
               value={String(examples.length)}
               color={colors.primary}
             />
             <StatTile
               icon="help-circle-outline"
-              label="Fragen"
+              label={g.questions}
               value={String(quizCount)}
               color={colors.success}
             />
           </View>
 
-          <ScrollView
+          <HorizontalScroll
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.chips}
@@ -276,7 +283,7 @@ export function LessonScreen() {
               .map((s) => (
                 <Chip key={s.key} label={s.label} selected={false} onPress={() => jump(s.key)} />
               ))}
-          </ScrollView>
+          </HorizontalScroll>
 
           {sections.length > 0 ? (
             <View style={styles.block} {...anchor('learn')}>
@@ -303,7 +310,7 @@ export function LessonScreen() {
           {lesson.videoLink ? (
             <View style={styles.block}>
               <Button
-                label="▶ Video ansehen"
+                label={g.watchVideo}
                 variant="secondary"
                 onPress={() => void Linking.openURL(lesson.videoLink!)}
               />
@@ -312,7 +319,7 @@ export function LessonScreen() {
 
           {examples.length > 0 ? (
             <View style={styles.block} {...anchor('example')}>
-              <AppText variant="heading">💬 Beispiel</AppText>
+              <AppText variant="heading">{g.exampleHeading}</AppText>
               {examples.map((blocks, i) => (
                 <ExampleBubble key={i} blocks={blocks} dir={dir} />
               ))}
@@ -322,7 +329,7 @@ export function LessonScreen() {
           {text.usageTips ? (
             <View style={styles.block} {...anchor('tip')}>
               <TipCallout>
-                <AppText variant="subheading">💡 Tipp</AppText>
+                <AppText variant="subheading">{g.tipHeading}</AppText>
                 <RichBlocks blocks={parseBlocks(text.usageTips)} dir={dir} />
               </TipCallout>
             </View>
@@ -331,7 +338,7 @@ export function LessonScreen() {
           {quickQuestion && quick ? (
             <View style={styles.block} {...anchor('practice')}>
               <Card style={{ gap: spacing.md }}>
-                <AppText variant="heading">⚡ Schnell-Check</AppText>
+                <AppText variant="heading">{g.quickCheck}</AppText>
                 <QuickCheck
                   key={lesson.id}
                   question={quickQuestion}
@@ -346,13 +353,11 @@ export function LessonScreen() {
           <View style={styles.block} {...(!quickQuestion ? anchor('practice') : {})}>
             {quizCount > 0 ? (
               <Card tone="accent" style={{ gap: spacing.sm }}>
-                <AppText variant="subheading">🏋️ Übungen</AppText>
-                <AppText color={colors.mutedForeground}>
-                  {quizCount} Fragen zu dieser Lektion
-                </AppText>
+                <AppText variant="subheading">{g.exercisesHeading}</AppText>
+                <AppText color={colors.mutedForeground}>{g.questionsForLesson(quizCount)}</AppText>
                 <Button
                   pill
-                  label="Übungen starten"
+                  label={g.startExercises}
                   onPress={() =>
                     router.push({
                       pathname: '/grammar/practice/[lessonId]',
@@ -366,11 +371,9 @@ export function LessonScreen() {
             {sections.length > 1 ? (
               <View style={{ gap: spacing.xs }}>
                 <AppText variant="small" color={colors.mutedForeground}>
-                  {learned
-                    ? 'Alle Schritte gelernt'
-                    : `${explored} von ${sections.length} Schritten angesehen`}
+                  {learned ? g.allStepsLearned : g.stepsViewed(explored, sections.length)}
                 </AppText>
-                <ProgressBar value={progress} label="Lektionsfortschritt" />
+                <ProgressBar value={progress} label={g.lessonProgressBar} />
               </View>
             ) : null}
 
@@ -382,7 +385,7 @@ export function LessonScreen() {
 
             <Button
               pill
-              label={learned ? '✓ Gelernt – zurücksetzen' : 'Als gelernt markieren'}
+              label={learned ? g.resetLearned : g.markLearned}
               variant={learned ? 'secondary' : 'primary'}
               loading={learnedMutation.isPending}
               onPress={() => learnedMutation.mutate(!learned)}
@@ -393,7 +396,7 @@ export function LessonScreen() {
                 <View style={styles.flex}>
                   {prev ? (
                     <Button
-                      label="‹ Vorherige"
+                      label={g.previous}
                       variant="secondary"
                       onPress={() => goTo(prev.id)}
                       accessibilityHint={
@@ -405,7 +408,7 @@ export function LessonScreen() {
                 <View style={styles.flex}>
                   {next ? (
                     <Button
-                      label="Nächste ›"
+                      label={g.next}
                       variant="secondary"
                       onPress={() => goTo(next.id)}
                       accessibilityHint={

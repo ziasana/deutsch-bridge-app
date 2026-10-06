@@ -148,7 +148,7 @@ describe('ProgressScreen', () => {
     api.stats.mockResolvedValue(stats);
     await wrap();
     expect(await screen.findByText('Keine Verbindung.')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('INSGESAMT GELERNT')).toBeTruthy();
   });
 });

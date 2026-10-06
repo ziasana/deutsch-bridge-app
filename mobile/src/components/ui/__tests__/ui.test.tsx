@@ -24,13 +24,13 @@ describe('design system', () => {
     const { rerender } = await render(
       <ErrorState error={new ApiError('network', 'Keine Verbindung.')} onRetry={onRetry} />,
     );
-    await fireEvent.press(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
     expect(onRetry).toHaveBeenCalled();
 
     await rerender(
-      <ErrorState error={new ApiError('notFound', 'Nicht gefunden.')} onRetry={onRetry} />,
+      <ErrorState error={new ApiError('notFound', 'Not found.')} onRetry={onRetry} />,
     );
-    expect(screen.queryByRole('button', { name: 'Erneut versuchen' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
   });
 
   it('LearningCelebration renders message, progress and next actions', async () => {

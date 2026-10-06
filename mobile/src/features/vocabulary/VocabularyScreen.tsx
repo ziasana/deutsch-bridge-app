@@ -15,6 +15,7 @@ import {
   AppText,
   Button,
   Chip,
+  DirectionalIcon,
   EmptyState,
   ErrorState,
   ProgressRing,
@@ -22,6 +23,8 @@ import {
   TextField,
 } from '@/components/ui';
 import { PressableScale, tint } from '@/features/exam/components/kit';
+import { useI18n } from '@/i18n';
+import { HorizontalScroll } from '@/components/ui/HorizontalScroll';
 import { colors, radius, shadow, spacing } from '@/theme';
 import type { VocabularyItem, VocabularyMasteryLevel, VocabularySource } from '@/types/vocabulary';
 import { CardsIllustration, MasteryBar, VocabularyHero } from './components/VocabularyViz';
@@ -33,16 +36,16 @@ import {
   MASTERY_ORDER,
   SOURCES,
   SOURCE_ICON,
-  SOURCE_LABEL,
   continueLearning,
   filterWords,
   masteryCounts,
   sourceCounts,
 } from './listLogic';
-import { MASTERY_LABEL } from './trainerLogic';
 
 export function VocabularyScreen() {
   const router = useRouter();
+  const { t } = useI18n();
+  const v = t.vocabulary;
   const list = useVocabularyList();
   const bookmark = useToggleVocabularyBookmark();
   const remove = useDeleteVocabulary();
@@ -74,9 +77,9 @@ export function VocabularyScreen() {
       item ? { pathname: '/learn/review', params: { vocabularyItemId: item.id } } : '/learn/review',
     );
   const confirmDelete = (item: VocabularyItem) =>
-    Alert.alert('Wort löschen?', `„${item.word}“ wird aus deinem Wortschatz entfernt.`, [
-      { text: 'Abbrechen', style: 'cancel' },
-      { text: 'Löschen', style: 'destructive', onPress: () => remove.mutate(item.id) },
+    Alert.alert(v.deleteTitle, v.deleteMessage(item.word), [
+      { text: v.cancel, style: 'cancel' },
+      { text: v.delete, style: 'destructive', onPress: () => remove.mutate(item.id) },
     ]);
   const reset = () => {
     setSearch('');
@@ -98,9 +101,9 @@ export function VocabularyScreen() {
   const header = (
     <View style={{ gap: spacing.lg, paddingBottom: spacing.md }}>
       <VocabularyHero
-        chip={`📚 ${SOURCE_LABEL[source].toUpperCase()}`}
-        title="Wortschatz"
-        subtitle="Deine Wörter sammeln, üben und behalten"
+        chip={v.chip(v.sources[source])}
+        title={v.title}
+        subtitle={v.subtitle}
         right={
           list.data && inSource.length > 0 ? (
             <ProgressRing
@@ -110,7 +113,7 @@ export function VocabularyScreen() {
               color={colors.success}
               textSize={20}
               trackColor="#FFFFFFCC"
-              label="Gemeisterte Wörter"
+              label={v.masteredWords}
             />
           ) : (
             <CardsIllustration size={104} />
@@ -120,14 +123,14 @@ export function VocabularyScreen() {
 
       <View style={[styles.pad, styles.ctaRow]}>
         <View style={{ flex: 1 }}>
-          <Button pill label="＋ Wort hinzufügen" onPress={() => setFormOpen(true)} />
+          <Button pill label={v.addWord} onPress={() => setFormOpen(true)} />
         </View>
         <View style={{ flex: 1 }}>
-          <Button pill variant="secondary" label="Training starten" onPress={() => practice()} />
+          <Button pill variant="secondary" label={v.startTraining} onPress={() => practice()} />
         </View>
       </View>
 
-      <ScrollView
+      <HorizontalScroll
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.sources}
@@ -139,7 +142,7 @@ export function VocabularyScreen() {
             <Pressable
               key={s}
               accessibilityRole="button"
-              accessibilityLabel={`${SOURCE_LABEL[s]} (${counts[s]})`}
+              accessibilityLabel={v.sourceLabel(v.sources[s], counts[s])}
               accessibilityState={{ selected: on }}
               onPress={() => setSource(s)}
               style={[
@@ -158,16 +161,16 @@ export function VocabularyScreen() {
                   color={on ? '#FFFFFF' : colors.ink}
                   style={{ fontWeight: '700' }}
                 >
-                  {SOURCE_LABEL[s]}
+                  {v.sources[s]}
                 </AppText>
                 <AppText variant="caption" color={on ? '#FFFFFFD9' : colors.mutedForeground}>
-                  {counts[s] === 1 ? '1 Wort' : `${counts[s]} Wörter`}
+                  {v.wordCount(counts[s])}
                 </AppText>
               </View>
             </Pressable>
           );
         })}
-      </ScrollView>
+      </HorizontalScroll>
 
       {inSource.length > 0 ? (
         <View style={[styles.pad, { gap: spacing.md }]}>
@@ -179,7 +182,7 @@ export function VocabularyScreen() {
                 <Pressable
                   key={m}
                   accessibilityRole="button"
-                  accessibilityLabel={`${MASTERY_LABEL[m]}: ${levels[m]}`}
+                  accessibilityLabel={v.masteryLabel(v.mastery[m], levels[m])}
                   accessibilityState={{ selected: on }}
                   onPress={() => setMastery(on ? 'ALL' : m)}
                   style={{ flex: 1 }}
@@ -195,7 +198,7 @@ export function VocabularyScreen() {
                       {levels[m]}
                     </AppText>
                     <AppText variant="caption" color={colors.mutedForeground} numberOfLines={1}>
-                      {MASTERY_LABEL[m]}
+                      {v.mastery[m]}
                     </AppText>
                   </View>
                 </Pressable>
@@ -207,8 +210,8 @@ export function VocabularyScreen() {
 
       <View style={[styles.pad, { gap: spacing.md }]}>
         <TextField
-          label="Suchen"
-          placeholder="Wort, Bedeutung oder Beispiel …"
+          label={v.search}
+          placeholder={v.searchPlaceholder}
           value={search}
           onChangeText={setSearch}
           autoCapitalize="none"
@@ -217,23 +220,23 @@ export function VocabularyScreen() {
         />
         <View style={styles.filterRow}>
           <Chip
-            label="★ Nur Gemerkte"
+            label={v.onlyBookmarked}
             selected={bookmarkedOnly}
             onPress={() => setBookmarkedOnly((b) => !b)}
           />
-          {isFiltered ? <Chip label="Zurücksetzen" onPress={reset} /> : null}
+          {isFiltered ? <Chip label={v.reset} onPress={reset} /> : null}
         </View>
       </View>
 
       {!isFiltered && next.list.length > 0 ? (
         <View style={{ gap: spacing.md }}>
           <View style={styles.pad}>
-            <AppText variant="heading">🔥 Weiter lernen</AppText>
+            <AppText variant="heading">{v.keepLearning}</AppText>
             <AppText variant="small" color={colors.mutedForeground}>
-              {next.readyCount} {next.readyCount === 1 ? 'Wort wartet' : 'Wörter warten'} auf dich
+              {v.waiting(next.readyCount)}
             </AppText>
           </View>
-          <ScrollView
+          <HorizontalScroll
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.minis}
@@ -243,7 +246,7 @@ export function VocabularyScreen() {
               <PressableScale
                 key={item.id}
                 accessibilityRole="button"
-                accessibilityLabel={`Weiter lernen: ${item.word}`}
+                accessibilityLabel={v.keepLearningWord(item.word)}
                 onPress={() => practice(item)}
                 style={[
                   styles.mini,
@@ -257,24 +260,24 @@ export function VocabularyScreen() {
                   {item.meaning}
                 </AppText>
                 <View style={styles.miniGo}>
-                  <Ionicons name="play" size={12} color={colors.primaryDark} />
+                  <DirectionalIcon name="play" size={12} color={colors.primaryDark} />
                   <AppText
                     variant="caption"
                     color={colors.primaryDark}
                     style={{ fontWeight: '800' }}
                   >
-                    Üben
+                    {v.practiceShort}
                   </AppText>
                 </View>
               </PressableScale>
             ))}
-          </ScrollView>
+          </HorizontalScroll>
         </View>
       ) : null}
 
       {inSource.length > 0 ? (
         <View style={[styles.pad, styles.allRow]}>
-          <AppText variant="heading">Alle Wörter</AppText>
+          <AppText variant="heading">{v.allWords}</AppText>
           <View style={styles.count}>
             <AppText variant="caption" color={colors.mutedForeground} style={{ fontWeight: '700' }}>
               {filtered.length}
@@ -288,7 +291,7 @@ export function VocabularyScreen() {
   let empty = null;
   if (list.isPending) {
     empty = (
-      <View accessibilityLabel="Wortschatz wird geladen" style={{ gap: spacing.md }}>
+      <View accessibilityLabel={v.loading} style={{ gap: spacing.md }}>
         {[0, 1, 2].map((i) => (
           <Skeleton key={i} height={170} />
         ))}
@@ -300,28 +303,24 @@ export function VocabularyScreen() {
     empty = isFiltered ? (
       <EmptyState
         emoji="🔍"
-        title="Keine Treffer"
-        message="Passe die Suche oder die Filter an."
-        actionLabel="Filter zurücksetzen"
+        title={v.noMatchesTitle}
+        message={v.noMatchesMessage}
+        actionLabel={v.resetFilters}
         onAction={reset}
       />
     ) : source === 'CUSTOM' ? (
       <EmptyState
         emoji="📚"
-        title="Noch keine Wörter"
-        message="Füge dein erstes Wort hinzu und übe es mit Lernkarten."
-        actionLabel="＋ Wort hinzufügen"
+        title={v.emptyTitle}
+        message={v.emptyMessage}
+        actionLabel={v.addWord}
         onAction={() => setFormOpen(true)}
       />
     ) : (
       <EmptyState
         emoji={source === 'DICTIONARY' ? '📖' : '✨'}
-        title="Noch nichts gespeichert"
-        message={
-          source === 'DICTIONARY'
-            ? 'Tippe beim Lesen auf ein Wort und füge es zum Wortschatz hinzu.'
-            : 'Speichere Wörter aus einer Antwort des KI-Tutors.'
-        }
+        title={v.emptySavedTitle}
+        message={source === 'DICTIONARY' ? v.emptyDictionary : v.emptyTutor}
       />
     );
   }
@@ -397,6 +396,7 @@ const styles = StyleSheet.create({
   minis: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.xs },
   mini: {
     width: 170,
+    alignItems: 'flex-start',
     gap: spacing.xs,
     padding: spacing.md,
     borderRadius: radius.lg,

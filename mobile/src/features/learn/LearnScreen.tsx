@@ -8,6 +8,7 @@ import { useDashboard } from '@/features/dashboard/hooks';
 import { useRedemittelHub } from '@/features/redemittel/hooks';
 import { REDEMITTEL_COLOR } from '@/features/redemittel/meta';
 import { useProgressOverview } from '@/features/progress/hooks';
+import { useI18n } from '@/i18n';
 import { useAuthStore } from '@/stores/authStore';
 import { colors, spacing } from '@/theme';
 import { featuredCards, topicCards, type FeaturedCard, type TopicCard } from './model';
@@ -61,10 +62,11 @@ function Featured({ card, onPress }: { card: FeaturedCard; onPress: () => void }
 
 /** A learning area as a tile: accent colour, emoji, ring with the percentage, what it is, and x / y. */
 function Topic({ card, onPress }: { card: TopicCard; onPress: () => void }) {
+  const { t, isRTL } = useI18n();
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel={`${card.title}, ${card.percent} Prozent`}
+      accessibilityLabel={t.learn.percentLabel(card.title, card.percent)}
       onPress={onPress}
       containerStyle={styles.topicWrap}
       style={[
@@ -83,7 +85,7 @@ function Topic({ card, onPress }: { card: TopicCard; onPress: () => void }) {
           textSize={12}
           color={card.color}
           trackColor="#FFFFFFCC"
-          label={`${card.title} Fortschritt`}
+          label={t.learn.progressLabel(card.title)}
         />
       </View>
       <View style={{ gap: 2 }}>
@@ -103,7 +105,11 @@ function Topic({ card, onPress }: { card: TopicCard; onPress: () => void }) {
         <AppText variant="caption" color={colors.ink} style={{ fontWeight: '800' }}>
           {card.detail}
         </AppText>
-        <Ionicons name="arrow-forward-circle" size={22} color={card.color} />
+        <Ionicons
+          name={isRTL ? 'arrow-back-circle' : 'arrow-forward-circle'}
+          size={22}
+          color={card.color}
+        />
       </View>
     </PressableScale>
   );
@@ -111,15 +117,16 @@ function Topic({ card, onPress }: { card: TopicCard; onPress: () => void }) {
 
 /** Redemittel entry: coral banner with what is due and new, so the learner sees it without hunting for it. */
 function RedemittelBanner({ onPress }: { onPress: () => void }) {
+  const { t, isRTL } = useI18n();
   const hub = useRedemittelHub().data;
   const detail = hub
     ? [
-        hub.dueCount > 0 ? `${hub.dueCount} zur Wiederholung` : null,
-        hub.newToday > 0 ? `${hub.newToday} neue` : null,
+        hub.dueCount > 0 ? t.learn.redemittelDue(hub.dueCount) : null,
+        hub.newToday > 0 ? t.learn.redemittelNew(hub.newToday) : null,
       ]
         .filter(Boolean)
-        .join(' · ') || 'Ausdrücke für Schreiben & Sprechen'
-    : 'Ausdrücke für Schreiben & Sprechen';
+        .join(' · ') || t.learn.redemittelHint
+    : t.learn.redemittelHint;
   return (
     <PressableScale
       accessibilityRole="button"
@@ -142,7 +149,11 @@ function RedemittelBanner({ onPress }: { onPress: () => void }) {
           {detail}
         </AppText>
       </View>
-      <Ionicons name="arrow-forward-circle" size={26} color={REDEMITTEL_COLOR} />
+      <Ionicons
+        name={isRTL ? 'arrow-back-circle' : 'arrow-forward-circle'}
+        size={26}
+        color={REDEMITTEL_COLOR}
+      />
     </PressableScale>
   );
 }
@@ -150,6 +161,7 @@ function RedemittelBanner({ onPress }: { onPress: () => void }) {
 /** Learn tab: greeting hero, today's highlights, and every learning area with its progress. */
 export function LearnScreen() {
   const router = useRouter();
+  const { t } = useI18n();
   const name = useAuthStore((s) => s.profile?.displayName);
   const overview = useProgressOverview();
   const dashboard = useDashboard();
@@ -162,26 +174,26 @@ export function LearnScreen() {
   return (
     <HeroScreen
       art={<LearnIllustration />}
-      title={name ? `Hallo, ${name.split(' ')[0]}!` : 'Hallo!'}
-      subtitle="Was möchtest du heute lernen?"
-      sheetTitle="Deine Lerninhalte"
+      title={t.learn.greeting(name?.split(' ')[0])}
+      subtitle={t.learn.subtitle}
+      sheetTitle={t.learn.sheetTitle}
       refreshControl={
         <RefreshControl refreshing={refreshing && !overview.isPending} onRefresh={refresh} />
       }
     >
       <AppText style={styles.sectionTitle} accessibilityRole="header">
-        Heute
+        {t.learn.today}
       </AppText>
       <View style={styles.featuredRow}>
-        {featuredCards(overview.data, dashboard.data).map((c) => (
+        {featuredCards(overview.data, dashboard.data, t.learn).map((c) => (
           <Featured key={c.key} card={c} onPress={() => router.push(c.href)} />
         ))}
       </View>
       <AppText style={styles.sectionTitle} accessibilityRole="header">
-        Lernbereiche
+        {t.learn.areas}
       </AppText>
       <View style={styles.grid}>
-        {topicCards(overview.data).map((c) => (
+        {topicCards(overview.data, t.learn).map((c) => (
           <Topic key={c.key} card={c} onPress={() => router.push(c.href)} />
         ))}
       </View>
@@ -189,9 +201,9 @@ export function LearnScreen() {
       {overview.isError ? (
         <View style={styles.error}>
           <AppText variant="small" color={colors.mutedForeground} center>
-            Der Fortschritt konnte nicht geladen werden.
+            {t.learn.progressFailed}
           </AppText>
-          <Button label="Erneut versuchen" variant="ghost" onPress={refresh} />
+          <Button label={t.common.retry} variant="ghost" onPress={refresh} />
         </View>
       ) : null}
     </HeroScreen>

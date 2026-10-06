@@ -16,6 +16,7 @@ import {
 } from '@/components/ui';
 import { useDashboard } from '@/features/dashboard/hooks';
 import { weekDays } from '@/features/dashboard/viewModel';
+import { useI18n } from '@/i18n';
 import { IconButton, PressableScale, tint } from '@/features/exam/components/kit';
 import { colors, radius, spacing } from '@/theme';
 import type { CategoryProgress, ProgressOverview, ProgressStats } from '@/types/progress';
@@ -494,6 +495,7 @@ function Milestones({ stats }: { stats: ProgressStats }) {
 }
 
 export function ProgressScreen() {
+  const { t } = useI18n();
   const router = useRouter();
   const overview = useProgressOverview();
   const stats = useProgressStats();
@@ -544,7 +546,7 @@ export function ProgressScreen() {
   }
 
   const exam = s.examPerformance;
-  const week = dashboard.data ? weekDays(dashboard.data.week.days, new Date()) : undefined;
+  const week = dashboard.data ? weekDays(dashboard.data.week.days, new Date(), t.home) : undefined;
   const areas: Area[] = [
     {
       key: 'mastered',

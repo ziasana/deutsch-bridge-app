@@ -321,7 +321,7 @@ describe('ReadingQuizScreen', () => {
     quiz.start.mockRejectedValueOnce(new ApiError('network', 'Keine Verbindung.'));
     await wrap(<ReadingQuizScreen />);
     expect(await screen.findByText('Keine Verbindung.')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('Frage 1 von 2')).toBeTruthy();
   });
 });

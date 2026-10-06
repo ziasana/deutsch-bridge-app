@@ -11,7 +11,8 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppText } from '@/components/ui';
+import { AppText, DirectionalIcon } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import { TEXT_SCALES, useExamTextSize } from '../textScale';
 
@@ -179,7 +180,7 @@ export function IconButton({
       hitSlop={spacing.xs}
       style={({ pressed }) => [styles.iconBtn, pressed && { backgroundColor: colors.muted }]}
     >
-      <Ionicons name={name} size={26} color={color} />
+      <DirectionalIcon name={name} size={26} color={color} />
     </Pressable>
   );
 }
@@ -189,15 +190,16 @@ export function IconButton({
  * Tap either A to step down / up; the choice is remembered for every exercise.
  */
 export function TextSizeControl() {
+  const { t } = useI18n();
   const index = useExamTextSize((s) => s.index);
   const larger = useExamTextSize((s) => s.larger);
   const smaller = useExamTextSize((s) => s.smaller);
   const last = TEXT_SCALES.length - 1;
   return (
-    <View style={styles.sizeRow} accessibilityRole="adjustable" accessibilityLabel="Schriftgröße">
+    <View style={styles.sizeRow} accessibilityRole="adjustable" accessibilityLabel={t.common.textSize}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Schrift verkleinern"
+        accessibilityLabel={t.common.smaller}
         accessibilityState={{ disabled: index === 0 }}
         disabled={index === 0}
         onPress={smaller}
@@ -216,7 +218,7 @@ export function TextSizeControl() {
       </View>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Schrift vergrößern"
+        accessibilityLabel={t.common.larger}
         accessibilityState={{ disabled: index === last }}
         disabled={index === last}
         onPress={larger}

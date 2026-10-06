@@ -170,7 +170,7 @@ describe('Schreiben', () => {
     await fireEvent.press(screen.getByRole('button', { name: '💬 Redemittel' }));
     expect(await screen.findByText(/Ich würde gern/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: '📖 Beispiel' })).toBeNull(); // Üben has only Tipp + Redemittel
-    await fireEvent.press(screen.getAllByRole('button', { name: 'Schließen' })[0]);
+    await fireEvent.press(screen.getAllByRole('button', { name: 'Close' })[0]);
 
     await fireEvent.press(screen.getByRole('button', { name: 'Prüfung' }));
     expect(screen.queryByRole('button', { name: 'Hilfe' })).toBeNull();

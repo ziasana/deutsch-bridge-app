@@ -12,6 +12,7 @@ import {
   Screen,
   Skeleton,
 } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { useAuthStore } from '@/stores/authStore';
 import { colors, spacing } from '@/theme';
 import { QuizRunner } from './components/QuizRunner';
@@ -29,6 +30,8 @@ type Phase = 'idle' | 'active' | 'results';
 
 export function LessonQuizScreen() {
   const router = useRouter();
+  const { t } = useI18n();
+  const g = t.grammar;
   const { lessonId } = useLocalSearchParams<{ lessonId: string }>();
   const persian = useAuthStore((s) => s.profile?.preferredLanguage === 'PR');
   const lessonQuery = useLesson(lessonId);
@@ -57,13 +60,13 @@ export function LessonQuizScreen() {
   const savedCorrect = questions.filter((q) => saved.get(questionKey(lessonId, q.index))).length;
   const allAnswered = questions.length > 0 && answeredCount === questions.length;
 
-  const title = lesson ? localizedHeading(lesson, persian).title : 'Übungen';
+  const title = lesson ? localizedHeading(lesson, persian).title : g.quizTitle;
 
   if (lessonQuery.isPending || progress.isPending) {
     return (
       <Screen>
-        <Header title="Übungen" back />
-        <View accessibilityLabel="Übungen werden geladen" style={{ gap: spacing.md }}>
+        <Header title={g.quizTitle} back />
+        <View accessibilityLabel={g.quizLoading} style={{ gap: spacing.md }}>
           <Skeleton height={8} />
           <Card style={{ gap: spacing.sm }}>
             <Skeleton height={24} />
@@ -76,7 +79,7 @@ export function LessonQuizScreen() {
   if (lessonQuery.isError || progress.isError || !lesson) {
     return (
       <Screen>
-        <Header title="Übungen" back />
+        <Header title={g.quizTitle} back />
         <ErrorState
           error={lessonQuery.error ?? progress.error}
           onRetry={() => {
@@ -93,9 +96,9 @@ export function LessonQuizScreen() {
         <Header title={title} back />
         <EmptyState
           emoji="🧩"
-          title="Keine Übungen"
-          message="Zu dieser Lektion gibt es noch keine Fragen."
-          actionLabel="Zur Lektion"
+          title={g.noExercisesTitle}
+          message={g.noExercisesMessage}
+          actionLabel={g.toLesson}
           onAction={() => router.back()}
         />
       </Screen>
@@ -128,14 +131,12 @@ export function LessonQuizScreen() {
   if (current === 'idle') {
     body = (
       <Card tone="accent" style={{ gap: spacing.md, padding: spacing.xl }}>
-        <AppText variant="heading">{questions.length} Fragen</AppText>
+        <AppText variant="heading">{g.questionsHeading(questions.length)}</AppText>
         <AppText color={colors.mutedForeground}>
-          {answeredCount > 0
-            ? `${answeredCount} von ${questions.length} bereits beantwortet. Du machst dort weiter, wo du aufgehört hast.`
-            : 'Teste, was du in dieser Lektion gelernt hast.'}
+          {answeredCount > 0 ? g.alreadyAnswered(answeredCount, questions.length) : g.testYourself}
         </AppText>
         <Button
-          label={answeredCount > 0 ? 'Fortsetzen' : 'Starten'}
+          label={answeredCount > 0 ? g.continue : g.start}
           onPress={() => setPhase('active')}
         />
       </Card>
@@ -164,23 +165,23 @@ export function LessonQuizScreen() {
     const perfect = correctNow === questions.length;
     body = (
       <LearningCelebration
-        title={resultTitle(correctNow, questions.length)}
-        subtitle={perfect ? 'Alle Fragen richtig – Lektion gelernt' : 'Übungen abgeschlossen'}
+        title={resultTitle(correctNow, questions.length, t.common.result)}
+        subtitle={perfect ? g.allRight : g.exercisesDone}
         progress={{ value: correctNow, max: questions.length }}
-        progressLabel={`${correctNow} von ${questions.length} richtig`}
-        encouragement={perfect ? undefined : 'Mit jeder Runde sitzt es besser.'}
-        primaryAction={{ label: 'Noch einmal üben', onPress: retry }}
-        secondaryAction={{ label: 'Zur Lektion', onPress: () => router.back() }}
+        progressLabel={g.correctOf(correctNow, questions.length)}
+        encouragement={perfect ? undefined : g.everyRound}
+        primaryAction={{ label: g.practiceAgain, onPress: retry }}
+        secondaryAction={{ label: g.toLesson, onPress: () => router.back() }}
       />
     );
   }
 
   return (
     <Screen keyboardAware>
-      <Header title={title} subtitle="Übungen" back />
+      <Header title={title} subtitle={g.quizTitle} back />
       {save.isError ? (
         <AppText variant="small" color={colors.destructive} accessibilityRole="alert">
-          Dein Fortschritt konnte nicht gespeichert werden.
+          {g.saveFailed}
         </AppText>
       ) : null}
       {reset.error ? (

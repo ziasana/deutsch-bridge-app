@@ -14,22 +14,18 @@ import {
   Screen,
   Skeleton,
 } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { colors, spacing } from '@/theme';
 import { resultTitle } from '@/utils/feedback';
 import { ContextQuestion } from './components/ContextQuestion';
 import { Flashcard } from './components/Flashcard';
 import { usePracticeSession, useSubmitRound } from './hooks';
-import {
-  MASTERY_LABEL,
-  initialState,
-  sessionPercent,
-  summarize,
-  trainerReducer,
-} from './trainerLogic';
+import { initialState, sessionPercent, summarize, trainerReducer } from './trainerLogic';
 
 function SessionSkeleton() {
+  const { t } = useI18n();
   return (
-    <View accessibilityLabel="Training wird geladen" style={{ gap: spacing.md }}>
+    <View accessibilityLabel={t.vocabulary.trainer.loading} style={{ gap: spacing.md }}>
       <Skeleton height={8} />
       <Card style={{ gap: spacing.md }}>
         <Skeleton width="60%" height={36} />
@@ -41,6 +37,8 @@ function SessionSkeleton() {
 
 export function VocabularyTrainerScreen() {
   const router = useRouter();
+  const { t } = useI18n();
+  const tr = t.vocabulary.trainer;
   const { vocabularyItemId } = useLocalSearchParams<{ vocabularyItemId?: string }>();
   const session = usePracticeSession(vocabularyItemId);
   const submit = useSubmitRound();
@@ -84,9 +82,9 @@ export function VocabularyTrainerScreen() {
     body = (
       <EmptyState
         emoji="📚"
-        title="Noch keine Wörter zum Üben"
-        message="Speichere Wörter aus Daily Words oder dem Tutor, dann erscheinen sie hier."
-        actionLabel="Zu Daily Words"
+        title={tr.noneTitle}
+        message={tr.noneMessage}
+        actionLabel={tr.toDaily}
         onAction={() => router.push('/learn/daily-words')}
       />
     );
@@ -94,31 +92,27 @@ export function VocabularyTrainerScreen() {
     const { newCount, reviewCount } = session.data!;
     body = (
       <Card tone="accent" style={{ gap: spacing.md, padding: spacing.xl }}>
-        <AppText variant="heading">{items.length} Wörter bereit</AppText>
-        <AppText color={colors.mutedForeground}>
-          {newCount} neu · {reviewCount} zur Wiederholung
-        </AppText>
-        <AppText color={colors.mutedForeground}>
-          Dreh die Karte um, bewerte dich ehrlich und beantworte die Kontextfrage.
-        </AppText>
-        <Button label="Training starten" onPress={() => dispatch({ type: 'START' })} />
+        <AppText variant="heading">{tr.ready(items.length)}</AppText>
+        <AppText color={colors.mutedForeground}>{tr.counts(newCount, reviewCount)}</AppText>
+        <AppText color={colors.mutedForeground}>{tr.intro}</AppText>
+        <Button label={tr.start} onPress={() => dispatch({ type: 'START' })} />
       </Card>
     );
   } else if (state.stage === 'done') {
     const s = summarize(state.results);
     body = (
       <LearningCelebration
-        title={resultTitle(s.correct, s.total)}
-        subtitle="Vocabulary-Training abgeschlossen"
+        title={resultTitle(s.correct, s.total, t.common.result)}
+        subtitle={tr.doneSubtitle}
         progress={{ value: s.correct, max: s.total }}
-        progressLabel={`${s.correct} von ${s.total} richtig`}
+        progressLabel={t.grammar.correctOf(s.correct, s.total)}
         encouragement={
           s.contextAsked > 0
-            ? `Erinnern: ${s.recallAccuracy}% · Kontext: ${s.contextAccuracy}%`
-            : `Erinnern: ${s.recallAccuracy}%`
+            ? tr.recallContext(s.recallAccuracy, s.contextAccuracy)
+            : tr.recall(s.recallAccuracy)
         }
-        primaryAction={{ label: 'Noch einmal', onPress: restart }}
-        secondaryAction={{ label: 'Zurück zum Dashboard', onPress: goToDashboard }}
+        primaryAction={{ label: tr.again, onPress: restart }}
+        secondaryAction={{ label: tr.toDashboard, onPress: goToDashboard }}
       />
     );
   } else if (item) {
@@ -131,15 +125,13 @@ export function VocabularyTrainerScreen() {
           <View
             style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
           >
-            <AppText variant="subheading">
-              Wort {state.index + 1} von {items.length}
-            </AppText>
+            <AppText variant="subheading">{tr.wordOf(state.index + 1, items.length)}</AppText>
             <View style={{ flexDirection: 'row', gap: spacing.sm }}>
               {item.level ? <Badge tone="primary" label={item.level} /> : null}
-              {hasContext ? <Badge label={`Schritt ${stepNumber} von 2`} /> : null}
+              {hasContext ? <Badge label={tr.stepOf(stepNumber)} /> : null}
             </View>
           </View>
-          <ProgressBar value={sessionPercent(state, items.length)} label="Trainingsfortschritt" />
+          <ProgressBar value={sessionPercent(state, items.length)} label={tr.progress} />
         </View>
 
         {(state.stage === 'flashcard' || (state.stage === 'result' && !hasContext)) && (
@@ -152,11 +144,11 @@ export function VocabularyTrainerScreen() {
             {!judged && state.flipped ? (
               <View style={{ gap: spacing.sm }}>
                 <AppText variant="small" color={colors.mutedForeground} center>
-                  Wusstest du die Bedeutung?
+                  {tr.didYouKnow}
                 </AppText>
-                <Button label="Gewusst" loading={submit.isPending} onPress={() => grade(true)} />
+                <Button label={tr.knew} loading={submit.isPending} onPress={() => grade(true)} />
                 <Button
-                  label="Nicht gewusst"
+                  label={tr.didNotKnow}
                   variant="secondary"
                   disabled={submit.isPending}
                   onPress={() => grade(false)}
@@ -186,19 +178,19 @@ export function VocabularyTrainerScreen() {
         {judged && state.round ? (
           <Card tone="accent" style={{ gap: spacing.sm }}>
             <AppText variant="subheading" accessibilityRole="alert">
-              {state.round.flashcardCorrect ? '✓ Gewusst' : '✕ Nicht gewusst'}
+              {state.round.flashcardCorrect ? tr.knewResult : tr.didNotKnowResult}
               {state.round.contextCorrect === null
                 ? ''
                 : state.round.contextCorrect
-                  ? ' · ✓ Kontext richtig'
-                  : ' · ✕ Kontext nicht richtig'}
+                  ? tr.contextRight
+                  : tr.contextWrong}
             </AppText>
             <Badge
               tone="primary"
-              label={`Stufe: ${MASTERY_LABEL[state.round.progress.masteryLevel]}`}
+              label={tr.stage(t.vocabulary.mastery[state.round.progress.masteryLevel])}
             />
             <Button
-              label={state.index + 1 >= items.length ? 'Ergebnis ansehen' : 'Weiter'}
+              label={state.index + 1 >= items.length ? tr.seeResult : tr.next}
               onPress={() => dispatch({ type: 'NEXT', total: items.length })}
             />
           </Card>
@@ -209,7 +201,7 @@ export function VocabularyTrainerScreen() {
 
   return (
     <Screen>
-      <Header title="Vocabulary" subtitle="Wortschatz trainieren" back />
+      <Header title={tr.title} subtitle={tr.subtitle} back />
       {body}
     </Screen>
   );

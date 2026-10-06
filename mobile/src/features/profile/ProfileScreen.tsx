@@ -9,6 +9,7 @@ import { totals, buildAchievements } from '@/features/achievements/model';
 import { useDashboard } from '@/features/dashboard/hooks';
 import { useUnreadCount } from '@/features/notifications/hooks';
 import { useProgressOverview, useProgressStats } from '@/features/progress/hooks';
+import { useI18n } from '@/i18n';
 import { useAuthStore } from '@/stores/authStore';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import { Avatar } from './Avatar';
@@ -25,6 +26,7 @@ type Row = {
 };
 
 function MenuRow({ row, onPress }: { row: Row; onPress: () => void }) {
+  const { isRTL } = useI18n();
   return (
     <Pressable
       accessibilityRole="button"
@@ -50,7 +52,11 @@ function MenuRow({ row, onPress }: { row: Row; onPress: () => void }) {
           </AppText>
         </View>
       ) : null}
-      <Ionicons name="caret-forward-outline" size={20} color={colors.mutedForeground} />
+      <Ionicons
+        name={isRTL ? 'caret-back-outline' : 'caret-forward-outline'}
+        size={20}
+        color={colors.mutedForeground}
+      />
     </Pressable>
   );
 }
@@ -69,6 +75,7 @@ function Stat({ value, label }: { value: string; label: string }) {
 /** Profile tab: wavy blue header with the learner card, quick stats, and the account menu. */
 export function ProfileScreen() {
   const router = useRouter();
+  const { t } = useI18n();
   const { width } = useWindowDimensions();
   const header = useHeaderScroll(width * 0.25);
   const profile = useAuthStore((s) => s.profile);
@@ -86,14 +93,14 @@ export function ProfileScreen() {
   const rows: Row[] = [
     {
       key: 'settings',
-      title: 'Einstellungen',
+      title: t.profile.settings,
       icon: 'settings-outline',
       color: '#3F86F0',
       href: '/settings',
     },
     {
       key: 'achievements',
-      title: 'Erfolge',
+      title: t.profile.achievements,
       icon: 'trophy-outline',
       color: '#F2B42D',
       href: '/achievements',
@@ -101,18 +108,18 @@ export function ProfileScreen() {
     },
     {
       key: 'progress',
-      title: 'Fortschritt',
+      title: t.profile.progress,
       icon: 'stats-chart-outline',
       color: '#2E8B57',
       href: '/progress',
     },
     {
       key: 'notifications',
-      title: 'Benachrichtigungen',
+      title: t.profile.notifications,
       icon: 'notifications-outline',
       color: '#F2703D',
       href: '/settings/notifications',
-      badge: unread > 0 ? { text: `${unread} neu`, color: '#F2703D' } : undefined,
+      badge: unread > 0 ? { text: t.profile.newCount(unread), color: '#F2703D' } : undefined,
     },
   ];
 
@@ -135,11 +142,11 @@ export function ProfileScreen() {
           <View style={styles.topBar}>
             <View style={styles.topSide} />
             <AppText style={styles.topTitle} color="#FFFFFF" accessibilityRole="header">
-              Mein Profil
+              {t.profile.title}
             </AppText>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Einstellungen"
+              accessibilityLabel={t.profile.settings}
               onPress={() => router.push('/settings')}
               hitSlop={8}
               style={styles.squareBtn}
@@ -165,12 +172,12 @@ export function ProfileScreen() {
                 {profile?.email}
               </AppText>
               <AppText variant="small" color={colors.primaryDark} style={styles.level}>
-                {level ? `Niveau ${level}` : 'Neu dabei'}
+                {level ? t.profile.levelLabel(level) : t.profile.newHere}
               </AppText>
             </View>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Profil bearbeiten"
+              accessibilityLabel={t.profile.editProfile}
               onPress={() => router.push('/settings/account')}
               hitSlop={8}
               style={styles.editBtn}
@@ -181,16 +188,19 @@ export function ProfileScreen() {
         </SafeAreaView>
 
         <View style={styles.statsRow}>
-          <Stat value={overview.data ? String(overview.data.totalLearned) : '–'} label="Gelernt" />
+          <Stat
+            value={overview.data ? String(overview.data.totalLearned) : '–'}
+            label={t.profile.learned}
+          />
           <View style={styles.divider} />
-          <Stat value={stats.data ? `${sum.earned}` : '–'} label="Sterne" />
+          <Stat value={stats.data ? `${sum.earned}` : '–'} label={t.profile.stars} />
           <View style={styles.divider} />
-          <Stat value={profile?.preferredLanguage ?? 'EN'} label="Erklärsprache" />
+          <Stat value={profile?.preferredLanguage ?? 'EN'} label={t.profile.explanationLanguage} />
         </View>
 
         <View style={styles.card}>
           <AppText variant="small" color={colors.mutedForeground}>
-            Übersicht
+            {t.profile.overview}
           </AppText>
           {rows.map((r) => (
             <MenuRow key={r.key} row={r} onPress={() => router.push(r.href)} />
@@ -199,26 +209,26 @@ export function ProfileScreen() {
 
         <View style={styles.card}>
           <AppText variant="small" color={colors.mutedForeground}>
-            Mein Konto
+            {t.profile.myAccount}
           </AppText>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Konto und Passwort"
+            accessibilityLabel={t.profile.accountAndPassword}
             onPress={() => router.push('/settings/account')}
             style={styles.link}
           >
             <AppText variant="subheading" color="#3F51B5">
-              Konto & Passwort
+              {t.profile.accountAndPassword}
             </AppText>
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Abmelden"
+            accessibilityLabel={t.profile.logout}
             onPress={confirmLogout}
             style={styles.link}
           >
             <AppText variant="subheading" color="#E5654F">
-              Abmelden
+              {t.profile.logout}
             </AppText>
           </Pressable>
         </View>
@@ -226,9 +236,9 @@ export function ProfileScreen() {
       <ConfirmSheet
         visible={logoutOpen}
         destructive
-        title="Abmelden?"
-        message="Möchtest du dich wirklich abmelden?"
-        confirmLabel="Abmelden"
+        title={t.profile.logoutTitle}
+        message={t.profile.logoutMessage}
+        confirmLabel={t.profile.logout}
         onConfirm={() => {
           setLogoutOpen(false);
           void signOut();
@@ -282,7 +292,8 @@ const styles = StyleSheet.create({
     elevation: 6,
     backgroundColor: '#FFFFFF',
   },
-  identityText: { flex: 1, gap: 2 },
+  // flex-start is the start edge of the reading direction: right in Persian, left in English.
+  identityText: { flex: 1, gap: 2, alignItems: 'flex-start' },
   name: { fontSize: 24, lineHeight: 30, fontWeight: '700', color: colors.ink },
   level: { fontWeight: '700' },
   editBtn: {

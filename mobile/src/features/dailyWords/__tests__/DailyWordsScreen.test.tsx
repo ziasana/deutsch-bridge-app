@@ -174,7 +174,7 @@ describe('DailyWordsScreen', () => {
     await renderScreen();
     expect(await screen.findByText('Keine Verbindung.')).toBeTruthy();
     getToday.mockResolvedValueOnce(makeWords());
-    await fireEvent.press(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
     expect((await screen.findAllByText('berücksichtigen')).length).toBeGreaterThan(0); // word + highlighted in its example
   });
 });

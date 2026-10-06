@@ -144,7 +144,7 @@ describe('ExpressionListScreen', () => {
     await wrap(<ExpressionListScreen />);
     expect(await screen.findByText('Der Server ist gerade nicht erreichbar.')).toBeTruthy();
     api.page.mockResolvedValueOnce(page([listItem(1)]));
-    await fireEvent.press(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('ins Auge fassen 1')).toBeTruthy();
   });
 });
@@ -340,7 +340,7 @@ describe('ExpressionPracticeScreen', () => {
     await wrap(<ExpressionPracticeScreen />);
     expect(await screen.findByText('Keine Verbindung.')).toBeTruthy();
     practice.session.mockResolvedValueOnce(session(2));
-    await fireEvent.press(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('2 Wendungen bereit')).toBeTruthy();
   });
 });

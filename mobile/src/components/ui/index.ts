@@ -19,3 +19,5 @@ export * from './Header';
 export * from './BottomSheet';
 export * from './ConfirmSheet';
 export * from './StateIllustrations';
+export { DirectionalIcon } from './DirectionalIcon';
+export * from './HorizontalScroll';

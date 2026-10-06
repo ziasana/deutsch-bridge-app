@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText, Card } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type { PracticeContextQuestion } from '@/types/vocabulary';
 
@@ -13,12 +14,13 @@ type Props = {
 };
 
 export function ContextQuestion({ question, selectedKey, correctKey, busy, onSelect }: Props) {
+  const { t } = useI18n();
   const judged = correctKey !== null;
   return (
     <View style={styles.gap}>
       <Card style={styles.gap}>
         <AppText variant="caption" color={colors.primaryDark}>
-          {question.isCloze ? 'LÜCKENTEXT' : 'KONTEXT'}
+          {question.isCloze ? t.vocabulary.trainer.cloze : t.vocabulary.trainer.contextHeading}
         </AppText>
         <AppText variant="heading">{question.prompt}</AppText>
       </Card>

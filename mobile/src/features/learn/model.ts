@@ -1,4 +1,5 @@
 import type { Href } from 'expo-router';
+import type { Dictionary } from '@/i18n';
 import type { DashboardResponse } from '@/types/dashboard';
 import type { CategoryProgress, ProgressOverview } from '@/types/progress';
 import { percent } from '@/features/progress/segments';
@@ -31,8 +32,9 @@ const DEFAULT_GOAL = 5;
 
 /** The two highlighted cards: today's word goal and what is due for review. */
 export function featuredCards(
-  overview?: ProgressOverview,
-  dashboard?: DashboardResponse,
+  overview: ProgressOverview | undefined,
+  dashboard: DashboardResponse | undefined,
+  t: Dictionary['learn'],
 ): FeaturedCard[] {
   const goal = overview?.dailyGoalWords ?? DEFAULT_GOAL;
   const today = overview?.itemsLearnedToday ?? 0;
@@ -40,17 +42,17 @@ export function featuredCards(
   return [
     {
       key: 'daily',
-      title: 'Daily Words',
+      title: t.dailyWords,
       headline: `${today}/${goal}`,
-      caption: 'Wörter heute',
+      caption: t.wordsToday,
       href: '/learn/daily-words',
       progress: percent(today, goal),
     },
     {
       key: 'review',
-      title: 'Wiederholen',
+      title: t.review,
       headline: dashboard ? String(due) : '–',
-      caption: 'fällig',
+      caption: t.due,
       href: '/learn/review',
       progress: null,
     },
@@ -62,50 +64,53 @@ const pct = (c?: CategoryProgress) => (c ? percent(c.learned, c.total) : 0);
 const detail = (c?: CategoryProgress) => `${c?.learned ?? 0} / ${c?.total ?? 0}`;
 
 /** Learning areas with how far the learner is in each. */
-export function topicCards(overview?: ProgressOverview): TopicCard[] {
+export function topicCards(
+  overview: ProgressOverview | undefined,
+  t: Dictionary['learn'],
+): TopicCard[] {
   return [
     {
       key: 'vocabulary',
       emoji: '📚',
-      title: 'Wortschatz',
+      title: t.vocabulary,
       percent: pct(overview?.dailyWords),
       href: '/learn/vocabulary',
       tint: '#E4EEFF',
       color: '#4D94FF',
-      subtitle: 'Wörter sammeln & üben',
+      subtitle: t.vocabularyHint,
       detail: detail(overview?.dailyWords),
     },
     {
       key: 'grammar',
       emoji: '🧩',
-      title: 'Grammatik',
+      title: t.grammar,
       percent: pct(overview?.grammar),
       href: '/learn/grammar',
       tint: '#FDEFE0',
       color: '#E8892B',
-      subtitle: 'Regeln verstehen',
+      subtitle: t.grammarHint,
       detail: detail(overview?.grammar),
     },
     {
       key: 'expressions',
       emoji: '💬',
-      title: 'Redewendungen',
+      title: t.expressions,
       percent: pct(overview?.expressions),
       href: '/learn/expressions',
       tint: '#E4F6EE',
       color: '#27AE7A',
-      subtitle: 'Natürlich sprechen',
+      subtitle: t.expressionsHint,
       detail: detail(overview?.expressions),
     },
     {
       key: 'reading',
       emoji: '📖',
-      title: 'Lesen',
+      title: t.reading,
       percent: pct(overview?.reading),
       href: '/learn/reading',
       tint: '#F1E9FD',
       color: '#8B5CF6',
-      subtitle: 'Texte lesen & verstehen',
+      subtitle: t.readingHint,
       detail: detail(overview?.reading),
     },
   ];

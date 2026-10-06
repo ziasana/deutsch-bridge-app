@@ -71,7 +71,7 @@ describe('TutorScreen', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Senden' }));
     expect(await screen.findByText('Keine Verbindung.')).toBeTruthy();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('Jetzt klappt es.')).toBeTruthy();
     expect(screen.getAllByText('Hilfe')).toHaveLength(1);
     expect(chat.send).toHaveBeenCalledTimes(2);

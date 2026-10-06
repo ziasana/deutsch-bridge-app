@@ -4,16 +4,21 @@ import { Tabs } from 'expo-router';
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
 import { notificationKeys, useUnreadCount } from '@/features/notifications/hooks';
+import { useI18n } from '@/i18n';
 import { colors } from '@/theme';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
-const TABS: { name: string; title: string; icon: IconName; iconActive: IconName }[] = [
-  { name: 'home', title: 'Home', icon: 'home-outline', iconActive: 'home' },
-  { name: 'learn', title: 'Learn', icon: 'book-outline', iconActive: 'book' },
-  { name: 'exam', title: 'Exam', icon: 'ribbon-outline', iconActive: 'ribbon' },
-  { name: 'tutor', title: 'Tutor', icon: 'chatbubbles-outline', iconActive: 'chatbubbles' },
-  { name: 'profile', title: 'Profile', icon: 'person-outline', iconActive: 'person' },
+const TABS: {
+  name: 'home' | 'learn' | 'exam' | 'tutor' | 'profile';
+  icon: IconName;
+  iconActive: IconName;
+}[] = [
+  { name: 'home', icon: 'home-outline', iconActive: 'home' },
+  { name: 'learn', icon: 'book-outline', iconActive: 'book' },
+  { name: 'exam', icon: 'ribbon-outline', iconActive: 'ribbon' },
+  { name: 'tutor', icon: 'chatbubbles-outline', iconActive: 'chatbubbles' },
+  { name: 'profile', icon: 'person-outline', iconActive: 'person' },
 ];
 
 export const unstable_settings = { initialRouteName: 'home' };
@@ -22,6 +27,7 @@ export const unstable_settings = { initialRouteName: 'home' };
 export default function TabsLayout() {
   const queryClient = useQueryClient();
   const unread = useUnreadCount().data ?? 0;
+  const { t: tr } = useI18n();
 
   // Coming back to the app (e.g. after a push arrived while it was closed) refreshes the badge.
   useEffect(() => {
@@ -48,7 +54,7 @@ export default function TabsLayout() {
           key={t.name}
           name={t.name}
           options={{
-            title: t.title,
+            title: tr.tabs[t.name],
             // Unread notifications live under Profile; the badge tells the learner they exist.
             tabBarBadge:
               t.name === 'profile' && unread > 0 ? (unread > 99 ? '99+' : unread) : undefined,

@@ -9,13 +9,16 @@ import {
   Button,
   Card,
   Chip,
+  DirectionalIcon,
   EmptyState,
   ErrorState,
   ProgressRing,
   Skeleton,
 } from '@/components/ui';
 import { IconButton, StatTile, tint } from '@/features/exam/components/kit';
+import { useI18n } from '@/i18n';
 import { useAuthStore } from '@/stores/authStore';
+import { HorizontalScroll } from '@/components/ui/HorizontalScroll';
 import { colors, radius, shadow, spacing } from '@/theme';
 import type { GrammarCategorySummary, GrammarLessonSummary } from '@/types/grammar';
 import { pickInitialLevel } from '@/utils/levels';
@@ -41,6 +44,7 @@ export function buildRows(
   categories: GrammarCategorySummary[],
   uncategorized: GrammarLessonSummary[],
   expanded: Record<string, boolean>,
+  otherTopics = 'Weitere Themen',
 ): Row[] {
   const rows: Row[] = [];
   categories.forEach((category, c) => {
@@ -61,7 +65,7 @@ export function buildRows(
     }
   });
   if (uncategorized.length > 0) {
-    if (categories.length > 0) rows.push({ kind: 'heading', title: 'Weitere Themen' });
+    if (categories.length > 0) rows.push({ kind: 'heading', title: otherTopics });
     uncategorized.forEach((lesson, i) =>
       rows.push({
         kind: 'lesson',
@@ -79,8 +83,9 @@ export const learnedIn = (lessons: GrammarLessonSummary[]) =>
   lessons.filter((l) => l.learned).length;
 
 function ListSkeleton() {
+  const { t } = useI18n();
   return (
-    <View accessibilityLabel="Grammatik wird geladen" style={{ gap: spacing.md }}>
+    <View accessibilityLabel={t.grammar.loading} style={{ gap: spacing.md }}>
       {[0, 1, 2].map((i) => (
         <Card key={i} style={{ gap: spacing.sm }}>
           <Skeleton width="60%" height={20} />
@@ -93,6 +98,8 @@ function ListSkeleton() {
 
 export function GrammarListScreen() {
   const router = useRouter();
+  const { t } = useI18n();
+  const g = t.grammar;
   const persian = useAuthStore((s) => s.profile?.preferredLanguage === 'PR');
   const profileLevel = useAuthStore((s) => s.profile?.learningLevel);
   const summary = useLevelSummary();
@@ -106,7 +113,12 @@ export function GrammarListScreen() {
 
   const rows = useMemo(() => {
     if (!onlySaved) {
-      return buildRows(view.data?.categories ?? [], view.data?.uncategorized ?? [], expanded);
+      return buildRows(
+        view.data?.categories ?? [],
+        view.data?.uncategorized ?? [],
+        expanded,
+        g.otherTopics,
+      );
     }
     const saved = [
       ...(view.data?.categories ?? []).flatMap((c) => c.lessons),
@@ -119,7 +131,7 @@ export function GrammarListScreen() {
       last: i === saved.length - 1,
       next: false,
     }));
-  }, [view.data, expanded, onlySaved]);
+  }, [view.data, expanded, onlySaved, g.otherTopics]);
 
   const refresh = () => {
     void summary.refetch();
@@ -144,20 +156,20 @@ export function GrammarListScreen() {
       <View style={[styles.hero, { backgroundColor: tint(colors.primary, '1F') }]}>
         <SafeAreaView edges={['top']}>
           <View style={styles.topRow}>
-            <IconButton name="arrow-back" label="Zurück" onPress={() => router.back()} />
+            <IconButton name="arrow-back" label={t.common.back} onPress={() => router.back()} />
             <View style={[styles.chip, { backgroundColor: tint(colors.primary, '33') }]}>
               <AppText variant="caption" color={colors.ink} style={{ fontWeight: '800' }}>
-                📘 GRAMMATIK{level ? ` · ${level}` : ''}
+                {g.chip(level)}
               </AppText>
             </View>
           </View>
           <View style={styles.heroMain}>
             <View style={{ flex: 1, gap: 2 }}>
               <AppText style={styles.title} accessibilityRole="header">
-                Grammatik
+                {g.title}
               </AppText>
               <AppText color={colors.ink} style={{ fontWeight: '500' }}>
-                Wähle dein Niveau und ein Thema
+                {g.subtitle}
               </AppText>
             </View>
             {current ? (
@@ -168,7 +180,7 @@ export function GrammarListScreen() {
                 color={colors.primary}
                 textSize={20}
                 trackColor="#FFFFFFCC"
-                label={`Fortschritt ${level}`}
+                label={g.levelProgress(level ?? '')}
               />
             ) : null}
           </View>
@@ -176,7 +188,7 @@ export function GrammarListScreen() {
       </View>
 
       {summaries.length > 0 ? (
-        <ScrollView
+        <HorizontalScroll
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.levels}
@@ -192,7 +204,7 @@ export function GrammarListScreen() {
               onPress={() => setPicked(s.level)}
             />
           ))}
-        </ScrollView>
+        </HorizontalScroll>
       ) : null}
 
       {view.data ? (
@@ -200,27 +212,27 @@ export function GrammarListScreen() {
           <View style={styles.tiles}>
             <StatTile
               icon="checkmark-circle-outline"
-              label="Erledigt"
+              label={g.tileDone}
               value={`${current?.learned ?? 0} / ${current?.total ?? 0}`}
               color={colors.success}
             />
             <StatTile
               icon="folder-open-outline"
-              label="Themenblöcke"
+              label={g.tileBlocks}
               value={String(categoryCount)}
               color={colors.primary}
             />
             <StatTile
               icon="star-outline"
-              label="Gemerkt"
+              label={g.tileSaved}
               value={String(bookmarked)}
               color={colors.warning}
             />
           </View>
           <View style={styles.filters}>
-            <Chip label="Alle Themen" selected={!onlySaved} onPress={() => setOnlySaved(false)} />
+            <Chip label={g.allTopics} selected={!onlySaved} onPress={() => setOnlySaved(false)} />
             <Chip
-              label={`★ Gemerkt (${bookmarked})`}
+              label={g.savedFilter(bookmarked)}
               selected={onlySaved}
               onPress={() => setOnlySaved(true)}
             />
@@ -229,7 +241,10 @@ export function GrammarListScreen() {
             <View style={{ marginTop: spacing.md }}>
               <Button
                 pill
-                label={`${current?.learned ? 'Weiter' : 'Starten'}: ${localizedHeading(nextLesson, persian).title}`}
+                label={g.nextLesson(
+                  current?.learned ? g.continue : g.start,
+                  localizedHeading(nextLesson, persian).title,
+                )}
                 onPress={() => openLesson(nextLesson.id)}
               />
             </View>
@@ -248,20 +263,14 @@ export function GrammarListScreen() {
     content = (
       <EmptyState
         emoji="⭐"
-        title="Noch nichts gemerkt"
-        message="Tippe in einer Lektion auf den Stern, um sie hier zu sammeln."
-        actionLabel="Alle Themen anzeigen"
+        title={g.emptySavedTitle}
+        message={g.emptySavedMessage}
+        actionLabel={g.showAllTopics}
         onAction={() => setOnlySaved(false)}
       />
     );
   } else if (rows.length === 0) {
-    content = (
-      <EmptyState
-        emoji="🧩"
-        title="Noch keine Lektionen"
-        message="Für dieses Niveau gibt es noch keine Lektionen. Schau später wieder vorbei oder wähle ein anderes Niveau."
-      />
-    );
+    content = <EmptyState emoji="🧩" title={g.emptyTitle} message={g.emptyMessage} />;
   } else {
     content = null;
   }
@@ -292,7 +301,7 @@ export function GrammarListScreen() {
                 stroke={6}
                 textSize={12}
                 color={done ? colors.success : colors.primary}
-                label={`${learned} von ${total} gelernt`}
+                label={g.categoryRing(learned, total)}
               />
               <View style={{ flex: 1, gap: 2 }}>
                 <AppText
@@ -300,25 +309,25 @@ export function GrammarListScreen() {
                   color={colors.mutedForeground}
                   style={{ fontWeight: '800' }}
                 >
-                  THEMA {item.index}
+                  {g.topicN(item.index)}
                 </AppText>
                 <AppText variant="subheading">
                   {(persian && category.level !== 'B2' && category.titleFa) || category.title}
                 </AppText>
                 <AppText variant="small" color={colors.mutedForeground}>
-                  {`${learned} von ${total} Themen gelernt`}
+                  {g.topicsLearned(learned, total)}
                 </AppText>
                 {status.completed ? (
                   <View style={{ alignSelf: 'flex-start', marginTop: 2 }}>
-                    <Badge tone="success" label="Abgeschlossen" />
+                    <Badge tone="success" label={g.completed} />
                   </View>
                 ) : status.passed ? (
                   <View style={{ alignSelf: 'flex-start', marginTop: 2 }}>
-                    <Badge tone="success" label="Test bestanden" />
+                    <Badge tone="success" label={g.testPassed} />
                   </View>
                 ) : null}
               </View>
-              <Ionicons
+              <DirectionalIcon
                 name={item.expanded ? 'chevron-up' : 'chevron-down'}
                 size={22}
                 color={colors.mutedForeground}
@@ -387,7 +396,7 @@ export function GrammarListScreen() {
                     color={colors.primaryDark}
                     style={{ fontWeight: '800' }}
                   >
-                    ALS NÄCHSTES
+                    {g.upNext}
                   </AppText>
                 ) : null}
                 <AppText variant="subheading">{text.title}</AppText>
@@ -397,11 +406,9 @@ export function GrammarListScreen() {
                   </AppText>
                 ) : null}
                 <View style={styles.tags}>
-                  {lesson.learned ? <Badge tone="success" label="Gelernt" /> : null}
+                  {lesson.learned ? <Badge tone="success" label={g.learned} /> : null}
                   {lesson.quizCount > 0 ? (
-                    <Badge
-                      label={`${lesson.quizCount} ${lesson.quizCount === 1 ? 'Frage' : 'Fragen'}`}
-                    />
+                    <Badge label={g.questionCount(lesson.quizCount)} />
                   ) : null}
                 </View>
               </View>
@@ -410,10 +417,10 @@ export function GrammarListScreen() {
                   name="star"
                   size={18}
                   color={colors.warning}
-                  accessibilityLabel="Gemerkt"
+                  accessibilityLabel={g.saved}
                 />
               ) : null}
-              <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
+              <DirectionalIcon name="chevron-forward" size={20} color={colors.mutedForeground} />
             </Pressable>
           </View>
         );
@@ -424,11 +431,7 @@ export function GrammarListScreen() {
           <View style={[styles.pad, { paddingVertical: spacing.sm }]}>
             <Button
               pill
-              label={
-                status.attempted
-                  ? `Kategorie-Test wiederholen (zuletzt ${status.score}/${status.total})`
-                  : 'Kategorie-Test starten'
-              }
+              label={status.attempted ? g.retakeTest(status.score, status.total) : g.startTest}
               variant="secondary"
               onPress={() =>
                 router.push({
@@ -500,6 +503,7 @@ function LevelTile({
   selected: boolean;
   onPress: () => void;
 }) {
+  const { t } = useI18n();
   const percent = total > 0 ? (learned / total) * 100 : 0;
   return (
     <Pressable
@@ -513,7 +517,7 @@ function LevelTile({
         {level}
       </AppText>
       <AppText variant="caption" color={selected ? '#FFFFFFD9' : colors.mutedForeground}>
-        {`${learned} von ${total}`}
+        {t.grammar.levelOf(learned, total)}
       </AppText>
       <View style={[styles.miniTrack, selected && { backgroundColor: '#FFFFFF55' }]}>
         <View
@@ -542,7 +546,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginLeft: -spacing.sm,
+    marginStart: -spacing.sm,
   },
   chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill },
   heroMain: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, paddingTop: spacing.sm },

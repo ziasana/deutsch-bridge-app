@@ -12,12 +12,13 @@ import {
   Skeleton,
 } from '@/components/ui';
 import { IconButton, PressableScale, StatTile, tint } from '@/features/exam/components/kit';
+import { useI18n } from '@/i18n';
 import { colors, radius, shadow, spacing } from '@/theme';
 import { playWordAudio } from './audio';
 import { MasteryDots, VocabularyHero } from './components/VocabularyViz';
 import { WordFormSheet } from './components/WordFormSheet';
 import { useDeleteVocabulary, useToggleVocabularyBookmark, useVocabularyItem } from './listHooks';
-import { ARTICLE_COLOR, SOURCE_LABEL, masteryOf, wordLabel } from './listLogic';
+import { ARTICLE_COLOR, masteryOf, wordLabel } from './listLogic';
 
 function Section({
   icon,
@@ -43,6 +44,8 @@ function Section({
 
 export function VocabularyDetailScreen() {
   const router = useRouter();
+  const { t } = useI18n();
+  const v = t.vocabulary;
   const { itemId } = useLocalSearchParams<{ itemId: string }>();
   const query = useVocabularyItem(itemId);
   const bookmark = useToggleVocabularyBookmark();
@@ -53,8 +56,8 @@ export function VocabularyDetailScreen() {
   if (query.isPending) {
     return (
       <Screen>
-        <Header title="Wort" back />
-        <View accessibilityLabel="Wort wird geladen" style={{ gap: spacing.md }}>
+        <Header title={v.word} back />
+        <View accessibilityLabel={v.loadingWord} style={{ gap: spacing.md }}>
           <Skeleton width="60%" height={36} />
           <Skeleton height={120} />
         </View>
@@ -64,7 +67,7 @@ export function VocabularyDetailScreen() {
   if (query.isError || !item) {
     return (
       <Screen>
-        <Header title="Wort" back />
+        <Header title={v.word} back />
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       </Screen>
     );
@@ -75,10 +78,10 @@ export function VocabularyDetailScreen() {
   const editable = item.source !== 'DICTIONARY';
   const accent = item.article ? (ARTICLE_COLOR[item.article] ?? colors.primary) : colors.primary;
   const confirmDelete = () =>
-    Alert.alert('Wort löschen?', `„${item.word}“ wird aus deinem Wortschatz entfernt.`, [
-      { text: 'Abbrechen', style: 'cancel' },
+    Alert.alert(v.deleteTitle, v.deleteMessage(item.word), [
+      { text: v.cancel, style: 'cancel' },
       {
-        text: 'Löschen',
+        text: v.delete,
         style: 'destructive',
         onPress: () => remove.mutate(item.id, { onSuccess: () => router.back() }),
       },
@@ -88,12 +91,12 @@ export function VocabularyDetailScreen() {
     <View style={styles.root}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <VocabularyHero
-          chip={`📚 ${SOURCE_LABEL[item.source].toUpperCase()}${item.level ? ` · ${item.level}` : ''}`}
+          chip={`${v.chip(v.sources[item.source])}${item.level ? ` · ${item.level}` : ''}`}
           title={wordLabel(item)}
           trailing={
             <IconButton
               name={item.bookmarked ? 'star' : 'star-outline'}
-              label={item.bookmarked ? 'Gemerkt' : 'Merken'}
+              label={item.bookmarked ? v.saved : v.save}
               color={item.bookmarked ? colors.warning : colors.ink}
               onPress={() => bookmark.mutate({ id: item.id, bookmarked: item.bookmarked })}
             />
@@ -101,7 +104,7 @@ export function VocabularyDetailScreen() {
           right={
             <PressableScale
               accessibilityRole="button"
-              accessibilityLabel="Aussprache anhören"
+              accessibilityLabel={v.listen}
               onPress={() => playWordAudio(item.audioUrl, item.word)}
               style={[styles.speaker, { backgroundColor: accent }]}
             >
@@ -115,57 +118,57 @@ export function VocabularyDetailScreen() {
         </VocabularyHero>
 
         <View style={styles.block}>
-          <Section icon="bulb-outline" title="Bedeutung">
+          <Section icon="bulb-outline" title={v.meaning}>
             <AppText style={styles.meaning}>{item.meaning}</AppText>
           </Section>
 
           {item.example ? (
-            <Section icon="chatbubble-ellipses-outline" title="Beispiel">
+            <Section icon="chatbubble-ellipses-outline" title={v.example}>
               <View style={styles.bubble}>
                 <AppText style={{ fontStyle: 'italic', fontWeight: '600' }}>
-                  „{item.example}“
+                  “{item.example}”
                 </AppText>
               </View>
             </Section>
           ) : null}
 
           {item.source === 'CUSTOM' && item.synonyms ? (
-            <Section icon="git-compare-outline" title="Synonyme">
+            <Section icon="git-compare-outline" title={v.synonyms}>
               <AppText color={colors.mutedForeground} style={{ fontStyle: 'italic' }}>
                 {item.synonyms}
               </AppText>
             </Section>
           ) : null}
 
-          <Section icon="trending-up-outline" title="Dein Fortschritt">
-            <ProgressBar value={overall} label="Gesamtfortschritt" />
+          <Section icon="trending-up-outline" title={v.progress}>
+            <ProgressBar value={overall} label={v.overall} />
             <AppText variant="small" color={colors.mutedForeground}>
-              Gesamt: {overall}%
+              {v.overallValue(overall)}
             </AppText>
             {item.progress ? (
               <View style={styles.tiles}>
                 <StatTile
                   icon="refresh-outline"
-                  label="Erinnern"
+                  label={v.recall}
                   value={`${Math.round(item.progress.recallScore)}%`}
                   color={colors.success}
                 />
                 <StatTile
                   icon="chatbubbles-outline"
-                  label="Kontext"
+                  label={v.context}
                   value={`${Math.round(item.progress.contextScore)}%`}
                   color={colors.primary}
                 />
                 <StatTile
                   icon="repeat-outline"
-                  label="Geübt"
+                  label={v.practised}
                   value={`${item.progress.reviewCount}×`}
                   color={colors.warning}
                 />
               </View>
             ) : (
               <AppText variant="small" color={colors.mutedForeground}>
-                Du hast dieses Wort noch nicht geübt.
+                {v.notPracticed}
               </AppText>
             )}
           </Section>
@@ -178,7 +181,7 @@ export function VocabularyDetailScreen() {
 
           <Button
             pill
-            label="Dieses Wort üben"
+            label={v.practiseWord}
             onPress={() =>
               router.push({ pathname: '/learn/review', params: { vocabularyItemId: item.id } })
             }
@@ -186,18 +189,13 @@ export function VocabularyDetailScreen() {
           {editable ? (
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
-                <Button
-                  pill
-                  variant="secondary"
-                  label="Bearbeiten"
-                  onPress={() => setEditing(true)}
-                />
+                <Button pill variant="secondary" label={v.edit} onPress={() => setEditing(true)} />
               </View>
               <View style={{ flex: 1 }}>
                 <Button
                   pill
                   variant="secondary"
-                  label="Löschen"
+                  label={v.delete}
                   loading={remove.isPending}
                   onPress={confirmDelete}
                 />
@@ -246,7 +244,7 @@ const styles = StyleSheet.create({
   bubble: {
     padding: spacing.md,
     borderRadius: radius.lg,
-    borderTopLeftRadius: 6,
+    borderTopStartRadius: 6,
     backgroundColor: colors.accent,
   },
   tiles: { flexDirection: 'row', gap: spacing.sm },

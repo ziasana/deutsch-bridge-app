@@ -32,9 +32,9 @@ describe('connectivity', () => {
 
   it('shows the notice only while offline', async () => {
     const { rerender } = await render(<OfflineBanner visible={false} />);
-    expect(screen.queryByText('Keine Internetverbindung')).toBeNull();
+    expect(screen.queryByText('No internet connection')).toBeNull();
     await rerender(<OfflineBanner visible />);
-    expect(screen.getByText('Keine Internetverbindung')).toBeTruthy();
+    expect(screen.getByText('No internet connection')).toBeTruthy();
   });
 });
 

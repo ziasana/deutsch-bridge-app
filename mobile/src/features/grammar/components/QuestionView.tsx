@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText, TextField } from '@/components/ui';
 import { InlineRich } from '@/components/content/RichContent';
+import { useI18n } from '@/i18n';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type { QuizQuestion } from '@/types/grammar';
 import { isCorrectAnswer, localizedQuestion } from '../quiz';
@@ -25,6 +26,8 @@ export function QuestionView({
   submitted,
   onSubmitEditing,
 }: Props) {
+  const { t } = useI18n();
+  const g = t.grammar;
   const text = localizedQuestion(question, level, persian);
   const correct = submitted && isCorrectAnswer(question, selected);
 
@@ -77,14 +80,14 @@ export function QuestionView({
 
       {question.type === 'truefalse' ? (
         <View style={styles.gap}>
-          {choice('True', <AppText style={styles.optionText}>Richtig</AppText>, 'A', 'Richtig')}
-          {choice('False', <AppText style={styles.optionText}>Falsch</AppText>, 'B', 'Falsch')}
+          {choice('True', <AppText style={styles.optionText}>{g.true}</AppText>, 'A', g.true)}
+          {choice('False', <AppText style={styles.optionText}>{g.false}</AppText>, 'B', g.false)}
         </View>
       ) : null}
 
       {question.type === 'fill' ? (
         <TextField
-          label="Deine Antwort"
+          label={g.yourAnswer}
           value={selected}
           editable={!submitted}
           autoCapitalize="none"
@@ -92,7 +95,7 @@ export function QuestionView({
           returnKeyType="done"
           onChangeText={onSelect}
           onSubmitEditing={onSubmitEditing}
-          error={submitted && !correct ? 'Nicht ganz richtig.' : undefined}
+          error={submitted && !correct ? g.notQuite : undefined}
         />
       ) : null}
 
@@ -102,14 +105,14 @@ export function QuestionView({
           accessibilityRole="alert"
         >
           <AppText variant="subheading" color={correct ? '#1B7A55' : colors.destructive}>
-            {correct ? '✓ Richtig!' : '✕ Nicht richtig'}
+            {correct ? g.right : g.wrong}
           </AppText>
           {!correct ? (
             <View style={styles.row}>
-              <AppText>Richtig ist: </AppText>
+              <AppText>{g.correctIs}</AppText>
               {typeof question.answer === 'boolean' ? (
                 <AppText style={{ fontWeight: '700' }}>
-                  {question.answer ? 'Richtig' : 'Falsch'}
+                  {question.answer ? g.true : g.false}
                 </AppText>
               ) : (
                 <InlineRich content={question.answer} style={{ fontWeight: '700' }} />

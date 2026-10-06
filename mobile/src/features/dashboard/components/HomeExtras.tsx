@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
-import { AppText } from '@/components/ui';
+import { AppText, DirectionalIcon } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { PressableScale, tint } from '@/features/exam/components/kit';
 import { colors, radius, shadow, spacing } from '@/theme';
 import type { DashboardResponse } from '@/types/dashboard';
@@ -9,8 +10,6 @@ import { useAuthStore } from '@/stores/authStore';
 import { useRedemittelHub, useTodayPreview } from '@/features/redemittel/hooks';
 import { REDEMITTEL_COLOR } from '@/features/redemittel/meta';
 import { useExamWeekSummary, usePendingBookmarkCount } from '../hooks';
-
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 /** A tappable pill that points at something new or waiting. */
 function Banner({
@@ -57,7 +56,7 @@ function Banner({
         <AppText variant="caption" color={color} style={{ fontWeight: '800' }}>
           {cta}
         </AppText>
-        <Ionicons name="chevron-forward" size={14} color={color} />
+        <DirectionalIcon name="chevron-forward" size={14} color={color} />
       </View>
     </PressableScale>
   );
@@ -66,23 +65,23 @@ function Banner({
 /** "n new lessons, texts and expressions": what the content team added since the learner's last visit. */
 export function NewContentBanner({ data }: { data: DashboardResponse }) {
   const router = useRouter();
+  const { t } = useI18n();
+  const b = t.home.banners;
   const n = data.newContent;
   if (!n || n.total <= 0) return null;
   const parts = [
-    n.grammarLessons > 0
-      ? plural(n.grammarLessons, 'Grammatiklektion', 'Grammatiklektionen')
-      : null,
-    n.readingArticles > 0 ? plural(n.readingArticles, 'Lesetext', 'Lesetexte') : null,
-    n.expressions > 0 ? plural(n.expressions, 'Redewendung', 'Redewendungen') : null,
+    n.grammarLessons > 0 ? b.grammarLessons(n.grammarLessons) : null,
+    n.readingArticles > 0 ? b.readingTexts(n.readingArticles) : null,
+    n.expressions > 0 ? t.home.expression(n.expressions) : null,
   ].filter(Boolean);
   return (
     <Banner
       icon="sparkles"
       color="#8B5CF6"
-      title={n.total === 1 ? '1 neuer Inhalt für dich' : `${n.total} neue Inhalte für dich`}
+      title={n.total === 1 ? b.newOne : b.newMany(n.total)}
       detail={parts.join(' · ')}
-      cta="Ansehen"
-      label="Neue Inhalte ansehen"
+      cta={b.view}
+      label={b.viewLabel}
       onPress={() => router.push('/learn')}
     />
   );
@@ -91,42 +90,45 @@ export function NewContentBanner({ data }: { data: DashboardResponse }) {
 /** Reminder for bookmarked grammar lessons that are still open. Renders nothing when there are none. */
 export function SavedLessonsBanner() {
   const router = useRouter();
+  const { t } = useI18n();
+  const b = t.home.banners;
   const count = usePendingBookmarkCount().data ?? 0;
   if (count === 0) return null;
   return (
     <Banner
       icon="bookmark"
       color={colors.primary}
-      title={count === 1 ? '1 gemerkte Lektion wartet' : `${count} gemerkte Lektionen warten`}
-      cta="Lernen"
-      label="Gemerkte Lektionen öffnen"
+      title={count === 1 ? b.savedOne : b.savedMany(count)}
+      cta={b.learn}
+      label={b.savedLabel}
       onPress={() => router.push('/learn/grammar')}
     />
   );
 }
 
 const SHORTCUTS = [
-  { key: 'vocab', emoji: '📚', label: 'Wörter', href: '/learn/vocabulary', color: '#4D94FF' },
-  { key: 'grammar', emoji: '🧩', label: 'Grammatik', href: '/learn/grammar', color: '#E8892B' },
-  { key: 'reading', emoji: '📖', label: 'Lesen', href: '/learn/reading', color: '#8B5CF6' },
-  { key: 'expr', emoji: '💬', label: 'Wendungen', href: '/learn/expressions', color: '#27AE7A' },
-  { key: 'exam', emoji: '🎯', label: 'Prüfung', href: '/exam', color: '#EC3E4E' },
+  { key: 'vocab', emoji: '📚', label: 'words', href: '/learn/vocabulary', color: '#4D94FF' },
+  { key: 'grammar', emoji: '🧩', label: 'grammar', href: '/learn/grammar', color: '#E8892B' },
+  { key: 'reading', emoji: '📖', label: 'reading', href: '/learn/reading', color: '#8B5CF6' },
+  { key: 'expr', emoji: '💬', label: 'expressions', href: '/learn/expressions', color: '#27AE7A' },
+  { key: 'exam', emoji: '🎯', label: 'exam', href: '/exam', color: '#EC3E4E' },
 ] as const;
 
 /** One-tap entry to every learning area: five icons share one card, no sideways scrolling. */
 export function QuickAccess() {
   const router = useRouter();
+  const { t } = useI18n();
   return (
     <View style={styles.card}>
       <AppText style={styles.sectionTitle} accessibilityRole="header">
-        Schnellzugriff
+        {t.home.quick.title}
       </AppText>
       <View style={styles.shortcuts}>
         {SHORTCUTS.map((s) => (
           <PressableScale
             key={s.key}
             accessibilityRole="button"
-            accessibilityLabel={`${s.label} öffnen`}
+            accessibilityLabel={t.home.quick.open(t.home.quick[s.label])}
             onPress={() => router.push(s.href)}
             containerStyle={{ flex: 1 }}
             style={styles.shortcut}
@@ -142,7 +144,7 @@ export function QuickAccess() {
               adjustsFontSizeToFit
               minimumFontScale={0.8}
             >
-              {s.label}
+              {t.home.quick[s.label]}
             </AppText>
           </PressableScale>
         ))}
@@ -153,24 +155,25 @@ export function QuickAccess() {
 
 /** Streak, learning days this week and mastered words in one calm card, split by thin dividers. */
 export function StatsRow({ data }: { data: DashboardResponse }) {
+  const { t } = useI18n();
   const items = [
     {
       icon: 'flame' as const,
       color: '#F5762B',
       value: String(data.currentStreak),
-      label: data.currentStreak === 1 ? 'Tag Serie' : 'Tage Serie',
+      label: data.currentStreak === 1 ? t.home.stats.streakOne : t.home.stats.streakMany,
     },
     {
       icon: 'calendar' as const,
       color: colors.primary,
       value: `${data.week.learningDays} / ${data.week.totalDays}`,
-      label: 'Lerntage',
+      label: t.home.stats.learningDays,
     },
     {
       icon: 'trophy' as const,
       color: '#E8A21A',
       value: String(data.milestone?.wordsMastered ?? 0),
-      label: 'Gemeistert',
+      label: t.home.stats.mastered,
     },
   ];
   return (
@@ -197,14 +200,16 @@ export function StatsRow({ data }: { data: DashboardResponse }) {
  */
 export function RedemittelHomeCard() {
   const router = useRouter();
+  const { t } = useI18n();
   const hub = useRedemittelHub().data;
   const today = useTodayPreview(!!hub && hub.newToday > 0).data;
   if (!hub || (hub.dueCount === 0 && hub.newToday === 0)) return null;
   const due = hub.dueCount > 0;
+  const cta = due ? t.home.redemittel.practice : t.home.redemittel.learn;
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel={`Redemittel: ${due ? 'Jetzt üben' : 'Jetzt lernen'}`}
+      accessibilityLabel={t.home.redemittel.label(cta)}
       onPress={() => router.push(due ? '/redemittel/review' : '/redemittel/learn')}
       style={[
         styles.redemittel,
@@ -224,18 +229,18 @@ export function RedemittelHomeCard() {
           </AppText>
           {hub.dueCount > 0 ? (
             <AppText variant="small" color={colors.ink}>
-              {hub.dueCount} zur Wiederholung
+              {t.learn.redemittelDue(hub.dueCount)}
             </AppText>
           ) : null}
           {hub.newToday > 0 ? (
             <AppText variant="small" color={colors.ink}>
-              {hub.newToday} neue
+              {t.learn.redemittelNew(hub.newToday)}
             </AppText>
           ) : null}
         </View>
         <View style={styles.redemittelCta}>
           <AppText variant="small" color="#FFFFFF" style={{ fontWeight: '800' }}>
-            {due ? 'Jetzt üben' : 'Jetzt lernen'}
+            {cta}
           </AppText>
         </View>
       </View>
@@ -262,20 +267,20 @@ export function RedemittelHomeCard() {
 /** TELC learners: how many timed exam exercises they finished this week, linking to the time analysis. */
 export function ExamInsightCard() {
   const router = useRouter();
+  const { t } = useI18n();
   const profile = useAuthStore((s) => s.profile);
   const level = profile?.examLevel;
   const telc = profile?.examType === 'TELC' && !!level;
   const week = useExamWeekSummary(telc);
   if (!telc || !level) return null;
   const count = week.data?.timedExercisesThisWeek;
-  let message = 'Übe mit der Zeitmessung, um ein Gefühl für die Prüfungszeit zu bekommen.';
-  if (count === 1) message = 'Du hast diese Woche 1 Prüfungsübung mit Zeitlimit abgeschlossen.';
-  else if (count != null && count > 1)
-    message = `Du hast diese Woche ${count} Prüfungsübungen mit Zeitlimit abgeschlossen.`;
+  let message = t.home.exam.none;
+  if (count === 1) message = t.home.exam.one;
+  else if (count != null && count > 1) message = t.home.exam.many(count);
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel={`TELC ${level} Vorbereitung`}
+      accessibilityLabel={t.home.exam.title(level)}
       onPress={() => router.push({ pathname: '/exam-prep/zeitmanagement', params: { level } })}
       style={styles.exam}
     >
@@ -284,13 +289,13 @@ export function ExamInsightCard() {
       </View>
       <View style={{ flex: 1, gap: 2 }}>
         <AppText style={{ fontWeight: '800' }} color={colors.ink}>
-          TELC {level} Vorbereitung
+          {t.home.exam.title(level)}
         </AppText>
         <AppText variant="small" color={colors.mutedForeground}>
           {message}
         </AppText>
       </View>
-      <Ionicons name="chevron-forward" size={20} color="#EC3E4E" />
+      <DirectionalIcon name="chevron-forward" size={20} color="#EC3E4E" />
     </PressableScale>
   );
 }

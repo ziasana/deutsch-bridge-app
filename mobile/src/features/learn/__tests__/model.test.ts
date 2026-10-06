@@ -1,7 +1,9 @@
 import { baseDashboard } from '@/features/dashboard/testing/fixtures';
 import type { ProgressOverview } from '@/types/progress';
+import { dictionaries } from '@/i18n';
 import { featuredCards, topicCards } from '../model';
 
+const L = dictionaries.en.learn;
 const overview = {
   dailyGoalWords: 10,
   itemsLearnedToday: 4,
@@ -18,18 +20,18 @@ describe('learn model', () => {
     const [daily, review] = featuredCards(overview, {
       ...baseDashboard,
       review: { wordsDue: 3, expressionsDue: 2 },
-    });
+    }, L);
     expect(daily.headline).toBe('4/10');
     expect(review.headline).toBe('5');
   });
 
   it('falls back gracefully without data', () => {
-    expect(featuredCards()[0].headline).toBe('0/5');
-    expect(topicCards().every((t) => t.percent === 0)).toBe(true);
+    expect(featuredCards(undefined, undefined, L)[0].headline).toBe('0/5');
+    expect(topicCards(undefined, L).every((t) => t.percent === 0)).toBe(true);
   });
 
   it('computes per-area percentages, guarding empty totals', () => {
-    const byKey = Object.fromEntries(topicCards(overview).map((t) => [t.key, t.percent]));
+    const byKey = Object.fromEntries(topicCards(overview, L).map((t) => [t.key, t.percent]));
     expect(byKey).toEqual({ vocabulary: 25, grammar: 50, expressions: 0, reading: 33 });
   });
 });

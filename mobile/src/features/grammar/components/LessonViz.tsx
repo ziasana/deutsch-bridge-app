@@ -5,6 +5,8 @@ import { InlineRich, RichBlocks } from '@/components/content/RichContent';
 import type { BlockNode, InlineNode } from '@/components/content/parse';
 import { AppText } from '@/components/ui';
 import { PressableScale, tint } from '@/features/exam/components/kit';
+import { useI18n } from '@/i18n';
+import { HorizontalScroll } from '@/components/ui/HorizontalScroll';
 import { colors, radius, shadow, spacing } from '@/theme';
 import type { QuizQuestion } from '@/types/grammar';
 import { isCorrectAnswer } from '../quiz';
@@ -111,7 +113,7 @@ export function InteractiveTable({
   const available = width - 2 * spacing.lg - 2 * spacing.lg;
   const colWidth = Math.max(104, Math.floor(available / cols));
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} accessibilityRole="none">
+    <HorizontalScroll horizontal showsHorizontalScrollIndicator={false} accessibilityRole="none">
       <View style={styles.table}>
         {rows.map((row, r) => {
           const selected = focus === r;
@@ -143,7 +145,7 @@ export function InteractiveTable({
           );
         })}
       </View>
-    </ScrollView>
+    </HorizontalScroll>
   );
 }
 
@@ -196,12 +198,13 @@ export function QuickCheck({
   text: string;
   dir: Dir;
 }) {
+  const { t } = useI18n();
   const [picked, setPicked] = useState<string | null>(null);
   const options =
     question.type === 'truefalse'
       ? [
-          { value: 'true', label: 'Richtig' },
-          { value: 'false', label: 'Falsch' },
+          { value: 'true', label: t.grammar.true },
+          { value: 'false', label: t.grammar.false },
         ]
       : (question.options ?? []).filter((o) => o.trim()).map((o) => ({ value: o, label: o }));
   const answered = picked !== null;
@@ -229,7 +232,7 @@ export function QuickCheck({
               key={o.value}
               disabled={answered}
               accessibilityRole="button"
-              accessibilityLabel={`Antwort: ${o.label}`}
+              accessibilityLabel={t.grammar.answerLabel(o.label)}
               accessibilityState={{ selected: isPicked, disabled: answered }}
               onPress={() => setPicked(o.value)}
               style={[styles.option, { backgroundColor: bg, borderColor: border }]}
@@ -252,15 +255,15 @@ export function QuickCheck({
             style={{ fontWeight: '700' }}
             color={correct ? colors.success : colors.destructive}
           >
-            {correct ? '🎉 Richtig!' : 'Nicht ganz – die richtige Antwort ist markiert.'}
+            {correct ? t.grammar.quickRight : t.grammar.quickWrong}
           </AppText>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Nochmal versuchen"
+            accessibilityLabel={t.grammar.tryAgain}
             onPress={() => setPicked(null)}
           >
             <AppText color={colors.primaryDark} style={{ fontWeight: '700' }}>
-              Nochmal
+              {t.grammar.tryAgain}
             </AppText>
           </Pressable>
         </View>
@@ -309,7 +312,7 @@ const styles = StyleSheet.create({
   bubble: {
     backgroundColor: colors.accent,
     borderRadius: radius.lg,
-    borderTopLeftRadius: 6,
+    borderTopStartRadius: 6,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },

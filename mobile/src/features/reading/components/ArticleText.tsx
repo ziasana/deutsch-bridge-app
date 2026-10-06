@@ -1,4 +1,5 @@
 import { Platform, StyleSheet, Text } from 'react-native';
+import { ltrText } from '@/i18n/direction';
 import { colors } from '@/theme';
 import type { Annotation } from '@/types/reading';
 import type { Segment } from '../segments';
@@ -79,7 +80,8 @@ export function ArticleText({
 }
 
 const styles = StyleSheet.create({
-  body: { color: colors.foreground },
+  // German reading text stays left-to-right even in the Persian (RTL) interface.
+  body: { color: colors.foreground, ...ltrText },
   seen: { backgroundColor: colors.muted },
   active: { backgroundColor: '#C9DEFF' },
 });

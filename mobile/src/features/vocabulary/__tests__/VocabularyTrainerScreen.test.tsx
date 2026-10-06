@@ -38,8 +38,8 @@ const renderScreen = () =>
   );
 
 const start = async () =>
-  fireEvent.press(await screen.findByRole('button', { name: 'Training starten' }));
-const flip = async () => fireEvent.press(screen.getByRole('button', { name: /Karte umdrehen/ }));
+  fireEvent.press(await screen.findByRole('button', { name: 'Start training' }));
+const flip = async () => fireEvent.press(screen.getByRole('button', { name: /Flip the card/ }));
 
 describe('VocabularyTrainerScreen', () => {
   beforeEach(() => {
@@ -49,9 +49,9 @@ describe('VocabularyTrainerScreen', () => {
   it('shows a skeleton, then the intro with the server counts', async () => {
     getSession.mockResolvedValue({ ...makeSession(3), newCount: 2, reviewCount: 1 });
     await renderScreen();
-    expect(screen.getByLabelText('Training wird geladen')).toBeTruthy();
-    expect(await screen.findByText('3 Wörter bereit')).toBeTruthy();
-    expect(screen.getByText('2 neu · 1 zur Wiederholung')).toBeTruthy();
+    expect(screen.getByLabelText('Loading training')).toBeTruthy();
+    expect(await screen.findByText('3 words ready')).toBeTruthy();
+    expect(screen.getByText('2 new · 1 to review')).toBeTruthy();
   });
 
   it('runs a full session with context questions and shows the summary', async () => {
@@ -65,35 +65,35 @@ describe('VocabularyTrainerScreen', () => {
     await start();
 
     // Word 1: flip, "Gewusst", pick the right option
-    expect(await screen.findByText('Wort 1 von 2')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Gewusst' })).toBeNull(); // not before flipping
+    expect(await screen.findByText('Word 1 of 2')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Knew it' })).toBeNull(); // not before flipping
     await flip();
     expect(screen.getByText('meaning 1')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Gewusst' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Knew it' }));
     expect(await screen.findByText('Ich suche ___ 1.')).toBeTruthy();
     await fireEvent.press(screen.getByRole('radio', { name: 'Option A1' }));
-    expect(await screen.findByText(/✓ Gewusst · ✓ Kontext richtig/)).toBeTruthy();
-    expect(screen.getByText('Stufe: Am Lernen')).toBeTruthy();
+    expect(await screen.findByText(/✓ Knew it · ✓ Context correct/)).toBeTruthy();
+    expect(screen.getByText('Level: Learning')).toBeTruthy();
     expect(submitRound).toHaveBeenCalledWith({
       vocabularyItemId: 'v1',
       flashcardKnewIt: true,
       contextSelectedKey: 'k1a',
     });
-    await fireEvent.press(screen.getByRole('button', { name: 'Weiter' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
 
     // Word 2: "Nicht gewusst", wrong option
-    expect(await screen.findByText('Wort 2 von 2')).toBeTruthy();
+    expect(await screen.findByText('Word 2 of 2')).toBeTruthy();
     await flip();
-    await fireEvent.press(screen.getByRole('button', { name: 'Nicht gewusst' }));
+    await fireEvent.press(screen.getByRole('button', { name: "Didn't know" }));
     await fireEvent.press(await screen.findByRole('radio', { name: 'Option A2' }));
-    expect(await screen.findByText(/✕ Nicht gewusst · ✕ Kontext nicht richtig/)).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Ergebnis ansehen' }));
+    expect(await screen.findByText(/✕ Didn't know · ✕ Context incorrect/)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'See result' }));
 
-    expect(await screen.findByText('Vocabulary-Training abgeschlossen')).toBeTruthy();
-    expect(screen.getByText('1 von 2 richtig')).toBeTruthy();
-    expect(screen.getByText('Erinnern: 50% · Kontext: 50%')).toBeTruthy();
+    expect(await screen.findByText('Vocabulary training completed')).toBeTruthy();
+    expect(screen.getByText('1 of 2 correct')).toBeTruthy();
+    expect(screen.getByText('Recall: 50% · Context: 50%')).toBeTruthy();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Zurück zum Dashboard' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Back to dashboard' }));
     expect(mockNavigate).toHaveBeenCalledWith('/home');
   });
 
@@ -102,10 +102,10 @@ describe('VocabularyTrainerScreen', () => {
     submitRound.mockResolvedValue(makeRound({ contextCorrect: null, correctContextKey: null }));
     await renderScreen();
     await start();
-    expect(screen.queryByText(/Schritt/)).toBeNull();
+    expect(screen.queryByText(/Step/)).toBeNull();
     await flip();
-    await fireEvent.press(screen.getByRole('button', { name: 'Gewusst' }));
-    expect(await screen.findByText('✓ Gewusst')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Knew it' }));
+    expect(await screen.findByText('✓ Knew it')).toBeTruthy();
     expect(submitRound).toHaveBeenCalledWith({
       vocabularyItemId: 'v1',
       flashcardKnewIt: true,
@@ -121,12 +121,12 @@ describe('VocabularyTrainerScreen', () => {
     await renderScreen();
     await start();
     await flip();
-    await fireEvent.press(screen.getByRole('button', { name: 'Gewusst' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Knew it' }));
     await fireEvent.press(await screen.findByRole('radio', { name: 'Option A1' }));
     expect(await screen.findByText('Keine Verbindung.')).toBeTruthy();
 
     await fireEvent.press(screen.getByRole('radio', { name: 'Option A1' })); // still tappable
-    expect(await screen.findByText(/✓ Gewusst · ✓ Kontext richtig/)).toBeTruthy();
+    expect(await screen.findByText(/✓ Knew it · ✓ Context correct/)).toBeTruthy();
   });
 
   it('"Noch einmal" fetches a fresh session', async () => {
@@ -135,18 +135,18 @@ describe('VocabularyTrainerScreen', () => {
     await renderScreen();
     await start();
     await flip();
-    await fireEvent.press(screen.getByRole('button', { name: 'Gewusst' }));
-    await fireEvent.press(await screen.findByRole('button', { name: 'Ergebnis ansehen' }));
-    await fireEvent.press(await screen.findByRole('button', { name: 'Noch einmal' }));
-    expect(await screen.findByText('1 Wörter bereit')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Knew it' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'See result' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Once more' }));
+    expect(await screen.findByText('1 word ready')).toBeTruthy();
     expect(getSession.mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
   it('shows an intentional empty state', async () => {
     getSession.mockResolvedValue({ items: [], newCount: 0, reviewCount: 0 });
     await renderScreen();
-    expect(await screen.findByText('Noch keine Wörter zum Üben')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Zu Daily Words' }));
+    expect(await screen.findByText('No words to practise yet')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Go to Daily Words' }));
     expect(mockPush).toHaveBeenCalledWith('/learn/daily-words');
   });
 
@@ -155,7 +155,7 @@ describe('VocabularyTrainerScreen', () => {
     await renderScreen();
     expect(await screen.findByText('Keine Verbindung.')).toBeTruthy();
     getSession.mockResolvedValueOnce(makeSession(2));
-    await fireEvent.press(screen.getByRole('button', { name: 'Erneut versuchen' }));
-    expect(await screen.findByText('2 Wörter bereit')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByText('2 words ready')).toBeTruthy();
   });
 });
