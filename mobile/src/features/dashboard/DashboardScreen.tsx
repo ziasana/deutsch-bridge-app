@@ -20,6 +20,7 @@ export function DashboardScreen() {
 
   return (
     <HeroScreen
+      icon="rocket"
       title={
         data
           ? headline(data, new Date().getHours())

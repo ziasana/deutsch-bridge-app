@@ -1,4 +1,5 @@
 import { AiUsageHint } from '@/features/aiUsage/AiUsageHint';
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -7,12 +8,22 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppText, BottomSheet, Button, ErrorState, LoadingState, TextField } from '@/components/ui';
+import {
+  AppText,
+  BottomSheet,
+  Button,
+  ErrorState,
+  FocusedLightStatusBar,
+  HeroArt,
+  LoadingState,
+  TextField,
+} from '@/components/ui';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type { ChatMessage } from '@/types/chat';
 import { MessageBubble } from './components/MessageBubble';
@@ -21,41 +32,51 @@ import { SessionsSheet } from './components/SessionsSheet';
 import { STARTERS } from './groups';
 import { useChatSessions, useTutorChat } from './hooks';
 
+const STARTER_COLORS = ['#3F86F0', '#7B61D9', '#2E8B57', '#E8832E'];
+
+/** Tappable conversation starters shown in the white sheet before the first message. */
 function EmptyChat({ onStarter }: { onStarter: (prompt: string) => void }) {
   return (
-    <View style={styles.empty}>
-      <AppText style={{ fontSize: 44 }} accessibilityElementsHidden>
-        ✨
+    <ScrollView
+      contentContainerStyle={styles.empty}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
+      <AppText style={styles.sheetTitle} center accessibilityRole="header">
+        Womit möchtest du starten?
       </AppText>
-      <AppText variant="title" center>
-        Guten Tag! 👋
-      </AppText>
-      <AppText color={colors.mutedForeground} center>
-        Ich bin dein Deutsch-Tutor. Übe Deutsch, stelle Fragen oder schreibe einfach mit mir.
-      </AppText>
-      <View style={{ width: '100%', gap: spacing.md, marginTop: spacing.md }}>
-        {STARTERS.map((s) => (
-          <Pressable
-            key={s.key}
-            accessibilityRole="button"
-            accessibilityLabel={`${s.title}: ${s.description}`}
-            onPress={() => onStarter(s.prompt)}
-            style={({ pressed }) => [styles.starter, pressed && { backgroundColor: colors.accent }]}
-          >
-            <AppText style={{ fontSize: 24 }}>{s.emoji}</AppText>
-            <View style={{ flex: 1 }}>
-              <AppText variant="subheading">{s.title}</AppText>
+      <View style={styles.starterGrid}>
+        {STARTERS.map((s, i) => {
+          const color = STARTER_COLORS[i % STARTER_COLORS.length];
+          return (
+            <Pressable
+              key={s.key}
+              accessibilityRole="button"
+              accessibilityLabel={`${s.title}: ${s.description}`}
+              onPress={() => onStarter(s.prompt)}
+              style={({ pressed }) => [
+                styles.starter,
+                {
+                  borderColor: `${color}55`,
+                  backgroundColor: pressed ? `${color}22` : `${color}0F`,
+                },
+              ]}
+            >
+              <View style={[styles.starterIcon, { backgroundColor: `${color}26` }]}>
+                <AppText style={{ fontSize: 26, lineHeight: 34 }}>{s.emoji}</AppText>
+              </View>
+              <AppText style={styles.starterTitle}>{s.title}</AppText>
               <AppText variant="small" color={colors.mutedForeground}>
                 {s.description}
               </AppText>
-            </View>
-          </Pressable>
-        ))}
+            </Pressable>
+          );
+        })}
       </View>
       <AppText variant="small" color={colors.mutedForeground} center>
         Oder schreibe einfach deine erste Nachricht …
       </AppText>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -93,52 +114,85 @@ export function TutorScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
-      <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Unterhaltungen anzeigen"
-          onPress={() => setHistoryOpen(true)}
-          style={styles.headerButton}
-        >
-          <AppText color={colors.primaryDark}>☰</AppText>
-        </Pressable>
-        <AppText variant="subheading" numberOfLines={1} style={{ flex: 1 }} center accessibilityRole="header">
-          {active?.title || 'AI Tutor'}
-        </AppText>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Neuer Chat"
-          onPress={chat.newChat}
-          style={styles.headerButton}
-        >
-          <AppText color={colors.primaryDark}>＋</AppText>
-        </Pressable>
-      </View>
-
-      {active ? (
-        <View style={styles.actions}>
+    <View style={styles.root}>
+      <FocusedLightStatusBar />
+      <SafeAreaView edges={['top']} style={styles.top}>
+        <View style={styles.header}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Chat umbenennen"
-            onPress={() => {
-              setTitle(active.title ?? '');
-              setRenameOpen(true);
-            }}
+            accessibilityLabel="Unterhaltungen anzeigen"
+            onPress={() => setHistoryOpen(true)}
+            style={styles.headerButton}
           >
-            <AppText variant="small" color={colors.primaryDark}>
-              Umbenennen
-            </AppText>
+            <Ionicons name="menu" size={24} color={colors.ink} />
           </Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel="Chat löschen" onPress={confirmDeleteActive}>
-            <AppText variant="small" color={colors.destructive}>
-              Löschen
-            </AppText>
+          <AppText
+            style={styles.headerTitle}
+            color="#FFFFFF"
+            numberOfLines={1}
+            center
+            accessibilityRole="header"
+          >
+            {active?.title || 'AI Tutor'}
+          </AppText>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Neuer Chat"
+            onPress={chat.newChat}
+            style={styles.headerButton}
+          >
+            <Ionicons name="add" size={26} color={colors.ink} />
           </Pressable>
         </View>
-      ) : null}
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        {active ? (
+          <View style={styles.actions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Chat umbenennen"
+              onPress={() => {
+                setTitle(active.title ?? '');
+                setRenameOpen(true);
+              }}
+              style={styles.actionPill}
+            >
+              <AppText variant="small" color="#FFFFFF" style={styles.actionText}>
+                Umbenennen
+              </AppText>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Chat löschen"
+              onPress={confirmDeleteActive}
+              style={styles.actionPill}
+            >
+              <AppText variant="small" color="#FFE1DC" style={styles.actionText}>
+                Löschen
+              </AppText>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {showEmpty ? (
+          <View style={styles.hero}>
+            <View style={styles.heroText}>
+              <AppText style={styles.heroTitle} color="#FFFFFF">
+                Guten Tag! 👋
+              </AppText>
+              <AppText style={styles.heroSub} color="#FFFFFF">
+                Ich bin dein Deutsch-Tutor. Übe Deutsch, stelle Fragen oder schreibe einfach mit
+                mir.
+              </AppText>
+            </View>
+            <HeroArt icon="chatbubbles" />
+          </View>
+        ) : null}
+      </SafeAreaView>
+
+      <KeyboardAvoidingView
+        style={styles.sheet}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         {chat.loadingSession ? (
           <LoadingState label="Chat wird geladen …" />
         ) : showEmpty ? (
@@ -149,13 +203,20 @@ export function TutorScreen() {
             data={chat.messages}
             keyExtractor={(m) => m.id}
             renderItem={({ item }) => (
-              <MessageBubble message={item} onSaveWord={item.role === 'assistant' ? setSaving : undefined} />
+              <MessageBubble
+                message={item}
+                onSaveWord={item.role === 'assistant' ? setSaving : undefined}
+              />
             )}
             contentContainerStyle={styles.list}
             ListFooterComponent={
               <View style={{ gap: spacing.md }}>
                 {chat.thinking ? (
-                  <View style={styles.thinking} accessibilityLabel="Der Tutor denkt nach" accessibilityLiveRegion="polite">
+                  <View
+                    style={styles.thinking}
+                    accessibilityLabel="Der Tutor denkt nach"
+                    accessibilityLiveRegion="polite"
+                  >
                     <ActivityIndicator color={colors.primary} />
                     <AppText color={colors.mutedForeground}>Der Tutor denkt nach …</AppText>
                   </View>
@@ -163,7 +224,11 @@ export function TutorScreen() {
                 {chat.error ? (
                   <ErrorState
                     error={chat.error.error}
-                    onRetry={chat.error.question ? () => void chat.send(chat.error!.question, { resend: true }) : undefined}
+                    onRetry={
+                      chat.error.question
+                        ? () => void chat.send(chat.error!.question, { resend: true })
+                        : undefined
+                    }
                   />
                 ) : null}
               </View>
@@ -194,9 +259,7 @@ export function TutorScreen() {
             onPress={submit}
             style={[styles.send, (chat.thinking || !input.trim()) && { opacity: 0.4 }]}
           >
-            <AppText color={colors.primaryForeground} style={{ fontSize: 18, fontWeight: '700' }}>
-              ↑
-            </AppText>
+            <Ionicons name="arrow-up" size={22} color="#FFFFFF" />
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -214,8 +277,17 @@ export function TutorScreen() {
         onNewChat={chat.newChat}
       />
 
-      <BottomSheet visible={renameOpen} onClose={() => setRenameOpen(false)} title="Chat umbenennen">
-        <TextField label="Titel" value={title} onChangeText={setTitle} placeholder="Titel festlegen …" />
+      <BottomSheet
+        visible={renameOpen}
+        onClose={() => setRenameOpen(false)}
+        title="Chat umbenennen"
+      >
+        <TextField
+          label="Titel"
+          value={title}
+          onChangeText={setTitle}
+          placeholder="Titel festlegen …"
+        />
         {chat.rename.error ? (
           <AppText color={colors.destructive} accessibilityRole="alert">
             {chat.rename.error.message}
@@ -225,60 +297,121 @@ export function TutorScreen() {
           label="Speichern"
           loading={chat.rename.isPending}
           disabled={!title.trim()}
-          onPress={() => chat.rename.mutate(title.trim(), { onSuccess: () => setRenameOpen(false) })}
+          onPress={() =>
+            chat.rename.mutate(title.trim(), { onSuccess: () => setRenameOpen(false) })
+          }
         />
       </BottomSheet>
 
       <SaveWordSheet message={saving} sessionId={chat.sessionId} onClose={() => setSaving(null)} />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.sm, gap: spacing.sm },
-  headerButton: { width: MIN_TOUCH, height: MIN_TOUCH, alignItems: 'center', justifyContent: 'center' },
-  actions: { flexDirection: 'row', justifyContent: 'center', gap: spacing.xl, paddingBottom: spacing.sm },
-  list: { padding: spacing.lg, gap: spacing.lg, flexGrow: 1 },
-  empty: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm, padding: spacing.lg },
-  starter: {
+  root: { flex: 1, backgroundColor: colors.brand },
+  top: { backgroundColor: colors.brand },
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
     gap: spacing.md,
-    padding: spacing.lg,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
   },
+  headerButton: {
+    width: MIN_TOUCH,
+    height: MIN_TOUCH,
+    borderRadius: radius.md,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#1D2433',
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  headerTitle: { flex: 1, fontSize: 20, lineHeight: 26, fontWeight: '700' },
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.md,
+    paddingBottom: spacing.md,
+  },
+  actionPill: {
+    minHeight: 36,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+  },
+  actionText: { fontWeight: '700' },
+  hero: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxl,
+  },
+  heroText: { flex: 1, gap: spacing.sm, paddingRight: spacing.md },
+  heroTitle: { fontSize: 28, lineHeight: 36, fontWeight: '800' },
+  heroSub: { fontSize: 15, lineHeight: 22, fontWeight: '500' },
+  sheet: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
+  },
+  sheetTitle: { fontSize: 20, lineHeight: 26, fontWeight: '700', color: colors.ink },
+  list: { padding: spacing.lg, paddingTop: spacing.xl, gap: spacing.lg, flexGrow: 1 },
+  empty: { flexGrow: 1, gap: spacing.lg, padding: spacing.xl, paddingTop: spacing.xl },
+  starterGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  starter: {
+    width: '48%',
+    flexGrow: 1,
+    gap: spacing.xs,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+  },
+  starterIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+  },
+  starterTitle: { fontSize: 17, lineHeight: 22, fontWeight: '700', color: colors.ink },
   thinking: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingLeft: 40 },
   composer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: spacing.sm,
-    padding: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    backgroundColor: colors.surface,
   },
   input: {
     flex: 1,
-    minHeight: MIN_TOUCH,
+    minHeight: 52,
     maxHeight: 140,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    paddingHorizontal: spacing.xl,
+    paddingTop: 15,
+    paddingBottom: 15,
+    borderRadius: 26,
     color: colors.foreground,
     fontSize: 16,
-    backgroundColor: colors.background,
+    backgroundColor: '#F1F5FB',
   },
   send: {
-    width: MIN_TOUCH,
-    height: MIN_TOUCH,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primary,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.brand,
     alignItems: 'center',
     justifyContent: 'center',
   },

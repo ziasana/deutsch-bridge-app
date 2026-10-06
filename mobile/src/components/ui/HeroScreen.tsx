@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useState, type ComponentProps, type ReactNode } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -14,9 +14,13 @@ import { AppText } from './AppText';
 import { useHeaderScroll } from './useHeaderScroll';
 import { colors, spacing } from '@/theme';
 
+type IconName = ComponentProps<typeof Ionicons>['name'];
+
 type Props = {
   title: string;
   subtitle: string;
+  /** Illustration icon that fits the page's title (default: an open book). */
+  icon?: IconName;
   /** Heading inside the white sheet. */
   sheetTitle?: string;
   refreshControl?: React.ReactElement<RefreshControlProps>;
@@ -24,11 +28,11 @@ type Props = {
 };
 
 /** Small "studying" illustration built from shapes so it needs no image asset. */
-function HeroArt() {
+export function HeroArt({ icon = 'book' }: { icon?: IconName }) {
   return (
     <View style={styles.art} accessible={false} importantForAccessibility="no-hide-descendants">
       <View style={styles.blob}>
-        <Ionicons name="book" size={54} color={colors.primaryDark} />
+        <Ionicons name={icon} size={54} color={colors.primaryDark} />
       </View>
       <View
         style={[
@@ -86,7 +90,7 @@ export function FocusedLightStatusBar({ dark }: { dark?: boolean } = {}) {
  * Content-page layout: blue greeting hero on top, white rounded sheet below with a drag-handle
  * accent. Used by the Learn tab; shares its look with the welcome and onboarding screens.
  */
-export function HeroScreen({ title, subtitle, sheetTitle, refreshControl, children }: Props) {
+export function HeroScreen({ title, subtitle, icon, sheetTitle, refreshControl, children }: Props) {
   const { width } = useWindowDimensions();
   const scroll = useHeaderScroll(width * 0.3);
   return (
@@ -110,7 +114,7 @@ export function HeroScreen({ title, subtitle, sheetTitle, refreshControl, childr
               {subtitle}
             </AppText>
           </View>
-          <HeroArt />
+          <HeroArt icon={icon} />
         </SafeAreaView>
         <View style={styles.sheet}>
           <View style={styles.handle} />
