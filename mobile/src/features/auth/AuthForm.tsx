@@ -1,7 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText, Screen } from '@/components/ui';
-import { colors, spacing } from '@/theme';
+import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 
 type Props = { title: string; subtitle: string; children: ReactNode };
 
@@ -9,6 +11,17 @@ type Props = { title: string; subtitle: string; children: ReactNode };
 export function AuthFrame({ title, subtitle, children }: Props) {
   return (
     <Screen keyboardAware>
+      {router.canGoBack() ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Zurück"
+          onPress={() => router.back()}
+          hitSlop={8}
+          style={styles.back}
+        >
+          <Ionicons name="chevron-back" size={24} color={colors.foreground} />
+        </Pressable>
+      ) : null}
       <View style={styles.header}>
         <AppText variant="caption" color={colors.primaryDark}>
           DEUTSCH BRIDGE
@@ -23,4 +36,16 @@ export function AuthFrame({ title, subtitle, children }: Props) {
   );
 }
 
-const styles = StyleSheet.create({ header: { gap: spacing.xs, marginTop: spacing.xl } });
+const styles = StyleSheet.create({
+  header: { gap: spacing.xs, marginTop: spacing.md },
+  back: {
+    width: MIN_TOUCH,
+    height: MIN_TOUCH,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

@@ -8,7 +8,9 @@ import { notificationApi } from '@/api/notificationApi';
 import { readingApi } from '@/api/readingApi';
 import { baseDashboard } from '@/features/dashboard/testing/fixtures';
 import { tokenStorage } from '@/api/tokenStorage';
+import { markIntroPlayed } from '@/features/welcome/SplashIntro';
 import { useAuthStore } from '@/stores/authStore';
+import { slides } from '@/features/welcome/slides';
 import type { UserProfile } from '@/types/user';
 
 jest.mock('@/api/authApi');
@@ -45,8 +47,11 @@ describe('app navigation', () => {
     await tokenStorage.clear();
   });
 
-  it('sends signed-out users to login', async () => {
+  it('sends signed-out users to the welcome page once the intro has played', async () => {
+    markIntroPlayed();
     await renderRouter('./src/app', { initialUrl: '/' });
+    expect(await screen.findByText(slides[0].title)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Anmelden' }));
     expect(await screen.findByText('Willkommen zurück 👋')).toBeTruthy();
   });
 
@@ -76,13 +81,13 @@ describe('app navigation', () => {
     expect(await screen.findByText('3 ungelesen')).toBeTruthy(); // unread badge on the Notifications row
     expect(screen.getByText('Erklärsprache: Persian')).toBeTruthy();
 
-    // Logout asks for confirmation, then the guard returns to login.
+    // Logout asks for confirmation, then the guard returns to the welcome page.
     const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
       buttons?.find((b) => b.style === 'destructive')?.onPress?.();
     });
     await fireEvent.press(screen.getByRole('button', { name: 'Abmelden' }));
     expect(alert).toHaveBeenCalled();
-    expect(await screen.findByText('Willkommen zurück 👋')).toBeTruthy();
+    expect(await screen.findByText(slides[0].title)).toBeTruthy();
     expect(await tokenStorage.getRefresh()).toBeNull();
     await act(async () => {});
   });

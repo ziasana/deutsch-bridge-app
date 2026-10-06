@@ -8,6 +8,7 @@ import LoginScreen from '@/app/(auth)/login';
 jest.mock('@/api/authApi');
 jest.mock('expo-router', () => ({
   Link: ({ children }: { children: React.ReactNode }) => children,
+  router: { canGoBack: () => false, back: jest.fn() },
 }));
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children }: { children: React.ReactNode }) => children,
