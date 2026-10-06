@@ -1,11 +1,17 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { dashboardApi } from '@/api/dashboardApi';
+import { examTimeApi } from '@/api/examTimeApi';
+import { grammarApi } from '@/api/grammarApi';
+import { useAuthStore } from '@/stores/authStore';
+import type { UserProfile } from '@/types/user';
 import { ApiError } from '@/api/errors';
 import { DashboardScreen } from '../DashboardScreen';
 import { baseDashboard, withOverrides } from '../testing/fixtures';
 
 jest.mock('@/api/dashboardApi');
+jest.mock('@/api/grammarApi');
+jest.mock('@/api/examTimeApi');
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
@@ -30,6 +36,57 @@ describe('DashboardScreen', () => {
   beforeEach(() => {
     get.mockReset();
     mockPush.mockReset();
+    (grammarApi.pendingBookmarks as jest.Mock).mockReset().mockResolvedValue([]);
+    (examTimeApi.weekSummary as jest.Mock)
+      .mockReset()
+      .mockResolvedValue({ timedExercisesThisWeek: 3 });
+    useAuthStore.setState({ profile: { examType: null, examLevel: null } as UserProfile });
+  });
+
+  it('shows new-content and saved-lessons banners that link on', async () => {
+    (grammarApi.pendingBookmarks as jest.Mock).mockResolvedValue([{ id: 'a' }, { id: 'b' }]);
+    get.mockResolvedValue(
+      withOverrides({
+        newContent: { grammarLessons: 2, readingArticles: 1, expressions: 0, total: 3 },
+      }),
+    );
+    await renderScreen();
+    expect(await screen.findByText('3 neue Inhalte für dich')).toBeTruthy();
+    expect(screen.getByText('2 Grammatiklektionen · 1 Lesetext')).toBeTruthy();
+    expect(await screen.findByText('2 gemerkte Lektionen warten')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Gemerkte Lektionen öffnen' }));
+    expect(mockPush).toHaveBeenCalledWith('/learn/grammar');
+  });
+
+  it('offers quick access to every learning area', async () => {
+    get.mockResolvedValue(baseDashboard);
+    await renderScreen();
+    await fireEvent.press(await screen.findByRole('button', { name: 'Lesen öffnen' }));
+    expect(mockPush).toHaveBeenCalledWith('/learn/reading');
+  });
+
+  it('shows the TELC exam nudge only for TELC learners', async () => {
+    get.mockResolvedValue(baseDashboard);
+    useAuthStore.setState({ profile: { examType: 'TELC', examLevel: 'B1' } as UserProfile });
+    await renderScreen();
+    expect(await screen.findByText('TELC B1 Vorbereitung')).toBeTruthy();
+    expect(
+      await screen.findByText('Du hast diese Woche 3 Prüfungsübungen mit Zeitlimit abgeschlossen.'),
+    ).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'TELC B1 Vorbereitung' }));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/exam-prep/zeitmanagement',
+      params: { level: 'B1' },
+    });
+  });
+
+  it('lets you tap a day of the week for its details', async () => {
+    get.mockResolvedValue(baseDashboard);
+    await renderScreen();
+    const days = await screen.findAllByRole('button', { name: /: (gelernt|nicht gelernt)$/ });
+    expect(days).toHaveLength(7);
+    await fireEvent.press(days[0]);
+    expect(await screen.findByText(/Gelernt 🔥$/)).toBeTruthy();
   });
 
   it('shows a skeleton while loading', async () => {

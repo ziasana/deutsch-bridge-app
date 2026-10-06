@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
-import type { ComponentProps } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useState, type ComponentProps } from 'react';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppText, FocusedLightStatusBar, WaveBackdrop } from '@/components/ui';
+import { AppText, ConfirmSheet, FocusedLightStatusBar, WaveBackdrop } from '@/components/ui';
 import { useHeaderScroll } from '@/components/ui/useHeaderScroll';
 import { totals, buildAchievements } from '@/features/achievements/model';
 import { useDashboard } from '@/features/dashboard/hooks';
@@ -74,6 +74,7 @@ export function ProfileScreen() {
   const profile = useAuthStore((s) => s.profile);
   const signOut = useAuthStore((s) => s.signOut);
   const unread = useUnreadCount().data ?? 0;
+  const [logoutOpen, setLogoutOpen] = useState(false);
   const overview = useProgressOverview();
   const stats = useProgressStats();
   const dashboard = useDashboard();
@@ -115,11 +116,7 @@ export function ProfileScreen() {
     },
   ];
 
-  const confirmLogout = () =>
-    Alert.alert('Abmelden', 'Möchtest du dich wirklich abmelden?', [
-      { text: 'Abbrechen', style: 'cancel' },
-      { text: 'Abmelden', style: 'destructive', onPress: () => void signOut() },
-    ]);
+  const confirmLogout = () => setLogoutOpen(true);
 
   const level = profile?.learningLevel;
 
@@ -226,6 +223,18 @@ export function ProfileScreen() {
           </Pressable>
         </View>
       </ScrollView>
+      <ConfirmSheet
+        visible={logoutOpen}
+        destructive
+        title="Abmelden?"
+        message="Möchtest du dich wirklich abmelden?"
+        confirmLabel="Abmelden"
+        onConfirm={() => {
+          setLogoutOpen(false);
+          void signOut();
+        }}
+        onCancel={() => setLogoutOpen(false)}
+      />
     </View>
   );
 }

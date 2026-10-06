@@ -12,13 +12,21 @@ import {
   TodayPlanCard,
   WeekCard,
 } from './components/DashboardCards';
+import {
+  ExamInsightCard,
+  NewContentBanner,
+  QuickAccess,
+  SavedLessonsBanner,
+  StatsRow,
+} from './components/HomeExtras';
 import { Reveal } from './components/Reveal';
-import { useDashboard } from './hooks';
-import { headline, statusMessage } from './viewModel';
+import { useDashboard, usePendingBookmarkCount } from './hooks';
+import { headline, isNewLearner, statusMessage } from './viewModel';
 
 export function DashboardScreen() {
   const { data, isPending, isError, error, refetch, isRefetching } = useDashboard();
   const name = useAuthStore((s) => s.profile?.displayName);
+  const pending = usePendingBookmarkCount().data ?? 0;
 
   return (
     <HeroScreen
@@ -52,17 +60,36 @@ export function DashboardScreen() {
             ) : null}
             <Badge tone="primary" label={data.user.learningLevel} />
           </View>
+          {(data.newContent?.total ?? 0) > 0 || pending > 0 ? (
+            <Reveal index={1}>
+              <View style={styles.banners}>
+                <NewContentBanner data={data} />
+                <SavedLessonsBanner />
+              </View>
+            </Reveal>
+          ) : null}
           <Reveal index={1}>
             <ContinueCard data={data} />
           </Reveal>
           <Reveal index={2}>
             <TodayPlanCard data={data} />
           </Reveal>
+          {isNewLearner(data) ? null : (
+            <Reveal index={3}>
+              <StatsRow data={data} />
+            </Reveal>
+          )}
           <Reveal index={3}>
+            <QuickAccess />
+          </Reveal>
+          <Reveal index={4}>
             <ReviewCard data={data} />
           </Reveal>
           <Reveal index={4}>
             <FocusCard data={data} />
+          </Reveal>
+          <Reveal index={5}>
+            <ExamInsightCard />
           </Reveal>
           <Reveal index={5}>
             <WeekCard data={data} />
@@ -78,4 +105,5 @@ export function DashboardScreen() {
 
 const styles = StyleSheet.create({
   chips: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
+  banners: { gap: spacing.sm },
 });

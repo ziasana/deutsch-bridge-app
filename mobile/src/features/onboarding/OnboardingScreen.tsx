@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState, type ComponentProps, type ReactNode } from 'react';
-import { Alert, Animated, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppText, Button, Chip, TextField } from '@/components/ui';
+import { AppText, Button, Chip, ConfirmSheet, TextField } from '@/components/ui';
 import { router } from 'expo-router';
 import { env } from '@/config/env';
 import { useAuthStore } from '@/stores/authStore';
@@ -327,6 +327,7 @@ export function OnboardingScreen() {
   const store = useOnboardingStore();
   const complete = useCompleteOnboarding();
   const [saved, setSaved] = useState<UserProfile | null>(null);
+  const [signOutOpen, setSignOutOpen] = useState(false);
   const { hydrated, ensureOwner } = store;
 
   // Stored answers belong to one account; another account (or a fresh sign-up) starts clean.
@@ -366,11 +367,7 @@ export function OnboardingScreen() {
     else complete.mutate(toRequest(store as PlanState), { onSuccess: setSaved });
   };
 
-  const confirmSignOut = () =>
-    Alert.alert('Abmelden', 'Möchtest du dich wirklich abmelden?', [
-      { text: 'Abbrechen', style: 'cancel' },
-      { text: 'Abmelden', style: 'destructive', onPress: () => void signOut() },
-    ]);
+  const confirmSignOut = () => setSignOutOpen(true);
 
   const copy = STEP_COPY[step];
 
@@ -409,6 +406,19 @@ export function OnboardingScreen() {
           Schritt {index + 1} von {steps.length}
         </AppText>
       </View>
+
+      <ConfirmSheet
+        visible={signOutOpen}
+        destructive
+        title="Abmelden?"
+        message="Möchtest du dich wirklich abmelden?"
+        confirmLabel="Abmelden"
+        onConfirm={() => {
+          setSignOutOpen(false);
+          void signOut();
+        }}
+        onCancel={() => setSignOutOpen(false)}
+      />
 
       <ScrollView
         contentContainerStyle={styles.content}

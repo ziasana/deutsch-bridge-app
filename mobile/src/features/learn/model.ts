@@ -9,6 +9,8 @@ export type FeaturedCard = {
   headline: string;
   caption: string;
   href: Href;
+  /** 0–100 ring on the card (daily goal progress); null when there is nothing to measure. */
+  progress: number | null;
 };
 export type TopicCard = {
   key: string;
@@ -17,6 +19,12 @@ export type TopicCard = {
   percent: number;
   href: Href;
   tint: string;
+  /** Accent colour of the area (tile border, ring, bar). */
+  color: string;
+  /** What the learner does here, in a few words. */
+  subtitle: string;
+  /** "12 / 40" */
+  detail: string;
 };
 
 const DEFAULT_GOAL = 5;
@@ -36,6 +44,7 @@ export function featuredCards(
       headline: `${today}/${goal}`,
       caption: 'Wörter heute',
       href: '/learn/daily-words',
+      progress: percent(today, goal),
     },
     {
       key: 'review',
@@ -43,11 +52,14 @@ export function featuredCards(
       headline: dashboard ? String(due) : '–',
       caption: 'fällig',
       href: '/learn/review',
+      progress: null,
     },
   ];
 }
 
 const pct = (c?: CategoryProgress) => (c ? percent(c.learned, c.total) : 0);
+
+const detail = (c?: CategoryProgress) => `${c?.learned ?? 0} / ${c?.total ?? 0}`;
 
 /** Learning areas with how far the learner is in each. */
 export function topicCards(overview?: ProgressOverview): TopicCard[] {
@@ -59,6 +71,9 @@ export function topicCards(overview?: ProgressOverview): TopicCard[] {
       percent: pct(overview?.dailyWords),
       href: '/learn/vocabulary',
       tint: '#E4EEFF',
+      color: '#4D94FF',
+      subtitle: 'Wörter sammeln & üben',
+      detail: detail(overview?.dailyWords),
     },
     {
       key: 'grammar',
@@ -67,6 +82,9 @@ export function topicCards(overview?: ProgressOverview): TopicCard[] {
       percent: pct(overview?.grammar),
       href: '/learn/grammar',
       tint: '#FDEFE0',
+      color: '#E8892B',
+      subtitle: 'Regeln verstehen',
+      detail: detail(overview?.grammar),
     },
     {
       key: 'expressions',
@@ -75,6 +93,9 @@ export function topicCards(overview?: ProgressOverview): TopicCard[] {
       percent: pct(overview?.expressions),
       href: '/learn/expressions',
       tint: '#E4F6EE',
+      color: '#27AE7A',
+      subtitle: 'Natürlich sprechen',
+      detail: detail(overview?.expressions),
     },
     {
       key: 'reading',
@@ -83,6 +104,9 @@ export function topicCards(overview?: ProgressOverview): TopicCard[] {
       percent: pct(overview?.reading),
       href: '/learn/reading',
       tint: '#F1E9FD',
+      color: '#8B5CF6',
+      subtitle: 'Texte lesen & verstehen',
+      detail: detail(overview?.reading),
     },
   ];
 }

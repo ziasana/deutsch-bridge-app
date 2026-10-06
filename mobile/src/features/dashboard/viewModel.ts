@@ -94,7 +94,7 @@ export function continueCopy(
       cta: started ? 'Weiterlernen' : 'Jetzt starten',
     },
     VOCAB_REVIEW: {
-      emoji: '🔄',
+      emoji: '🗂️',
       title: 'Vocabulary Review',
       description: `${plural(c.total, 'Wort wartet', 'Wörter warten')} auf dich.`,
       cta: 'Jetzt starten',

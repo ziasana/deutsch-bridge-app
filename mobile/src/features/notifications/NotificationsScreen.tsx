@@ -1,10 +1,20 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppText, Chip, EmptyState, ErrorState, Header, Skeleton } from '@/components/ui';
-import { MIN_TOUCH, colors, spacing } from '@/theme';
-import type { NotificationItem } from '@/types/notification';
+import { AppText, EmptyState, ErrorState, Skeleton } from '@/components/ui';
+import { IconButton, PressableScale, tint } from '@/features/exam/components/kit';
+import { colors, radius, spacing } from '@/theme';
+import type { NotificationCategory, NotificationItem } from '@/types/notification';
 import {
   useMarkAllRead,
   useNotificationList,
@@ -14,6 +24,10 @@ import {
 } from './hooks';
 import { inAppHref } from './destination';
 import { BUCKET_LABEL, dayBucket, relativeTimeDe, type DayBucket } from './time';
+
+/** Orange: the same colour as the notifications row and badge on the profile tab. */
+const ACCENT = '#F2703D';
+const ACCENT_DARK = '#C4501F';
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'all', label: 'Alle' },
@@ -36,25 +50,83 @@ export function buildRows(items: NotificationItem[], now = new Date()): Row[] {
   return rows;
 }
 
+const CATEGORY_STYLE: Record<
+  NotificationCategory,
+  { icon: keyof typeof Ionicons.glyphMap; color: string }
+> = {
+  LEARNING: { icon: 'book', color: '#4D94FF' },
+  REMINDER: { icon: 'alarm', color: '#E8892B' },
+  PROGRESS: { icon: 'trophy', color: '#27AE7A' },
+  SYSTEM: { icon: 'settings', color: '#7B8498' },
+  PREMIUM: { icon: 'star', color: '#8B5CF6' },
+};
+
+const TAB_ICON: Record<Tab, keyof typeof Ionicons.glyphMap> = {
+  all: 'notifications-outline',
+  learning: 'book-outline',
+  progress: 'trophy-outline',
+  system: 'settings-outline',
+};
+
 function NotificationRow({ item, onPress }: { item: NotificationItem; onPress: () => void }) {
+  const { icon, color } = CATEGORY_STYLE[item.category] ?? CATEGORY_STYLE.SYSTEM;
+  const goes = inAppHref(item.actionUrl) !== null;
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={`${item.read ? '' : 'Ungelesen: '}${item.title}${item.body ? `. ${item.body}` : ''}`}
       onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.accent }]}
+      style={[
+        styles.row,
+        !item.read && { borderColor: tint(color, '33'), backgroundColor: tint(color, '14') },
+      ]}
     >
-      <View style={[styles.dot, { backgroundColor: item.read ? 'transparent' : colors.primary }]} />
+      <View style={[styles.iconTile, { backgroundColor: tint(color, '1F') }]}>
+        <Ionicons name={icon} size={22} color={color} />
+        {!item.read ? <View style={styles.dot} /> : null}
+      </View>
       <View style={{ flex: 1, gap: 2 }}>
-        <AppText variant="subheading" style={item.read ? { fontWeight: '500' } : undefined}>
+        <AppText
+          variant="subheading"
+          style={item.read ? { fontWeight: '500' } : { fontWeight: '800' }}
+        >
           {item.title}
         </AppText>
-        {item.body ? <AppText color={colors.mutedForeground}>{item.body}</AppText> : null}
+        {item.body ? (
+          <AppText variant="small" color={colors.mutedForeground}>
+            {item.body}
+          </AppText>
+        ) : null}
         <AppText variant="caption" color={colors.mutedForeground}>
           {relativeTimeDe(item.createdAt)}
         </AppText>
       </View>
-    </Pressable>
+      {goes ? <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} /> : null}
+    </PressableScale>
+  );
+}
+
+/** A bell with the number of unread notifications — decoration that doubles as the summary. */
+function BellBadge({ count }: { count: number }) {
+  return (
+    <View
+      style={styles.bell}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      <Ionicons
+        name={count > 0 ? 'notifications' : 'notifications-outline'}
+        size={44}
+        color={ACCENT}
+      />
+      {count > 0 ? (
+        <View style={styles.bellCount}>
+          <AppText variant="caption" color="#FFFFFF" style={{ fontWeight: '800' }}>
+            {count > 99 ? '99+' : count}
+          </AppText>
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -97,52 +169,116 @@ export function NotificationsScreen() {
   }
 
   const header = (
-    <View style={{ gap: spacing.md, paddingBottom: spacing.md }}>
-      <Header title="Notifications" subtitle={unread.data ? `${unread.data} ungelesen` : 'Alles gelesen'} back />
-      <View style={styles.actions}>
-        {unread.data ? (
-          <Pressable accessibilityRole="button" onPress={() => markAll.mutate()} disabled={markAll.isPending}>
-            <AppText color={colors.primaryDark}>Alle als gelesen markieren</AppText>
-          </Pressable>
-        ) : (
-          <View />
-        )}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Benachrichtigungs-Einstellungen"
-          onPress={() => router.push('/settings/notification-preferences')}
-        >
-          <AppText color={colors.primaryDark}>⚙️ Einstellungen</AppText>
-        </Pressable>
+    <View style={{ gap: spacing.lg, paddingBottom: spacing.md }}>
+      <View style={[styles.hero, { backgroundColor: tint(ACCENT, '1F') }]}>
+        <SafeAreaView edges={['top']}>
+          <View style={styles.topRow}>
+            <IconButton name="arrow-back" label="Zurück" onPress={() => router.back()} />
+            <IconButton
+              name="settings-outline"
+              label="Benachrichtigungs-Einstellungen"
+              onPress={() => router.push('/settings/notification-preferences')}
+            />
+          </View>
+          <View style={styles.heroMain}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <AppText
+                style={styles.title}
+                accessibilityRole="header"
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                Benachrichtigungen
+              </AppText>
+              <AppText color={colors.ink} style={{ fontWeight: '500' }}>
+                {unread.data ? `${unread.data} ungelesen` : 'Alles gelesen'}
+              </AppText>
+            </View>
+            <BellBadge count={unread.data ?? 0} />
+          </View>
+          {unread.data ? (
+            <View style={{ marginTop: spacing.md, alignSelf: 'flex-start' }}>
+              <PressableScale
+                accessibilityRole="button"
+                accessibilityLabel="Alle als gelesen markieren"
+                disabled={markAll.isPending}
+                onPress={() => markAll.mutate()}
+                style={styles.markAll}
+              >
+                <Ionicons name="checkmark-done" size={18} color={ACCENT_DARK} />
+                <AppText variant="small" color={ACCENT_DARK} style={{ fontWeight: '800' }}>
+                  Alle als gelesen markieren
+                </AppText>
+              </PressableScale>
+            </View>
+          ) : null}
+        </SafeAreaView>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        {TABS.map((t) => (
-          <Chip key={t.key} label={t.label} selected={tab === t.key} onPress={() => setTab(t.key)} />
-        ))}
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chips}
+        style={{ flexGrow: 0 }}
+      >
+        {TABS.map((t) => {
+          const on = tab === t.key;
+          return (
+            <Pressable
+              key={t.key}
+              accessibilityRole="button"
+              accessibilityLabel={t.label}
+              accessibilityState={{ selected: on }}
+              onPress={() => setTab(t.key)}
+              style={[styles.tab, on && { backgroundColor: ACCENT, borderColor: ACCENT }]}
+            >
+              <Ionicons name={TAB_ICON[t.key]} size={16} color={on ? '#FFFFFF' : colors.ink} />
+              <AppText
+                variant="small"
+                color={on ? '#FFFFFF' : colors.ink}
+                style={{ fontWeight: '700' }}
+              >
+                {t.label}
+              </AppText>
+            </Pressable>
+          );
+        })}
       </ScrollView>
     </View>
   );
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right', 'bottom']}>
+    <SafeAreaView style={styles.screen} edges={['left', 'right', 'bottom']}>
       <FlatList
         testID="notification-list"
         data={empty ? [] : rows}
         keyExtractor={(r) => (r.kind === 'header' ? `h-${r.bucket}` : r.item.id)}
         renderItem={({ item: r }) =>
           r.kind === 'header' ? (
-            <AppText variant="caption" color={colors.mutedForeground} style={{ paddingTop: spacing.md }}>
-              {BUCKET_LABEL[r.bucket].toUpperCase()}
-            </AppText>
+            <View style={[styles.pad, { paddingTop: spacing.md }]}>
+              <AppText
+                variant="caption"
+                color={colors.mutedForeground}
+                style={{ fontWeight: '800' }}
+              >
+                {BUCKET_LABEL[r.bucket].toUpperCase()}
+              </AppText>
+            </View>
           ) : (
-            <NotificationRow item={r.item} onPress={() => void handleOpen(r.item)} />
+            <View style={styles.pad}>
+              <NotificationRow item={r.item} onPress={() => void handleOpen(r.item)} />
+            </View>
           )
         }
         ListHeaderComponent={header}
-        ListEmptyComponent={empty}
+        ListEmptyComponent={empty ? <View style={styles.pad}>{empty}</View> : null}
+        ItemSeparatorComponent={Gap}
         ListFooterComponent={
           list.isFetchingNextPage ? (
-            <View style={{ padding: spacing.lg }} accessibilityLabel="Weitere Benachrichtigungen werden geladen">
+            <View
+              style={{ padding: spacing.lg }}
+              accessibilityLabel="Weitere Benachrichtigungen werden geladen"
+            >
               <ActivityIndicator color={colors.primary} />
             </View>
           ) : null
@@ -167,11 +303,96 @@ export function NotificationsScreen() {
   );
 }
 
+const Gap = () => <View style={{ height: spacing.sm }} />;
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  list: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.xxl },
-  actions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: MIN_TOUCH - 8 },
-  chips: { gap: spacing.sm, paddingVertical: spacing.xs },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md, paddingVertical: spacing.md, minHeight: MIN_TOUCH },
-  dot: { width: 10, height: 10, borderRadius: 5, marginTop: 6 },
+  list: { paddingBottom: spacing.xxl },
+  pad: { paddingHorizontal: spacing.lg },
+  hero: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: -spacing.sm,
+    paddingRight: spacing.sm,
+  },
+  heroMain: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingTop: spacing.sm },
+  title: { fontSize: 30, lineHeight: 36, fontWeight: '800', color: colors.ink },
+  bell: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFFB3',
+  },
+  bellCount: {
+    position: 'absolute',
+    top: 2,
+    right: 0,
+    minWidth: 26,
+    height: 26,
+    paddingHorizontal: 6,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: ACCENT,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  markAll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.lg,
+    minHeight: 44,
+    borderRadius: radius.pill,
+    backgroundColor: '#FFFFFF',
+  },
+  chips: { gap: spacing.sm, paddingHorizontal: spacing.lg },
+  tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 40,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  iconTile: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dot: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: ACCENT,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
 });

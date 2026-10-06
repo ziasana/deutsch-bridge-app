@@ -46,7 +46,7 @@ export const LEARN_DESTINATIONS: Destination[] = [
   },
   {
     key: 'review',
-    emoji: '🔄',
+    emoji: '🗂️',
     title: 'Review',
     subtitle: 'Gelerntes wiederholen',
     href: '/learn/review',

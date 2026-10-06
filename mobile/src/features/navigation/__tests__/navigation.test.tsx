@@ -1,5 +1,4 @@
 import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
-import { Alert } from 'react-native';
 import { authApi } from '@/api/authApi';
 import { dashboardApi } from '@/api/dashboardApi';
 import { chatApi } from '@/api/chatApi';
@@ -124,11 +123,9 @@ describe('app navigation', () => {
     expect(screen.getByText('PR')).toBeTruthy(); // explanation-language stat
 
     // Logout asks for confirmation, then the guard returns to the welcome page.
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
-      buttons?.find((b) => b.style === 'destructive')?.onPress?.();
-    });
     await fireEvent.press(screen.getByRole('button', { name: 'Abmelden' }));
-    expect(alert).toHaveBeenCalled();
+    expect(await screen.findByText('Abmelden?')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Abmelden bestätigen' }));
     expect(await screen.findByText(slides[0].title)).toBeTruthy();
     expect(await tokenStorage.getRefresh()).toBeNull();
     await act(async () => {});

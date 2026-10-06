@@ -20,7 +20,7 @@ type Props = { data: DashboardResponse };
 
 const ACTIVITY_STYLE: Record<PlanActivityType, { emoji: string; color: string }> = {
   DAILY_WORDS: { emoji: '🌱', color: '#2E8B57' },
-  VOCAB_REVIEW: { emoji: '🔄', color: '#3F86F0' },
+  VOCAB_REVIEW: { emoji: '🗂️', color: '#3F86F0' },
   GRAMMAR: { emoji: '🧩', color: '#7B61D9' },
   READING: { emoji: '📖', color: '#E8832E' },
 };
@@ -222,7 +222,7 @@ export function ReviewCard({ data }: Props) {
   const { wordsDue, expressionsDue } = data.review;
   const due = wordsDue + expressionsDue;
   return (
-    <TintCard tint="#3F86F0" emoji="🔄" title="Review Needed">
+    <TintCard tint="#3F86F0" emoji="🗂️" title="Review Needed">
       {due > 0 ? (
         <>
           <AppText style={styles.big}>{reviewSummary(wordsDue, expressionsDue)}</AppText>
@@ -302,9 +302,13 @@ function TodayDot() {
   );
 }
 
+const MONTHS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+
 export function WeekCard({ data, today = new Date() }: Props & { today?: Date }) {
   const router = useRouter();
   const { days, learningDays, totalDays } = data.week;
+  // Tap a day to see its date and whether you learned (tap again to close).
+  const [picked, setPicked] = useState<number | null>(null);
   const summary = `${learningDays} von ${totalDays} Tagen gelernt in den letzten 7 Tagen`;
   return (
     <View style={styles.card}>
@@ -313,7 +317,14 @@ export function WeekCard({ data, today = new Date() }: Props & { today?: Date })
       </AppText>
       <View accessible accessibilityLabel={summary} style={styles.weekRow}>
         {weekDays(days, today).map((d, i) => (
-          <View key={i} style={styles.dayCol}>
+          <Pressable
+            key={i}
+            accessibilityRole="button"
+            accessibilityLabel={`${d.label}: ${d.learned ? 'gelernt' : 'nicht gelernt'}`}
+            accessibilityState={{ selected: picked === i }}
+            onPress={() => setPicked(picked === i ? null : i)}
+            style={styles.dayCol}
+          >
             <AppText
               variant="caption"
               color={d.isToday ? colors.primaryDark : colors.mutedForeground}
@@ -324,13 +335,33 @@ export function WeekCard({ data, today = new Date() }: Props & { today?: Date })
             {/* Learned = filled with a flame/check; not learned = hollow. Never colour alone. */}
             <View style={styles.dotWrap}>
               {d.isToday && !d.learned ? <TodayDot /> : null}
-              <View style={[styles.dot, d.learned && styles.dotOn, d.isToday && styles.dotToday]}>
+              <View
+                style={[
+                  styles.dot,
+                  d.learned && styles.dotOn,
+                  d.isToday && styles.dotToday,
+                  picked === i && styles.dotPicked,
+                ]}
+              >
                 {d.learned ? <Ionicons name="flame" size={18} color="#FFFFFF" /> : null}
               </View>
             </View>
-          </View>
+          </Pressable>
         ))}
       </View>
+      {picked !== null ? (
+        <View style={styles.dayDetail} accessibilityRole="alert">
+          <AppText variant="small" style={{ fontWeight: '700' }} color={colors.ink}>
+            {(() => {
+              const date = new Date(today);
+              date.setDate(today.getDate() - (days.length - 1 - picked));
+              return `${weekDays(days, today)[picked].label}, ${date.getDate()}. ${MONTHS[date.getMonth()]}`;
+            })()}
+            {' · '}
+            {days[picked] ? 'Gelernt 🔥' : 'Noch nichts gelernt'}
+          </AppText>
+        </View>
+      ) : null}
       <AppText variant="small" color={colors.mutedForeground}>
         {learningDays} / {totalDays} Lerntage
       </AppText>
@@ -489,6 +520,14 @@ const styles = StyleSheet.create({
   },
   dotOn: { backgroundColor: '#F5762B', borderColor: '#F5762B' },
   dotToday: { borderColor: colors.primary },
+  dotPicked: { borderColor: colors.ink, borderWidth: 3 },
+  dayDetail: {
+    alignSelf: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accent,
+  },
   milestone: {
     flexDirection: 'row',
     alignItems: 'center',
