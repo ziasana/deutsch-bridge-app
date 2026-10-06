@@ -11,6 +11,8 @@ type Props = {
   label?: string;
   /** Font size of the centred percentage (default scales with the ring). */
   textSize?: number;
+  trackColor?: string;
+  textColor?: string;
 };
 
 /** Circular progress (0–100) with the percentage in the middle. */
@@ -21,6 +23,8 @@ export function ProgressRing({
   color = colors.success,
   label = 'Fortschritt',
   textSize,
+  trackColor = colors.muted,
+  textColor,
 }: Props) {
   const pct = Math.min(100, Math.max(0, Math.round(value)));
   const r = (size - stroke) / 2;
@@ -38,7 +42,7 @@ export function ProgressRing({
           cx={size / 2}
           cy={size / 2}
           r={r}
-          stroke={colors.muted}
+          stroke={trackColor}
           strokeWidth={stroke}
           fill="none"
         />
@@ -60,6 +64,7 @@ export function ProgressRing({
           style={[
             styles.text,
             textSize ? { fontSize: textSize, lineHeight: textSize * 1.25 } : null,
+            textColor ? { color: textColor } : null,
           ]}
         >
           {pct}%

@@ -12,6 +12,7 @@ import {
   TodayPlanCard,
   WeekCard,
 } from './components/DashboardCards';
+import { Reveal } from './components/Reveal';
 import { useDashboard } from './hooks';
 import { headline, statusMessage } from './viewModel';
 
@@ -51,12 +52,24 @@ export function DashboardScreen() {
             ) : null}
             <Badge tone="primary" label={data.user.learningLevel} />
           </View>
-          <ContinueCard data={data} />
-          <TodayPlanCard data={data} />
-          <ReviewCard data={data} />
-          <FocusCard data={data} />
-          <WeekCard data={data} />
-          <MilestoneCard data={data} />
+          <Reveal index={1}>
+            <ContinueCard data={data} />
+          </Reveal>
+          <Reveal index={2}>
+            <TodayPlanCard data={data} />
+          </Reveal>
+          <Reveal index={3}>
+            <ReviewCard data={data} />
+          </Reveal>
+          <Reveal index={4}>
+            <FocusCard data={data} />
+          </Reveal>
+          <Reveal index={5}>
+            <WeekCard data={data} />
+          </Reveal>
+          <Reveal index={6}>
+            <MilestoneCard data={data} />
+          </Reveal>
         </>
       ) : null}
     </HeroScreen>
