@@ -55,6 +55,13 @@ describe('app navigation', () => {
     expect(await screen.findByText('Mit Google anmelden')).toBeTruthy();
   });
 
+  it('sends signed-in users without a learning plan to onboarding', async () => {
+    await tokenStorage.setTokens('a', 'r');
+    (authApi.getProfile as jest.Mock).mockResolvedValue({ ...profile, onboardingCompleted: false });
+    await renderRouter('./src/app', { initialUrl: '/' });
+    expect(await screen.findByText('In welcher Sprache erklären wir dir Dinge?')).toBeTruthy();
+  });
+
   it('walks every tab, pushes a feature screen, goes back, and logs out', async () => {
     await tokenStorage.setTokens('a', 'r');
     await renderRouter('./src/app', { initialUrl: '/' });

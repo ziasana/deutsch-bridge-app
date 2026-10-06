@@ -23,6 +23,8 @@ configurePushHandler();
 function RootNavigator() {
   const status = useAuthStore((s) => s.status);
   const error = useAuthStore((s) => s.error);
+  // New accounts (and old ones that never finished) set up their learning plan before the app opens.
+  const needsOnboarding = useAuthStore((s) => s.profile?.onboardingCompleted === false);
   const restoreSession = useAuthStore((s) => s.restoreSession);
 
   useEffect(() => {
@@ -48,8 +50,11 @@ function RootNavigator() {
     <Stack
       screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}
     >
-      <Stack.Protected guard={status === 'authenticated'}>
+      <Stack.Protected guard={status === 'authenticated' && !needsOnboarding}>
         <Stack.Screen name="(app)" />
+      </Stack.Protected>
+      <Stack.Protected guard={status === 'authenticated' && needsOnboarding}>
+        <Stack.Screen name="(onboarding)" />
       </Stack.Protected>
       <Stack.Protected guard={status === 'unauthenticated'}>
         <Stack.Screen name="(auth)" />

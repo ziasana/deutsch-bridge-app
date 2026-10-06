@@ -7,12 +7,14 @@ import { SplashIntro, hasPlayedIntro, markIntroPlayed } from '@/features/welcome
 // then the welcome page.
 export default function Index() {
   const status = useAuthStore((s) => s.status);
+  const needsOnboarding = useAuthStore((s) => s.profile?.onboardingCompleted === false);
   const finish = useCallback(() => {
     markIntroPlayed();
     router.replace('/welcome');
   }, []);
 
-  if (status === 'authenticated') return <Redirect href="/home" />;
+  if (status === 'authenticated')
+    return <Redirect href={needsOnboarding ? '/onboarding' : '/home'} />;
   if (hasPlayedIntro()) return <Redirect href="/welcome" />;
   return <SplashIntro onDone={finish} />;
 }
