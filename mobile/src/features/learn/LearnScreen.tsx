@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { AppText, Button, HeroScreen } from '@/components/ui';
+import { LearnIllustration } from '@/components/ui/HeroIllustrations';
 import { useDashboard } from '@/features/dashboard/hooks';
 import { useProgressOverview } from '@/features/progress/hooks';
 import { useAuthStore } from '@/stores/authStore';
@@ -76,6 +77,7 @@ export function LearnScreen() {
 
   return (
     <HeroScreen
+      art={<LearnIllustration />}
       title={name ? `Hallo, ${name.split(' ')[0]}!` : 'Hallo!'}
       subtitle="Was möchtest du heute lernen?"
       sheetTitle="Deine Lerninhalte"

@@ -1,4 +1,5 @@
 import { RefreshControl, StyleSheet, View } from 'react-native';
+import { HomeIllustration } from '@/components/ui/HeroIllustrations';
 import { Badge, ErrorState, HeroScreen } from '@/components/ui';
 import { useAuthStore } from '@/stores/authStore';
 import { spacing } from '@/theme';
@@ -20,7 +21,7 @@ export function DashboardScreen() {
 
   return (
     <HeroScreen
-      icon="rocket"
+      art={<HomeIllustration />}
       title={
         data
           ? headline(data, new Date().getHours())

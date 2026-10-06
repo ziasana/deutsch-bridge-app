@@ -21,6 +21,8 @@ type Props = {
   subtitle: string;
   /** Illustration icon that fits the page's title (default: an open book). */
   icon?: IconName;
+  /** A full illustration that replaces the icon circle. */
+  art?: ReactNode;
   /** Heading inside the white sheet. */
   sheetTitle?: string;
   refreshControl?: React.ReactElement<RefreshControlProps>;
@@ -90,7 +92,15 @@ export function FocusedLightStatusBar({ dark }: { dark?: boolean } = {}) {
  * Content-page layout: blue greeting hero on top, white rounded sheet below with a drag-handle
  * accent. Used by the Learn tab; shares its look with the welcome and onboarding screens.
  */
-export function HeroScreen({ title, subtitle, icon, sheetTitle, refreshControl, children }: Props) {
+export function HeroScreen({
+  title,
+  subtitle,
+  icon,
+  art,
+  sheetTitle,
+  refreshControl,
+  children,
+}: Props) {
   const { width } = useWindowDimensions();
   const scroll = useHeaderScroll(width * 0.3);
   return (
@@ -114,7 +124,7 @@ export function HeroScreen({ title, subtitle, icon, sheetTitle, refreshControl, 
               {subtitle}
             </AppText>
           </View>
-          <HeroArt icon={icon} />
+          {art ?? <HeroArt icon={icon} />}
         </SafeAreaView>
         <View style={styles.sheet}>
           <View style={styles.handle} />
@@ -149,7 +159,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
     paddingTop: spacing.lg,
   },
-  heroText: { flex: 1, gap: spacing.sm, paddingRight: spacing.md },
+  heroText: { flex: 1, gap: spacing.sm, paddingRight: spacing.sm },
   title: { fontSize: 30, lineHeight: 38, fontWeight: '800' },
   subtitle: { fontSize: 17, lineHeight: 24, fontWeight: '500' },
   art: { width: 130, height: 130, alignItems: 'center', justifyContent: 'center' },
