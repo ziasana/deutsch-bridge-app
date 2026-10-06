@@ -3,7 +3,15 @@ import Svg, { Circle } from 'react-native-svg';
 import { AppText } from './AppText';
 import { colors } from '@/theme';
 
-type Props = { value: number; size?: number; stroke?: number; color?: string; label?: string };
+type Props = {
+  value: number;
+  size?: number;
+  stroke?: number;
+  color?: string;
+  label?: string;
+  /** Font size of the centred percentage (default scales with the ring). */
+  textSize?: number;
+};
 
 /** Circular progress (0–100) with the percentage in the middle. */
 export function ProgressRing({
@@ -12,6 +20,7 @@ export function ProgressRing({
   stroke = 12,
   color = colors.success,
   label = 'Fortschritt',
+  textSize,
 }: Props) {
   const pct = Math.min(100, Math.max(0, Math.round(value)));
   const r = (size - stroke) / 2;
@@ -47,7 +56,14 @@ export function ProgressRing({
         />
       </Svg>
       <View style={styles.center}>
-        <AppText style={styles.text}>{pct} %</AppText>
+        <AppText
+          style={[
+            styles.text,
+            textSize ? { fontSize: textSize, lineHeight: textSize * 1.25 } : null,
+          ]}
+        >
+          {pct}%
+        </AppText>
       </View>
     </View>
   );

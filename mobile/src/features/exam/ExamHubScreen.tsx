@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { Animated, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import {
   AppText,
   Button,
@@ -10,11 +10,12 @@ import {
   ErrorState,
   ListItem,
   ProgressBar,
+  ProgressRing,
   SkyScreen,
   Skeleton,
 } from '@/components/ui';
 import { useAuthStore } from '@/stores/authStore';
-import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
+import { colors, radius, spacing } from '@/theme';
 import type { ExamSection } from '@/types/exam';
 import { pickInitialLevel } from '@/utils/levels';
 import { ExerciseRow } from './components/ExerciseRow';
@@ -35,89 +36,147 @@ import {
 import { useExerciseLastTimes } from './time/hooks';
 import { TeilTimeCard } from './time/TeilTimeCard';
 
-const LEVEL_COLORS: Record<string, string> = {
-  A1: '#34B27B',
-  A2: '#2BA5A5',
-  B1: '#3F86F0',
-  B2: '#7B61D9',
-  C1: '#F08A3C',
-  C2: '#E5654F',
+const SECTION_COLORS: Record<ExamSection, string> = {
+  LESEVERSTEHEN: '#3F86F0',
+  SPRACHBAUSTEINE: '#7B61D9',
+  HOERVERSTEHEN: '#E8832E',
+  SCHRIFTLICHER_AUSDRUCK: '#2E8B57',
+  TESTFORMAT_INFORMATION: '#64748B',
 };
 
-/** "#Lesen"-style pill; filled blue when selected. */
-function SectionPill({
-  emoji,
-  label,
-  selected,
-  onPress,
+/** Equal-width level switcher: every level is visible at once, no sideways scrolling. */
+function LevelSwitch({
+  summaries,
+  level,
+  onPick,
 }: {
-  emoji: string;
-  label: string;
-  selected: boolean;
-  onPress: () => void;
+  summaries: { level: string; mastered: number; total: number }[];
+  level: string | null;
+  onPick: (level: string) => void;
 }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${emoji} ${label}`}
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={[styles.pill, selected && styles.pillOn]}
-    >
-      <AppText
-        variant="small"
-        color={selected ? '#FFFFFF' : colors.primaryDark}
-        style={styles.pillText}
-      >
-        #{label}
-      </AppText>
-    </Pressable>
+    <View style={styles.switchTrack} accessibilityRole="tablist">
+      {summaries.map((s) => {
+        const on = s.level === level;
+        return (
+          <Pressable
+            key={s.level}
+            accessibilityRole="button"
+            accessibilityLabel={`${s.level} · ${s.mastered}/${s.total}`}
+            accessibilityState={{ selected: on }}
+            onPress={() => onPick(s.level)}
+            style={[styles.switchItem, on && styles.switchItemOn]}
+          >
+            <AppText style={[styles.switchLevel, on && { color: colors.primaryDark }]}>
+              {s.level}
+            </AppText>
+            <AppText variant="caption" color={on ? colors.primaryDark : colors.mutedForeground}>
+              {s.mastered}/{s.total}
+            </AppText>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
-/** Level card: colourful square with the level, and the learner's progress underneath. */
-function LevelTile({
-  level,
+/** Big tappable exam-section card: icon, name, progress ring and task count. */
+function SectionCard({
+  section,
   mastered,
   total,
   selected,
   onPress,
 }: {
-  level: string;
+  section: ExamSection;
   mastered: number;
   total: number;
   selected: boolean;
   onPress: () => void;
 }) {
+  const meta = SECTION_META[section];
+  const color = SECTION_COLORS[section];
+  const [scale] = useState(() => new Animated.Value(1));
+  const spring = (to: number) =>
+    Animated.spring(scale, {
+      toValue: to,
+      friction: 7,
+      tension: 220,
+      useNativeDriver: true,
+    }).start();
+  const pct = total > 0 ? Math.round((mastered / total) * 100) : 0;
+  const wide = !!meta.informational;
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${level} · ${mastered}/${total}`}
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={styles.tileWrap}
-    >
-      <View
+    <Animated.View style={[wide ? styles.cardWide : styles.cardHalf, { transform: [{ scale }] }]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={
+          meta.informational
+            ? `${meta.emoji} ${meta.label}`
+            : `${meta.emoji} ${meta.label}, ${mastered} von ${total} Aufgaben gemeistert`
+        }
+        accessibilityState={{ selected }}
+        onPress={onPress}
+        onPressIn={() => spring(0.96)}
+        onPressOut={() => spring(1)}
         style={[
-          styles.tile,
-          { backgroundColor: LEVEL_COLORS[level] ?? colors.primary },
-          selected && styles.tileOn,
+          styles.sectionCard,
+          wide && styles.sectionCardWide,
+          {
+            borderColor: selected ? color : colors.border,
+            backgroundColor: selected ? `${color}14` : '#FFFFFF',
+          },
         ]}
       >
-        <View style={styles.tileDeco} />
-        <AppText style={styles.tileLevel} color="#FFFFFF">
-          {level}
-        </AppText>
-        {selected ? (
-          <View style={styles.tileCheck}>
-            <Ionicons name="checkmark" size={16} color={colors.ink} />
-          </View>
-        ) : null}
-      </View>
-      <AppText variant="small" style={styles.tileLabel}>
-        {mastered}/{total}
-      </AppText>
-    </Pressable>
+        {wide ? (
+          <>
+            <View
+              style={[styles.sectionIcon, { backgroundColor: selected ? color : `${color}22` }]}
+            >
+              <AppText style={styles.sectionEmoji}>{meta.emoji}</AppText>
+            </View>
+            <View style={styles.sectionText}>
+              <AppText style={styles.sectionName}>{meta.label}</AppText>
+              <AppText variant="caption" color={colors.mutedForeground}>
+                So läuft die Prüfung ab
+              </AppText>
+            </View>
+            <Ionicons name="information-circle-outline" size={28} color={color} />
+          </>
+        ) : (
+          <>
+            <View style={styles.sectionTop}>
+              <View
+                style={[styles.sectionIcon, { backgroundColor: selected ? color : `${color}22` }]}
+              >
+                <AppText style={styles.sectionEmoji}>{meta.emoji}</AppText>
+              </View>
+              <ProgressRing
+                value={pct}
+                size={48}
+                stroke={5}
+                color={color}
+                textSize={11}
+                label={`${meta.label} Fortschritt`}
+              />
+            </View>
+            <View style={styles.sectionText}>
+              <AppText
+                style={styles.sectionName}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
+              >
+                {meta.label}
+              </AppText>
+              <AppText variant="caption" color={colors.mutedForeground} numberOfLines={1}>
+                {mastered} von {total} Aufgaben
+              </AppText>
+            </View>
+          </>
+        )}
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -231,6 +290,22 @@ export function ExamHubScreen() {
   };
   const stats = sectionStats(section);
 
+  // Tapping a section card selects it and brings its parts into view.
+  const scrollRef = useRef<ScrollView>(null);
+  const partsRef = useRef<View>(null);
+  const selectSection = (s: ExamSection) => {
+    setSection(s);
+    setTimeout(() => {
+      const scroller = scrollRef.current;
+      if (!scroller || !partsRef.current) return;
+      partsRef.current.measureLayout(
+        scroller as never,
+        (_x, y) => scroller.scrollTo({ y: Math.max(0, y - spacing.lg), animated: true }),
+        () => {},
+      );
+    }, 60);
+  };
+
   let body;
   if (summary.isPending || (!!level && exercises.isPending)) {
     body = (
@@ -343,6 +418,7 @@ export function ExamHubScreen() {
 
   return (
     <SkyScreen
+      scrollRef={scrollRef}
       title="Prüfung üben"
       subtitle="Bereite dich Schritt für Schritt vor."
       search={{
@@ -352,6 +428,62 @@ export function ExamHubScreen() {
         label: 'Suche nach Prüfungsteil oder Aufgabe',
       }}
     >
+      {target ? (
+        <Card tone="accent" style={{ gap: spacing.sm }}>
+          <AppText variant="small" color={colors.primaryDark}>
+            Weiterlernen · {SECTION_META[target.section].label}
+          </AppText>
+          <AppText variant="subheading">{target.partLabel}</AppText>
+          <ProgressBar value={target.avgScore} label="Fortschritt im Prüfungsteil" />
+          <Button
+            pill
+            label={
+              target.state === 'completed'
+                ? 'Wiederholen'
+                : target.state === 'in_progress'
+                  ? 'Weiter'
+                  : 'Starten'
+            }
+            onPress={() => openExercise(target.exerciseId)}
+          />
+        </Card>
+      ) : null}
+
+      {summaries.length > 1 ? (
+        <View style={{ gap: spacing.sm }}>
+          <AppText style={styles.heading} accessibilityRole="header">
+            Niveau
+          </AppText>
+          <LevelSwitch summaries={summaries} level={level} onPick={setPickedLevel} />
+        </View>
+      ) : null}
+
+      <View style={{ gap: spacing.sm }}>
+        <AppText style={styles.heading} accessibilityRole="header">
+          Was möchtest du üben?
+        </AppText>
+        {summaries.length === 1 && level ? (
+          <AppText variant="small" color={colors.mutedForeground}>
+            Prüfungsniveau {level} · {summaries[0].mastered}/{summaries[0].total} gemeistert
+          </AppText>
+        ) : null}
+        <View style={styles.cardGrid}>
+          {SECTION_ORDER.map((sec) => {
+            const st = sectionStats(sec);
+            return (
+              <SectionCard
+                key={sec}
+                section={sec}
+                mastered={st.mastered}
+                total={st.total}
+                selected={sec === section}
+                onPress={() => selectSection(sec)}
+              />
+            );
+          })}
+        </View>
+      </View>
+
       {saved.length > 0 ? (
         <Card style={{ gap: spacing.xs }}>
           <AppText variant="subheading">Für später gemerkt</AppText>
@@ -389,76 +521,16 @@ export function ExamHubScreen() {
         </Card>
       ) : null}
 
-      <View style={styles.categoryRow}>
-        <AppText style={styles.categoryLabel}>Bereich:</AppText>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.pills}
-        >
-          {SECTION_ORDER.map((s) => (
-            <SectionPill
-              key={s}
-              emoji={SECTION_META[s].emoji}
-              label={SECTION_META[s].label}
-              selected={s === section}
-              onPress={() => setSection(s)}
-            />
-          ))}
-        </ScrollView>
+      <View ref={partsRef} collapsable={false} style={{ gap: 2 }}>
+        <AppText style={styles.heading} accessibilityRole="header">
+          {meta.emoji} {meta.label}
+        </AppText>
+        <AppText variant="small" color={colors.mutedForeground}>
+          {meta.informational || stats.total === 0
+            ? meta.description
+            : `${stats.mastered} / ${stats.total} Aufgaben · Ø ${stats.avg}% – ${meta.description}`}
+        </AppText>
       </View>
-
-      {summaries.length > 0 ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tiles}
-          style={styles.bleed}
-        >
-          {summaries.map((s) => (
-            <LevelTile
-              key={s.level}
-              level={s.level}
-              mastered={s.mastered}
-              total={s.total}
-              selected={s.level === level}
-              onPress={() => setPickedLevel(s.level)}
-            />
-          ))}
-        </ScrollView>
-      ) : null}
-
-      {target ? (
-        <Card tone="accent" style={{ gap: spacing.sm }}>
-          <AppText variant="small" color={colors.primaryDark}>
-            Weiterlernen · {SECTION_META[target.section].label}
-          </AppText>
-          <AppText variant="subheading">{target.partLabel}</AppText>
-          <ProgressBar value={target.avgScore} label="Fortschritt im Prüfungsteil" />
-          <Button
-            pill
-            label={
-              target.state === 'completed'
-                ? 'Wiederholen'
-                : target.state === 'in_progress'
-                  ? 'Weiter'
-                  : 'Starten'
-            }
-            onPress={() => openExercise(target.exerciseId)}
-          />
-        </Card>
-      ) : null}
-
-      {!meta.informational && stats.total > 0 ? (
-        <View style={{ gap: 2 }}>
-          <AppText style={styles.heading} accessibilityRole="header">
-            {meta.label}
-          </AppText>
-          <AppText variant="small" color={colors.mutedForeground}>
-            {stats.mastered} / {stats.total} Aufgaben · {stats.avg}% – {meta.description}
-          </AppText>
-        </View>
-      ) : null}
 
       {body}
 
@@ -481,53 +553,57 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  categoryRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  categoryLabel: { fontSize: 16, fontWeight: '700', color: colors.ink },
-  pills: { gap: spacing.sm, paddingRight: spacing.xl },
-  pill: {
-    minHeight: MIN_TOUCH - 8,
-    paddingHorizontal: spacing.lg,
+  heading: { fontSize: 22, lineHeight: 28, fontWeight: '700', color: colors.ink },
+  switchTrack: {
+    flexDirection: 'row',
+    padding: 4,
     borderRadius: radius.pill,
     backgroundColor: colors.accent,
-    justifyContent: 'center',
   },
-  pillOn: { backgroundColor: '#3F86F0' },
-  pillText: { fontWeight: '600' },
-  bleed: { marginHorizontal: -spacing.xl },
-  tiles: { gap: spacing.lg, paddingHorizontal: spacing.xl },
-  tileWrap: { alignItems: 'center', gap: spacing.sm },
-  tile: {
-    width: 104,
-    height: 104,
-    borderRadius: 26,
+  switchItem: {
+    flex: 1,
+    minHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
+    borderRadius: radius.pill,
   },
-  tileOn: { borderWidth: 3, borderColor: colors.ink },
-  tileDeco: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    top: -40,
-    right: -40,
-  },
-  tileLevel: { fontSize: 38, lineHeight: 46, fontWeight: '800' },
-  tileCheck: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  switchItemOn: {
     backgroundColor: '#FFFFFF',
+    shadowColor: '#1D2433',
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  switchLevel: { fontSize: 16, lineHeight: 20, fontWeight: '800', color: colors.ink },
+  cardGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  cardHalf: { width: '48%', flexGrow: 1 },
+  cardWide: { width: '100%' },
+  sectionCard: {
+    minHeight: 132,
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 2,
+  },
+  sectionCardWide: {
+    minHeight: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  sectionTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sectionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tileLabel: { fontWeight: '600', color: colors.ink },
-  heading: { fontSize: 22, lineHeight: 28, fontWeight: '700', color: colors.ink },
+  sectionEmoji: { fontSize: 22, lineHeight: 28 },
+  sectionText: { flex: 1, gap: 2 },
+  sectionName: { fontSize: 16, lineHeight: 22, fontWeight: '700', color: colors.ink },
   part: {
     flexDirection: 'row',
     alignItems: 'center',

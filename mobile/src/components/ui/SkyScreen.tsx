@@ -21,6 +21,8 @@ type Props = {
   subtitle: string;
   search: { value: string; onChange: (text: string) => void; placeholder: string; label: string };
   refreshControl?: React.ReactElement<RefreshControlProps>;
+  /** Lets the page scroll itself, e.g. to a section after a tap. */
+  scrollRef?: React.Ref<ScrollView>;
   children: ReactNode;
 };
 
@@ -48,13 +50,14 @@ function Cloud({ width, style }: { width: number; style: object }) {
  * Search-style page: light-blue sky header with clouds and a large title, a floating search card
  * overlapping its lower edge, then the content. The header scrolls away with the page.
  */
-export function SkyScreen({ title, subtitle, search, refreshControl, children }: Props) {
+export function SkyScreen({ title, subtitle, search, refreshControl, scrollRef, children }: Props) {
   const { width } = useWindowDimensions();
   const scroll = useHeaderScroll(width * 0.25);
   return (
     <View style={styles.root}>
       <FocusedLightStatusBar dark={scroll.gone} />
       <ScrollView
+        ref={scrollRef}
         refreshControl={refreshControl}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
