@@ -20,10 +20,10 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primaryDark,
-        tabBarInactiveTintColor: colors.mutedForeground,
-        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
-        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+        tabBarActiveTintColor: colors.brand,
+        tabBarInactiveTintColor: colors.ink,
+        tabBarStyle: { backgroundColor: '#FFFFFF', borderTopColor: colors.border, paddingTop: 6 },
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '500' },
       }}
     >
       {TABS.map((t) => (
@@ -33,7 +33,7 @@ export default function TabsLayout() {
           options={{
             title: t.title,
             tabBarIcon: ({ focused, color, size }) => (
-              <Ionicons name={focused ? t.iconActive : t.icon} color={color} size={size} />
+              <Ionicons name={focused ? t.iconActive : t.icon} color={color} size={size + 4} />
             ),
           }}
         />

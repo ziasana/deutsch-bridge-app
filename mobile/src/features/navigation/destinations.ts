@@ -62,6 +62,13 @@ export const PROFILE_DESTINATIONS: Destination[] = [
     href: '/progress',
   },
   {
+    key: 'achievements',
+    emoji: '🏆',
+    title: 'Erfolge',
+    subtitle: 'Deine gesammelten Sterne',
+    href: '/achievements',
+  },
+  {
     key: 'settings',
     emoji: '⚙️',
     title: 'Settings',

@@ -6,6 +6,8 @@ export * from './Chip';
 export * from './LearningCelebration';
 export * from './ListItem';
 export * from './ProgressBar';
+export * from './ProgressRing';
+export * from './HeroScreen';
 export * from './Screen';
 export * from './SectionHeader';
 export * from './Skeleton';

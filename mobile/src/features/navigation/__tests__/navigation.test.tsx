@@ -5,6 +5,7 @@ import { dashboardApi } from '@/api/dashboardApi';
 import { chatApi } from '@/api/chatApi';
 import { examApi } from '@/api/examApi';
 import { notificationApi } from '@/api/notificationApi';
+import { progressApi } from '@/api/progressApi';
 import { readingApi } from '@/api/readingApi';
 import { baseDashboard } from '@/features/dashboard/testing/fixtures';
 import { tokenStorage } from '@/api/tokenStorage';
@@ -15,6 +16,7 @@ import type { UserProfile } from '@/types/user';
 
 jest.mock('@/api/authApi');
 jest.mock('@/api/dashboardApi');
+jest.mock('@/api/progressApi');
 jest.mock('@/api/readingApi');
 jest.mock('@/api/examApi');
 jest.mock('@/api/chatApi');
@@ -36,13 +38,32 @@ describe('app navigation', () => {
     jest.restoreAllMocks();
     (authApi.getProfile as jest.Mock).mockResolvedValue(profile);
     (dashboardApi.get as jest.Mock).mockResolvedValue(baseDashboard);
-    (readingApi.levelSummary as jest.Mock).mockResolvedValue([{ level: 'B1', total: 0, learned: 0 }]);
+    const none = { learned: 0, total: 10 };
+    (progressApi.overview as jest.Mock).mockResolvedValue({
+      dailyGoalWords: 5,
+      itemsLearnedToday: 2,
+      dailyWords: none,
+      grammar: none,
+      expressions: none,
+      reading: none,
+      totalLearned: 0,
+      totalAvailable: 40,
+    });
+    (readingApi.levelSummary as jest.Mock).mockResolvedValue([
+      { level: 'B1', total: 0, learned: 0 },
+    ]);
     (notificationApi.unreadCount as jest.Mock).mockResolvedValue({ count: 3 });
     (chatApi.sessions as jest.Mock).mockResolvedValue([]);
     (examApi.levelSummary as jest.Mock).mockResolvedValue([]);
     (examApi.pendingBookmarks as jest.Mock).mockResolvedValue([]);
     (readingApi.categories as jest.Mock).mockResolvedValue([]);
-    (readingApi.page as jest.Mock).mockResolvedValue({ items: [], page: 0, size: 10, totalElements: 0, totalPages: 0 });
+    (readingApi.page as jest.Mock).mockResolvedValue({
+      items: [],
+      page: 0,
+      size: 10,
+      totalElements: 0,
+      totalPages: 0,
+    });
     useAuthStore.setState({ status: 'loading', profile: null, error: null });
     await tokenStorage.clear();
   });
@@ -69,13 +90,13 @@ describe('app navigation', () => {
     expect(await screen.findByText('Perfekt')).toBeTruthy(); // dashboard loaded on Home
 
     await fireEvent.press(screen.getByRole('button', { name: /Learn/ }));
-    expect(await screen.findByText('Active Expressions')).toBeTruthy();
+    expect(await screen.findByText('Deine Lerninhalte')).toBeTruthy();
 
-    await fireEvent.press(screen.getByText('Reading'));
+    await fireEvent.press(screen.getByText('Lesen'));
     expect(await screen.findByText('Lies Texte auf deinem Niveau')).toBeTruthy();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Zurück' }));
-    expect(await screen.findByText('Active Expressions')).toBeTruthy();
+    expect(await screen.findByText('Deine Lerninhalte')).toBeTruthy();
 
     await fireEvent.press(screen.getByRole('button', { name: /Exam/ }));
     expect(await screen.findByText('Prüfungsvorbereitung')).toBeTruthy();
