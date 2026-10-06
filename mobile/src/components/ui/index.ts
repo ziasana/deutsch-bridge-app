@@ -9,6 +9,7 @@ export * from './ProgressBar';
 export * from './ProgressRing';
 export * from './HeroScreen';
 export * from './WavePage';
+export * from './SkyScreen';
 export * from './Screen';
 export * from './SectionHeader';
 export * from './Skeleton';

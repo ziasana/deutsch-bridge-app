@@ -21,6 +21,7 @@ let mockParams: Record<string, string> = {};
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, replace: jest.fn(), back: mockBack }),
   useLocalSearchParams: () => mockParams,
+  useFocusEffect: jest.fn(),
 }));
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children }: { children: React.ReactNode }) => children,
@@ -101,7 +102,7 @@ describe('ExamHubScreen', () => {
     await wrap(<ExamHubScreen />);
     expect(await screen.findByText('1. Teil 1 – Zuordnungsaufgaben')).toBeTruthy();
     expect(api.exercisesForLevel).toHaveBeenCalledWith('B1');
-    expect(screen.getByText('B1 · 1/5')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'B1 · 1/5' }).props.accessibilityState.selected).toBe(true);
 
     // Teil 2 has a single exercise: opens it directly. Teil 1 has two: opens the Teil list.
     await fireEvent.press(screen.getByRole('button', { name: /^Teil 2/ }));

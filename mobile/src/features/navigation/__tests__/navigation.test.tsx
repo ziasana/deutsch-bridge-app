@@ -113,7 +113,7 @@ describe('app navigation', () => {
     expect(await screen.findByText('Deine Lerninhalte')).toBeTruthy();
 
     await fireEvent.press(screen.getByRole('button', { name: /Exam/ }));
-    expect(await screen.findByText('Prüfungsvorbereitung')).toBeTruthy();
+    expect(await screen.findByText('Prüfung üben')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: /Tutor/ }));
     expect(await screen.findByText('AI Tutor')).toBeTruthy();
 
