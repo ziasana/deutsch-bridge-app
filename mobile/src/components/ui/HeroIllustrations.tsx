@@ -43,19 +43,26 @@ function useHop() {
   return { v, hop };
 }
 
-/** Home: a learner with a daily checklist, a streak flame and a calendar. Tap ticks the next task. */
-export function HomeIllustration() {
+/** Home: a learner with a checklist that mirrors today's real plan, a streak flame and a calendar. */
+export function HomeIllustration({
+  completed = 0,
+  total = 3,
+}: {
+  completed?: number;
+  total?: number;
+}) {
   const bob = useBob(1500);
-  const [done, setDone] = useState(1);
   const [pop] = useState(() => new Animated.Value(1));
   const tick = () => {
-    setDone((d) => (d >= 3 ? 0 : d + 1));
     pop.setValue(0.7);
     Animated.spring(pop, { toValue: 1, friction: 4, tension: 160, useNativeDriver: true }).start();
   };
+  const count = Math.min(4, Math.max(1, total));
+  const done = Math.min(completed, count);
+  const step = count > 3 ? 8.5 : 11;
   const flame = bob.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1.12] });
   const float = bob.interpolate({ inputRange: [0, 1], outputRange: [0, -6] });
-  const rows = [0, 1, 2];
+  const rows = Array.from({ length: count }, (_, i) => i);
   return (
     <View style={styles.box} accessible={false} importantForAccessibility="no-hide-descendants">
       <Pressable onPress={tick} style={styles.fill}>
@@ -111,9 +118,9 @@ export function HomeIllustration() {
             <G key={i}>
               <Rect
                 x="42"
-                y={106 + i * 11}
-                width="9"
-                height="9"
+                y={106 + i * step}
+                width="8"
+                height="8"
                 rx="2.5"
                 fill={i < done ? '#2E8B57' : '#FFFFFF'}
                 stroke={i < done ? '#2E8B57' : '#9AA3AE'}
@@ -121,7 +128,7 @@ export function HomeIllustration() {
               />
               {i < done ? (
                 <Path
-                  d={`M44 ${110.5 + i * 11} l2.2 2.4 l3.8 -4.6`}
+                  d={`M44 ${110 + i * step} l2 2.2 l3.4 -4.2`}
                   stroke="#FFFFFF"
                   strokeWidth="1.8"
                   strokeLinecap="round"
@@ -129,7 +136,14 @@ export function HomeIllustration() {
                   fill="none"
                 />
               ) : null}
-              <Rect x="57" y={108 + i * 11} width={34 - i * 5} height="4" rx="2" fill="#C9CED6" />
+              <Rect
+                x="57"
+                y={108 + i * step}
+                width={34 - (i % 3) * 5}
+                height="3.5"
+                rx="2"
+                fill="#C9CED6"
+              />
             </G>
           ))}
         </Svg>
@@ -159,7 +173,7 @@ export function HomeIllustration() {
         >
           <View style={styles.calTop} />
           <AppText style={styles.calText} color="#2B3A4A">
-            {done}/3
+            {completed}/{total}
           </AppText>
         </Animated.View>
       </Pressable>
