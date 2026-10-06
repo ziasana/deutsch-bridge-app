@@ -43,57 +43,124 @@ function useHop() {
   return { v, hop };
 }
 
-function Stars() {
-  return (
-    <>
-      <Circle cx="28" cy="40" r="3" fill="#FFFFFF" opacity="0.9" />
-      <Circle cx="150" cy="30" r="2.5" fill="#FFFFFF" opacity="0.8" />
-      <Circle cx="140" cy="96" r="3.5" fill="#BFD9FF" />
-      <Circle cx="18" cy="108" r="2.5" fill="#BFD9FF" />
-    </>
-  );
-}
-
-/** Home: a rocket lifting off — "start your learning routine". Tap to launch a hop. */
+/** Home: a learner with a daily checklist, a streak flame and a calendar. Tap ticks the next task. */
 export function HomeIllustration() {
   const bob = useBob(1500);
-  const { v, hop } = useHop();
-  const y = Animated.add(
-    bob.interpolate({ inputRange: [0, 1], outputRange: [0, -7] }),
-    v.interpolate({ inputRange: [0, 1], outputRange: [0, -22] }),
-  );
+  const [done, setDone] = useState(1);
+  const [pop] = useState(() => new Animated.Value(1));
+  const tick = () => {
+    setDone((d) => (d >= 3 ? 0 : d + 1));
+    pop.setValue(0.7);
+    Animated.spring(pop, { toValue: 1, friction: 4, tension: 160, useNativeDriver: true }).start();
+  };
+  const flame = bob.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1.12] });
+  const float = bob.interpolate({ inputRange: [0, 1], outputRange: [0, -6] });
+  const rows = [0, 1, 2];
   return (
     <View style={styles.box} accessible={false} importantForAccessibility="no-hide-descendants">
-      <Pressable onPress={hop} style={styles.fill}>
-        <Svg width={W} height={H} viewBox="0 0 170 170">
+      <Pressable onPress={tick} style={styles.fill}>
+        <Svg width={W} height={H} viewBox="0 0 140 140">
+          {/* tilted rounded backdrop */}
           <Path
-            d="M20 118 C6 70 40 22 88 24 C136 26 166 66 156 112 C148 148 100 166 60 158 C36 153 26 138 20 118 Z"
+            d="M22 28 C40 8 96 6 122 24 C140 40 134 92 116 118 C98 142 44 138 24 116 C6 94 6 46 22 28 Z"
             fill="#F2F4F5"
           />
-          <Stars />
-          <Ellipse cx="46" cy="136" rx="30" ry="9" fill="#FFFFFF" opacity="0.85" />
-          <Ellipse cx="124" cy="140" rx="24" ry="8" fill="#FFFFFF" opacity="0.7" />
+          <Circle cx="20" cy="46" r="2.5" fill="#FFFFFF" opacity="0.9" />
+          <Circle cx="132" cy="112" r="3" fill="#BFD9FF" />
+          {/* hair behind + torso */}
+          <Path d="M46 44 C44 22 62 14 74 16 C90 18 98 32 94 50 Z" fill="#2B3A4A" />
+          <Path d="M26 140 C28 104 48 92 70 92 C92 92 112 104 114 140 Z" fill="#2F6FDB" />
+          {/* neck + head */}
+          <Rect x="63" y="78" width="14" height="18" rx="6" fill="#E9A87F" />
+          <Ellipse cx="70" cy="58" rx="19" ry="22" fill="#E9A87F" />
+          <Path
+            d="M51 54 C48 30 66 22 78 24 C94 26 98 42 90 56 C86 42 70 38 58 46 Z"
+            fill="#2B3A4A"
+          />
+          {/* glasses + face */}
+          <Circle
+            cx="63"
+            cy="60"
+            r="6"
+            fill="rgba(255,255,255,0.45)"
+            stroke="#2B3A4A"
+            strokeWidth="1.8"
+          />
+          <Circle
+            cx="78"
+            cy="60"
+            r="6"
+            fill="rgba(255,255,255,0.45)"
+            stroke="#2B3A4A"
+            strokeWidth="1.8"
+          />
+          <Path d="M69 60 L72 60" stroke="#2B3A4A" strokeWidth="1.8" />
+          <Circle cx="63" cy="61" r="1.8" fill="#2B3A4A" />
+          <Circle cx="78" cy="61" r="1.8" fill="#2B3A4A" />
+          <Path
+            d="M64 71 Q70 77 77 71"
+            stroke="#B5594A"
+            strokeWidth="2"
+            strokeLinecap="round"
+            fill="none"
+          />
+          {/* checklist board held in front */}
+          <Rect x="34" y="96" width="72" height="44" rx="6" fill="#FFFFFF" />
+          <Rect x="58" y="92" width="24" height="8" rx="4" fill="#9AA3AE" />
+          {rows.map((i) => (
+            <G key={i}>
+              <Rect
+                x="42"
+                y={106 + i * 11}
+                width="9"
+                height="9"
+                rx="2.5"
+                fill={i < done ? '#2E8B57' : '#FFFFFF'}
+                stroke={i < done ? '#2E8B57' : '#9AA3AE'}
+                strokeWidth="1.6"
+              />
+              {i < done ? (
+                <Path
+                  d={`M44 ${110.5 + i * 11} l2.2 2.4 l3.8 -4.6`}
+                  stroke="#FFFFFF"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+              ) : null}
+              <Rect x="57" y={108 + i * 11} width={34 - i * 5} height="4" rx="2" fill="#C9CED6" />
+            </G>
+          ))}
         </Svg>
+        {/* streak flame */}
         <Animated.View
-          style={[styles.fill, { transform: [{ translateY: y }] }]}
+          style={[styles.flame, { transform: [{ scale: flame }] }]}
           pointerEvents="none"
         >
-          <Svg width={W} height={H} viewBox="0 0 170 170">
-            <G rotation="22" origin="85, 85">
-              {/* flame */}
-              <Path d="M85 128 C74 138 80 152 85 158 C90 152 96 138 85 128 Z" fill="#F5A524" />
-              <Path d="M85 128 C80 134 83 142 85 146 C87 142 90 134 85 128 Z" fill="#FFE08A" />
-              {/* fins */}
-              <Path d="M66 100 L50 126 L70 118 Z" fill="#E5654F" />
-              <Path d="M104 100 L120 126 L100 118 Z" fill="#E5654F" />
-              {/* body */}
-              <Path d="M85 24 C104 42 108 80 102 124 L68 124 C62 80 66 42 85 24 Z" fill="#FFFFFF" />
-              <Path d="M85 24 C96 34 102 48 103 62 L67 62 C68 48 74 34 85 24 Z" fill="#2F6FDB" />
-              <Circle cx="85" cy="84" r="11" fill="#2F6FDB" />
-              <Circle cx="85" cy="84" r="7" fill="#BFD9FF" />
-              <Rect x="68" y="112" width="34" height="8" rx="4" fill="#C9CED6" />
-            </G>
+          <Svg width={34} height={42} viewBox="0 0 34 42">
+            <Path
+              d="M17 2 C20 12 31 16 31 27 C31 36 24 41 17 41 C10 41 3 36 3 27 C3 20 8 17 10 11 C13 14 14 16 15 18 C17 14 17 8 17 2 Z"
+              fill="#F5762B"
+            />
+            <Path
+              d="M17 20 C20 25 25 27 25 32 C25 36 21 38 17 38 C13 38 9 36 9 32 C9 27 14 25 17 20 Z"
+              fill="#FFC857"
+            />
           </Svg>
+        </Animated.View>
+        {/* calendar page */}
+        <Animated.View
+          style={[
+            styles.calendar,
+            { transform: [{ translateY: float }, { rotate: '8deg' }, { scale: pop }] },
+          ]}
+          pointerEvents="none"
+        >
+          <View style={styles.calTop} />
+          <AppText style={styles.calText} color="#2B3A4A">
+            {done}/3
+          </AppText>
         </Animated.View>
       </Pressable>
     </View>
@@ -214,6 +281,20 @@ export function LearnIllustration() {
 }
 
 const styles = StyleSheet.create({
+  flame: { position: 'absolute', left: 4, top: 8, width: 34, height: 42 },
+  calendar: {
+    position: 'absolute',
+    right: 0,
+    top: 20,
+    width: 38,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  calTop: { width: '100%', height: 10, backgroundColor: '#E5654F' },
+  calText: { fontSize: 14, lineHeight: 26, fontWeight: '800' },
   tile: {
     position: 'absolute',
     width: 28,
