@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { ApiError } from '@/api/errors';
 import { lexiconApi, readingApi, readingQuizApi } from '@/api/readingApi';
+import { vocabularyApi } from '@/api/vocabularyApi';
 import { useAuthStore } from '@/stores/authStore';
 import { useReadingSessionStore } from '@/stores/readingSessionStore';
 import type { UserProfile } from '@/types/user';
@@ -11,6 +12,7 @@ import { ReadingQuizScreen } from '../ReadingQuizScreen';
 import { makeArticle, makeSummary } from '../testing/fixtures';
 
 jest.mock('@/api/readingApi');
+jest.mock('@/api/vocabularyApi');
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
 const mockBack = jest.fn();
@@ -26,6 +28,7 @@ jest.mock('expo-image', () => ({ Image: () => null }));
 jest.mock('expo-speech', () => ({ speak: jest.fn(), stop: jest.fn() }));
 
 const api = readingApi as jest.Mocked<typeof readingApi>;
+const mockedVocab = vocabularyApi as jest.Mocked<typeof vocabularyApi>;
 const quiz = readingQuizApi as jest.Mocked<typeof readingQuizApi>;
 const lexicon = lexiconApi as jest.Mocked<typeof lexiconApi>;
 
@@ -49,7 +52,9 @@ beforeEach(() => {
   jest.resetAllMocks();
   mockParams = {};
   useReadingSessionStore.setState({ articleId: null, tapped: [], saved: [] });
-  useAuthStore.setState({ profile: { learningLevel: 'B1', preferredLanguage: 'EN' } as UserProfile });
+  useAuthStore.setState({
+    profile: { learningLevel: 'B1', preferredLanguage: 'EN' } as UserProfile,
+  });
 });
 
 const pageOf = (n: number) => ({
@@ -76,7 +81,7 @@ describe('ReadingListScreen', () => {
       0,
       10,
     );
-    expect(screen.getByText('B1 · 2/6')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'B1 · 2/6' })).toBeTruthy();
 
     await fireEvent.press(screen.getByText('Artikel 2'));
     expect(mockPush).toHaveBeenCalledWith({
@@ -94,7 +99,7 @@ describe('ReadingListScreen', () => {
     api.page.mockResolvedValue(pageOf(1));
     await wrap(<ReadingListScreen />);
     await screen.findByText('Artikel 1');
-    await fireEvent.press(screen.getByText('A2 · 1/4'));
+    await fireEvent.press(screen.getByRole('button', { name: 'A2 · 1/4' }));
     await waitFor(() =>
       expect(api.page).toHaveBeenCalledWith(expect.objectContaining({ level: 'A2' }), 0, 10),
     );
@@ -189,6 +194,36 @@ describe('ReadingArticleScreen', () => {
     expect(lexicon.lookup).toHaveBeenCalledWith('laut');
   });
 
+  it('adds a looked-up word to the vocabulary and can remove it again', async () => {
+    api.article.mockResolvedValue(makeArticle());
+    lexicon.lookup.mockResolvedValue({
+      id: 'd1',
+      lemma: 'laut',
+      ipa: null,
+      audioUrl: null,
+      article: null,
+      savedByCurrentUser: false,
+      senses: [{ id: 's1', pos: 'ADJ', translations: ['loud'], examples: [] }],
+    } as never);
+    mockedVocab.addFromDictionary.mockResolvedValue({});
+    mockedVocab.listFromDictionary.mockResolvedValue([{ id: 'v9', dictionaryEntryId: 'd1' }]);
+    mockedVocab.remove.mockResolvedValue(undefined as never);
+    await wrap(<ReadingArticleScreen />);
+    await fireEvent.press(await screen.findByText('laut'));
+    await fireEvent.press(
+      await screen.findByRole('button', { name: '＋ Zum Wortschatz hinzufügen' }),
+    );
+    await waitFor(() => expect(mockedVocab.addFromDictionary).toHaveBeenCalledWith('d1'));
+
+    await fireEvent.press(
+      await screen.findByRole('button', { name: '✓ Im Wortschatz – entfernen' }),
+    );
+    await waitFor(() => expect(mockedVocab.remove).toHaveBeenCalledWith('v9'));
+    expect(
+      await screen.findByRole('button', { name: '＋ Zum Wortschatz hinzufügen' }),
+    ).toBeTruthy();
+  });
+
   it('shows an error state when the article fails to load', async () => {
     api.article.mockRejectedValue(new ApiError('network', 'Keine Verbindung.'));
     await wrap(<ReadingArticleScreen />);
@@ -198,7 +233,12 @@ describe('ReadingArticleScreen', () => {
 
 describe('ReadingQuizScreen', () => {
   const questions = [
-    { id: 'q1', type: 'HAUPTIDEE' as const, prompt: 'Worum geht es?', options: ['Hunde', 'Katzen'] },
+    {
+      id: 'q1',
+      type: 'HAUPTIDEE' as const,
+      prompt: 'Worum geht es?',
+      options: ['Hunde', 'Katzen'],
+    },
     { id: 'q2', type: 'DETAIL' as const, prompt: 'Was ist laut?', options: null },
   ];
 
@@ -230,7 +270,13 @@ describe('ReadingQuizScreen', () => {
       attemptId: 'at1',
       comprehensionScore: 90,
       vocabScore: 60,
-      recommendation: { type: 'CONTINUE', suggestedArticleId: 'r9', suggestedTitle: 'Neuer Text', suggestedLevel: 'B1', message: 'Weiter so!' },
+      recommendation: {
+        type: 'CONTINUE',
+        suggestedArticleId: 'r9',
+        suggestedTitle: 'Neuer Text',
+        suggestedLevel: 'B1',
+        message: 'Weiter so!',
+      },
     });
     await wrap(<ReadingQuizScreen />);
 
@@ -241,7 +287,12 @@ describe('ReadingQuizScreen', () => {
     expect(await screen.findByText('✕ Nicht richtig')).toBeTruthy();
     expect(screen.getByText('Richtig ist: Hunde')).toBeTruthy();
     expect(quiz.answer).toHaveBeenCalledWith('at1', 'q1', 'Katzen');
-    await waitFor(() => expect(lexicon.save).toHaveBeenCalledWith(expect.objectContaining({ lemma: 'Hund' }), expect.anything()));
+    await waitFor(() =>
+      expect(lexicon.save).toHaveBeenCalledWith(
+        expect.objectContaining({ lemma: 'Hund' }),
+        expect.anything(),
+      ),
+    );
 
     await fireEvent.press(screen.getByRole('button', { name: 'Nächste Frage' }));
     expect(await screen.findByText('Frage 2 von 2')).toBeTruthy();

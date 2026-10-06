@@ -8,6 +8,8 @@ type Props = {
   fontSize: number;
   activeAnnotationId: string | null;
   tappedLemmas: string[];
+  /** Annotation types whose highlight is switched off (still tappable). */
+  hiddenTypes?: ReadonlySet<Annotation['type']>;
   onAnnotation: (annotation: Annotation) => void;
   onWord: (lemma: string) => void;
 };
@@ -31,6 +33,7 @@ export function ArticleText({
   fontSize,
   activeAnnotationId,
   tappedLemmas,
+  hiddenTypes,
   onAnnotation,
   onWord,
 }: Props) {
@@ -49,18 +52,23 @@ export function ArticleText({
         const a = seg.annotation;
         const active = a.id === activeAnnotationId;
         const seen = tappedLemmas.includes(a.lemma);
+        const hidden = hiddenTypes?.has(a.type) && !active;
         return (
           <Text
             key={i}
             onPress={() => onAnnotation(a)}
             accessibilityRole="button"
             accessibilityHint="Zeigt die Bedeutung"
-            style={[
-              HIGHLIGHT[a.type],
-              Platform.OS === 'ios' && { textDecorationStyle: DECORATION[a.type] },
-              seen && styles.seen,
-              active && styles.active,
-            ]}
+            style={
+              hidden
+                ? undefined
+                : [
+                    HIGHLIGHT[a.type],
+                    Platform.OS === 'ios' && { textDecorationStyle: DECORATION[a.type] },
+                    seen && styles.seen,
+                    active && styles.active,
+                  ]
+            }
           >
             {seg.text}
           </Text>

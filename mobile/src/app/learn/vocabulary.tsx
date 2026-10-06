@@ -1,5 +1,5 @@
-import { VocabularyTrainerScreen } from '@/features/vocabulary/VocabularyTrainerScreen';
+import { VocabularyScreen } from '@/features/vocabulary/VocabularyScreen';
 
 export default function VocabularyRoute() {
-  return <VocabularyTrainerScreen />;
+  return <VocabularyScreen />;
 }

@@ -221,7 +221,7 @@ export function ProgressScreen() {
         segments={vocabularySegments(s.vocabulary, { new: NEUTRAL, ...CHART })}
         emptyMessage="Du hast noch keine Wörter im Vokabular."
         ctaLabel="Vokabeln üben"
-        onCta={() => router.push('/learn/vocabulary')}
+        onCta={() => router.push('/learn/review')}
       />
       <MasteryCard
         title="💬 Ausdrücke"

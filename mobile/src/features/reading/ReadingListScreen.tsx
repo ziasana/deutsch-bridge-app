@@ -1,37 +1,126 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppText, Badge, Chip, EmptyState, ErrorState, Header, ListItem, Skeleton, TextField } from '@/components/ui';
+import {
+  AppText,
+  Chip,
+  EmptyState,
+  ErrorState,
+  ProgressRing,
+  Skeleton,
+  TextField,
+} from '@/components/ui';
+import { PressableScale, StatTile, tint } from '@/features/exam/components/kit';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useAuthStore } from '@/stores/authStore';
-import { colors, radius, spacing } from '@/theme';
+import { colors, radius, shadow, spacing } from '@/theme';
 import type { ReadingArticleSummary } from '@/types/reading';
-import { resolveUploadUrl } from '@/utils/urls';
 import { pickInitialLevel } from '@/utils/levels';
-import { useReadingCategories, useReadingLevelSummary, useReadingList } from './hooks';
+import { resolveUploadUrl } from '@/utils/urls';
+import { BookIllustration, InfoPill, READING_COLOR, ReadingHero } from './components/ReadingViz';
+import {
+  useReadingCategories,
+  useReadingLevelSummary,
+  useReadingList,
+  useToggleArticleBookmark,
+} from './hooks';
 
-function ArticleRow({ item, onPress }: { item: ReadingArticleSummary; onPress: () => void }) {
+function ArticleCard({
+  item,
+  next,
+  onPress,
+}: {
+  item: ReadingArticleSummary;
+  next: boolean;
+  onPress: () => void;
+}) {
   const image = resolveUploadUrl(item.thumbnailUrl ?? item.imageUrl);
+  const bookmark = useToggleArticleBookmark(item.id);
   return (
-    <ListItem
-      title={item.title}
-      subtitle={[item.categoryTitle, item.newWordCount > 0 ? `${item.newWordCount} neue Wörter` : null].filter(Boolean).join(' · ')}
-      leading={image ? <Image source={{ uri: image }} contentFit="cover" style={styles.thumb} /> : undefined}
-      trailing={
-        <View style={{ alignItems: 'flex-end', gap: 4 }}>
-          <Badge tone="primary" label={item.level} />
-          {item.learned ? <Badge tone="success" label="✓ Gelesen" /> : null}
-          {item.bookmarked ? (
-            <AppText accessibilityLabel="Gemerkt" color={colors.warning}>
-              ★
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={`${item.title}${item.learned ? ', gelesen' : ''}`}
+      onPress={onPress}
+      style={[styles.card, next && { borderColor: READING_COLOR, borderWidth: 2 }]}
+    >
+      <View style={styles.cover}>
+        {image ? (
+          <Image source={{ uri: image }} contentFit="cover" style={StyleSheet.absoluteFill} />
+        ) : (
+          <View style={[StyleSheet.absoluteFill, styles.coverEmpty]}>
+            <AppText style={{ fontSize: 40, lineHeight: 48 }}>📖</AppText>
+          </View>
+        )}
+        <View style={styles.coverTop}>
+          <View style={styles.levelPill}>
+            <AppText variant="caption" color="#FFFFFF" style={{ fontWeight: '800' }}>
+              {item.level}
             </AppText>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={item.bookmarked ? 'Gemerkt' : 'Merken'}
+            disabled={bookmark.isPending}
+            onPress={() => bookmark.mutate(item.bookmarked)}
+            hitSlop={spacing.sm}
+            style={styles.starBtn}
+          >
+            <Ionicons
+              name={item.bookmarked ? 'star' : 'star-outline'}
+              size={20}
+              color={item.bookmarked ? colors.warning : colors.ink}
+            />
+          </Pressable>
+        </View>
+        {item.learned ? (
+          <View style={styles.readBadge}>
+            <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
+            <AppText variant="caption" color="#FFFFFF" style={{ fontWeight: '800' }}>
+              Gelesen
+            </AppText>
+          </View>
+        ) : null}
+      </View>
+      <View style={styles.cardBody}>
+        {next ? (
+          <AppText variant="caption" color={READING_COLOR} style={{ fontWeight: '800' }}>
+            ALS NÄCHSTES
+          </AppText>
+        ) : null}
+        <AppText variant="subheading" numberOfLines={2}>
+          {item.title}
+        </AppText>
+        <View style={styles.tags}>
+          {item.categoryTitle ? (
+            <InfoPill
+              icon="pricetag-outline"
+              text={item.categoryTitle}
+              color={colors.mutedForeground}
+              background={colors.muted}
+            />
+          ) : null}
+          {item.newWordCount > 0 ? (
+            <InfoPill
+              icon="sparkles"
+              text={`${item.newWordCount} neue Wörter`}
+              color="#8A5A00"
+              background={colors.warningSoft}
+            />
           ) : null}
         </View>
-      }
-      onPress={onPress}
-    />
+      </View>
+    </PressableScale>
   );
 }
 
@@ -52,6 +141,10 @@ export function ReadingListScreen() {
   const list = useReadingList(params);
   const items = useMemo(() => list.data?.pages.flatMap((p) => p.items) ?? [], [list.data]);
   const filtered = !!categoryId || bookmarked || debounced !== '';
+  const nextId = !filtered ? items.find((a) => !a.learned)?.id : undefined;
+
+  const current = summaries.find((s) => s.level === level);
+  const percent = current && current.total > 0 ? (current.learned / current.total) * 100 : 0;
 
   const reset = () => {
     setSearch('');
@@ -60,23 +153,125 @@ export function ReadingListScreen() {
   };
 
   const header = (
-    <View style={{ gap: spacing.md, paddingBottom: spacing.md }}>
-      <Header title="Reading" subtitle="Lies Texte auf deinem Niveau" back />
+    <View style={{ gap: spacing.lg, paddingBottom: spacing.md }}>
+      <ReadingHero
+        chip={`📖 LESEN${level ? ` · ${level}` : ''}`}
+        title="Lesen"
+        subtitle="Lies Texte auf deinem Niveau"
+        right={
+          current ? (
+            <ProgressRing
+              value={percent}
+              size={84}
+              stroke={9}
+              color={READING_COLOR}
+              textSize={20}
+              trackColor="#FFFFFFCC"
+              label={`Fortschritt ${level}`}
+            />
+          ) : (
+            <BookIllustration size={104} />
+          )
+        }
+      />
+
       {summaries.length > 0 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          {summaries.map((s) => (
-            <Chip key={s.level} label={`${s.level} · ${s.learned}/${s.total}`} selected={s.level === level} onPress={() => setPickedLevel(s.level)} />
-          ))}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.levels}
+          style={{ flexGrow: 0 }}
+        >
+          {summaries.map((s) => {
+            const on = s.level === level;
+            const p = s.total > 0 ? (s.learned / s.total) * 100 : 0;
+            return (
+              <Pressable
+                key={s.level}
+                accessibilityRole="button"
+                accessibilityLabel={`${s.level} · ${s.learned}/${s.total}`}
+                accessibilityState={{ selected: on }}
+                onPress={() => setPickedLevel(s.level)}
+                style={[
+                  styles.levelTile,
+                  on && { backgroundColor: READING_COLOR, borderColor: READING_COLOR },
+                ]}
+              >
+                <AppText style={styles.levelText} color={on ? '#FFFFFF' : colors.ink}>
+                  {s.level}
+                </AppText>
+                <AppText variant="caption" color={on ? '#FFFFFFD9' : colors.mutedForeground}>
+                  {`${s.learned} von ${s.total}`}
+                </AppText>
+                <View style={[styles.miniTrack, on && { backgroundColor: '#FFFFFF55' }]}>
+                  <View
+                    style={[
+                      styles.miniFill,
+                      { width: `${p}%`, backgroundColor: on ? '#FFFFFF' : colors.success },
+                    ]}
+                  />
+                </View>
+              </Pressable>
+            );
+          })}
         </ScrollView>
       ) : null}
-      <TextField label="Suchen" value={search} onChangeText={setSearch} autoCapitalize="none" autoCorrect={false} returnKeyType="search" />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        <Chip label="★ Gemerkte" selected={bookmarked} onPress={() => setBookmarked((b) => !b)} />
-        <Chip label="Alle Themen" selected={categoryId === ''} onPress={() => setCategoryId('')} />
-        {(categories.data ?? []).map((c) => (
-          <Chip key={c.id} label={c.title} selected={categoryId === c.id} onPress={() => setCategoryId(c.id)} />
-        ))}
-      </ScrollView>
+
+      {current ? (
+        <View style={[styles.pad, styles.tiles]}>
+          <StatTile
+            icon="checkmark-circle-outline"
+            label="Gelesen"
+            value={`${current.learned} / ${current.total}`}
+            color={colors.success}
+          />
+          <StatTile
+            icon="book-outline"
+            label="Noch offen"
+            value={String(Math.max(0, current.total - current.learned))}
+            color={READING_COLOR}
+          />
+          <StatTile
+            icon="pricetags-outline"
+            label="Themen"
+            value={String(categories.data?.length ?? 0)}
+            color={colors.primary}
+          />
+        </View>
+      ) : null}
+
+      <View style={[styles.pad, { gap: spacing.md }]}>
+        <TextField
+          label="Suchen"
+          placeholder="Text suchen …"
+          value={search}
+          onChangeText={setSearch}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="search"
+        />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chips}
+          style={styles.chipsBleed}
+        >
+          <Chip label="★ Gemerkte" selected={bookmarked} onPress={() => setBookmarked((b) => !b)} />
+          <Chip
+            label="Alle Themen"
+            selected={categoryId === ''}
+            onPress={() => setCategoryId('')}
+          />
+          {(categories.data ?? []).map((c) => (
+            <Chip
+              key={c.id}
+              label={c.title}
+              selected={categoryId === c.id}
+              onPress={() => setCategoryId(c.id)}
+            />
+          ))}
+        </ScrollView>
+      </View>
     </View>
   );
 
@@ -84,8 +279,8 @@ export function ReadingListScreen() {
   if (summary.isPending || (list.isPending && !!params)) {
     empty = (
       <View accessibilityLabel="Texte werden geladen" style={{ gap: spacing.md }}>
-        {[0, 1, 2, 3].map((i) => (
-          <Skeleton key={i} height={56} />
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} height={200} />
         ))}
       </View>
     );
@@ -101,23 +296,42 @@ export function ReadingListScreen() {
     );
   } else if (items.length === 0) {
     empty = filtered ? (
-      <EmptyState emoji="🔍" title="Keine Texte gefunden" message="Passe Suche oder Filter an." actionLabel="Filter zurücksetzen" onAction={reset} />
+      <EmptyState
+        emoji="🔍"
+        title="Keine Texte gefunden"
+        message="Passe Suche oder Filter an."
+        actionLabel="Filter zurücksetzen"
+        onAction={reset}
+      />
     ) : (
-      <EmptyState emoji="📖" title="Noch keine Texte" message="Für dieses Niveau gibt es noch keine Texte. Wähle ein anderes Niveau." />
+      <EmptyState
+        emoji="📖"
+        title="Noch keine Texte"
+        message="Für dieses Niveau gibt es noch keine Texte. Wähle ein anderes Niveau."
+      />
     );
   }
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right', 'bottom']}>
+    <SafeAreaView style={styles.screen} edges={['left', 'right', 'bottom']}>
       <FlatList
         testID="reading-list"
         data={empty ? [] : items}
         keyExtractor={(a) => a.id}
         renderItem={({ item }) => (
-          <ArticleRow item={item} onPress={() => router.push({ pathname: '/reading/[articleId]', params: { articleId: item.id } })} />
+          <View style={styles.pad}>
+            <ArticleCard
+              item={item}
+              next={item.id === nextId}
+              onPress={() =>
+                router.push({ pathname: '/reading/[articleId]', params: { articleId: item.id } })
+              }
+            />
+          </View>
         )}
+        ItemSeparatorComponent={Gap}
         ListHeaderComponent={header}
-        ListEmptyComponent={empty}
+        ListEmptyComponent={empty ? <View style={styles.pad}>{empty}</View> : null}
         ListFooterComponent={
           list.isFetchingNextPage ? (
             <View style={{ padding: spacing.lg }} accessibilityLabel="Weitere Texte werden geladen">
@@ -145,9 +359,79 @@ export function ReadingListScreen() {
   );
 }
 
+const Gap = () => <View style={{ height: spacing.lg }} />;
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  list: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.xxl },
-  chips: { gap: spacing.sm, paddingVertical: spacing.xs },
-  thumb: { width: 56, height: 56, borderRadius: radius.sm, backgroundColor: colors.muted },
+  list: { paddingBottom: spacing.xxl },
+  pad: { paddingHorizontal: spacing.lg },
+  tiles: { flexDirection: 'row', gap: spacing.sm },
+  chips: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.xs },
+  chipsBleed: { marginHorizontal: -spacing.lg },
+  levels: { gap: spacing.sm, paddingHorizontal: spacing.lg },
+  levelTile: {
+    width: 104,
+    gap: 2,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  levelText: { fontSize: 24, lineHeight: 30, fontWeight: '800' },
+  miniTrack: {
+    height: 6,
+    marginTop: spacing.xs,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+    backgroundColor: colors.secondary,
+  },
+  miniFill: { height: '100%', borderRadius: radius.pill },
+  card: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    overflow: 'hidden',
+    ...shadow.card,
+  },
+  cover: { height: 150, backgroundColor: tint(READING_COLOR, '1F') },
+  coverEmpty: { alignItems: 'center', justifyContent: 'center' },
+  coverTop: {
+    position: 'absolute',
+    top: spacing.sm,
+    left: spacing.sm,
+    right: spacing.sm,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  levelPill: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    backgroundColor: READING_COLOR,
+  },
+  starBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFFE6',
+  },
+  readBadge: {
+    position: 'absolute',
+    bottom: spacing.sm,
+    left: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    backgroundColor: colors.success,
+  },
+  cardBody: { gap: spacing.xs, padding: spacing.md },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: 2 },
 });
