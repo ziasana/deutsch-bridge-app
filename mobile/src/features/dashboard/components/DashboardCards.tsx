@@ -334,12 +334,17 @@ export function WeekCard({ data, today = new Date() }: Props & { today?: Date })
       <AppText variant="small" color={colors.mutedForeground}>
         {learningDays} / {totalDays} Lerntage
       </AppText>
-      <Button
-        pill
-        label="Fortschritt ansehen"
-        variant="ghost"
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Fortschritt ansehen"
         onPress={() => router.push('/progress')}
-      />
+        style={({ pressed }) => [styles.linkRow, pressed && { opacity: 0.6 }]}
+      >
+        <AppText variant="subheading" color={colors.primaryDark}>
+          Fortschritt ansehen
+        </AppText>
+        <Ionicons name="arrow-forward" size={18} color={colors.primaryDark} />
+      </Pressable>
     </View>
   );
 }
@@ -453,6 +458,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   big: { fontSize: 18, lineHeight: 24, fontWeight: '700', color: colors.ink },
+  linkRow: {
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: -spacing.xs,
+  },
   weekRow: { flexDirection: 'row', justifyContent: 'space-between' },
   dayCol: { alignItems: 'center', gap: spacing.sm },
   todayLabel: { fontWeight: '800' },
