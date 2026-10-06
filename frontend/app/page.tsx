@@ -12,9 +12,9 @@ import BlogCardSkeleton from "@/componenets/blog/BlogCardSkeleton";
 import { getHomeBlogPosts } from "@/services/blogService";
 
 const HERO_IMAGE =
-    "/images/deutsch-hero.png";
+    "/images/hero-image.jpg";
 
-const FAQ_IMAGE = "/images/hero-image.jpg";
+const FAQ_IMAGE = "/images/ll.png";
 const TESTIMONIAL_IMAGES = [
     "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
     "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
