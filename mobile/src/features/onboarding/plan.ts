@@ -54,13 +54,24 @@ export type PlanState = {
 
 export const MAX_FOCUS = 3;
 
+export const LEVEL_ORDER: Level[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+
+/** The target must lie above the current level (any level is fine when the current one is unknown). */
+export function isTargetAllowed(
+  level: Level,
+  plan: Pick<PlanState, 'currentLevel' | 'currentLevelUnknown'>,
+): boolean {
+  if (plan.currentLevelUnknown || !plan.currentLevel) return true;
+  return LEVEL_ORDER.indexOf(level) > LEVEL_ORDER.indexOf(plan.currentLevel);
+}
+
 export const initialPlan: PlanState = {
   language: null,
   reasons: [],
   currentLevel: null,
   currentLevelUnknown: false,
   targetLevel: null,
-  dailyWords: null,
+  dailyWords: 5,
   focus: [],
   examType: null,
   examLevel: null,
@@ -115,7 +126,7 @@ export function isStepValid(step: StepId, plan: PlanState, today = new Date()): 
     case 'currentLevel':
       return plan.currentLevel !== null || plan.currentLevelUnknown;
     case 'targetLevel':
-      return plan.targetLevel !== null;
+      return plan.targetLevel !== null && isTargetAllowed(plan.targetLevel, plan);
     case 'dailyWords':
       return plan.dailyWords !== null;
     case 'focus':

@@ -4,22 +4,22 @@ import type { ExamKind, Focus, Level, Reason } from './plan';
 import type { PreferredLanguage } from '@/types/user';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
-export type Option<T> = { value: T; label: string; description?: string; icon?: IconName };
+export type Option<T> = {
+  value: T;
+  label: string;
+  description?: string;
+  icon?: IconName;
+  emoji?: string;
+};
 
 export const LANGUAGE_OPTIONS: Option<PreferredLanguage>[] = [
   {
     value: 'EN',
     label: 'English',
-    description: 'Erklärungen auf Englisch',
-    icon: 'language-outline',
+    description: 'Deutsche Erklärungen mit englischer Unterstützung',
+    emoji: '🇬🇧',
   },
-  {
-    value: 'PR',
-    label: 'فارسی (Persisch)',
-    description: 'Erklärungen auf Persisch',
-    icon: 'language-outline',
-  },
-  { value: 'DE', label: 'Deutsch', description: 'Alles auf Deutsch', icon: 'language-outline' },
+  { value: 'PR', label: 'فارسی', description: 'توضیحات و ترجمه‌های آلمانی به فارسی', emoji: '🇮🇷' },
 ];
 
 export const REASON_OPTIONS: Option<Reason>[] = [

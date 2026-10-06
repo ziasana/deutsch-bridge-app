@@ -59,7 +59,7 @@ describe('app navigation', () => {
     await tokenStorage.setTokens('a', 'r');
     (authApi.getProfile as jest.Mock).mockResolvedValue({ ...profile, onboardingCompleted: false });
     await renderRouter('./src/app', { initialUrl: '/' });
-    expect(await screen.findByText('In welcher Sprache erklären wir dir Dinge?')).toBeTruthy();
+    expect(await screen.findByText('Wie sollen wir Deutsch erklären?')).toBeTruthy();
   });
 
   it('walks every tab, pushes a feature screen, goes back, and logs out', async () => {

@@ -30,7 +30,11 @@ export function ChoiceCard<T>({ option, selected, onPress, multi, disabled }: Pr
         disabled && { opacity: 0.45 },
       ]}
     >
-      {option.icon ? (
+      {option.emoji ? (
+        <View style={styles.icon}>
+          <AppText style={styles.emoji}>{option.emoji}</AppText>
+        </View>
+      ) : option.icon ? (
         <View style={[styles.icon, selected && { backgroundColor: colors.primary }]}>
           <Ionicons
             name={option.icon}
@@ -77,6 +81,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  emoji: { fontSize: 24, lineHeight: 30 },
   text: { flex: 1, gap: 2 },
   mark: {
     width: 24,

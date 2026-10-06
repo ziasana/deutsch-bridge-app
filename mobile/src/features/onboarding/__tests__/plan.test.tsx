@@ -4,6 +4,7 @@ import { userApi } from '@/api/userApi';
 import { useAuthStore } from '@/stores/authStore';
 import type { UserProfile } from '@/types/user';
 import { OnboardingScreen } from '../OnboardingScreen';
+import { useOnboardingStore } from '../store';
 import {
   initialPlan,
   isStepValid,
@@ -78,12 +79,22 @@ describe('learning plan logic', () => {
 });
 
 describe('OnboardingScreen', () => {
-  it('walks the steps, saves the plan and marks the profile completed', async () => {
-    const saved = { displayName: 'Ali', onboardingCompleted: true } as UserProfile;
+  beforeEach(() => useOnboardingStore.getState().reset());
+
+  it('walks the steps like the web wizard, saves, shows the summary, then opens the app', async () => {
+    const saved = {
+      displayName: 'Ali',
+      email: 'ali@example.com',
+      onboardingCompleted: true,
+    } as UserProfile;
     api.completeOnboarding.mockResolvedValue(saved);
     useAuthStore.setState({
       status: 'authenticated',
-      profile: { displayName: 'Ali', onboardingCompleted: false } as UserProfile,
+      profile: {
+        displayName: 'Ali',
+        email: 'ali@example.com',
+        onboardingCompleted: false,
+      } as UserProfile,
     });
     const client = new QueryClient({ defaultOptions: { mutations: { gcTime: Infinity } } });
     await render(
@@ -95,19 +106,26 @@ describe('OnboardingScreen', () => {
     const check = (name: string) => fireEvent.press(screen.getByRole('checkbox', { name }));
     const next = () => fireEvent.press(screen.getByRole('button', { name: 'Weiter' }));
 
+    expect(await screen.findByText('Wie sollen wir Deutsch erklären?')).toBeTruthy();
+    expect(screen.getByText('Schritt 1 von 6')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Weiter' })).toBeDisabled();
     await press('English');
     await next();
     await check('Beruf & Karriere');
     await next();
-    await press('Ich weiß es nicht');
+    await press('A2 · Grundlagen');
     await next();
+    // Target must lie above the current level.
+    expect(screen.getByRole('radio', { name: 'A1 · Anfänger' })).toBeDisabled();
+    expect(screen.getByRole('radio', { name: 'A2 · Grundlagen' })).toBeDisabled();
     await press('B2 · Gute Mittelstufe');
     await next();
-    await press('10 Wörter');
+    // 5 words/day is preselected, so the step is already valid.
+    expect(screen.getByRole('button', { name: 'Weiter' })).toBeEnabled();
+    await press('10 Wörter pro Tag, Ausgewogen');
     await next();
     await check('Grammatik');
-    await fireEvent.press(screen.getByRole('button', { name: 'Lernplan starten' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Fertig' }));
 
     await waitFor(() =>
       expect(api.completeOnboarding).toHaveBeenCalledWith(
@@ -119,6 +137,19 @@ describe('OnboardingScreen', () => {
         }),
       ),
     );
-    await waitFor(() => expect(useAuthStore.getState().profile?.onboardingCompleted).toBe(true));
+    // The profile only flips after the learner leaves the summary screen.
+    expect(await screen.findByText('Dein Lernplan ist fertig!')).toBeTruthy();
+    expect(useAuthStore.getState().profile?.onboardingCompleted).toBe(false);
+    await fireEvent.press(screen.getByRole('button', { name: 'Jetzt lernen' }));
+    expect(useAuthStore.getState().profile?.onboardingCompleted).toBe(true);
+  });
+
+  it('keeps answers per account and resets for a different one', async () => {
+    useOnboardingStore.getState().ensureOwner('a@example.com');
+    useOnboardingStore.getState().patch({ language: 'PR' });
+    useOnboardingStore.getState().ensureOwner('a@example.com');
+    expect(useOnboardingStore.getState().language).toBe('PR');
+    useOnboardingStore.getState().ensureOwner('b@example.com');
+    expect(useOnboardingStore.getState().language).toBeNull();
   });
 });
