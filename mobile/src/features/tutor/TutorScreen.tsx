@@ -20,13 +20,13 @@ import {
   Button,
   ErrorState,
   FocusedLightStatusBar,
-  HeroArt,
   LoadingState,
   TextField,
 } from '@/components/ui';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type { ChatMessage } from '@/types/chat';
 import { MessageBubble } from './components/MessageBubble';
+import { TutorIllustration } from './TutorIllustration';
 import { SaveWordSheet } from './components/SaveWordSheet';
 import { SessionsSheet } from './components/SessionsSheet';
 import { STARTERS } from './groups';
@@ -180,11 +180,10 @@ export function TutorScreen() {
                 Guten Tag! 👋
               </AppText>
               <AppText style={styles.heroSub} color="#FFFFFF">
-                Ich bin dein Deutsch-Tutor. Übe Deutsch, stelle Fragen oder schreibe einfach mit
-                mir.
+                Ich bin dein Deutsch-Tutor – übe, frag und schreib mit mir.
               </AppText>
             </View>
-            <HeroArt icon="chatbubbles" />
+            <TutorIllustration onUsePhrase={(phrase) => setInput(`Erkläre mir: „${phrase}“`)} />
           </View>
         ) : null}
       </SafeAreaView>
@@ -347,13 +346,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   actionText: { fontWeight: '700' },
+  // Bottom-aligned and pulled under the sheet, so the tutor appears to sit behind it.
   hero: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xxl,
+    alignItems: 'flex-end',
+    paddingLeft: spacing.xl,
+    paddingRight: spacing.sm,
+    marginBottom: -18,
   },
-  heroText: { flex: 1, gap: spacing.sm, paddingRight: spacing.md },
+  heroText: { flex: 1, gap: spacing.sm, paddingRight: spacing.xs, paddingBottom: spacing.xxl + 22 },
   heroTitle: { fontSize: 28, lineHeight: 36, fontWeight: '800' },
   heroSub: { fontSize: 15, lineHeight: 22, fontWeight: '500' },
   sheet: {
