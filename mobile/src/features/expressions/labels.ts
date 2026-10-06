@@ -62,3 +62,18 @@ export const SORT_LABEL = {
   progress: 'Fortschritt',
   alphabetical: 'A–Z',
 } as const;
+
+/** Accent per mastery step: grey → blue → teal → green, so progress reads at a glance. */
+export const MASTERY_COLOR: Record<ExpressionMasteryLevel, string> = {
+  NEW: '#9AA3B5',
+  LEARNING: '#D98E04',
+  FAMILIAR: '#4D94FF',
+  ACTIVE: '#27AE7A',
+  MASTERED: '#1B7A55',
+};
+
+/** Accent per collection. */
+export const TYPE_COLOR: Record<ExpressionType, string> = {
+  REDEWENDUNG: '#4D94FF',
+  NOMEN_VERB_VERBINDUNG: '#E8892B',
+};

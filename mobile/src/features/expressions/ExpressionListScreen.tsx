@@ -15,16 +15,25 @@ import {
   Chip,
   EmptyState,
   ErrorState,
-  Header,
   Skeleton,
   TextField,
 } from '@/components/ui';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { colors, spacing } from '@/theme';
 import type { ExpressionFilters, ExpressionSort, ExpressionType } from '@/types/expression';
+import { ExpressionHero } from './components/ExpressionViz';
 import { ExpressionRow } from './components/ExpressionRow';
 import { useExpressionList } from './hooks';
-import { LEVELS, MASTERY_LABEL, MASTERY_ORDER, SORT_LABEL, TYPE_LABEL } from './labels';
+import {
+  LEVELS,
+  MASTERY_LABEL,
+  MASTERY_ORDER,
+  SORT_LABEL,
+  TYPE_COLOR,
+  TYPE_DESCRIPTION,
+  TYPE_EMOJI,
+  TYPE_LABEL,
+} from './labels';
 
 const DEFAULT_FILTERS: Omit<ExpressionFilters, 'search'> = {
   level: 'ALL',
@@ -66,27 +75,32 @@ export function ExpressionListScreen() {
   };
 
   const header = (
-    <View style={{ gap: spacing.md, paddingBottom: spacing.md }}>
-      <Header
+    <View style={{ gap: spacing.lg, paddingBottom: spacing.md }}>
+      <ExpressionHero
+        accent={TYPE_COLOR[type]}
+        chip={`${TYPE_EMOJI[type]} ${total !== undefined ? `${total} TREFFER` : 'SAMMLUNG'}`}
         title={TYPE_LABEL[type]}
-        subtitle={total !== undefined ? `${total} Treffer` : undefined}
-        back
+        subtitle={TYPE_DESCRIPTION[type]}
       />
-      <TextField
-        label="Suchen"
-        value={search}
-        onChangeText={setSearch}
-        autoCapitalize="none"
-        autoCorrect={false}
-        returnKeyType="search"
-      />
-      <Button
-        variant="secondary"
-        label={`Filter & Sortierung${activeFilterCount(filters) > 0 ? ` (${activeFilterCount(filters)})` : ''} ${showFilters ? '▴' : '▾'}`}
-        onPress={() => setShowFilters((s) => !s)}
-      />
+      <View style={[styles.pad, { gap: spacing.md }]}>
+        <TextField
+          label="Suchen"
+          placeholder="Wendung suchen …"
+          value={search}
+          onChangeText={setSearch}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="search"
+        />
+        <Button
+          pill
+          variant="secondary"
+          label={`Filter & Sortierung${activeFilterCount(filters) > 0 ? ` (${activeFilterCount(filters)})` : ''} ${showFilters ? '▴' : '▾'}`}
+          onPress={() => setShowFilters((s) => !s)}
+        />
+      </View>
       {showFilters ? (
-        <View style={{ gap: spacing.md }}>
+        <View style={[styles.pad, { gap: spacing.md }]}>
           <ChipRow label="Niveau">
             <Chip
               label="Alle"
@@ -168,24 +182,27 @@ export function ExpressionListScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right', 'bottom']}>
+    <SafeAreaView style={styles.screen} edges={['left', 'right', 'bottom']}>
       <FlatList
         testID="expression-list"
         data={empty ? [] : items}
         keyExtractor={(i) => i.id}
         renderItem={({ item }) => (
-          <ExpressionRow
-            item={item}
-            onPress={() =>
-              router.push({
-                pathname: '/expressions/[expressionId]',
-                params: { expressionId: item.id },
-              })
-            }
-          />
+          <View style={styles.pad}>
+            <ExpressionRow
+              item={item}
+              onPress={() =>
+                router.push({
+                  pathname: '/expressions/[expressionId]',
+                  params: { expressionId: item.id },
+                })
+              }
+            />
+          </View>
         )}
+        ItemSeparatorComponent={Gap}
         ListHeaderComponent={header}
-        ListEmptyComponent={empty}
+        ListEmptyComponent={empty ? <View style={styles.pad}>{empty}</View> : null}
         ListFooterComponent={
           query.isFetchingNextPage ? (
             <View
@@ -225,6 +242,8 @@ export function ExpressionListScreen() {
   );
 }
 
+const Gap = () => <View style={{ height: spacing.sm }} />;
+
 function ChipRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <View style={{ gap: spacing.xs }}>
@@ -244,5 +263,6 @@ function ChipRow({ label, children }: { label: string; children: React.ReactNode
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  list: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.xxl },
+  list: { paddingBottom: spacing.xxl },
+  pad: { paddingHorizontal: spacing.lg },
 });

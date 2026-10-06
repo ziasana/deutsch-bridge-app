@@ -172,6 +172,19 @@ function Boldened({ blocks, dir }: { blocks: BlockNode[]; dir: Direction }) {
   return <Blocks blocks={bolded} dir={dir} />;
 }
 
+/** Renders already-parsed blocks, for screens that lay the content out in their own widgets. */
+export function RichBlocks({
+  blocks,
+  dir = 'ltr',
+  bold,
+}: {
+  blocks: BlockNode[];
+  dir?: Direction;
+  bold?: boolean;
+}) {
+  return bold ? <Boldened blocks={blocks} dir={dir} /> : <Blocks blocks={blocks} dir={dir} />;
+}
+
 /** Lesson content: Markdown and/or rich-text HTML, rendered natively. */
 export function RichContent({
   content,

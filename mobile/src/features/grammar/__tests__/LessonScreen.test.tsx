@@ -63,6 +63,14 @@ describe('LessonScreen', () => {
     expect(screen.getByText('Im Alltag benutzt man das Perfekt.')).toBeTruthy();
   });
 
+  it('lets you answer the quick check and try again', async () => {
+    await renderScreen();
+    await fireEvent.press(await screen.findByRole('button', { name: 'Antwort: bin' }));
+    expect(await screen.findByText('🎉 Richtig!')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Nochmal versuchen' }));
+    expect(screen.queryByText('🎉 Richtig!')).toBeNull();
+  });
+
   it('marks the lesson learned and can undo it', async () => {
     await renderScreen();
     await fireEvent.press(await screen.findByRole('button', { name: 'Als gelernt markieren' }));
