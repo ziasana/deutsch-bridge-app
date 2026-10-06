@@ -3,6 +3,8 @@ import { useEffect, useState, type ComponentProps, type ReactNode } from 'react'
 import { Alert, Animated, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText, Button, Chip, TextField } from '@/components/ui';
+import { router } from 'expo-router';
+import { env } from '@/config/env';
 import { useAuthStore } from '@/stores/authStore';
 import type { UserProfile } from '@/types/user';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
@@ -349,7 +351,8 @@ export function OnboardingScreen() {
         dailyWords={store.dailyWords ?? 5}
         onStart={() => {
           store.reset();
-          setProfile(saved); // flips onboardingCompleted → the route guard opens the app
+          if (env.onboardingPreview) router.replace('/welcome');
+          else setProfile(saved); // flips onboardingCompleted → the route guard opens the app
         }}
       />
     );
@@ -358,6 +361,8 @@ export function OnboardingScreen() {
   const next = () => {
     if (!valid) return;
     if (!last) store.setStep(steps[index + 1]);
+    else if (env.onboardingPreview)
+      setSaved({} as UserProfile); // preview: show the summary, save nothing
     else complete.mutate(toRequest(store as PlanState), { onSuccess: setSaved });
   };
 
@@ -382,6 +387,8 @@ export function OnboardingScreen() {
           >
             <Ionicons name="chevron-back" size={24} color={colors.ink} />
           </Pressable>
+        ) : env.onboardingPreview ? (
+          <View style={styles.signOut} />
         ) : (
           <Pressable
             accessibilityRole="button"

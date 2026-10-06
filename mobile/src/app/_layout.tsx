@@ -11,6 +11,7 @@ import { ErrorState } from '@/components/ui';
 import { OfflineBanner } from '@/features/offline/OfflineBanner';
 import { useConnectivity } from '@/features/offline/useConnectivity';
 import { configurePushHandler } from '@/features/notifications/push';
+import { env } from '@/config/env';
 import { initSession, useAuthStore } from '@/stores/authStore';
 import { colors } from '@/theme';
 
@@ -53,7 +54,9 @@ function RootNavigator() {
       <Stack.Protected guard={status === 'authenticated' && !needsOnboarding}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>
-      <Stack.Protected guard={status === 'authenticated' && needsOnboarding}>
+      <Stack.Protected
+        guard={env.onboardingPreview || (status === 'authenticated' && needsOnboarding)}
+      >
         <Stack.Screen name="(onboarding)" />
       </Stack.Protected>
       <Stack.Protected guard={status === 'unauthenticated'}>

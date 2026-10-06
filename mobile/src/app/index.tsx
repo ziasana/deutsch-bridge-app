@@ -1,5 +1,6 @@
 import { Redirect, router } from 'expo-router';
 import { useCallback } from 'react';
+import { env } from '@/config/env';
 import { useAuthStore } from '@/stores/authStore';
 import { SplashIntro, hasPlayedIntro, markIntroPlayed } from '@/features/welcome/SplashIntro';
 
@@ -13,6 +14,7 @@ export default function Index() {
     router.replace('/welcome');
   }, []);
 
+  if (env.onboardingPreview) return <Redirect href="/onboarding" />;
   if (status === 'authenticated')
     return <Redirect href={needsOnboarding ? '/onboarding' : '/home'} />;
   if (hasPlayedIntro()) return <Redirect href="/welcome" />;
