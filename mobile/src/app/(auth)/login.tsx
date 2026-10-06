@@ -4,6 +4,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { StyleSheet, View } from 'react-native';
 import { AppText, Button, TextField } from '@/components/ui';
 import { AuthFrame } from '@/features/auth/AuthForm';
+import { GoogleButton } from '@/features/auth/GoogleButton';
 import { useLogin } from '@/features/auth/hooks';
 import { loginSchema, type LoginForm } from '@/features/auth/schemas';
 import { colors, spacing } from '@/theme';
@@ -16,15 +17,13 @@ export default function LoginScreen() {
   });
 
   return (
-    <AuthFrame
-      title="Willkommen zurück 👋"
-      subtitle="Melde dich an und lerne dort weiter, wo du aufgehört hast."
-    >
+    <AuthFrame>
       <Controller
         control={control}
         name="email"
         render={({ field, fieldState }) => (
           <TextField
+            pill
             label="E-Mail"
             autoCapitalize="none"
             autoComplete="email"
@@ -43,6 +42,7 @@ export default function LoginScreen() {
         name="password"
         render={({ field, fieldState }) => (
           <TextField
+            pill
             label="Passwort"
             secret
             autoCapitalize="none"
@@ -63,26 +63,30 @@ export default function LoginScreen() {
         </AppText>
       ) : null}
       <Button
+        pill
         label="Anmelden"
         loading={login.isPending || formState.isSubmitting}
         onPress={handleSubmit((v) => login.mutate(v))}
       />
+      <GoogleButton />
       <View style={styles.links}>
         <Link href="/forgot-password" accessibilityRole="link">
           <AppText variant="small" color={colors.primaryDark}>
             Passwort vergessen?
           </AppText>
         </Link>
-        <Link href="/register" accessibilityRole="link">
-          <AppText variant="small" color={colors.primaryDark}>
-            Noch kein Konto? Registrieren
-          </AppText>
-        </Link>
+        <AppText variant="small" color={colors.mutedForeground}>
+          Noch kein Konto?{' '}
+          <Link href="/register" accessibilityRole="link" style={styles.link}>
+            Registrieren
+          </Link>
+        </AppText>
       </View>
     </AuthFrame>
   );
 }
 
 const styles = StyleSheet.create({
+  link: { color: colors.primaryDark, fontWeight: '600' },
   links: { alignItems: 'center', gap: spacing.lg, paddingTop: spacing.sm },
 });

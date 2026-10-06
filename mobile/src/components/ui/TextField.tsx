@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { forwardRef, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 import { AppText } from './AppText';
@@ -8,19 +9,25 @@ type Props = Omit<TextInputProps, 'style'> & {
   error?: string;
   /** Adds a show/hide toggle and masks input. */
   secret?: boolean;
+  /** Rounded auth-screen look: brand-blue label and outline, eye icon for the password toggle. */
+  pill?: boolean;
 };
 
 export const TextField = forwardRef<TextInput, Props>(function TextField(
-  { label, error, secret, ...input },
+  { label, error, secret, pill, ...input },
   ref,
 ) {
   const [hidden, setHidden] = useState(true);
   return (
     <View style={styles.wrap}>
-      <AppText variant="small" style={styles.label}>
+      <AppText
+        variant={pill ? 'subheading' : 'small'}
+        color={pill ? colors.primaryDark : undefined}
+        style={styles.label}
+      >
         {label}
       </AppText>
-      <View style={[styles.field, !!error && styles.fieldError]}>
+      <View style={[styles.field, pill && styles.fieldPill, !!error && styles.fieldError]}>
         <TextInput
           ref={ref}
           accessibilityLabel={label}
@@ -36,9 +43,17 @@ export const TextField = forwardRef<TextInput, Props>(function TextField(
             onPress={() => setHidden((h) => !h)}
             style={styles.toggle}
           >
-            <AppText variant="small" color={colors.primaryDark}>
-              {hidden ? 'Zeigen' : 'Verbergen'}
-            </AppText>
+            {pill ? (
+              <Ionicons
+                name={hidden ? 'eye-outline' : 'eye-off-outline'}
+                size={22}
+                color={colors.mutedForeground}
+              />
+            ) : (
+              <AppText variant="small" color={colors.primaryDark}>
+                {hidden ? 'Zeigen' : 'Verbergen'}
+              </AppText>
+            )}
           </Pressable>
         ) : null}
       </View>
@@ -64,6 +79,12 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.md,
     paddingLeft: spacing.lg,
+  },
+  fieldPill: {
+    minHeight: 56,
+    borderRadius: radius.pill,
+    borderColor: colors.primaryDark,
+    paddingLeft: spacing.xl,
   },
   fieldError: { borderColor: colors.destructive, borderWidth: 2 },
   input: { flex: 1, minHeight: MIN_TOUCH, fontSize: 16, color: colors.foreground },

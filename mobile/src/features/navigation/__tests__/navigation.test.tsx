@@ -52,7 +52,7 @@ describe('app navigation', () => {
     await renderRouter('./src/app', { initialUrl: '/' });
     expect(await screen.findByText(slides[0].title)).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Anmelden' }));
-    expect(await screen.findByText('Willkommen zurück 👋')).toBeTruthy();
+    expect(await screen.findByText('Mit Google anmelden')).toBeTruthy();
   });
 
   it('walks every tab, pushes a feature screen, goes back, and logs out', async () => {

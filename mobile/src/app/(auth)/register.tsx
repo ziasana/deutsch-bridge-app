@@ -28,6 +28,7 @@ export default function RegisterScreen() {
         name="displayName"
         render={({ field, fieldState }) => (
           <TextField
+            pill
             label="Name"
             autoComplete="name"
             textContentType="name"
@@ -43,6 +44,7 @@ export default function RegisterScreen() {
         name="email"
         render={({ field, fieldState }) => (
           <TextField
+            pill
             label="E-Mail"
             autoCapitalize="none"
             autoComplete="email"
@@ -60,6 +62,7 @@ export default function RegisterScreen() {
         name="password"
         render={({ field, fieldState }) => (
           <TextField
+            pill
             label="Passwort"
             secret
             autoCapitalize="none"
@@ -77,6 +80,7 @@ export default function RegisterScreen() {
         name="passwordConfirmation"
         render={({ field, fieldState }) => (
           <TextField
+            pill
             label="Passwort bestätigen"
             secret
             autoCapitalize="none"
@@ -95,7 +99,7 @@ export default function RegisterScreen() {
           {register.error.message}
         </AppText>
       ) : null}
-      <Button label="Registrieren" loading={register.isPending} onPress={submit} />
+      <Button pill label="Registrieren" loading={register.isPending} onPress={submit} />
       <View style={styles.links}>
         <Link href="/login" accessibilityRole="link">
           <AppText variant="small" color={colors.primaryDark}>
