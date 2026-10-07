@@ -52,6 +52,12 @@ export const entryEn = {
       passwordRequired: 'Please enter your password.',
       passwordMin: 'The password must be at least 6 characters long.',
     },
+    serverErrors: {
+      network: 'No connection. Please check your internet and try again.',
+      server: 'The server is having trouble right now. Please try again in a moment.',
+      mailUnavailable:
+        "We couldn't send the verification email right now. Please try again in a moment.",
+    },
     strength: {
       levels: ['Too short', 'Weak', 'Medium', 'Strong', 'Very strong'],
       hint: (level: string) => `Password strength: ${level}`,
@@ -238,6 +244,11 @@ export const entryFa: EntryDictionary = {
       nameMax: 'نام می‌تواند حداکثر ۳۰ نویسه باشد.',
       passwordRequired: 'لطفاً گذرواژه خود را وارد کنید.',
       passwordMin: 'گذرواژه باید حداقل ۶ نویسه باشد.',
+    },
+    serverErrors: {
+      network: 'اتصال برقرار نیست. اینترنت خود را بررسی کنید و دوباره تلاش کنید.',
+      server: 'سرور در حال حاضر مشکل دارد. لطفاً کمی بعد دوباره تلاش کنید.',
+      mailUnavailable: 'ارسال ایمیل تأیید در حال حاضر ممکن نشد. لطفاً کمی بعد دوباره تلاش کنید.',
     },
     strength: {
       levels: ['خیلی کوتاه', 'ضعیف', 'متوسط', 'قوی', 'خیلی قوی'],

@@ -8,6 +8,7 @@ import { AuthFrame } from '@/features/auth/AuthForm';
 import { GoogleButton } from '@/features/auth/GoogleButton';
 import { useLogin } from '@/features/auth/hooks';
 import { createAuthSchemas, type LoginForm } from '@/features/auth/schemas';
+import { authErrorMessage } from '@/features/auth/serverError';
 import { useI18n } from '@/i18n';
 import { colors, spacing } from '@/theme';
 
@@ -62,7 +63,12 @@ export default function LoginScreen() {
           />
         )}
       />
-      {login.error ? <ErrorNotice error={login.error} /> : null}
+      {login.error ? (
+        <ErrorNotice
+          error={login.error}
+          message={authErrorMessage(login.error, a.serverErrors, false)}
+        />
+      ) : null}
       <Button
         pill
         label={a.login}
