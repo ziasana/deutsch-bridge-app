@@ -127,6 +127,23 @@ describe('TutorScreen', () => {
     expect(screen.getAllByText('Dativ üben').length).toBeGreaterThan(0);
   });
 
+  it('closes the open conversation and goes back to the start screen', async () => {
+    chat.sessions.mockResolvedValue([session('s1', 'Dativ üben')]);
+    chat.messages.mockResolvedValue([{ id: 'm1', role: 'user', content: 'Erkläre Dativ' }]);
+    await wrap();
+    // Nothing to close on the start screen.
+    expect(screen.queryByRole('button', { name: 'Close conversation' })).toBeNull();
+
+    await fireEvent.press(await screen.findByRole('button', { name: 'Show conversations' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Dativ üben' }));
+    expect(await screen.findByText('Erkläre Dativ')).toBeTruthy();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Close conversation' }));
+    expect(await screen.findByText('What would you like to start with?')).toBeTruthy();
+    expect(screen.queryByText('Erkläre Dativ')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Close conversation' })).toBeNull();
+  });
+
   it('renames the open conversation', async () => {
     chat.sessions.mockResolvedValue([session('s1', 'Alt')]);
     chat.messages.mockResolvedValue([{ id: 'm1', role: 'user', content: 'Hi' }]);
@@ -134,7 +151,8 @@ describe('TutorScreen', () => {
     await wrap();
     await fireEvent.press(await screen.findByRole('button', { name: 'Show conversations' }));
     await fireEvent.press(await screen.findByRole('button', { name: 'Alt' }));
-    await fireEvent.press(await screen.findByRole('button', { name: 'Rename chat' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Chat options' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Rename' }));
     await fireEvent.changeText(screen.getByLabelText('Title'), 'Neu');
     await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(chat.rename).toHaveBeenCalledWith('s1', 'Neu'));
@@ -151,7 +169,8 @@ describe('TutorScreen', () => {
     await wrap();
     await fireEvent.press(await screen.findByRole('button', { name: 'Show conversations' }));
     await fireEvent.press(await screen.findByRole('button', { name: 'Weg damit' }));
-    await fireEvent.press(await screen.findByRole('button', { name: 'Delete chat' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Chat options' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Delete' }));
     expect(alert).toHaveBeenCalled();
     await waitFor(() => expect(chat.remove).toHaveBeenCalledWith('s1'));
     expect(await screen.findByText('What would you like to start with?')).toBeTruthy();
