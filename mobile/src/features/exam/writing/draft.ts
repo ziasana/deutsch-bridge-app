@@ -59,7 +59,10 @@ export function useWritingDraft(exerciseId: string, leitpunkteCount: number) {
       return;
     }
     const timer = setTimeout(() => {
-      AsyncStorage.setItem(key(exerciseId), JSON.stringify({ text, plan, mode, planDone } satisfies Draft))
+      AsyncStorage.setItem(
+        key(exerciseId),
+        JSON.stringify({ text, plan, mode, planDone } satisfies Draft),
+      )
         .then(() => setSavedAt(new Date()))
         .catch(() => {
           /* storage unavailable: the draft just isn't persisted */
@@ -73,5 +76,17 @@ export function useWritingDraft(exerciseId: string, leitpunkteCount: number) {
     setSavedAt(null);
   }, [exerciseId]);
 
-  return { ready, text, setText, plan, setPlan, mode, setMode, planDone, setPlanDone, savedAt, clear };
+  return {
+    ready,
+    text,
+    setText,
+    plan,
+    setPlan,
+    mode,
+    setMode,
+    planDone,
+    setPlanDone,
+    savedAt,
+    clear,
+  };
 }

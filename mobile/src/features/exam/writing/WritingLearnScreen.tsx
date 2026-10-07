@@ -54,9 +54,19 @@ function LearnView({
   return (
     <OverviewShell level={level} onLevel={onLevel}>
       {stations.length === 0 ? (
-        <EmptyState emoji="📚" title="Noch keine Lerninhalte" message={`Für ${level} sind noch keine Lerninhalte verfügbar.`} />
+        <EmptyState
+          emoji="📚"
+          title="Noch keine Lerninhalte"
+          message={`Für ${level} sind noch keine Lerninhalte verfügbar.`}
+        />
       ) : (
-        <LearnPath stations={stations} done={done} onOpen={setStationId} onReset={reset} onPractice={() => router.back()} />
+        <LearnPath
+          stations={stations}
+          done={done}
+          onOpen={setStationId}
+          onReset={reset}
+          onPractice={() => router.back()}
+        />
       )}
     </OverviewShell>
   );
@@ -81,7 +91,9 @@ function OverviewShell({
           <SafeAreaView edges={['top']}>
             <View style={styles.topRow}>
               <IconButton name="arrow-back" label="Zurück" onPress={() => router.back()} />
-              <View style={[styles.tag, styles.tagRow, { backgroundColor: tint(WRITING_COLOR, '33') }]}>
+              <View
+                style={[styles.tag, styles.tagRow, { backgroundColor: tint(WRITING_COLOR, '33') }]}
+              >
                 <SectionIcon section="SCHRIFTLICHER_AUSDRUCK" size={14} />
                 <AppText variant="caption" color={colors.ink} style={{ fontWeight: '800' }}>
                   SCHREIBEN · {level}
@@ -92,14 +104,25 @@ function OverviewShell({
               Schreiben lernen
             </AppText>
             <AppText color={colors.ink}>
-              Kleine Schritte, Aufgaben zum Ausprobieren – und du siehst sofort, was du schon kannst.
+              Kleine Schritte, Aufgaben zum Ausprobieren – und du siehst sofort, was du schon
+              kannst.
             </AppText>
           </SafeAreaView>
         </View>
         <View style={styles.body}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.levels}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.levels}
+          >
             {LEVELS.map((l) => (
-              <Chip key={l} label={l} selected={l === level} onPress={() => onLevel(l)} color={darken(WRITING_COLOR)} />
+              <Chip
+                key={l}
+                label={l}
+                selected={l === level}
+                onPress={() => onLevel(l)}
+                color={darken(WRITING_COLOR)}
+              />
             ))}
           </ScrollView>
           {children}
@@ -151,7 +174,12 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 28,
     overflow: 'hidden',
   },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginLeft: -spacing.sm },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginLeft: -spacing.sm,
+  },
   tag: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill },
   tagRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   title: { fontSize: 32, lineHeight: 38, fontWeight: '800', color: colors.ink },

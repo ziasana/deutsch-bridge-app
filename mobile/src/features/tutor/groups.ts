@@ -7,7 +7,9 @@ export interface SessionGroup {
 }
 
 const sameDay = (a: Date, b: Date) =>
-  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
 
 /** Today / Yesterday / Earlier by createdAt, keeping the incoming (newest-first) order inside each group. */
 export function groupSessionsByDate(sessions: ChatSession[], now = new Date()): SessionGroup[] {

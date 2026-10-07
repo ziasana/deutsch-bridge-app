@@ -65,7 +65,9 @@ export function FeedbackCard({
       ) : null}
       {feedback.explanation ? <AppText style={body}>💡 {feedback.explanation}</AppText> : null}
       {feedback.commonMistake ? (
-        <AppText style={[body, { fontStyle: 'italic' }]}>⚠️ Häufiger Fehler: {feedback.commonMistake}</AppText>
+        <AppText style={[body, { fontStyle: 'italic' }]}>
+          ⚠️ Häufiger Fehler: {feedback.commonMistake}
+        </AppText>
       ) : null}
       {showTranscript && !isEmptyTranscript(feedback.transcript) ? (
         <View style={{ gap: spacing.xs }}>
@@ -110,16 +112,28 @@ function ReviewItem({
         <View style={{ flex: 1 }}>
           <AppText variant="subheading">Aufgabe {n}</AppText>
           {item.question.prompt ? (
-            <AppText variant="small" color={colors.mutedForeground} numberOfLines={open ? undefined : 1}>
+            <AppText
+              variant="small"
+              color={colors.mutedForeground}
+              numberOfLines={open ? undefined : 1}
+            >
               {item.question.prompt}
             </AppText>
           ) : null}
         </View>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={colors.mutedForeground} />
+        <Ionicons
+          name={open ? 'chevron-up' : 'chevron-down'}
+          size={20}
+          color={colors.mutedForeground}
+        />
       </Pressable>
       {open ? (
         <View style={styles.reviewBody}>
-          <FeedbackCard feedback={item.feedback} formatAnswer={formatAnswer} showTranscript={showTranscript} />
+          <FeedbackCard
+            feedback={item.feedback}
+            formatAnswer={formatAnswer}
+            showTranscript={showTranscript}
+          />
         </View>
       ) : null}
     </View>
@@ -142,10 +156,25 @@ type ResultsProps = {
 type Tier = { title: string; line: string; color: string; icon: keyof typeof Ionicons.glyphMap };
 const tierFor = (score: number): Tier =>
   score >= 80
-    ? { title: 'Sehr gut!', line: 'Stark – diese Übung sitzt.', color: colors.success, icon: 'trophy' }
+    ? {
+        title: 'Sehr gut!',
+        line: 'Stark – diese Übung sitzt.',
+        color: colors.success,
+        icon: 'trophy',
+      }
     : score >= 50
-      ? { title: 'Gut gemacht!', line: 'Schau dir die Fehler an – dann klappt es noch besser.', color: colors.primary, icon: 'thumbs-up' }
-      : { title: 'Weiter üben!', line: 'Aus Fehlern lernt man. Lies die Erklärungen und versuche es nochmal.', color: colors.warning, icon: 'barbell' };
+      ? {
+          title: 'Gut gemacht!',
+          line: 'Schau dir die Fehler an – dann klappt es noch besser.',
+          color: colors.primary,
+          icon: 'thumbs-up',
+        }
+      : {
+          title: 'Weiter üben!',
+          line: 'Aus Fehlern lernt man. Lies die Erklärungen und versuche es nochmal.',
+          color: colors.warning,
+          icon: 'barbell',
+        };
 
 export function ResultsView({
   results,
@@ -185,7 +214,10 @@ export function ResultsView({
           label="Nächste Übung"
           accessibilityHint={next.title}
           onPress={() =>
-            router.replace({ pathname: '/exam-prep/exercise/[exerciseId]', params: { exerciseId: next.id } })
+            router.replace({
+              pathname: '/exam-prep/exercise/[exerciseId]',
+              params: { exerciseId: next.id },
+            })
           }
           color={color}
         />
@@ -198,7 +230,12 @@ export function ResultsView({
         </View>
         {next ? (
           <View style={{ flex: 1 }}>
-            <Button label="Fertig" variant="secondary" onPress={() => router.back()} color={darken(color)} />
+            <Button
+              label="Fertig"
+              variant="secondary"
+              onPress={() => router.back()}
+              color={darken(color)}
+            />
           </View>
         ) : null}
       </View>
@@ -230,8 +267,18 @@ export function ResultsView({
       </View>
 
       <View style={styles.tiles}>
-        <StatTile icon="checkmark-circle" label="Richtig" value={String(correct)} color={colors.success} />
-        <StatTile icon="close-circle" label="Falsch" value={String(wrong)} color={colors.destructive} />
+        <StatTile
+          icon="checkmark-circle"
+          label="Richtig"
+          value={String(correct)}
+          color={colors.success}
+        />
+        <StatTile
+          icon="close-circle"
+          label="Falsch"
+          value={String(wrong)}
+          color={colors.destructive}
+        />
         <StatTile icon="speedometer" label="Ergebnis" value={`${score}%`} color={color} />
       </View>
 
@@ -241,7 +288,9 @@ export function ResultsView({
         <Card tone="accent">
           {defaultExplanation ? <AppText>💡 {defaultExplanation}</AppText> : null}
           {defaultCommonMistake ? (
-            <AppText style={{ fontStyle: 'italic' }}>⚠️ Häufiger Fehler: {defaultCommonMistake}</AppText>
+            <AppText style={{ fontStyle: 'italic' }}>
+              ⚠️ Häufiger Fehler: {defaultCommonMistake}
+            </AppText>
           ) : null}
         </Card>
       ) : null}
@@ -278,19 +327,36 @@ export function ResultsView({
           <AppText variant="heading" style={{ flex: 1 }}>
             Auswertung
           </AppText>
-          <View style={styles.dots} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <View
+            style={styles.dots}
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          >
             {results.items.map((r) => (
               <View
                 key={r.question.id}
-                style={[styles.dot, { backgroundColor: r.feedback.correct ? colors.success : colors.destructive }]}
+                style={[
+                  styles.dot,
+                  { backgroundColor: r.feedback.correct ? colors.success : colors.destructive },
+                ]}
               />
             ))}
           </View>
         </View>
         {wrong > 0 ? (
           <View style={styles.filters}>
-            <Chip label="Alle" selected={filter === 'ALL'} onPress={() => setFilter('ALL')} color={darken(color)} />
-            <Chip label={`Fehler (${wrong})`} selected={filter === 'WRONG'} onPress={() => setFilter('WRONG')} color={darken(color)} />
+            <Chip
+              label="Alle"
+              selected={filter === 'ALL'}
+              onPress={() => setFilter('ALL')}
+              color={darken(color)}
+            />
+            <Chip
+              label={`Fehler (${wrong})`}
+              selected={filter === 'WRONG'}
+              onPress={() => setFilter('WRONG')}
+              color={darken(color)}
+            />
           </View>
         ) : (
           <AppText variant="small" color={'#1B7A55'}>
@@ -317,10 +383,21 @@ const styles = StyleSheet.create({
   tiles: { flexDirection: 'row', gap: spacing.sm },
   footerRow: { flexDirection: 'row', gap: spacing.sm },
   reviewTitle: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  dots: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, maxWidth: 140, justifyContent: 'flex-end' },
+  dots: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    maxWidth: 140,
+    justifyContent: 'flex-end',
+  },
   dot: { width: 10, height: 10, borderRadius: 5 },
   filters: { flexDirection: 'row', gap: spacing.sm },
-  review: { borderRadius: radius.lg, borderWidth: 1.5, overflow: 'hidden', backgroundColor: colors.surface },
+  review: {
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
+  },
   reviewHead: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -328,6 +405,12 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     minHeight: 56,
   },
-  reviewDot: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  reviewDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   reviewBody: { padding: spacing.lg, paddingTop: spacing.md },
 });

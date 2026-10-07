@@ -49,9 +49,7 @@ function buildGroup(
   items: ExamExerciseSummary[],
 ): ExamPartGroup {
   // The API returns no defined order; "1. Übung" < "2. Übung" < "10. Übung".
-  const sorted = [...items].sort((a, b) =>
-    a.title.localeCompare(b.title, 'de', { numeric: true }),
-  );
+  const sorted = [...items].sort((a, b) => a.title.localeCompare(b.title, 'de', { numeric: true }));
   const mastered = masteredCount(sorted);
   return {
     key,
@@ -85,7 +83,10 @@ function groupBy<T>(items: T[], key: (item: T) => string): Map<string, T[]> {
 }
 
 /** Groups a section's exercises into ordered "Teil" cards (same rules as the web app). */
-export function groupIntoParts(items: ExamExerciseSummary[], section: ExamSection): ExamPartGroup[] {
+export function groupIntoParts(
+  items: ExamExerciseSummary[],
+  section: ExamSection,
+): ExamPartGroup[] {
   if (section === 'LESEVERSTEHEN' || section === 'HOERVERSTEHEN') {
     const fallback = SECTION_META[section].label;
     return [...groupBy(items, (e) => String(e.partNumber ?? 1)).entries()]
@@ -106,8 +107,7 @@ export function groupIntoParts(items: ExamExerciseSummary[], section: ExamSectio
     return keys.map((key, index) => {
       const group = byTask.get(key)!;
       const taskType = group[0]?.taskType ?? null;
-      const label =
-        SPRACHBAUSTEINE_LABELS[key as keyof typeof SPRACHBAUSTEINE_LABELS] ?? key;
+      const label = SPRACHBAUSTEINE_LABELS[key as keyof typeof SPRACHBAUSTEINE_LABELS] ?? key;
       return buildGroup(
         key,
         label,
@@ -155,7 +155,11 @@ function pickGroupToContinue(groups: ExamPartGroup[]): ExamPartGroup | undefined
   return groups.find((g) => g.state === 'not_started');
 }
 
-const toTarget = (section: ExamSection, group: ExamPartGroup, exerciseId: string): ContinueTarget => ({
+const toTarget = (
+  section: ExamSection,
+  group: ExamPartGroup,
+  exerciseId: string,
+): ContinueTarget => ({
   exerciseId,
   section,
   partLabel: group.label,

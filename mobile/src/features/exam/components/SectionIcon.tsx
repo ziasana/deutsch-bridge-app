@@ -24,7 +24,10 @@ export function SectionIcon({ section, size }: { section: ExamSection; size: num
     );
   }
   return (
-    <AppText style={{ fontSize: size, lineHeight: Math.round(size * 1.28) }} accessibilityElementsHidden>
+    <AppText
+      style={{ fontSize: size, lineHeight: Math.round(size * 1.28) }}
+      accessibilityElementsHidden
+    >
       {meta.emoji}
     </AppText>
   );

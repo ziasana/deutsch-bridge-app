@@ -28,7 +28,13 @@ export function PremiumUpsellModal() {
   };
 
   return (
-    <Modal transparent visible={isOpen} animationType="fade" onRequestClose={close} statusBarTranslucent>
+    <Modal
+      transparent
+      visible={isOpen}
+      animationType="fade"
+      onRequestClose={close}
+      statusBarTranslucent
+    >
       <View style={[styles.root, { direction: dir }]}>
         <Pressable
           accessibilityRole="button"
@@ -96,7 +102,12 @@ export function PremiumUpsellModal() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, justifyContent: 'center', padding: spacing.lg, backgroundColor: 'rgba(0,0,0,0.45)' },
+  root: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: spacing.lg,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
   card: {
     maxHeight: '92%',
     borderRadius: radius.lg,

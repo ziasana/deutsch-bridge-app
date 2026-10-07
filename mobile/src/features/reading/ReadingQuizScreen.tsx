@@ -1,3 +1,4 @@
+import { ErrorNotice } from '@/components/ui';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -254,11 +255,7 @@ function QuizRunner({
         />
       )}
 
-      {submit.error ? (
-        <AppText color={colors.destructive} accessibilityRole="alert">
-          {submit.error.message}
-        </AppText>
-      ) : null}
+      {submit.error ? <ErrorNotice error={submit.error} /> : null}
 
       {feedback ? (
         <Card tone="accent" style={{ gap: spacing.sm }}>
@@ -284,11 +281,7 @@ function QuizRunner({
         </Card>
       ) : null}
 
-      {complete.isError ? (
-        <AppText color={colors.destructive} accessibilityRole="alert">
-          {complete.error.message}
-        </AppText>
-      ) : null}
+      {complete.isError ? <ErrorNotice error={complete.error} /> : null}
 
       {feedback ? (
         <Button

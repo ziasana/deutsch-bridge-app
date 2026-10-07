@@ -1,4 +1,5 @@
 import type { PreferredLanguage } from '@/types/user';
+import { entryEn, entryFa } from './entry';
 
 export type AppLanguage = 'en' | 'fa';
 
@@ -16,6 +17,7 @@ export function toAppLanguage(
 export const isRtlLanguage = (language: AppLanguage) => language === 'fa';
 
 const en = {
+  entry: entryEn,
   common: {
     loading: 'Loading …',
     retry: 'Try again',
@@ -1049,6 +1051,7 @@ const en = {
 export type Dictionary = typeof en;
 
 const fa: Dictionary = {
+  entry: entryFa,
   common: {
     loading: 'در حال بارگذاری …',
     retry: 'تلاش دوباره',

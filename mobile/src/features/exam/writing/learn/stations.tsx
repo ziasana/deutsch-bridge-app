@@ -13,14 +13,23 @@ import type {
   WritingStructureData,
 } from '@/types/writing';
 import { tint } from '../../components/kit';
-import { LEARN_SECTIONS, itemsOfKind, phraseCategoryLabels, type LearnSectionId } from '../writingMeta';
+import {
+  LEARN_SECTIONS,
+  itemsOfKind,
+  phraseCategoryLabels,
+  type LearnSectionId,
+} from '../writingMeta';
 import { ChoiceQuiz, DiscoverText, FlashDeck, OrderGame, TapChecklist } from './games';
 import { seededRandom, shuffled } from './random';
 import type { LessonStep, Station, StepApi } from './types';
 import { Chips, Lead, Slide, Tinted, WRITING_COLOR } from './ui';
 
 const Eyebrow = ({ children }: { children: string }) => (
-  <AppText variant="caption" color={colors.mutedForeground} style={{ fontWeight: '800', letterSpacing: 0.6 }}>
+  <AppText
+    variant="caption"
+    color={colors.mutedForeground}
+    style={{ fontWeight: '800', letterSpacing: 0.6 }}
+  >
     {children.toUpperCase()}
   </AppText>
 );
@@ -48,7 +57,11 @@ function formatSteps(data: WritingLearningResponse): LessonStep[] {
         id: `format-req-${item.id}`,
         gated: true,
         render: (api) => (
-          <TapChecklist api={api} prompt="Das musst du beachten – tippe jeden Punkt an, wenn du ihn verstanden hast." items={reqs} />
+          <TapChecklist
+            api={api}
+            prompt="Das musst du beachten – tippe jeden Punkt an, wenn du ihn verstanden hast."
+            items={reqs}
+          />
         ),
       });
     }
@@ -63,15 +76,25 @@ function strategySteps(data: WritingLearningResponse, seed: string): LessonStep[
     {
       id: 'strategy-intro',
       render: () => (
-        <Slide emoji="🧠" eyebrow="Schreibstrategie" title={`${items.length} Schritte zu einem guten Text`}>
-          <Lead>Mit diesem Ablauf löst du jede Schreibaufgabe – immer in derselben Reihenfolge.</Lead>
+        <Slide
+          emoji="🧠"
+          eyebrow="Schreibstrategie"
+          title={`${items.length} Schritte zu einem guten Text`}
+        >
+          <Lead>
+            Mit diesem Ablauf löst du jede Schreibaufgabe – immer in derselben Reihenfolge.
+          </Lead>
           <View style={styles.flow}>
             {items.map((s, i) => (
               <View key={s.id} style={styles.flowItem}>
                 <View style={[styles.flowPill, { backgroundColor: tint(WRITING_COLOR, '1F') }]}>
-                  <AppText variant="small" color={WRITING_COLOR} style={{ fontWeight: '700' }}>{s.title}</AppText>
+                  <AppText variant="small" color={WRITING_COLOR} style={{ fontWeight: '700' }}>
+                    {s.title}
+                  </AppText>
                 </View>
-                {i < items.length - 1 ? <Ionicons name="arrow-forward" size={14} color={colors.mutedForeground} /> : null}
+                {i < items.length - 1 ? (
+                  <Ionicons name="arrow-forward" size={14} color={colors.mutedForeground} />
+                ) : null}
               </View>
             ))}
           </View>
@@ -131,7 +154,9 @@ function structureSteps(data: WritingLearningResponse, seed: string): LessonStep
           {parts.map((p, i) => (
             <View key={p.id} style={styles.partRow}>
               <View style={[styles.partNum, { backgroundColor: tint(WRITING_COLOR, '1F') }]}>
-                <AppText variant="small" color={WRITING_COLOR} style={{ fontWeight: '800' }}>{i + 1}</AppText>
+                <AppText variant="small" color={WRITING_COLOR} style={{ fontWeight: '800' }}>
+                  {i + 1}
+                </AppText>
               </View>
               <AppText style={{ fontWeight: '700', flex: 1 }}>{p.title}</AppText>
             </View>
@@ -155,7 +180,9 @@ function structureSteps(data: WritingLearningResponse, seed: string): LessonStep
             <View style={{ gap: spacing.sm }}>
               <Eyebrow>Beispiele</Eyebrow>
               {p.data.examples.map((e) => (
-                <Tinted key={e}><AppText>{e}</AppText></Tinted>
+                <Tinted key={e}>
+                  <AppText>{e}</AppText>
+                </Tinted>
               ))}
             </View>
           ) : null}
@@ -172,7 +199,10 @@ function structureSteps(data: WritingLearningResponse, seed: string): LessonStep
 
   // "Which part does this sentence belong to?": one example per part, so questions are varied.
   const candidates = shuffled(parts, rand)
-    .map((p) => ({ part: p, example: (p.data?.examples ?? []).find((e) => e.length <= MAX_EXAMPLE_LENGTH) }))
+    .map((p) => ({
+      part: p,
+      example: (p.data?.examples ?? []).find((e) => e.length <= MAX_EXAMPLE_LENGTH),
+    }))
     .filter((c): c is { part: (typeof parts)[number]; example: string } => !!c.example)
     .slice(0, MAX_QUESTIONS);
   if (parts.length >= 2) {
@@ -216,7 +246,9 @@ function exampleSteps(data: WritingLearningResponse, seed: string): LessonStep[]
             </Tinted>
           ) : null}
           <View style={styles.model}>
-            <AppText style={{ fontSize: 16, lineHeight: 25 }}>{sections.map((s) => s.text).join('\n\n')}</AppText>
+            <AppText style={{ fontSize: 16, lineHeight: 25 }}>
+              {sections.map((s) => s.text).join('\n\n')}
+            </AppText>
           </View>
         </Slide>
       ),
@@ -266,9 +298,12 @@ function phraseSteps(data: WritingLearningResponse, seed: string): LessonStep[] 
       render: () => (
         <Slide emoji="💬" eyebrow="Redemittel" title="Sag es mit den richtigen Worten">
           <Lead>
-            Redemittel sind feste Ausdrücke für eine bestimmte Funktion – zum Beispiel um eine Meinung zu äußern, etwas zu begründen oder höflich zu bitten.
+            Redemittel sind feste Ausdrücke für eine bestimmte Funktion – zum Beispiel um eine
+            Meinung zu äußern, etwas zu begründen oder höflich zu bitten.
           </Lead>
-          <AppText color={colors.mutedForeground}>Zuerst übst du sie nach Funktion, dann testest du dich.</AppText>
+          <AppText color={colors.mutedForeground}>
+            Zuerst übst du sie nach Funktion, dann testest du dich.
+          </AppText>
         </Slide>
       ),
     },
@@ -277,11 +312,23 @@ function phraseSteps(data: WritingLearningResponse, seed: string): LessonStep[] 
   const labels = phraseCategoryLabels(phrases);
   const categories = Object.keys(labels);
   if (categories.length >= 3) {
-    const byCategory = shuffled(categories, rand).map((c) => shuffled(phrases.filter((p) => p.category === c), rand)[0]);
+    const byCategory = shuffled(categories, rand).map(
+      (c) =>
+        shuffled(
+          phrases.filter((p) => p.category === c),
+          rand,
+        )[0],
+    );
     const picked: WritingPhrase[] = byCategory.slice(0, PHRASE_QUESTIONS);
     picked.forEach((p, i) => {
-      const distractors = shuffled(categories.filter((c) => c !== p.category), rand).slice(0, PHRASE_OPTIONS - 1);
-      const options = shuffled([p.category, ...distractors], rand).map((c) => ({ id: c, label: labels[c] }));
+      const distractors = shuffled(
+        categories.filter((c) => c !== p.category),
+        rand,
+      ).slice(0, PHRASE_OPTIONS - 1);
+      const options = shuffled([p.category, ...distractors], rand).map((c) => ({
+        id: c,
+        label: labels[c],
+      }));
       steps.push({
         id: `phrases-quiz-${p.id}`,
         gated: true,
@@ -323,11 +370,22 @@ function patternSteps(data: WritingLearningResponse, seed: string): LessonStep[]
     const examples = p.data?.examples ?? [];
     const sentence = puzzleSentence(examples);
     const card = (
-      <View style={[styles.pattern, { borderColor: tint(WRITING_COLOR, '33'), backgroundColor: tint(WRITING_COLOR, '14') }]}>
-        <AppText variant="caption" color={WRITING_COLOR} style={{ fontWeight: '800', letterSpacing: 0.6 }}>
+      <View
+        style={[
+          styles.pattern,
+          { borderColor: tint(WRITING_COLOR, '33'), backgroundColor: tint(WRITING_COLOR, '14') },
+        ]}
+      >
+        <AppText
+          variant="caption"
+          color={WRITING_COLOR}
+          style={{ fontWeight: '800', letterSpacing: 0.6 }}
+        >
           {`SATZBAUSTEIN ${i + 1} VON ${patterns.length}`}
         </AppText>
-        <AppText style={{ fontSize: 20, lineHeight: 26, fontWeight: '800', color: colors.ink }}>{p.title}</AppText>
+        <AppText style={{ fontSize: 20, lineHeight: 26, fontWeight: '800', color: colors.ink }}>
+          {p.title}
+        </AppText>
         {p.content ? <AppText color={colors.mutedForeground}>{p.content}</AppText> : null}
       </View>
     );
@@ -338,7 +396,9 @@ function patternSteps(data: WritingLearningResponse, seed: string): LessonStep[]
           <View style={{ gap: spacing.lg }}>
             {card}
             {examples.map((e) => (
-              <Tinted key={e}><AppText>{e}</AppText></Tinted>
+              <Tinted key={e}>
+                <AppText>{e}</AppText>
+              </Tinted>
             ))}
           </View>
         ),
@@ -379,16 +439,33 @@ function mistakeSteps(data: WritingLearningResponse, seed: string): LessonStep[]
         ),
       };
     }
-    const options = shuffled([{ id: 'wrong', label: wrong }, { id: 'right', label: right }], rand);
+    const options = shuffled(
+      [
+        { id: 'wrong', label: wrong },
+        { id: 'right', label: right },
+      ],
+      rand,
+    );
     return {
       id: `mistake-${m.id}`,
       gated: true,
       render: (api: StepApi) => (
         <View style={{ gap: spacing.md }}>
-          <AppText variant="caption" color={WRITING_COLOR} style={{ fontWeight: '800', letterSpacing: 0.6 }}>
+          <AppText
+            variant="caption"
+            color={WRITING_COLOR}
+            style={{ fontWeight: '800', letterSpacing: 0.6 }}
+          >
             {`⚠️ FEHLER ${i + 1} VON ${mistakes.length} – ${m.title.toUpperCase()}`}
           </AppText>
-          <ChoiceQuiz api={api} salt={i} question="Welche Version ist besser?" options={options} correctId="right" explanation={m.content} />
+          <ChoiceQuiz
+            api={api}
+            salt={i}
+            question="Welche Version ist besser?"
+            options={options}
+            correctId="right"
+            explanation={m.content}
+          />
         </View>
       ),
     };
@@ -402,13 +479,17 @@ function checklistSteps(data: WritingLearningResponse): LessonStep[] {
   if (items.length === 0) return [];
   const titles = items.map((i) => i.title);
   const chunks: string[][] = [];
-  for (let i = 0; i < titles.length; i += CHECK_CHUNK) chunks.push(titles.slice(i, i + CHECK_CHUNK));
+  for (let i = 0; i < titles.length; i += CHECK_CHUNK)
+    chunks.push(titles.slice(i, i + CHECK_CHUNK));
   return [
     {
       id: 'checklist-intro',
       render: () => (
         <Slide emoji="✅" eyebrow="Checkliste" title="Dein Check vor dem Abgeben">
-          <Lead>Gehe diese Fragen bei jedem Text durch. Du kannst sie später auch in der Schreibaufgabe im Kopf abhaken.</Lead>
+          <Lead>
+            Gehe diese Fragen bei jedem Text durch. Du kannst sie später auch in der Schreibaufgabe
+            im Kopf abhaken.
+          </Lead>
         </Slide>
       ),
     },
@@ -417,7 +498,11 @@ function checklistSteps(data: WritingLearningResponse): LessonStep[] {
       render: (api: StepApi) => (
         <TapChecklist
           api={api}
-          prompt={chunks.length > 1 ? `Meine Schreib-Checkliste (${i + 1}/${chunks.length})` : 'Meine Schreib-Checkliste'}
+          prompt={
+            chunks.length > 1
+              ? `Meine Schreib-Checkliste (${i + 1}/${chunks.length})`
+              : 'Meine Schreib-Checkliste'
+          }
           items={chunk}
           requireAll={false}
         />
@@ -439,7 +524,10 @@ export function buildStations(data: WritingLearningResponse, level: string): Sta
     fehler: mistakeSteps(data, seed('fehler')),
     checkliste: checklistSteps(data),
   };
-  return LEARN_SECTIONS.filter((s) => byId[s.id].length > 0).map((s) => ({ id: s.id, steps: byId[s.id] }));
+  return LEARN_SECTIONS.filter((s) => byId[s.id].length > 0).map((s) => ({
+    id: s.id,
+    steps: byId[s.id],
+  }));
 }
 
 const styles = StyleSheet.create({
@@ -467,7 +555,13 @@ const styles = StyleSheet.create({
     borderColor: tint(WRITING_COLOR, '33'),
     backgroundColor: colors.surface,
   },
-  partNum: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  partNum: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   model: {
     padding: spacing.lg,
     borderRadius: radius.lg,

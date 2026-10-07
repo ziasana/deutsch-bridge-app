@@ -36,17 +36,17 @@ describe('LoginScreen', () => {
 
   it('shows validation errors and does not call the API', async () => {
     await renderScreen();
-    await fireEvent.press(screen.getByRole('button', { name: 'Anmelden' }));
-    expect(await screen.findByText('Bitte gib deine E-Mail-Adresse ein.')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Log in' }));
+    expect(await screen.findByText('Please enter your email address.')).toBeTruthy();
     expect(login).not.toHaveBeenCalled();
   });
 
   it('surfaces the server message for wrong credentials', async () => {
     login.mockRejectedValue(new ApiError('notFound', 'Incorrect email or password.', 404));
     await renderScreen();
-    await fireEvent.changeText(screen.getByLabelText('E-Mail'), 'a@b.de');
-    await fireEvent.changeText(screen.getByLabelText('Passwort'), 'wrong');
-    await fireEvent.press(screen.getByRole('button', { name: 'Anmelden' }));
+    await fireEvent.changeText(screen.getByLabelText('Email'), 'a@b.de');
+    await fireEvent.changeText(screen.getByLabelText('Password'), 'wrong');
+    await fireEvent.press(screen.getByRole('button', { name: 'Log in' }));
     expect(await screen.findByText('Incorrect email or password.')).toBeTruthy();
   });
 
@@ -57,9 +57,9 @@ describe('LoginScreen', () => {
       user: { displayName: 'Ali' } as never,
     });
     await renderScreen();
-    await fireEvent.changeText(screen.getByLabelText('E-Mail'), 'a@b.de');
-    await fireEvent.changeText(screen.getByLabelText('Passwort'), 'secret1');
-    await fireEvent.press(screen.getByRole('button', { name: 'Anmelden' }));
+    await fireEvent.changeText(screen.getByLabelText('Email'), 'a@b.de');
+    await fireEvent.changeText(screen.getByLabelText('Password'), 'secret1');
+    await fireEvent.press(screen.getByRole('button', { name: 'Log in' }));
     await waitFor(() => expect(useAuthStore.getState().status).toBe('authenticated'));
   });
 });

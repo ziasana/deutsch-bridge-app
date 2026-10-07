@@ -82,7 +82,12 @@ export function ProfileScreen() {
   const dashboard = useDashboard();
 
   const sum = totals(
-    buildAchievements(stats.data, overview.data, dashboard.data?.currentStreak ?? 0, t.achievements),
+    buildAchievements(
+      stats.data,
+      overview.data,
+      dashboard.data?.currentStreak ?? 0,
+      t.achievements,
+    ),
   );
 
   const rows: Row[] = [

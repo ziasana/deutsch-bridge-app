@@ -78,7 +78,9 @@ beforeEach(() => {
   time.lastTimes.mockResolvedValue([]);
   time.startSession.mockResolvedValue(SESSION);
   useExamTimerStore.setState({ active: null, lastResult: null, hasHydrated: true });
-  useAuthStore.setState({ profile: { learningLevel: 'B1', preferredLanguage: 'EN' } as UserProfile });
+  useAuthStore.setState({
+    profile: { learningLevel: 'B1', preferredLanguage: 'EN' } as UserProfile,
+  });
 });
 
 const LEVELS = [
@@ -91,8 +93,18 @@ describe('ExamHubScreen', () => {
     summary('a', { partNumber: 1, lastScore: 100, completed: true }),
     summary('b', { partNumber: 1 }),
     summary('c', { partNumber: 2, taskType: 'MULTIPLE_CHOICE', title: 'Einzel' }),
-    summary('w', { section: 'SCHRIFTLICHER_AUSDRUCK', taskType: 'WRITING_TASK', title: 'E-Mail an den Vermieter', teil: 1 }),
-    summary('i', { section: 'TESTFORMAT_INFORMATION', taskType: null, title: 'Aufbau', teilDescription: 'So läuft die Prüfung' }),
+    summary('w', {
+      section: 'SCHRIFTLICHER_AUSDRUCK',
+      taskType: 'WRITING_TASK',
+      title: 'E-Mail an den Vermieter',
+      teil: 1,
+    }),
+    summary('i', {
+      section: 'TESTFORMAT_INFORMATION',
+      taskType: null,
+      title: 'Aufbau',
+      teilDescription: 'So läuft die Prüfung',
+    }),
   ];
 
   beforeEach(() => {
@@ -103,9 +115,13 @@ describe('ExamHubScreen', () => {
 
   it('opens on the profile level with Teile and a continue card', async () => {
     await wrap(<ExamHubScreen />);
-    expect(await screen.findByRole('button', { name: /^Teil 1 – Zuordnungsaufgaben/ })).toBeTruthy();
+    expect(
+      await screen.findByRole('button', { name: /^Teil 1 – Zuordnungsaufgaben/ }),
+    ).toBeTruthy();
     expect(api.exercisesForLevel).toHaveBeenCalledWith('B1');
-    expect(screen.getByRole('button', { name: 'B1 · 1/5' }).props.accessibilityState.selected).toBe(true);
+    expect(screen.getByRole('button', { name: 'B1 · 1/5' }).props.accessibilityState.selected).toBe(
+      true,
+    );
 
     // Teil 2 has a single exercise: opens it directly. Teil 1 has two: opens the Teil list.
     await fireEvent.press(screen.getByRole('button', { name: /^Teil 2/ }));
@@ -160,7 +176,13 @@ describe('ExamHubScreen', () => {
 
   it('shows saved-for-later bookmarks and can remove one', async () => {
     api.pendingBookmarks.mockResolvedValue([
-      { id: 's1', title: '3. Übung', section: 'HOERVERSTEHEN', level: 'B1', bookmarkedAt: '2026-01-01T00:00:00Z' },
+      {
+        id: 's1',
+        title: '3. Übung',
+        section: 'HOERVERSTEHEN',
+        level: 'B1',
+        bookmarkedAt: '2026-01-01T00:00:00Z',
+      },
     ]);
     api.removeBookmark.mockResolvedValue(summary('s1'));
     await wrap(<ExamHubScreen />);
@@ -232,8 +254,20 @@ describe('ExamExerciseScreen', () => {
       answerOptionLabels: null,
     });
     attempts.answer
-      .mockResolvedValueOnce({ correct: false, correctAnswer: 'Ja', explanation: 'Steht im Text.', commonMistake: '', transcript: null })
-      .mockResolvedValueOnce({ correct: true, correctAnswer: 'Nein', explanation: '', commonMistake: '', transcript: null });
+      .mockResolvedValueOnce({
+        correct: false,
+        correctAnswer: 'Ja',
+        explanation: 'Steht im Text.',
+        commonMistake: '',
+        transcript: null,
+      })
+      .mockResolvedValueOnce({
+        correct: true,
+        correctAnswer: 'Nein',
+        explanation: '',
+        commonMistake: '',
+        transcript: null,
+      });
     attempts.complete.mockResolvedValue({ attemptId: 'at1', score: 50, transcripts: [] });
     await wrap(<ExamExerciseScreen />);
 
@@ -275,8 +309,20 @@ describe('ExamExerciseScreen', () => {
       answerOptionLabels: null,
     });
     attempts.answer
-      .mockResolvedValueOnce({ correct: false, correctAnswer: 'Ja', explanation: 'Falsch gelesen.', commonMistake: '', transcript: null })
-      .mockResolvedValueOnce({ correct: true, correctAnswer: 'Nein', explanation: 'Gut erkannt.', commonMistake: '', transcript: null });
+      .mockResolvedValueOnce({
+        correct: false,
+        correctAnswer: 'Ja',
+        explanation: 'Falsch gelesen.',
+        commonMistake: '',
+        transcript: null,
+      })
+      .mockResolvedValueOnce({
+        correct: true,
+        correctAnswer: 'Nein',
+        explanation: 'Gut erkannt.',
+        commonMistake: '',
+        transcript: null,
+      });
     attempts.complete.mockResolvedValue({ attemptId: 'at9', score: 50, transcripts: [] });
     await wrap(<ExamExerciseScreen />);
 
@@ -320,8 +366,20 @@ describe('ExamExerciseScreen', () => {
       answerOptionLabels: null,
     });
     attempts.answer
-      .mockResolvedValueOnce({ correct: true, correctAnswer: 'ad1', explanation: '', commonMistake: '', transcript: null })
-      .mockResolvedValueOnce({ correct: false, correctAnswer: 'ad2', explanation: '', commonMistake: '', transcript: null });
+      .mockResolvedValueOnce({
+        correct: true,
+        correctAnswer: 'ad1',
+        explanation: '',
+        commonMistake: '',
+        transcript: null,
+      })
+      .mockResolvedValueOnce({
+        correct: false,
+        correctAnswer: 'ad2',
+        explanation: '',
+        commonMistake: '',
+        transcript: null,
+      });
     attempts.complete.mockResolvedValue({ attemptId: 'at2', score: 50, transcripts: [] });
     await wrap(<ExamExerciseScreen />);
 
@@ -345,7 +403,11 @@ describe('ExamExerciseScreen', () => {
 
   it('runs Hörverstehen with audio, +/- answers and a transcript at the end', async () => {
     api.byId.mockResolvedValue(
-      exercise({ section: 'HOERVERSTEHEN', taskType: 'TRUE_FALSE_NOT_GIVEN', passages: [passage('c1', { audioUrl: '/uploads/a.mp3' })] }),
+      exercise({
+        section: 'HOERVERSTEHEN',
+        taskType: 'TRUE_FALSE_NOT_GIVEN',
+        passages: [passage('c1', { audioUrl: '/uploads/a.mp3' })],
+      }),
     );
     attempts.start.mockResolvedValue({
       attemptId: 'at3',
@@ -354,8 +416,18 @@ describe('ExamExerciseScreen', () => {
       answerOptions: ['+', '-'],
       answerOptionLabels: null,
     });
-    attempts.answer.mockResolvedValue({ correct: true, correctAnswer: '+', explanation: '', commonMistake: '', transcript: null });
-    attempts.complete.mockResolvedValue({ attemptId: 'at3', score: 100, transcripts: [{ label: 'Text 1', transcript: 'Der Zug fährt ab.' }] });
+    attempts.answer.mockResolvedValue({
+      correct: true,
+      correctAnswer: '+',
+      explanation: '',
+      commonMistake: '',
+      transcript: null,
+    });
+    attempts.complete.mockResolvedValue({
+      attemptId: 'at3',
+      score: 100,
+      transcripts: [{ label: 'Text 1', transcript: 'Der Zug fährt ab.' }],
+    });
     await wrap(<ExamExerciseScreen />);
 
     await fireEvent.press(await screen.findByRole('button', { name: 'Start exercise' }));
@@ -370,7 +442,9 @@ describe('ExamExerciseScreen', () => {
   });
 
   it('keeps the answers and offers a retry when submitting fails', async () => {
-    api.byId.mockResolvedValue(exercise({ section: 'HOERVERSTEHEN', taskType: 'TRUE_FALSE_NOT_GIVEN', passages: [] }));
+    api.byId.mockResolvedValue(
+      exercise({ section: 'HOERVERSTEHEN', taskType: 'TRUE_FALSE_NOT_GIVEN', passages: [] }),
+    );
     attempts.start.mockResolvedValue({
       attemptId: 'at4',
       passages: [],
@@ -388,7 +462,9 @@ describe('ExamExerciseScreen', () => {
   });
 
   it('marks Testformat information as done', async () => {
-    api.byId.mockResolvedValue(exercise({ section: 'TESTFORMAT_INFORMATION', taskType: null, questions: [] }));
+    api.byId.mockResolvedValue(
+      exercise({ section: 'TESTFORMAT_INFORMATION', taskType: null, questions: [] }),
+    );
     await wrap(<ExamExerciseScreen />);
     await fireEvent.press(await screen.findByRole('button', { name: 'Als erledigt markieren' }));
     await waitFor(() => expect(api.markCompleted).toHaveBeenCalledWith('e1'));
@@ -396,7 +472,9 @@ describe('ExamExerciseScreen', () => {
   });
 
   it('toggles the bookmark on the exercise screen', async () => {
-    api.byId.mockResolvedValue(exercise({ section: 'TESTFORMAT_INFORMATION', taskType: null, questions: [] }));
+    api.byId.mockResolvedValue(
+      exercise({ section: 'TESTFORMAT_INFORMATION', taskType: null, questions: [] }),
+    );
     api.addBookmark.mockResolvedValue(summary('e1', { bookmarked: true }));
     await wrap(<ExamExerciseScreen />);
     await fireEvent.press(await screen.findByRole('button', { name: 'Aufgabe merken' }));
@@ -407,13 +485,34 @@ describe('ExamExerciseScreen', () => {
   it('times a Lesen exercise and shows the Zeit-Check with the result', async () => {
     api.byId.mockResolvedValue(exercise());
     time.completeSession.mockResolvedValue({
-      id: 'ps1', scope: 'EXERCISE', mode: 'TIME_TRAINING', section: 'LESEVERSTEHEN', level: 'B1', teil: 2,
-      elapsedSeconds: 432, targetSeconds: 600, differenceSeconds: -168, questionsTotal: 1, questionsAnswered: 1, correctAnswers: 1, score: 100,
+      id: 'ps1',
+      scope: 'EXERCISE',
+      mode: 'TIME_TRAINING',
+      section: 'LESEVERSTEHEN',
+      level: 'B1',
+      teil: 2,
+      elapsedSeconds: 432,
+      targetSeconds: 600,
+      differenceSeconds: -168,
+      questionsTotal: 1,
+      questionsAnswered: 1,
+      correctAnswers: 1,
+      score: 100,
     });
     attempts.start.mockResolvedValue({
-      attemptId: 'at9', passages: [passage('p1')], questions: [question('q1')], answerOptions: null, answerOptionLabels: null,
+      attemptId: 'at9',
+      passages: [passage('p1')],
+      questions: [question('q1')],
+      answerOptions: null,
+      answerOptionLabels: null,
     });
-    attempts.answer.mockResolvedValue({ correct: true, correctAnswer: 'Ja', explanation: '', commonMistake: '', transcript: null });
+    attempts.answer.mockResolvedValue({
+      correct: true,
+      correctAnswer: 'Ja',
+      explanation: '',
+      commonMistake: '',
+      transcript: null,
+    });
     attempts.complete.mockResolvedValue({ attemptId: 'at9', score: 100, transcripts: [] });
     await wrap(<ExamExerciseScreen />);
 
@@ -425,7 +524,11 @@ describe('ExamExerciseScreen', () => {
 
     await fireEvent.press(screen.getByRole('button', { name: 'Start exercise' }));
     expect(await screen.findByText('Time for this exercise')).toBeTruthy();
-    expect(time.startSession).toHaveBeenCalledWith({ scope: 'EXERCISE', mode: 'TIME_TRAINING', exerciseId: 'e1' });
+    expect(time.startSession).toHaveBeenCalledWith({
+      scope: 'EXERCISE',
+      mode: 'TIME_TRAINING',
+      exerciseId: 'e1',
+    });
     expect(screen.getByLabelText(/Elapsed time 00:00/)).toBeTruthy();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Pause timer' }));
@@ -480,13 +583,18 @@ describe('ExamExerciseScreen', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Text vorlesen' }));
     // Read paragraph by paragraph in German.
     await waitFor(() =>
-      expect(Speech.speak).toHaveBeenCalledWith('Erster Absatz.', expect.objectContaining({ language: 'de-DE' })),
+      expect(Speech.speak).toHaveBeenCalledWith(
+        'Erster Absatz.',
+        expect.objectContaining({ language: 'de-DE' }),
+      ),
     );
     expect(screen.getByRole('button', { name: 'Vorlesen stoppen' })).toBeTruthy();
   });
 
   it('does not time Hörverstehen', async () => {
-    api.byId.mockResolvedValue(exercise({ section: 'HOERVERSTEHEN', taskType: 'TRUE_FALSE_NOT_GIVEN', passages: [] }));
+    api.byId.mockResolvedValue(
+      exercise({ section: 'HOERVERSTEHEN', taskType: 'TRUE_FALSE_NOT_GIVEN', passages: [] }),
+    );
     await wrap(<ExamExerciseScreen />);
     await screen.findByRole('button', { name: 'Start exercise' });
     expect(time.startSession).not.toHaveBeenCalled();

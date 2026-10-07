@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { AppText, Button } from '@/components/ui';
+import { AppText, Button, ErrorNotice } from '@/components/ui';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type { ExamExercise, ExamQuestionPublic, StartExamAttemptResponse } from '@/types/exam';
 import { NO_AD_ANSWER } from '../content';
@@ -40,7 +40,15 @@ const SIGN_WORD: Record<string, string> = {
   F: 'Falsch',
 };
 
-function Hint({ icon, children, color }: { icon: keyof typeof Ionicons.glyphMap; children: string; color: string }) {
+function Hint({
+  icon,
+  children,
+  color,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  children: string;
+  color: string;
+}) {
   return (
     <View style={[styles.hint, { backgroundColor: tint(color, '14') }]}>
       <Ionicons name={icon} size={20} color={color} />
@@ -86,7 +94,9 @@ export function BatchQuiz({ variant, exercise, attempt, onFinish }: Props) {
   const answered = attempt.questions.filter((q) => answers[q.id]).length;
   const allAnswered = answered === total;
   const firstOpen = attempt.questions.findIndex((q) => !answers[q.id]);
-  const states: SegmentState[] = attempt.questions.map((q) => (answers[q.id] ? 'answered' : undefined));
+  const states: SegmentState[] = attempt.questions.map((q) =>
+    answers[q.id] ? 'answered' : undefined,
+  );
 
   const submitAll = async () => {
     if (busy) return;
@@ -95,7 +105,10 @@ export function BatchQuiz({ variant, exercise, attempt, onFinish }: Props) {
     try {
       const items: ResultItem[] = [];
       for (const question of attempt.questions) {
-        const feedback = await submit.mutateAsync({ questionId: question.id, answer: answers[question.id] ?? '' });
+        const feedback = await submit.mutateAsync({
+          questionId: question.id,
+          answer: answers[question.id] ?? '',
+        });
         items.push({ question, feedback });
       }
       const result = await complete.mutateAsync();
@@ -108,11 +121,7 @@ export function BatchQuiz({ variant, exercise, attempt, onFinish }: Props) {
 
   const footer = (
     <>
-      {error ? (
-        <AppText color={colors.destructive} accessibilityRole="alert">
-          {error}
-        </AppText>
-      ) : null}
+      {error ? <ErrorNotice message={error} /> : null}
       <Button
         pill
         label={error ? 'Erneut abgeben' : 'Antworten abgeben'}
@@ -135,7 +144,9 @@ export function BatchQuiz({ variant, exercise, attempt, onFinish }: Props) {
       />
       <View style={styles.headRow}>
         <AppText variant="small" style={{ fontWeight: '700', flex: 1 }} color={colors.ink}>
-          {allAnswered ? '✓ Alles beantwortet – bereit zum Abgeben' : `${answered} von ${total} beantwortet`}
+          {allAnswered
+            ? '✓ Alles beantwortet – bereit zum Abgeben'
+            : `${answered} von ${total} beantwortet`}
         </AppText>
         <TextSizeControl color={color} />
       </View>
@@ -160,7 +171,10 @@ export function BatchQuiz({ variant, exercise, attempt, onFinish }: Props) {
           const passage = q.sectionIndex != null ? attempt.passages[q.sectionIndex] : null;
           const n = q.questionNumber ?? i + 1;
           return (
-            <View key={q.id} style={[styles.qCard, !!answers[q.id] && { borderColor: tint(color, '33') }]}>
+            <View
+              key={q.id}
+              style={[styles.qCard, !!answers[q.id] && { borderColor: tint(color, '33') }]}
+            >
               <View style={styles.qHead}>
                 <NumberBadge n={n} done={!!answers[q.id]} color={color} />
                 <AppText style={[styles.qPrompt, scaledText(BODY_SIZE, BODY_LINE, scale)]}>
@@ -183,9 +197,19 @@ export function BatchQuiz({ variant, exercise, attempt, onFinish }: Props) {
                       accessibilityState={{ selected: picked, disabled: busy }}
                       disabled={busy}
                       onPress={() => set(q.id, option)}
-                      style={[styles.sign, picked && { backgroundColor: color, borderColor: color }]}
+                      style={[
+                        styles.sign,
+                        picked && { backgroundColor: color, borderColor: color },
+                      ]}
                     >
-                      <View style={[styles.signIcon, { backgroundColor: picked ? 'rgba(255,255,255,0.25)' : tint(color, '1F') }]}>
+                      <View
+                        style={[
+                          styles.signIcon,
+                          {
+                            backgroundColor: picked ? 'rgba(255,255,255,0.25)' : tint(color, '1F'),
+                          },
+                        ]}
+                      >
                         <Ionicons
                           name={word ? (yes ? 'checkmark' : 'close') : 'ellipse'}
                           size={16}
@@ -245,7 +269,10 @@ export function BatchQuiz({ variant, exercise, attempt, onFinish }: Props) {
 
       {attempt.questions.map((q, i) => {
         // SITUATION_MATCHING's passages are the answer ads, not a text the question refers to.
-        const ref = !isSituation && !isCloze && q.sectionIndex != null ? attempt.passages[q.sectionIndex] : null;
+        const ref =
+          !isSituation && !isCloze && q.sectionIndex != null
+            ? attempt.passages[q.sectionIndex]
+            : null;
         const n = q.questionNumber ?? i + 1;
         const choices = choicesFor(q);
         return (
@@ -329,7 +356,13 @@ const styles = StyleSheet.create({
   },
   qHead: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
   qPrompt: { flex: 1, fontSize: 17, lineHeight: 24, fontWeight: '600', color: colors.ink },
-  badge: { width: 32, height: 32, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  badge: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   signs: { flexDirection: 'row', gap: spacing.md },
   sign: {
     minHeight: 52,
@@ -343,7 +376,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
   },
-  signIcon: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  signIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   signText: { fontSize: 15, lineHeight: 20, fontWeight: '700' },
   adRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   ad: {

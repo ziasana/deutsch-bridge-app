@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { AppText, Button, DirectionalIcon } from '@/components/ui';
+import { AppText, Button, DirectionalIcon, ErrorNotice } from '@/components/ui';
 import { PressableScale, tint } from '@/features/exam/components/kit';
 import { rtlText } from '@/i18n/direction';
 import { useI18n } from '@/i18n';
@@ -180,11 +180,7 @@ export function WordCard({
         ) : null}
       </View>
 
-      {error ? (
-        <AppText color={colors.destructive} accessibilityRole="alert">
-          {error}
-        </AppText>
-      ) : null}
+      {error ? <ErrorNotice message={error} /> : null}
 
       <Button pill label={continueLabel} loading={isMarking} onPress={onContinue} />
       <Button

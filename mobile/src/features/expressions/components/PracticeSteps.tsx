@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { AppText, Button, Card, TextField } from '@/components/ui';
+import { AppText, Button, Card, TextField, ErrorNotice } from '@/components/ui';
 import { tint } from '@/features/exam/components/kit';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type { PracticeExpression, PracticeQuestion } from '@/types/expression';
@@ -115,11 +115,7 @@ export function RecallStep({
         onChangeText={setAnswer}
         onSubmitEditing={submit}
       />
-      {recall.error ? (
-        <AppText color={colors.destructive} accessibilityRole="alert">
-          {recall.error.message}
-        </AppText>
-      ) : null}
+      {recall.error ? <ErrorNotice error={recall.error} /> : null}
       {!result ? (
         <Button
           label="Prüfen"
@@ -217,11 +213,7 @@ export function McqStep({
         onSelect={setSelected}
         locked={!!result}
       />
-      {answer.error ? (
-        <AppText color={colors.destructive} accessibilityRole="alert">
-          {answer.error.message}
-        </AppText>
-      ) : null}
+      {answer.error ? <ErrorNotice error={answer.error} /> : null}
       {!result ? (
         <Button
           label="Prüfen"
@@ -294,9 +286,7 @@ function SentenceStep({
           />
           {error ? (
             <View style={styles.gap}>
-              <AppText color={colors.destructive} accessibilityRole="alert">
-                {error}
-              </AppText>
+              <ErrorNotice message={error} />
               {/* An AI limit or outage must never trap the learner in the last step. */}
               <Button
                 label="Schritt überspringen"

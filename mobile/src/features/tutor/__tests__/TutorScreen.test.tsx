@@ -21,7 +21,14 @@ const vocab = chatVocabularyApi as jest.Mocked<typeof chatVocabularyApi>;
 const wrap = () =>
   render(
     <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } } })}
+      client={
+        new QueryClient({
+          defaultOptions: {
+            queries: { retry: false, gcTime: Infinity },
+            mutations: { gcTime: Infinity },
+          },
+        })
+      }
     >
       <TutorScreen />
     </QueryClientProvider>,
@@ -46,7 +53,13 @@ describe('TutorScreen', () => {
   });
 
   it('sends a message, shows the reply, and the new session appears with its AI title', async () => {
-    chat.send.mockResolvedValue({ sessionId: 's1', userId: 'u', role: '', content: 'Hallo! **Wie geht’s?**', sessionTitle: 'Begrüßung' });
+    chat.send.mockResolvedValue({
+      sessionId: 's1',
+      userId: 'u',
+      role: '',
+      content: 'Hallo! **Wie geht’s?**',
+      sessionTitle: 'Begrüßung',
+    });
     await wrap();
     await screen.findByText('Guten Tag! 👋');
     await fireEvent.changeText(screen.getByLabelText('Message'), 'Hallo');
@@ -68,7 +81,12 @@ describe('TutorScreen', () => {
   it('shows the limit message and lets you resend without duplicating the question', async () => {
     chat.send
       .mockRejectedValueOnce(new ApiError('network', 'Keine Verbindung.'))
-      .mockResolvedValueOnce({ sessionId: 's2', userId: 'u', role: '', content: 'Jetzt klappt es.' });
+      .mockResolvedValueOnce({
+        sessionId: 's2',
+        userId: 'u',
+        role: '',
+        content: 'Jetzt klappt es.',
+      });
     await wrap();
     await fireEvent.changeText(await screen.findByLabelText('Message'), 'Hilfe');
     await fireEvent.press(screen.getByRole('button', { name: 'Send' }));
@@ -81,7 +99,9 @@ describe('TutorScreen', () => {
   });
 
   it('shows the daily AI limit message', async () => {
-    chat.send.mockRejectedValue(new ApiError('limit', 'Dein Tageslimit für den AI Tutor ist erreicht.', 429));
+    chat.send.mockRejectedValue(
+      new ApiError('limit', 'Dein Tageslimit für den AI Tutor ist erreicht.', 429),
+    );
     await wrap();
     await fireEvent.changeText(await screen.findByLabelText('Message'), 'Noch eine Frage');
     await fireEvent.press(screen.getByRole('button', { name: 'Send' }));
@@ -138,26 +158,48 @@ describe('TutorScreen', () => {
   });
 
   it('saves a word from a tutor answer to vocabulary, and says when it already exists', async () => {
-    chat.send.mockResolvedValue({ sessionId: 's1', userId: 'u', role: '', content: 'Das **Fernweh** ist ein schönes Wort.', sessionTitle: 'Wörter' });
-    vocab.classify.mockResolvedValue({ type: 'WORD', normalizedText: 'das Fernweh', meaning: 'wanderlust', example: 'Ich habe Fernweh.' });
-    vocab.exists.mockResolvedValueOnce({ exists: false, vocabularyItemId: null }).mockResolvedValueOnce({ exists: true, vocabularyItemId: 'v1' });
+    chat.send.mockResolvedValue({
+      sessionId: 's1',
+      userId: 'u',
+      role: '',
+      content: 'Das **Fernweh** ist ein schönes Wort.',
+      sessionTitle: 'Wörter',
+    });
+    vocab.classify.mockResolvedValue({
+      type: 'WORD',
+      normalizedText: 'das Fernweh',
+      meaning: 'wanderlust',
+      example: 'Ich habe Fernweh.',
+    });
+    vocab.exists
+      .mockResolvedValueOnce({ exists: false, vocabularyItemId: null })
+      .mockResolvedValueOnce({ exists: true, vocabularyItemId: 'v1' });
     vocab.create.mockResolvedValue({});
     await wrap();
     await fireEvent.changeText(await screen.findByLabelText('Message'), 'Ein Wort bitte');
     await fireEvent.press(screen.getByRole('button', { name: 'Send' }));
-    await fireEvent.press(await screen.findByRole('button', { name: 'Save a word from this answer' }));
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Save a word from this answer' }),
+    );
 
     await fireEvent.changeText(await screen.findByLabelText('Word or phrase'), 'Fernweh');
     await fireEvent.press(screen.getByRole('button', { name: 'Add to vocabulary' }));
     expect(await screen.findByText(/Added to vocabulary: das Fernweh – wanderlust/)).toBeTruthy();
     expect(vocab.classify).toHaveBeenCalledWith('Fernweh', 'Das **Fernweh** ist ein schönes Wort.');
     expect(vocab.create).toHaveBeenCalledWith(
-      expect.objectContaining({ word: 'das Fernweh', meaning: 'wanderlust', example: 'Ich habe Fernweh.', sourceChatId: 's1' }),
+      expect.objectContaining({
+        word: 'das Fernweh',
+        meaning: 'wanderlust',
+        example: 'Ich habe Fernweh.',
+        sourceChatId: 's1',
+      }),
     );
 
     // Saving it again reports the duplicate instead of creating another entry.
     await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
-    await fireEvent.press(await screen.findByRole('button', { name: 'Save a word from this answer' }));
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Save a word from this answer' }),
+    );
     await fireEvent.changeText(await screen.findByLabelText('Word or phrase'), 'Fernweh');
     await fireEvent.press(screen.getByRole('button', { name: 'Add to vocabulary' }));
     expect(await screen.findByText(/already in your vocabulary/)).toBeTruthy();

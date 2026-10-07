@@ -1,3 +1,4 @@
+import { ErrorNotice } from '@/components/ui';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -433,9 +434,7 @@ export function ReadingArticleScreen() {
           {glossary.length > 0 ? <Glossary items={glossary} /> : null}
 
           {learnedMutation.error || bookmarkMutation.error ? (
-            <AppText color={colors.destructive} accessibilityRole="alert">
-              {(learnedMutation.error ?? bookmarkMutation.error)?.message}
-            </AppText>
+            <ErrorNotice message={(learnedMutation.error ?? bookmarkMutation.error)?.message} />
           ) : null}
 
           <Button

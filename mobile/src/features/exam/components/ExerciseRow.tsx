@@ -90,9 +90,7 @@ export function ExerciseRow({
         <View style={styles.rail}>
           {node}
           {!path.last ? (
-            <View
-              style={[styles.line, { backgroundColor: mastered ? color : colors.border }]}
-            />
+            <View style={[styles.line, { backgroundColor: mastered ? color : colors.border }]} />
           ) : null}
         </View>
       ) : null}

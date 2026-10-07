@@ -13,6 +13,8 @@ export const env = {
   onboardingPreview,
   apiOrigin: origin,
   apiBaseUrl: `${origin}/api`,
+  googleWebClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '',
+  googleIosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '',
   requestTimeoutMs: 20_000,
   /** AI-backed endpoints (chat, feedback, judging) can take much longer than normal requests. */
   aiRequestTimeoutMs: 90_000,

@@ -185,12 +185,7 @@ export function ExamTeilScreen() {
           <Button pill label={continueLabel} onPress={() => open(next.id)} color={color} />
 
           {group.items[0]?.teil != null && TIMED_SECTIONS.includes(typed) ? (
-            <TeilTimeCard
-              section={typed}
-              level={level}
-              teil={group.items[0].teil}
-              color={color}
-            />
+            <TeilTimeCard section={typed} level={level} teil={group.items[0].teil} color={color} />
           ) : null}
 
           <View style={{ gap: spacing.sm }}>

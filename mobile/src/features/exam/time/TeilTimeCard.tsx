@@ -38,7 +38,11 @@ export function TeilTimeCard({ section, level, teil, showLastResult = true, colo
   return (
     <Card style={{ gap: spacing.md }}>
       <View style={styles.head}>
-        <Ionicons name="timer-outline" size={22} color={color ? darken(color) : colors.primaryDark} />
+        <Ionicons
+          name="timer-outline"
+          size={22}
+          color={color ? darken(color) : colors.primaryDark}
+        />
         <AppText variant="subheading">{t.examHub.timeCheck.title}</AppText>
       </View>
       {minutes != null ? (

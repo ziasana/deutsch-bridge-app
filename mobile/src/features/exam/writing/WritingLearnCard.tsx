@@ -55,7 +55,12 @@ export function WritingLearnCard({ level }: { level: string }) {
           {all ? w.allStations : w.stations(finished, total)}
         </AppText>
       ) : null}
-      <Button pill label={all ? w.again : started ? w.continue : w.learn} onPress={open} color={WRITING_COLOR} />
+      <Button
+        pill
+        label={all ? w.again : started ? w.continue : w.learn}
+        onPress={open}
+        color={WRITING_COLOR}
+      />
     </Pressable>
   );
 }

@@ -1,3 +1,4 @@
+import { I18nProvider, dictionaries } from '@/i18n';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { userApi } from '@/api/userApi';
@@ -104,28 +105,28 @@ describe('OnboardingScreen', () => {
     );
     const press = (name: string) => fireEvent.press(screen.getByRole('radio', { name }));
     const check = (name: string) => fireEvent.press(screen.getByRole('checkbox', { name }));
-    const next = () => fireEvent.press(screen.getByRole('button', { name: 'Weiter' }));
+    const next = () => fireEvent.press(screen.getByRole('button', { name: 'Next' }));
 
-    expect(await screen.findByText('Wie sollen wir Deutsch erklären?')).toBeTruthy();
-    expect(screen.getByText('Schritt 1 von 6')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Weiter' })).toBeDisabled();
+    expect(await screen.findByText('In which language should we explain German?')).toBeTruthy();
+    expect(screen.getByText('Step 1 of 6')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
     await press('English');
     await next();
-    await check('Beruf & Karriere');
+    await check('Work & career');
     await next();
-    await press('A2 · Grundlagen');
+    await press('A2 · Elementary');
     await next();
     // Target must lie above the current level.
-    expect(screen.getByRole('radio', { name: 'A1 · Anfänger' })).toBeDisabled();
-    expect(screen.getByRole('radio', { name: 'A2 · Grundlagen' })).toBeDisabled();
-    await press('B2 · Gute Mittelstufe');
+    expect(screen.getByRole('radio', { name: 'A1 · Beginner' })).toBeDisabled();
+    expect(screen.getByRole('radio', { name: 'A2 · Elementary' })).toBeDisabled();
+    await press('B2 · Upper intermediate');
     await next();
     // 5 words/day is preselected, so the step is already valid.
-    expect(screen.getByRole('button', { name: 'Weiter' })).toBeEnabled();
-    await press('10 Wörter pro Tag, Ausgewogen');
+    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled();
+    await press('10 words per day, Balanced');
     await next();
-    await check('Grammatik');
-    await fireEvent.press(screen.getByRole('button', { name: 'Fertig' }));
+    await check('Grammar');
+    await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
 
     await waitFor(() =>
       expect(api.completeOnboarding).toHaveBeenCalledWith(
@@ -138,9 +139,9 @@ describe('OnboardingScreen', () => {
       ),
     );
     // The profile only flips after the learner leaves the summary screen.
-    expect(await screen.findByText('Dein Lernplan ist fertig!')).toBeTruthy();
+    expect(await screen.findByText('Your learning plan is ready!')).toBeTruthy();
     expect(useAuthStore.getState().profile?.onboardingCompleted).toBe(false);
-    await fireEvent.press(screen.getByRole('button', { name: 'Jetzt lernen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Start learning' }));
     expect(useAuthStore.getState().profile?.onboardingCompleted).toBe(true);
   });
 
@@ -151,5 +152,33 @@ describe('OnboardingScreen', () => {
     expect(useOnboardingStore.getState().language).toBe('PR');
     useOnboardingStore.getState().ensureOwner('b@example.com');
     expect(useOnboardingStore.getState().language).toBeNull();
+  });
+});
+
+describe('OnboardingScreen language', () => {
+  beforeEach(() => useOnboardingStore.getState().reset());
+
+  it('starts in English and switches to Persian as soon as Persian is picked', async () => {
+    useAuthStore.setState({
+      status: 'authenticated',
+      profile: {
+        displayName: 'Ali',
+        email: 'ali@example.com',
+        onboardingCompleted: false,
+      } as UserProfile,
+    });
+    const client = new QueryClient({ defaultOptions: { mutations: { gcTime: Infinity } } });
+    await render(
+      <QueryClientProvider client={client}>
+        <I18nProvider>
+          <OnboardingScreen />
+        </I18nProvider>
+      </QueryClientProvider>,
+    );
+    const fa = dictionaries.fa.entry.onboarding;
+    expect(await screen.findByText('In which language should we explain German?')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('radio', { name: 'فارسی' }));
+    expect(await screen.findByText(fa.steps.language.title)).toBeTruthy();
+    expect(screen.getByRole('button', { name: dictionaries.fa.entry.common.next })).toBeTruthy();
   });
 });

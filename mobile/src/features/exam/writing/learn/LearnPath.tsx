@@ -35,7 +35,14 @@ export function LearnPath({
   return (
     <View style={{ gap: spacing.lg }}>
       <View style={[styles.hero, { backgroundColor: tint(WRITING_COLOR, '14') }]}>
-        <ProgressRing value={pct} size={84} stroke={9} color={WRITING_COLOR} textSize={19} label={`${doneCount} von ${stations.length} Stationen geschafft`} />
+        <ProgressRing
+          value={pct}
+          size={84}
+          stroke={9}
+          color={WRITING_COLOR}
+          textSize={19}
+          label={`${doneCount} von ${stations.length} Stationen geschafft`}
+        />
         <View style={{ flex: 1, gap: 2 }}>
           <AppText style={styles.heroTitle}>
             {allDone ? 'Alles geschafft! 🎉' : doneCount === 0 ? 'Los geht’s!' : 'Weiter so!'}
@@ -73,12 +80,26 @@ export function LearnPath({
                     styles.node,
                     result
                       ? { backgroundColor: colors.success, borderColor: colors.success }
-                      : { borderColor: isNext ? WRITING_COLOR : colors.border, backgroundColor: isNext ? tint(WRITING_COLOR, '1F') : colors.surface },
+                      : {
+                          borderColor: isNext ? WRITING_COLOR : colors.border,
+                          backgroundColor: isNext ? tint(WRITING_COLOR, '1F') : colors.surface,
+                        },
                   ]}
                 >
-                  {result ? <Ionicons name="checkmark" size={24} color="#FFFFFF" /> : <AppText style={{ fontSize: 20, lineHeight: 26 }}>{m.emoji}</AppText>}
+                  {result ? (
+                    <Ionicons name="checkmark" size={24} color="#FFFFFF" />
+                  ) : (
+                    <AppText style={{ fontSize: 20, lineHeight: 26 }}>{m.emoji}</AppText>
+                  )}
                 </View>
-                {!last ? <View style={[styles.line, { backgroundColor: result ? colors.success : colors.border }]} /> : null}
+                {!last ? (
+                  <View
+                    style={[
+                      styles.line,
+                      { backgroundColor: result ? colors.success : colors.border },
+                    ]}
+                  />
+                ) : null}
               </View>
               <Pressable
                 accessibilityRole="button"
@@ -86,24 +107,35 @@ export function LearnPath({
                 onPress={() => onOpen(s.id)}
                 style={({ pressed }) => [
                   styles.card,
-                  isNext && { borderColor: WRITING_COLOR, backgroundColor: tint(WRITING_COLOR, '14') },
+                  isNext && {
+                    borderColor: WRITING_COLOR,
+                    backgroundColor: tint(WRITING_COLOR, '14'),
+                  },
                   result && !isNext && { borderColor: tint(colors.success, '33') },
                   pressed && { opacity: 0.75 },
                 ]}
               >
                 <View style={{ flex: 1, gap: 2 }}>
                   {isNext ? (
-                    <AppText variant="caption" color={WRITING_COLOR} style={{ fontWeight: '800', letterSpacing: 0.6 }}>
+                    <AppText
+                      variant="caption"
+                      color={WRITING_COLOR}
+                      style={{ fontWeight: '800', letterSpacing: 0.6 }}
+                    >
                       ALS NÄCHSTES
                     </AppText>
                   ) : null}
                   <AppText variant="subheading">
                     {i + 1}. {m.label}
                   </AppText>
-                  <AppText variant="small" color={colors.mutedForeground}>{m.hint}</AppText>
+                  <AppText variant="small" color={colors.mutedForeground}>
+                    {m.hint}
+                  </AppText>
                   <AppText variant="caption" color={colors.mutedForeground}>
                     {s.steps.length} Schritte · ca. {minutes(s.steps.length)} Min.
-                    {result && result.total > 0 ? ` · ${result.correct}/${result.total} richtig` : ''}
+                    {result && result.total > 0
+                      ? ` · ${result.correct}/${result.total} richtig`
+                      : ''}
                   </AppText>
                 </View>
                 <Ionicons name="chevron-forward" size={22} color={colors.mutedForeground} />
@@ -114,18 +146,36 @@ export function LearnPath({
       </View>
 
       {doneCount > 0 ? (
-        <Button label="↺ Fortschritt zurücksetzen" variant="ghost" onPress={onReset} color={darken(WRITING_COLOR)} />
+        <Button
+          label="↺ Fortschritt zurücksetzen"
+          variant="ghost"
+          onPress={onReset}
+          color={darken(WRITING_COLOR)}
+        />
       ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  hero: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, padding: spacing.lg, borderRadius: radius.lg },
+  hero: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+  },
   heroTitle: { fontSize: 20, lineHeight: 26, fontWeight: '800', color: colors.ink },
   row: { flexDirection: 'row', alignItems: 'stretch', gap: spacing.md },
   rail: { width: NODE, alignItems: 'center' },
-  node: { width: NODE, height: NODE, borderRadius: NODE / 2, borderWidth: 2.5, alignItems: 'center', justifyContent: 'center' },
+  node: {
+    width: NODE,
+    height: NODE,
+    borderRadius: NODE / 2,
+    borderWidth: 2.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   line: { flex: 1, width: 4, borderRadius: 2, marginVertical: 2 },
   card: {
     flex: 1,

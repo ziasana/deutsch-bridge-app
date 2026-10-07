@@ -21,7 +21,9 @@ import {
 } from './ui';
 import { darken } from '@/features/exam/components/kit';
 
-const Prompt = ({ children }: { children: ReactNode }) => <AppText style={styles.prompt}>{children}</AppText>;
+const Prompt = ({ children }: { children: ReactNode }) => (
+  <AppText style={styles.prompt}>{children}</AppText>
+);
 
 /* ───────────────────────── ChoiceQuiz ───────────────────────── */
 
@@ -92,7 +94,9 @@ export function ChoiceQuiz({
                 ]}
               >
                 <AppText style={{ flex: 1, fontWeight: '600' }}>{o.label}</AppText>
-                {revealed && isCorrect ? <Ionicons name="checkmark-circle" size={24} color={colors.success} /> : null}
+                {revealed && isCorrect ? (
+                  <Ionicons name="checkmark-circle" size={24} color={colors.success} />
+                ) : null}
                 {wrong ? <Ionicons name="close-circle" size={24} color={colors.warning} /> : null}
               </PressableScale>
             </Shake>
@@ -151,7 +155,12 @@ export function TapChecklist({
               onPress={() => toggle(i)}
               style={[styles.option, on && styles.optionRight]}
             >
-              <View style={[styles.box, on && { backgroundColor: colors.success, borderColor: colors.success }]}>
+              <View
+                style={[
+                  styles.box,
+                  on && { backgroundColor: colors.success, borderColor: colors.success },
+                ]}
+              >
                 {on ? <Ionicons name="checkmark" size={16} color="#FFFFFF" /> : null}
               </View>
               <AppText style={{ flex: 1 }}>{item}</AppText>
@@ -188,7 +197,14 @@ export function OrderGame({
   seed: string;
   explanation?: string | null;
 }) {
-  const pool = useMemo(() => shuffledDifferent(items.map((_, i) => i), seededRandom(seed)), [items, seed]);
+  const pool = useMemo(
+    () =>
+      shuffledDifferent(
+        items.map((_, i) => i),
+        seededRandom(seed),
+      ),
+    [items, seed],
+  );
   const [placed, setPlaced] = useState<number[]>([]);
   const [misses, setMisses] = useState(0);
   const [status, setStatus] = useState<'idle' | 'wrong' | 'correct' | 'revealed'>('idle');
@@ -197,7 +213,9 @@ export function OrderGame({
   const shown = api.solved && status === 'idle' ? items.map((_, i) => i) : placed;
   const remaining = pool.filter((i) => !shown.includes(i));
   const wrongAt = new Set<number>(
-    status === 'wrong' ? shown.map((idx, pos) => (items[idx] === items[pos] ? -1 : pos)).filter((p) => p >= 0) : [],
+    status === 'wrong'
+      ? shown.map((idx, pos) => (items[idx] === items[pos] ? -1 : pos)).filter((p) => p >= 0)
+      : [],
   );
 
   const place = (idx: number) => {
@@ -249,7 +267,11 @@ export function OrderGame({
                 accessibilityLabel={`${pos + 1}. ${items[idx]} – tippen zum Entfernen`}
                 style={[
                   styles.chipBtn,
-                  solved ? styles.optionRight : wrongAt.has(pos) ? styles.optionWrong : { borderColor: tint(WRITING_COLOR, '33') },
+                  solved
+                    ? styles.optionRight
+                    : wrongAt.has(pos)
+                      ? styles.optionWrong
+                      : { borderColor: tint(WRITING_COLOR, '33') },
                 ]}
               >
                 {variant === 'list' ? (
@@ -283,7 +305,12 @@ export function OrderGame({
           </View>
           <View style={styles.actions}>
             <View style={{ flex: 1 }}>
-              <Button label="Prüfen" disabled={placed.length !== items.length} onPress={check} color={WRITING_COLOR} />
+              <Button
+                label="Prüfen"
+                disabled={placed.length !== items.length}
+                onPress={check}
+                color={WRITING_COLOR}
+              />
             </View>
             {placed.length > 0 ? (
               <Button
@@ -297,18 +324,36 @@ export function OrderGame({
               />
             ) : null}
           </View>
-          {misses >= MAX_TRIES_BEFORE_SOLUTION ? <Button label="Lösung zeigen" variant="ghost" onPress={reveal} color={darken(WRITING_COLOR)} /> : null}
+          {misses >= MAX_TRIES_BEFORE_SOLUTION ? (
+            <Button
+              label="Lösung zeigen"
+              variant="ghost"
+              onPress={reveal}
+              color={darken(WRITING_COLOR)}
+            />
+          ) : null}
         </>
       ) : null}
 
       {status === 'wrong' ? (
-        <Feedback correct={false} message="Noch nicht ganz – die orange markierten Karten stehen an der falschen Stelle." />
+        <Feedback
+          correct={false}
+          message="Noch nicht ganz – die orange markierten Karten stehen an der falschen Stelle."
+        />
       ) : null}
       {status === 'correct' ? (
-        <Feedback correct message={pickMessage(CORRECT_MESSAGES, items.length)} explanation={explanation} />
+        <Feedback
+          correct
+          message={pickMessage(CORRECT_MESSAGES, items.length)}
+          explanation={explanation}
+        />
       ) : null}
       {status === 'revealed' ? (
-        <Feedback correct={false} message="Das ist die richtige Reihenfolge. Beim nächsten Mal klappt es!" explanation={explanation} />
+        <Feedback
+          correct={false}
+          message="Das ist die richtige Reihenfolge. Beim nächsten Mal klappt es!"
+          explanation={explanation}
+        />
       ) : null}
     </View>
   );
@@ -363,7 +408,9 @@ export function FlashDeck({ api, phrases }: { api: StepApi; phrases: WritingPhra
       <View style={{ gap: spacing.lg }}>
         <View style={{ gap: 4 }}>
           <Prompt>Wähle eine Funktion</Prompt>
-          <AppText color={colors.mutedForeground}>Was möchtest du ausdrücken? Übe die Redemittel Karte für Karte.</AppText>
+          <AppText color={colors.mutedForeground}>
+            Was möchtest du ausdrücken? Übe die Redemittel Karte für Karte.
+          </AppText>
         </View>
         <View style={styles.grid}>
           {categories.map((c) => {
@@ -396,11 +443,22 @@ export function FlashDeck({ api, phrases }: { api: StepApi; phrases: WritingPhra
   return (
     <View style={{ gap: spacing.lg }}>
       <View style={styles.deckHead}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Zurück zu den Funktionen" onPress={() => { halt(); setCategory(null); }}>
-          <AppText color={colors.primaryDark} style={{ fontWeight: '700' }}>‹ Funktionen</AppText>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Zurück zu den Funktionen"
+          onPress={() => {
+            halt();
+            setCategory(null);
+          }}
+        >
+          <AppText color={colors.primaryDark} style={{ fontWeight: '700' }}>
+            ‹ Funktionen
+          </AppText>
         </Pressable>
         <AppText style={{ fontWeight: '700' }}>{labels[category]}</AppText>
-        <AppText variant="small" color={colors.mutedForeground}>{known}/{total}</AppText>
+        <AppText variant="small" color={colors.mutedForeground}>
+          {known}/{total}
+        </AppText>
       </View>
       <View style={styles.track}>
         <View style={[styles.fill, { width: `${(known / total) * 100}%` }]} />
@@ -413,27 +471,55 @@ export function FlashDeck({ api, phrases }: { api: StepApi; phrases: WritingPhra
               <View style={styles.cardTop}>
                 {card.formality ? (
                   <View style={styles.tag}>
-                    <AppText variant="caption" color={colors.mutedForeground}>{FORMALITY_LABELS[card.formality]}</AppText>
+                    <AppText variant="caption" color={colors.mutedForeground}>
+                      {FORMALITY_LABELS[card.formality]}
+                    </AppText>
                   </View>
-                ) : <View />}
+                ) : (
+                  <View />
+                )}
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={speaking ? 'Vorlesen stoppen' : 'Redemittel anhören'}
-                  onPress={() => say(card.example ? `${card.phrase}. ${card.example}` : card.phrase)}
+                  onPress={() =>
+                    say(card.example ? `${card.phrase}. ${card.example}` : card.phrase)
+                  }
                   style={[styles.speak, speaking && { backgroundColor: WRITING_COLOR }]}
                 >
-                  <Ionicons name={speaking ? 'stop' : 'volume-high'} size={20} color={speaking ? '#FFFFFF' : WRITING_COLOR} />
+                  <Ionicons
+                    name={speaking ? 'stop' : 'volume-high'}
+                    size={20}
+                    color={speaking ? '#FFFFFF' : WRITING_COLOR}
+                  />
                 </Pressable>
               </View>
               <AppText style={styles.phrase}>{card.phrase}</AppText>
-              {card.example ? <AppText style={{ fontStyle: 'italic', fontSize: 16, lineHeight: 24 }} color={colors.mutedForeground}>z. B. {card.example}</AppText> : null}
-              {card.explanation ? <AppText color={colors.mutedForeground}>{card.explanation}</AppText> : null}
-              {card.usageNote ? <AppText variant="small" color={colors.mutedForeground}>Hinweis: {card.usageNote}</AppText> : null}
+              {card.example ? (
+                <AppText
+                  style={{ fontStyle: 'italic', fontSize: 16, lineHeight: 24 }}
+                  color={colors.mutedForeground}
+                >
+                  z. B. {card.example}
+                </AppText>
+              ) : null}
+              {card.explanation ? (
+                <AppText color={colors.mutedForeground}>{card.explanation}</AppText>
+              ) : null}
+              {card.usageNote ? (
+                <AppText variant="small" color={colors.mutedForeground}>
+                  Hinweis: {card.usageNote}
+                </AppText>
+              ) : null}
             </View>
           </Pop>
           <View style={styles.actions}>
             <View style={{ flex: 1 }}>
-              <Button label="↻ Nochmal" variant="secondary" onPress={() => answer(false)} color={darken(WRITING_COLOR)} />
+              <Button
+                label="↻ Nochmal"
+                variant="secondary"
+                onPress={() => answer(false)}
+                color={darken(WRITING_COLOR)}
+              />
             </View>
             <View style={{ flex: 1 }}>
               <Button label="✓ Kenne ich" onPress={() => answer(true)} color={WRITING_COLOR} />
@@ -442,10 +528,18 @@ export function FlashDeck({ api, phrases }: { api: StepApi; phrases: WritingPhra
         </>
       ) : (
         <Pop>
-          <View style={[styles.card, { backgroundColor: colors.successSoft, alignItems: 'center' }]}>
+          <View
+            style={[styles.card, { backgroundColor: colors.successSoft, alignItems: 'center' }]}
+          >
             <AppText style={styles.prompt}>Geschafft! 🎉</AppText>
-            <AppText center>Du kennst alle {total} Redemittel für „{labels[category]}“.</AppText>
-            <Button label="Nächste Funktion wählen" onPress={() => setCategory(null)} color={WRITING_COLOR} />
+            <AppText center>
+              Du kennst alle {total} Redemittel für „{labels[category]}“.
+            </AppText>
+            <Button
+              label="Nächste Funktion wählen"
+              onPress={() => setCategory(null)}
+              color={WRITING_COLOR}
+            />
           </View>
         </Pop>
       )}
@@ -459,7 +553,13 @@ export function FlashDeck({ api, phrases }: { api: StepApi; phrases: WritingPhra
  * The model text split into its functional parts. The learner picks a part and sees that part's text,
  * why it works and matching phrases, one part at a time.
  */
-export function DiscoverText({ api, sections }: { api: StepApi; sections: WritingExampleSection[] }) {
+export function DiscoverText({
+  api,
+  sections,
+}: {
+  api: StepApi;
+  sections: WritingExampleSection[];
+}) {
   const [active, setActive] = useState<string | null>(null);
   const [seen, setSeen] = useState<ReadonlySet<string>>(new Set());
   const current = sections.find((s) => s.key === active);
@@ -477,7 +577,9 @@ export function DiscoverText({ api, sections }: { api: StepApi; sections: Writin
     <View style={{ gap: spacing.lg }}>
       <View style={{ gap: 4 }}>
         <Prompt>Entdecke den Text</Prompt>
-        <AppText color={colors.mutedForeground}>Tippe auf jeden Teil und finde heraus, warum er funktioniert.</AppText>
+        <AppText color={colors.mutedForeground}>
+          Tippe auf jeden Teil und finde heraus, warum er funktioniert.
+        </AppText>
       </View>
       <View style={styles.wrap} accessibilityRole="tablist">
         {sections.map((s) => {
@@ -490,10 +592,22 @@ export function DiscoverText({ api, sections }: { api: StepApi; sections: Writin
               accessibilityLabel={s.label}
               accessibilityState={{ selected: on }}
               onPress={() => open(s.key)}
-              style={[styles.pill, on && { backgroundColor: WRITING_COLOR, borderColor: WRITING_COLOR }, !on && isSeen && styles.optionRight]}
+              style={[
+                styles.pill,
+                on && { backgroundColor: WRITING_COLOR, borderColor: WRITING_COLOR },
+                !on && isSeen && styles.optionRight,
+              ]}
             >
-              {isSeen && !on ? <Ionicons name="checkmark" size={14} color={colors.success} /> : null}
-              <AppText variant="small" style={{ fontWeight: '700' }} color={on ? '#FFFFFF' : colors.foreground}>{s.label}</AppText>
+              {isSeen && !on ? (
+                <Ionicons name="checkmark" size={14} color={colors.success} />
+              ) : null}
+              <AppText
+                variant="small"
+                style={{ fontWeight: '700' }}
+                color={on ? '#FFFFFF' : colors.foreground}
+              >
+                {s.label}
+              </AppText>
             </Pressable>
           );
         })}
@@ -506,14 +620,22 @@ export function DiscoverText({ api, sections }: { api: StepApi; sections: Writin
             </View>
             {current.why ? (
               <View style={{ gap: 2 }}>
-                <AppText variant="caption" color={colors.mutedForeground} style={{ fontWeight: '800' }}>WARUM IST DAS WICHTIG?</AppText>
+                <AppText
+                  variant="caption"
+                  color={colors.mutedForeground}
+                  style={{ fontWeight: '800' }}
+                >
+                  WARUM IST DAS WICHTIG?
+                </AppText>
                 <AppText>{current.why}</AppText>
               </View>
             ) : null}
             {current.phrases?.length ? (
               <View style={styles.wrap}>
                 {current.phrases.map((p) => (
-                  <View key={p} style={styles.tag}><AppText variant="small">{p}</AppText></View>
+                  <View key={p} style={styles.tag}>
+                    <AppText variant="small">{p}</AppText>
+                  </View>
                 ))}
               </View>
             ) : null}
@@ -525,7 +647,9 @@ export function DiscoverText({ api, sections }: { api: StepApi; sections: Writin
         </View>
       )}
       <AppText variant="small" color={colors.mutedForeground} accessibilityLiveRegion="polite">
-        {allSeen ? 'Alle Teile entdeckt – klasse! 🔍' : `${seen.size} von ${sections.length} entdeckt`}
+        {allSeen
+          ? 'Alle Teile entdeckt – klasse! 🔍'
+          : `${seen.size} von ${sections.length} entdeckt`}
       </AppText>
     </View>
   );
@@ -596,7 +720,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  tag: { paddingHorizontal: spacing.sm + 2, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: colors.accent },
+  tag: {
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accent,
+  },
   phrase: { fontSize: 22, lineHeight: 30, fontWeight: '800', color: colors.ink },
   speak: {
     width: 40,

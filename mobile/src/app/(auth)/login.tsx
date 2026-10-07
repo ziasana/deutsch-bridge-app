@@ -1,18 +1,23 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'expo-router';
+import { useMemo } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { StyleSheet, View } from 'react-native';
-import { AppText, Button, TextField } from '@/components/ui';
+import { AppText, Button, TextField, ErrorNotice } from '@/components/ui';
 import { AuthFrame } from '@/features/auth/AuthForm';
 import { GoogleButton } from '@/features/auth/GoogleButton';
 import { useLogin } from '@/features/auth/hooks';
-import { loginSchema, type LoginForm } from '@/features/auth/schemas';
+import { createAuthSchemas, type LoginForm } from '@/features/auth/schemas';
+import { useI18n } from '@/i18n';
 import { colors, spacing } from '@/theme';
 
 export default function LoginScreen() {
   const login = useLogin();
+  const { t } = useI18n();
+  const a = t.entry.auth;
+  const schemas = useMemo(() => createAuthSchemas(a.errors), [a.errors]);
   const { control, handleSubmit, formState } = useForm<LoginForm>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(schemas.loginSchema),
     defaultValues: { email: '', password: '' },
   });
 
@@ -24,7 +29,7 @@ export default function LoginScreen() {
         render={({ field, fieldState }) => (
           <TextField
             pill
-            label="E-Mail"
+            label={a.email}
             autoCapitalize="none"
             autoComplete="email"
             keyboardType="email-address"
@@ -43,7 +48,7 @@ export default function LoginScreen() {
         render={({ field, fieldState }) => (
           <TextField
             pill
-            label="Passwort"
+            label={a.password}
             secret
             autoCapitalize="none"
             autoComplete="current-password"
@@ -57,14 +62,10 @@ export default function LoginScreen() {
           />
         )}
       />
-      {login.error ? (
-        <AppText color={colors.destructive} accessibilityRole="alert">
-          {login.error.message}
-        </AppText>
-      ) : null}
+      {login.error ? <ErrorNotice error={login.error} /> : null}
       <Button
         pill
-        label="Anmelden"
+        label={a.login}
         loading={login.isPending || formState.isSubmitting}
         onPress={handleSubmit((v) => login.mutate(v))}
       />
@@ -72,13 +73,13 @@ export default function LoginScreen() {
       <View style={styles.links}>
         <Link href="/forgot-password" accessibilityRole="link">
           <AppText variant="small" color={colors.primaryDark}>
-            Passwort vergessen?
+            {a.forgot}
           </AppText>
         </Link>
         <AppText variant="small" color={colors.mutedForeground}>
-          Noch kein Konto?{' '}
+          {a.noAccount}{' '}
           <Link href="/register" accessibilityRole="link" style={styles.link}>
-            Registrieren
+            {a.signUp}
           </Link>
         </AppText>
       </View>

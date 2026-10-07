@@ -1,3 +1,4 @@
+import { ErrorNotice } from '@/components/ui';
 import { AiUsageHint } from '@/features/aiUsage/AiUsageHint';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
@@ -282,22 +283,14 @@ export function TutorScreen() {
         onNewChat={chat.newChat}
       />
 
-      <BottomSheet
-        visible={renameOpen}
-        onClose={() => setRenameOpen(false)}
-        title={w.renameLabel}
-      >
+      <BottomSheet visible={renameOpen} onClose={() => setRenameOpen(false)} title={w.renameLabel}>
         <TextField
           label={w.renameTitle}
           value={title}
           onChangeText={setTitle}
           placeholder={w.renamePlaceholder}
         />
-        {chat.rename.error ? (
-          <AppText color={colors.destructive} accessibilityRole="alert">
-            {chat.rename.error.message}
-          </AppText>
-        ) : null}
+        {chat.rename.error ? <ErrorNotice error={chat.rename.error} /> : null}
         <Button
           label={w.save}
           loading={chat.rename.isPending}

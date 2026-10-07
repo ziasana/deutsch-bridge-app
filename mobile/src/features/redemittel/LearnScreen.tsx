@@ -1,7 +1,15 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { AppText, Button, EmptyState, ErrorState, ProgressBar, Skeleton } from '@/components/ui';
+import {
+  AppText,
+  Button,
+  EmptyState,
+  ErrorState,
+  ProgressBar,
+  Skeleton,
+  ErrorNotice,
+} from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 import { DetailCard } from './components/DetailCard';
 import { PhraseIllustration, RedemittelHero } from './components/RedemittelViz';
@@ -114,11 +122,7 @@ export function RedemittelLearnScreen() {
             color={REDEMITTEL_COLOR}
           />
         </DetailCard>
-        {learn.error ? (
-          <AppText color={colors.destructive} accessibilityRole="alert">
-            {learn.error.message}
-          </AppText>
-        ) : null}
+        {learn.error ? <ErrorNotice error={learn.error} /> : null}
       </>
     );
   }

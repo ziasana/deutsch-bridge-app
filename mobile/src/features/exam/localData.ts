@@ -6,7 +6,9 @@ import { useExamTimerStore } from './time/timerStore';
 export async function clearExamLocalData(): Promise<void> {
   useExamTimerStore.setState({ active: null, lastResult: null });
   try {
-    const keys = (await AsyncStorage.getAllKeys()).filter((k) => k.startsWith(WRITING_DRAFT_PREFIX));
+    const keys = (await AsyncStorage.getAllKeys()).filter((k) =>
+      k.startsWith(WRITING_DRAFT_PREFIX),
+    );
     if (keys.length > 0) await AsyncStorage.multiRemove(keys);
   } catch {
     /* storage unavailable: nothing was stored either */

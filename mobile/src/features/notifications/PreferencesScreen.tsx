@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Switch, View } from 'react-native';
-import { AppText, Card, ErrorState, Header, LoadingState, Screen, TextField } from '@/components/ui';
+import {
+  AppText,
+  Card,
+  ErrorState,
+  Header,
+  LoadingState,
+  Screen,
+  TextField,
+  ErrorNotice,
+} from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { colors, spacing } from '@/theme';
 import type { NotificationPreferences } from '@/types/notification';
@@ -100,14 +109,25 @@ export function PreferencesScreen() {
   }, [prefs, mutate]);
 
   const save = (patch: Partial<NotificationPreferences>) => update.mutate(patch);
-  const toggle = (key: BooleanKey, label: string, opts: { hint?: string; disabled?: boolean } = {}) =>
+  const toggle = (
+    key: BooleanKey,
+    label: string,
+    opts: { hint?: string; disabled?: boolean } = {},
+  ) =>
     prefs && (
-      <ToggleRow label={label} hint={opts.hint} disabled={opts.disabled} value={prefs[key]} onChange={(v) => save({ [key]: v })} />
+      <ToggleRow
+        label={label}
+        hint={opts.hint}
+        disabled={opts.disabled}
+        value={prefs[key]}
+        onChange={(v) => save({ [key]: v })}
+      />
     );
 
   let body;
   if (query.isPending) body = <LoadingState label={p.loading} />;
-  else if (query.isError || !prefs) body = <ErrorState error={query.error} onRetry={() => void query.refetch()} />;
+  else if (query.isError || !prefs)
+    body = <ErrorState error={query.error} onRetry={() => void query.refetch()} />;
   else {
     const learningOff = !prefs.learningRemindersEnabled;
     const progressOff = !prefs.progressNotificationsEnabled;
@@ -147,8 +167,16 @@ export function PreferencesScreen() {
           {toggle('quietHoursEnabled', p.quietHours, { hint: p.quietHoursHint })}
           {prefs.quietHoursEnabled ? (
             <>
-              <TimeField label={p.quietFrom} saved={prefs.quietHoursStart} onSave={(v) => save({ quietHoursStart: v })} />
-              <TimeField label={p.quietTo} saved={prefs.quietHoursEnd} onSave={(v) => save({ quietHoursEnd: v })} />
+              <TimeField
+                label={p.quietFrom}
+                saved={prefs.quietHoursStart}
+                onSave={(v) => save({ quietHoursStart: v })}
+              />
+              <TimeField
+                label={p.quietTo}
+                saved={prefs.quietHoursEnd}
+                onSave={(v) => save({ quietHoursEnd: v })}
+              />
             </>
           ) : null}
           {prefs.timezone ? (
@@ -167,11 +195,7 @@ export function PreferencesScreen() {
           ) : null}
         </Card>
 
-        {update.isError ? (
-          <AppText color={colors.destructive} accessibilityRole="alert">
-            {p.saveFailed}
-          </AppText>
-        ) : null}
+        {update.isError ? <ErrorNotice message={p.saveFailed} /> : null}
       </View>
     );
   }

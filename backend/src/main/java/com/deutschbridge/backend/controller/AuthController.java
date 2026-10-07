@@ -6,6 +6,7 @@ import com.deutschbridge.backend.model.dto.*;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.service.AuthService;
 import com.deutschbridge.backend.service.CookieService;
+import com.deutschbridge.backend.service.GoogleTokenVerifier;
 import com.deutschbridge.backend.service.UserProfileService;
 import com.deutschbridge.backend.service.UserService;
 import com.deutschbridge.backend.util.JWTUtil;
@@ -26,8 +27,10 @@ public class AuthController {
     private  final JWTUtil jwtUtil;
     private final CookieService cookieService;
     private final UserProfileService userProfileService;
+    private final GoogleTokenVerifier googleTokenVerifier;
 
-    public AuthController( AuthService authService, UserService userService, JWTUtil jwtUtil, CookieService cookieService, UserProfileService userProfileService) {
+    public AuthController( AuthService authService, UserService userService, JWTUtil jwtUtil, CookieService cookieService, UserProfileService userProfileService, GoogleTokenVerifier googleTokenVerifier) {
+        this.googleTokenVerifier = googleTokenVerifier;
         this.authService = authService;
         this.userService = userService;
         this.jwtUtil = jwtUtil;
@@ -120,6 +123,14 @@ public class AuthController {
     public ResponseEntity<ApiResponse<MobileAuthResponse>> mobileRegister(@RequestBody @Valid UserRegistrationRequest request) throws UserVerificationException {
         User user = userService.registerUser(request);
         return new ResponseEntity<>(new ApiResponse<>("Account created", issueMobileTokens(user)), HttpStatus.CREATED);
+    }
+
+    /** Login and signup in one: the app sends the Google ID token, we create the account on first use. */
+    @PostMapping("/mobile/google")
+    public ResponseEntity<ApiResponse<MobileAuthResponse>> mobileGoogle(@RequestBody @Valid GoogleLoginRequest request) throws UserVerificationException {
+        GoogleTokenVerifier.GoogleIdentity identity = googleTokenVerifier.verify(request.idToken());
+        User user = userService.findOrCreateGoogleUser(identity.email(), identity.name(), identity.picture());
+        return ResponseEntity.ok(new ApiResponse<>("Login successful!", issueMobileTokens(user)));
     }
 
     @PostMapping("/mobile/refresh")

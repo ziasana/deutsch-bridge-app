@@ -3,29 +3,30 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText, Button, Chip } from '@/components/ui';
 import { IntroHero } from '@/features/onboarding/IntroHero';
 import { colors, radius, spacing } from '@/theme';
-import { FOCUS_OPTIONS } from './options';
+import { useI18n } from '@/i18n';
+import { buildOptions } from './options';
 import type { Focus } from './plan';
 
 type Props = { targetLevel: string; focus: Focus[]; dailyWords: number; onStart: () => void };
 
 /** Shown once the plan is saved: a summary of what was chosen, then into the app. */
 export function OnboardingComplete({ targetLevel, focus, dailyWords, onStart }: Props) {
-  const chosen = FOCUS_OPTIONS.filter((o) => focus.includes(o.value));
+  const { t } = useI18n();
+  const c = t.entry.onboarding.complete;
+  const chosen = buildOptions(t.entry.onboarding).focus.filter((o) => focus.includes(o.value));
   return (
     <View style={styles.root}>
       <IntroHero />
       <SafeAreaView edges={['bottom']} style={styles.body}>
         <View style={styles.text}>
           <AppText style={styles.title} accessibilityRole="header">
-            Dein Lernplan ist fertig!
+            {c.title}
           </AppText>
-          <AppText color={colors.mutedForeground}>
-            Du arbeitest auf <AppText style={styles.bold}>{targetLevel}</AppText> hin.
-          </AppText>
+          <AppText color={colors.mutedForeground}>{c.working(targetLevel)}</AppText>
           {chosen.length ? (
             <View style={styles.focus}>
               <AppText variant="small" color={colors.mutedForeground}>
-                Darauf konzentrieren wir uns:
+                {c.focusHint}
               </AppText>
               <View style={styles.chips}>
                 {chosen.map((o) => (
@@ -36,12 +37,12 @@ export function OnboardingComplete({ targetLevel, focus, dailyWords, onStart }: 
           ) : null}
           <View style={styles.goal}>
             <AppText variant="small" color={colors.mutedForeground}>
-              Dein tägliches Wortziel
+              {c.goal}
             </AppText>
-            <AppText style={styles.goalValue}>{dailyWords} Wörter</AppText>
+            <AppText style={styles.goalValue}>{t.entry.onboarding.words(dailyWords)}</AppText>
           </View>
         </View>
-        <Button pill label="Jetzt lernen" onPress={onStart} />
+        <Button pill label={c.start} onPress={onStart} />
       </SafeAreaView>
     </View>
   );
@@ -57,7 +58,6 @@ const styles = StyleSheet.create({
   },
   text: { gap: spacing.md, marginTop: spacing.xl },
   title: { fontSize: 28, lineHeight: 34, fontWeight: '800', color: colors.ink },
-  bold: { fontWeight: '700', color: colors.ink },
   focus: { gap: spacing.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   goal: {

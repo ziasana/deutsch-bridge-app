@@ -1,5 +1,6 @@
 import type { ComponentProps } from 'react';
 import type { Ionicons } from '@expo/vector-icons';
+import type { Dictionary } from '@/i18n';
 import type { ExamKind, Focus, Level, Reason } from './plan';
 import type { PreferredLanguage } from '@/types/user';
 
@@ -12,148 +13,64 @@ export type Option<T> = {
   emoji?: string;
 };
 
-export const LANGUAGE_OPTIONS: Option<PreferredLanguage>[] = [
-  {
-    value: 'EN',
-    label: 'English',
-    description: 'Deutsche Erklärungen mit englischer Unterstützung',
-    emoji: '🇬🇧',
-  },
-  { value: 'PR', label: 'فارسی', description: 'توضیحات و ترجمه‌های آلمانی به فارسی', emoji: '🇮🇷' },
-];
+const REASON_ICONS: Record<Reason, IconName> = {
+  WORK: 'briefcase-outline',
+  EVERYDAY_LIFE: 'home-outline',
+  STUDY: 'school-outline',
+  COMMUNICATION: 'chatbubbles-outline',
+  EXAM: 'ribbon-outline',
+  LIVING_IN_GERMANY: 'location-outline',
+  PERSONAL_INTEREST: 'heart-outline',
+};
 
-export const REASON_OPTIONS: Option<Reason>[] = [
-  {
-    value: 'WORK',
-    label: 'Beruf & Karriere',
-    description: 'Mein Deutsch im Job verbessern',
-    icon: 'briefcase-outline',
-  },
-  {
-    value: 'EVERYDAY_LIFE',
-    label: 'Alltag',
-    description: 'Im Alltag sicherer kommunizieren',
-    icon: 'home-outline',
-  },
-  {
-    value: 'STUDY',
-    label: 'Studium',
-    description: 'Auf ein Studium auf Deutsch vorbereiten',
-    icon: 'school-outline',
-  },
-  {
-    value: 'COMMUNICATION',
-    label: 'Kommunikation',
-    description: 'Besser sprechen und verstehen',
-    icon: 'chatbubbles-outline',
-  },
-  {
-    value: 'EXAM',
-    label: 'Prüfungsvorbereitung',
-    description: 'Auf eine Deutschprüfung lernen',
-    icon: 'ribbon-outline',
-  },
-  {
-    value: 'LIVING_IN_GERMANY',
-    label: 'Leben in Deutschland',
-    description: 'Mich in Deutschland wohler fühlen',
-    icon: 'location-outline',
-  },
-  {
-    value: 'PERSONAL_INTEREST',
-    label: 'Persönliches Interesse',
-    description: 'Ich lerne einfach gern Deutsch',
-    icon: 'heart-outline',
-  },
-];
+const FOCUS_ICONS: Record<Focus, IconName> = {
+  VOCABULARY: 'book-outline',
+  GRAMMAR: 'extension-puzzle-outline',
+  SPEAKING: 'mic-outline',
+  LISTENING: 'ear-outline',
+  READING: 'reader-outline',
+  WRITING: 'create-outline',
+  EXPRESSIONS: 'chatbox-ellipses-outline',
+  EXAM: 'clipboard-outline',
+};
 
-export const LEVEL_OPTIONS: Option<Level>[] = [
-  { value: 'A1', label: 'A1 · Anfänger', description: 'Ich kenne einfache Wörter und Sätze.' },
-  {
-    value: 'A2',
-    label: 'A2 · Grundlagen',
-    description: 'Ich komme in vertrauten Alltagssituationen zurecht.',
-  },
-  {
-    value: 'B1',
-    label: 'B1 · Mittelstufe',
-    description: 'Ich kann viele Alltagsgespräche führen.',
-  },
-  {
-    value: 'B2',
-    label: 'B2 · Gute Mittelstufe',
-    description: 'Ich kann über komplexe Themen sprechen.',
-  },
-  { value: 'C1', label: 'C1 · Fortgeschritten', description: 'Ich drücke mich fließend aus.' },
-  {
-    value: 'C2',
-    label: 'C2 · Experte',
-    description: 'Ich verstehe fast alles und formuliere präzise.',
-  },
+const LEVELS: Level[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+const EXAM_KINDS: [ExamKind, string | null][] = [
+  ['TELC', 'TELC'],
+  ['GOETHE', 'Goethe'],
+  ['TESTDAF', 'TestDaF'],
+  ['DSH', 'DSH'],
+  ['OTHER', null],
 ];
+export const DAILY_WORD_VALUES = [5, 10, 15, 20];
 
-export const FOCUS_OPTIONS: Option<Focus>[] = [
-  {
-    value: 'VOCABULARY',
-    label: 'Wortschatz',
-    description: 'Mehr Wörter lernen und behalten',
-    icon: 'book-outline',
-  },
-  {
-    value: 'GRAMMAR',
-    label: 'Grammatik',
-    description: 'Sicherer im Satzbau werden',
-    icon: 'extension-puzzle-outline',
-  },
-  {
-    value: 'SPEAKING',
-    label: 'Sprechen',
-    description: 'Mich selbstbewusster ausdrücken',
-    icon: 'mic-outline',
-  },
-  {
-    value: 'LISTENING',
-    label: 'Hören',
-    description: 'Gesprochenes Deutsch besser verstehen',
-    icon: 'ear-outline',
-  },
-  {
-    value: 'READING',
-    label: 'Lesen',
-    description: 'Texte leichter verstehen',
-    icon: 'reader-outline',
-  },
-  {
-    value: 'WRITING',
-    label: 'Schreiben',
-    description: 'Klarer und korrekter schreiben',
-    icon: 'create-outline',
-  },
-  {
-    value: 'EXPRESSIONS',
-    label: 'Redewendungen',
-    description: 'Natürliche Ausdrücke lernen',
-    icon: 'chatbox-ellipses-outline',
-  },
-  {
-    value: 'EXAM',
-    label: 'Prüfungsfertigkeiten',
-    description: 'Prüfungsaufgaben üben',
-    icon: 'clipboard-outline',
-  },
-];
-
-export const EXAM_OPTIONS: Option<ExamKind>[] = [
-  { value: 'TELC', label: 'TELC' },
-  { value: 'GOETHE', label: 'Goethe' },
-  { value: 'TESTDAF', label: 'TestDaF' },
-  { value: 'DSH', label: 'DSH' },
-  { value: 'OTHER', label: 'Sonstige' },
-];
-
-export const DAILY_WORD_OPTIONS: Option<number>[] = [
-  { value: 5, label: '5 Wörter', description: 'Entspannt' },
-  { value: 10, label: '10 Wörter', description: 'Ausgewogen' },
-  { value: 15, label: '15 Wörter', description: 'Fokussiert' },
-  { value: 20, label: '20 Wörter', description: 'Intensiv' },
-];
+/** The wizard's answer lists, labelled in the current interface language. */
+export function buildOptions(o: Dictionary['entry']['onboarding']) {
+  return {
+    languages: (['EN', 'PR'] as PreferredLanguage[]).map((value): Option<PreferredLanguage> => ({
+      value,
+      ...o.languages[value as 'EN' | 'PR'],
+      emoji: value === 'EN' ? '🇬🇧' : '🇮🇷',
+    })),
+    reasons: (Object.keys(REASON_ICONS) as Reason[]).map((value): Option<Reason> => ({
+      value,
+      ...o.reasons[value],
+      icon: REASON_ICONS[value],
+    })),
+    levels: LEVELS.map((value): Option<Level> => ({ value, ...o.levels[value] })),
+    focus: (Object.keys(FOCUS_ICONS) as Focus[]).map((value): Option<Focus> => ({
+      value,
+      ...o.focus[value],
+      icon: FOCUS_ICONS[value],
+    })),
+    exams: EXAM_KINDS.map(([value, name]): Option<ExamKind> => ({
+      value,
+      label: name ?? o.exams.OTHER,
+    })),
+    dailyWords: DAILY_WORD_VALUES.map((value): Option<number> => ({
+      value,
+      label: o.words(value),
+      description: o.pace[value],
+    })),
+  };
+}

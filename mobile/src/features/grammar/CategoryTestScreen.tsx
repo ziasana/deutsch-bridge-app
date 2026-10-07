@@ -1,3 +1,4 @@
+import { ErrorNotice } from '@/components/ui';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
@@ -141,9 +142,7 @@ export function CategoryTestScreen() {
         />
         {submit.isError ? (
           <View style={{ gap: spacing.sm }}>
-            <AppText color={colors.destructive} accessibilityRole="alert">
-              {submit.error.message}
-            </AppText>
+            <ErrorNotice error={submit.error} />
             <Button
               label={c.saveAgain}
               variant="secondary"
@@ -161,11 +160,7 @@ export function CategoryTestScreen() {
           />
         ) : null}
         {resultStatus.completed ? <Badge tone="success" label={c.categoryCompleted} /> : null}
-        {complete.isError ? (
-          <AppText color={colors.destructive} accessibilityRole="alert">
-            {complete.error.message}
-          </AppText>
-        ) : null}
+        {complete.isError ? <ErrorNotice error={complete.error} /> : null}
       </View>
     );
   }

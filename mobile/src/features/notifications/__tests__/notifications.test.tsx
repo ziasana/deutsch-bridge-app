@@ -10,7 +10,8 @@ import { PreferencesScreen } from '../PreferencesScreen';
 import { dictionaries } from '@/i18n';
 import { dayBucket, isValidTime, relativeTime } from '../time';
 
-const relativeTimeDe = (iso: string, now: Date) => relativeTime(iso, dictionaries.en.notifications.time, now);
+const relativeTimeDe = (iso: string, now: Date) =>
+  relativeTime(iso, dictionaries.en.notifications.time, now);
 
 jest.mock('@/api/notificationApi');
 jest.mock('../push', () => ({ getPushState: async () => 'unsupported', enablePush: jest.fn() }));
@@ -24,7 +25,16 @@ const api = notificationApi as jest.Mocked<typeof notificationApi>;
 
 const wrap = (ui: React.ReactElement) =>
   render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } } })}>
+    <QueryClientProvider
+      client={
+        new QueryClient({
+          defaultOptions: {
+            queries: { retry: false, gcTime: Infinity },
+            mutations: { gcTime: Infinity },
+          },
+        })
+      }
+    >
       {ui}
     </QueryClientProvider>,
   );
@@ -45,7 +55,13 @@ const item = (id: string, over: Partial<NotificationItem> = {}): NotificationIte
   createdAt: ago(5),
   ...over,
 });
-const page = (items: NotificationItem[], hasNext = false, p = 0) => ({ items, page: p, size: 20, totalElements: items.length, hasNext });
+const page = (items: NotificationItem[], hasNext = false, p = 0) => ({
+  items,
+  page: p,
+  size: 20,
+  totalElements: items.length,
+  hasNext,
+});
 
 beforeEach(() => {
   // Not jest.resetAllMocks(): that also wipes React Native's own native-component mocks (e.g. Switch).
@@ -77,15 +93,33 @@ describe('time helpers', () => {
     expect(['24:00', '7:30', '18:60', 'abc', ''].some(isValidTime)).toBe(false);
   });
   it('builds rows with day headers', () => {
-    const rows = buildRows([item('a'), item('b', { createdAt: new Date(2020, 0, 1).toISOString() })], now);
-    expect(rows.map((r) => (r.kind === 'header' ? r.bucket : r.item.id))).toEqual(['today', 'a', 'earlier', 'b']);
+    const rows = buildRows(
+      [item('a'), item('b', { createdAt: new Date(2020, 0, 1).toISOString() })],
+      now,
+    );
+    expect(rows.map((r) => (r.kind === 'header' ? r.bucket : r.item.id))).toEqual([
+      'today',
+      'a',
+      'earlier',
+      'b',
+    ]);
   });
 });
 
 describe('NotificationsScreen', () => {
   it('lists notifications by day and opens one: click is tracked and its destination followed', async () => {
-    api.page.mockResolvedValue(page([item('n1'), item('n2', { read: true, actionUrl: '/dashboard/exam-prep/exercise?id=e7' })]));
-    api.click.mockImplementation(async (id) => item(id, { read: true, actionUrl: id === 'n1' ? '/dashboard/grammar' : '/dashboard/exam-prep/exercise?id=e7' }));
+    api.page.mockResolvedValue(
+      page([
+        item('n1'),
+        item('n2', { read: true, actionUrl: '/dashboard/exam-prep/exercise?id=e7' }),
+      ]),
+    );
+    api.click.mockImplementation(async (id) =>
+      item(id, {
+        read: true,
+        actionUrl: id === 'n1' ? '/dashboard/grammar' : '/dashboard/exam-prep/exercise?id=e7',
+      }),
+    );
     await wrap(<NotificationsScreen />);
     expect(await screen.findByText('Titel n1')).toBeTruthy();
     expect(screen.getByText('TODAY')).toBeTruthy();
@@ -98,12 +132,27 @@ describe('NotificationsScreen', () => {
     expect(await screen.findByText('1 unread')).toBeTruthy(); // optimistic
 
     await fireEvent.press(screen.getByRole('button', { name: /Titel n2/ }));
-    await waitFor(() => expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/exam-prep/exercise/[exerciseId]', params: { exerciseId: 'e7' } }));
+    await waitFor(() =>
+      expect(mockPush).toHaveBeenLastCalledWith({
+        pathname: '/exam-prep/exercise/[exerciseId]',
+        params: { exerciseId: 'e7' },
+      }),
+    );
   });
 
   it('does not navigate for unknown or unsafe destinations', async () => {
-    api.page.mockResolvedValue(page([item('n1', { actionUrl: null }), item('n2', { actionUrl: '//evil.example' }), item('n3', { actionUrl: '/somewhere/else' })]));
-    api.click.mockImplementation(async (id) => item(id, { actionUrl: id === 'n1' ? null : id === 'n2' ? '//evil.example' : '/somewhere/else' }));
+    api.page.mockResolvedValue(
+      page([
+        item('n1', { actionUrl: null }),
+        item('n2', { actionUrl: '//evil.example' }),
+        item('n3', { actionUrl: '/somewhere/else' }),
+      ]),
+    );
+    api.click.mockImplementation(async (id) =>
+      item(id, {
+        actionUrl: id === 'n1' ? null : id === 'n2' ? '//evil.example' : '/somewhere/else',
+      }),
+    );
     await wrap(<NotificationsScreen />);
     for (const id of ['n1', 'n2', 'n3']) {
       await fireEvent.press(await screen.findByRole('button', { name: new RegExp(`Titel ${id}`) }));
@@ -134,7 +183,9 @@ describe('NotificationsScreen', () => {
   });
 
   it('loads the next page when scrolled to the end', async () => {
-    api.page.mockResolvedValueOnce(page([item('n1')], true, 0)).mockResolvedValueOnce(page([item('n2')], false, 1));
+    api.page
+      .mockResolvedValueOnce(page([item('n1')], true, 0))
+      .mockResolvedValueOnce(page([item('n2')], false, 1));
     await wrap(<NotificationsScreen />);
     await screen.findByText('Titel n1');
     await fireEvent(screen.getByTestId('notification-list'), 'endReached');
@@ -174,15 +225,22 @@ describe('PreferencesScreen', () => {
   beforeEach(() => {
     useAuthStore.setState({ profile: { notificationsEnabled: true } as UserProfile });
     api.preferences.mockResolvedValue(prefs);
-    api.updatePreferences.mockImplementation(async (patch) => ({ message: 'ok', data: { ...prefs, ...patch } }));
+    api.updatePreferences.mockImplementation(async (patch) => ({
+      message: 'ok',
+      data: { ...prefs, ...patch },
+    }));
   });
 
   it('toggles are saved immediately; the master switch also disables its children and mirrors into the profile', async () => {
     await wrap(<PreferencesScreen />);
     const master = await screen.findByLabelText('Daily reminders');
     await fireEvent(master, 'valueChange', false);
-    await waitFor(() => expect(api.updatePreferences).toHaveBeenCalledWith({ learningRemindersEnabled: false }));
-    await waitFor(() => expect(screen.getByLabelText('Review reminders').props.disabled).toBe(true));
+    await waitFor(() =>
+      expect(api.updatePreferences).toHaveBeenCalledWith({ learningRemindersEnabled: false }),
+    );
+    await waitFor(() =>
+      expect(screen.getByLabelText('Review reminders').props.disabled).toBe(true),
+    );
     expect(useAuthStore.getState().profile?.notificationsEnabled).toBe(false);
   });
 
@@ -201,7 +259,9 @@ describe('PreferencesScreen', () => {
     expect(await screen.findByText(/format HH:mm/)).toBeTruthy();
     expect(api.updatePreferences).not.toHaveBeenCalled();
     await fireEvent.changeText(time, '19:30');
-    await waitFor(() => expect(api.updatePreferences).toHaveBeenCalledWith({ preferredReminderTime: '19:30' }));
+    await waitFor(() =>
+      expect(api.updatePreferences).toHaveBeenCalledWith({ preferredReminderTime: '19:30' }),
+    );
 
     expect(screen.queryByLabelText('Quiet hours from')).toBeNull();
     await fireEvent(screen.getByLabelText('Quiet hours'), 'valueChange', true);
@@ -211,7 +271,9 @@ describe('PreferencesScreen', () => {
   it('reports the device timezone once when the backend has none', async () => {
     api.preferences.mockResolvedValue({ ...prefs, timezone: null });
     await wrap(<PreferencesScreen />);
-    await waitFor(() => expect(api.updatePreferences).toHaveBeenCalledWith({ timezone: expect.any(String) }));
+    await waitFor(() =>
+      expect(api.updatePreferences).toHaveBeenCalledWith({ timezone: expect.any(String) }),
+    );
     expect(api.updatePreferences).toHaveBeenCalledTimes(1);
   });
 

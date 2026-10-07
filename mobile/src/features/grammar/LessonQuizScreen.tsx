@@ -1,3 +1,4 @@
+import { ErrorNotice } from '@/components/ui';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
@@ -186,11 +187,7 @@ export function LessonQuizScreen() {
           {g.saveFailed}
         </AppText>
       ) : null}
-      {reset.error ? (
-        <AppText color={colors.destructive} accessibilityRole="alert">
-          {reset.error.message}
-        </AppText>
-      ) : null}
+      {reset.error ? <ErrorNotice error={reset.error} /> : null}
       {body}
     </Screen>
   );

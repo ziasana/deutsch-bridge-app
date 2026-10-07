@@ -20,6 +20,13 @@ export const authApi = {
       auth: false,
     }).then((r) => r.data),
 
+  google: (idToken: string) =>
+    request<ApiResponse<MobileAuthData>>('/auth/mobile/google', {
+      method: 'POST',
+      body: { idToken },
+      auth: false,
+    }).then((r) => r.data),
+
   forgotPassword: (email: string) =>
     request<ApiResponse<null>>('/auth/forgot-password', {
       method: 'POST',

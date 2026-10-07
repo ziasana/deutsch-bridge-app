@@ -33,7 +33,10 @@ export const passage = (id: string, over: Partial<ExamPassagePublic> = {}): Exam
   ...over,
 });
 
-export const question = (id: string, over: Partial<ExamQuestionPublic> = {}): ExamQuestionPublic => ({
+export const question = (
+  id: string,
+  over: Partial<ExamQuestionPublic> = {},
+): ExamQuestionPublic => ({
   id,
   taskType: 'MULTIPLE_CHOICE',
   prompt: `Frage ${id}`,

@@ -1,3 +1,4 @@
+import { ErrorNotice } from '@/components/ui';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -176,11 +177,7 @@ export function VocabularyDetailScreen() {
             )}
           </Section>
 
-          {remove.error ? (
-            <AppText color={colors.destructive} accessibilityRole="alert">
-              {remove.error.message}
-            </AppText>
-          ) : null}
+          {remove.error ? <ErrorNotice error={remove.error} /> : null}
 
           <Button
             pill

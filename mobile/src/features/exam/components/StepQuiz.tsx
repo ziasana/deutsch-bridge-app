@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { AppText, Badge, Button } from '@/components/ui';
+import { AppText, Badge, Button, ErrorNotice } from '@/components/ui';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type {
   ExamAnswerFeedback,
@@ -72,8 +72,17 @@ export function StepQuiz({ exercise, attempt, onFinish }: Props) {
       ? attempt.passages[question.sectionIndex]
       : null;
   // Matching shows the text of the current question; every other task shares one text (or none).
-  const shownPassages = matched ? [matched] : exercise.taskType === 'MATCHING' ? [] : attempt.passages;
-  const options = optionsFor(question, exercise.taskType, attempt.answerOptions ?? [], attempt.answerOptionLabels);
+  const shownPassages = matched
+    ? [matched]
+    : exercise.taskType === 'MATCHING'
+      ? []
+      : attempt.passages;
+  const options = optionsFor(
+    question,
+    exercise.taskType,
+    attempt.answerOptions ?? [],
+    attempt.answerOptionLabels,
+  );
 
   const states: SegmentState[] = attempt.questions.map((_, i) => {
     const r = items[i];
@@ -118,26 +127,31 @@ export function StepQuiz({ exercise, attempt, onFinish }: Props) {
   const footer = (
     <>
       {feedback ? <FeedbackPanel key={question.id} feedback={feedback} /> : null}
-      {submit.error ? (
-        <AppText color={colors.destructive} accessibilityRole="alert">
-          {submit.error.message}
-        </AppText>
-      ) : null}
-      {complete.error ? (
-        <AppText color={colors.destructive} accessibilityRole="alert">
-          {complete.error.message}
-        </AppText>
-      ) : null}
+      {submit.error ? <ErrorNotice error={submit.error} /> : null}
+      {complete.error ? <ErrorNotice error={complete.error} /> : null}
       {feedback ? (
         <Button
           pill
-          label={complete.isError ? 'Ergebnis erneut senden' : isLast ? 'Ergebnis anzeigen' : 'Nächste Aufgabe'}
+          label={
+            complete.isError
+              ? 'Ergebnis erneut senden'
+              : isLast
+                ? 'Ergebnis anzeigen'
+                : 'Nächste Aufgabe'
+          }
           loading={complete.isPending}
           onPress={next}
           color={color}
         />
       ) : (
-        <Button pill label="Antwort prüfen" loading={submit.isPending} disabled={!selected} onPress={check} color={color} />
+        <Button
+          pill
+          label="Antwort prüfen"
+          loading={submit.isPending}
+          disabled={!selected}
+          onPress={check}
+          color={color}
+        />
       )}
     </>
   );
@@ -191,7 +205,8 @@ export function StepQuiz({ exercise, attempt, onFinish }: Props) {
           const picked = selected === option.value;
           const right = !!feedback && option.value === feedback.correctAnswer;
           const wrong = !!feedback && picked && !right;
-          const tfn = exercise.taskType === 'TRUE_FALSE_NOT_GIVEN' ? TFN_ICON[option.value] : undefined;
+          const tfn =
+            exercise.taskType === 'TRUE_FALSE_NOT_GIVEN' ? TFN_ICON[option.value] : undefined;
           return (
             <PressableScale
               key={`${i}-${option.value}`}
@@ -218,7 +233,11 @@ export function StepQuiz({ exercise, attempt, onFinish }: Props) {
                 {right || wrong ? (
                   <Ionicons name={right ? 'checkmark' : 'close'} size={20} color="#FFFFFF" />
                 ) : tfn ? (
-                  <Ionicons name={tfn} size={20} color={picked ? '#FFFFFF' : colors.mutedForeground} />
+                  <Ionicons
+                    name={tfn}
+                    size={20}
+                    color={picked ? '#FFFFFF' : colors.mutedForeground}
+                  />
                 ) : (
                   <AppText
                     variant="small"
@@ -229,7 +248,9 @@ export function StepQuiz({ exercise, attempt, onFinish }: Props) {
                   </AppText>
                 )}
               </View>
-              <AppText style={[styles.optionText, scaledText(BODY_SIZE, BODY_LINE, scale)]}>{option.label}</AppText>
+              <AppText style={[styles.optionText, scaledText(BODY_SIZE, BODY_LINE, scale)]}>
+                {option.label}
+              </AppText>
             </PressableScale>
           );
         })}
@@ -239,8 +260,18 @@ export function StepQuiz({ exercise, attempt, onFinish }: Props) {
 }
 
 const styles = StyleSheet.create({
-  headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
-  gap: { alignSelf: 'flex-start', paddingHorizontal: spacing.md, paddingVertical: 4, borderRadius: radius.pill },
+  headRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  gap: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+  },
   option: {
     minHeight: MIN_TOUCH + 12,
     flexDirection: 'row',

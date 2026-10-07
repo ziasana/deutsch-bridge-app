@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { AppText, Button, Card, Chip, WavePage } from '@/components/ui';
+import { AppText, Button, Card, Chip, WavePage, ErrorNotice } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { useAuthStore } from '@/stores/authStore';
 import { colors, spacing } from '@/theme';
@@ -103,11 +103,7 @@ export function SettingsScreen() {
         </Group>
       </Card>
 
-      {update.isError ? (
-        <AppText color={colors.destructive} accessibilityRole="alert">
-          {update.error.message}
-        </AppText>
-      ) : null}
+      {update.isError ? <ErrorNotice error={update.error} /> : null}
       {update.isSuccess && !dirty ? (
         <AppText color="#1B7A55" accessibilityRole="alert">
           {t.common.saved}

@@ -43,7 +43,13 @@ export function SessionsSheet({
 
   return (
     <BottomSheet visible={visible} onClose={onClose} title={w.conversations}>
-      <Button label={w.newChatButton} onPress={() => { onNewChat(); onClose(); }} />
+      <Button
+        label={w.newChatButton}
+        onPress={() => {
+          onNewChat();
+          onClose();
+        }}
+      />
       {loading ? <LoadingState label={w.loadingConversations} /> : null}
       {error ? <ErrorState error={error} onRetry={onRetry} /> : null}
       {!loading && !error && groups.length === 0 ? (

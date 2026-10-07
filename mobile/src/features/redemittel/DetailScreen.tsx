@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { AppText, ErrorState, Header, Screen, Skeleton } from '@/components/ui';
+import { AppText, ErrorState, Header, Screen, Skeleton, ErrorNotice } from '@/components/ui';
 import { IconButton } from '@/features/exam/components/kit';
 import { colors, spacing } from '@/theme';
 import { DetailCard } from './components/DetailCard';
@@ -57,11 +57,7 @@ export function RedemittelDetailScreen() {
             saving={toggle.isPending}
             onToggleSave={(x) => toggle.mutate(x)}
           />
-          {toggle.error ? (
-            <AppText color={colors.destructive} accessibilityRole="alert">
-              {toggle.error.message}
-            </AppText>
-          ) : null}
+          {toggle.error ? <ErrorNotice error={toggle.error} /> : null}
         </View>
       </ScrollView>
     </View>

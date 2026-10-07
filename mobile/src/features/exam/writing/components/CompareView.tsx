@@ -30,7 +30,10 @@ function Delta({ label, before, after }: { label: string; before: number; after:
 
 const open = (a: WritingAttempt) =>
   a.feedback
-    ? a.feedback.dimensions.reduce((n, d) => n + (d.status === 'NOT_ASSESSED' ? 0 : d.improvements.length), 0)
+    ? a.feedback.dimensions.reduce(
+        (n, d) => n + (d.status === 'NOT_ASSESSED' ? 0 : d.improvements.length),
+        0,
+      )
     : 0;
 
 /** Original vs. revision with the changed words highlighted in both. */
@@ -75,7 +78,9 @@ export function CompareView({ attempts }: { attempts: WritingAttempt[] }) {
             .map((p, i) => (
               <AppText
                 key={i}
-                style={p.kind === 'removed' ? { backgroundColor: colors.destructiveSoft } : undefined}
+                style={
+                  p.kind === 'removed' ? { backgroundColor: colors.destructiveSoft } : undefined
+                }
               >
                 {p.text}
               </AppText>
@@ -102,9 +107,21 @@ export function CompareView({ attempts }: { attempts: WritingAttempt[] }) {
 
       {from.feedback && to.feedback ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md }}>
-          <Delta label="Wörter" before={from.feedback.stats.wordCount} after={to.feedback.stats.wordCount} />
-          <Delta label="Verbindungswörter" before={from.feedback.stats.connectorCount} after={to.feedback.stats.connectorCount} />
-          <Delta label="Redemittel" before={from.feedback.stats.usedPhrases.length} after={to.feedback.stats.usedPhrases.length} />
+          <Delta
+            label="Wörter"
+            before={from.feedback.stats.wordCount}
+            after={to.feedback.stats.wordCount}
+          />
+          <Delta
+            label="Verbindungswörter"
+            before={from.feedback.stats.connectorCount}
+            after={to.feedback.stats.connectorCount}
+          />
+          <Delta
+            label="Redemittel"
+            before={from.feedback.stats.usedPhrases.length}
+            after={to.feedback.stats.usedPhrases.length}
+          />
           <Delta label="Offene Hinweise" before={open(from)} after={open(to)} />
         </View>
       ) : null}

@@ -705,7 +705,10 @@ export function ExamHubScreen() {
           accessibilityRole="button"
           accessibilityLabel={`⏱ ${h.timeTitle}`}
           onPress={() => router.push({ pathname: '/exam-prep/zeitmanagement', params: { level } })}
-          style={({ pressed }) => [styles.timeTile, pressed && { backgroundColor: tint(color, '14') }]}
+          style={({ pressed }) => [
+            styles.timeTile,
+            pressed && { backgroundColor: tint(color, '14') },
+          ]}
         >
           <View style={[styles.timeIcon, { backgroundColor: tint(color, '1F') }]}>
             <Ionicons name="timer-outline" size={26} color={darken(color)} />

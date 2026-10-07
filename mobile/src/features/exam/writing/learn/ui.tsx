@@ -7,13 +7,20 @@ import { SECTION_META } from '../../examMeta';
 /** The Schreiben accent colour, shared with the exam section. */
 export const WRITING_COLOR = SECTION_META.SCHRIFTLICHER_AUSDRUCK.color;
 
-export const CORRECT_MESSAGES = ['Richtig! 🎉', 'Genau! 👏', 'Super gemacht! ⭐', 'Stark! 💪', 'Perfekt! ✅'];
+export const CORRECT_MESSAGES = [
+  'Richtig! 🎉',
+  'Genau! 👏',
+  'Super gemacht! ⭐',
+  'Stark! 💪',
+  'Perfekt! ✅',
+];
 export const WRONG_MESSAGES = [
   'Fast! Schau dir die Erklärung an.',
   'Nicht ganz – so merkst du es dir.',
   'Kein Problem – das lernst du jetzt.',
 ];
-export const pickMessage = (messages: readonly string[], salt: number) => messages[salt % messages.length];
+export const pickMessage = (messages: readonly string[], salt: number) =>
+  messages[salt % messages.length];
 
 /** A short buzz on Android; iOS only has one long vibration, which would feel wrong for a tap. */
 export function buzz(ms = 12) {
@@ -28,7 +35,13 @@ export function Pop({ children, style }: { children: ReactNode; style?: ViewStyl
   }, [v]);
   return (
     <Animated.View
-      style={[style, { opacity: v, transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }] }]}
+      style={[
+        style,
+        {
+          opacity: v,
+          transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }],
+        },
+      ]}
     >
       {children}
     </Animated.View>
@@ -36,7 +49,15 @@ export function Pop({ children, style }: { children: ReactNode; style?: ViewStyl
 }
 
 /** Shakes sideways each time `trigger` changes (a wrong answer). */
-export function Shake({ trigger, children, style }: { trigger: number; children: ReactNode; style?: ViewStyle }) {
+export function Shake({
+  trigger,
+  children,
+  style,
+}: {
+  trigger: number;
+  children: ReactNode;
+  style?: ViewStyle;
+}) {
   const [x] = useState(() => new Animated.Value(0));
   useEffect(() => {
     if (trigger === 0) return;
@@ -47,7 +68,9 @@ export function Shake({ trigger, children, style }: { trigger: number; children:
       Animated.timing(x, { toValue: 0, duration: 60, useNativeDriver: true }),
     ]).start();
   }, [trigger, x]);
-  return <Animated.View style={[style, { transform: [{ translateX: x }] }]}>{children}</Animated.View>;
+  return (
+    <Animated.View style={[style, { transform: [{ translateX: x }] }]}>{children}</Animated.View>
+  );
 }
 
 /** One small, focused learning chunk: eyebrow, title and a little body. */
@@ -131,7 +154,12 @@ const styles = StyleSheet.create({
   slideTitle: { fontSize: 24, lineHeight: 30, fontWeight: '800', color: colors.ink },
   lead: { fontSize: 17, lineHeight: 26, color: colors.foreground },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: colors.accent },
+  chip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accent,
+  },
   tinted: { padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.accent },
   feedback: { gap: spacing.xs, padding: spacing.md, borderRadius: radius.md },
   good: { backgroundColor: colors.successSoft },

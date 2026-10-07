@@ -46,7 +46,10 @@ export function ChoiceField({
         ]}
       >
         <AppText
-          style={[{ flex: 1, fontWeight: selected ? '600' : '400' }, scaledText(BODY_SIZE, BODY_LINE, scale)]}
+          style={[
+            { flex: 1, fontWeight: selected ? '600' : '400' },
+            scaledText(BODY_SIZE, BODY_LINE, scale),
+          ]}
           color={selected ? colors.foreground : colors.mutedForeground}
         >
           {selected?.label ?? placeholder}
@@ -70,7 +73,11 @@ export function ChoiceField({
                 onChange(c.value);
                 setOpen(false);
               }}
-              style={[styles.choice, c.value === value && styles.picked, c.disabled && { opacity: 0.4 }]}
+              style={[
+                styles.choice,
+                c.value === value && styles.picked,
+                c.disabled && { opacity: 0.4 },
+              ]}
             >
               <AppText>{c.label}</AppText>
             </Pressable>

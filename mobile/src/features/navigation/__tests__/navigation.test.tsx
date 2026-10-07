@@ -10,7 +10,7 @@ import { baseDashboard } from '@/features/dashboard/testing/fixtures';
 import { tokenStorage } from '@/api/tokenStorage';
 import { markIntroPlayed } from '@/features/welcome/SplashIntro';
 import { useAuthStore } from '@/stores/authStore';
-import { slides } from '@/features/welcome/slides';
+import { dictionaries } from '@/i18n';
 import type { UserProfile } from '@/types/user';
 
 jest.mock('@/api/authApi');
@@ -84,16 +84,18 @@ describe('app navigation', () => {
   it('sends signed-out users to the welcome page once the intro has played', async () => {
     markIntroPlayed();
     await renderRouter('./src/app', { initialUrl: '/' });
-    expect(await screen.findByText(slides[0].title)).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Anmelden' }));
-    expect(await screen.findByText('Mit Google anmelden')).toBeTruthy();
+    expect(await screen.findByText(dictionaries.en.entry.welcome.slides[0].title)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Log in' }));
+    expect(await screen.findByText('Continue with Google')).toBeTruthy();
   });
 
   it('sends signed-in users without a learning plan to onboarding', async () => {
     await tokenStorage.setTokens('a', 'r');
     (authApi.getProfile as jest.Mock).mockResolvedValue({ ...profile, onboardingCompleted: false });
     await renderRouter('./src/app', { initialUrl: '/' });
-    expect(await screen.findByText('Wie sollen wir Deutsch erklären?')).toBeTruthy();
+    expect(
+      await screen.findByText(dictionaries.fa.entry.onboarding.steps.language.title),
+    ).toBeTruthy();
   });
 
   it('walks every tab, pushes a feature screen, goes back, and logs out', async () => {
@@ -126,7 +128,7 @@ describe('app navigation', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'خروج' }));
     expect(await screen.findByText('خروج از حساب؟')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'تأیید خروج' }));
-    expect(await screen.findByText(slides[0].title)).toBeTruthy();
+    expect(await screen.findByText(dictionaries.en.entry.welcome.slides[0].title)).toBeTruthy();
     expect(await tokenStorage.getRefresh()).toBeNull();
     await act(async () => {});
   });

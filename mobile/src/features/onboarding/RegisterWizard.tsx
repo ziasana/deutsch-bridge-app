@@ -1,6 +1,5 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Link, router } from 'expo-router';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   Animated,
   KeyboardAvoidingView,
@@ -12,10 +11,12 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppText, Button, TextField } from '@/components/ui';
+import { AppText, Button, DirectionalIcon, TextField } from '@/components/ui';
+import { GoogleButton } from '@/features/auth/GoogleButton';
 import { useRegister } from '@/features/auth/hooks';
-import { passwordStrength, strengthHint } from '@/features/auth/passwordStrength';
-import { emailSchema, nameSchema, passwordSchema } from '@/features/auth/schemas';
+import { passwordStrength } from '@/features/auth/passwordStrength';
+import { createAuthSchemas } from '@/features/auth/schemas';
+import { useI18n } from '@/i18n';
 import { IntroHero } from '@/features/onboarding/IntroHero';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 
@@ -41,45 +42,48 @@ function FadeIn({ children, id }: { children: ReactNode; id: string }) {
 }
 
 function BackSquare({ onPress }: { onPress: () => void }) {
+  const { t } = useI18n();
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Zurück"
+      accessibilityLabel={t.entry.common.back}
       onPress={onPress}
       hitSlop={8}
       style={styles.back}
     >
-      <Ionicons name="chevron-back" size={24} color={colors.ink} />
+      <DirectionalIcon name="chevron-back" size={24} color={colors.ink} />
     </Pressable>
   );
 }
 
 function Intro({ onNext }: { onNext: () => void }) {
+  const { t } = useI18n();
+  const r = t.entry.register;
   return (
     <View style={styles.flex}>
       <IntroHero />
       <SafeAreaView edges={['bottom']} style={styles.introBody}>
         <FadeIn id="intro">
           <Text style={styles.introTitle} accessibilityRole="header">
-            Erstelle dein Profil <Text style={styles.introBold}>jetzt!</Text>
+            {r.introTitle} <Text style={styles.introBold}>{r.introBold}</Text>
           </Text>
           <AppText style={styles.introSub} color={colors.mutedForeground}>
-            Mit einem Profil speicherst du deinen Lernfortschritt und lernst kostenlos weiter.
+            {r.introSub}
           </AppText>
         </FadeIn>
         <View style={styles.introActions}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Zurück"
+            accessibilityLabel={t.entry.common.back}
             onPress={() => router.back()}
             style={styles.textBtn}
           >
             <AppText variant="subheading" color={colors.primaryDark}>
-              Zurück
+              {t.entry.common.back}
             </AppText>
           </Pressable>
           <View style={styles.nextWrap}>
-            <Button pill label="Weiter" onPress={onNext} />
+            <Button pill label={t.entry.common.next} onPress={onNext} />
           </View>
         </View>
       </SafeAreaView>
@@ -90,6 +94,13 @@ function Intro({ onNext }: { onNext: () => void }) {
 /** Step-by-step sign-up: intro → name → e-mail → password (with a strength hint). */
 export function RegisterWizard() {
   const register = useRegister();
+  const { t } = useI18n();
+  const a = t.entry.auth;
+  const r = t.entry.register;
+  const { emailSchema, nameSchema, passwordSchema } = useMemo(
+    () => createAuthSchemas(a.errors),
+    [a.errors],
+  );
   const [step, setStep] = useState<Step>('intro');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -132,17 +143,17 @@ export function RegisterWizard() {
   const strength = passwordStrength(password);
   const config = {
     name: {
-      title: 'Wie heißt du?',
-      label: 'Name',
+      title: r.name.title,
+      label: r.name.label,
       value: name,
       set: setName,
       props: { autoComplete: 'name', textContentType: 'name', autoCapitalize: 'words' } as const,
-      action: 'Weiter',
+      action: t.entry.common.next,
       run: advance,
     },
     email: {
-      title: 'Wie lautet deine E-Mail?',
-      label: 'E-Mail',
+      title: r.email.title,
+      label: r.email.label,
       value: email,
       set: setEmail,
       props: {
@@ -151,12 +162,12 @@ export function RegisterWizard() {
         keyboardType: 'email-address',
         autoCapitalize: 'none',
       } as const,
-      action: 'Weiter',
+      action: t.entry.common.next,
       run: advance,
     },
     password: {
-      title: 'Wähle dein Passwort',
-      label: 'Passwort',
+      title: r.password.title,
+      label: r.password.label,
       value: password,
       set: setPassword,
       props: {
@@ -165,7 +176,7 @@ export function RegisterWizard() {
         textContentType: 'newPassword',
         autoCapitalize: 'none',
       } as const,
-      action: 'Starten',
+      action: t.entry.register.start,
       run: submit,
     },
   }[step];
@@ -205,7 +216,11 @@ export function RegisterWizard() {
                 onSubmitEditing={config.run}
                 error={error ?? serverError}
                 tint={isPassword && password ? strength.color : undefined}
-                hint={isPassword ? strengthHint(password) : undefined}
+                hint={
+                  isPassword && password
+                    ? a.strength.hint(a.strength.levels[strength.score])
+                    : undefined
+                }
                 {...config.props}
               />
               <Button
@@ -214,11 +229,12 @@ export function RegisterWizard() {
                 loading={isPassword && register.isPending}
                 onPress={config.run}
               />
+              {step === 'name' ? <GoogleButton signUp /> : null}
               {step === 'name' ? (
                 <AppText variant="small" color={colors.mutedForeground} center>
-                  Schon ein Konto?{' '}
+                  {r.haveAccount}{' '}
                   <Link href="/login" accessibilityRole="link" style={styles.link}>
-                    Anmelden
+                    {r.logIn}
                   </Link>
                 </AppText>
               ) : null}

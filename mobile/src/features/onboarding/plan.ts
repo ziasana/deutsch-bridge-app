@@ -48,7 +48,7 @@ export type PlanState = {
   examType: ExamKind | null;
   examLevel: Level | null;
   hasExamDate: boolean;
-  /** Raw "TT.MM.JJJJ" text as typed. */
+  /** Raw "DD.MM.YYYY" text as typed. */
   examDateText: string;
 };
 
@@ -109,11 +109,13 @@ export function parseGermanDate(text: string): string | null {
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
-export function examDateProblem(plan: PlanState, today = new Date()): string | null {
+export type ExamDateProblem = 'format' | 'past';
+
+export function examDateProblem(plan: PlanState, today = new Date()): ExamDateProblem | null {
   if (!plan.hasExamDate) return null;
   const iso = parseGermanDate(plan.examDateText);
-  if (!iso) return 'Bitte gib das Datum als TT.MM.JJJJ ein.';
-  if (iso < today.toISOString().slice(0, 10)) return 'Der Termin muss in der Zukunft liegen.';
+  if (!iso) return 'format';
+  if (iso < today.toISOString().slice(0, 10)) return 'past';
   return null;
 }
 

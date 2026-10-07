@@ -53,7 +53,12 @@ export function useTutorChat() {
         setMessages(
           data
             .filter((m) => m.role === 'user' || m.role === 'assistant')
-            .map((m) => ({ id: m.id, role: m.role as 'user' | 'assistant', content: m.content, timestamp: m.timestamp })),
+            .map((m) => ({
+              id: m.id,
+              role: m.role as 'user' | 'assistant',
+              content: m.content,
+              timestamp: m.timestamp,
+            })),
         );
       } catch (e) {
         if (epoch.current === mine) setError({ error: toApiError(e), question: '' });
@@ -69,18 +74,27 @@ export function useTutorChat() {
       const text = question.trim();
       if (!text || thinking) return;
       const mine = epoch.current;
-      if (!resend) setMessages((prev) => [...prev, { id: nextId('u'), role: 'user', content: text }]);
+      if (!resend)
+        setMessages((prev) => [...prev, { id: nextId('u'), role: 'user', content: text }]);
       setError(null);
       setThinking(true);
       try {
         const reply = await chatApi.send(text, sessionId);
         if (epoch.current !== mine) return;
-        setMessages((prev) => [...prev, { id: nextId('a'), role: 'assistant', content: reply.content }]);
+        setMessages((prev) => [
+          ...prev,
+          { id: nextId('a'), role: 'assistant', content: reply.content },
+        ]);
         if (reply.sessionId && reply.sessionId !== sessionId) {
           setSessionId(reply.sessionId);
           if (reply.sessionTitle) {
             queryClient.setQueryData<ChatSession[]>(SESSIONS_KEY, (old = []) => [
-              { id: reply.sessionId, userId: '', title: reply.sessionTitle as string, createdAt: new Date().toISOString() },
+              {
+                id: reply.sessionId,
+                userId: '',
+                title: reply.sessionTitle as string,
+                createdAt: new Date().toISOString(),
+              },
               ...old,
             ]);
           } else {
@@ -108,22 +122,40 @@ export function useTutorChat() {
   const remove = useMutation({
     mutationFn: (id: string) => chatApi.remove(id).then(() => id),
     onSuccess: (id) => {
-      queryClient.setQueryData<ChatSession[]>(SESSIONS_KEY, (old = []) => old.filter((s) => s.id !== id));
+      queryClient.setQueryData<ChatSession[]>(SESSIONS_KEY, (old = []) =>
+        old.filter((s) => s.id !== id),
+      );
       if (id === sessionId) newChat();
     },
   });
 
-  return { sessionId, messages, thinking, loadingSession, error, send, select, newChat, rename, remove };
+  return {
+    sessionId,
+    messages,
+    thinking,
+    loadingSession,
+    error,
+    send,
+    select,
+    newChat,
+    rename,
+    remove,
+  };
 }
 
 export type SaveOutcome =
-  | { kind: 'saved'; word: string; meaning: string }
-  | { kind: 'exists'; word: string };
+  { kind: 'saved'; word: string; meaning: string } | { kind: 'exists'; word: string };
 
 /** Classify → skip duplicates → save a word or phrase from a tutor answer to vocabulary. */
 export function useSaveFromChat(sessionId: string | null, messageId: string) {
   return useMutation({
-    mutationFn: async ({ text, context }: { text: string; context: string }): Promise<SaveOutcome> => {
+    mutationFn: async ({
+      text,
+      context,
+    }: {
+      text: string;
+      context: string;
+    }): Promise<SaveOutcome> => {
       const classified = await chatVocabularyApi.classify(text.trim(), context);
       const existing = await chatVocabularyApi.exists(classified.normalizedText);
       if (existing.exists) return { kind: 'exists', word: classified.normalizedText };
