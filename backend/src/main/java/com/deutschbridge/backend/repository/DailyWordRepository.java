@@ -21,4 +21,7 @@ public interface DailyWordRepository extends JpaRepository<DailyWord, String> {
     List<DailyWord> findByLevelAndAssignedToIsNull(LearningLevel level);
 
     long countByAssignedToIsNull();
+
+    /** Words generated for one user's own daily sets. */
+    long countByAssignedTo(User user);
 }
