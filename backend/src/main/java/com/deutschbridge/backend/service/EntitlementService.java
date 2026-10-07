@@ -3,6 +3,7 @@ package com.deutschbridge.backend.service;
 import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.exception.FeatureLimitExceededException;
 import com.deutschbridge.backend.model.dto.AiUsageResponse;
+import com.deutschbridge.backend.model.dto.DownloadAccessResponse;
 import com.deutschbridge.backend.model.entity.FeatureLimit;
 import com.deutschbridge.backend.model.entity.FeatureUsage;
 import com.deutschbridge.backend.model.entity.User;
@@ -98,6 +99,18 @@ public class EntitlementService {
                     limit.getDailyLimit(), used, Math.max(0, limit.getDailyLimit() - used), limit.isEnabled()));
         }
         return new AiUsageResponse(true, features);
+    }
+
+    /**
+     * Whether {@code userId} may download content for offline use. Open to everyone unless the admin
+     * restricts downloads to Premium; like the AI limits, that restriction only applies while the
+     * global Premium switch is on.
+     */
+    public DownloadAccessResponse downloadAccessFor(String userId) {
+        boolean premiumOnly = appSettingService.isDownloadsPremiumOnly();
+        boolean restricted = premiumOnly && appSettingService.isPremiumEnabled();
+        boolean allowed = !restricted || resolveEffectiveAccountType(userId) == AccountType.PREMIUM;
+        return new DownloadAccessResponse(allowed, premiumOnly);
     }
 
     /** The account type whose limit applies to this user, once Premium is enabled. */

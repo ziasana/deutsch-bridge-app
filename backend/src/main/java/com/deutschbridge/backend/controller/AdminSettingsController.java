@@ -3,6 +3,8 @@ package com.deutschbridge.backend.controller;
 import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.model.dto.AdminAuditLogResponse;
 import com.deutschbridge.backend.model.dto.ApiResponse;
+import com.deutschbridge.backend.model.dto.DownloadSettingRequest;
+import com.deutschbridge.backend.model.dto.DownloadSettingResponse;
 import com.deutschbridge.backend.model.dto.FeatureLimitResponse;
 import com.deutschbridge.backend.model.dto.FeatureLimitUpdateRequest;
 import com.deutschbridge.backend.model.dto.PremiumSettingRequest;
@@ -59,6 +61,26 @@ public class AdminSettingsController {
         );
 
         return ResponseEntity.ok(new ApiResponse<>("Premium setting updated", new PremiumSettingResponse(request.enabled())));
+    }
+
+    @GetMapping("/downloads")
+    public DownloadSettingResponse getDownloadSetting() {
+        return new DownloadSettingResponse(appSettingService.isDownloadsPremiumOnly());
+    }
+
+    @PutMapping("/downloads")
+    public ResponseEntity<ApiResponse<DownloadSettingResponse>> updateDownloadSetting(@RequestBody @Valid DownloadSettingRequest request) {
+        boolean previous = appSettingService.isDownloadsPremiumOnly();
+        appSettingService.setDownloadsPremiumOnly(request.premiumOnly());
+
+        adminAuditLogService.record(
+                requestContext.getUserId(),
+                requestContext.getUserEmail(),
+                "DOWNLOADS_PREMIUM_ONLY_TOGGLED",
+                "Downloads premium-only: " + previous + " -> " + request.premiumOnly()
+        );
+
+        return ResponseEntity.ok(new ApiResponse<>("Download setting updated", new DownloadSettingResponse(request.premiumOnly())));
     }
 
     @GetMapping("/feature-limits")

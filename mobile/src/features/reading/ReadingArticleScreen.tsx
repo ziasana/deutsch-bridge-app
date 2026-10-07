@@ -23,6 +23,7 @@ import {
   Screen,
   Skeleton,
 } from '@/components/ui';
+import { DownloadButton } from '@/features/downloads/DownloadButton';
 import { useI18n } from '@/i18n';
 import { ltrText } from '@/i18n/direction';
 import { IconButton, StatTile, TextSizeControl, tint } from '@/features/exam/components/kit';
@@ -341,13 +342,16 @@ export function ReadingArticleScreen() {
           chip={`📖 ${article.level}${article.categoryTitle ? ` · ${article.categoryTitle}`.toUpperCase() : ''}`}
           title={article.title}
           trailing={
-            <IconButton
-              name={article.bookmarked ? 'star' : 'star-outline'}
-              label={article.bookmarked ? r.saved : r.save}
-              color={article.bookmarked ? colors.warning : colors.ink}
-              busy={bookmarkMutation.isPending}
-              onPress={() => bookmarkMutation.mutate(article.bookmarked)}
-            />
+            <View style={{ flexDirection: 'row' }}>
+              <DownloadButton kind="reading" id={article.id} />
+              <IconButton
+                name={article.bookmarked ? 'star' : 'star-outline'}
+                label={article.bookmarked ? r.saved : r.save}
+                color={article.bookmarked ? colors.warning : colors.ink}
+                busy={bookmarkMutation.isPending}
+                onPress={() => bookmarkMutation.mutate(article.bookmarked)}
+              />
+            </View>
           }
           right={
             total > 0 ? (

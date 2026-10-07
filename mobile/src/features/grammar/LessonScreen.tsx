@@ -45,6 +45,7 @@ import {
   localizedHeading,
   localizedLesson,
 } from './quiz';
+import { DownloadButton } from '@/features/downloads/DownloadButton';
 import { GRAMMAR_COLOR, GRAMMAR_DARK } from './meta';
 
 function LessonSkeleton() {
@@ -210,13 +211,16 @@ export function LessonScreen() {
             <SafeAreaView edges={['top']}>
               <View style={styles.topRow}>
                 <IconButton name="arrow-back" label={t.common.back} onPress={() => router.back()} />
-                <IconButton
-                  name={lesson.bookmarked ? 'star' : 'star-outline'}
-                  label={lesson.bookmarked ? g.unbookmark : g.bookmark}
-                  color={lesson.bookmarked ? colors.warning : colors.ink}
-                  busy={bookmarkMutation.isPending}
-                  onPress={() => bookmarkMutation.mutate(lesson.bookmarked)}
-                />
+                <View style={styles.topActions}>
+                  <DownloadButton kind="grammar" id={lesson.id} />
+                  <IconButton
+                    name={lesson.bookmarked ? 'star' : 'star-outline'}
+                    label={lesson.bookmarked ? g.unbookmark : g.bookmark}
+                    color={lesson.bookmarked ? colors.warning : colors.ink}
+                    busy={bookmarkMutation.isPending}
+                    onPress={() => bookmarkMutation.mutate(lesson.bookmarked)}
+                  />
+                </View>
               </View>
               <View style={styles.heroMain}>
                 <View style={{ flex: 1, gap: spacing.xs }}>
@@ -453,6 +457,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginHorizontal: -spacing.sm,
   },
+  topActions: { flexDirection: 'row', alignItems: 'center' },
   heroMain: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, paddingTop: spacing.sm },
   meta: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
   chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill },

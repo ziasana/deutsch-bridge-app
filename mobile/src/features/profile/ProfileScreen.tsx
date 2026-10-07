@@ -114,6 +114,13 @@ export function ProfileScreen() {
       href: '/progress',
     },
     {
+      key: 'downloads',
+      title: t.downloads.profileRow,
+      icon: 'download-outline',
+      color: '#7B61FF',
+      href: '/settings/downloads',
+    },
+    {
       key: 'notifications',
       title: t.profile.notifications,
       icon: 'notifications-outline',

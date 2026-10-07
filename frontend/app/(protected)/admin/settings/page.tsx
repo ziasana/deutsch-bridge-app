@@ -6,8 +6,10 @@ import { toast } from "@/lib/toast";
 import useAuthStore from "@/store/useAuthStore";
 import {
     getAuditLog,
+    getDownloadSetting,
     getFeatureLimits,
     getPremiumSetting,
+    updateDownloadSetting,
     updateFeatureLimits,
     updatePremiumSetting,
 } from "@/services/adminService";
@@ -37,13 +39,15 @@ export default function AdminSettingsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [premiumEnabled, setPremiumEnabled] = useState(false);
+    const [downloadsPremiumOnly, setDownloadsPremiumOnly] = useState(true);
     const [limits, setLimits] = useState<FeatureLimit[]>([]);
     const [auditLog, setAuditLog] = useState<AdminAuditLogEntry[]>([]);
 
     const fetchAll = useCallback(() => {
-        Promise.all([getPremiumSetting(), getFeatureLimits(), getAuditLog()])
-            .then(([premiumRes, limitsRes, auditRes]) => {
+        Promise.all([getPremiumSetting(), getDownloadSetting(), getFeatureLimits(), getAuditLog()])
+            .then(([premiumRes, downloadsRes, limitsRes, auditRes]) => {
                 setPremiumEnabled(premiumRes.data.enabled);
+                setDownloadsPremiumOnly(downloadsRes.data.premiumOnly);
                 setLimits(limitsRes.data);
                 setAuditLog(auditRes.data);
             })
@@ -71,6 +75,18 @@ export default function AdminSettingsPage() {
                 fetchAll();
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to update premium setting."))
+            .finally(() => setIsSaving(false));
+    };
+
+    const toggleDownloadsPremiumOnly = (premiumOnly: boolean) => {
+        setIsSaving(true);
+        updateDownloadSetting(premiumOnly)
+            .then(() => {
+                setDownloadsPremiumOnly(premiumOnly);
+                toast.success(`Offline downloads ${premiumOnly ? "limited to Premium users" : "available to all users"}.`);
+                fetchAll();
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to update download setting."))
             .finally(() => setIsSaving(false));
     };
 
@@ -141,6 +157,26 @@ export default function AdminSettingsPage() {
                                         </p>
                                     </div>
                                     <Toggle checked={premiumEnabled} onChange={togglePremium} disabled={isSaving} />
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardContent className="p-6">
+                                <div className="flex items-center justify-between gap-4">
+                                    <div>
+                                        <h2 className="text-lg font-semibold text-foreground">Offline Downloads (Premium only)</h2>
+                                        <p className="text-sm text-foreground/60 mt-1">
+                                            Lets learners save grammar lessons and reading articles in the mobile app.
+                                            When on, only Premium users can download; when off, everyone can. Like the
+                                            limits below, the restriction only applies while the Premium System is on.
+                                        </p>
+                                    </div>
+                                    <Toggle
+                                        checked={downloadsPremiumOnly}
+                                        onChange={toggleDownloadsPremiumOnly}
+                                        disabled={isSaving}
+                                    />
                                 </div>
                             </CardContent>
                         </Card>

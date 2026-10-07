@@ -8,6 +8,7 @@ import {
 import { lexiconApi, readingApi, readingQuizApi, type ReadingListParams } from '@/api/readingApi';
 import { vocabularyApi } from '@/api/vocabularyApi';
 import { DASHBOARD_KEY } from '@/features/dashboard/hooks';
+import { deliverOrQueue, loadItem } from '@/features/downloads/offline';
 import type { DictionaryEntry, ReadingArticle } from '@/types/reading';
 
 export const READING_PAGE_SIZE = 10;
@@ -47,7 +48,7 @@ export const useReadingList = (params: ReadingListParams | null) =>
 export const useReadingArticle = (id: string) =>
   useQuery({
     queryKey: readingKeys.article(id),
-    queryFn: () => readingApi.article(id),
+    queryFn: () => loadItem('reading', id, () => readingApi.article(id)),
     enabled: !!id,
     staleTime: 5 * 60_000,
   });
@@ -73,7 +74,10 @@ function refreshOverviews(queryClient: ReturnType<typeof useQueryClient>) {
 export function useSetArticleLearned(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (learned: boolean) => readingApi.setLearned(id, learned),
+    mutationFn: (learned: boolean) =>
+      deliverOrQueue({ field: 'learned', kind: 'reading', id, value: learned }, () =>
+        readingApi.setLearned(id, learned),
+      ),
     onSuccess: (_d, learned) => {
       queryClient.setQueryData<ReadingArticle>(readingKeys.article(id), (a) =>
         a ? { ...a, learningProgresses: [{ id: 'local', learned }] } : a,
@@ -87,9 +91,15 @@ export function useToggleArticleBookmark(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (bookmarked: boolean) =>
-      bookmarked ? readingApi.removeBookmark(id) : readingApi.addBookmark(id),
-    onSuccess: (article) => {
-      queryClient.setQueryData<ReadingArticle>(readingKeys.article(id), article);
+      deliverOrQueue({ field: 'bookmarked', kind: 'reading', id, value: !bookmarked }, () =>
+        bookmarked ? readingApi.removeBookmark(id) : readingApi.addBookmark(id),
+      ),
+    onSuccess: (article, wasBookmarked) => {
+      // Queued offline (no server answer): flip the flag locally instead.
+      queryClient.setQueryData<ReadingArticle>(
+        readingKeys.article(id),
+        (a) => article ?? (a ? { ...a, bookmarked: !wasBookmarked } : a),
+      );
       void queryClient.invalidateQueries({ queryKey: readingKeys.listRoot });
     },
   });

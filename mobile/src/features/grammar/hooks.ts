@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { exerciseProgressApi, grammarApi } from '@/api/grammarApi';
 import { DASHBOARD_KEY } from '@/features/dashboard/hooks';
+import { deliverOrQueue, loadItem } from '@/features/downloads/offline';
 import type {
   CategoryTestStatus,
   ExerciseAnswer,
@@ -32,7 +33,7 @@ export const useLevelView = (level: string | null) =>
 export const useLesson = (id: string) =>
   useQuery({
     queryKey: grammarKeys.lesson(id),
-    queryFn: () => grammarApi.lesson(id),
+    queryFn: () => loadItem('grammar', id, () => grammarApi.lesson(id)),
     enabled: !!id,
     staleTime: 5 * 60_000,
   });
@@ -63,7 +64,10 @@ function refreshOverviews(queryClient: QueryClient) {
 export function useSetLessonLearned(lessonId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (learned: boolean) => grammarApi.setLearned(lessonId, learned),
+    mutationFn: (learned: boolean) =>
+      deliverOrQueue({ field: 'learned', kind: 'grammar', id: lessonId, value: learned }, () =>
+        grammarApi.setLearned(lessonId, learned),
+      ),
     onSuccess: (_d, learned) => {
       queryClient.setQueryData<GrammarLesson>(grammarKeys.lesson(lessonId), (lesson) =>
         lesson ? { ...lesson, learningProgresses: [{ id: lessonId, learned }] } : lesson,
@@ -77,7 +81,10 @@ export function useToggleBookmark(lessonId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (bookmarked: boolean) =>
-      bookmarked ? grammarApi.removeBookmark(lessonId) : grammarApi.addBookmark(lessonId),
+      deliverOrQueue(
+        { field: 'bookmarked', kind: 'grammar', id: lessonId, value: !bookmarked },
+        () => (bookmarked ? grammarApi.removeBookmark(lessonId) : grammarApi.addBookmark(lessonId)),
+      ),
     onSuccess: (_lesson, wasBookmarked) => {
       queryClient.setQueryData<GrammarLesson>(grammarKeys.lesson(lessonId), (lesson) =>
         lesson ? { ...lesson, bookmarked: !wasBookmarked } : lesson,

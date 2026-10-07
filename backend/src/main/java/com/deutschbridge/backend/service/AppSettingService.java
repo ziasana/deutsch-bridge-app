@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 public class AppSettingService {
 
     public static final String PREMIUM_ENABLED_KEY = "premium.enabled";
+    public static final String DOWNLOADS_PREMIUM_ONLY_KEY = "downloads.premium-only";
 
     private final AppSettingRepository appSettingRepository;
 
@@ -25,6 +26,16 @@ public class AppSettingService {
     public void seedDefaults() {
         appSettingRepository.findById(PREMIUM_ENABLED_KEY).orElseGet(() ->
                 appSettingRepository.save(new AppSetting(PREMIUM_ENABLED_KEY, "false", "Enables Premium account entitlements globally.")));
+        seedIfMissing(DOWNLOADS_PREMIUM_ONLY_KEY, "true",
+                "Offline downloads (grammar lessons, reading articles) are limited to Premium users; when false, everyone can download.");
+    }
+
+    public boolean isDownloadsPremiumOnly() {
+        return getBoolean(DOWNLOADS_PREMIUM_ONLY_KEY, true);
+    }
+
+    public void setDownloadsPremiumOnly(boolean premiumOnly) {
+        setValue(DOWNLOADS_PREMIUM_ONLY_KEY, String.valueOf(premiumOnly));
     }
 
     public boolean isPremiumEnabled() {
