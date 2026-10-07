@@ -79,6 +79,13 @@ export function WordCard({ item, onOpen, onPractice, onToggleBookmark, onEdit, o
               </AppText>
             </View>
           ) : null}
+          {item.wordType ? (
+            <View style={styles.level}>
+              <AppText variant="caption" color={VOCABULARY_DARK} style={{ fontWeight: '700' }}>
+                {v.wordTypes[item.wordType]}
+              </AppText>
+            </View>
+          ) : null}
           <View style={styles.source}>
             <Ionicons name={SOURCE_ICON[item.source]} size={12} color={colors.mutedForeground} />
             <AppText variant="caption" color={colors.mutedForeground}>
@@ -160,7 +167,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
-  tags: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 1 },
+  tags: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    flexShrink: 1,
+  },
   level: {
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,

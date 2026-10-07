@@ -122,6 +122,18 @@ describe('VocabularyScreen', () => {
     expect(await screen.findByText('No words yet')).toBeTruthy();
   });
 
+  it('shows the word type on a word that has one, and nothing for older words', async () => {
+    api.list.mockResolvedValue([
+      makeWord(1, { wordType: 'NOUN_VERB_CONNECTION' }),
+      makeWord(2, { wordType: 'VERB' }),
+      makeWord(3),
+    ]);
+    await wrap(<VocabularyScreen />);
+    expect(await screen.findByText('Noun-verb phrase (Nomen-Verb-Verbindung)')).toBeTruthy();
+    expect(screen.getByText('Verb')).toBeTruthy();
+    expect(screen.queryAllByText(/Noun|Verb|Idiom|Expression/)).toHaveLength(2);
+  });
+
   it('shows an empty state with an add action for new learners', async () => {
     api.list.mockResolvedValue([]);
     await wrap(<VocabularyScreen />);
