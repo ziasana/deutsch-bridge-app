@@ -1,10 +1,19 @@
 import { localizeExamText } from '../examText';
 
 describe('localizeExamText', () => {
-  it('leaves German untouched for English learners', () => {
-    expect(localizeExamText('Teil 1 – Zuordnungsaufgaben', 'en')).toBe(
-      'Teil 1 – Zuordnungsaufgaben',
-    );
+  it('translates the fixed exam vocabulary for English learners', () => {
+    expect(localizeExamText('Teil 1 – Zuordnungsaufgaben', 'en')).toBe('Part 1 – Matching tasks');
+    expect(localizeExamText('Sprachbausteine Teil 2', 'en')).toBe('Language elements Part 2');
+    expect(localizeExamText('Hörverstehen: 3. Übung', 'en')).toBe('Listening: Exercise 3');
+    expect(localizeExamText('Lesen', 'en')).toBe('Reading');
+    expect(localizeExamText('Schreiben', 'en')).toBe('Writing');
+    expect(localizeExamText('Schriftlicher Ausdruck', 'en')).toBe('Written expression');
+    expect(localizeExamText('Testformat', 'en')).toBe('Test format');
+  });
+
+  it('keeps free-text titles and longer words intact in English too', () => {
+    expect(localizeExamText('E-Mail an den Vermieter', 'en')).toBe('E-Mail an den Vermieter');
+    expect(localizeExamText('Vorlesen üben', 'en')).toBe('Vorlesen üben');
   });
 
   it('translates the fixed exam vocabulary for Persian learners', () => {
