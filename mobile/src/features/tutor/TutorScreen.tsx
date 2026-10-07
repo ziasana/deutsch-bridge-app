@@ -29,7 +29,6 @@ import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type { ChatMessage } from '@/types/chat';
 import { MessageBubble } from './components/MessageBubble';
 import { TutorIllustration } from './TutorIllustration';
-import { SaveWordSheet } from './components/SaveWordSheet';
 import { SessionsSheet } from './components/SessionsSheet';
 import { STARTERS } from './groups';
 import { useChatSessions, useTutorChat } from './hooks';
@@ -95,7 +94,6 @@ export function TutorScreen() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [title, setTitle] = useState('');
-  const [saving, setSaving] = useState<ChatMessage | null>(null);
   const listRef = useRef<FlatList<ChatMessage>>(null);
 
   const active = sessions.data?.find((s) => s.id === chat.sessionId) ?? null;
@@ -203,12 +201,7 @@ export function TutorScreen() {
             ref={listRef}
             data={chat.messages}
             keyExtractor={(m) => m.id}
-            renderItem={({ item }) => (
-              <MessageBubble
-                message={item}
-                onSaveWord={item.role === 'assistant' ? setSaving : undefined}
-              />
-            )}
+            renderItem={({ item }) => <MessageBubble message={item} sessionId={chat.sessionId} />}
             contentContainerStyle={styles.list}
             ListFooterComponent={
               <View style={{ gap: spacing.md }}>
@@ -295,8 +288,6 @@ export function TutorScreen() {
           }
         />
       </BottomSheet>
-
-      <SaveWordSheet message={saving} sessionId={chat.sessionId} onClose={() => setSaving(null)} />
     </View>
   );
 }
