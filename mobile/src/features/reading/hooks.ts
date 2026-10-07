@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import {
   keepPreviousData,
   useInfiniteQuery,
@@ -8,6 +9,7 @@ import {
 import { lexiconApi, readingApi, readingQuizApi, type ReadingListParams } from '@/api/readingApi';
 import { vocabularyApi } from '@/api/vocabularyApi';
 import { DASHBOARD_KEY } from '@/features/dashboard/hooks';
+import { CONTENT_STALE_MS } from '@/api/queryClient';
 import { deliverOrQueue, loadItem } from '@/features/downloads/offline';
 import type { DictionaryEntry, ReadingArticle } from '@/types/reading';
 
@@ -29,7 +31,7 @@ export const useReadingCategories = () =>
   useQuery({
     queryKey: readingKeys.categories,
     queryFn: readingApi.categories,
-    staleTime: 10 * 60_000,
+    staleTime: 60 * 60_000,
   });
 
 export const useReadingList = (params: ReadingListParams | null) =>
@@ -45,20 +47,29 @@ export const useReadingList = (params: ReadingListParams | null) =>
     staleTime: 60_000,
   });
 
-export const useReadingArticle = (id: string) =>
-  useQuery({
-    queryKey: readingKeys.article(id),
-    queryFn: () => loadItem('reading', id, () => readingApi.article(id)),
-    enabled: !!id,
-    staleTime: 5 * 60_000,
-  });
+const articleOptions = (id: string) => ({
+  queryKey: readingKeys.article(id),
+  queryFn: () => loadItem('reading', id, () => readingApi.article(id)),
+  staleTime: CONTENT_STALE_MS,
+});
+
+export const useReadingArticle = (id: string) => useQuery({ ...articleOptions(id), enabled: !!id });
+
+/** Warms the cache with the neighbouring articles so "next" / "previous" open instantly. */
+export function usePrefetchNeighbourArticles(neighbours: (string | undefined)[]): void {
+  const queryClient = useQueryClient();
+  const key = neighbours.filter(Boolean).join(',');
+  useEffect(() => {
+    for (const id of key ? key.split(',') : []) void queryClient.prefetchQuery(articleOptions(id));
+  }, [key, queryClient]);
+}
 
 export const useReadingNavigation = (id: string) =>
   useQuery({
     queryKey: readingKeys.navigation(id),
     queryFn: () => readingApi.navigation(id),
     enabled: !!id,
-    staleTime: 5 * 60_000,
+    staleTime: CONTENT_STALE_MS,
   });
 
 /** Views are counted on every open, separate from the cacheable article fetch; failures are cosmetic. */

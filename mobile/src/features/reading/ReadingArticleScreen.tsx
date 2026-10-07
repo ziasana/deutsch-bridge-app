@@ -38,6 +38,7 @@ import { AnnotationSheet, DictionarySheet } from './components/WordSheets';
 import {
   useReadingArticle,
   useReadingNavigation,
+  usePrefetchNeighbourArticles,
   useRecordView,
   useSaveToLexicon,
   useSetArticleLearned,
@@ -215,6 +216,7 @@ export function ReadingArticleScreen() {
   const { articleId } = useLocalSearchParams<{ articleId: string }>();
   const query = useReadingArticle(articleId);
   const navigation = useReadingNavigation(articleId);
+  usePrefetchNeighbourArticles([navigation.data?.previous?.id, navigation.data?.next?.id]);
   const learnedMutation = useSetArticleLearned(articleId);
   const bookmarkMutation = useToggleArticleBookmark(articleId);
   const recordView = useRecordView();

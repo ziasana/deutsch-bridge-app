@@ -26,7 +26,13 @@ import { useI18n } from '@/i18n';
 import { useAuthStore } from '@/stores/authStore';
 import { HorizontalScroll } from '@/components/ui/HorizontalScroll';
 import { colors, radius, spacing } from '@/theme';
-import { useLesson, useLessonNavigation, useSetLessonLearned, useToggleBookmark } from './hooks';
+import {
+  useLesson,
+  useLessonNavigation,
+  usePrefetchNeighbourLessons,
+  useSetLessonLearned,
+  useToggleBookmark,
+} from './hooks';
 import {
   ExampleBubble,
   InteractiveTable,
@@ -112,6 +118,7 @@ export function LessonScreen() {
   const persian = useAuthStore((s) => s.profile?.preferredLanguage === 'PR');
   const lessonQuery = useLesson(lessonId);
   const navigation = useLessonNavigation(lessonId);
+  usePrefetchNeighbourLessons([navigation.data?.previous?.id, navigation.data?.next?.id]);
   const learnedMutation = useSetLessonLearned(lessonId);
   const bookmarkMutation = useToggleBookmark(lessonId);
 
