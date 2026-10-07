@@ -45,6 +45,11 @@ public interface LearningProgressRepository extends JpaRepository<LearningProgre
 
     long countByUserAndReadingIsNotNullAndIsLearnedTrue(User user);
 
+    /** Daily words the user learned from the shared seed pool (the fallback when none were generated for them). */
+    @Query("SELECT COUNT(lp) FROM learning_progress lp WHERE lp.user = :user AND lp.isLearned = true " +
+            "AND lp.dailyWord IS NOT NULL AND lp.dailyWord.assignedTo IS NULL")
+    long countLearnedSharedDailyWords(@Param("user") User user);
+
     long countByUserAndIsLearnedTrueAndLearnedAtBetween(User user, LocalDateTime start, LocalDateTime end);
 
     @Query("SELECT DISTINCT CAST(lp.learnedAt AS localdate) FROM learning_progress lp " +

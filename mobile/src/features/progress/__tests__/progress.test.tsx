@@ -109,6 +109,10 @@ describe('ProgressScreen', () => {
     expect(screen.getByLabelText('3 of 7 days learned')).toBeTruthy();
     expect(screen.getByText('Today: 4 / 10 learning goals')).toBeTruthy();
     expect(screen.getByText('20 / 50')).toBeTruthy(); // daily words
+    // "Words mastered" is the learner's own vocabulary, not the platform's content: the hero keeps
+    // the overall 30 / 200, the tile shows 3 of the learner's 20 words.
+    expect(screen.getByRole('button', { name: /^Words mastered: 3 of 20/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /^Words mastered: 30 of 200/ })).toBeNull();
     expect(
       screen.getByLabelText(/📚 Vocabulary: New 5, Learning 8, Familiar 4, Mastered 3/),
     ).toBeTruthy();

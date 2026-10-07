@@ -30,23 +30,39 @@ class LearningProgressOverviewTest {
             mock(GrammarCategoryRepository.class), mock(GrammarCategoryTestAttemptRepository.class),
             mock(ExamAttemptRepository.class), mock(LearningActivityService.class));
 
-    @Test
-    @DisplayName("daily words total includes the learner's own generated words, so learned never exceeds it")
-    void dailyWordsTotalIncludesOwnWords() throws Exception {
-        User user = new User();
+    private void learner(User user, long learned, long own, long sharedLearned) throws Exception {
         when(requestContext.getUserEmail()).thenReturn("a@b.c");
         when(userService.findByEmail("a@b.c")).thenReturn(user);
-        when(repository.countByUserAndDailyWordIsNotNullAndIsLearnedTrue(user)).thenReturn(20L);
-        when(dailyWords.countByAssignedToIsNull()).thenReturn(15L);
-        when(dailyWords.countByAssignedTo(user)).thenReturn(30L);
+        when(repository.countByUserAndDailyWordIsNotNullAndIsLearnedTrue(user)).thenReturn(learned);
+        when(dailyWords.countByAssignedTo(user)).thenReturn(own);
+        when(repository.countLearnedSharedDailyWords(user)).thenReturn(sharedLearned);
         when(repository.countByUserAndIsLearnedTrueAndLearnedAtBetween(any(), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(0L);
+    }
+
+    @Test
+    @DisplayName("a new learner with 5 generated daily words shows 5 / 5, not the size of the shared pool")
+    void totalIsTheLearnersOwnWords() throws Exception {
+        User user = new User();
+        learner(user, 5, 5, 0);
 
         OverviewResponse overview = service.getOverview();
 
-        assertEquals(20, overview.dailyWords().learned());
-        assertEquals(45, overview.dailyWords().total());
+        assertEquals(5, overview.dailyWords().learned());
+        assertEquals(5, overview.dailyWords().total());
+        assertEquals(5, overview.totalAvailable());
+    }
+
+    @Test
+    @DisplayName("shared words the learner actually learned count towards the total, so learned never exceeds it")
+    void learnedSharedWordsAreIncluded() throws Exception {
+        User user = new User();
+        learner(user, 8, 5, 3);
+
+        OverviewResponse overview = service.getOverview();
+
+        assertEquals(8, overview.dailyWords().learned());
+        assertEquals(8, overview.dailyWords().total());
         assertTrue(overview.dailyWords().learned() <= overview.dailyWords().total());
-        assertEquals(45, overview.totalAvailable());
     }
 }

@@ -45,7 +45,7 @@ export default function ProgressPage() {
     const s = t.progress.stats
     const tiles = overview
         ? [
-              { title: s.wordsMastered, learned: overview.totalLearned, total: overview.totalAvailable, icon: <Award className="size-4" />, tone: { surface: "from-motivation/15 to-motivation/5", icon: "text-motivation", iconBg: "bg-motivation/15", bar: "bg-motivation" } },
+              { title: s.wordsMastered, learned: stats?.vocabulary.mastered ?? 0, total: stats?.vocabulary.total ?? 0, icon: <Award className="size-4" />, tone: { surface: "from-motivation/15 to-motivation/5", icon: "text-motivation", iconBg: "bg-motivation/15", bar: "bg-motivation" } },
               { title: s.dailyWordsLearned, learned: overview.dailyWords.learned, total: overview.dailyWords.total, icon: <SpellCheck className="size-4" />, tone: { surface: "from-learning-vocabulary/15 to-learning-vocabulary/5", icon: "text-learning-vocabulary", iconBg: "bg-learning-vocabulary/15", bar: "bg-learning-vocabulary" } },
               { title: s.lessonsCompleted, learned: overview.grammar.learned, total: overview.grammar.total, icon: <GraduationCap className="size-4" />, tone: { surface: "from-learning-grammar/15 to-learning-grammar/5", icon: "text-learning-grammar", iconBg: "bg-learning-grammar/15", bar: "bg-learning-grammar" } },
               { title: s.activeExpressions, learned: overview.expressions.learned, total: overview.expressions.total, icon: <Link2 className="size-4" />, tone: { surface: "from-learning-expression/15 to-learning-expression/5", icon: "text-learning-expression", iconBg: "bg-learning-expression/15", bar: "bg-learning-expression" } },
