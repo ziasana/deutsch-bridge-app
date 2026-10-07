@@ -40,9 +40,14 @@ describe('nextSelection', () => {
     expect(nextSelection({ scope: 's', from: 2, to: 2, text: 'c' }, 's', 2, words)).toBeNull();
   });
 
-  it('starts over for a distant word or another paragraph', () => {
+  it('grows the phrase to a distant word in the same paragraph (separable verbs, noun-verb phrases)', () => {
+    const one = nextSelection(null, 's', 1, words);
+    expect(nextSelection(one, 's', 4, words)).toMatchObject({ from: 1, to: 4, text: 'b c d e' });
+    expect(nextSelection(one, 's', 0, words)).toMatchObject({ from: 0, to: 1, text: 'a b' });
+  });
+
+  it('starts over in another paragraph', () => {
     const one = nextSelection(null, 's', 0, words);
-    expect(nextSelection(one, 's', 4, words)).toMatchObject({ from: 4, to: 4 });
     expect(nextSelection(one, 'other', 1, words)).toMatchObject({ scope: 'other', from: 1 });
   });
 });

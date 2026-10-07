@@ -55,39 +55,61 @@ function TutorBubble({ message, sessionId }: { message: ChatMessage; sessionId: 
       </View>
 
       {selection ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={label}
-          disabled={save.isPending}
-          onPress={() =>
-            save.mutate(
-              { text: selection.text, context: message.content },
-              { onSuccess: () => setSelection(null) },
-            )
-          }
-          style={({ pressed }) => [styles.save, pressed && { opacity: 0.8 }]}
-        >
-          {save.isPending ? (
-            <ActivityIndicator size="small" color={colors.primaryForeground} />
-          ) : (
-            <Ionicons name="bookmark" size={16} color={colors.primaryForeground} />
-          )}
-          <AppText
-            variant="small"
-            color={colors.primaryForeground}
-            numberOfLines={1}
-            style={{ fontWeight: '700', flexShrink: 1 }}
+        <View style={styles.pillRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            disabled={save.isPending}
+            onPress={() =>
+              save.mutate(
+                { text: selection.text, context: message.content },
+                { onSuccess: () => setSelection(null) },
+              )
+            }
+            style={({ pressed }) => [styles.save, pressed && { opacity: 0.8 }]}
           >
-            {save.isPending ? w.saving : isPhrase ? w.saveExpression : w.saveWord}
-            {!save.isPending ? `: ${selection.text}` : ''}
-          </AppText>
-        </Pressable>
+            {save.isPending ? (
+              <ActivityIndicator size="small" color={colors.primaryForeground} />
+            ) : (
+              <Ionicons name="bookmark" size={16} color={colors.primaryForeground} />
+            )}
+            <AppText
+              variant="small"
+              color={colors.primaryForeground}
+              numberOfLines={1}
+              style={{ fontWeight: '700', flexShrink: 1 }}
+            >
+              {save.isPending ? w.saving : isPhrase ? w.saveExpression : w.saveWord}
+              {!save.isPending ? `: ${selection.text}` : ''}
+            </AppText>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={w.clearSelection}
+            disabled={save.isPending}
+            onPress={() => setSelection(null)}
+            hitSlop={spacing.sm}
+            style={styles.clear}
+          >
+            <Ionicons name="close" size={18} color={colors.mutedForeground} />
+          </Pressable>
+        </View>
       ) : null}
 
       {save.error ? <ErrorNotice error={save.error} /> : null}
       {outcome?.kind === 'saved' ? (
         <AppText variant="small" color="#1B7A55" accessibilityRole="alert">
           {w.added(outcome.word, outcome.meaning)}
+        </AppText>
+      ) : null}
+      {outcome?.kind === 'saved' && (outcome.wordType || outcome.synonyms) ? (
+        <AppText variant="small" color={colors.mutedForeground}>
+          {[
+            outcome.wordType ? t.vocabulary.wordTypes[outcome.wordType] : null,
+            outcome.synonyms ? w.synonymsLine(outcome.synonyms) : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
         </AppText>
       ) : null}
       {outcome?.kind === 'exists' ? (
@@ -140,9 +162,11 @@ const styles = StyleSheet.create({
   bubble: { borderRadius: 22, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   user: { maxWidth: '85%', backgroundColor: colors.brand, borderBottomEndRadius: 6 },
   tutor: { backgroundColor: '#F1F5FB', borderTopStartRadius: 6 },
+  pillRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, maxWidth: '100%' },
+  clear: { padding: spacing.xs },
   save: {
     minHeight: 40,
-    maxWidth: '100%',
+    flexShrink: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,

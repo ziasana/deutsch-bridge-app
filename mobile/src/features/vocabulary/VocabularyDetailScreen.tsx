@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import {
   AppText,
+  Badge,
   Button,
   ErrorState,
   ProgressBar,
@@ -117,6 +118,7 @@ export function VocabularyDetailScreen() {
           }
         >
           <View style={styles.heroMeta}>
+            {item.wordType ? <Badge label={v.wordTypes[item.wordType]} /> : null}
             <MasteryDots level={mastery} />
           </View>
         </VocabularyHero>
@@ -136,7 +138,7 @@ export function VocabularyDetailScreen() {
             </Section>
           ) : null}
 
-          {item.source === 'CUSTOM' && item.synonyms ? (
+          {item.synonyms ? (
             <Section icon="git-compare-outline" title={v.synonyms}>
               <AppText color={colors.mutedForeground} style={{ fontStyle: 'italic' }}>
                 {item.synonyms}
@@ -222,7 +224,13 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   scroll: { flexGrow: 1, paddingBottom: spacing.xxl },
   block: { padding: spacing.lg, gap: spacing.lg },
-  heroMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.sm },
+  heroMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+  },
   speaker: {
     width: 64,
     height: 64,

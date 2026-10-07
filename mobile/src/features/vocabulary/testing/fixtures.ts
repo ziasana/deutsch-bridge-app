@@ -64,6 +64,7 @@ export const makeWord = (n: number, over: Partial<VocabularyItem> = {}): Vocabul
   language: 'EN',
   example: null,
   synonyms: null,
+  wordType: null,
   level: null,
   audioUrl: null,
   dictionaryEntryId: null,

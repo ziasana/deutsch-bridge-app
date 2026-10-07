@@ -177,6 +177,8 @@ describe('TutorScreen', () => {
       normalizedText: 'das Fernweh',
       meaning: 'wanderlust',
       example: 'Ich habe Fernweh.',
+      wordType: 'NOUN',
+      synonyms: 'Reiselust, Wanderlust',
     });
     vocab.exists
       .mockResolvedValueOnce({ exists: false, vocabularyItemId: null })
@@ -196,8 +198,11 @@ describe('TutorScreen', () => {
         meaning: 'wanderlust',
         example: 'Ich habe Fernweh.',
         sourceChatId: 's1',
+        wordType: 'NOUN',
+        synonyms: 'Reiselust, Wanderlust',
       }),
     );
+    expect(screen.getByText('Noun · Synonyms: Reiselust, Wanderlust')).toBeTruthy();
 
     // Saving it again reports the duplicate instead of creating another entry.
     await fireEvent.press(screen.getByText('Fernweh'));
@@ -213,11 +218,13 @@ describe('TutorScreen', () => {
     await fireEvent.press(screen.getByText('schönes'));
     expect(screen.getByRole('button', { name: 'Save expression “ein schönes”' })).toBeTruthy();
 
-    // A word that is not next to the phrase starts a new selection.
+    // A word further away widens the phrase, so words with others in between are one selection.
     await fireEvent.press(screen.getByText('Das'));
-    expect(screen.getByRole('button', { name: 'Save “Das”' })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Save expression “Das Fernweh ist ein schönes”' }),
+    ).toBeTruthy();
 
-    await fireEvent.press(screen.getByText('Das'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Clear selection' }));
     expect(screen.queryByRole('button', { name: /^Save/ })).toBeNull();
   });
 });

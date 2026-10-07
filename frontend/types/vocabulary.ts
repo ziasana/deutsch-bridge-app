@@ -64,6 +64,8 @@ export interface VocabularyFromChatCreateRequest {
     sourceChatId: string | null;
     sourceMessageId: string | null;
     level: LearningLevelCode | null;
+    wordType?: string | null;
+    synonyms?: string | null;
 }
 
 export type SelectionType = "WORD" | "EXPRESSION";
@@ -73,6 +75,9 @@ export interface SelectionClassifyResult {
     normalizedText: string;
     meaning: string;
     example: string;
+    /** Part of speech or expression kind (e.g. NOUN, IDIOM); null if unknown. */
+    wordType?: string | null;
+    synonyms?: string | null;
 }
 
 export interface VocabularyExistsResult {

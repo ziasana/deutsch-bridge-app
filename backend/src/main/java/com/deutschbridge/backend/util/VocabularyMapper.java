@@ -21,6 +21,7 @@ public class VocabularyMapper {
                 item.getLanguage(),
                 item.getExample(),
                 item.getSynonyms(),
+                item.getWordType() != null ? item.getWordType().name() : null,
                 item.getLevel() != null ? item.getLevel().getValue() : null,
                 item.getAudioUrl(),
                 item.getDictionaryEntry() != null ? item.getDictionaryEntry().getId() : null,

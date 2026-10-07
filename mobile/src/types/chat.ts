@@ -1,3 +1,4 @@
+import type { VocabularyWordType } from './vocabulary';
 export interface ChatSession {
   id: string;
   userId: string;
@@ -28,6 +29,10 @@ export interface SelectionClassifyResult {
   normalizedText: string;
   meaning: string;
   example: string;
+  /** Part of speech or expression kind (see VocabularyWordType); null if the model gave none. */
+  wordType: VocabularyWordType | null;
+  /** Comma-separated synonyms, if the model found any. */
+  synonyms: string | null;
 }
 
 export interface VocabularyFromChatRequest {
@@ -37,4 +42,6 @@ export interface VocabularyFromChatRequest {
   sourceChatId: string | null;
   sourceMessageId: string | null;
   level: string | null;
+  wordType?: VocabularyWordType | null;
+  synonyms?: string | null;
 }

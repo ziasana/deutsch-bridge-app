@@ -34,7 +34,12 @@ export function splitWords(text: string): TextPart[] {
   return parts;
 }
 
-/** The selection after tapping word `index`: extends an adjacent run, toggles a lone word, else starts over. */
+/**
+ * The selection after tapping word `index` in the same paragraph. A tap next to or away from the
+ * run grows it to cover that word (so separable verbs and noun-verb phrases like
+ * "eine Entscheidung treffen" are one tap each), a tap on an end shrinks it, and a tap on the only
+ * selected word clears it.
+ */
 export function nextSelection(
   current: WordSelection | null,
   scope: string,
@@ -55,9 +60,6 @@ export function nextSelection(
       text: words.slice(range[0], range[1] + 1).join(' '),
     };
   }
-  if (index === to + 1)
-    return { scope, from, to: index, text: words.slice(from, index + 1).join(' ') };
-  if (index === from - 1)
-    return { scope, from: index, to, text: words.slice(index, to + 1).join(' ') };
-  return single;
+  if (index > to) return { scope, from, to: index, text: words.slice(from, index + 1).join(' ') };
+  return { scope, from: index, to, text: words.slice(index, to + 1).join(' ') };
 }

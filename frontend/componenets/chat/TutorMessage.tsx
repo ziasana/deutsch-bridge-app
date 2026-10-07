@@ -47,6 +47,8 @@ export default function TutorMessage({ message, sessionId }: Readonly<TutorMessa
                     sourceChatId: sessionId,
                     sourceMessageId: message.id,
                     level: null,
+                    wordType: classified.wordType ?? null,
+                    synonyms: classified.synonyms ?? null,
                 });
                 toast.success(t.chat.selection.savedToVocabulary);
             })
