@@ -79,7 +79,7 @@ export function SessionScreen({ mode }: { mode: 'review' | 'practice' }) {
           </AppText>
         ) : null}
         <View style={{ alignSelf: 'stretch', marginTop: spacing.md }}>
-          <Button pill label="Zur Übersicht" onPress={home} />
+          <Button pill label="Zur Übersicht" onPress={home} color={REDEMITTEL_COLOR} />
         </View>
       </View>
     );

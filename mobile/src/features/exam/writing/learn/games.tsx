@@ -19,6 +19,7 @@ import {
   buzz,
   pickMessage,
 } from './ui';
+import { darken } from '@/features/exam/components/kit';
 
 const Prompt = ({ children }: { children: ReactNode }) => <AppText style={styles.prompt}>{children}</AppText>;
 
@@ -282,7 +283,7 @@ export function OrderGame({
           </View>
           <View style={styles.actions}>
             <View style={{ flex: 1 }}>
-              <Button label="Prüfen" disabled={placed.length !== items.length} onPress={check} />
+              <Button label="Prüfen" disabled={placed.length !== items.length} onPress={check} color={WRITING_COLOR} />
             </View>
             {placed.length > 0 ? (
               <Button
@@ -292,10 +293,11 @@ export function OrderGame({
                   setPlaced([]);
                   setStatus('idle');
                 }}
+                color={darken(WRITING_COLOR)}
               />
             ) : null}
           </View>
-          {misses >= MAX_TRIES_BEFORE_SOLUTION ? <Button label="Lösung zeigen" variant="ghost" onPress={reveal} /> : null}
+          {misses >= MAX_TRIES_BEFORE_SOLUTION ? <Button label="Lösung zeigen" variant="ghost" onPress={reveal} color={darken(WRITING_COLOR)} /> : null}
         </>
       ) : null}
 
@@ -431,10 +433,10 @@ export function FlashDeck({ api, phrases }: { api: StepApi; phrases: WritingPhra
           </Pop>
           <View style={styles.actions}>
             <View style={{ flex: 1 }}>
-              <Button label="↻ Nochmal" variant="secondary" onPress={() => answer(false)} />
+              <Button label="↻ Nochmal" variant="secondary" onPress={() => answer(false)} color={darken(WRITING_COLOR)} />
             </View>
             <View style={{ flex: 1 }}>
-              <Button label="✓ Kenne ich" onPress={() => answer(true)} />
+              <Button label="✓ Kenne ich" onPress={() => answer(true)} color={WRITING_COLOR} />
             </View>
           </View>
         </>
@@ -443,7 +445,7 @@ export function FlashDeck({ api, phrases }: { api: StepApi; phrases: WritingPhra
           <View style={[styles.card, { backgroundColor: colors.successSoft, alignItems: 'center' }]}>
             <AppText style={styles.prompt}>Geschafft! 🎉</AppText>
             <AppText center>Du kennst alle {total} Redemittel für „{labels[category]}“.</AppText>
-            <Button label="Nächste Funktion wählen" onPress={() => setCategory(null)} />
+            <Button label="Nächste Funktion wählen" onPress={() => setCategory(null)} color={WRITING_COLOR} />
           </View>
         </Pop>
       )}

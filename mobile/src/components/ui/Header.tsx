@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText } from './AppText';
+import { useI18n } from '@/i18n';
 import { MIN_TOUCH, colors, spacing } from '@/theme';
 
 type Props = { title: string; subtitle?: string; back?: boolean };
@@ -8,18 +9,19 @@ type Props = { title: string; subtitle?: string; back?: boolean };
 /** Screen header. `back` shows a back button for screens pushed above the tabs. */
 export function Header({ title, subtitle, back }: Props) {
   const router = useRouter();
+  const { t, isRTL } = useI18n();
   return (
     <View style={styles.wrap}>
       {back ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Zurück"
+          accessibilityLabel={t.common.back}
           onPress={() => router.back()}
           hitSlop={spacing.sm}
           style={styles.back}
         >
           <AppText variant="subheading" color={colors.primaryDark}>
-            ‹ Zurück
+            {isRTL ? '›' : '‹'} {t.common.back}
           </AppText>
         </Pressable>
       ) : null}

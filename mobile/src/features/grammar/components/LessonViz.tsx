@@ -5,9 +5,12 @@ import { InlineRich, RichBlocks } from '@/components/content/RichContent';
 import type { BlockNode, InlineNode } from '@/components/content/parse';
 import { AppText } from '@/components/ui';
 import { PressableScale, tint } from '@/features/exam/components/kit';
+import { useI18n } from '@/i18n';
+import { HorizontalScroll } from '@/components/ui/HorizontalScroll';
 import { colors, radius, shadow, spacing } from '@/theme';
 import type { QuizQuestion } from '@/types/grammar';
 import { isCorrectAnswer } from '../quiz';
+import { GRAMMAR_COLOR, GRAMMAR_DARK } from '../meta';
 
 type Dir = 'ltr' | 'rtl';
 
@@ -78,7 +81,7 @@ export function SectionCard({
         onPress={onToggle}
         style={styles.sectionHead}
       >
-        <View style={[styles.badge, open && { backgroundColor: colors.primary }]}>
+        <View style={[styles.badge, open && { backgroundColor: GRAMMAR_COLOR }]}>
           <AppText style={[styles.badgeText, open && { color: '#FFFFFF' }]}>{index}</AppText>
         </View>
         <AppText variant="subheading" style={{ flex: 1 }}>
@@ -111,7 +114,7 @@ export function InteractiveTable({
   const available = width - 2 * spacing.lg - 2 * spacing.lg;
   const colWidth = Math.max(104, Math.floor(available / cols));
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} accessibilityRole="none">
+    <HorizontalScroll horizontal showsHorizontalScrollIndicator={false} accessibilityRole="none">
       <View style={styles.table}>
         {rows.map((row, r) => {
           const selected = focus === r;
@@ -143,7 +146,7 @@ export function InteractiveTable({
           );
         })}
       </View>
-    </ScrollView>
+    </HorizontalScroll>
   );
 }
 
@@ -196,12 +199,13 @@ export function QuickCheck({
   text: string;
   dir: Dir;
 }) {
+  const { t } = useI18n();
   const [picked, setPicked] = useState<string | null>(null);
   const options =
     question.type === 'truefalse'
       ? [
-          { value: 'true', label: 'Richtig' },
-          { value: 'false', label: 'Falsch' },
+          { value: 'true', label: t.grammar.true },
+          { value: 'false', label: t.grammar.false },
         ]
       : (question.options ?? []).filter((o) => o.trim()).map((o) => ({ value: o, label: o }));
   const answered = picked !== null;
@@ -229,7 +233,7 @@ export function QuickCheck({
               key={o.value}
               disabled={answered}
               accessibilityRole="button"
-              accessibilityLabel={`Antwort: ${o.label}`}
+              accessibilityLabel={t.grammar.answerLabel(o.label)}
               accessibilityState={{ selected: isPicked, disabled: answered }}
               onPress={() => setPicked(o.value)}
               style={[styles.option, { backgroundColor: bg, borderColor: border }]}
@@ -252,15 +256,15 @@ export function QuickCheck({
             style={{ fontWeight: '700' }}
             color={correct ? colors.success : colors.destructive}
           >
-            {correct ? '🎉 Richtig!' : 'Nicht ganz – die richtige Antwort ist markiert.'}
+            {correct ? t.grammar.quickRight : t.grammar.quickWrong}
           </AppText>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Nochmal versuchen"
+            accessibilityLabel={t.grammar.tryAgain}
             onPress={() => setPicked(null)}
           >
-            <AppText color={colors.primaryDark} style={{ fontWeight: '700' }}>
-              Nochmal
+            <AppText color={GRAMMAR_DARK} style={{ fontWeight: '700' }}>
+              {t.grammar.tryAgain}
             </AppText>
           </Pressable>
         </View>
@@ -292,9 +296,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.accent,
+    backgroundColor: tint(GRAMMAR_COLOR, '1F'),
   },
-  badgeText: { fontWeight: '800', color: colors.primaryDark },
+  badgeText: { fontWeight: '800', color: GRAMMAR_DARK },
   table: {
     borderWidth: 1,
     borderColor: colors.border,
@@ -302,14 +306,14 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   tr: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border },
-  trHead: { backgroundColor: colors.accent },
-  trSelected: { backgroundColor: tint(colors.primary, '33') },
+  trHead: { backgroundColor: tint(GRAMMAR_COLOR, '1F') },
+  trSelected: { backgroundColor: tint(GRAMMAR_COLOR, '33') },
   td: { padding: spacing.md, justifyContent: 'center' },
-  tdFirst: { backgroundColor: tint(colors.primary, '14') },
+  tdFirst: { backgroundColor: tint(GRAMMAR_COLOR, '14') },
   bubble: {
-    backgroundColor: colors.accent,
+    backgroundColor: tint(GRAMMAR_COLOR, '1F'),
     borderRadius: radius.lg,
-    borderTopLeftRadius: 6,
+    borderTopStartRadius: 6,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },

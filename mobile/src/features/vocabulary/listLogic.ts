@@ -10,12 +10,6 @@ export const MASTERY_COLOR: Record<VocabularyMasteryLevel, string> = {
   MASTERED: '#27AE7A',
 };
 
-export const SOURCE_LABEL: Record<VocabularySource, string> = {
-  CUSTOM: 'Meine Wörter',
-  DICTIONARY: 'Aus dem Lesen',
-  AI_TUTOR: 'Aus dem KI-Tutor',
-};
-
 export const SOURCE_ICON = {
   CUSTOM: 'create-outline',
   DICTIONARY: 'book-outline',

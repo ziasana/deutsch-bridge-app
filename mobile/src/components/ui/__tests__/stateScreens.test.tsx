@@ -18,9 +18,9 @@ describe('illustrated states', () => {
         onRetry={retry}
       />,
     );
-    expect(screen.getByText('Nicht verbunden')).toBeTruthy();
+    expect(screen.getByText('Not connected')).toBeTruthy();
     expect(screen.getByText('Keine Verbindung. Bitte versuche es erneut.')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
     expect(retry).toHaveBeenCalled();
   });
 
@@ -31,8 +31,8 @@ describe('illustrated states', () => {
         onRetry={jest.fn()}
       />,
     );
-    expect(screen.getByText('Nicht gefunden')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Erneut versuchen' })).toBeNull();
+    expect(screen.getByText('Not found')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
   });
 
   it('keeps the plain message for other errors', async () => {
@@ -40,7 +40,7 @@ describe('illustrated states', () => {
       <ErrorState error={new ApiError('server', 'Der Server ist gerade nicht erreichbar.')} />,
     );
     expect(screen.getByText('Der Server ist gerade nicht erreichbar.')).toBeTruthy();
-    expect(screen.queryByText('Nicht verbunden')).toBeNull();
+    expect(screen.queryByText('Not connected')).toBeNull();
   });
 
   it('uses the not-found picture for empty search results and keeps the action', async () => {

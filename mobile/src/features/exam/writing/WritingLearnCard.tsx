@@ -1,14 +1,18 @@
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText, Button, ProgressRing } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { colors, radius, spacing } from '@/theme';
 import { tint } from '../components/kit';
 import { useLearnSummary } from './learn/useLearnSummary';
 import { WRITING_COLOR } from './learn/ui';
+import { darken } from '@/features/exam/components/kit';
 
 /** Entry to "Schreiben lernen" at the top of the Schreiben section: learn the method, then write. */
 export function WritingLearnCard({ level }: { level: string }) {
   const router = useRouter();
+  const { t } = useI18n();
+  const w = t.examHub.writingLearn;
   const { total, finished } = useLearnSummary(level);
   const open = () => router.push({ pathname: '/exam-prep/schreiben/lernen', params: { level } });
   const started = finished > 0;
@@ -17,19 +21,22 @@ export function WritingLearnCard({ level }: { level: string }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Schreiben lernen"
-      accessibilityHint="Öffnet den Lernpfad"
+      accessibilityLabel={w.title}
+      accessibilityHint={w.hint}
       onPress={open}
-      style={[styles.card, { backgroundColor: tint(WRITING_COLOR, '14'), borderColor: tint(WRITING_COLOR, '33') }]}
+      style={[
+        styles.card,
+        { backgroundColor: tint(WRITING_COLOR, '14'), borderColor: tint(WRITING_COLOR, '33') },
+      ]}
     >
       <View style={styles.top}>
         <View style={[styles.icon, { backgroundColor: tint(WRITING_COLOR, '33') }]}>
           <AppText style={{ fontSize: 30, lineHeight: 38 }}>📚</AppText>
         </View>
         <View style={{ flex: 1, gap: 2 }}>
-          <AppText style={styles.title}>Schreiben lernen</AppText>
+          <AppText style={styles.title}>{w.title}</AppText>
           <AppText variant="small" color={colors.ink}>
-            Lerne Schritt für Schritt, wie du eine Schreibaufgabe löst.
+            {w.description}
           </AppText>
         </View>
         {total ? (
@@ -39,16 +46,16 @@ export function WritingLearnCard({ level }: { level: string }) {
             stroke={6}
             textSize={11}
             color={WRITING_COLOR}
-            label={`${finished} von ${total} Stationen geschafft`}
+            label={w.stations(finished, total)}
           />
         ) : null}
       </View>
       {total ? (
         <AppText variant="small" color={colors.mutedForeground}>
-          {all ? 'Alle Stationen geschafft 🎉' : `${finished} von ${total} Stationen geschafft`}
+          {all ? w.allStations : w.stations(finished, total)}
         </AppText>
       ) : null}
-      <Button pill label={all ? 'Nochmal ansehen' : started ? 'Weiterlernen' : 'Lernen'} onPress={open} />
+      <Button pill label={all ? w.again : started ? w.continue : w.learn} onPress={open} color={WRITING_COLOR} />
     </Pressable>
   );
 }

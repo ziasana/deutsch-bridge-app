@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { AppText } from './AppText';
+import { useI18n } from '@/i18n';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 
 type Props = {
@@ -22,6 +23,7 @@ type Props = {
 
 /** Modal panel anchored to the bottom: tap the backdrop, the close button or use the system back to dismiss. */
 export function BottomSheet({ visible, onClose, title, tall, children }: Props) {
+  const { t, dir } = useI18n();
   return (
     <Modal
       transparent
@@ -31,12 +33,12 @@ export function BottomSheet({ visible, onClose, title, tall, children }: Props) 
       statusBarTranslucent
     >
       <KeyboardAvoidingView
-        style={styles.root}
+        style={[styles.root, { direction: dir }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Schließen"
+          accessibilityLabel={t.common.close}
           style={styles.backdrop}
           onPress={onClose}
         />
@@ -48,12 +50,12 @@ export function BottomSheet({ visible, onClose, title, tall, children }: Props) 
             </AppText>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Schließen"
+              accessibilityLabel={t.common.close}
               onPress={onClose}
               style={styles.close}
             >
               <AppText variant="subheading" color={colors.primaryDark}>
-                Schließen
+                {t.common.close}
               </AppText>
             </Pressable>
           </View>

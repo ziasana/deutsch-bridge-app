@@ -62,17 +62,17 @@ describe('DashboardScreen', () => {
       }),
     );
     await renderScreen();
-    expect(await screen.findByText('3 neue Inhalte für dich')).toBeTruthy();
-    expect(screen.getByText('2 Grammatiklektionen · 1 Lesetext')).toBeTruthy();
-    expect(await screen.findByText('2 gemerkte Lektionen warten')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Gemerkte Lektionen öffnen' }));
+    expect(await screen.findByText('3 new items for you')).toBeTruthy();
+    expect(screen.getByText('2 grammar lessons · 1 reading text')).toBeTruthy();
+    expect(await screen.findByText('2 saved lessons are waiting')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Open saved lessons' }));
     expect(mockPush).toHaveBeenCalledWith('/learn/grammar');
   });
 
   it('offers quick access to every learning area', async () => {
     get.mockResolvedValue(baseDashboard);
     await renderScreen();
-    await fireEvent.press(await screen.findByRole('button', { name: 'Lesen öffnen' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Open Reading' }));
     expect(mockPush).toHaveBeenCalledWith('/learn/reading');
   });
 
@@ -80,11 +80,9 @@ describe('DashboardScreen', () => {
     get.mockResolvedValue(baseDashboard);
     useAuthStore.setState({ profile: { examType: 'TELC', examLevel: 'B1' } as UserProfile });
     await renderScreen();
-    expect(await screen.findByText('TELC B1 Vorbereitung')).toBeTruthy();
-    expect(
-      await screen.findByText('Du hast diese Woche 3 Prüfungsübungen mit Zeitlimit abgeschlossen.'),
-    ).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'TELC B1 Vorbereitung' }));
+    expect(await screen.findByText('TELC B1 preparation')).toBeTruthy();
+    expect(await screen.findByText('You completed 3 timed exam exercises this week.')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'TELC B1 preparation' }));
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/exam-prep/zeitmanagement',
       params: { level: 'B1' },
@@ -94,40 +92,40 @@ describe('DashboardScreen', () => {
   it('lets you tap a day of the week for its details', async () => {
     get.mockResolvedValue(baseDashboard);
     await renderScreen();
-    const days = await screen.findAllByRole('button', { name: /: (gelernt|nicht gelernt)$/ });
+    const days = await screen.findAllByRole('button', { name: /: (learned|not learned)$/ });
     expect(days).toHaveLength(7);
     await fireEvent.press(days[0]);
-    expect(await screen.findByText(/Gelernt 🔥$/)).toBeTruthy();
+    expect(await screen.findByText(/Learned 🔥$/)).toBeTruthy();
   });
 
   it('shows a skeleton while loading', async () => {
     get.mockReturnValue(new Promise(() => {}));
     await renderScreen();
-    expect(screen.getByLabelText('Dashboard wird geladen')).toBeTruthy();
+    expect(screen.getByLabelText('Loading dashboard')).toBeTruthy();
   });
 
   it('renders the orchestrated sections and navigates with mapped routes', async () => {
     get.mockResolvedValue(withOverrides({ review: { wordsDue: 8, expressionsDue: 3 } }));
     await renderScreen();
 
-    expect(await screen.findByText('Willkommen zurück 👋')).toBeTruthy();
-    expect(screen.getByText('🔥 6 Tage')).toBeTruthy();
+    expect(await screen.findByText('Welcome back 👋')).toBeTruthy();
+    expect(screen.getByText('🔥 6 days')).toBeTruthy();
     expect(screen.getByText('B1')).toBeTruthy();
     expect(screen.getByText('Perfekt')).toBeTruthy(); // backend-provided title
-    expect(screen.getByText('8 Wörter · 3 Redewendungen')).toBeTruthy();
-    expect(screen.getByText('4 / 7 Lerntage')).toBeTruthy();
-    expect(screen.getByText('🏆 60 Wörter gemeistert')).toBeTruthy();
+    expect(screen.getByText('8 words · 3 expressions')).toBeTruthy();
+    expect(screen.getByText('4 / 7 learning days')).toBeTruthy();
+    expect(screen.getByText('🏆 60 words mastered')).toBeTruthy();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Weiterlernen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Keep learning' }));
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/grammar/[lessonId]',
       params: { lessonId: '1' },
     });
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Jetzt wiederholen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Review now' }));
     expect(mockPush).toHaveBeenCalledWith('/learn/review');
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Weiter' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
     expect(mockPush).toHaveBeenCalledWith('/learn/daily-words');
   });
 
@@ -150,21 +148,19 @@ describe('DashboardScreen', () => {
       }),
     );
     await renderScreen();
-    expect(await screen.findByText('Willkommen 👋')).toBeTruthy();
-    expect(screen.queryByText('🔥 0 Tage')).toBeNull();
+    expect(await screen.findByText('Welcome 👋')).toBeTruthy();
+    expect(screen.queryByText('🔥 0 days')).toBeNull();
     expect(screen.queryByText("Today's Plan")).toBeNull();
-    expect(screen.queryByText('🎯 Dein aktueller Fokus')).toBeNull();
-    await fireEvent.press(screen.getByRole('button', { name: 'Jetzt starten' }));
+    expect(screen.queryByText('🎯 Your current focus')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Start now' }));
     expect(mockPush).toHaveBeenCalledWith('/learn/daily-words');
   });
 
   it('shows an intentional empty state when nothing is due for review', async () => {
     get.mockResolvedValue(baseDashboard);
     await renderScreen();
-    expect(
-      await screen.findByText('🎉 Du hast momentan keine Wörter zur Wiederholung.'),
-    ).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Neue Wörter lernen' }));
+    expect(await screen.findByText('🎉 You have nothing to review right now.')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Learn new words' }));
     expect(mockPush).toHaveBeenCalledWith('/learn/daily-words');
   });
 
@@ -178,7 +174,7 @@ describe('DashboardScreen', () => {
     await renderScreen();
     expect(await screen.findByText(/Keine Verbindung/)).toBeTruthy();
     get.mockResolvedValueOnce(baseDashboard);
-    await fireEvent.press(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('Perfekt')).toBeTruthy();
   });
 });

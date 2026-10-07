@@ -17,6 +17,8 @@ import {
   phraseCategoryLabels,
 } from '../writingMeta';
 import { Expandable } from './Expandable';
+import { WRITING_COLOR } from '@/features/exam/writing/learn/ui';
+import { darken } from '@/features/exam/components/kit';
 
 function Strategy({ data }: { data: WritingLearningResponse }) {
   const steps = itemsOfKind<WritingStrategyData>(data, 'STRATEGY_STEP');
@@ -48,8 +50,8 @@ function Example({ data }: { data: WritingLearningResponse }) {
             <AppText variant="subheading">{item.title}</AppText>
             {item.content ? <AppText color={colors.mutedForeground}>{item.content}</AppText> : null}
             <View style={styles.row}>
-              <Chip label="Vollständiger Text" selected={view === 'full'} onPress={() => setView('full')} />
-              <Chip label="Text analysieren" selected={view === 'analyze'} onPress={() => setView('analyze')} />
+              <Chip label="Vollständiger Text" selected={view === 'full'} onPress={() => setView('full')} color={darken(WRITING_COLOR)} />
+              <Chip label="Text analysieren" selected={view === 'analyze'} onPress={() => setView('analyze')} color={darken(WRITING_COLOR)} />
             </View>
             {view === 'full' ? (
               <AppText>{sections.map((s) => s.text).join('\n\n')}</AppText>
@@ -62,6 +64,7 @@ function Example({ data }: { data: WritingLearningResponse }) {
                       label={s.label}
                       selected={active?.key === s.key}
                       onPress={() => setActiveKey((m) => ({ ...m, [item.id]: s.key }))}
+                      color={darken(WRITING_COLOR)}
                     />
                   ))}
                 </View>
@@ -103,7 +106,7 @@ function Phrases({ data }: { data: WritingLearningResponse }) {
     <View style={{ gap: spacing.md }}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
         {categories.map((c) => (
-          <Chip key={c} label={labels[c]} selected={c === current} onPress={() => setSelected(c)} />
+          <Chip key={c} label={labels[c]} selected={c === current} onPress={() => setSelected(c)} color={darken(WRITING_COLOR)} />
         ))}
       </ScrollView>
       {shown.map((p) => (
@@ -170,7 +173,7 @@ export function HelpSheet({ visible, onClose, tabs, data, loading }: Props) {
     <BottomSheet visible={visible} onClose={onClose} title="Hilfe">
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
         {tabs.map((t) => (
-          <Chip key={t} label={HELP_TAB_LABELS[t]} selected={t === current} onPress={() => setTab(t)} />
+          <Chip key={t} label={HELP_TAB_LABELS[t]} selected={t === current} onPress={() => setTab(t)} color={darken(WRITING_COLOR)} />
         ))}
       </ScrollView>
       {loading ? (

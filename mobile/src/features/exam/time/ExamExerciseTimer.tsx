@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { colors, spacing } from '@/theme';
 import type { ExamExercise } from '@/types/exam';
 import type { ExamPracticeSessionResult } from '@/types/examTime';
@@ -31,6 +32,8 @@ export function ExamExerciseTimer({
   /** Always begin a new run when armed instead of continuing this exercise's earlier one. */
   fresh?: boolean;
 }) {
+  const { t } = useI18n();
+  const tr = t.examRun.timer;
   const { active, hasHydrated, busy, start, finish } = useExamSession();
   const restartSignal = useExamTimerStore((s) => s.restartSignal);
   const [stoppedResult, setStoppedResult] = useState<ExamPracticeSessionResult | null>(null);
@@ -121,9 +124,7 @@ export function ExamExerciseTimer({
       <View style={styles.waiting}>
         <Ionicons name="timer-outline" size={20} color={colors.mutedForeground} />
         <AppText variant="small" color={colors.mutedForeground} style={{ flex: 1 }}>
-          {minutes != null
-            ? `Empfohlene Zeit: ${minutes} Min. Die Zeit startet mit „Übung starten“.`
-            : 'Die Zeit startet mit „Übung starten“.'}
+          {tr.waiting(minutes, t.examRun.startButton)}
         </AppText>
       </View>
     );
@@ -133,11 +134,11 @@ export function ExamExerciseTimer({
     return (
       <ExamTimerBar
         active={active}
-        title="Zeit für diese Übung"
+        title={tr.barTitle}
         actions={
           <TimerPill
-            label="Stopp"
-            text="Stopp"
+            label={tr.stop}
+            text={tr.stop}
             busy={busy}
             onPress={async () => {
               setStoppedByHand(true);
@@ -166,9 +167,9 @@ export function ExamExerciseTimer({
       ) : null}
       <View style={styles.stopped}>
         <AppText variant="small" color={colors.mutedForeground} style={{ flex: 1 }}>
-          {startError ? 'Die Zeitmessung konnte nicht gestartet werden.' : 'Die Zeitmessung ist gestoppt.'}
+          {startError ? tr.startFailed : tr.stopped}
         </AppText>
-        <TimerPill label="Zeit starten" text="Zeit starten" busy={busy} onPress={startByHand} />
+        <TimerPill label={tr.startTimer} text={tr.startTimer} busy={busy} onPress={startByHand} />
       </View>
     </View>
   );

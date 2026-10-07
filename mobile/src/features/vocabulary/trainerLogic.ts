@@ -108,10 +108,3 @@ export function sessionPercent(state: TrainerState, total: number): number {
   const partial = state.stage === 'result' ? 1 : state.stage === 'context' ? 0.5 : 0;
   return Math.round(((state.index + partial) / total) * 100);
 }
-
-export const MASTERY_LABEL: Record<VocabularyMasteryLevel, string> = {
-  NEW: 'Neu',
-  LEARNING: 'Am Lernen',
-  FAMILIAR: 'Vertraut',
-  MASTERED: 'Gemeistert',
-};

@@ -4,9 +4,12 @@ import type {
   RedemittelExerciseType,
   RedemittelStatus,
 } from '@/types/redemittel';
+import { SECTION_COLOR } from '@/theme/sectionColors';
 
 /** Accent for everything Redemittel: a warm coral, apart from the blue/green/violet of the other areas. */
-export const REDEMITTEL_COLOR = '#EC5B8A';
+export const REDEMITTEL_COLOR: string = SECTION_COLOR.redemittel;
+/** Darker shade for text and icons on the light pink tint. */
+export const REDEMITTEL_DARK = '#B8346A';
 
 export const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
 

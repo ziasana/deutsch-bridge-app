@@ -5,11 +5,16 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
 import { AppText } from '@/components/ui';
+import { HeroBackdrop } from '@/components/ui/HeroDecor';
 import { IconButton, tint } from '@/features/exam/components/kit';
+import { useI18n } from '@/i18n';
 import { colors, radius, spacing } from '@/theme';
+import { SECTION_COLOR } from '@/theme/sectionColors';
 
 /** Accent for everything reading: a soft violet, matching the Lesen tile in the learn tab. */
-export const READING_COLOR = '#8B5CF6';
+export const READING_COLOR: string = SECTION_COLOR.reading;
+/** Darker shade for text and icons on the light violet tint. */
+export const READING_DARK = '#6034C9';
 
 /** An open book with a magnifier — decoration only. */
 export function BookIllustration({ size = 112 }: { size?: number }) {
@@ -76,11 +81,13 @@ export function ReadingHero({
   children?: ReactNode;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   return (
     <View style={[styles.hero, { backgroundColor: tint(READING_COLOR, '1F') }]}>
+      <HeroBackdrop color={READING_COLOR} />
       <SafeAreaView edges={['top']}>
         <View style={styles.topRow}>
-          <IconButton name="arrow-back" label="Zurück" onPress={() => router.back()} />
+          <IconButton name="arrow-back" label={t.common.back} onPress={() => router.back()} />
           {trailing ?? (
             <View style={[styles.chip, { backgroundColor: tint(READING_COLOR, '33') }]}>
               <AppText variant="caption" color={colors.ink} style={{ fontWeight: '800' }}>
@@ -120,7 +127,7 @@ export function ReadingHero({
   );
 }
 
-/** Small pill with an icon, e.g. "3 neue Wörter". */
+/** Small pill with an icon, e.g. "3 new words". */
 export function InfoPill({
   icon,
   text,
@@ -148,13 +155,14 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    overflow: 'hidden',
   },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginHorizontal: -spacing.sm,
-    paddingRight: spacing.sm,
+    paddingEnd: spacing.sm,
   },
   chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill },
   heroMain: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingTop: spacing.sm },

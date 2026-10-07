@@ -7,7 +7,10 @@ import type { NotificationItem, NotificationPreferences } from '@/types/notifica
 import type { UserProfile } from '@/types/user';
 import { buildRows, NotificationsScreen } from '../NotificationsScreen';
 import { PreferencesScreen } from '../PreferencesScreen';
-import { dayBucket, isValidTime, relativeTimeDe } from '../time';
+import { dictionaries } from '@/i18n';
+import { dayBucket, isValidTime, relativeTime } from '../time';
+
+const relativeTimeDe = (iso: string, now: Date) => relativeTime(iso, dictionaries.en.notifications.time, now);
 
 jest.mock('@/api/notificationApi');
 jest.mock('../push', () => ({ getPushState: async () => 'unsupported', enablePush: jest.fn() }));
@@ -61,13 +64,13 @@ describe('time helpers', () => {
   it('words relative times in German', () => {
     const base = new Date(2026, 9, 5, 12);
     const at = (min: number) => new Date(base.getTime() - min * 60_000).toISOString();
-    expect(relativeTimeDe(at(0), base)).toBe('gerade eben');
-    expect(relativeTimeDe(at(1), base)).toBe('vor einer Minute');
-    expect(relativeTimeDe(at(5), base)).toBe('vor 5 Minuten');
-    expect(relativeTimeDe(at(60), base)).toBe('vor einer Stunde');
-    expect(relativeTimeDe(at(3 * 60), base)).toBe('vor 3 Stunden');
-    expect(relativeTimeDe(at(24 * 60), base)).toBe('vor einem Tag');
-    expect(relativeTimeDe(at(14 * 24 * 60), base)).toBe('vor 2 Wochen');
+    expect(relativeTimeDe(at(0), base)).toBe('just now');
+    expect(relativeTimeDe(at(1), base)).toBe('1 minute ago');
+    expect(relativeTimeDe(at(5), base)).toBe('5 minutes ago');
+    expect(relativeTimeDe(at(60), base)).toBe('1 hour ago');
+    expect(relativeTimeDe(at(3 * 60), base)).toBe('3 hours ago');
+    expect(relativeTimeDe(at(24 * 60), base)).toBe('1 day ago');
+    expect(relativeTimeDe(at(14 * 24 * 60), base)).toBe('2 weeks ago');
   });
   it('validates HH:mm', () => {
     expect(['00:00', '18:30', '23:59'].every(isValidTime)).toBe(true);
@@ -85,14 +88,14 @@ describe('NotificationsScreen', () => {
     api.click.mockImplementation(async (id) => item(id, { read: true, actionUrl: id === 'n1' ? '/dashboard/grammar' : '/dashboard/exam-prep/exercise?id=e7' }));
     await wrap(<NotificationsScreen />);
     expect(await screen.findByText('Titel n1')).toBeTruthy();
-    expect(screen.getByText('HEUTE')).toBeTruthy();
-    expect(screen.getByText('2 ungelesen')).toBeTruthy();
+    expect(screen.getByText('TODAY')).toBeTruthy();
+    expect(screen.getByText('2 unread')).toBeTruthy();
     expect(api.page).toHaveBeenCalledWith(0, 20, []);
 
-    await fireEvent.press(screen.getByRole('button', { name: /Ungelesen: Titel n1/ }));
+    await fireEvent.press(screen.getByRole('button', { name: /Unread: Titel n1/ }));
     await waitFor(() => expect(api.click).toHaveBeenCalledWith('n1'));
     await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/learn/grammar'));
-    expect(await screen.findByText('1 ungelesen')).toBeTruthy(); // optimistic
+    expect(await screen.findByText('1 unread')).toBeTruthy(); // optimistic
 
     await fireEvent.press(screen.getByRole('button', { name: /Titel n2/ }));
     await waitFor(() => expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/exam-prep/exercise/[exerciseId]', params: { exerciseId: 'e7' } }));
@@ -122,12 +125,12 @@ describe('NotificationsScreen', () => {
     api.markAllRead.mockResolvedValue(undefined);
     await wrap(<NotificationsScreen />);
     await screen.findByText('Titel n1');
-    await fireEvent.press(screen.getByRole('button', { name: 'Lernen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Learning' }));
     await waitFor(() => expect(api.page).toHaveBeenCalledWith(0, 20, ['LEARNING', 'REMINDER']));
 
-    await fireEvent.press(await screen.findByRole('button', { name: 'Alle als gelesen markieren' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Mark all as read' }));
     await waitFor(() => expect(api.markAllRead).toHaveBeenCalled());
-    expect(await screen.findByText('Alles gelesen')).toBeTruthy();
+    expect(await screen.findByText('All caught up')).toBeTruthy();
   });
 
   it('loads the next page when scrolled to the end', async () => {
@@ -142,7 +145,7 @@ describe('NotificationsScreen', () => {
   it('shows an empty state', async () => {
     api.page.mockResolvedValue(page([]));
     await wrap(<NotificationsScreen />);
-    expect(await screen.findByText('Keine Benachrichtigungen')).toBeTruthy();
+    expect(await screen.findByText('No notifications')).toBeTruthy();
   });
 
   it('shows an error state', async () => {
@@ -176,33 +179,33 @@ describe('PreferencesScreen', () => {
 
   it('toggles are saved immediately; the master switch also disables its children and mirrors into the profile', async () => {
     await wrap(<PreferencesScreen />);
-    const master = await screen.findByLabelText('Tägliche Erinnerungen');
+    const master = await screen.findByLabelText('Daily reminders');
     await fireEvent(master, 'valueChange', false);
     await waitFor(() => expect(api.updatePreferences).toHaveBeenCalledWith({ learningRemindersEnabled: false }));
-    await waitFor(() => expect(screen.getByLabelText('Wiederholungs-Erinnerungen').props.disabled).toBe(true));
+    await waitFor(() => expect(screen.getByLabelText('Review reminders').props.disabled).toBe(true));
     expect(useAuthStore.getState().profile?.notificationsEnabled).toBe(false);
   });
 
   it('rolls a toggle back when saving fails', async () => {
     api.updatePreferences.mockRejectedValue(new ApiError('server', 'x'));
     await wrap(<PreferencesScreen />);
-    await fireEvent(await screen.findByLabelText('Prüfungs-Erinnerungen'), 'valueChange', false);
-    expect(await screen.findByText(/konnte nicht gespeichert werden/)).toBeTruthy();
-    expect(screen.getByLabelText('Prüfungs-Erinnerungen').props.value).toBe(true);
+    await fireEvent(await screen.findByLabelText('Exam reminders'), 'valueChange', false);
+    expect(await screen.findByText(/could not be saved/)).toBeTruthy();
+    expect(screen.getByLabelText('Exam reminders').props.value).toBe(true);
   });
 
   it('saves a valid time only, and shows quiet hours fields when enabled', async () => {
     await wrap(<PreferencesScreen />);
-    const time = await screen.findByLabelText('Bevorzugte Erinnerungszeit');
+    const time = await screen.findByLabelText('Preferred reminder time');
     await fireEvent.changeText(time, '25:00');
-    expect(await screen.findByText(/Format HH:mm/)).toBeTruthy();
+    expect(await screen.findByText(/format HH:mm/)).toBeTruthy();
     expect(api.updatePreferences).not.toHaveBeenCalled();
     await fireEvent.changeText(time, '19:30');
     await waitFor(() => expect(api.updatePreferences).toHaveBeenCalledWith({ preferredReminderTime: '19:30' }));
 
-    expect(screen.queryByLabelText('Ruhezeit von')).toBeNull();
-    await fireEvent(screen.getByLabelText('Ruhezeiten'), 'valueChange', true);
-    expect(await screen.findByLabelText('Ruhezeit von')).toBeTruthy();
+    expect(screen.queryByLabelText('Quiet hours from')).toBeNull();
+    await fireEvent(screen.getByLabelText('Quiet hours'), 'valueChange', true);
+    expect(await screen.findByLabelText('Quiet hours from')).toBeTruthy();
   });
 
   it('reports the device timezone once when the backend has none', async () => {
@@ -216,5 +219,16 @@ describe('PreferencesScreen', () => {
     api.preferences.mockRejectedValue(new ApiError('network', 'Keine Verbindung.'));
     await wrap(<PreferencesScreen />);
     expect(await screen.findByText('Keine Verbindung.')).toBeTruthy();
+  });
+});
+
+describe('Persian interface', () => {
+  it('words relative times in Persian', () => {
+    const now = new Date('2026-10-07T12:00:00Z');
+    const at = (min: number) => new Date(now.getTime() - min * 60_000).toISOString();
+    const time = dictionaries.fa.notifications.time;
+    expect(relativeTime(at(0), time, now)).toBe('همین الان');
+    expect(relativeTime(at(5), time, now)).toBe('5 دقیقه پیش');
+    expect(relativeTime(at(3 * 60), time, now)).toBe('3 ساعت پیش');
   });
 });

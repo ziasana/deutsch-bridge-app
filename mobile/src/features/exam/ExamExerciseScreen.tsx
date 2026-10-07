@@ -5,6 +5,7 @@ import { AppText, Button, Card, ErrorState, Skeleton } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 import type { ExamExercise } from '@/types/exam';
 import type { ExamPracticeSessionResult } from '@/types/examTime';
+import { useExamText } from './examText';
 import { RichContentScale } from './components/RichContentScale';
 import { ExerciseFrame, IconButton, QuizTopBar, TextSizeControl } from './components/kit';
 import { PassageBody } from './components/Passages';
@@ -14,6 +15,7 @@ import { ExamExerciseTimer } from './time/ExamExerciseTimer';
 import { useStopExerciseTimer } from './time/hooks';
 import { WritingExercise } from './writing/WritingExercise';
 import { useExamExercise, useMarkExamCompleted, useToggleExamBookmark } from './hooks';
+import { darken } from '@/features/exam/components/kit';
 
 /** Testformat pages are read-only information; finishing them is a manual "erledigt". */
 function InfoBody({ exercise }: { exercise: ExamExercise }) {
@@ -34,12 +36,13 @@ function InfoBody({ exercise }: { exercise: ExamExercise }) {
             disabled={exercise.completed}
             loading={mark.isPending}
             onPress={() => mark.mutate()}
+            color={darken(SECTION_META[exercise.section].color)}
           />
         </>
       }
     >
       <View style={styles.sizeRow}>
-        <TextSizeControl />
+        <TextSizeControl color={SECTION_META[exercise.section].color} />
       </View>
       {exercise.teilDescription ? (
         <Card tone="accent">
@@ -64,7 +67,7 @@ function WritingBody({ exercise }: { exercise: ExamExercise }) {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ExerciseFrame>
         <View style={styles.sizeRow}>
-          <TextSizeControl />
+          <TextSizeControl color={SECTION_META[exercise.section].color} />
         </View>
         {exercise.teilDescription ? (
           <Card tone="accent">
@@ -95,6 +98,7 @@ function WritingBody({ exercise }: { exercise: ExamExercise }) {
  */
 export function ExamExerciseScreen() {
   const router = useRouter();
+  const tx = useExamText();
   const { exerciseId } = useLocalSearchParams<{ exerciseId: string }>();
   const query = useExamExercise(exerciseId);
   const bookmark = useToggleExamBookmark();
@@ -135,8 +139,8 @@ export function ExamExerciseScreen() {
     <RichContentScale>
     <View style={styles.root}>
       <QuizTopBar
-        title={exercise.title}
-        subtitle={`${meta?.label ?? ''}${exercise.level ? ` · ${exercise.level}` : ''}`}
+        title={tx(exercise.title)}
+        subtitle={`${tx(meta?.label ?? '')}${exercise.level ? ` · ${exercise.level}` : ''}`}
         color={meta?.color ?? colors.primary}
         onClose={close}
         right={

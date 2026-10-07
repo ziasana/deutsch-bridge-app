@@ -35,7 +35,12 @@ export function getTimeStatus(
   let status: TimeStatus = 'ON_TRACK';
   if (elapsedSeconds > targetSeconds * t.overTime) status = 'OVER_TIME';
   else if (elapsedSeconds >= targetSeconds * t.target) status = 'TARGET_REACHED';
-  return { status, elapsedSeconds, targetSeconds, differenceSeconds: elapsedSeconds - targetSeconds };
+  return {
+    status,
+    elapsedSeconds,
+    targetSeconds,
+    differenceSeconds: elapsedSeconds - targetSeconds,
+  };
 }
 
 export type WarningStage = 'APPROACHING' | 'TARGET_REACHED' | 'OVER_TIME';

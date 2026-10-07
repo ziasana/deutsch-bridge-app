@@ -51,34 +51,34 @@ describe('VocabularyScreen', () => {
     ]);
     await wrap(<VocabularyScreen />);
     expect((await screen.findAllByText('der Wort1')).length).toBeGreaterThan(0); // card + 'Weiter lernen'
-    expect(screen.getByRole('button', { name: 'Meine Wörter (2)' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Aus dem Lesen (1)' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'My words (2)' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'From reading (1)' })).toBeTruthy();
     expect(screen.queryByText('Wort3')).toBeNull();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Training starten' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Start training' }));
     expect(mockPush).toHaveBeenCalledWith('/learn/review');
-    await fireEvent.press(screen.getByRole('button', { name: 'der Wort1 üben' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Practise der Wort1' }));
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/learn/review',
       params: { vocabularyItemId: 'w1' },
     });
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Aus dem Lesen (1)' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'From reading (1)' }));
     expect((await screen.findAllByText('Wort3')).length).toBeGreaterThan(0);
-    expect(screen.queryByRole('button', { name: 'Bearbeiten' })).toBeNull(); // dictionary words are read-only here
+    expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull(); // dictionary words are read-only here
   });
 
   it('adds a word through the form', async () => {
     api.list.mockResolvedValue([]);
     api.create.mockResolvedValue(makeWord(9, { word: 'Hund', meaning: 'dog', article: 'der' }));
     await wrap(<VocabularyScreen />);
-    await fireEvent.press(await screen.findByRole('button', { name: '＋ Wort hinzufügen' }));
-    expect(screen.getByRole('button', { name: 'Speichern' })).toBeDisabled();
+    await fireEvent.press(await screen.findByRole('button', { name: '＋ Add word' }));
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
 
     await fireEvent.press(screen.getByRole('button', { name: 'der' }));
-    await fireEvent.changeText(screen.getByLabelText('Wort'), 'Hund');
-    await fireEvent.changeText(screen.getByLabelText('Bedeutung'), 'dog');
-    await fireEvent.press(screen.getByRole('button', { name: 'Speichern' }));
+    await fireEvent.changeText(screen.getByLabelText('Word'), 'Hund');
+    await fireEvent.changeText(screen.getByLabelText('Meaning'), 'dog');
+    await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() =>
       expect(api.create).toHaveBeenCalledWith(
         expect.objectContaining({ word: 'Hund', meaning: 'dog', article: 'der', example: null }),
@@ -91,10 +91,10 @@ describe('VocabularyScreen', () => {
     api.list.mockResolvedValue([makeWord(1), makeWord(2, { bookmarked: true })]);
     api.addBookmark.mockResolvedValue(makeWord(1, { bookmarked: true }));
     await wrap(<VocabularyScreen />);
-    await fireEvent.press((await screen.findAllByRole('button', { name: 'Merken' }))[0]);
+    await fireEvent.press((await screen.findAllByRole('button', { name: 'Save for later' }))[0]);
     await waitFor(() => expect(api.addBookmark).toHaveBeenCalledWith('w1'));
 
-    await fireEvent.press(screen.getByRole('button', { name: '★ Nur Gemerkte' }));
+    await fireEvent.press(screen.getByRole('button', { name: '★ Saved only' }));
     expect(screen.getAllByText('Wort1').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Wort2').length).toBeGreaterThan(0);
   });
@@ -103,9 +103,9 @@ describe('VocabularyScreen', () => {
     api.list.mockResolvedValue([makeWord(1), makeWord(2)]);
     await wrap(<VocabularyScreen />);
     await screen.findAllByText('Wort1');
-    await fireEvent.changeText(screen.getByLabelText('Suchen'), 'zzz');
-    expect(await screen.findByText('Keine Treffer')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Filter zurücksetzen' }));
+    await fireEvent.changeText(screen.getByLabelText('Search'), 'zzz');
+    expect(await screen.findByText('No matches')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Reset filters' }));
     expect((await screen.findAllByText('Wort1')).length).toBeGreaterThan(0);
   });
 
@@ -116,16 +116,16 @@ describe('VocabularyScreen', () => {
       buttons?.find((b) => b.style === 'destructive')?.onPress?.();
     });
     await wrap(<VocabularyScreen />);
-    await fireEvent.press(await screen.findByRole('button', { name: 'Löschen' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Delete' }));
     expect(alert).toHaveBeenCalled();
     await waitFor(() => expect(api.remove).toHaveBeenCalledWith('w1'));
-    expect(await screen.findByText('Noch keine Wörter')).toBeTruthy();
+    expect(await screen.findByText('No words yet')).toBeTruthy();
   });
 
   it('shows an empty state with an add action for new learners', async () => {
     api.list.mockResolvedValue([]);
     await wrap(<VocabularyScreen />);
-    expect(await screen.findByText('Noch keine Wörter')).toBeTruthy();
+    expect(await screen.findByText('No words yet')).toBeTruthy();
   });
 });
 
@@ -141,11 +141,11 @@ describe('VocabularyDetailScreen', () => {
     await wrap(<VocabularyDetailScreen />);
     expect(await screen.findByText('das Wort1')).toBeTruthy();
     expect(screen.getByText('meaning 1')).toBeTruthy();
-    expect(screen.getByText('„Das Haus ist groß.“')).toBeTruthy();
+    expect(screen.getByText('“Das Haus ist groß.”')).toBeTruthy();
     expect(screen.getByText('Gebäude')).toBeTruthy();
-    expect(screen.getByText('Du hast dieses Wort noch nicht geübt.')).toBeTruthy();
+    expect(screen.getByText("You haven't practised this word yet.")).toBeTruthy();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Dieses Wort üben' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Practise this word' }));
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/learn/review',
       params: { vocabularyItemId: 'w1' },
@@ -156,6 +156,6 @@ describe('VocabularyDetailScreen', () => {
     api.byId.mockResolvedValue(makeWord(1, { source: 'DICTIONARY' }));
     await wrap(<VocabularyDetailScreen />);
     await screen.findByText('Wort1');
-    expect(screen.queryByRole('button', { name: 'Bearbeiten' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
   });
 });

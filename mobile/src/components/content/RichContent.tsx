@@ -1,6 +1,8 @@
 import { Image } from 'expo-image';
 import { createContext, useContext, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { detectDir, ltrText, rtlText } from '@/i18n/direction';
+import { HorizontalScroll } from '@/components/ui/HorizontalScroll';
 import { colors, radius, spacing } from '@/theme';
 import { parseBlocks, parseInline, type BlockNode, type InlineNode } from './parse';
 
@@ -68,18 +70,46 @@ function styles_h(size: number) {
   };
 }
 
+const inlineText = (nodes: InlineNode[]) =>
+  nodes.map((n) => (n.t === 'text' ? n.text : ' ')).join('');
+
+/** Plain text of a block, for sniffing its direction. */
+function blockText(b: BlockNode): string {
+  switch (b.t) {
+    case 'p':
+    case 'h':
+      return inlineText(b.inlines);
+    case 'list':
+      return b.items.map((item) => item.map(blockText).join(' ')).join(' ');
+    case 'quote':
+      return b.blocks.map(blockText).join(' ');
+    case 'table':
+      return b.rows.map((r) => r.cells.map((c) => c.map(blockText).join(' ')).join(' ')).join(' ');
+    default:
+      return '';
+  }
+}
+
 function Blocks({ blocks, dir }: { blocks: BlockNode[]; dir: Direction }) {
-  const align =
-    dir === 'rtl' ? { textAlign: 'right' as const, writingDirection: 'rtl' as const } : null;
+  // `dir` is the lesson's language direction, used only where a block has no letters to go by.
+  // Each block takes its own direction, like the web renderer: a Persian lesson keeps its German
+  // example sentences left-to-right, and a German lesson keeps any Persian note right-to-left.
+  const textOf = (b: BlockNode) => detectDir(blockText(b), dir);
   return (
-    <View style={styles.stack}>
+    <View style={[styles.stack, { direction: dir }]}>
       {blocks.map((b, i) => {
+        const bd = textOf(b);
+        const align = bd === 'rtl' ? rtlText : ltrText;
         switch (b.t) {
           case 'p':
-            return <Inlines key={i} nodes={b.inlines} base={[styles.body, align]} />;
+            return (
+              <View key={i} style={{ direction: bd }}>
+                <Inlines nodes={b.inlines} base={[styles.body, align]} />
+              </View>
+            );
           case 'h':
             return (
-              <View key={i} accessibilityRole="header">
+              <View key={i} accessibilityRole="header" style={{ direction: bd }}>
                 <Inlines nodes={b.inlines} base={[HEADING_STYLE[b.level - 1], align]} />
               </View>
             );
@@ -89,7 +119,10 @@ function Blocks({ blocks, dir }: { blocks: BlockNode[]; dir: Direction }) {
                 {b.items.map((item, j) => (
                   <View
                     key={j}
-                    style={[styles.item, dir === 'rtl' && { flexDirection: 'row-reverse' }]}
+                    style={[
+                      styles.item,
+                      { direction: detectDir(item.map(blockText).join(' '), dir) },
+                    ]}
                   >
                     <Text style={[styles.body, styles.marker]}>
                       {b.ordered ? `${j + 1}.` : '•'}
@@ -127,7 +160,7 @@ function Blocks({ blocks, dir }: { blocks: BlockNode[]; dir: Direction }) {
             );
           case 'table':
             return (
-              <ScrollView
+              <HorizontalScroll
                 key={i}
                 horizontal
                 showsHorizontalScrollIndicator
@@ -154,7 +187,7 @@ function Blocks({ blocks, dir }: { blocks: BlockNode[]; dir: Direction }) {
                     </View>
                   ))}
                 </View>
-              </ScrollView>
+              </HorizontalScroll>
             );
         }
       })}
@@ -207,7 +240,7 @@ export function RichContent({
       return next;
     });
   return (
-    <View style={styles.stack}>
+    <View style={[styles.stack, { direction: dir }]}>
       {blocks.map((b, i) =>
         b.t === 'p' ? (
           <Pressable
@@ -237,14 +270,18 @@ export function InlineRich({
   style?: object;
   dir?: Direction;
 }) {
-  const align =
-    dir === 'rtl' ? { textAlign: 'right' as const, writingDirection: 'rtl' as const } : null;
+  const align = detectDir(content, dir) === 'rtl' ? rtlText : ltrText;
   return <Inlines nodes={parseInline(content)} base={[styles.body, style, align]} />;
 }
 
 const styles = StyleSheet.create({
   stack: { gap: spacing.sm },
-  para: { marginHorizontal: -spacing.sm, paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.sm },
+  para: {
+    marginHorizontal: -spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.sm,
+  },
   marked: { backgroundColor: '#FFF0A6' },
   flex: { flex: 1 },
   body: { fontSize: 16, lineHeight: 25, color: colors.foreground },
@@ -258,9 +295,9 @@ const styles = StyleSheet.create({
   item: { flexDirection: 'row', gap: spacing.sm },
   marker: { minWidth: 18 },
   quote: {
-    borderLeftWidth: 4,
-    borderLeftColor: colors.accent,
-    paddingLeft: spacing.md,
+    borderStartWidth: 4,
+    borderStartColor: colors.accent,
+    paddingStart: spacing.md,
     opacity: 0.9,
   },
   hr: { height: 1, backgroundColor: colors.border, marginVertical: spacing.sm },

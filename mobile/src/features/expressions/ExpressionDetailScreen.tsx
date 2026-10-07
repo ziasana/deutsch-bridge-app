@@ -26,7 +26,15 @@ import {
   useMarkViewed,
   useToggleExpressionBookmark,
 } from './hooks';
-import { CONTEXT_LABEL, REGISTER_LABEL, TYPE_COLOR, TYPE_EMOJI, TYPE_SINGULAR } from './labels';
+import {
+  CONTEXT_LABEL,
+  EXPRESSION_COLOR,
+  REGISTER_LABEL,
+  TYPE_COLOR,
+  TYPE_EMOJI,
+  TYPE_SINGULAR,
+} from './labels';
+import { EXPRESSION_DARK } from './labels';
 
 /** Body text that follows the learner's text size (the same setting as in the exam and lessons). */
 function Body({
@@ -148,6 +156,7 @@ export function ExpressionDetailScreen() {
             variant="secondary"
             accessibilityHint={prev.expression}
             onPress={() => goTo(prev.id)}
+            color={EXPRESSION_DARK}
           />
         ) : null}
       </View>
@@ -158,6 +167,7 @@ export function ExpressionDetailScreen() {
             variant="secondary"
             accessibilityHint={next.expression}
             onPress={() => goTo(next.id)}
+            color={EXPRESSION_DARK}
           />
         ) : null}
       </View>
@@ -211,6 +221,7 @@ export function ExpressionDetailScreen() {
                     params: { expressionId: e.id, skipIntro: '1' },
                   })
                 }
+                color={EXPRESSION_COLOR}
               />
             </View>
             <View style={styles.flex}>
@@ -220,6 +231,7 @@ export function ExpressionDetailScreen() {
                 variant="secondary"
                 loading={bookmark.isPending}
                 onPress={() => bookmark.mutate(e.bookmarked)}
+                color={EXPRESSION_DARK}
               />
             </View>
           </View>
@@ -233,7 +245,7 @@ export function ExpressionDetailScreen() {
             <AppText variant="small" color={colors.mutedForeground} style={{ fontWeight: '600' }}>
               Schriftgröße
             </AppText>
-            <TextSizeControl />
+            <TextSizeControl color={EXPRESSION_COLOR} dark={EXPRESSION_DARK} />
           </View>
 
           <Section title="Bedeutung" icon="bulb-outline" color={color}>
@@ -313,6 +325,7 @@ export function ExpressionDetailScreen() {
               <ProgressBar
                 value={Math.round(e.progress.overallScore * 100)}
                 label="Gesamtfortschritt"
+                color={EXPRESSION_COLOR}
               />
               <View style={styles.stats}>
                 <StatPill
@@ -327,7 +340,7 @@ export function ExpressionDetailScreen() {
                 />
                 <StatPill
                   icon="repeat"
-                  color={colors.primary}
+                  color={EXPRESSION_COLOR}
                   text={`${e.progress.reviewCount}× geübt`}
                 />
               </View>
@@ -455,7 +468,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: radius.lg,
     borderTopLeftRadius: 6,
-    backgroundColor: colors.accent,
+    backgroundColor: tint(EXPRESSION_COLOR, '1F'),
   },
   segment: {
     flexDirection: 'row',

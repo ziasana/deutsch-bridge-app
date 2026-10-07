@@ -7,7 +7,15 @@ import { colors, radius, shadow, spacing } from '@/theme';
 import type { ExpressionListItem, ExpressionType } from '@/types/expression';
 import { BubblesIllustration, ExpressionHero, MasteryDots } from './components/ExpressionViz';
 import { useCollectionSummary, useContinueLearning } from './hooks';
-import { MASTERY_COLOR, TYPE_COLOR, TYPE_DESCRIPTION, TYPE_EMOJI, TYPE_LABEL } from './labels';
+import {
+  EXPRESSION_COLOR,
+  EXPRESSION_DARK,
+  MASTERY_COLOR,
+  TYPE_COLOR,
+  TYPE_DESCRIPTION,
+  TYPE_EMOJI,
+  TYPE_LABEL,
+} from './labels';
 import { meaningLine } from './practiceLogic';
 
 const TYPES: ExpressionType[] = ['REDEWENDUNG', 'NOMEN_VERB_VERBINDUNG'];
@@ -25,7 +33,7 @@ function MiniCard({ item, onPress }: { item: ExpressionListItem; onPress: () => 
     >
       <View style={styles.miniTop}>
         <View style={styles.level}>
-          <AppText variant="caption" color={colors.primaryDark} style={{ fontWeight: '800' }}>
+          <AppText variant="caption" color={EXPRESSION_DARK} style={{ fontWeight: '800' }}>
             {item.level}
           </AppText>
         </View>
@@ -104,6 +112,7 @@ function CollectionCard({ type, total }: { type: ExpressionType; total: number |
         label={`${TYPE_LABEL[type]} ansehen`}
         variant="secondary"
         onPress={() => router.push({ pathname: '/expressions/list/[type]', params: { type } })}
+        color={EXPRESSION_DARK}
       />
     </View>
   );
@@ -140,7 +149,7 @@ export function ExpressionsHubScreen() {
                   icon="albums-outline"
                   label="Einträge"
                   value={String(grandTotal)}
-                  color={colors.primary}
+                  color={EXPRESSION_COLOR}
                 />
                 {TYPES.map((type) => (
                   <StatTile
@@ -167,8 +176,8 @@ export function ExpressionsHubScreen() {
                   onPress={() => router.push('/expressions/practice')}
                   style={styles.trainingBtn}
                 >
-                  <Ionicons name="play" size={18} color={colors.primaryDark} />
-                  <AppText variant="small" color={colors.primaryDark} style={{ fontWeight: '800' }}>
+                  <Ionicons name="play" size={18} color={EXPRESSION_DARK} />
+                  <AppText variant="small" color={EXPRESSION_DARK} style={{ fontWeight: '800' }}>
                     Starten
                   </AppText>
                 </PressableScale>
@@ -196,7 +205,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     padding: spacing.lg,
     borderRadius: radius.lg,
-    backgroundColor: colors.primary,
+    backgroundColor: EXPRESSION_COLOR,
     ...shadow.card,
   },
   trainingTitle: { fontSize: 20, lineHeight: 26, fontWeight: '800', color: '#FFFFFF' },
@@ -244,6 +253,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: radius.pill,
-    backgroundColor: colors.accent,
+    backgroundColor: tint(EXPRESSION_COLOR, '1F'),
   },
 });

@@ -47,15 +47,15 @@ describe('GrammarListScreen', () => {
     expect(screen.getByRole('button', { name: 'A1 · 4/4' })).toBeTruthy();
     expect(levelView).toHaveBeenCalledWith('A2');
     expect(screen.getByText('Vergangenheit')).toBeTruthy();
-    expect(screen.getByText('1 von 2 Themen gelernt')).toBeTruthy();
-    expect(screen.getByText('Test bestanden')).toBeTruthy();
+    expect(screen.getByText('1 of 2 topics learned')).toBeTruthy();
+    expect(screen.getByText('Test passed')).toBeTruthy();
   });
 
   it('expands a category, opens a lesson and the category test', async () => {
     await renderScreen();
     await fireEvent.press(await screen.findByText('Vergangenheit'));
     expect(await screen.findByText('Lektion l1')).toBeTruthy();
-    expect(screen.getByText('Gelernt')).toBeTruthy();
+    expect(screen.getByText('Learned')).toBeTruthy();
 
     await fireEvent.press(screen.getByText('Lektion l2'));
     expect(mockPush).toHaveBeenCalledWith({
@@ -63,7 +63,7 @@ describe('GrammarListScreen', () => {
       params: { lessonId: 'l2' },
     });
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Kategorie-Test starten' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Start category test' }));
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/grammar/category-test/[categoryId]',
       params: { categoryId: 'c1' },
@@ -79,7 +79,7 @@ describe('GrammarListScreen', () => {
   it('shows an intentional empty state', async () => {
     levelView.mockResolvedValue({ level: 'A2', categories: [], uncategorized: [] });
     await renderScreen();
-    expect(await screen.findByText('Noch keine Lektionen')).toBeTruthy();
+    expect(await screen.findByText('No lessons yet')).toBeTruthy();
   });
 
   it('shows an error state with retry', async () => {
@@ -87,7 +87,7 @@ describe('GrammarListScreen', () => {
     await renderScreen();
     expect(await screen.findByText('Keine Verbindung.')).toBeTruthy();
     summary.mockResolvedValue([{ level: 'A2', total: 1, learned: 0 }]);
-    await fireEvent.press(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('Vergangenheit')).toBeTruthy();
   });
 });

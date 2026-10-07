@@ -23,6 +23,7 @@ import {
   LoadingState,
   TextField,
 } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type { ChatMessage } from '@/types/chat';
 import { MessageBubble } from './components/MessageBubble';
@@ -36,6 +37,8 @@ const STARTER_COLORS = ['#3F86F0', '#7B61D9', '#2E8B57', '#E8832E'];
 
 /** Tappable conversation starters shown in the white sheet before the first message. */
 function EmptyChat({ onStarter }: { onStarter: (prompt: string) => void }) {
+  const { t } = useI18n();
+  const w = t.tutor;
   return (
     <ScrollView
       contentContainerStyle={styles.empty}
@@ -43,16 +46,17 @@ function EmptyChat({ onStarter }: { onStarter: (prompt: string) => void }) {
       keyboardShouldPersistTaps="handled"
     >
       <AppText style={styles.sheetTitle} center accessibilityRole="header">
-        Womit möchtest du starten?
+        {w.startWith}
       </AppText>
       <View style={styles.starterGrid}>
         {STARTERS.map((s, i) => {
+          const info = w.starters[s.key];
           const color = STARTER_COLORS[i % STARTER_COLORS.length];
           return (
             <Pressable
               key={s.key}
               accessibilityRole="button"
-              accessibilityLabel={`${s.title}: ${s.description}`}
+              accessibilityLabel={`${info.title}: ${info.description}`}
               onPress={() => onStarter(s.prompt)}
               style={({ pressed }) => [
                 styles.starter,
@@ -65,16 +69,16 @@ function EmptyChat({ onStarter }: { onStarter: (prompt: string) => void }) {
               <View style={[styles.starterIcon, { backgroundColor: `${color}26` }]}>
                 <AppText style={{ fontSize: 26, lineHeight: 34 }}>{s.emoji}</AppText>
               </View>
-              <AppText style={styles.starterTitle}>{s.title}</AppText>
+              <AppText style={styles.starterTitle}>{info.title}</AppText>
               <AppText variant="small" color={colors.mutedForeground}>
-                {s.description}
+                {info.description}
               </AppText>
             </Pressable>
           );
         })}
       </View>
       <AppText variant="small" color={colors.mutedForeground} center>
-        Oder schreibe einfach deine erste Nachricht …
+        {w.orWrite}
       </AppText>
     </ScrollView>
   );
@@ -82,6 +86,8 @@ function EmptyChat({ onStarter }: { onStarter: (prompt: string) => void }) {
 
 /** The AI Tutor tab: a chat with history, rename/delete, and "save word" from answers. */
 export function TutorScreen() {
+  const { t } = useI18n();
+  const w = t.tutor;
   const chat = useTutorChat();
   const sessions = useChatSessions();
   const [input, setInput] = useState('');
@@ -107,9 +113,9 @@ export function TutorScreen() {
 
   const confirmDeleteActive = () => {
     if (!active) return;
-    Alert.alert(`„${active.title || 'Chat'}“ löschen?`, 'Der gesamte Chat wird gelöscht.', [
-      { text: 'Abbrechen', style: 'cancel' },
-      { text: 'Löschen', style: 'destructive', onPress: () => chat.remove.mutate(active.id) },
+    Alert.alert(w.deleteTitle(active.title || w.chatFallback), w.deleteMessage, [
+      { text: w.cancel, style: 'cancel' },
+      { text: w.delete, style: 'destructive', onPress: () => chat.remove.mutate(active.id) },
     ]);
   };
 
@@ -120,7 +126,7 @@ export function TutorScreen() {
         <View style={styles.header}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Unterhaltungen anzeigen"
+            accessibilityLabel={w.showChats}
             onPress={() => setHistoryOpen(true)}
             style={styles.headerButton}
           >
@@ -133,11 +139,11 @@ export function TutorScreen() {
             center
             accessibilityRole="header"
           >
-            {active?.title || 'AI Tutor'}
+            {active?.title || w.title}
           </AppText>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Neuer Chat"
+            accessibilityLabel={w.newChat}
             onPress={chat.newChat}
             style={styles.headerButton}
           >
@@ -149,7 +155,7 @@ export function TutorScreen() {
           <View style={styles.actions}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Chat umbenennen"
+              accessibilityLabel={w.renameLabel}
               onPress={() => {
                 setTitle(active.title ?? '');
                 setRenameOpen(true);
@@ -157,17 +163,17 @@ export function TutorScreen() {
               style={styles.actionPill}
             >
               <AppText variant="small" color="#FFFFFF" style={styles.actionText}>
-                Umbenennen
+                {w.rename}
               </AppText>
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Chat löschen"
+              accessibilityLabel={w.deleteLabel}
               onPress={confirmDeleteActive}
               style={styles.actionPill}
             >
               <AppText variant="small" color="#FFE1DC" style={styles.actionText}>
-                Löschen
+                {w.delete}
               </AppText>
             </Pressable>
           </View>
@@ -177,13 +183,13 @@ export function TutorScreen() {
           <View style={styles.hero}>
             <View style={styles.heroText}>
               <AppText style={styles.heroTitle} color="#FFFFFF">
-                Guten Tag! 👋
+                {w.greeting}
               </AppText>
               <AppText style={styles.heroSub} color="#FFFFFF">
-                Ich bin dein Deutsch-Tutor – übe, frag und schreib mit mir.
+                {w.greetingSub}
               </AppText>
             </View>
-            <TutorIllustration onUsePhrase={(phrase) => setInput(`Erkläre mir: „${phrase}“`)} />
+            <TutorIllustration onUsePhrase={(phrase) => setInput(w.explainPhrase(phrase))} />
           </View>
         ) : null}
       </SafeAreaView>
@@ -193,7 +199,7 @@ export function TutorScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         {chat.loadingSession ? (
-          <LoadingState label="Chat wird geladen …" />
+          <LoadingState label={w.loadingChat} />
         ) : showEmpty ? (
           <EmptyChat onStarter={setInput} />
         ) : (
@@ -213,11 +219,11 @@ export function TutorScreen() {
                 {chat.thinking ? (
                   <View
                     style={styles.thinking}
-                    accessibilityLabel="Der Tutor denkt nach"
+                    accessibilityLabel={w.thinkingLabel}
                     accessibilityLiveRegion="polite"
                   >
                     <ActivityIndicator color={colors.primary} />
-                    <AppText color={colors.mutedForeground}>Der Tutor denkt nach …</AppText>
+                    <AppText color={colors.mutedForeground}>{w.thinking}</AppText>
                   </View>
                 ) : null}
                 {chat.error ? (
@@ -242,17 +248,17 @@ export function TutorScreen() {
         </View>
         <View style={styles.composer}>
           <TextInput
-            accessibilityLabel="Nachricht"
+            accessibilityLabel={w.message}
             value={input}
             onChangeText={setInput}
-            placeholder="Schreibe etwas auf Deutsch …"
+            placeholder={w.placeholder}
             placeholderTextColor={colors.mutedForeground}
             multiline
             style={styles.input}
           />
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Senden"
+            accessibilityLabel={w.send}
             accessibilityState={{ disabled: chat.thinking || !input.trim() }}
             disabled={chat.thinking || !input.trim()}
             onPress={submit}
@@ -279,13 +285,13 @@ export function TutorScreen() {
       <BottomSheet
         visible={renameOpen}
         onClose={() => setRenameOpen(false)}
-        title="Chat umbenennen"
+        title={w.renameLabel}
       >
         <TextField
-          label="Titel"
+          label={w.renameTitle}
           value={title}
           onChangeText={setTitle}
-          placeholder="Titel festlegen …"
+          placeholder={w.renamePlaceholder}
         />
         {chat.rename.error ? (
           <AppText color={colors.destructive} accessibilityRole="alert">
@@ -293,7 +299,7 @@ export function TutorScreen() {
           </AppText>
         ) : null}
         <Button
-          label="Speichern"
+          label={w.save}
           loading={chat.rename.isPending}
           disabled={!title.trim()}
           onPress={() =>
@@ -350,18 +356,18 @@ const styles = StyleSheet.create({
   hero: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    paddingLeft: spacing.xl,
-    paddingRight: spacing.sm,
+    paddingStart: spacing.xl,
+    paddingEnd: spacing.sm,
     marginBottom: -18,
   },
-  heroText: { flex: 1, gap: spacing.sm, paddingRight: spacing.xs, paddingBottom: spacing.xxl + 22 },
+  heroText: { flex: 1, gap: spacing.sm, paddingEnd: spacing.xs, paddingBottom: spacing.xxl + 22 },
   heroTitle: { fontSize: 28, lineHeight: 36, fontWeight: '800' },
   heroSub: { fontSize: 15, lineHeight: 22, fontWeight: '500' },
   sheet: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopStartRadius: 28,
+    borderTopEndRadius: 28,
     overflow: 'hidden',
   },
   sheetTitle: { fontSize: 20, lineHeight: 26, fontWeight: '700', color: colors.ink },
@@ -385,7 +391,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   starterTitle: { fontSize: 17, lineHeight: 22, fontWeight: '700', color: colors.ink },
-  thinking: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingLeft: 40 },
+  thinking: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingStart: 40 },
   composer: {
     flexDirection: 'row',
     alignItems: 'flex-end',

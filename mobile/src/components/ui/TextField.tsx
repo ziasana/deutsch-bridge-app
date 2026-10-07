@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { forwardRef, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 import { AppText } from './AppText';
+import { useI18n } from '@/i18n';
+import { detectDir } from '@/i18n/direction';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 
 type Props = Omit<TextInputProps, 'style'> & {
@@ -28,6 +30,11 @@ export const TextField = forwardRef<TextInput, Props>(function TextField(
   ref,
 ) {
   const [hidden, setHidden] = useState(true);
+  const { t, dir } = useI18n();
+  // The text follows what is typed (German stays LTR, Persian RTL); an empty field - and so its
+  // placeholder - follows the interface language.
+  const typed = input.value ?? input.defaultValue ?? '';
+  const textDir = typed ? detectDir(typed, dir) : dir;
   return (
     <View style={styles.wrap}>
       {hideLabel ? null : (
@@ -53,13 +60,18 @@ export const TextField = forwardRef<TextInput, Props>(function TextField(
           accessibilityLabel={label}
           placeholderTextColor={colors.mutedForeground}
           secureTextEntry={secret && hidden}
-          style={[styles.input, input.multiline && styles.multiline, centered && styles.centered]}
+          style={[
+            styles.input,
+            { writingDirection: textDir },
+            input.multiline && styles.multiline,
+            centered && styles.centered,
+          ]}
           {...input}
         />
         {secret ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={hidden ? 'Passwort anzeigen' : 'Passwort verbergen'}
+            accessibilityLabel={hidden ? t.common.showPassword : t.common.hidePassword}
             onPress={() => setHidden((h) => !h)}
             style={styles.toggle}
           >
@@ -71,7 +83,7 @@ export const TextField = forwardRef<TextInput, Props>(function TextField(
               />
             ) : (
               <AppText variant="small" color={colors.primaryDark}>
-                {hidden ? 'Zeigen' : 'Verbergen'}
+                {hidden ? t.common.show : t.common.hide}
               </AppText>
             )}
           </Pressable>
@@ -103,23 +115,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
-    paddingLeft: spacing.lg,
+    paddingStart: spacing.lg,
   },
   fieldPill: {
     minHeight: 56,
     borderRadius: radius.pill,
     borderColor: colors.primaryDark,
-    paddingLeft: spacing.xl,
+    paddingStart: spacing.xl,
   },
   fieldNeutral: { borderColor: '#CFD3DA' },
   fieldError: { borderColor: colors.destructive, borderWidth: 2 },
   input: { flex: 1, minHeight: MIN_TOUCH, fontSize: 16, color: colors.foreground },
   centered: { textAlign: 'center' },
-  hint: { paddingLeft: spacing.lg },
+  hint: { paddingStart: spacing.lg },
   multiline: {
     minHeight: 110,
     paddingTop: spacing.md,
-    paddingRight: spacing.md,
+    paddingEnd: spacing.md,
     textAlignVertical: 'top',
   },
   toggle: { minHeight: MIN_TOUCH, paddingHorizontal: spacing.lg, justifyContent: 'center' },

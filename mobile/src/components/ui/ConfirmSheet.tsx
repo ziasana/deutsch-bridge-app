@@ -1,6 +1,7 @@
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from './AppText';
+import { useI18n } from '@/i18n';
 import { colors, radius, spacing } from '@/theme';
 
 type Props = {
@@ -21,11 +22,13 @@ export function ConfirmSheet({
   title,
   message,
   confirmLabel,
-  cancelLabel = 'Abbrechen',
+  cancelLabel,
   destructive,
   onConfirm,
   onCancel,
 }: Props) {
+  const { t, dir } = useI18n();
+  cancelLabel ??= t.common.cancel;
   return (
     <Modal
       transparent
@@ -34,7 +37,7 @@ export function ConfirmSheet({
       onRequestClose={onCancel}
       statusBarTranslucent
     >
-      <View style={styles.root}>
+      <View style={[styles.root, { direction: dir }]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={cancelLabel}
@@ -51,7 +54,7 @@ export function ConfirmSheet({
           </AppText>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${confirmLabel} bestätigen`}
+            accessibilityLabel={t.common.confirm(confirmLabel)}
             onPress={onConfirm}
             style={({ pressed }) => [
               styles.confirm,

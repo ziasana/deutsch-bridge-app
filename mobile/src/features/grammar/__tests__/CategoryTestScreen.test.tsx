@@ -43,12 +43,12 @@ const renderScreen = () =>
 /** Answers every question correctly ("bin" is the right option in all fixtures). */
 async function playAll(total: number, pick = 'bin') {
   for (let i = 1; i <= total; i++) {
-    await screen.findByText(`Frage ${i} von ${total}`);
+    await screen.findByText(`Question ${i} of ${total}`);
     await fireEvent.press(screen.getByRole('radio', { name: pick }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Antwort prüfen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Check answer' }));
     await fireEvent.press(
       await screen.findByRole('button', {
-        name: i === total ? 'Ergebnis ansehen' : 'Nächste Frage',
+        name: i === total ? 'See result' : 'Next question',
       }),
     );
   }
@@ -78,18 +78,16 @@ describe('CategoryTestScreen', () => {
       completed: true,
     });
     await renderScreen();
-    expect(await screen.findByText(/3 Fragen aus den Lektionen/)).toBeTruthy(); // 2 + 1 playable (1 broken skipped)
-    expect(screen.getByText(/mindestens 70%/)).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Test starten' }));
+    expect(await screen.findByText(/3 questions from the lessons/)).toBeTruthy(); // 2 + 1 playable (1 broken skipped)
+    expect(screen.getByText(/at least 70%/)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Start test' }));
 
     await playAll(3);
-    expect(await screen.findByText('Bestanden!')).toBeTruthy();
+    expect(await screen.findByText('Passed!')).toBeTruthy();
     expect(submitTest).toHaveBeenCalledWith('c1', 3, 3);
 
-    await fireEvent.press(
-      await screen.findByRole('button', { name: 'Als abgeschlossen markieren' }),
-    );
-    expect(await screen.findByText('✓ Kategorie abgeschlossen')).toBeTruthy();
+    await fireEvent.press(await screen.findByRole('button', { name: 'Mark as completed' }));
+    expect(await screen.findByText('✓ Category completed')).toBeTruthy();
   });
 
   it('reports a failed attempt encouragingly and offers a retake', async () => {
@@ -101,13 +99,13 @@ describe('CategoryTestScreen', () => {
       passed: false,
     });
     await renderScreen();
-    await fireEvent.press(await screen.findByRole('button', { name: 'Test starten' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Start test' }));
     await playAll(3, 'habe');
-    expect(await screen.findByText('Gut gemacht!')).toBeTruthy();
-    expect(screen.getByText('0 von 3 richtig')).toBeTruthy();
-    expect(await screen.findByText(/Du brauchst 70% zum Bestehen/)).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Als abgeschlossen markieren' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Test wiederholen' })).toBeTruthy();
+    expect(await screen.findByText('Well done!')).toBeTruthy();
+    expect(screen.getByText('0 of 3 correct')).toBeTruthy();
+    expect(await screen.findByText(/You need 70% to pass/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Mark as completed' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Retake test' })).toBeTruthy();
   });
 
   it('lets the learner re-save the score when submitting fails', async () => {
@@ -121,11 +119,11 @@ describe('CategoryTestScreen', () => {
         passed: true,
       });
     await renderScreen();
-    await fireEvent.press(await screen.findByRole('button', { name: 'Test starten' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Start test' }));
     await playAll(3);
     expect(await screen.findByText('Keine Verbindung.')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Ergebnis erneut speichern' }));
-    expect(await screen.findByText('Bestanden!')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Save result again' }));
+    expect(await screen.findByText('Passed!')).toBeTruthy();
   });
 
   it('shows the last attempt and handles categories without questions', async () => {
@@ -134,14 +132,14 @@ describe('CategoryTestScreen', () => {
       testStatus: { ...notAttempted, attempted: true, score: 8, total: 10, passed: true },
     });
     await renderScreen();
-    expect(await screen.findByText('Letzter Versuch: 8 von 10')).toBeTruthy();
-    expect(screen.getByText('✓ Bestanden')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Test wiederholen' })).toBeTruthy();
+    expect(await screen.findByText('Last attempt: 8 of 10')).toBeTruthy();
+    expect(screen.getByText('✓ Passed')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Retake test' })).toBeTruthy();
   });
 
   it('shows an empty state when no question is playable', async () => {
     category.mockResolvedValue({ ...makeCategory(), lessons: [] });
     await renderScreen();
-    expect(await screen.findByText('Noch keine Übungen')).toBeTruthy();
+    expect(await screen.findByText('No exercises yet')).toBeTruthy();
   });
 });

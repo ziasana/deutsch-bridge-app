@@ -7,7 +7,7 @@ import { colors, radius, shadow, spacing } from '@/theme';
 import type { ExpressionListItem } from '@/types/expression';
 import { resolveUploadUrl } from '@/utils/urls';
 import { useToggleExpressionBookmark } from '../hooks';
-import { MASTERY_COLOR, TYPE_EMOJI } from '../labels';
+import { EXPRESSION_COLOR, EXPRESSION_DARK, MASTERY_COLOR, TYPE_EMOJI } from '../labels';
 import { meaningLine } from '../practiceLogic';
 import { MasteryDots } from './ExpressionViz';
 
@@ -48,7 +48,7 @@ export function ExpressionRow({ item, onPress }: Props) {
         ) : null}
         <View style={styles.meta}>
           <View style={styles.level}>
-            <AppText variant="caption" color={colors.primaryDark} style={{ fontWeight: '800' }}>
+            <AppText variant="caption" color={EXPRESSION_DARK} style={{ fontWeight: '800' }}>
               {item.level}
             </AppText>
           </View>
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: radius.pill,
-    backgroundColor: colors.accent,
+    backgroundColor: tint(EXPRESSION_COLOR, '1F'),
   },
   star: { padding: spacing.xs },
 });

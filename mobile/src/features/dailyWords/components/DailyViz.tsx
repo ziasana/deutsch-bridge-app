@@ -6,6 +6,7 @@ import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '@/components/ui';
 import { IconButton, tint } from '@/features/exam/components/kit';
+import { useI18n } from '@/i18n';
 import { colors, radius, spacing } from '@/theme';
 import type { DailyWord } from '@/types/dailyWord';
 
@@ -70,11 +71,12 @@ export function DailyHero({
   children?: ReactNode;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   return (
     <View style={[styles.hero, { backgroundColor: tint(DAILY_COLOR, '1F') }]}>
       <SafeAreaView edges={['top']}>
         <View style={styles.topRow}>
-          <IconButton name="arrow-back" label="Zurück" onPress={() => router.back()} />
+          <IconButton name="arrow-back" label={t.common.back} onPress={() => router.back()} />
           <View style={[styles.chip, { backgroundColor: tint(DAILY_COLOR, '33') }]}>
             <AppText variant="caption" color={colors.ink} style={{ fontWeight: '800' }}>
               {chip}
@@ -110,6 +112,7 @@ export function WordStepper({
   current: number;
   onJump: (index: number) => void;
 }) {
+  const { t } = useI18n();
   return (
     <View style={styles.stepper}>
       {words.map((w, i) => {
@@ -128,7 +131,7 @@ export function WordStepper({
             )}
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Wort ${i + 1}${w.learned ? ', gelernt' : ''}`}
+              accessibilityLabel={t.daily.stepper(i + 1, w.learned)}
               accessibilityState={{ selected: on }}
               onPress={() => onJump(i)}
               hitSlop={spacing.xs}
@@ -174,7 +177,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginHorizontal: -spacing.sm,
-    paddingRight: spacing.sm,
+    paddingEnd: spacing.sm,
   },
   chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill },
   heroMain: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingTop: spacing.sm },

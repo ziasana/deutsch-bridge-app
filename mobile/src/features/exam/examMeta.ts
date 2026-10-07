@@ -47,7 +47,7 @@ export const SECTION_META: Record<ExamSection, ExamSectionMeta> = {
   SCHRIFTLICHER_AUSDRUCK: {
     label: 'Schreiben',
     emoji: '✍️',
-    color: '#2E8B57',
+    color: '#0E9AA7',
     description: 'Übe das Schreiben im Prüfungsformat.',
   },
   TESTFORMAT_INFORMATION: {

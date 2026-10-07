@@ -1,10 +1,6 @@
-export type DayBucket = 'today' | 'yesterday' | 'earlier';
+import type { Dictionary } from '@/i18n';
 
-export const BUCKET_LABEL: Record<DayBucket, string> = {
-  today: 'Heute',
-  yesterday: 'Gestern',
-  earlier: 'Früher',
-};
+export type DayBucket = 'today' | 'yesterday' | 'earlier';
 
 /** Groups by the viewer's local calendar day. */
 export function dayBucket(iso: string, now = new Date()): DayBucket {
@@ -17,26 +13,26 @@ export function dayBucket(iso: string, now = new Date()): DayBucket {
   return 'earlier';
 }
 
-// [singular, plural, seconds, article for "vor einer/einem …"]
-const UNITS: [string, string, number, 'einer' | 'einem'][] = [
-  ['Jahr', 'Jahren', 365 * 24 * 3600, 'einem'],
-  ['Monat', 'Monaten', 30 * 24 * 3600, 'einem'],
-  ['Woche', 'Wochen', 7 * 24 * 3600, 'einer'],
-  ['Tag', 'Tagen', 24 * 3600, 'einem'],
-  ['Stunde', 'Stunden', 3600, 'einer'],
-  ['Minute', 'Minuten', 60, 'einer'],
+const UNITS: [Parameters<Dictionary['notifications']['time']['ago']>[1], number][] = [
+  ['year', 365 * 24 * 3600],
+  ['month', 30 * 24 * 3600],
+  ['week', 7 * 24 * 3600],
+  ['day', 24 * 3600],
+  ['hour', 3600],
+  ['minute', 60],
 ];
 
-/** "vor 5 Minuten" / "vor einer Stunde" (German, without depending on Intl.RelativeTimeFormat being available). */
-export function relativeTimeDe(iso: string, now = new Date()): string {
+/** "5 minutes ago" in the interface language (no dependency on Intl.RelativeTimeFormat being available). */
+export function relativeTime(
+  iso: string,
+  time: Dictionary['notifications']['time'],
+  now = new Date(),
+): string {
   const seconds = Math.round((now.getTime() - new Date(iso).getTime()) / 1000);
-  for (const [singular, plural, size, article] of UNITS) {
-    if (seconds >= size) {
-      const n = Math.floor(seconds / size);
-      return n === 1 ? `vor ${article} ${singular}` : `vor ${n} ${plural}`;
-    }
+  for (const [unit, size] of UNITS) {
+    if (seconds >= size) return time.ago(Math.floor(seconds / size), unit);
   }
-  return 'gerade eben';
+  return time.now;
 }
 
 export const isValidTime = (value: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(value);

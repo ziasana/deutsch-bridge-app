@@ -5,6 +5,7 @@ import { dashboardApi } from '@/api/dashboardApi';
 import { progressApi } from '@/api/progressApi';
 import type { ProgressOverview, ProgressStats } from '@/types/progress';
 import { ProgressScreen } from '../ProgressScreen';
+import { dictionaries } from '@/i18n';
 import { expressionSegments, nextMilestoneText, percent, vocabularySegments } from '../segments';
 
 jest.mock('@/api/progressApi');
@@ -68,34 +69,32 @@ beforeEach(() => {
   });
 });
 
+const P = dictionaries.en.progress;
+
 describe('segments', () => {
   it('computes percentages safely and orders mastery segments', () => {
     expect(percent(1, 3)).toBe(33);
     expect(percent(5, 0)).toBe(0);
     expect(percent(9, 3)).toBe(100);
     const c = { new: 'n', learning: 'l', familiar: 'f', active: 'a', mastered: 'm' };
-    expect(vocabularySegments(stats.vocabulary, c).map((s) => [s.label, s.count])).toEqual([
-      ['Neu', 5],
-      ['Am Lernen', 8],
-      ['Vertraut', 4],
-      ['Gemeistert', 3],
+    expect(vocabularySegments(stats.vocabulary, c, P).map((s) => [s.label, s.count])).toEqual([
+      ['New', 5],
+      ['Learning', 8],
+      ['Familiar', 4],
+      ['Mastered', 3],
     ]);
-    expect(expressionSegments({ ...stats.expressions, active: 2 }, c).map((s) => s.key)).toEqual([
-      'new',
-      'learning',
-      'familiar',
-      'active',
-      'mastered',
-    ]);
+    expect(expressionSegments({ ...stats.expressions, active: 2 }, c, P).map((s) => s.key)).toEqual(
+      ['new', 'learning', 'familiar', 'active', 'mastered'],
+    );
   });
 
   it('words the next milestone', () => {
-    expect(nextMilestoneText(stats.milestones)).toBe('Noch 20 Wörter bis 50');
-    expect(nextMilestoneText({ ...stats.milestones, wordsMastered: 49 })).toBe(
-      'Noch 1 Wort bis 50',
+    expect(nextMilestoneText(stats.milestones, P)).toBe('20 more words until 50');
+    expect(nextMilestoneText({ ...stats.milestones, wordsMastered: 49 }, P)).toBe(
+      '1 more word until 50',
     );
-    expect(nextMilestoneText({ ...stats.milestones, nextThreshold: null })).toMatch(
-      /Alle Meilensteine/,
+    expect(nextMilestoneText({ ...stats.milestones, nextThreshold: null }, P)).toMatch(
+      /All milestones/,
     );
   });
 });
@@ -105,30 +104,30 @@ describe('ProgressScreen', () => {
     api.overview.mockResolvedValue(overview);
     api.stats.mockResolvedValue(stats);
     await wrap();
-    expect(await screen.findByText('INSGESAMT GELERNT')).toBeTruthy();
-    expect(await screen.findByText('6 Tage')).toBeTruthy();
-    expect(screen.getByLabelText('3 von 7 Tagen gelernt')).toBeTruthy();
-    expect(screen.getByText('Heute: 4 / 10 Lernziele')).toBeTruthy();
+    expect(await screen.findByText('LEARNED IN TOTAL')).toBeTruthy();
+    expect(await screen.findByText('6 days')).toBeTruthy();
+    expect(screen.getByLabelText('3 of 7 days learned')).toBeTruthy();
+    expect(screen.getByText('Today: 4 / 10 learning goals')).toBeTruthy();
     expect(screen.getByText('20 / 50')).toBeTruthy(); // daily words
     expect(
-      screen.getByLabelText(/Wortschatz: Neu 5, Am Lernen 8, Vertraut 4, Gemeistert 3/),
+      screen.getByLabelText(/📚 Vocabulary: New 5, Learning 8, Familiar 4, Mastered 3/),
     ).toBeTruthy();
-    expect(screen.getByText('Lektionen: 3 / 30')).toBeTruthy();
-    expect(screen.getByText(/Kategorie-Tests bestanden: 1 \/ 6 \(2 versucht\)/)).toBeTruthy();
-    expect(screen.getByText('Durchschnitt: 72% · 3 Versuche')).toBeTruthy();
-    expect(screen.getByText('Noch 20 Wörter bis 50')).toBeTruthy();
-    expect(screen.getByLabelText('10 Wörter, erreicht')).toBeTruthy();
+    expect(screen.getByText('Lessons: 3 / 30')).toBeTruthy();
+    expect(screen.getByText(/Category tests passed: 1 \/ 6 \(2 attempted\)/)).toBeTruthy();
+    expect(screen.getByText('Average: 72% · 3 attempts')).toBeTruthy();
+    expect(screen.getByText('20 more words until 50')).toBeTruthy();
+    expect(screen.getByLabelText('10 words, reached')).toBeTruthy();
 
     // Tapping a mastery chip spotlights that step with its share.
-    await fireEvent.press(screen.getByRole('button', { name: 'Am Lernen · 8' }));
-    expect(screen.getByText('Am Lernen: 40% deiner 20 Einträge')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Learning · 8' }));
+    expect(screen.getByText('Learning: 40% of your 20 entries')).toBeTruthy();
 
     // Area tiles lead into the learning areas.
-    await fireEvent.press(screen.getByRole('button', { name: /^Grammatik-Lektionen: 3 von 30/ }));
+    await fireEvent.press(screen.getByRole('button', { name: /^Grammar lessons: 3 of 30/ }));
     expect(mockPush).toHaveBeenCalledWith('/learn/grammar');
 
     // Expressions are empty: a call to action instead of an empty bar.
-    await fireEvent.press(screen.getByRole('button', { name: 'Ausdrücke üben' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Practise expressions' }));
     expect(mockPush).toHaveBeenCalledWith('/learn/expressions');
   });
 
@@ -136,8 +135,8 @@ describe('ProgressScreen', () => {
     api.overview.mockResolvedValue({ ...overview, totalLearned: 0, totalAvailable: 0 });
     api.stats.mockResolvedValue({ ...stats, vocabulary: { ...stats.vocabulary, total: 0 } });
     await wrap();
-    expect(await screen.findByText('Noch kein Fortschritt')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Jetzt lernen' }));
+    expect(await screen.findByText('No progress yet')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Learn now' }));
     expect(mockPush).toHaveBeenCalledWith('/learn');
   });
 
@@ -148,7 +147,7 @@ describe('ProgressScreen', () => {
     api.stats.mockResolvedValue(stats);
     await wrap();
     expect(await screen.findByText('Keine Verbindung.')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Erneut versuchen' }));
-    expect(await screen.findByText('INSGESAMT GELERNT')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByText('LEARNED IN TOTAL')).toBeTruthy();
   });
 });

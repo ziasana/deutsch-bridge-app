@@ -20,6 +20,7 @@ import {
 import { PassageBody, ReadingCard, WordBank } from './Passages';
 import type { ResultItem, ResultsState } from './Results';
 import { optionsFor } from './StepQuiz';
+import { darken } from '@/features/exam/components/kit';
 
 export type BatchVariant = 'grid' | 'hoeren';
 
@@ -118,6 +119,7 @@ export function BatchQuiz({ variant, exercise, attempt, onFinish }: Props) {
         loading={busy}
         disabled={!allAnswered}
         onPress={() => void submitAll()}
+        color={color}
       />
     </>
   );
@@ -135,7 +137,7 @@ export function BatchQuiz({ variant, exercise, attempt, onFinish }: Props) {
         <AppText variant="small" style={{ fontWeight: '700', flex: 1 }} color={colors.ink}>
           {allAnswered ? '✓ Alles beantwortet – bereit zum Abgeben' : `${answered} von ${total} beantwortet`}
         </AppText>
-        <TextSizeControl />
+        <TextSizeControl color={color} />
       </View>
     </>
   );

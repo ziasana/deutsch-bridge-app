@@ -15,6 +15,7 @@ import {
   STATUS_LABELS,
   categoryEmoji,
 } from '../meta';
+import { REDEMITTEL_DARK } from '../meta';
 
 /** Body text that follows the learner's text size (the same setting as the exam, lessons and expressions). */
 function Body({
@@ -103,7 +104,7 @@ export function DetailCard({
           <AppText variant="small" color={colors.mutedForeground} style={{ fontWeight: '600' }}>
             Schriftgröße
           </AppText>
-          <TextSizeControl />
+          <TextSizeControl color={REDEMITTEL_COLOR} dark={REDEMITTEL_DARK} />
         </View>
         <View style={styles.head}>
           <View style={styles.emoji}>

@@ -1,19 +1,15 @@
+import { tint } from '@/features/exam/components/kit';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { AppText } from '@/components/ui';
+import { AppText, DirectionalIcon } from '@/components/ui';
 import { PressableScale } from '@/features/exam/components/kit';
+import { useI18n } from '@/i18n';
 import { colors, radius, shadow, spacing } from '@/theme';
 import type { VocabularyItem } from '@/types/vocabulary';
 import { playWordAudio } from '../audio';
-import {
-  ARTICLE_COLOR,
-  MASTERY_COLOR,
-  SOURCE_ICON,
-  SOURCE_LABEL,
-  masteryOf,
-  wordLabel,
-} from '../listLogic';
+import { ARTICLE_COLOR, MASTERY_COLOR, SOURCE_ICON, masteryOf, wordLabel } from '../listLogic';
 import { MasteryDots } from './VocabularyViz';
+import { VOCABULARY_COLOR, VOCABULARY_DARK } from '../meta';
 
 type Props = {
   item: VocabularyItem;
@@ -47,7 +43,10 @@ function IconAction({
       hitSlop={spacing.xs}
       style={[
         styles.iconBtn,
-        active && { backgroundColor: colors.accent, borderColor: colors.accent },
+        active && {
+          backgroundColor: tint(VOCABULARY_COLOR, '1F'),
+          borderColor: tint(VOCABULARY_COLOR, '1F'),
+        },
       ]}
     >
       <Ionicons name={name} size={19} color={color} />
@@ -57,6 +56,8 @@ function IconAction({
 
 /** One word as a card: article-coloured edge, word, meaning, example, mastery and quick actions. */
 export function WordCard({ item, onOpen, onPractice, onToggleBookmark, onEdit, onDelete }: Props) {
+  const { t } = useI18n();
+  const v = t.vocabulary;
   const mastery = masteryOf(item);
   const edge = item.article
     ? (ARTICLE_COLOR[item.article] ?? MASTERY_COLOR[mastery])
@@ -73,7 +74,7 @@ export function WordCard({ item, onOpen, onPractice, onToggleBookmark, onEdit, o
         <View style={styles.tags}>
           {item.level ? (
             <View style={styles.level}>
-              <AppText variant="caption" color={colors.primaryDark} style={{ fontWeight: '800' }}>
+              <AppText variant="caption" color={VOCABULARY_DARK} style={{ fontWeight: '800' }}>
                 {item.level}
               </AppText>
             </View>
@@ -81,14 +82,14 @@ export function WordCard({ item, onOpen, onPractice, onToggleBookmark, onEdit, o
           <View style={styles.source}>
             <Ionicons name={SOURCE_ICON[item.source]} size={12} color={colors.mutedForeground} />
             <AppText variant="caption" color={colors.mutedForeground}>
-              {SOURCE_LABEL[item.source]}
+              {v.sources[item.source]}
             </AppText>
           </View>
         </View>
         <MasteryDots level={mastery} />
       </View>
 
-      <View style={{ gap: 2 }}>
+      <View style={{ gap: 2, alignItems: 'flex-start' }}>
         <AppText style={styles.word}>{wordLabel(item)}</AppText>
         <AppText color={colors.mutedForeground}>{item.meaning}</AppText>
       </View>
@@ -104,33 +105,33 @@ export function WordCard({ item, onOpen, onPractice, onToggleBookmark, onEdit, o
       <View style={styles.actions}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${wordLabel(item)} üben`}
+          accessibilityLabel={v.practiseItem(wordLabel(item))}
           onPress={onPractice}
           style={styles.practice}
         >
-          <AppText variant="small" color={colors.primaryDark} style={{ fontWeight: '800' }}>
-            Üben
+          <AppText variant="small" color={VOCABULARY_DARK} style={{ fontWeight: '800' }}>
+            {v.practiceShort}
           </AppText>
-          <Ionicons name="arrow-forward" size={14} color={colors.primaryDark} />
+          <DirectionalIcon name="arrow-forward" size={14} color={VOCABULARY_DARK} />
         </Pressable>
         <IconAction
           name="volume-high-outline"
-          label={`${wordLabel(item)} anhören`}
-          color={colors.primaryDark}
+          label={v.listenItem(wordLabel(item))}
+          color={VOCABULARY_DARK}
           onPress={() => playWordAudio(item.audioUrl, item.word)}
         />
         <IconAction
           name={item.bookmarked ? 'star' : 'star-outline'}
-          label={item.bookmarked ? 'Gemerkt' : 'Merken'}
+          label={item.bookmarked ? v.saved : v.save}
           color={item.bookmarked ? colors.warning : colors.mutedForeground}
           active={item.bookmarked}
           onPress={onToggleBookmark}
         />
-        {onEdit ? <IconAction name="create-outline" label="Bearbeiten" onPress={onEdit} /> : null}
+        {onEdit ? <IconAction name="create-outline" label={v.edit} onPress={onEdit} /> : null}
         {onDelete ? (
           <IconAction
             name="trash-outline"
-            label="Löschen"
+            label={v.delete}
             color={colors.destructive}
             onPress={onDelete}
           />
@@ -144,7 +145,7 @@ const styles = StyleSheet.create({
   card: {
     gap: spacing.md,
     padding: spacing.lg,
-    paddingLeft: spacing.lg + 4,
+    paddingStart: spacing.lg + 4,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
@@ -152,7 +153,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...shadow.card,
   },
-  edge: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 5 },
+  edge: { position: 'absolute', start: 0, top: 0, bottom: 0, width: 5 },
   head: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -164,11 +165,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: radius.pill,
-    backgroundColor: colors.accent,
+    backgroundColor: tint(VOCABULARY_COLOR, '1F'),
   },
   source: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
   word: { fontSize: 22, lineHeight: 28, fontWeight: '800', color: colors.foreground },
-  example: { padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.accent },
+  example: {
+    padding: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: tint(VOCABULARY_COLOR, '1F'),
+  },
   actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   practice: {
     flex: 1,
@@ -178,7 +183,7 @@ const styles = StyleSheet.create({
     gap: 6,
     minHeight: 40,
     borderRadius: radius.md,
-    backgroundColor: colors.accent,
+    backgroundColor: tint(VOCABULARY_COLOR, '1F'),
   },
   iconBtn: {
     width: 40,

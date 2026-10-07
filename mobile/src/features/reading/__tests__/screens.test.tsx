@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 import { ApiError } from '@/api/errors';
 import { lexiconApi, readingApi, readingQuizApi } from '@/api/readingApi';
 import { vocabularyApi } from '@/api/vocabularyApi';
+import { I18nProvider } from '@/i18n';
 import { useAuthStore } from '@/stores/authStore';
 import { useReadingSessionStore } from '@/stores/readingSessionStore';
 import type { UserProfile } from '@/types/user';
@@ -110,7 +111,7 @@ describe('ReadingListScreen', () => {
     api.categories.mockResolvedValue([]);
     api.page.mockResolvedValue(pageOf(0));
     await wrap(<ReadingListScreen />);
-    expect(await screen.findByText('Noch keine Texte')).toBeTruthy();
+    expect(await screen.findByText('No texts yet')).toBeTruthy();
   });
 
   it('shows an error state', async () => {
@@ -119,6 +120,25 @@ describe('ReadingListScreen', () => {
     api.categories.mockResolvedValue([]);
     await wrap(<ReadingListScreen />);
     expect(await screen.findByText('Keine Verbindung.')).toBeTruthy();
+  });
+});
+
+describe('Persian interface', () => {
+  it('shows the reading list in Persian when the profile language is PR', async () => {
+    useAuthStore.setState({
+      profile: { learningLevel: 'B1', preferredLanguage: 'PR' } as UserProfile,
+    });
+    api.levelSummary.mockResolvedValue([{ level: 'B1', total: 6, learned: 2 }]);
+    api.categories.mockResolvedValue([]);
+    api.page.mockResolvedValue(pageOf(1));
+    await wrap(
+      <I18nProvider>
+        <ReadingListScreen />
+      </I18nProvider>,
+    );
+    expect(await screen.findByText('Artikel 1')).toBeTruthy();
+    expect(screen.getByText('متن‌هایی هم‌سطح خودتان بخوانید')).toBeTruthy();
+    expect(screen.getByText('2 از 6')).toBeTruthy();
   });
 });
 
@@ -132,11 +152,11 @@ describe('ReadingArticleScreen', () => {
   it('renders the text, counts the view and links to the next article', async () => {
     api.article.mockResolvedValue(makeArticle());
     await wrap(<ReadingArticleScreen />);
-    expect(await screen.findByText('Wichtige Wörter', { exact: false })).toBeTruthy();
-    expect(screen.getByText('2 neue Wörter')).toBeTruthy();
+    expect(await screen.findByText('Key words', { exact: false })).toBeTruthy();
+    expect(screen.getByText('2 new words')).toBeTruthy();
     await waitFor(() => expect(api.recordView).toHaveBeenCalledWith('r1'));
 
-    await fireEvent.press(await screen.findByRole('button', { name: 'Nächster Text ›' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Next text ›' }));
     expect(mockReplace).toHaveBeenCalledWith({
       pathname: '/reading/[articleId]',
       params: { articleId: 'r2' },
@@ -152,14 +172,14 @@ describe('ReadingArticleScreen', () => {
     expect(screen.getByText('Plural: Hunde')).toBeTruthy();
     expect(useReadingSessionStore.getState().tapped).toEqual(['Hund']);
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Zur Wiederholung speichern' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Save for review' }));
     await waitFor(() =>
       expect(lexicon.save).toHaveBeenCalledWith(
         expect.objectContaining({ lemma: 'Hund', articleId: 'r1', translation: 'dog' }),
         expect.anything(),
       ),
     );
-    expect(await screen.findByText('✓ In deiner Wiederholung')).toBeTruthy();
+    expect(await screen.findByText('✓ In your review list')).toBeTruthy();
     expect(useReadingSessionStore.getState().saved).toEqual(['Hund']);
   });
 
@@ -168,13 +188,13 @@ describe('ReadingArticleScreen', () => {
     api.setLearned.mockResolvedValue({});
     api.addBookmark.mockResolvedValue(makeArticle({ bookmarked: true }));
     await wrap(<ReadingArticleScreen />);
-    await fireEvent.press(await screen.findByRole('button', { name: 'Als gelesen markieren' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Mark as read' }));
     await waitFor(() => expect(api.setLearned).toHaveBeenCalledWith('r1', true));
-    expect(await screen.findByRole('button', { name: '✓ Gelesen' })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: '✓ Read' })).toBeTruthy();
 
-    await fireEvent.press(screen.getByRole('button', { name: '☆ Merken' }));
+    await fireEvent.press(screen.getByRole('button', { name: '☆ Save' }));
     await waitFor(() => expect(api.addBookmark).toHaveBeenCalledWith('r1'));
-    expect(await screen.findByRole('button', { name: '★ Gemerkt' })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: '★ Saved' })).toBeTruthy();
   });
 
   it('looks up any tapped word in the dictionary', async () => {
@@ -210,18 +230,12 @@ describe('ReadingArticleScreen', () => {
     mockedVocab.remove.mockResolvedValue(undefined as never);
     await wrap(<ReadingArticleScreen />);
     await fireEvent.press(await screen.findByText('laut'));
-    await fireEvent.press(
-      await screen.findByRole('button', { name: '＋ Zum Wortschatz hinzufügen' }),
-    );
+    await fireEvent.press(await screen.findByRole('button', { name: '＋ Add to vocabulary' }));
     await waitFor(() => expect(mockedVocab.addFromDictionary).toHaveBeenCalledWith('d1'));
 
-    await fireEvent.press(
-      await screen.findByRole('button', { name: '✓ Im Wortschatz – entfernen' }),
-    );
+    await fireEvent.press(await screen.findByRole('button', { name: '✓ In vocabulary – remove' }));
     await waitFor(() => expect(mockedVocab.remove).toHaveBeenCalledWith('v9'));
-    expect(
-      await screen.findByRole('button', { name: '＋ Zum Wortschatz hinzufügen' }),
-    ).toBeTruthy();
+    expect(await screen.findByRole('button', { name: '＋ Add to vocabulary' })).toBeTruthy();
   });
 
   it('shows an error state when the article fails to load', async () => {
@@ -280,12 +294,12 @@ describe('ReadingQuizScreen', () => {
     });
     await wrap(<ReadingQuizScreen />);
 
-    expect(await screen.findByText('Frage 1 von 2')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Antwort prüfen' })).toBeDisabled();
+    expect(await screen.findByText('Question 1 of 2')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Check answer' })).toBeDisabled();
     await fireEvent.press(screen.getByRole('radio', { name: 'Katzen' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Antwort prüfen' }));
-    expect(await screen.findByText('✕ Nicht richtig')).toBeTruthy();
-    expect(screen.getByText('Richtig ist: Hunde')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Check answer' }));
+    expect(await screen.findByText('✕ Not correct')).toBeTruthy();
+    expect(screen.getByText('Correct answer: Hunde')).toBeTruthy();
     expect(quiz.answer).toHaveBeenCalledWith('at1', 'q1', 'Katzen');
     await waitFor(() =>
       expect(lexicon.save).toHaveBeenCalledWith(
@@ -294,17 +308,17 @@ describe('ReadingQuizScreen', () => {
       ),
     );
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Nächste Frage' }));
-    expect(await screen.findByText('Frage 2 von 2')).toBeTruthy();
-    await fireEvent.changeText(screen.getByLabelText('Deine Antwort'), 'Hund');
-    await fireEvent.press(screen.getByRole('button', { name: 'Antwort prüfen' }));
-    expect(await screen.findByText('✓ Richtig!')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Next question' }));
+    expect(await screen.findByText('Question 2 of 2')).toBeTruthy();
+    await fireEvent.changeText(screen.getByLabelText('Your answer'), 'Hund');
+    await fireEvent.press(screen.getByRole('button', { name: 'Check answer' }));
+    expect(await screen.findByText('✓ Correct!')).toBeTruthy();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Ergebnis ansehen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'See result' }));
     await waitFor(() => expect(quiz.complete).toHaveBeenCalledWith('at1', ['Hund'], ['Hund']));
-    expect(await screen.findByText('Sehr gut!')).toBeTruthy();
+    expect(await screen.findByText('Very good!')).toBeTruthy();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Weiter: Neuer Text' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Continue: Neuer Text' }));
     expect(mockReplace).toHaveBeenCalledWith({
       pathname: '/reading/[articleId]',
       params: { articleId: 'r9' },
@@ -314,14 +328,14 @@ describe('ReadingQuizScreen', () => {
   it('shows an empty state when the text has no questions', async () => {
     quiz.start.mockResolvedValue({ attemptId: 'at1', questions: [] });
     await wrap(<ReadingQuizScreen />);
-    expect(await screen.findByText('Noch kein Quiz')).toBeTruthy();
+    expect(await screen.findByText('No quiz yet')).toBeTruthy();
   });
 
   it('retries after a failed start', async () => {
     quiz.start.mockRejectedValueOnce(new ApiError('network', 'Keine Verbindung.'));
     await wrap(<ReadingQuizScreen />);
     expect(await screen.findByText('Keine Verbindung.')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Erneut versuchen' }));
-    expect(await screen.findByText('Frage 1 von 2')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByText('Question 1 of 2')).toBeTruthy();
   });
 });

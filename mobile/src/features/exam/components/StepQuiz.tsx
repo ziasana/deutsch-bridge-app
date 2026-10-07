@@ -24,6 +24,7 @@ import {
 } from './kit';
 import { ReadingCard } from './Passages';
 import type { ResultItem, ResultsState } from './Results';
+import { darken } from '@/features/exam/components/kit';
 
 type Option = { value: string; label: string };
 
@@ -133,9 +134,10 @@ export function StepQuiz({ exercise, attempt, onFinish }: Props) {
           label={complete.isError ? 'Ergebnis erneut senden' : isLast ? 'Ergebnis anzeigen' : 'Nächste Aufgabe'}
           loading={complete.isPending}
           onPress={next}
+          color={color}
         />
       ) : (
-        <Button pill label="Antwort prüfen" loading={submit.isPending} disabled={!selected} onPress={check} />
+        <Button pill label="Antwort prüfen" loading={submit.isPending} disabled={!selected} onPress={check} color={color} />
       )}
     </>
   );
@@ -157,7 +159,7 @@ export function StepQuiz({ exercise, attempt, onFinish }: Props) {
               </AppText>
               {rightSoFar > 0 ? <Badge tone="success" label={`✓ ${rightSoFar} richtig`} /> : null}
             </View>
-            <TextSizeControl />
+            <TextSizeControl color={color} />
           </View>
         </>
       }

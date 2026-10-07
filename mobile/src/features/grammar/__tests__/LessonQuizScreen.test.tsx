@@ -40,7 +40,7 @@ const renderScreen = () =>
 
 const answerMcq = async (option: string) => {
   await fireEvent.press(screen.getByRole('radio', { name: option }));
-  await fireEvent.press(screen.getByRole('button', { name: 'Antwort prüfen' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Check answer' }));
 };
 
 describe('LessonQuizScreen', () => {
@@ -56,44 +56,44 @@ describe('LessonQuizScreen', () => {
 
   it('runs all question types, saves each answer, marks the lesson learned on a perfect score', async () => {
     await renderScreen();
-    await fireEvent.press(await screen.findByRole('button', { name: 'Starten' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Start' }));
 
     // 1) multiple choice
-    expect(await screen.findByText('Frage 1 von 3')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Antwort prüfen' })).toBeDisabled();
+    expect(await screen.findByText('Question 1 of 3')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Check answer' })).toBeDisabled();
     await answerMcq('bin');
-    expect(await screen.findByText('✓ Richtig!')).toBeTruthy();
+    expect(await screen.findByText('✓ Correct!')).toBeTruthy();
     expect(save).toHaveBeenCalledWith({ questionKey: 'l1:0', correct: true });
-    await fireEvent.press(screen.getByRole('button', { name: 'Nächste Frage' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Next question' }));
 
     // 2) fill-in (case-insensitive)
-    await screen.findByText('Frage 2 von 3');
-    await fireEvent.changeText(screen.getByLabelText('Deine Antwort'), 'BIST');
-    await fireEvent.press(screen.getByRole('button', { name: 'Antwort prüfen' }));
-    expect(await screen.findByText('✓ Richtig!')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Nächste Frage' }));
+    await screen.findByText('Question 2 of 3');
+    await fireEvent.changeText(screen.getByLabelText('Your answer'), 'BIST');
+    await fireEvent.press(screen.getByRole('button', { name: 'Check answer' }));
+    expect(await screen.findByText('✓ Correct!')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Next question' }));
 
     // 3) true/false
-    await screen.findByText('Frage 3 von 3');
-    await fireEvent.press(screen.getByRole('radio', { name: 'Richtig' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Antwort prüfen' }));
-    await fireEvent.press(await screen.findByRole('button', { name: 'Ergebnis ansehen' }));
+    await screen.findByText('Question 3 of 3');
+    await fireEvent.press(screen.getByRole('radio', { name: 'True' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Check answer' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'See result' }));
 
-    expect(await screen.findByText('Alle Fragen richtig – Lektion gelernt')).toBeTruthy();
-    expect(screen.getByText('3 von 3 richtig')).toBeTruthy();
+    expect(await screen.findByText('All questions right – lesson learned')).toBeTruthy();
+    expect(screen.getByText('3 of 3 correct')).toBeTruthy();
     expect(setLearned).toHaveBeenCalledWith('l1', true);
   });
 
   it('shows the correct answer after a wrong one and does not mark the lesson learned', async () => {
     lessonApi.mockResolvedValue(makeLesson({ quiz: [mcq(1)] }));
     await renderScreen();
-    await fireEvent.press(await screen.findByRole('button', { name: 'Starten' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Start' }));
     await answerMcq('habe');
-    expect(await screen.findByText('✕ Nicht richtig')).toBeTruthy();
-    expect(screen.getByText('Richtig ist:')).toBeTruthy();
+    expect(await screen.findByText('✕ Not correct')).toBeTruthy();
+    expect(screen.getByText('Correct answer:')).toBeTruthy();
     expect(save).toHaveBeenCalledWith({ questionKey: 'l1:0', correct: false });
-    await fireEvent.press(screen.getByRole('button', { name: 'Ergebnis ansehen' }));
-    expect(await screen.findByText('Übungen abgeschlossen')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'See result' }));
+    expect(await screen.findByText('Exercises completed')).toBeTruthy();
     expect(setLearned).not.toHaveBeenCalled();
   });
 
@@ -101,12 +101,10 @@ describe('LessonQuizScreen', () => {
     list.mockResolvedValue([{ questionKey: 'l1:0', correct: true }]);
     await renderScreen();
     expect(
-      await screen.findByText(
-        '1 von 3 bereits beantwortet. Du machst dort weiter, wo du aufgehört hast.',
-      ),
+      await screen.findByText('1 of 3 already answered. You will continue where you left off.'),
     ).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Fortsetzen' }));
-    expect(await screen.findByText('Frage 2 von 3')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+    expect(await screen.findByText('Question 2 of 3')).toBeTruthy();
   });
 
   it('opens straight on the results when everything was answered, and "Noch einmal" resets', async () => {
@@ -117,10 +115,10 @@ describe('LessonQuizScreen', () => {
       { questionKey: 'other:0', correct: true },
     ]);
     await renderScreen();
-    expect(await screen.findByText('2 von 3 richtig')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Noch einmal üben' }));
+    expect(await screen.findByText('2 of 3 correct')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Practise again' }));
     expect(reset).toHaveBeenCalledWith(['l1:0', 'l1:1', 'l1:2']);
-    expect(await screen.findByText('Frage 1 von 3')).toBeTruthy();
+    expect(await screen.findByText('Question 1 of 3')).toBeTruthy();
   });
 
   it('skips unplayable questions and handles lessons with none', async () => {
@@ -130,6 +128,6 @@ describe('LessonQuizScreen', () => {
       }),
     );
     await renderScreen();
-    expect(await screen.findByText('Keine Übungen')).toBeTruthy();
+    expect(await screen.findByText('No exercises')).toBeTruthy();
   });
 });

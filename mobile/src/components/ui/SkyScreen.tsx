@@ -32,7 +32,10 @@ type Props = {
 /** Exam illustration: an answer sheet with ticks, a puzzle piece clicking into place and a pencil — decoration only. */
 function ExamIllustration({ size, style }: { size: number; style: object }) {
   return (
-    <View style={[{ position: 'absolute', width: size, height: size * 0.93 }, style]} pointerEvents="none">
+    <View
+      style={[{ position: 'absolute', width: size, height: size * 0.93 }, style]}
+      pointerEvents="none"
+    >
       <Svg width="100%" height="100%" viewBox="0 0 140 130">
         <Circle cx="72" cy="66" r="54" fill="#FFFFFF" fillOpacity={0.16} />
         <Circle cx="120" cy="20" r="5" fill="#FFFFFF" fillOpacity={0.5} />
@@ -66,8 +69,22 @@ function ExamIllustration({ size, style }: { size: number; style: object }) {
                   fill="none"
                 />
               )}
-              <Rect x="55" y={y + 2} width={i === 1 ? 26 : 32} height="3.5" rx="1.75" fill="#C9D9EE" />
-              <Rect x="55" y={y + 7.5} width={i === 2 ? 16 : 22} height="3" rx="1.5" fill="#E2EBF6" />
+              <Rect
+                x="55"
+                y={y + 2}
+                width={i === 1 ? 26 : 32}
+                height="3.5"
+                rx="1.75"
+                fill="#C9D9EE"
+              />
+              <Rect
+                x="55"
+                y={y + 7.5}
+                width={i === 2 ? 16 : 22}
+                height="3"
+                rx="1.5"
+                fill="#E2EBF6"
+              />
             </G>
           ))}
         </G>
@@ -80,7 +97,13 @@ function ExamIllustration({ size, style }: { size: number; style: object }) {
             strokeWidth="2"
             strokeLinejoin="round"
           />
-          <Path d="M10 15h18" stroke="#FFFFFF" strokeOpacity={0.7} strokeWidth="3" strokeLinecap="round" />
+          <Path
+            d="M10 15h18"
+            stroke="#FFFFFF"
+            strokeOpacity={0.7}
+            strokeWidth="3"
+            strokeLinecap="round"
+          />
         </G>
 
         <G rotation={-38} origin="0, 0" x="16" y="96">
@@ -98,14 +121,26 @@ function ExamIllustration({ size, style }: { size: number; style: object }) {
  * Search-style page: light-blue sky header with an exam/puzzle illustration and a large title, a floating search card
  * overlapping its lower edge, then the content. The header scrolls away with the page.
  */
-export function SkyScreen({ title, subtitle, search, floating, refreshControl, scrollRef, children }: Props) {
+export function SkyScreen({
+  title,
+  subtitle,
+  search,
+  floating,
+  refreshControl,
+  scrollRef,
+  children,
+}: Props) {
   const { width } = useWindowDimensions();
   const scroll = useHeaderScroll(width * 0.25);
   return (
     <View style={styles.root}>
       <FocusedLightStatusBar dark={scroll.gone} />
       <ScrollView
-        ref={scrollRef}
+        ref={(node) => {
+          scroll.ref.current = node;
+          if (typeof scrollRef === 'function') scrollRef(node);
+          else if (scrollRef) (scrollRef as { current: ScrollView | null }).current = node;
+        }}
         refreshControl={refreshControl}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -115,7 +150,7 @@ export function SkyScreen({ title, subtitle, search, floating, refreshControl, s
       >
         <View style={styles.hero}>
           <View style={styles.skyFill} />
-          <ExamIllustration size={150} style={{ right: 14, top: 44 }} />
+          <ExamIllustration size={150} style={{ end: 14, top: 44 }} />
           <SafeAreaView edges={['top']}>
             <View style={styles.heroText}>
               <AppText style={styles.title} color="#FFFFFF" accessibilityRole="header">
@@ -160,7 +195,7 @@ const styles = StyleSheet.create({
   hero: { paddingBottom: 64, minHeight: 210 },
   // Extends upward so pulling the page down shows sky, not white.
   skyFill: { position: 'absolute', top: -600, left: 0, right: 0, bottom: 0, backgroundColor: SKY },
-  heroText: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl, paddingRight: 150, gap: 4 },
+  heroText: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl, paddingEnd: 150, gap: 4 },
   title: { fontSize: 32, lineHeight: 40, fontWeight: '700' },
   subtitle: { fontSize: 17, lineHeight: 24, fontWeight: '500' },
   searchWrap: { marginTop: -30, paddingHorizontal: spacing.xl },

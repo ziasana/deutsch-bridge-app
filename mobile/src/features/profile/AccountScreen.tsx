@@ -2,9 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText, Button, TextField, WavePage } from '@/components/ui';
+import { useI18n } from '@/i18n';
+import type { Dictionary } from '@/i18n';
 import { useAuthStore } from '@/stores/authStore';
 import { colors, spacing } from '@/theme';
-import { passwordStrength, strengthHint } from '@/features/auth/passwordStrength';
+import { passwordStrength } from '@/features/auth/passwordStrength';
 import { Avatar } from './Avatar';
 import { pickAvatar } from './avatarPicker';
 import { useChangePassword, useUpdateProfile, useUploadAvatar } from './hooks';
@@ -12,17 +14,22 @@ import { useChangePassword, useUpdateProfile, useUploadAvatar } from './hooks';
 const MIN_PASSWORD = 6;
 
 /** Pure so it can be tested: what is wrong with the password form, if anything. */
-export function passwordProblem(current: string, next: string, confirm: string): string | null {
-  if (!current) return 'Bitte gib dein aktuelles Passwort ein.';
-  if (next.length < MIN_PASSWORD)
-    return `Das neue Passwort braucht mindestens ${MIN_PASSWORD} Zeichen.`;
-  if (next !== confirm) return 'Die neuen Passwörter stimmen nicht überein.';
-  if (next === current) return 'Das neue Passwort muss sich vom aktuellen unterscheiden.';
+export function passwordProblem(
+  current: string,
+  next: string,
+  confirm: string,
+  t: Dictionary['account'],
+): string | null {
+  if (!current) return t.enterCurrent;
+  if (next.length < MIN_PASSWORD) return t.tooShort(MIN_PASSWORD);
+  if (next !== confirm) return t.mismatch;
+  if (next === current) return t.sameAsOld;
   return null;
 }
 
 /** Centred avatar on the wave, with a pencil badge that opens the photo picker. */
 function Identity() {
+  const { t } = useI18n();
   const profile = useAuthStore((s) => s.profile);
   const upload = useUploadAvatar();
   const [pickError, setPickError] = useState<string | null>(null);
@@ -33,7 +40,7 @@ function Identity() {
       const file = await pickAvatar();
       if (file) upload.mutate(file);
     } catch (e) {
-      setPickError(e instanceof Error ? e.message : 'Das Bild konnte nicht geöffnet werden.');
+      setPickError(e instanceof Error ? e.message : t.account.photoFailed);
     }
   };
 
@@ -48,8 +55,8 @@ function Identity() {
         />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Foto ändern"
-          accessibilityHint="JPG, PNG oder WebP"
+          accessibilityLabel={t.account.changePhoto}
+          accessibilityHint={t.account.photoHint}
           disabled={upload.isPending}
           onPress={() => void change()}
           style={styles.pencil}
@@ -63,7 +70,7 @@ function Identity() {
       </View>
       <AppText style={styles.name}>{profile?.displayName}</AppText>
       <AppText color={colors.mutedForeground}>
-        {profile?.learningLevel ? `Niveau ${profile.learningLevel}` : 'Neu dabei'}
+        {profile?.learningLevel ? t.profile.levelLabel(profile.learningLevel) : t.profile.newHere}
       </AppText>
       {pickError || upload.error ? (
         <AppText color={colors.destructive} accessibilityRole="alert" center>
@@ -72,7 +79,7 @@ function Identity() {
       ) : null}
       {upload.isSuccess ? (
         <AppText color="#1B7A55" accessibilityRole="alert">
-          ✓ Profilbild aktualisiert
+          {t.account.photoUpdated}
         </AppText>
       ) : null}
     </View>
@@ -80,13 +87,17 @@ function Identity() {
 }
 
 function NameSection() {
+  const { t, language } = useI18n();
   const profile = useAuthStore((s) => s.profile);
   const update = useUpdateProfile();
   const [name, setName] = useState<string | null>(null);
   const value = name ?? profile?.displayName ?? '';
   const dirty = name !== null && name.trim() !== '' && name.trim() !== profile?.displayName;
   const joined = profile?.createdAt
-    ? new Date(profile.createdAt).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })
+    ? new Date(profile.createdAt).toLocaleDateString(language === 'fa' ? 'fa-IR' : 'en-US', {
+        month: 'long',
+        year: 'numeric',
+      })
     : null;
 
   return (
@@ -94,12 +105,18 @@ function NameSection() {
       <TextField
         pill
         neutral
-        label="Name"
+        label={t.account.name}
         value={value}
         onChangeText={setName}
         autoCorrect={false}
       />
-      <TextField pill neutral label="E-Mail" value={profile?.email ?? ''} editable={false} />
+      <TextField
+        pill
+        neutral
+        label={t.account.email}
+        value={profile?.email ?? ''}
+        editable={false}
+      />
       {update.error ? (
         <AppText color={colors.destructive} accessibilityRole="alert">
           {update.error.message}
@@ -107,13 +124,13 @@ function NameSection() {
       ) : null}
       {update.isSuccess && !dirty ? (
         <AppText color="#1B7A55" accessibilityRole="alert">
-          ✓ Gespeichert
+          {t.common.saved}
         </AppText>
       ) : null}
       {dirty ? (
         <Button
           pill
-          label="Name speichern"
+          label={t.account.saveName}
           loading={update.isPending}
           onPress={() =>
             update.mutate({ displayName: value.trim() }, { onSuccess: () => setName(null) })
@@ -122,7 +139,7 @@ function NameSection() {
       ) : null}
       {joined ? (
         <AppText variant="small" color={colors.mutedForeground} style={styles.joined}>
-          Dabei seit {joined}
+          {t.account.joined(joined)}
         </AppText>
       ) : null}
     </View>
@@ -130,6 +147,7 @@ function NameSection() {
 }
 
 function PasswordSection() {
+  const { t } = useI18n();
   const change = useChangePassword();
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
@@ -137,7 +155,7 @@ function PasswordSection() {
   const [problem, setProblem] = useState<string | null>(null);
 
   const submit = () => {
-    const issue = passwordProblem(current, next, confirm);
+    const issue = passwordProblem(current, next, confirm, t.account);
     setProblem(issue);
     if (issue) return;
     change.mutate(
@@ -154,11 +172,11 @@ function PasswordSection() {
 
   return (
     <View style={styles.section}>
-      <AppText style={styles.sectionTitle}>Passwort ändern</AppText>
+      <AppText style={styles.sectionTitle}>{t.account.changePassword}</AppText>
       <TextField
         pill
         neutral
-        label="Aktuelles Passwort"
+        label={t.account.currentPassword}
         value={current}
         onChangeText={setCurrent}
         secret
@@ -167,9 +185,13 @@ function PasswordSection() {
       <TextField
         pill
         neutral
-        label="Neues Passwort"
+        label={t.account.newPassword}
         tint={next ? passwordStrength(next).color : undefined}
-        hint={strengthHint(next)}
+        hint={
+          next
+            ? `${t.account.strength.label}: ${t.account.strength.levels[passwordStrength(next).score]}`
+            : undefined
+        }
         value={next}
         onChangeText={setNext}
         secret
@@ -178,7 +200,7 @@ function PasswordSection() {
       <TextField
         pill
         neutral
-        label="Neues Passwort wiederholen"
+        label={t.account.repeatPassword}
         value={confirm}
         onChangeText={setConfirm}
         secret
@@ -191,17 +213,18 @@ function PasswordSection() {
       ) : null}
       {change.isSuccess ? (
         <AppText color="#1B7A55" accessibilityRole="alert">
-          ✓ Passwort geändert
+          {t.account.passwordChanged}
         </AppText>
       ) : null}
-      <Button pill label="Passwort ändern" loading={change.isPending} onPress={submit} />
+      <Button pill label={t.account.changePassword} loading={change.isPending} onPress={submit} />
     </View>
   );
 }
 
 export function AccountScreen() {
+  const { t } = useI18n();
   return (
-    <WavePage title="Konto" variant="fall" header={<Identity />}>
+    <WavePage title={t.account.title} variant="fall" header={<Identity />}>
       <NameSection />
       <PasswordSection />
     </WavePage>

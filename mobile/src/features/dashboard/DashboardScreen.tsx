@@ -1,6 +1,7 @@
 import { RefreshControl, StyleSheet, View } from 'react-native';
 import { HomeIllustration } from '@/components/ui/HeroIllustrations';
 import { Badge, ErrorState, HeroScreen } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { useAuthStore } from '@/stores/authStore';
 import { spacing } from '@/theme';
 import { DashboardSkeleton } from './components/DashboardSkeleton';
@@ -26,6 +27,7 @@ import { headline, isNewLearner, statusMessage } from './viewModel';
 
 export function DashboardScreen() {
   const { data, isPending, isError, error, refetch, isRefetching } = useDashboard();
+  const { t } = useI18n();
   const name = useAuthStore((s) => s.profile?.displayName);
   const pending = usePendingBookmarkCount().data ?? 0;
 
@@ -39,11 +41,9 @@ export function DashboardScreen() {
         />
       }
       title={
-        data
-          ? headline(data, new Date().getHours())
-          : `Hallo${name ? `, ${name.split(' ')[0]}` : ''}!`
+        data ? headline(data, new Date().getHours(), t.home) : t.home.hello(name?.split(' ')[0])
       }
-      subtitle={data ? statusMessage(data) : 'Dein Lernplan wird geladen …'}
+      subtitle={data ? statusMessage(data, t.home) : t.home.loadingPlan}
       refreshControl={
         <RefreshControl refreshing={isRefetching && !isPending} onRefresh={() => void refetch()} />
       }
@@ -54,10 +54,7 @@ export function DashboardScreen() {
         <>
           <View style={styles.chips}>
             {data.currentStreak > 0 ? (
-              <Badge
-                tone="warning"
-                label={`🔥 ${data.currentStreak} ${data.currentStreak === 1 ? 'Tag' : 'Tage'}`}
-              />
+              <Badge tone="warning" label={t.home.streakBadge(data.currentStreak)} />
             ) : null}
             <Badge tone="primary" label={data.user.learningLevel} />
           </View>

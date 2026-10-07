@@ -170,7 +170,7 @@ describe('Schreiben', () => {
     await fireEvent.press(screen.getByRole('button', { name: '💬 Redemittel' }));
     expect(await screen.findByText(/Ich würde gern/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: '📖 Beispiel' })).toBeNull(); // Üben has only Tipp + Redemittel
-    await fireEvent.press(screen.getAllByRole('button', { name: 'Schließen' })[0]);
+    await fireEvent.press(screen.getAllByRole('button', { name: 'Close' })[0]);
 
     await fireEvent.press(screen.getByRole('button', { name: 'Prüfung' }));
     expect(screen.queryByRole('button', { name: 'Hilfe' })).toBeNull();
@@ -193,7 +193,7 @@ describe('Schreiben', () => {
     expect(await screen.findByText('✅ Text abgegeben')).toBeTruthy();
 
     await fireEvent.press(screen.getByRole('button', { name: '🤖 KI-Feedback anfordern' }));
-    expect(await screen.findByText('Tageslimit für KI-Korrekturen erreicht.')).toBeTruthy();
+    expect(await screen.findByText('Daily limit reached')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: '🤖 KI-Feedback anfordern' }));
     expect(await screen.findByText('🤖 KI-Feedback')).toBeTruthy();
     expect(screen.getByText('Klar formuliert', { exact: false })).toBeTruthy();
@@ -259,8 +259,8 @@ describe('timing screens', () => {
     time.configurations.mockResolvedValue([{ examType: 'TELC', level: 'B1', section: 'LESEVERSTEHEN', teil: 1, recommendedMinutes: 15 }]);
     time.lastTimes.mockResolvedValue([{ exerciseId: 'a', elapsedSeconds: 600, targetSeconds: 900 }]);
     await wrap(<ExamTeilScreen />);
-    expect(await screen.findByText(/Empfohlene Zeit pro Übung: 15 Min/)).toBeTruthy();
-    expect(await screen.findByText(/Letzte Zeit 10:00 von 15:00/)).toBeTruthy();
+    expect(await screen.findByText(/Recommended time per exercise: 15 min/)).toBeTruthy();
+    expect(await screen.findByText(/Last time 10:00 of 15:00/)).toBeTruthy();
     expect(time.lastTimes).toHaveBeenCalledWith('LESEVERSTEHEN', 'B1');
   });
 
@@ -273,8 +273,8 @@ describe('timing screens', () => {
     await wrap(<ZeitmanagementScreen />);
     expect(await screen.findByText('Lesen · Teil 1')).toBeTruthy();
     expect(screen.getByText('13:00')).toBeTruthy();
-    expect(screen.getByText('-02:00')).toBeTruthy();
-    expect(screen.getByText('✓ Innerhalb der Vorgabe')).toBeTruthy();
+    expect(screen.getByText('\u200E-02:00')).toBeTruthy();
+    expect(screen.getByText('✓ Within the target')).toBeTruthy();
     expect(screen.getByText('Sprachbausteine · Teil 2')).toBeTruthy();
   });
 
@@ -282,7 +282,7 @@ describe('timing screens', () => {
     mockParams = { level: 'B1' };
     time.timeManagement.mockResolvedValue([]);
     await wrap(<ZeitmanagementScreen />);
-    expect(await screen.findByText('Noch keine Zeiten')).toBeTruthy();
+    expect(await screen.findByText('No times yet')).toBeTruthy();
   });
 });
 

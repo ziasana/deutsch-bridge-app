@@ -4,6 +4,7 @@ import type {
   ExpressionRegister,
   ExpressionType,
 } from '@/types/expression';
+import { SECTION_COLOR } from '@/theme/sectionColors';
 
 export const TYPE_LABEL: Record<ExpressionType, string> = {
   REDEWENDUNG: 'Redewendungen',
@@ -72,8 +73,13 @@ export const MASTERY_COLOR: Record<ExpressionMasteryLevel, string> = {
   MASTERED: '#1B7A55',
 };
 
-/** Accent per collection. */
+/** Accent for the whole expressions section: the same green as its tile in the learn tab. */
+export const EXPRESSION_COLOR: string = SECTION_COLOR.expressions;
+/** Darker shade for text and controls on the light green tint. */
+export const EXPRESSION_DARK = '#1B7A55';
+
+/** Accent per collection: one section colour, the emoji and label tell the two apart. */
 export const TYPE_COLOR: Record<ExpressionType, string> = {
-  REDEWENDUNG: '#4D94FF',
-  NOMEN_VERB_VERBINDUNG: '#E8892B',
+  REDEWENDUNG: EXPRESSION_COLOR,
+  NOMEN_VERB_VERBINDUNG: EXPRESSION_COLOR,
 };

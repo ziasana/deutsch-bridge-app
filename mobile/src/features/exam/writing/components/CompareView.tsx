@@ -4,6 +4,8 @@ import { AppText, Card, Chip } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 import type { WritingAttempt } from '@/types/writing';
 import { diffWords } from '../wordDiff';
+import { WRITING_COLOR } from '@/features/exam/writing/learn/ui';
+import { darken } from '@/features/exam/components/kit';
 
 function Delta({ label, before, after }: { label: string; before: number; after: number }) {
   const diff = after - before;
@@ -51,6 +53,7 @@ export function CompareView({ attempts }: { attempts: WritingAttempt[] }) {
             label={`${label}: Versuch ${a.attemptNumber}`}
             selected={value === i}
             onPress={() => set(i)}
+            color={darken(WRITING_COLOR)}
           />
         ))}
       </View>

@@ -10,6 +10,7 @@ import { useExamTextScale } from '../../textScale';
 import { LEARN_SECTIONS, type LearnSectionId } from '../writingMeta';
 import type { LessonStep, Station, StationResult } from './types';
 import { Pop, WRITING_COLOR } from './ui';
+import { darken } from '@/features/exam/components/kit';
 
 function milestone(index: number, total: number): string | null {
   if (total < 4) return null;
@@ -140,7 +141,7 @@ function LessonShell({
                 </AppText>
               )}
             </View>
-            <TextSizeControl />
+            <TextSizeControl color={WRITING_COLOR} />
           </View>
         }
         footer={
@@ -151,6 +152,7 @@ function LessonShell({
                 variant="secondary"
                 disabled={index === 0}
                 onPress={() => setIndex((i) => Math.max(0, i - 1))}
+                color={darken(WRITING_COLOR)}
               />
               <View style={{ flex: 1 }}>
                 <Button
@@ -158,6 +160,7 @@ function LessonShell({
                   label={isLast ? 'Abschließen' : 'Weiter'}
                   disabled={!canContinue}
                   onPress={next}
+                  color={WRITING_COLOR}
                 />
               </View>
             </View>
@@ -213,13 +216,14 @@ function Celebration({
             pill
             label={nextLabel ? `Weiter: ${nextLabel}` : 'Jetzt Schreibaufgaben üben'}
             onPress={onNext}
+            color={WRITING_COLOR}
           />
           <View style={styles.nav}>
             <View style={{ flex: 1 }}>
-              <Button label="Noch einmal" variant="secondary" onPress={onRepeat} />
+              <Button label="Noch einmal" variant="secondary" onPress={onRepeat} color={darken(WRITING_COLOR)} />
             </View>
             <View style={{ flex: 1 }}>
-              <Button label="Zur Übersicht" variant="secondary" onPress={onOverview} />
+              <Button label="Zur Übersicht" variant="secondary" onPress={onOverview} color={darken(WRITING_COLOR)} />
             </View>
           </View>
         </>

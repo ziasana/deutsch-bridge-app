@@ -2,9 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText, BottomSheet, Button, Chip, TextField } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { colors, spacing } from '@/theme';
 import type { VocabularyItem } from '@/types/vocabulary';
 import { useGenerateExample, useSaveVocabulary } from '../listHooks';
+import { VOCABULARY_COLOR, VOCABULARY_DARK } from '../meta';
 
 const ARTICLES = ['', 'der', 'die', 'das'] as const;
 
@@ -18,12 +20,13 @@ type Props = {
 
 /** Add or edit a word: word, article, meaning and an example (optionally written by the AI). */
 export function WordFormSheet({ visible, item, onClose, onSaved }: Props) {
+  const { t } = useI18n();
   return (
     <BottomSheet
       visible={visible}
       onClose={onClose}
       tall
-      title={item ? 'Wort bearbeiten' : 'Neues Wort'}
+      title={item ? t.vocabulary.form.editTitle : t.vocabulary.form.newTitle}
     >
       {/* The sheet's content only exists while it is open, so the form starts fresh every time. */}
       <WordForm item={item} onClose={onClose} onSaved={onSaved} />
@@ -32,6 +35,8 @@ export function WordFormSheet({ visible, item, onClose, onSaved }: Props) {
 }
 
 function WordForm({ item, onClose, onSaved }: Omit<Props, 'visible'>) {
+  const { t } = useI18n();
+  const f = t.vocabulary.form;
   const [word, setWord] = useState(item?.word ?? '');
   const [article, setArticle] = useState(item?.article ?? '');
   const [meaning, setMeaning] = useState(item?.meaning ?? '');
@@ -65,40 +70,41 @@ function WordForm({ item, onClose, onSaved }: Omit<Props, 'visible'>) {
     <>
       <View style={{ gap: spacing.xs }}>
         <AppText variant="small" color={colors.mutedForeground}>
-          Artikel
+          {f.article}
         </AppText>
         <View style={styles.row}>
           {ARTICLES.map((a) => (
             <Chip
               key={a || 'none'}
-              label={a || 'Kein'}
+              label={a || f.none}
               selected={article === a}
               onPress={() => setArticle(a)}
+              color={VOCABULARY_DARK}
             />
           ))}
         </View>
       </View>
       <TextField
-        label="Wort"
+        label={f.word}
         value={word}
         onChangeText={setWord}
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="next"
       />
-      <TextField label="Bedeutung" value={meaning} onChangeText={setMeaning} returnKeyType="next" />
+      <TextField label={f.meaning} value={meaning} onChangeText={setMeaning} returnKeyType="next" />
       <View style={{ gap: spacing.xs }}>
-        <TextField label="Beispielsatz" value={example} onChangeText={setExample} multiline />
+        <TextField label={f.example} value={example} onChangeText={setExample} multiline />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Beispiel mit KI erzeugen"
+          accessibilityLabel={f.generate}
           disabled={!word.trim() || generate.isPending}
           onPress={suggest}
           style={[styles.ai, (!word.trim() || generate.isPending) && { opacity: 0.4 }]}
         >
-          <Ionicons name="sparkles" size={16} color={colors.primaryDark} />
-          <AppText variant="small" color={colors.primaryDark} style={{ fontWeight: '700' }}>
-            {generate.isPending ? 'Wird erzeugt …' : 'Beispiel mit KI erzeugen'}
+          <Ionicons name="sparkles" size={16} color={VOCABULARY_DARK} />
+          <AppText variant="small" color={VOCABULARY_DARK} style={{ fontWeight: '700' }}>
+            {generate.isPending ? f.generating : f.generate}
           </AppText>
         </Pressable>
         {generate.error ? (
@@ -112,8 +118,21 @@ function WordForm({ item, onClose, onSaved }: Omit<Props, 'visible'>) {
           {save.error.message}
         </AppText>
       ) : null}
-      <Button pill label="Speichern" onPress={submit} loading={save.isPending} disabled={!valid} />
-      <Button pill variant="ghost" label="Abbrechen" onPress={onClose} />
+      <Button
+        pill
+        label={f.save}
+        onPress={submit}
+        loading={save.isPending}
+        disabled={!valid}
+        color={VOCABULARY_COLOR}
+      />
+      <Button
+        pill
+        variant="ghost"
+        label={t.common.cancel}
+        onPress={onClose}
+        color={VOCABULARY_DARK}
+      />
     </>
   );
 }

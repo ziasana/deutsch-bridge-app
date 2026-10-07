@@ -102,30 +102,30 @@ describe('app navigation', () => {
 
     expect(await screen.findByText('Perfekt')).toBeTruthy(); // dashboard loaded on Home
 
-    await fireEvent.press(screen.getByRole('button', { name: /Learn/ }));
-    expect(await screen.findByText('Deine Lerninhalte')).toBeTruthy();
+    await fireEvent.press(screen.getAllByRole('button', { name: /یادگیری/ }).at(-1)!);
+    expect(await screen.findByText('محتوای یادگیری شما')).toBeTruthy();
 
-    await fireEvent.press(screen.getByText('Lesen'));
-    expect(await screen.findByText('Lies Texte auf deinem Niveau')).toBeTruthy();
+    await fireEvent.press(screen.getByText('خواندن'));
+    expect(await screen.findByText('متن‌هایی هم‌سطح خودتان بخوانید')).toBeTruthy();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Zurück' }));
-    expect(await screen.findByText('Deine Lerninhalte')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'بازگشت' }));
+    expect(await screen.findByText('محتوای یادگیری شما')).toBeTruthy();
 
-    await fireEvent.press(screen.getByRole('button', { name: /Exam/ }));
-    expect(await screen.findByText('Prüfung üben')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: /Tutor/ }));
-    expect(await screen.findByText('AI Tutor')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: /آزمون/ }));
+    expect(await screen.findByText('تمرین آزمون')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: /مربی/ }));
+    expect(await screen.findByText('مربی هوشمند')).toBeTruthy();
 
-    await fireEvent.press(screen.getByRole('button', { name: /Profile/ }));
+    await fireEvent.press(screen.getByRole('button', { name: /پروفایل/ }));
     expect(await screen.findByText('ali@example.com')).toBeTruthy();
-    expect(screen.getByText('Niveau B1')).toBeTruthy();
-    expect(await screen.findByText('3 neu')).toBeTruthy(); // unread badge on the Notifications row
+    expect(screen.getByText('سطح B1')).toBeTruthy();
+    expect(await screen.findByText('3 جدید')).toBeTruthy(); // unread badge on the Notifications row
     expect(screen.getByText('PR')).toBeTruthy(); // explanation-language stat
 
     // Logout asks for confirmation, then the guard returns to the welcome page.
-    await fireEvent.press(screen.getByRole('button', { name: 'Abmelden' }));
-    expect(await screen.findByText('Abmelden?')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Abmelden bestätigen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'خروج' }));
+    expect(await screen.findByText('خروج از حساب؟')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'تأیید خروج' }));
     expect(await screen.findByText(slides[0].title)).toBeTruthy();
     expect(await tokenStorage.getRefresh()).toBeNull();
     await act(async () => {});

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AppText, Button, Card, Chip, WavePage } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { useAuthStore } from '@/stores/authStore';
 import { colors, spacing } from '@/theme';
 import type { PreferredLanguage } from '@/types/user';
@@ -40,6 +41,7 @@ function Group({
 
 /** Learning preferences: level, daily word goal and explanation language, saved together. */
 export function SettingsScreen() {
+  const { t } = useI18n();
   const profile = useAuthStore((s) => s.profile);
   const update = useUpdateProfile();
   // Only edits live here; everything else is read from the session profile.
@@ -67,9 +69,9 @@ export function SettingsScreen() {
   const dirty = Object.keys(changes).length > 0;
 
   return (
-    <WavePage title="Einstellungen">
+    <WavePage title={t.settings.title}>
       <Card style={{ gap: spacing.xl }}>
-        <Group title="Lernniveau">
+        <Group title={t.settings.level}>
           {LEVELS.map((l) => (
             <Chip
               key={l}
@@ -79,20 +81,17 @@ export function SettingsScreen() {
             />
           ))}
         </Group>
-        <Group title="Tägliches Wortziel" hint="Empfohlen: 5–10 Wörter pro Tag.">
+        <Group title={t.settings.dailyGoal} hint={t.settings.dailyGoalHint}>
           {WORD_GOALS.map((n) => (
             <Chip
               key={n}
-              label={`${n} Wörter`}
+              label={t.settings.words(n)}
               selected={goal === n}
               onPress={() => setDraft((d) => ({ ...d, dailyGoalWords: n }))}
             />
           ))}
         </Group>
-        <Group
-          title="Erklärsprache"
-          hint="In dieser Sprache erscheinen Bedeutungen und Erklärungen."
-        >
+        <Group title={t.settings.language} hint={t.settings.languageHint}>
           {LANGUAGES.map((l) => (
             <Chip
               key={l.value}
@@ -111,7 +110,7 @@ export function SettingsScreen() {
       ) : null}
       {update.isSuccess && !dirty ? (
         <AppText color="#1B7A55" accessibilityRole="alert">
-          ✓ Gespeichert
+          {t.common.saved}
         </AppText>
       ) : null}
 
@@ -119,13 +118,13 @@ export function SettingsScreen() {
         <View style={{ gap: spacing.sm }}>
           <Button
             pill
-            label="Änderungen speichern"
+            label={t.settings.save}
             loading={update.isPending}
             onPress={() => update.mutate(changes, { onSuccess: () => setDraft({}) })}
           />
           <Button
             pill
-            label="Verwerfen"
+            label={t.settings.discard}
             variant="secondary"
             onPress={() => {
               setDraft({});

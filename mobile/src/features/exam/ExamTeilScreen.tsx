@@ -13,27 +13,36 @@ import {
   Screen,
   Skeleton,
 } from '@/components/ui';
+import { HorizontalScroll } from '@/components/ui/HorizontalScroll';
+import { useI18n } from '@/i18n';
 import { colors, radius, spacing } from '@/theme';
 import type { ExamSection } from '@/types/exam';
 import { ExerciseRow } from './components/ExerciseRow';
 import { IconButton, StatTile, tint } from './components/kit';
+import { useExamText } from './examText';
 import { effectiveScore, findGroupByKey } from './examData';
 import { SECTION_META, SECTION_ORDER } from './examMeta';
 import { useExamExercises, useToggleExamBookmark } from './hooks';
 import { TIMED_SECTIONS } from './time/examTime';
 import { useExerciseLastTimes } from './time/hooks';
 import { TeilTimeCard } from './time/TeilTimeCard';
+import { darken } from '@/features/exam/components/kit';
+import { HeroBackdrop } from '@/components/ui/HeroDecor';
+import { SectionIcon } from './components/SectionIcon';
 
 type Filter = 'ALL' | 'OPEN' | 'DONE';
-const FILTERS: { value: Filter; label: string }[] = [
-  { value: 'ALL', label: 'Alle' },
-  { value: 'OPEN', label: 'Offen' },
-  { value: 'DONE', label: 'Abgeschlossen' },
-];
+const FILTERS: Filter[] = ['ALL', 'OPEN', 'DONE'];
 
 export function ExamTeilScreen() {
   const router = useRouter();
-  const { section, level, part } = useLocalSearchParams<{ section: string; level: string; part: string }>();
+  const { t } = useI18n();
+  const tx = useExamText();
+  const e = t.examTeil;
+  const { section, level, part } = useLocalSearchParams<{
+    section: string;
+    level: string;
+    part: string;
+  }>();
   const valid = SECTION_ORDER.includes(section as ExamSection);
   const query = useExamExercises(valid ? level : null);
   const bookmark = useToggleExamBookmark();
@@ -46,16 +55,22 @@ export function ExamTeilScreen() {
   if (!valid) {
     return (
       <Screen>
-        <Header title="Prüfungsteil" back />
-        <EmptyState emoji="🔍" title="Nicht gefunden" message="Dieser Prüfungsteil konnte nicht gefunden werden." actionLabel="Zurück" onAction={() => router.back()} />
+        <Header title={e.title} back />
+        <EmptyState
+          emoji="🔍"
+          title={e.notFoundTitle}
+          message={e.notFoundMessage}
+          actionLabel={t.common.back}
+          onAction={() => router.back()}
+        />
       </Screen>
     );
   }
   if (query.isPending) {
     return (
       <Screen>
-        <Header title="Prüfungsteil" back />
-        <View accessibilityLabel="Übungen werden geladen" style={{ gap: spacing.md }}>
+        <Header title={e.title} back />
+        <View accessibilityLabel={e.loading} style={{ gap: spacing.md }}>
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} height={72} />
           ))}
@@ -66,7 +81,7 @@ export function ExamTeilScreen() {
   if (query.isError) {
     return (
       <Screen>
-        <Header title="Prüfungsteil" back />
+        <Header title={e.title} back />
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       </Screen>
     );
@@ -77,8 +92,14 @@ export function ExamTeilScreen() {
   if (!group) {
     return (
       <Screen>
-        <Header title="Prüfungsteil" back />
-        <EmptyState emoji="🔍" title="Nicht gefunden" message="Dieser Prüfungsteil konnte nicht gefunden werden." actionLabel="Zurück" onAction={() => router.back()} />
+        <Header title={e.title} back />
+        <EmptyState
+          emoji="🔍"
+          title={e.notFoundTitle}
+          message={e.notFoundMessage}
+          actionLabel={t.common.back}
+          onAction={() => router.back()}
+        />
       </Screen>
     );
   }
@@ -90,12 +111,13 @@ export function ExamTeilScreen() {
   const started = group.items.some((i) => i.completed);
   const continueLabel =
     group.state === 'completed'
-      ? `Wiederholen: ${next.title}`
+      ? e.again(tx(next.title))
       : started
-        ? `Weiter: ${next.title}`
-        : `Starten: ${next.title}`;
+        ? e.resume(tx(next.title))
+        : e.start(tx(next.title));
   const items = group.items.filter(
-    (i) => filter === 'ALL' || (filter === 'DONE' ? effectiveScore(i) === 100 : effectiveScore(i) < 100),
+    (i) =>
+      filter === 'ALL' || (filter === 'DONE' ? effectiveScore(i) === 100 : effectiveScore(i) < 100),
   );
   const nextId = group.state === 'completed' ? null : next.id;
 
@@ -103,23 +125,25 @@ export function ExamTeilScreen() {
     <View style={styles.root}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <View style={[styles.hero, { backgroundColor: tint(color, '1F') }]}>
+          <HeroBackdrop color={color} />
           <SafeAreaView edges={['top']}>
             <View style={styles.topRow}>
-              <IconButton name="arrow-back" label="Zurück" onPress={() => router.back()} />
-              <View style={[styles.chip, { backgroundColor: tint(color, '33') }]}>
+              <IconButton name="arrow-back" label={t.common.back} onPress={() => router.back()} />
+              <View style={[styles.chip, styles.chipRow, { backgroundColor: tint(color, '33') }]}>
+                <SectionIcon section={typed} size={14} />
                 <AppText variant="caption" color={colors.ink} style={{ fontWeight: '800' }}>
-                  {meta.emoji} {meta.label.toUpperCase()} · {level}
+                  {tx(meta.label).toUpperCase()} · {level}
                 </AppText>
               </View>
             </View>
             <View style={styles.heroMain}>
               <View style={{ flex: 1, gap: 2 }}>
                 <AppText style={styles.title} accessibilityRole="header">
-                  {group.heading}
+                  {tx(group.heading)}
                 </AppText>
                 {group.subheading ? (
                   <AppText color={colors.ink} style={{ fontWeight: '500' }}>
-                    {group.subheading}
+                    {tx(group.subheading)}
                   </AppText>
                 ) : null}
               </View>
@@ -130,7 +154,7 @@ export function ExamTeilScreen() {
                 color={color}
                 textSize={20}
                 trackColor="#FFFFFFCC"
-                label="Dein Fortschritt"
+                label={e.progress}
               />
             </View>
           </SafeAreaView>
@@ -138,24 +162,54 @@ export function ExamTeilScreen() {
 
         <View style={styles.body}>
           <View style={styles.tiles}>
-            <StatTile icon="albums-outline" label={group.total === 1 ? 'Übung' : 'Übungen'} value={String(group.total)} color={color} />
-            <StatTile icon="help-circle-outline" label={questions === 1 ? 'Frage' : 'Fragen'} value={String(questions)} color={color} />
-            <StatTile icon="checkmark-circle-outline" label="Gemeistert" value={`${group.mastered} / ${group.total}`} color={colors.success} />
+            <StatTile
+              icon="albums-outline"
+              label={e.exercises(group.total)}
+              value={String(group.total)}
+              color={color}
+            />
+            <StatTile
+              icon="help-circle-outline"
+              label={e.questions(questions)}
+              value={String(questions)}
+              color={color}
+            />
+            <StatTile
+              icon="checkmark-circle-outline"
+              label={e.mastered}
+              value={`${group.mastered} / ${group.total}`}
+              color={colors.success}
+            />
           </View>
 
-          <Button pill label={continueLabel} onPress={() => open(next.id)} />
+          <Button pill label={continueLabel} onPress={() => open(next.id)} color={color} />
 
           {group.items[0]?.teil != null && TIMED_SECTIONS.includes(typed) ? (
-            <TeilTimeCard section={typed} level={level} teil={group.items[0].teil} />
+            <TeilTimeCard
+              section={typed}
+              level={level}
+              teil={group.items[0].teil}
+              color={color}
+            />
           ) : null}
 
           <View style={{ gap: spacing.sm }}>
-            <AppText variant="heading">Dein Lernpfad</AppText>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+            <AppText variant="heading">{e.path}</AppText>
+            <HorizontalScroll
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chips}
+            >
               {FILTERS.map((f) => (
-                <Chip key={f.value} label={f.label} selected={filter === f.value} onPress={() => setFilter(f.value)} />
+                <Chip
+                  key={f}
+                  label={e.filters[f]}
+                  selected={filter === f}
+                  onPress={() => setFilter(f)}
+                  color={darken(color)}
+                />
               ))}
-            </ScrollView>
+            </HorizontalScroll>
           </View>
 
           <View>
@@ -167,14 +221,20 @@ export function ExamTeilScreen() {
                 path={{ index: group.items.indexOf(item) + 1, last: i === items.length - 1 }}
                 next={item.id === nextId}
                 onPress={() => open(item.id)}
-                onToggleBookmark={() => bookmark.mutate({ id: item.id, bookmarked: item.bookmarked })}
+                onToggleBookmark={() =>
+                  bookmark.mutate({ id: item.id, bookmarked: item.bookmarked })
+                }
                 bookmarkBusy={bookmark.isPending && bookmark.variables?.id === item.id}
                 lastTime={lastTimes[item.id]}
               />
             ))}
             {items.length === 0 ? (
-              <AppText center color={colors.mutedForeground} style={{ paddingVertical: spacing.xl }}>
-                Keine Übungen für diesen Filter gefunden.
+              <AppText
+                center
+                color={colors.mutedForeground}
+                style={{ paddingVertical: spacing.xl }}
+              >
+                {e.emptyFilter}
               </AppText>
             ) : null}
           </View>
@@ -192,9 +252,16 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    overflow: 'hidden',
   },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginLeft: -spacing.sm },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginStart: -spacing.sm,
+  },
   chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill },
+  chipRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   heroMain: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, paddingTop: spacing.sm },
   title: { fontSize: 32, lineHeight: 38, fontWeight: '800', color: colors.ink },
   body: { padding: spacing.lg, gap: spacing.lg },

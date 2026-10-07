@@ -38,14 +38,21 @@ export function useExamTimeConfiguration(
 }
 
 /** Last finished time per exercise id; empty while loading or if the request fails. */
-export function useExerciseLastTimes(section: ExamSection | null, level: string | null | undefined) {
+export function useExerciseLastTimes(
+  section: ExamSection | null,
+  level: string | null | undefined,
+) {
   const { data } = useQuery({
     queryKey: ['exam', 'last-times', section, level],
     queryFn: () => examTimeApi.lastTimes(section!, level!),
     enabled: !!level && !!section,
   });
   return useMemo(
-    () => Object.fromEntries((data ?? []).map((t) => [t.exerciseId, t])) as Record<string, ExamExerciseLastTime>,
+    () =>
+      Object.fromEntries((data ?? []).map((t) => [t.exerciseId, t])) as Record<
+        string,
+        ExamExerciseLastTime
+      >,
     [data],
   );
 }
@@ -88,7 +95,10 @@ export function useExamSession() {
     if (!current) return null;
     setBusy(true);
     try {
-      return await examTimeApi.completeSession(current.sessionId, pausedSecondsAt(current, Date.now()));
+      return await examTimeApi.completeSession(
+        current.sessionId,
+        pausedSecondsAt(current, Date.now()),
+      );
     } catch {
       return null;
     } finally {

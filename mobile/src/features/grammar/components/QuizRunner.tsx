@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { AppText, Button, ProgressBar } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { colors, spacing } from '@/theme';
 import { isCorrectAnswer, type RunnerQuestion } from '../quiz';
 import { QuestionView } from './QuestionView';
+import { GRAMMAR_COLOR, GRAMMAR_DARK } from '../meta';
 
 type Props = {
   questions: RunnerQuestion[];
@@ -26,6 +28,7 @@ export function QuizRunner({
   onAnswered,
   onFinish,
 }: Props) {
+  const { t } = useI18n();
   const [index, setIndex] = useState(startIndex);
   const [selected, setSelected] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -56,13 +59,11 @@ export function QuizRunner({
   return (
     <View style={{ gap: spacing.lg }}>
       <View style={{ gap: spacing.sm }}>
-        <AppText variant="subheading">
-          Frage {index + 1} von {questions.length}
-        </AppText>
+        <AppText variant="subheading">{t.grammar.questionOf(index + 1, questions.length)}</AppText>
         <ProgressBar
           value={index + (submitted ? 1 : 0)}
           max={questions.length}
-          label="Quiz-Fortschritt"
+          label={t.grammar.quizProgress}
         />
       </View>
 
@@ -78,13 +79,22 @@ export function QuizRunner({
       />
 
       {submitted ? (
-        <Button label={isLast ? 'Ergebnis ansehen' : 'Nächste Frage'} onPress={next} />
+        <Button
+          label={isLast ? t.grammar.seeResult : t.grammar.nextQuestion}
+          onPress={next}
+          color={GRAMMAR_COLOR}
+        />
       ) : (
         <>
-          <Button label="Antwort prüfen" disabled={!selected.trim()} onPress={submit} />
+          <Button
+            label={t.grammar.checkAnswer}
+            disabled={!selected.trim()}
+            onPress={submit}
+            color={GRAMMAR_COLOR}
+          />
           {!selected.trim() ? (
             <AppText variant="small" color={colors.mutedForeground} center>
-              Wähle oder tippe eine Antwort.
+              {t.grammar.pickAnswer}
             </AppText>
           ) : null}
         </>

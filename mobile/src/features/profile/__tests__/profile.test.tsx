@@ -3,11 +3,14 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 import * as ImagePicker from 'expo-image-picker';
 import { ApiError } from '@/api/errors';
 import { userApi } from '@/api/userApi';
+import { dictionaries } from '@/i18n';
 import { useAuthStore } from '@/stores/authStore';
 import type { UserProfile } from '@/types/user';
 import { AccountScreen, passwordProblem } from '../AccountScreen';
 import { SettingsScreen } from '../SettingsScreen';
 import { initialsOf } from '../avatarPicker';
+
+const T = dictionaries.en.account;
 
 jest.mock('@/api/userApi');
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn() }));
@@ -37,7 +40,12 @@ const profile = {
 
 let queryClient: QueryClient;
 const wrap = (ui: React.ReactElement) => {
-  queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } } });
+  queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, gcTime: Infinity },
+      mutations: { gcTime: Infinity },
+    },
+  });
   return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 };
 
@@ -48,11 +56,11 @@ beforeEach(() => {
 
 describe('helpers', () => {
   it('validates the password form', () => {
-    expect(passwordProblem('', 'abcdef', 'abcdef')).toMatch(/aktuelle/);
-    expect(passwordProblem('old', 'abc', 'abc')).toMatch(/mindestens 6/);
-    expect(passwordProblem('old', 'abcdef', 'abcdeg')).toMatch(/stimmen nicht überein/);
-    expect(passwordProblem('abcdef', 'abcdef', 'abcdef')).toMatch(/unterscheiden/);
-    expect(passwordProblem('old', 'abcdef', 'abcdef')).toBeNull();
+    expect(passwordProblem('', 'abcdef', 'abcdef', T)).toMatch(/current password/);
+    expect(passwordProblem('old', 'abc', 'abc', T)).toMatch(/at least 6/);
+    expect(passwordProblem('old', 'abcdef', 'abcdeg', T)).toMatch(/do not match/);
+    expect(passwordProblem('abcdef', 'abcdef', 'abcdef', T)).toMatch(/must differ/);
+    expect(passwordProblem('old', 'abcdef', 'abcdef', T)).toBeNull();
   });
   it('builds initials', () => {
     expect(initialsOf('Ali Reza Khan', 'x@y.z')).toBe('AR');
@@ -65,28 +73,43 @@ describe('SettingsScreen', () => {
   it('shows the current choices and saves only what changed, merging into the session profile', async () => {
     api.updateProfile.mockResolvedValue({ message: 'ok', data: null });
     await wrap(<SettingsScreen />);
-    expect(screen.queryByRole('button', { name: 'Änderungen speichern' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Save changes' })).toBeNull();
     expect(screen.getByRole('button', { name: 'B1' }).props.accessibilityState.selected).toBe(true);
 
     await fireEvent.press(screen.getByRole('button', { name: 'B2' }));
     await fireEvent.press(screen.getByRole('button', { name: '🇮🇷 فارسی' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Änderungen speichern' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Save changes' }));
 
-    await waitFor(() => expect(api.updateProfile).toHaveBeenCalledWith({ learningLevel: 'B2', preferredLanguage: 'PR' }));
-    await waitFor(() => expect(useAuthStore.getState().profile).toMatchObject({ learningLevel: 'B2', preferredLanguage: 'PR', displayName: 'Ali Reza', onboardingCompleted: true, role: 'USER' }));
-    expect(await screen.findByText('✓ Gespeichert')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Änderungen speichern' })).toBeNull();
+    await waitFor(() =>
+      expect(api.updateProfile).toHaveBeenCalledWith({
+        learningLevel: 'B2',
+        preferredLanguage: 'PR',
+      }),
+    );
+    await waitFor(() =>
+      expect(useAuthStore.getState().profile).toMatchObject({
+        learningLevel: 'B2',
+        preferredLanguage: 'PR',
+        displayName: 'Ali Reza',
+        onboardingCompleted: true,
+        role: 'USER',
+      }),
+    );
+    expect(await screen.findByText('✓ Saved')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Save changes' })).toBeNull();
   });
 
   it('can discard edits and shows save errors', async () => {
-    api.updateProfile.mockRejectedValue(new ApiError('server', 'Der Server ist gerade nicht erreichbar.'));
+    api.updateProfile.mockRejectedValue(
+      new ApiError('server', 'Der Server ist gerade nicht erreichbar.'),
+    );
     await wrap(<SettingsScreen />);
-    await fireEvent.press(screen.getByRole('button', { name: '20 Wörter' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Verwerfen' }));
-    expect(screen.queryByRole('button', { name: 'Verwerfen' })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: '20 words' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Discard' }));
+    expect(screen.queryByRole('button', { name: 'Discard' })).toBeNull();
 
-    await fireEvent.press(screen.getByRole('button', { name: '5 Wörter' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Änderungen speichern' }));
+    await fireEvent.press(screen.getByRole('button', { name: '5 words' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Save changes' }));
     expect(await screen.findByText('Der Server ist gerade nicht erreichbar.')).toBeTruthy();
     expect(useAuthStore.getState().profile?.dailyGoalWords).toBe(10); // unchanged on failure
   });
@@ -96,35 +119,51 @@ describe('AccountScreen', () => {
   it('shows account info and saves a changed name', async () => {
     api.updateProfile.mockResolvedValue({ message: 'ok', data: null });
     await wrap(<AccountScreen />);
-    expect(screen.getByLabelText('E-Mail').props.editable).toBe(false);
-    expect(screen.getByText(/Dabei seit .*2026/)).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Name speichern' })).toBeNull();
+    expect(screen.getByLabelText('Email').props.editable).toBe(false);
+    expect(screen.getByText(/Member since .*2026/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Save name' })).toBeNull();
 
     await fireEvent.changeText(screen.getByLabelText('Name'), '  Ali R.  ');
-    await fireEvent.press(screen.getByRole('button', { name: 'Name speichern' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Save name' }));
     await waitFor(() => expect(api.updateProfile).toHaveBeenCalledWith({ displayName: 'Ali R.' }));
     await waitFor(() => expect(useAuthStore.getState().profile?.displayName).toBe('Ali R.'));
   });
 
   it('uploads a picked photo and updates the profile picture', async () => {
-    picker.mockResolvedValue({ canceled: false, assets: [{ uri: 'file:///p.png', mimeType: 'image/png', fileName: null }] });
+    picker.mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: 'file:///p.png', mimeType: 'image/png', fileName: null }],
+    });
     api.uploadAvatar.mockResolvedValue('/uploads/avatars/me.png');
     await wrap(<AccountScreen />);
-    await fireEvent.press(screen.getByRole('button', { name: 'Foto ändern' }));
-    await waitFor(() => expect(api.uploadAvatar).toHaveBeenCalledWith({ uri: 'file:///p.png', name: 'avatar.png', type: 'image/png' }));
-    expect(picker).toHaveBeenCalledWith(expect.objectContaining({ allowsEditing: true, aspect: [1, 1], mediaTypes: ['images'] }));
-    await waitFor(() => expect(useAuthStore.getState().profile?.avatarUrl).toBe('/uploads/avatars/me.png'));
-    expect(await screen.findByText('✓ Profilbild aktualisiert')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Change photo' }));
+    await waitFor(() =>
+      expect(api.uploadAvatar).toHaveBeenCalledWith({
+        uri: 'file:///p.png',
+        name: 'avatar.png',
+        type: 'image/png',
+      }),
+    );
+    expect(picker).toHaveBeenCalledWith(
+      expect.objectContaining({ allowsEditing: true, aspect: [1, 1], mediaTypes: ['images'] }),
+    );
+    await waitFor(() =>
+      expect(useAuthStore.getState().profile?.avatarUrl).toBe('/uploads/avatars/me.png'),
+    );
+    expect(await screen.findByText('✓ Profile photo updated')).toBeTruthy();
   });
 
   it('does nothing when the picker is cancelled and rejects unsupported formats', async () => {
     await wrap(<AccountScreen />);
     picker.mockResolvedValueOnce({ canceled: true, assets: [] });
-    await fireEvent.press(screen.getByRole('button', { name: 'Foto ändern' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Change photo' }));
     expect(api.uploadAvatar).not.toHaveBeenCalled();
 
-    picker.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///a.gif', mimeType: 'image/gif' }] });
-    await fireEvent.press(screen.getByRole('button', { name: 'Foto ändern' }));
+    picker.mockResolvedValueOnce({
+      canceled: false,
+      assets: [{ uri: 'file:///a.gif', mimeType: 'image/gif' }],
+    });
+    await fireEvent.press(screen.getByRole('button', { name: 'Change photo' }));
     expect(await screen.findByText('Bitte wähle ein JPG-, PNG- oder WebP-Bild.')).toBeTruthy();
     expect(api.uploadAvatar).not.toHaveBeenCalled();
   });
@@ -132,27 +171,29 @@ describe('AccountScreen', () => {
   it('changes the password after validating, and clears the fields', async () => {
     api.updatePassword.mockResolvedValue({ message: 'ok', data: null });
     await wrap(<AccountScreen />);
-    await fireEvent.changeText(screen.getByLabelText('Aktuelles Passwort'), 'oldpass');
-    await fireEvent.changeText(screen.getByLabelText('Neues Passwort'), 'newpass1');
-    await fireEvent.changeText(screen.getByLabelText('Neues Passwort wiederholen'), 'different');
-    await fireEvent.press(screen.getByRole('button', { name: 'Passwort ändern' }));
-    expect(await screen.findByText('Die neuen Passwörter stimmen nicht überein.')).toBeTruthy();
+    await fireEvent.changeText(screen.getByLabelText('Current password'), 'oldpass');
+    await fireEvent.changeText(screen.getByLabelText('New password'), 'newpass1');
+    await fireEvent.changeText(screen.getByLabelText('Repeat new password'), 'different');
+    await fireEvent.press(screen.getByRole('button', { name: 'Change password' }));
+    expect(await screen.findByText('The new passwords do not match.')).toBeTruthy();
     expect(api.updatePassword).not.toHaveBeenCalled();
 
-    await fireEvent.changeText(screen.getByLabelText('Neues Passwort wiederholen'), 'newpass1');
-    await fireEvent.press(screen.getByRole('button', { name: 'Passwort ändern' }));
+    await fireEvent.changeText(screen.getByLabelText('Repeat new password'), 'newpass1');
+    await fireEvent.press(screen.getByRole('button', { name: 'Change password' }));
     await waitFor(() => expect(api.updatePassword).toHaveBeenCalledWith('oldpass', 'newpass1'));
-    expect(await screen.findByText('✓ Passwort geändert')).toBeTruthy();
-    expect(screen.getByLabelText('Aktuelles Passwort').props.value).toBe('');
+    expect(await screen.findByText('✓ Password changed')).toBeTruthy();
+    expect(screen.getByLabelText('Current password').props.value).toBe('');
   });
 
   it('shows the server message for a wrong current password', async () => {
-    api.updatePassword.mockRejectedValue(new ApiError('validation', 'Das aktuelle Passwort ist falsch.', 400));
+    api.updatePassword.mockRejectedValue(
+      new ApiError('validation', 'Das aktuelle Passwort ist falsch.', 400),
+    );
     await wrap(<AccountScreen />);
-    await fireEvent.changeText(screen.getByLabelText('Aktuelles Passwort'), 'wrong');
-    await fireEvent.changeText(screen.getByLabelText('Neues Passwort'), 'newpass1');
-    await fireEvent.changeText(screen.getByLabelText('Neues Passwort wiederholen'), 'newpass1');
-    await fireEvent.press(screen.getByRole('button', { name: 'Passwort ändern' }));
+    await fireEvent.changeText(screen.getByLabelText('Current password'), 'wrong');
+    await fireEvent.changeText(screen.getByLabelText('New password'), 'newpass1');
+    await fireEvent.changeText(screen.getByLabelText('Repeat new password'), 'newpass1');
+    await fireEvent.press(screen.getByRole('button', { name: 'Change password' }));
     expect(await screen.findByText('Das aktuelle Passwort ist falsch.')).toBeTruthy();
   });
 });

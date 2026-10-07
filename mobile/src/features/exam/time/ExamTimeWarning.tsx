@@ -1,22 +1,10 @@
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { colors, radius, spacing } from '@/theme';
 import { stageToAnnounce, stagesUpTo, type WarningStage } from './examTime';
 import { useExamTimerStore } from './timerStore';
-
-const MESSAGES: Partial<Record<WarningStage, { title: string; body: string; over: boolean }>> = {
-  TARGET_REACHED: {
-    title: 'Empfohlene Zeit erreicht',
-    body: 'Du kannst weitermachen, versuche aber bald fertig zu werden.',
-    over: false,
-  },
-  OVER_TIME: {
-    title: 'Du bist über der empfohlenen Zeit',
-    body: 'Überlege, weiterzugehen, wenn du bei einer Aufgabe unsicher bist.',
-    over: true,
-  },
-};
 
 type Props = {
   elapsedSeconds: number;
@@ -30,6 +18,12 @@ type Props = {
  * persisted timer, so a restart does not bring a closed message back. The exercise is never stopped.
  */
 export function ExamTimeWarning({ elapsedSeconds, targetSeconds, announced, dismissed }: Props) {
+  const { t } = useI18n();
+  const tr = t.examRun.timer;
+  const MESSAGES: Partial<Record<WarningStage, { title: string; body: string; over: boolean }>> = {
+    TARGET_REACHED: { title: tr.warnReachedTitle, body: tr.warnReachedBody, over: false },
+    OVER_TIME: { title: tr.warnOverTitle, body: tr.warnOverBody, over: true },
+  };
   const markAnnounced = useExamTimerStore((s) => s.markAnnounced);
   const dismissWarning = useExamTimerStore((s) => s.dismissWarning);
 
@@ -54,7 +48,7 @@ export function ExamTimeWarning({ elapsedSeconds, targetSeconds, announced, dism
       </View>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Hinweis schließen"
+        accessibilityLabel={tr.dismiss}
         onPress={() => dismissWarning(shown)}
         hitSlop={spacing.sm}
       >

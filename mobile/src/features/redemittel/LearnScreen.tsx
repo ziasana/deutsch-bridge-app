@@ -7,6 +7,7 @@ import { DetailCard } from './components/DetailCard';
 import { PhraseIllustration, RedemittelHero } from './components/RedemittelViz';
 import { useLearnRedemittel, useTodayRedemittel, useToggleSave } from './hooks';
 import { REDEMITTEL_COLOR } from './meta';
+import { REDEMITTEL_DARK } from './meta';
 
 /** Today's new Redemittel, one card at a time: read it, then "Verstanden" marks it learned. */
 export function RedemittelLearnScreen() {
@@ -61,8 +62,15 @@ export function RedemittelLearnScreen() {
                 params: { ids: learnedIds.join(',') },
               })
             }
+            color={REDEMITTEL_COLOR}
           />
-          <Button pill variant="secondary" label="Später wiederholen" onPress={home} />
+          <Button
+            pill
+            variant="secondary"
+            label="Später wiederholen"
+            onPress={home}
+            color={REDEMITTEL_DARK}
+          />
         </View>
         <AppText variant="small" center color={colors.mutedForeground}>
           Die erste Wiederholung ist automatisch für morgen geplant.
@@ -103,6 +111,7 @@ export function RedemittelLearnScreen() {
                 },
               })
             }
+            color={REDEMITTEL_COLOR}
           />
         </DetailCard>
         {learn.error ? (

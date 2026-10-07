@@ -2,41 +2,44 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
-import { AppText, Button, ProgressBar, ProgressRing } from '@/components/ui';
+import { AppText, Button, DirectionalIcon, ProgressBar, ProgressRing } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { colors, radius, spacing } from '@/theme';
 import type { DashboardResponse, PlanActivityType } from '@/types/dashboard';
 import { toMobileHref } from '../routes';
 import {
-  PLAN_LABEL,
   continueCopy,
   focusCopy,
   isNewLearner,
+  planLabel,
   reviewSummary,
   weekDays,
 } from '../viewModel';
 import { usePressScale } from './Reveal';
+import { SECTION_COLOR } from '@/theme/sectionColors';
 
 type Props = { data: DashboardResponse };
 
 const ACTIVITY_STYLE: Record<PlanActivityType, { emoji: string; color: string }> = {
-  DAILY_WORDS: { emoji: '🌱', color: '#2E8B57' },
-  VOCAB_REVIEW: { emoji: '🗂️', color: '#3F86F0' },
-  GRAMMAR: { emoji: '🧩', color: '#7B61D9' },
-  READING: { emoji: '📖', color: '#E8832E' },
+  DAILY_WORDS: { emoji: '🌱', color: SECTION_COLOR.dailyWords },
+  VOCAB_REVIEW: { emoji: '🗂️', color: SECTION_COLOR.review },
+  GRAMMAR: { emoji: '🧱', color: SECTION_COLOR.grammar },
+  READING: { emoji: '📖', color: SECTION_COLOR.reading },
 };
 
 /** Big brand-blue call to action: what to do next, with its progress as a ring. */
 export function ContinueCard({ data }: Props) {
   const router = useRouter();
+  const { t } = useI18n();
   const c = data.continueLearning;
   const isStart = isNewLearner(data);
-  const copy = continueCopy(c, isStart);
+  const copy = continueCopy(c, t.home, isStart);
   const go = () => router.push(toMobileHref(c.route, isStart ? '/learn/daily-words' : '/learn'));
   return (
     <View style={styles.continueCard}>
       <View style={styles.continueDeco} pointerEvents="none" />
       <AppText variant="caption" color="#DCEAFF" style={styles.eyebrow}>
-        {isStart ? 'SO STARTEST DU' : 'WEITERLERNEN'}
+        {isStart ? t.home.continue.eyebrowStart : t.home.continue.eyebrowContinue}
       </AppText>
       <View style={styles.row}>
         <View style={styles.flex}>
@@ -61,7 +64,7 @@ export function ContinueCard({ data }: Props) {
               stroke={8}
               color="#FFFFFF"
               textSize={17}
-              label={`${Math.round(c.progressPercent)} Prozent abgeschlossen`}
+              label={t.home.continue.percentDone(Math.round(c.progressPercent))}
               trackColor="rgba(255,255,255,0.28)"
               textColor="#FFFFFF"
             />
@@ -83,7 +86,7 @@ export function ContinueCard({ data }: Props) {
         <AppText variant="subheading" color={colors.primaryDark}>
           {copy.cta}
         </AppText>
-        <Ionicons name="arrow-forward" size={20} color={colors.primaryDark} />
+        <DirectionalIcon name="arrow-forward" size={20} color={colors.primaryDark} />
       </Pressable>
     </View>
   );
@@ -99,13 +102,14 @@ function ActivityTile({
   onPress: () => void;
 }) {
   const press = usePressScale();
+  const { t } = useI18n();
   const { emoji, color } = ACTIVITY_STYLE[type];
-  const label = PLAN_LABEL[type];
+  const label = planLabel(type, t.home);
   return (
     <Animated.View style={[styles.tileWrap, { transform: [{ scale: press.scale }] }]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${label}, ${completed ? 'Erledigt' : 'Offen'}`}
+        accessibilityLabel={t.home.plan.tileLabel(label, completed)}
         onPress={onPress}
         onPressIn={press.onPressIn}
         onPressOut={press.onPressOut}
@@ -137,7 +141,7 @@ function ActivityTile({
           color={completed ? color : colors.mutedForeground}
           style={styles.tileState}
         >
-          {completed ? 'Erledigt' : 'Offen'}
+          {completed ? t.home.plan.done : t.home.plan.open}
         </AppText>
       </Pressable>
     </Animated.View>
@@ -146,6 +150,7 @@ function ActivityTile({
 
 export function TodayPlanCard({ data }: Props) {
   const router = useRouter();
+  const { t } = useI18n();
   const { completed, total, activities } = data.today;
   if (total === 0) return null;
   const next = activities.find((a) => !a.completed);
@@ -159,14 +164,14 @@ export function TodayPlanCard({ data }: Props) {
           stroke={10}
           color={colors.success}
           textSize={20}
-          label={`${completed} von ${total} Aktivitäten abgeschlossen`}
+          label={t.home.plan.ringLabel(completed, total)}
         />
         <View style={styles.flex}>
           <AppText style={styles.cardTitle} accessibilityRole="header">
-            Today&apos;s Plan
+            {t.home.plan.title}
           </AppText>
           <AppText variant="small" color={colors.mutedForeground}>
-            {completed} / {total} abgeschlossen
+            {t.home.plan.completedOf(completed, total)}
           </AppText>
         </View>
       </View>
@@ -181,10 +186,14 @@ export function TodayPlanCard({ data }: Props) {
         ))}
       </View>
       {next ? (
-        <Button pill label="Weiter" onPress={() => router.push(toMobileHref(next.route))} />
+        <Button
+          pill
+          label={t.home.plan.next}
+          onPress={() => router.push(toMobileHref(next.route))}
+        />
       ) : (
         <AppText center color={colors.mutedForeground}>
-          🎉 Alles geschafft für heute.
+          {t.home.plan.allDone}
         </AppText>
       )}
     </View>
@@ -219,26 +228,23 @@ function TintCard({
 
 export function ReviewCard({ data }: Props) {
   const router = useRouter();
+  const { t } = useI18n();
   const { wordsDue, expressionsDue } = data.review;
   const due = wordsDue + expressionsDue;
   return (
-    <TintCard tint="#3F86F0" emoji="🗂️" title="Review Needed">
+    <TintCard tint={SECTION_COLOR.review} emoji="🗂️" title={t.home.review.title}>
       {due > 0 ? (
         <>
-          <AppText style={styles.big}>{reviewSummary(wordsDue, expressionsDue)}</AppText>
-          <AppText color={colors.mutedForeground}>
-            Diese Inhalte sind bereit für eine Wiederholung.
-          </AppText>
-          <Button pill label="Jetzt wiederholen" onPress={() => router.push('/learn/review')} />
+          <AppText style={styles.big}>{reviewSummary(wordsDue, expressionsDue, t.home)}</AppText>
+          <AppText color={colors.mutedForeground}>{t.home.review.ready}</AppText>
+          <Button pill label={t.home.review.now} onPress={() => router.push('/learn/review')} />
         </>
       ) : (
         <>
-          <AppText color={colors.mutedForeground}>
-            🎉 Du hast momentan keine Wörter zur Wiederholung.
-          </AppText>
+          <AppText color={colors.mutedForeground}>{t.home.review.none}</AppText>
           <Button
             pill
-            label="Neue Wörter lernen"
+            label={t.home.review.learnNew}
             variant="secondary"
             onPress={() => router.push('/learn/daily-words')}
           />
@@ -250,10 +256,11 @@ export function ReviewCard({ data }: Props) {
 
 export function FocusCard({ data }: Props) {
   const router = useRouter();
-  const copy = focusCopy(data.focus);
+  const { t } = useI18n();
+  const copy = focusCopy(data.focus, t.home);
   if (!copy) return null;
   return (
-    <TintCard tint="#E8832E" emoji="🎯" title="Dein aktueller Fokus">
+    <TintCard tint="#E8832E" emoji="🎯" title={t.home.focus.title}>
       <AppText style={styles.big}>{copy.area}</AppText>
       <AppText color={colors.mutedForeground}>{copy.text}</AppText>
       <Button
@@ -302,25 +309,25 @@ function TodayDot() {
   );
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
-
 export function WeekCard({ data, today = new Date() }: Props & { today?: Date }) {
   const router = useRouter();
+  const { t } = useI18n();
+  const w = t.home.week;
   const { days, learningDays, totalDays } = data.week;
   // Tap a day to see its date and whether you learned (tap again to close).
   const [picked, setPicked] = useState<number | null>(null);
-  const summary = `${learningDays} von ${totalDays} Tagen gelernt in den letzten 7 Tagen`;
+  const summary = w.summary(learningDays, totalDays);
   return (
     <View style={styles.card}>
       <AppText style={styles.cardTitle} accessibilityRole="header">
-        Diese Woche
+        {w.title}
       </AppText>
       <View accessible accessibilityLabel={summary} style={styles.weekRow}>
-        {weekDays(days, today).map((d, i) => (
+        {weekDays(days, today, t.home).map((d, i) => (
           <Pressable
             key={i}
             accessibilityRole="button"
-            accessibilityLabel={`${d.label}: ${d.learned ? 'gelernt' : 'nicht gelernt'}`}
+            accessibilityLabel={w.dayLabel(d.label, d.learned)}
             accessibilityState={{ selected: picked === i }}
             onPress={() => setPicked(picked === i ? null : i)}
             style={styles.dayCol}
@@ -355,32 +362,37 @@ export function WeekCard({ data, today = new Date() }: Props & { today?: Date })
             {(() => {
               const date = new Date(today);
               date.setDate(today.getDate() - (days.length - 1 - picked));
-              return `${weekDays(days, today)[picked].label}, ${date.getDate()}. ${MONTHS[date.getMonth()]}`;
+              return w.dayDetail(
+                weekDays(days, today, t.home)[picked].label,
+                date.getDate(),
+                w.months[date.getMonth()],
+              );
             })()}
             {' · '}
-            {days[picked] ? 'Gelernt 🔥' : 'Noch nichts gelernt'}
+            {days[picked] ? w.learned : w.notLearned}
           </AppText>
         </View>
       ) : null}
       <AppText variant="small" color={colors.mutedForeground}>
-        {learningDays} / {totalDays} Lerntage
+        {w.learningDays(learningDays, totalDays)}
       </AppText>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Fortschritt ansehen"
+        accessibilityLabel={w.viewProgress}
         onPress={() => router.push('/progress')}
         style={({ pressed }) => [styles.linkRow, pressed && { opacity: 0.6 }]}
       >
         <AppText variant="subheading" color={colors.primaryDark}>
-          Fortschritt ansehen
+          {w.viewProgress}
         </AppText>
-        <Ionicons name="arrow-forward" size={18} color={colors.primaryDark} />
+        <DirectionalIcon name="arrow-forward" size={18} color={colors.primaryDark} />
       </Pressable>
     </View>
   );
 }
 
 export function MilestoneCard({ data }: Props) {
+  const { t } = useI18n();
   const m = data.milestone;
   if (!m) return null;
   return (
@@ -392,15 +404,15 @@ export function MilestoneCard({ data }: Props) {
       </View>
       <View style={styles.flex}>
         <AppText style={styles.big} color="#FFFFFF">
-          🏆 {m.wordsMastered} Wörter gemeistert
+          {t.home.milestone.mastered(m.wordsMastered)}
         </AppText>
         <ProgressBar
           value={m.wordsMastered}
           max={m.nextThreshold}
-          label={`Nächstes Ziel: ${m.nextThreshold} Wörter`}
+          label={t.home.milestone.nextGoal(m.nextThreshold)}
         />
         <AppText variant="small" color="#FFF3D6">
-          Nächstes Ziel: {m.nextThreshold} Wörter
+          {t.home.milestone.nextGoal(m.nextThreshold)}
         </AppText>
       </View>
     </View>
@@ -420,7 +432,7 @@ const styles = StyleSheet.create({
   },
   continueDeco: {
     position: 'absolute',
-    right: -40,
+    end: -40,
     top: -50,
     width: 170,
     height: 170,

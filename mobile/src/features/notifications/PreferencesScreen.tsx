@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Switch, View } from 'react-native';
 import { AppText, Card, ErrorState, Header, LoadingState, Screen, TextField } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { colors, spacing } from '@/theme';
 import type { NotificationPreferences } from '@/types/notification';
 import { PushCard } from './PushCard';
@@ -57,6 +58,7 @@ function TimeField({
   disabled?: boolean;
   onSave: (value: string) => void;
 }) {
+  const { t } = useI18n();
   const [text, setText] = useState<string | null>(null);
   const value = text ?? saved;
   const invalid = text !== null && !isValidTime(text);
@@ -73,12 +75,14 @@ function TimeField({
       keyboardType="numbers-and-punctuation"
       maxLength={5}
       placeholder="HH:mm"
-      error={invalid ? 'Bitte im Format HH:mm eingeben, z. B. 18:30.' : undefined}
+      error={invalid ? t.notifications.prefs.timeFormat : undefined}
     />
   );
 }
 
 export function PreferencesScreen() {
+  const { t } = useI18n();
+  const p = t.notifications.prefs;
   const query = useNotificationPreferences();
   const update = useUpdateNotificationPreferences();
   const prefs = query.data;
@@ -102,7 +106,7 @@ export function PreferencesScreen() {
     );
 
   let body;
-  if (query.isPending) body = <LoadingState label="Einstellungen werden geladen …" />;
+  if (query.isPending) body = <LoadingState label={p.loading} />;
   else if (query.isError || !prefs) body = <ErrorState error={query.error} onRetry={() => void query.refetch()} />;
   else {
     const learningOff = !prefs.learningRemindersEnabled;
@@ -113,43 +117,43 @@ export function PreferencesScreen() {
         <PushCard />
         <Card style={{ gap: spacing.xs }}>
           <AppText variant="caption" color={colors.primaryDark}>
-            LERNEN
+            {p.learning.toUpperCase()}
           </AppText>
-          {toggle('learningRemindersEnabled', 'Tägliche Erinnerungen', { hint: 'Hauptschalter für alle Lern-Erinnerungen.' })}
-          {toggle('reviewRemindersEnabled', 'Wiederholungs-Erinnerungen', { disabled: learningOff })}
-          {toggle('dailyPlanRemindersEnabled', 'Tagesplan', { disabled: learningOff })}
-          {toggle('examRemindersEnabled', 'Prüfungs-Erinnerungen', { disabled: learningOff })}
+          {toggle('learningRemindersEnabled', p.dailyReminders, { hint: p.dailyRemindersHint })}
+          {toggle('reviewRemindersEnabled', p.reviewReminders, { disabled: learningOff })}
+          {toggle('dailyPlanRemindersEnabled', p.dailyPlan, { disabled: learningOff })}
+          {toggle('examRemindersEnabled', p.examReminders, { disabled: learningOff })}
         </Card>
 
         <Card style={{ gap: spacing.xs }}>
           <AppText variant="caption" color={colors.primaryDark}>
-            FORTSCHRITT
+            {p.progress.toUpperCase()}
           </AppText>
-          {toggle('progressNotificationsEnabled', 'Fortschritts-Meldungen')}
-          {toggle('milestoneNotificationsEnabled', 'Meilensteine', { disabled: progressOff })}
-          {toggle('weeklyProgressEnabled', 'Wochenrückblick', { disabled: progressOff })}
+          {toggle('progressNotificationsEnabled', p.progressUpdates)}
+          {toggle('milestoneNotificationsEnabled', p.milestones, { disabled: progressOff })}
+          {toggle('weeklyProgressEnabled', p.weekly, { disabled: progressOff })}
         </Card>
 
         <Card style={{ gap: spacing.sm }}>
           <AppText variant="caption" color={colors.primaryDark}>
-            ZEITPLAN
+            {p.schedule.toUpperCase()}
           </AppText>
           <TimeField
-            label="Bevorzugte Erinnerungszeit"
+            label={p.preferredTime}
             saved={prefs.preferredReminderTime}
             disabled={learningOff}
             onSave={(v) => save({ preferredReminderTime: v })}
           />
-          {toggle('quietHoursEnabled', 'Ruhezeiten', { hint: 'In dieser Zeit bekommst du keine Erinnerungen.' })}
+          {toggle('quietHoursEnabled', p.quietHours, { hint: p.quietHoursHint })}
           {prefs.quietHoursEnabled ? (
             <>
-              <TimeField label="Ruhezeit von" saved={prefs.quietHoursStart} onSave={(v) => save({ quietHoursStart: v })} />
-              <TimeField label="Ruhezeit bis" saved={prefs.quietHoursEnd} onSave={(v) => save({ quietHoursEnd: v })} />
+              <TimeField label={p.quietFrom} saved={prefs.quietHoursStart} onSave={(v) => save({ quietHoursStart: v })} />
+              <TimeField label={p.quietTo} saved={prefs.quietHoursEnd} onSave={(v) => save({ quietHoursEnd: v })} />
             </>
           ) : null}
           {prefs.timezone ? (
             <AppText variant="small" color={colors.mutedForeground}>
-              Zeitzone: {prefs.timezone}
+              {p.timeZone(prefs.timezone)}
             </AppText>
           ) : null}
           {device && prefs.timezone && device !== prefs.timezone ? (
@@ -158,14 +162,14 @@ export function PreferencesScreen() {
               color={colors.primaryDark}
               onPress={() => save({ timezone: device })}
             >
-              Zeitzone dieses Geräts verwenden ({device})
+              {p.useDeviceZone(device)}
             </AppText>
           ) : null}
         </Card>
 
         {update.isError ? (
           <AppText color={colors.destructive} accessibilityRole="alert">
-            Die Einstellung konnte nicht gespeichert werden. Bitte versuche es erneut.
+            {p.saveFailed}
           </AppText>
         ) : null}
       </View>
@@ -174,7 +178,7 @@ export function PreferencesScreen() {
 
   return (
     <Screen keyboardAware>
-      <Header title="Erinnerungen" subtitle="Was du wann erhalten möchtest" back />
+      <Header title={p.title} subtitle={p.subtitle} back />
       {body}
     </Screen>
   );

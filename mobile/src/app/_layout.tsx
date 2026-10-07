@@ -8,10 +8,12 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { queryClient } from '@/api/queryClient';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { ErrorState } from '@/components/ui';
+import { PremiumUpsellModal } from '@/features/premium/PremiumUpsellModal';
 import { OfflineBanner } from '@/features/offline/OfflineBanner';
 import { useConnectivity } from '@/features/offline/useConnectivity';
 import { configurePushHandler } from '@/features/notifications/push';
 import { env } from '@/config/env';
+import { I18nProvider } from '@/i18n';
 import { initSession, useAuthStore } from '@/stores/authStore';
 import { colors } from '@/theme';
 
@@ -76,8 +78,11 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <StatusBar style="dark" />
-        <RootNavigator />
-        <ConnectivityNotice />
+        <I18nProvider>
+          <RootNavigator />
+          <ConnectivityNotice />
+          <PremiumUpsellModal />
+        </I18nProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
   );

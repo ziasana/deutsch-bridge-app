@@ -3,6 +3,9 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 import { Alert } from 'react-native';
 import { chatApi, chatVocabularyApi } from '@/api/chatApi';
 import { ApiError } from '@/api/errors';
+import { I18nProvider } from '@/i18n';
+import { useAuthStore } from '@/stores/authStore';
+import type { UserProfile } from '@/types/user';
 import { TutorScreen } from '../TutorScreen';
 
 jest.mock('expo-router', () => ({ useFocusEffect: jest.fn() }));
@@ -36,29 +39,29 @@ describe('TutorScreen', () => {
   it('shows starters; a starter prefills the composer', async () => {
     await wrap();
     expect(await screen.findByText('Guten Tag! 👋')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Senden' })).toBeDisabled();
-    await fireEvent.press(screen.getByRole('button', { name: /Grammatik/ }));
-    expect(screen.getByLabelText('Nachricht').props.value).toMatch(/Grammatik/);
-    expect(screen.getByRole('button', { name: 'Senden' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
+    await fireEvent.press(screen.getByRole('button', { name: /Grammar/ }));
+    expect(screen.getByLabelText('Message').props.value).toMatch(/Grammatik/);
+    expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled();
   });
 
   it('sends a message, shows the reply, and the new session appears with its AI title', async () => {
     chat.send.mockResolvedValue({ sessionId: 's1', userId: 'u', role: '', content: 'Hallo! **Wie geht’s?**', sessionTitle: 'Begrüßung' });
     await wrap();
     await screen.findByText('Guten Tag! 👋');
-    await fireEvent.changeText(screen.getByLabelText('Nachricht'), 'Hallo');
-    await fireEvent.press(screen.getByRole('button', { name: 'Senden' }));
+    await fireEvent.changeText(screen.getByLabelText('Message'), 'Hallo');
+    await fireEvent.press(screen.getByRole('button', { name: 'Send' }));
 
     expect(await screen.findByText('Hallo')).toBeTruthy(); // the user's bubble
     expect(await screen.findByText('Wie geht’s?', { exact: false })).toBeTruthy();
     expect(chat.send).toHaveBeenCalledWith('Hallo', '');
-    expect(screen.getByLabelText('Nachricht').props.value).toBe('');
+    expect(screen.getByLabelText('Message').props.value).toBe('');
     expect(await screen.findByText('Begrüßung')).toBeTruthy(); // header title
 
     // The follow-up continues the same session.
     chat.send.mockResolvedValue({ sessionId: 's1', userId: 'u', role: '', content: 'Gut!' });
-    await fireEvent.changeText(screen.getByLabelText('Nachricht'), 'Gut, danke');
-    await fireEvent.press(screen.getByRole('button', { name: 'Senden' }));
+    await fireEvent.changeText(screen.getByLabelText('Message'), 'Gut, danke');
+    await fireEvent.press(screen.getByRole('button', { name: 'Send' }));
     await waitFor(() => expect(chat.send).toHaveBeenLastCalledWith('Gut, danke', 's1'));
   });
 
@@ -67,11 +70,11 @@ describe('TutorScreen', () => {
       .mockRejectedValueOnce(new ApiError('network', 'Keine Verbindung.'))
       .mockResolvedValueOnce({ sessionId: 's2', userId: 'u', role: '', content: 'Jetzt klappt es.' });
     await wrap();
-    await fireEvent.changeText(await screen.findByLabelText('Nachricht'), 'Hilfe');
-    await fireEvent.press(screen.getByRole('button', { name: 'Senden' }));
+    await fireEvent.changeText(await screen.findByLabelText('Message'), 'Hilfe');
+    await fireEvent.press(screen.getByRole('button', { name: 'Send' }));
     expect(await screen.findByText('Keine Verbindung.')).toBeTruthy();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('Jetzt klappt es.')).toBeTruthy();
     expect(screen.getAllByText('Hilfe')).toHaveLength(1);
     expect(chat.send).toHaveBeenCalledTimes(2);
@@ -80,9 +83,9 @@ describe('TutorScreen', () => {
   it('shows the daily AI limit message', async () => {
     chat.send.mockRejectedValue(new ApiError('limit', 'Dein Tageslimit für den AI Tutor ist erreicht.', 429));
     await wrap();
-    await fireEvent.changeText(await screen.findByLabelText('Nachricht'), 'Noch eine Frage');
-    await fireEvent.press(screen.getByRole('button', { name: 'Senden' }));
-    expect(await screen.findByText('Dein Tageslimit für den AI Tutor ist erreicht.')).toBeTruthy();
+    await fireEvent.changeText(await screen.findByLabelText('Message'), 'Noch eine Frage');
+    await fireEvent.press(screen.getByRole('button', { name: 'Send' }));
+    expect(await screen.findByText('Daily limit reached')).toBeTruthy();
   });
 
   it('opens a past conversation from the history and loads its messages', async () => {
@@ -93,8 +96,8 @@ describe('TutorScreen', () => {
       { id: 'm3', role: 'system', content: 'versteckt' },
     ]);
     await wrap();
-    await fireEvent.press(await screen.findByRole('button', { name: 'Unterhaltungen anzeigen' }));
-    expect(await screen.findByText('HEUTE')).toBeTruthy();
+    await fireEvent.press(await screen.findByRole('button', { name: 'Show conversations' }));
+    expect(await screen.findByText('TODAY')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Dativ üben' }));
 
     expect(await screen.findByText('Erkläre Dativ')).toBeTruthy();
@@ -109,11 +112,11 @@ describe('TutorScreen', () => {
     chat.messages.mockResolvedValue([{ id: 'm1', role: 'user', content: 'Hi' }]);
     chat.rename.mockResolvedValue(session('s1', 'Neu'));
     await wrap();
-    await fireEvent.press(await screen.findByRole('button', { name: 'Unterhaltungen anzeigen' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Show conversations' }));
     await fireEvent.press(await screen.findByRole('button', { name: 'Alt' }));
-    await fireEvent.press(await screen.findByRole('button', { name: 'Chat umbenennen' }));
-    await fireEvent.changeText(screen.getByLabelText('Titel'), 'Neu');
-    await fireEvent.press(screen.getByRole('button', { name: 'Speichern' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Rename chat' }));
+    await fireEvent.changeText(screen.getByLabelText('Title'), 'Neu');
+    await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(chat.rename).toHaveBeenCalledWith('s1', 'Neu'));
     expect((await screen.findAllByText('Neu')).length).toBeGreaterThan(0);
   });
@@ -126,9 +129,9 @@ describe('TutorScreen', () => {
       buttons?.find((b) => b.style === 'destructive')?.onPress?.();
     });
     await wrap();
-    await fireEvent.press(await screen.findByRole('button', { name: 'Unterhaltungen anzeigen' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Show conversations' }));
     await fireEvent.press(await screen.findByRole('button', { name: 'Weg damit' }));
-    await fireEvent.press(await screen.findByRole('button', { name: 'Chat löschen' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Delete chat' }));
     expect(alert).toHaveBeenCalled();
     await waitFor(() => expect(chat.remove).toHaveBeenCalledWith('s1'));
     expect(await screen.findByText('Guten Tag! 👋')).toBeTruthy();
@@ -140,24 +143,40 @@ describe('TutorScreen', () => {
     vocab.exists.mockResolvedValueOnce({ exists: false, vocabularyItemId: null }).mockResolvedValueOnce({ exists: true, vocabularyItemId: 'v1' });
     vocab.create.mockResolvedValue({});
     await wrap();
-    await fireEvent.changeText(await screen.findByLabelText('Nachricht'), 'Ein Wort bitte');
-    await fireEvent.press(screen.getByRole('button', { name: 'Senden' }));
-    await fireEvent.press(await screen.findByRole('button', { name: 'Wort aus dieser Antwort speichern' }));
+    await fireEvent.changeText(await screen.findByLabelText('Message'), 'Ein Wort bitte');
+    await fireEvent.press(screen.getByRole('button', { name: 'Send' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Save a word from this answer' }));
 
-    await fireEvent.changeText(await screen.findByLabelText('Wort oder Ausdruck'), 'Fernweh');
-    await fireEvent.press(screen.getByRole('button', { name: 'Zum Vokabular hinzufügen' }));
-    expect(await screen.findByText(/Zum Vokabular hinzugefügt: das Fernweh – wanderlust/)).toBeTruthy();
+    await fireEvent.changeText(await screen.findByLabelText('Word or phrase'), 'Fernweh');
+    await fireEvent.press(screen.getByRole('button', { name: 'Add to vocabulary' }));
+    expect(await screen.findByText(/Added to vocabulary: das Fernweh – wanderlust/)).toBeTruthy();
     expect(vocab.classify).toHaveBeenCalledWith('Fernweh', 'Das **Fernweh** ist ein schönes Wort.');
     expect(vocab.create).toHaveBeenCalledWith(
       expect.objectContaining({ word: 'das Fernweh', meaning: 'wanderlust', example: 'Ich habe Fernweh.', sourceChatId: 's1' }),
     );
 
     // Saving it again reports the duplicate instead of creating another entry.
-    await fireEvent.press(screen.getByRole('button', { name: 'Fertig' }));
-    await fireEvent.press(await screen.findByRole('button', { name: 'Wort aus dieser Antwort speichern' }));
-    await fireEvent.changeText(await screen.findByLabelText('Wort oder Ausdruck'), 'Fernweh');
-    await fireEvent.press(screen.getByRole('button', { name: 'Zum Vokabular hinzufügen' }));
-    expect(await screen.findByText(/schon in deinem Vokabular/)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Save a word from this answer' }));
+    await fireEvent.changeText(await screen.findByLabelText('Word or phrase'), 'Fernweh');
+    await fireEvent.press(screen.getByRole('button', { name: 'Add to vocabulary' }));
+    expect(await screen.findByText(/already in your vocabulary/)).toBeTruthy();
     expect(vocab.create).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('TutorScreen in Persian', () => {
+  it('shows the Persian interface when the profile language is PR', async () => {
+    useAuthStore.setState({ profile: { preferredLanguage: 'PR' } as UserProfile });
+    await render(
+      <QueryClientProvider client={new QueryClient()}>
+        <I18nProvider>
+          <TutorScreen />
+        </I18nProvider>
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText('از چه چیزی شروع کنیم؟')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'ارسال' })).toBeTruthy();
+    useAuthStore.setState({ profile: null });
   });
 });

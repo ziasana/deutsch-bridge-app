@@ -1,3 +1,4 @@
+import { dictionaries } from '@/i18n';
 import { toMobileHref } from '../routes';
 import {
   continueCopy,
@@ -11,14 +12,16 @@ import {
 } from '../viewModel';
 import { baseDashboard, withOverrides } from '../testing/fixtures';
 
+const H = dictionaries.en.home;
+
 describe('getMode / statusMessage', () => {
   it('new learner when the backend recommends START', () => {
     const d = withOverrides({
       continueLearning: { ...baseDashboard.continueLearning, type: 'START', progressPercent: null },
     });
     expect(getMode(d)).toBe('new');
-    expect(headline(d, 9)).toBe('Willkommen 👋');
-    expect(statusMessage(d)).toContain('Lernroutine');
+    expect(headline(d, 9, H)).toBe('Welcome 👋');
+    expect(statusMessage(d, H)).toContain('learning routine');
   });
 
   it('a never-studied account is "new" even though the backend counts an empty review as done', () => {
@@ -36,8 +39,8 @@ describe('getMode / statusMessage', () => {
       today: { ...baseDashboard.today, completed: 1, total: 4 },
     });
     expect(getMode(d)).toBe('new');
-    expect(statusMessage(d)).toContain('Lernroutine');
-    expect(continueCopy(d.continueLearning, true).title).toBe('Erste 5 Wörter lernen');
+    expect(statusMessage(d, H)).toContain('learning routine');
+    expect(continueCopy(d.continueLearning, H, true).title).toBe('Learn your first 5 words');
   });
 
   it('exam-focused learner', () => {
@@ -49,66 +52,69 @@ describe('getMode / statusMessage', () => {
       },
     });
     expect(getMode(d)).toBe('exam');
-    expect(statusMessage(d)).toBe('Dein aktueller Fokus: Lesen – Teil 2');
+    expect(statusMessage(d, H)).toBe('Your current focus: Lesen – Teil 2');
   });
 
   it('unfinished plan', () => {
     const d = withOverrides({ today: { ...baseDashboard.today, completed: 2, total: 4 } });
     expect(getMode(d)).toBe('planInProgress');
-    expect(statusMessage(d)).toBe(
-      'Du bist heute schon halb fertig. 2 von 4 Aktivitäten abgeschlossen.',
+    expect(statusMessage(d, H)).toBe(
+      "You're already halfway through today. 2 of 4 activities completed.",
     );
     expect(
-      statusMessage(withOverrides({ today: { ...baseDashboard.today, completed: 1, total: 4 } })),
-    ).toContain('schon angefangen');
+      statusMessage(
+        withOverrides({ today: { ...baseDashboard.today, completed: 1, total: 4 } }),
+        H,
+      ),
+    ).toContain('already started');
   });
 
   it('returning learner with reviews due', () => {
     const d = withOverrides({ review: { wordsDue: 8, expressionsDue: 3 } });
     expect(getMode(d)).toBe('reviewDue');
-    expect(headline(d, 9)).toBe('Willkommen zurück 👋');
-    expect(statusMessage(d)).toBe('8 Wörter · 3 Redewendungen warten auf Wiederholung.');
+    expect(headline(d, 9, H)).toBe('Welcome back 👋');
+    expect(statusMessage(d, H)).toBe('8 words · 3 expressions waiting for review.');
   });
 
   it('default state greets by time of day', () => {
     expect(getMode(baseDashboard)).toBe('default');
-    expect(headline(baseDashboard, 8)).toBe('Guten Morgen, Ali 👋');
-    expect(greeting(14)).toBe('Guten Tag');
-    expect(greeting(20)).toBe('Guten Abend');
+    expect(headline(baseDashboard, 8, H)).toBe('Good morning, Ali 👋');
+    expect(greeting(14, H)).toBe('Good afternoon');
+    expect(greeting(20, H)).toBe('Good evening');
   });
 });
 
 describe('copy helpers', () => {
   it('pluralizes review summary', () => {
-    expect(reviewSummary(1, 0)).toBe('1 Wort');
-    expect(reviewSummary(0, 1)).toBe('1 Redewendung');
-    expect(reviewSummary(2, 2)).toBe('2 Wörter · 2 Redewendungen');
+    expect(reviewSummary(1, 0, H)).toBe('1 word');
+    expect(reviewSummary(0, 1, H)).toBe('1 expression');
+    expect(reviewSummary(2, 2, H)).toBe('2 words · 2 expressions');
   });
 
   it('uses the backend title and counts, never invented numbers', () => {
-    expect(continueCopy(baseDashboard.continueLearning).title).toBe('Perfekt');
+    expect(continueCopy(baseDashboard.continueLearning, H).title).toBe('Perfekt');
     expect(
-      continueCopy({ ...baseDashboard.continueLearning, type: 'VOCAB_REVIEW', total: 8 })
+      continueCopy({ ...baseDashboard.continueLearning, type: 'VOCAB_REVIEW', total: 8 }, H)
         .description,
-    ).toBe('8 Wörter warten auf dich.');
+    ).toBe('8 words are waiting for you.');
   });
 
   it('focus is encouraging, null when nothing to suggest', () => {
-    expect(focusCopy({ area: 'VOCABULARY', route: null })?.area).toBe('Wortschatz');
-    expect(focusCopy({ area: 'WRITING', route: null, detail: 'FORM' })?.text).toContain(
-      'Form und Anrede',
+    expect(focusCopy({ area: 'VOCABULARY', route: null }, H)?.area).toBe('Vocabulary');
+    expect(focusCopy({ area: 'WRITING', route: null, detail: 'FORM' }, H)?.text).toContain(
+      'form and salutation',
     );
-    expect(focusCopy({ area: null, route: null })).toBeNull();
-    expect(JSON.stringify(focusCopy({ area: 'GRAMMAR', route: null }))).not.toMatch(
+    expect(focusCopy({ area: null, route: null }, H)).toBeNull();
+    expect(JSON.stringify(focusCopy({ area: 'GRAMMAR', route: null }, H))).not.toMatch(
       /schwäch|weak/i,
     );
   });
 
   it('maps the rolling 7-day window oldest → today', () => {
     const today = new Date(2026, 9, 7); // Wednesday
-    const days = weekDays([true, false, false, false, false, false, true], today);
-    expect(days[6]).toEqual({ label: 'Mi', learned: true, isToday: true });
-    expect(days[0].label).toBe('Do');
+    const days = weekDays([true, false, false, false, false, false, true], today, H);
+    expect(days[6]).toEqual({ label: 'We', learned: true, isToday: true });
+    expect(days[0].label).toBe('Th');
   });
 });
 

@@ -1,4 +1,12 @@
-import type { ContinueLearningType, CurrentFocusDto, DashboardResponse } from '@/types/dashboard';
+import type { Dictionary } from '@/i18n';
+import type {
+  ContinueLearningType,
+  CurrentFocusDto,
+  DashboardResponse,
+  PlanActivityType,
+} from '@/types/dashboard';
+
+type HomeText = Dictionary['home'];
 
 export type DashboardMode = 'new' | 'exam' | 'planInProgress' | 'reviewDue' | 'default';
 
@@ -26,49 +34,40 @@ export function getMode(d: DashboardResponse): DashboardMode {
   return 'default';
 }
 
-export function greeting(hour: number): string {
-  if (hour < 11) return 'Guten Morgen';
-  if (hour < 18) return 'Guten Tag';
-  return 'Guten Abend';
+export function greeting(hour: number, t: HomeText): string {
+  if (hour < 11) return t.greetMorning;
+  if (hour < 18) return t.greetAfternoon;
+  return t.greetEvening;
 }
 
-export function headline(d: DashboardResponse, hour: number): string {
+export function headline(d: DashboardResponse, hour: number, t: HomeText): string {
   const mode = getMode(d);
-  if (mode === 'new') return 'Willkommen 👋';
-  if (mode === 'reviewDue') return 'Willkommen zurück 👋';
-  const name = d.user.displayName?.trim();
-  return `${greeting(hour)}${name ? `, ${name}` : ''} 👋`;
+  if (mode === 'new') return t.headlineNew;
+  if (mode === 'reviewDue') return t.headlineBack;
+  return t.greetName(greeting(hour, t), d.user.displayName?.trim() || undefined);
 }
 
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-
-export function reviewSummary(words: number, expressions: number): string {
-  return [
-    words > 0 ? plural(words, 'Wort', 'Wörter') : null,
-    expressions > 0 ? plural(expressions, 'Redewendung', 'Redewendungen') : null,
-  ]
+export function reviewSummary(words: number, expressions: number, t: HomeText): string {
+  return [words > 0 ? t.word(words) : null, expressions > 0 ? t.expression(expressions) : null]
     .filter(Boolean)
     .join(' · ');
 }
 
-export function statusMessage(d: DashboardResponse): string {
+export function statusMessage(d: DashboardResponse, t: HomeText): string {
   switch (getMode(d)) {
     case 'new':
-      return 'Lass uns deine Deutsch-Lernroutine starten.';
+      return t.status.new;
     case 'exam':
-      return `Dein aktueller Fokus: ${d.continueLearning.title ?? 'Prüfungsvorbereitung'}`;
+      return t.status.examFocus(d.continueLearning.title ?? t.status.examDefault);
     case 'planInProgress': {
       const { completed, total } = d.today;
-      const lead =
-        completed * 2 >= total
-          ? 'Du bist heute schon halb fertig.'
-          : 'Du hast heute schon angefangen.';
-      return `${lead} ${completed} von ${total} Aktivitäten abgeschlossen.`;
+      const lead = completed * 2 >= total ? t.status.halfDone : t.status.started;
+      return t.status.progress(lead, completed, total);
     }
     case 'reviewDue':
-      return `${reviewSummary(d.review.wordsDue, d.review.expressionsDue)} warten auf Wiederholung.`;
+      return t.status.reviewWaiting(reviewSummary(d.review.wordsDue, d.review.expressionsDue, t));
     default:
-      return 'Bereit für deine nächste Deutsch-Lerneinheit?';
+      return t.status.ready;
   }
 }
 
@@ -77,120 +76,93 @@ type ContinueCopy = { emoji: string; title: string; description: string; cta: st
 /** Card copy per recommendation type. Nothing here is computed; counts come from the backend. */
 export function continueCopy(
   c: DashboardResponse['continueLearning'],
+  t: HomeText,
   isNew = false,
 ): ContinueCopy {
   const started = c.completed > 0;
+  const k = t.continue;
   const map: Record<ContinueLearningType, ContinueCopy> = {
-    START: {
-      emoji: '🌱',
-      title: 'Erste 5 Wörter lernen',
-      description: 'Ein kleiner Start für deine Lernroutine.',
-      cta: 'Jetzt starten',
-    },
+    START: { emoji: '🌱', title: k.first5Title, description: k.first5Desc, cta: k.ctaStart },
     DAILY_WORDS: {
       emoji: '🌱',
-      title: isNew ? 'Erste 5 Wörter lernen' : 'Daily Words',
-      description: isNew ? 'Ein kleiner Start für deine Lernroutine.' : 'Deine Wörter für heute.',
-      cta: started ? 'Weiterlernen' : 'Jetzt starten',
+      title: isNew ? k.first5Title : t.plan.dailyWords,
+      description: isNew ? k.first5Desc : k.dailyDesc,
+      cta: started ? k.ctaContinue : k.ctaStart,
     },
     VOCAB_REVIEW: {
       emoji: '🗂️',
-      title: 'Vocabulary Review',
-      description: `${plural(c.total, 'Wort wartet', 'Wörter warten')} auf dich.`,
-      cta: 'Jetzt starten',
+      title: t.plan.vocabReview,
+      description: k.vocabWaiting(c.total),
+      cta: k.ctaStart,
     },
     GRAMMAR: {
-      emoji: '🧩',
-      title: c.title ?? 'Grammatik',
-      description: 'Mach mit deiner Grammatik weiter.',
-      cta: 'Weiterlernen',
+      emoji: '🧱',
+      title: c.title ?? t.plan.grammar,
+      description: k.grammarDesc,
+      cta: k.ctaContinue,
     },
     READING: {
       emoji: '📖',
-      title: c.title ?? 'Reading',
-      description: 'Lies weiter und verstehe mehr.',
-      cta: 'Weiterlernen',
+      title: c.title ?? t.plan.reading,
+      description: k.readingDesc,
+      cta: k.ctaContinue,
     },
     EXPRESSIONS: {
       emoji: '💬',
-      title: 'Active Expressions',
-      description: 'Aktive Wendungen festigen.',
-      cta: 'Weiterlernen',
+      title: t.plan.expressions,
+      description: k.expressionsDesc,
+      cta: k.ctaContinue,
     },
     EXAM: {
       emoji: '🎯',
-      title: c.title ?? 'Prüfungsvorbereitung',
-      description: 'Bleib im Prüfungsrhythmus.',
-      cta: 'Weiterüben',
+      title: c.title ?? t.plan.exam,
+      description: k.examDesc,
+      cta: k.ctaPractice,
     },
   };
   return map[c.type];
 }
 
-export const PLAN_LABEL = {
-  DAILY_WORDS: 'Daily Words',
-  VOCAB_REVIEW: 'Word Review',
-  GRAMMAR: 'Grammatik',
-  READING: 'Reading',
-} as const;
+export const planLabel = (type: PlanActivityType, t: HomeText) =>
+  ({
+    DAILY_WORDS: t.plan.dailyWords,
+    VOCAB_REVIEW: t.plan.wordReview,
+    GRAMMAR: t.plan.grammar,
+    READING: t.plan.reading,
+  })[type];
 
 type FocusCopy = { area: string; text: string; cta: string };
 
 /** Encouraging, never "weakest". Returns null when there is nothing meaningful to suggest. */
-export function focusCopy(focus: CurrentFocusDto): FocusCopy | null {
+export function focusCopy(focus: CurrentFocusDto, t: HomeText): FocusCopy | null {
   switch (focus.area) {
     case 'VOCABULARY':
-      return {
-        area: 'Wortschatz',
-        text: 'Ein wenig mehr Wortschatz-Wiederholung könnte dein Lernen stärken.',
-        cta: 'Wortschatz üben',
-      };
+      return t.focus.vocabulary;
     case 'GRAMMAR':
-      return {
-        area: 'Grammatik',
-        text: 'Mit etwas mehr Grammatik-Praxis festigst du dein Fundament.',
-        cta: 'Grammatik üben',
-      };
+      return t.focus.grammar;
     case 'READING':
-      return {
-        area: 'Lesen',
-        text: 'Ein weiterer Text hilft dir, sicherer im Leseverstehen zu werden.',
-        cta: 'Lesen üben',
-      };
+      return t.focus.reading;
     case 'EXPRESSIONS':
-      return {
-        area: 'Redewendungen',
-        text: 'Aktive Wendungen machen deine Sprache natürlicher.',
-        cta: 'Redewendungen üben',
-      };
+      return t.focus.expressions;
     case 'WRITING': {
-      const detail: Record<string, string> = {
-        TASK: 'die Aufgabenstellung',
-        STRUCTURE: 'den Aufbau deines Textes',
-        VOCABULARY: 'einen abwechslungsreichen Wortschatz',
-        FORM: 'Form und Anrede',
-      };
-      return {
-        area: 'Schreiben',
-        text: `Achte beim Schreiben in nächster Zeit besonders auf ${detail[focus.detail ?? ''] ?? detail.STRUCTURE}.`,
-        cta: 'Schreiben üben',
-      };
+      const w = t.focus.writing;
+      const detail = w.details[focus.detail ?? ''] ?? w.details.STRUCTURE;
+      return { area: w.area, text: w.text(detail), cta: w.cta };
     }
     default:
       return null;
   }
 }
 
-const WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-
 /** The backend sends the last 7 days oldest → today (a rolling window, not Mon–Sun). */
 export function weekDays(
   days: boolean[],
   today: Date,
+  t: HomeText,
 ): { label: string; learned: boolean; isToday: boolean }[] {
   return days.map((learned, i) => {
     const date = new Date(today);
     date.setDate(today.getDate() - (days.length - 1 - i));
-    return { label: WEEKDAYS[date.getDay()], learned, isToday: i === days.length - 1 };
+    return { label: t.week.weekdays[date.getDay()], learned, isToday: i === days.length - 1 };
   });
 }

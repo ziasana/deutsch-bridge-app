@@ -13,17 +13,21 @@ import {
   Screen,
   Skeleton,
 } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { useAuthStore } from '@/stores/authStore';
 import { shuffle } from '@/utils/random';
 import { colors, spacing } from '@/theme';
 import { QuizRunner } from './components/QuizRunner';
 import { useCategory, useMarkCategoryComplete, useSubmitCategoryTest } from './hooks';
 import { CATEGORY_TEST_MAX_QUESTIONS, lessonQuestions, type RunnerQuestion } from './quiz';
+import { GRAMMAR_COLOR, GRAMMAR_DARK } from './meta';
 
 type Phase = 'idle' | 'active' | 'results';
 
 export function CategoryTestScreen() {
   const router = useRouter();
+  const { t } = useI18n();
+  const c = t.grammar.categoryTest;
   const { categoryId } = useLocalSearchParams<{ categoryId: string }>();
   const persian = useAuthStore((s) => s.profile?.preferredLanguage === 'PR');
   const categoryQuery = useCategory(categoryId);
@@ -43,8 +47,8 @@ export function CategoryTestScreen() {
   if (categoryQuery.isPending) {
     return (
       <Screen>
-        <Header title="Kategorie-Test" back />
-        <View accessibilityLabel="Test wird geladen" style={{ gap: spacing.md }}>
+        <Header title={c.title} back />
+        <View accessibilityLabel={c.loading} style={{ gap: spacing.md }}>
           <Card style={{ gap: spacing.sm }}>
             <Skeleton height={24} />
             <Skeleton height={48} />
@@ -56,7 +60,7 @@ export function CategoryTestScreen() {
   if (categoryQuery.isError || !category) {
     return (
       <Screen>
-        <Header title="Kategorie-Test" back />
+        <Header title={c.title} back />
         <ErrorState error={categoryQuery.error} onRetry={() => void categoryQuery.refetch()} />
       </Screen>
     );
@@ -82,10 +86,10 @@ export function CategoryTestScreen() {
   if (pool.length === 0) {
     body = (
       <EmptyState
-        emoji="🧩"
-        title="Noch keine Übungen"
-        message="In dieser Kategorie gibt es noch keine Fragen für einen Test."
-        actionLabel="Zurück"
+        emoji="🧱"
+        title={c.noneTitle}
+        message={c.noneMessage}
+        actionLabel={t.common.back}
         onAction={() => router.back()}
       />
     );
@@ -94,21 +98,22 @@ export function CategoryTestScreen() {
       <Card tone="accent" style={{ gap: spacing.md, padding: spacing.xl }}>
         {status.attempted ? (
           <View style={{ gap: spacing.xs }}>
-            <AppText>
-              Letzter Versuch: {status.score} von {status.total}
-            </AppText>
+            <AppText>{c.lastAttempt(status.score, status.total)}</AppText>
             <Badge
               tone={status.passed ? 'success' : 'warning'}
-              label={status.passed ? '✓ Bestanden' : 'Noch nicht bestanden'}
+              label={status.passed ? c.passed : c.notPassed}
             />
-            {status.completed ? <Badge tone="success" label="✓ Abgeschlossen" /> : null}
+            {status.completed ? <Badge tone="success" label={c.completedBadge} /> : null}
           </View>
         ) : null}
         <AppText color={colors.mutedForeground}>
-          {questionCount} Fragen aus den Lektionen dieser Kategorie. Zum Bestehen brauchst du
-          mindestens {category.passThreshold}%.
+          {c.intro(questionCount, category.passThreshold)}
         </AppText>
-        <Button label={status.attempted ? 'Test wiederholen' : 'Test starten'} onPress={begin} />
+        <Button
+          label={status.attempted ? c.retake : c.start}
+          onPress={begin}
+          color={GRAMMAR_COLOR}
+        />
       </Card>
     );
   } else if (phase === 'active') {
@@ -120,19 +125,19 @@ export function CategoryTestScreen() {
     body = (
       <View style={{ gap: spacing.md }}>
         <LearningCelebration
-          title={passedNow === false ? 'Gut gemacht!' : passedNow ? 'Bestanden!' : 'Ergebnis'}
+          title={passedNow === false ? c.wellDone : passedNow ? c.passedTitle : c.result}
           subtitle={title}
           progress={{ value: score, max: picked.length }}
-          progressLabel={`${score} von ${picked.length} richtig`}
+          progressLabel={t.grammar.correctOf(score, picked.length)}
           encouragement={
             passedNow === null
-              ? 'Ergebnis wird gespeichert …'
+              ? c.saving
               : passedNow
-                ? `Du hast die ${category.passThreshold}% erreicht.`
-                : `Du brauchst ${category.passThreshold}% zum Bestehen. Wiederhole die Lektionen und versuche es noch einmal.`
+                ? c.reached(category.passThreshold)
+                : c.needs(category.passThreshold)
           }
-          primaryAction={{ label: 'Test wiederholen', onPress: begin }}
-          secondaryAction={{ label: 'Zurück zur Liste', onPress: () => router.back() }}
+          primaryAction={{ label: c.retake, onPress: begin }}
+          secondaryAction={{ label: c.backToList, onPress: () => router.back() }}
         />
         {submit.isError ? (
           <View style={{ gap: spacing.sm }}>
@@ -140,20 +145,22 @@ export function CategoryTestScreen() {
               {submit.error.message}
             </AppText>
             <Button
-              label="Ergebnis erneut speichern"
+              label={c.saveAgain}
               variant="secondary"
               onPress={() => submit.mutate({ score, total: picked.length })}
+              color={GRAMMAR_DARK}
             />
           </View>
         ) : null}
         {passedNow && !resultStatus.completed ? (
           <Button
-            label="Als abgeschlossen markieren"
+            label={c.markComplete}
             loading={complete.isPending}
             onPress={() => complete.mutate()}
+            color={GRAMMAR_COLOR}
           />
         ) : null}
-        {resultStatus.completed ? <Badge tone="success" label="✓ Kategorie abgeschlossen" /> : null}
+        {resultStatus.completed ? <Badge tone="success" label={c.categoryCompleted} /> : null}
         {complete.isError ? (
           <AppText color={colors.destructive} accessibilityRole="alert">
             {complete.error.message}
@@ -165,7 +172,7 @@ export function CategoryTestScreen() {
 
   return (
     <Screen keyboardAware>
-      <Header title="Kategorie-Test" subtitle={title} back />
+      <Header title={c.title} subtitle={title} back />
       {body}
     </Screen>
   );

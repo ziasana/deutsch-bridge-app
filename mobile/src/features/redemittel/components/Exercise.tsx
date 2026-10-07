@@ -7,6 +7,7 @@ import { scaledText, useExamTextScale } from '@/features/exam/textScale';
 import { colors, radius, spacing } from '@/theme';
 import type { RedemittelAnswer, RedemittelExercise } from '@/types/redemittel';
 import { EXERCISE_LABELS, REDEMITTEL_COLOR, inDays } from '../meta';
+import { REDEMITTEL_DARK } from '../meta';
 
 type Props = {
   exercise: RedemittelExercise;
@@ -120,6 +121,7 @@ export function Exercise({ exercise, onAnswer, onNext, isLast, showSchedule }: P
                 loading={submitting}
                 disabled={placed.length !== words.length}
                 onPress={() => void submit(placed.map((i) => words[i].text).join(' '))}
+                color={REDEMITTEL_COLOR}
               />
               <Button
                 pill
@@ -127,6 +129,7 @@ export function Exercise({ exercise, onAnswer, onNext, isLast, showSchedule }: P
                 label="Zurücksetzen"
                 disabled={placed.length === 0}
                 onPress={() => setPlaced([])}
+                color={REDEMITTEL_DARK}
               />
             </View>
           ) : null}
@@ -209,6 +212,7 @@ export function Exercise({ exercise, onAnswer, onNext, isLast, showSchedule }: P
               loading={submitting}
               disabled={!text.trim()}
               onPress={() => void submit(text.trim())}
+              color={REDEMITTEL_COLOR}
             />
           ) : null}
         </View>
@@ -270,7 +274,14 @@ export function Exercise({ exercise, onAnswer, onNext, isLast, showSchedule }: P
         </View>
       ) : null}
 
-      {result ? <Button pill label={isLast ? 'Fertig' : 'Weiter'} onPress={onNext} /> : null}
+      {result ? (
+        <Button
+          pill
+          label={isLast ? 'Fertig' : 'Weiter'}
+          onPress={onNext}
+          color={REDEMITTEL_COLOR}
+        />
+      ) : null}
     </View>
   );
 }

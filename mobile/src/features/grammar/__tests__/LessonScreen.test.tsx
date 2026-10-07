@@ -59,24 +59,24 @@ describe('LessonScreen', () => {
     expect(screen.getByText('Regel')).toBeTruthy(); // ## heading from markdown
     expect(screen.getByText('Person')).toBeTruthy(); // table header
     expect(screen.getAllByText('habe').length).toBeGreaterThan(0); // table cell + example
-    expect(screen.getByText('💬 Beispiel')).toBeTruthy();
+    expect(screen.getByText('💬 Example')).toBeTruthy();
     expect(screen.getByText('Im Alltag benutzt man das Perfekt.')).toBeTruthy();
   });
 
   it('lets you answer the quick check and try again', async () => {
     await renderScreen();
-    await fireEvent.press(await screen.findByRole('button', { name: 'Antwort: bin' }));
-    expect(await screen.findByText('🎉 Richtig!')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Nochmal versuchen' }));
-    expect(screen.queryByText('🎉 Richtig!')).toBeNull();
+    await fireEvent.press(await screen.findByRole('button', { name: 'Answer: bin' }));
+    expect(await screen.findByText('🎉 Correct!')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+    expect(screen.queryByText('🎉 Correct!')).toBeNull();
   });
 
   it('marks the lesson learned and can undo it', async () => {
     await renderScreen();
-    await fireEvent.press(await screen.findByRole('button', { name: 'Als gelernt markieren' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Mark as learned' }));
     expect(setLearned).toHaveBeenCalledWith('l1', true);
-    expect(await screen.findByRole('button', { name: '✓ Gelernt – zurücksetzen' })).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: '✓ Gelernt – zurücksetzen' }));
+    expect(await screen.findByRole('button', { name: '✓ Learned – reset' })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: '✓ Learned – reset' }));
     expect(setLearned).toHaveBeenLastCalledWith('l1', false);
   });
 
@@ -85,26 +85,26 @@ describe('LessonScreen', () => {
       new ApiError('server', 'Der Server ist gerade nicht erreichbar.'),
     );
     await renderScreen();
-    await fireEvent.press(await screen.findByRole('button', { name: 'Als gelernt markieren' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Mark as learned' }));
     expect(await screen.findByText('Der Server ist gerade nicht erreichbar.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Als gelernt markieren' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Mark as learned' })).toBeTruthy();
   });
 
   it('bookmarks the lesson', async () => {
     addBookmark.mockResolvedValue(makeLesson({ bookmarked: true }));
     await renderScreen();
-    await fireEvent.press(await screen.findByRole('button', { name: '☆ Für später merken' }));
-    expect(await screen.findByRole('button', { name: '★ Gemerkt – entfernen' })).toBeTruthy();
+    await fireEvent.press(await screen.findByRole('button', { name: '☆ Save for later' }));
+    expect(await screen.findByRole('button', { name: '★ Saved – remove' })).toBeTruthy();
   });
 
   it('navigates to the next lesson and to the exercises', async () => {
     await renderScreen();
-    await fireEvent.press((await screen.findAllByRole('button', { name: 'Nächste ›' }))[0]);
+    await fireEvent.press((await screen.findAllByRole('button', { name: 'Next' }))[0]);
     expect(mockReplace).toHaveBeenCalledWith({
       pathname: '/grammar/[lessonId]',
       params: { lessonId: 'l2' },
     });
-    await fireEvent.press(screen.getByRole('button', { name: 'Übungen starten' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Start exercises' }));
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/grammar/practice/[lessonId]',
       params: { lessonId: 'l1' },
@@ -116,8 +116,8 @@ describe('LessonScreen', () => {
     jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
     await renderScreen();
     expect(await screen.findByText('Das Perfekt')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Übungen starten' })).toBeNull();
-    await fireEvent.press(screen.getByRole('button', { name: '▶ Video ansehen' }));
+    expect(screen.queryByRole('button', { name: 'Start exercises' })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: '▶ Watch video' }));
     expect(Linking.openURL).toHaveBeenCalledWith('https://example.com/v');
   });
 

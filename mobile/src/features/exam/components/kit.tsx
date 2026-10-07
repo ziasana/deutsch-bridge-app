@@ -11,9 +11,20 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppText } from '@/components/ui';
+import { AppText, DirectionalIcon } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import { TEXT_SCALES, useExamTextSize } from '../textScale';
+
+/** A darker shade of a #RRGGBB colour, for text and icons on that colour's light tint. */
+export function darken(hex: string, factor = 0.68): string {
+  const n = parseInt(hex.slice(1, 7), 16);
+  const c = (shift: number) =>
+    Math.round(((n >> shift) & 255) * factor)
+      .toString(16)
+      .padStart(2, '0');
+  return `#${c(16)}${c(8)}${c(0)}`;
+}
 
 /** Section colour at a given opacity (hex alpha), for soft tinted backgrounds. */
 export const tint = (color: string, alpha: '14' | '1F' | '33' = '1F') => `${color}${alpha}`;
@@ -68,8 +79,14 @@ export function ExerciseFrame({
           edges={['bottom']}
           style={[
             styles.footerSafe,
-            footerTone === 'success' && { backgroundColor: colors.successSoft, borderTopColor: colors.success },
-            footerTone === 'danger' && { backgroundColor: colors.destructiveSoft, borderTopColor: colors.destructive },
+            footerTone === 'success' && {
+              backgroundColor: colors.successSoft,
+              borderTopColor: colors.success,
+            },
+            footerTone === 'danger' && {
+              backgroundColor: colors.destructiveSoft,
+              borderTopColor: colors.destructive,
+            },
           ]}
         >
           <View style={styles.footer}>{footer}</View>
@@ -95,10 +112,20 @@ export function PressableScale({
 }) {
   const [scale] = useState(() => new Animated.Value(1));
   const spring = (to: number) =>
-    Animated.spring(scale, { toValue: to, friction: 7, tension: 240, useNativeDriver: true }).start();
+    Animated.spring(scale, {
+      toValue: to,
+      friction: 7,
+      tension: 240,
+      useNativeDriver: true,
+    }).start();
   return (
     <Animated.View style={[containerStyle, { transform: [{ scale }] }]}>
-      <Pressable {...rest} onPressIn={() => spring(scaleTo)} onPressOut={() => spring(1)} style={style}>
+      <Pressable
+        {...rest}
+        onPressIn={() => spring(scaleTo)}
+        onPressOut={() => spring(1)}
+        style={style}
+      >
         {children}
       </Pressable>
     </Animated.View>
@@ -145,7 +172,9 @@ export function SegmentedProgress({
                   : colors.muted;
         return (
           <View key={i} style={[styles.segment, { backgroundColor: bg }]}>
-            {i === current && !st ? <View style={[styles.segmentNow, { backgroundColor: color }]} /> : null}
+            {i === current && !st ? (
+              <View style={[styles.segmentNow, { backgroundColor: color }]} />
+            ) : null}
           </View>
         );
       })}
@@ -179,7 +208,7 @@ export function IconButton({
       hitSlop={spacing.xs}
       style={({ pressed }) => [styles.iconBtn, pressed && { backgroundColor: colors.muted }]}
     >
-      <Ionicons name={name} size={26} color={color} />
+      <DirectionalIcon name={name} size={26} color={color} />
     </Pressable>
   );
 }
@@ -188,42 +217,65 @@ export function IconButton({
  * Text size as a little slider: small "A", four dots showing the current step, large "A".
  * Tap either A to step down / up; the choice is remembered for every exercise.
  */
-export function TextSizeControl() {
+export function TextSizeControl({ color, dark }: { color?: string; dark?: string }) {
+  const { t } = useI18n();
   const index = useExamTextSize((s) => s.index);
   const larger = useExamTextSize((s) => s.larger);
   const smaller = useExamTextSize((s) => s.smaller);
   const last = TEXT_SCALES.length - 1;
+  const textColor = dark ?? (color ? darken(color) : undefined);
   return (
-    <View style={styles.sizeRow} accessibilityRole="adjustable" accessibilityLabel="Schriftgröße">
+    <View
+      style={[styles.sizeRow, color ? { backgroundColor: tint(color, '1F') } : null]}
+      accessibilityRole="adjustable"
+      accessibilityLabel={t.common.textSize}
+    >
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Schrift verkleinern"
+        accessibilityLabel={t.common.smaller}
         accessibilityState={{ disabled: index === 0 }}
         disabled={index === 0}
         onPress={smaller}
         hitSlop={spacing.sm}
         style={[styles.sizeBtn, index === 0 && { opacity: 0.35 }]}
       >
-        <AppText style={[styles.sizeA, { fontSize: 13, lineHeight: 18 }]}>A</AppText>
+        <AppText
+          style={[styles.sizeA, { fontSize: 13, lineHeight: 18 }, textColor ? { color: textColor } : null]}
+        >
+          A
+        </AppText>
       </Pressable>
-      <View style={styles.sizeDots} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <View
+        style={styles.sizeDots}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      >
         {TEXT_SCALES.map((_, i) => (
           <View
             key={i}
-            style={[styles.sizeDot, { width: 5 + i * 2, height: 5 + i * 2 }, i <= index && styles.sizeDotOn]}
+            style={[
+              styles.sizeDot,
+              { width: 5 + i * 2, height: 5 + i * 2 },
+              i <= index && styles.sizeDotOn,
+              i <= index && color ? { backgroundColor: color } : null,
+            ]}
           />
         ))}
       </View>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Schrift vergrößern"
+        accessibilityLabel={t.common.larger}
         accessibilityState={{ disabled: index === last }}
         disabled={index === last}
         onPress={larger}
         hitSlop={spacing.sm}
         style={[styles.sizeBtn, index === last && { opacity: 0.35 }]}
       >
-        <AppText style={[styles.sizeA, { fontSize: 21, lineHeight: 26 }]}>A</AppText>
+        <AppText
+          style={[styles.sizeA, { fontSize: 21, lineHeight: 26 }, textColor ? { color: textColor } : null]}
+        >
+          A
+        </AppText>
       </Pressable>
     </View>
   );
@@ -252,7 +304,12 @@ export function QuizTopBar({
             {title}
           </AppText>
           {subtitle ? (
-            <AppText variant="caption" color={color} numberOfLines={1} style={{ fontWeight: '700' }}>
+            <AppText
+              variant="caption"
+              color={color}
+              numberOfLines={1}
+              style={{ fontWeight: '700' }}
+            >
               {subtitle}
             </AppText>
           ) : null}
@@ -352,5 +409,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
     borderRadius: radius.lg,
   },
-  tileValue: { fontSize: 20, lineHeight: 26, fontWeight: '800', color: colors.ink, fontVariant: ['tabular-nums'] },
+  tileValue: {
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: '800',
+    color: colors.ink,
+    fontVariant: ['tabular-nums'],
+  },
 });

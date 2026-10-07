@@ -1,10 +1,12 @@
 import { View } from 'react-native';
 import { Card, Skeleton } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { spacing } from '@/theme';
 
 export function DashboardSkeleton() {
+  const { t } = useI18n();
   return (
-    <View accessibilityLabel="Dashboard wird geladen" style={{ gap: spacing.lg }}>
+    <View accessibilityLabel={t.home.loadingDashboard} style={{ gap: spacing.lg }}>
       <View style={{ gap: spacing.sm }}>
         <Skeleton width="70%" height={28} />
         <Skeleton width="90%" height={16} />

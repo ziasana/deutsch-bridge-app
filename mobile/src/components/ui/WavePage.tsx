@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from './AppText';
 import { FocusedLightStatusBar } from './HeroScreen';
 import { useHeaderScroll } from './useHeaderScroll';
+import { useI18n } from '@/i18n';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 
 /**
@@ -86,6 +87,7 @@ type Props = {
 
 /** Pushed-page layout: wave header with a white back button and centred title, then the content. */
 export function WavePage({ title, variant = 'arc', header, children }: Props) {
+  const { t, isRTL } = useI18n();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const scroll = useHeaderScroll(width * 0.2);
@@ -97,6 +99,7 @@ export function WavePage({ title, variant = 'arc', header, children }: Props) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
+          ref={scroll.ref}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.scroll}
@@ -109,12 +112,16 @@ export function WavePage({ title, variant = 'arc', header, children }: Props) {
             <View style={styles.topBar}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Zurück"
+                accessibilityLabel={t.common.back}
                 onPress={() => router.back()}
                 hitSlop={8}
                 style={styles.squareBtn}
               >
-                <Ionicons name="chevron-back" size={24} color={colors.ink} />
+                <Ionicons
+                  name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                  size={24}
+                  color={colors.ink}
+                />
               </Pressable>
               <AppText style={styles.title} color="#FFFFFF" accessibilityRole="header">
                 {title}

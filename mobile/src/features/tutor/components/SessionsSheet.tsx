@@ -1,5 +1,6 @@
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { AppText, BottomSheet, Button, ErrorState, LoadingState } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type { ChatSession } from '@/types/chat';
 import { groupSessionsByDate } from '../groups';
@@ -30,32 +31,34 @@ export function SessionsSheet({
   onDelete,
   onNewChat,
 }: Props) {
+  const { t } = useI18n();
+  const w = t.tutor;
   const groups = groupSessionsByDate(sessions ?? []);
 
   const confirmDelete = (s: ChatSession) =>
-    Alert.alert(`„${s.title || 'Chat'}“ löschen?`, 'Der gesamte Chat wird gelöscht.', [
-      { text: 'Abbrechen', style: 'cancel' },
-      { text: 'Löschen', style: 'destructive', onPress: () => onDelete(s.id) },
+    Alert.alert(w.deleteTitle(s.title || w.chatFallback), w.deleteMessage, [
+      { text: w.cancel, style: 'cancel' },
+      { text: w.delete, style: 'destructive', onPress: () => onDelete(s.id) },
     ]);
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} title="Unterhaltungen">
-      <Button label="＋ Neuer Chat" onPress={() => { onNewChat(); onClose(); }} />
-      {loading ? <LoadingState label="Unterhaltungen werden geladen …" /> : null}
+    <BottomSheet visible={visible} onClose={onClose} title={w.conversations}>
+      <Button label={w.newChatButton} onPress={() => { onNewChat(); onClose(); }} />
+      {loading ? <LoadingState label={w.loadingConversations} /> : null}
       {error ? <ErrorState error={error} onRetry={onRetry} /> : null}
       {!loading && !error && groups.length === 0 ? (
-        <AppText color={colors.mutedForeground}>Noch keine Unterhaltungen.</AppText>
+        <AppText color={colors.mutedForeground}>{w.noConversations}</AppText>
       ) : null}
       {groups.map((g) => (
         <View key={g.key} style={{ gap: spacing.xs }}>
           <AppText variant="caption" color={colors.mutedForeground}>
-            {g.label.toUpperCase()}
+            {w.groups[g.key].toUpperCase()}
           </AppText>
           {g.sessions.map((s) => (
             <View key={s.id} style={[styles.row, s.id === activeId && styles.active]}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={s.title || 'Chat'}
+                accessibilityLabel={s.title || w.chatFallback}
                 accessibilityState={{ selected: s.id === activeId }}
                 onPress={() => {
                   onSelect(s.id);
@@ -63,11 +66,11 @@ export function SessionsSheet({
                 }}
                 style={styles.title}
               >
-                <AppText numberOfLines={1}>{s.title || 'Neuer Chat'}</AppText>
+                <AppText numberOfLines={1}>{s.title || w.newChatTitle}</AppText>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`${s.title || 'Chat'} löschen`}
+                accessibilityLabel={w.deleteNamed(s.title || w.chatFallback)}
                 onPress={() => confirmDelete(s)}
                 style={styles.delete}
               >
