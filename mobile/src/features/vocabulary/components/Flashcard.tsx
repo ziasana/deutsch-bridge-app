@@ -35,11 +35,16 @@ export function Flashcard({ item, flipped, onFlip }: Props) {
       <Card tone={flipped ? 'accent' : 'default'} style={styles.card}>
         {!flipped ? (
           <>
-            {item.article ? (
-              <Badge
-                tone={ARTICLE_TONE[item.article.toLowerCase()] ?? 'primary'}
-                label={item.article}
-              />
+            {item.article || item.wordType ? (
+              <View style={styles.badges}>
+                {item.article ? (
+                  <Badge
+                    tone={ARTICLE_TONE[item.article.toLowerCase()] ?? 'primary'}
+                    label={item.article}
+                  />
+                ) : null}
+                {item.wordType ? <Badge label={t.vocabulary.wordTypes[item.wordType]} /> : null}
+              </View>
             ) : null}
             <View style={styles.wordRow}>
               <AppText style={styles.word}>{item.word}</AppText>
@@ -64,6 +69,11 @@ export function Flashcard({ item, flipped, onFlip }: Props) {
             <AppText variant="caption" color={VOCABULARY_DARK}>
               {label.toUpperCase()}
             </AppText>
+            {item.wordType ? (
+              <AppText variant="caption" color={colors.mutedForeground}>
+                {t.vocabulary.wordTypes[item.wordType]}
+              </AppText>
+            ) : null}
             <AppText variant="title" center>
               {item.meaning}
             </AppText>
@@ -85,6 +95,7 @@ export function Flashcard({ item, flipped, onFlip }: Props) {
 }
 
 const styles = StyleSheet.create({
+  badges: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6 },
   card: {
     minHeight: 240,
     alignItems: 'center',

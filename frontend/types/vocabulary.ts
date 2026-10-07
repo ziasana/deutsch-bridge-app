@@ -121,6 +121,7 @@ export interface PracticeVocabularyItem {
     meaning: string;
     example: string | null;
     synonyms: string | null;
+    wordType: VocabularyWordType | null;
     level: LearningLevelCode | null;
     audioUrl: string | null;
     masteryLevel: VocabularyMasteryLevel;

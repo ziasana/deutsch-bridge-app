@@ -32,6 +32,7 @@ export interface PracticeVocabularyItem {
   meaning: string;
   example: string | null;
   synonyms: string | null;
+  wordType: VocabularyWordType | null;
   level: string | null;
   audioUrl: string | null;
   masteryLevel: VocabularyMasteryLevel;

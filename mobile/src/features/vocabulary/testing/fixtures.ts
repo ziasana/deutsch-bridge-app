@@ -13,6 +13,7 @@ export const makeItem = (n: number, withContext = true): PracticeVocabularyItem 
   meaning: `meaning ${n}`,
   example: `Beispielsatz ${n}.`,
   synonyms: null,
+  wordType: null,
   level: 'A2',
   audioUrl: null,
   masteryLevel: 'NEW',

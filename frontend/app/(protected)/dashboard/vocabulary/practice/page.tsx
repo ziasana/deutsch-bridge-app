@@ -194,6 +194,7 @@ function VocabularyPracticeContent() {
                 meta={
                     <>
                         {item.level && <PracticeChip className="text-primary">{item.level}</PracticeChip>}
+                        {item.wordType && <PracticeChip>{t.vocabulary.wordTypes[item.wordType]}</PracticeChip>}
                         {totalSteps > 1 && <PracticeChip>{t.vocabulary.practice.stepOf(currentStepNumber, totalSteps)}</PracticeChip>}
                     </>
                 }
@@ -211,6 +212,11 @@ function VocabularyPracticeContent() {
                                 <>
                                     {item.article && (
                                         <span className={cn("rounded-full px-3 py-0.5 text-sm font-bold", articleTone)}>{item.article}</span>
+                                    )}
+                                    {item.wordType && (
+                                        <span className="rounded-full bg-muted px-3 py-0.5 text-xs font-semibold text-foreground/70">
+                                            {t.vocabulary.wordTypes[item.wordType]}
+                                        </span>
                                     )}
                                     <div className="flex items-center gap-2">
                                         <h2 className="break-words text-4xl font-bold leading-tight text-foreground">{item.word}</h2>
@@ -230,7 +236,10 @@ function VocabularyPracticeContent() {
                             }
                             back={
                                 <>
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-white/70">{wordLabel}</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-white/70">
+                                        {wordLabel}
+                                        {item.wordType ? ` · ${t.vocabulary.wordTypes[item.wordType]}` : ""}
+                                    </span>
                                     <p className="text-2xl font-bold leading-snug">{item.meaning}</p>
                                     {item.example && <p className="line-clamp-4 text-sm italic text-white/85">„{item.example}“</p>}
                                     {item.synonyms && <p className="text-xs text-white/70">{item.synonyms}</p>}

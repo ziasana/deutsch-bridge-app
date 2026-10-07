@@ -134,6 +134,10 @@ export function VocabularyTrainerScreen() {
             <AppText variant="subheading">{tr.wordOf(state.index + 1, items.length)}</AppText>
             <View style={{ flexDirection: 'row', gap: spacing.sm }}>
               {item.level ? <Badge tone="primary" label={item.level} /> : null}
+              {/* The flashcard shows the type itself; the question step keeps it in view. */}
+              {item.wordType && state.stage !== 'flashcard' ? (
+                <Badge label={t.vocabulary.wordTypes[item.wordType]} />
+              ) : null}
               {hasContext ? <Badge label={tr.stepOf(stepNumber)} /> : null}
             </View>
           </View>
