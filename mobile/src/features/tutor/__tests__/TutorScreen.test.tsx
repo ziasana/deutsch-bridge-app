@@ -45,7 +45,7 @@ beforeEach(() => {
 describe('TutorScreen', () => {
   it('shows starters; a starter prefills the composer', async () => {
     await wrap();
-    expect(await screen.findByText('Guten Tag! 👋')).toBeTruthy();
+    expect(await screen.findByText('What would you like to start with?')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
     await fireEvent.press(screen.getByRole('button', { name: /Grammar/ }));
     expect(screen.getByLabelText('Message').props.value).toMatch(/Grammatik/);
@@ -61,7 +61,7 @@ describe('TutorScreen', () => {
       sessionTitle: 'Begrüßung',
     });
     await wrap();
-    await screen.findByText('Guten Tag! 👋');
+    await screen.findByText('What would you like to start with?');
     await fireEvent.changeText(screen.getByLabelText('Message'), 'Hallo');
     await fireEvent.press(screen.getByRole('button', { name: 'Send' }));
 
@@ -154,7 +154,7 @@ describe('TutorScreen', () => {
     await fireEvent.press(await screen.findByRole('button', { name: 'Delete chat' }));
     expect(alert).toHaveBeenCalled();
     await waitFor(() => expect(chat.remove).toHaveBeenCalledWith('s1'));
-    expect(await screen.findByText('Guten Tag! 👋')).toBeTruthy();
+    expect(await screen.findByText('What would you like to start with?')).toBeTruthy();
   });
 
   it('saves a word from a tutor answer to vocabulary, and says when it already exists', async () => {

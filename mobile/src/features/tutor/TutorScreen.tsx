@@ -182,15 +182,10 @@ export function TutorScreen() {
 
         {showEmpty ? (
           <View style={styles.hero}>
-            <View style={styles.heroText}>
-              <AppText style={styles.heroTitle} color="#FFFFFF">
-                {w.greeting}
-              </AppText>
-              <AppText style={styles.heroSub} color="#FFFFFF">
-                {w.greetingSub}
-              </AppText>
-            </View>
-            <TutorIllustration onUsePhrase={(phrase) => setInput(w.explainPhrase(phrase))} />
+            <TutorIllustration
+              scale={0.68}
+              onUsePhrase={(phrase) => setInput(w.explainPhrase(phrase))}
+            />
           </View>
         ) : null}
       </SafeAreaView>
@@ -346,16 +341,7 @@ const styles = StyleSheet.create({
   },
   actionText: { fontWeight: '700' },
   // Bottom-aligned and pulled under the sheet, so the tutor appears to sit behind it.
-  hero: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingStart: spacing.xl,
-    paddingEnd: spacing.sm,
-    marginBottom: -18,
-  },
-  heroText: { flex: 1, gap: spacing.sm, paddingEnd: spacing.xs, paddingBottom: spacing.xxl + 22 },
-  heroTitle: { fontSize: 28, lineHeight: 36, fontWeight: '800' },
-  heroSub: { fontSize: 15, lineHeight: 22, fontWeight: '500' },
+  hero: { alignItems: 'center', marginBottom: -18 },
   sheet: {
     flex: 1,
     backgroundColor: '#FFFFFF',
