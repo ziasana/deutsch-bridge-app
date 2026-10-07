@@ -9,6 +9,7 @@ import { useExamText } from './examText';
 import { SECTION_META } from './examMeta';
 import { formatClock, formatDifference } from './time/examTime';
 import { useTimeManagement } from './time/hooks';
+import { SectionIcon } from './components/SectionIcon';
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
@@ -71,7 +72,7 @@ export function ZeitmanagementScreen() {
                     { backgroundColor: tint(meta?.color ?? colors.primary, '1F') },
                   ]}
                 >
-                  <AppText style={{ fontSize: 22, lineHeight: 28 }}>{meta?.emoji}</AppText>
+                  <SectionIcon section={row.section} size={22} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <AppText variant="subheading">

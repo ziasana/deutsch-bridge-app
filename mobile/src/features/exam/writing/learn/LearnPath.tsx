@@ -6,6 +6,7 @@ import { tint } from '../../components/kit';
 import { LEARN_SECTIONS, type LearnSectionId } from '../writingMeta';
 import type { Station, StationResult } from './types';
 import { WRITING_COLOR } from './ui';
+import { darken } from '@/features/exam/components/kit';
 
 const meta = (id: LearnSectionId) => LEARN_SECTIONS.find((s) => s.id === id)!;
 /** Rough reading/practice time so the learner knows what they sign up for. */
@@ -48,12 +49,13 @@ export function LearnPath({
       </View>
 
       {allDone ? (
-        <Button pill label="Zu den Schreibaufgaben" onPress={onPractice} />
+        <Button pill label="Zu den Schreibaufgaben" onPress={onPractice} color={WRITING_COLOR} />
       ) : next ? (
         <Button
           pill
           label={`${doneCount === 0 ? 'Starten' : 'Weiterlernen'}: ${meta(next.id).label}`}
           onPress={() => onOpen(next.id)}
+          color={WRITING_COLOR}
         />
       ) : null}
 
@@ -112,7 +114,7 @@ export function LearnPath({
       </View>
 
       {doneCount > 0 ? (
-        <Button label="↺ Fortschritt zurücksetzen" variant="ghost" onPress={onReset} />
+        <Button label="↺ Fortschritt zurücksetzen" variant="ghost" onPress={onReset} color={darken(WRITING_COLOR)} />
       ) : null}
     </View>
   );

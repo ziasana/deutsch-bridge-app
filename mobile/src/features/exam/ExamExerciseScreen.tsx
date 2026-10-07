@@ -15,6 +15,7 @@ import { ExamExerciseTimer } from './time/ExamExerciseTimer';
 import { useStopExerciseTimer } from './time/hooks';
 import { WritingExercise } from './writing/WritingExercise';
 import { useExamExercise, useMarkExamCompleted, useToggleExamBookmark } from './hooks';
+import { darken } from '@/features/exam/components/kit';
 
 /** Testformat pages are read-only information; finishing them is a manual "erledigt". */
 function InfoBody({ exercise }: { exercise: ExamExercise }) {
@@ -35,12 +36,13 @@ function InfoBody({ exercise }: { exercise: ExamExercise }) {
             disabled={exercise.completed}
             loading={mark.isPending}
             onPress={() => mark.mutate()}
+            color={darken(SECTION_META[exercise.section].color)}
           />
         </>
       }
     >
       <View style={styles.sizeRow}>
-        <TextSizeControl />
+        <TextSizeControl color={SECTION_META[exercise.section].color} />
       </View>
       {exercise.teilDescription ? (
         <Card tone="accent">
@@ -65,7 +67,7 @@ function WritingBody({ exercise }: { exercise: ExamExercise }) {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ExerciseFrame>
         <View style={styles.sizeRow}>
-          <TextSizeControl />
+          <TextSizeControl color={SECTION_META[exercise.section].color} />
         </View>
         {exercise.teilDescription ? (
           <Card tone="accent">

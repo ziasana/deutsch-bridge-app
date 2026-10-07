@@ -16,6 +16,16 @@ import { useI18n } from '@/i18n';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import { TEXT_SCALES, useExamTextSize } from '../textScale';
 
+/** A darker shade of a #RRGGBB colour, for text and icons on that colour's light tint. */
+export function darken(hex: string, factor = 0.68): string {
+  const n = parseInt(hex.slice(1, 7), 16);
+  const c = (shift: number) =>
+    Math.round(((n >> shift) & 255) * factor)
+      .toString(16)
+      .padStart(2, '0');
+  return `#${c(16)}${c(8)}${c(0)}`;
+}
+
 /** Section colour at a given opacity (hex alpha), for soft tinted backgrounds. */
 export const tint = (color: string, alpha: '14' | '1F' | '33' = '1F') => `${color}${alpha}`;
 
@@ -213,6 +223,7 @@ export function TextSizeControl({ color, dark }: { color?: string; dark?: string
   const larger = useExamTextSize((s) => s.larger);
   const smaller = useExamTextSize((s) => s.smaller);
   const last = TEXT_SCALES.length - 1;
+  const textColor = dark ?? (color ? darken(color) : undefined);
   return (
     <View
       style={[styles.sizeRow, color ? { backgroundColor: tint(color, '1F') } : null]}
@@ -229,7 +240,7 @@ export function TextSizeControl({ color, dark }: { color?: string; dark?: string
         style={[styles.sizeBtn, index === 0 && { opacity: 0.35 }]}
       >
         <AppText
-          style={[styles.sizeA, { fontSize: 13, lineHeight: 18 }, dark ? { color: dark } : null]}
+          style={[styles.sizeA, { fontSize: 13, lineHeight: 18 }, textColor ? { color: textColor } : null]}
         >
           A
         </AppText>
@@ -261,7 +272,7 @@ export function TextSizeControl({ color, dark }: { color?: string; dark?: string
         style={[styles.sizeBtn, index === last && { opacity: 0.35 }]}
       >
         <AppText
-          style={[styles.sizeA, { fontSize: 21, lineHeight: 26 }, dark ? { color: dark } : null]}
+          style={[styles.sizeA, { fontSize: 21, lineHeight: 26 }, textColor ? { color: textColor } : null]}
         >
           A
         </AppText>

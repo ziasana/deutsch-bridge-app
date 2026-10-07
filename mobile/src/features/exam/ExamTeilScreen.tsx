@@ -26,6 +26,9 @@ import { useExamExercises, useToggleExamBookmark } from './hooks';
 import { TIMED_SECTIONS } from './time/examTime';
 import { useExerciseLastTimes } from './time/hooks';
 import { TeilTimeCard } from './time/TeilTimeCard';
+import { darken } from '@/features/exam/components/kit';
+import { HeroBackdrop } from '@/components/ui/HeroDecor';
+import { SectionIcon } from './components/SectionIcon';
 
 type Filter = 'ALL' | 'OPEN' | 'DONE';
 const FILTERS: Filter[] = ['ALL', 'OPEN', 'DONE'];
@@ -122,12 +125,14 @@ export function ExamTeilScreen() {
     <View style={styles.root}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <View style={[styles.hero, { backgroundColor: tint(color, '1F') }]}>
+          <HeroBackdrop color={color} />
           <SafeAreaView edges={['top']}>
             <View style={styles.topRow}>
               <IconButton name="arrow-back" label={t.common.back} onPress={() => router.back()} />
-              <View style={[styles.chip, { backgroundColor: tint(color, '33') }]}>
+              <View style={[styles.chip, styles.chipRow, { backgroundColor: tint(color, '33') }]}>
+                <SectionIcon section={typed} size={14} />
                 <AppText variant="caption" color={colors.ink} style={{ fontWeight: '800' }}>
-                  {meta.emoji} {tx(meta.label).toUpperCase()} · {level}
+                  {tx(meta.label).toUpperCase()} · {level}
                 </AppText>
               </View>
             </View>
@@ -177,10 +182,15 @@ export function ExamTeilScreen() {
             />
           </View>
 
-          <Button pill label={continueLabel} onPress={() => open(next.id)} />
+          <Button pill label={continueLabel} onPress={() => open(next.id)} color={color} />
 
           {group.items[0]?.teil != null && TIMED_SECTIONS.includes(typed) ? (
-            <TeilTimeCard section={typed} level={level} teil={group.items[0].teil} />
+            <TeilTimeCard
+              section={typed}
+              level={level}
+              teil={group.items[0].teil}
+              color={color}
+            />
           ) : null}
 
           <View style={{ gap: spacing.sm }}>
@@ -196,6 +206,7 @@ export function ExamTeilScreen() {
                   label={e.filters[f]}
                   selected={filter === f}
                   onPress={() => setFilter(f)}
+                  color={darken(color)}
                 />
               ))}
             </HorizontalScroll>
@@ -241,6 +252,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    overflow: 'hidden',
   },
   topRow: {
     flexDirection: 'row',
@@ -249,6 +261,7 @@ const styles = StyleSheet.create({
     marginStart: -spacing.sm,
   },
   chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill },
+  chipRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   heroMain: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, paddingTop: spacing.sm },
   title: { fontSize: 32, lineHeight: 38, fontWeight: '800', color: colors.ink },
   body: { padding: spacing.lg, gap: spacing.lg },

@@ -10,7 +10,7 @@ import type { ExamPracticeSessionResult } from '@/types/examTime';
 import { isEmptyTranscript, isHtmlTranscript, plainParagraphs } from '../content';
 import { BODY_LINE, BODY_SIZE, scaledText, useExamTextScale } from '../textScale';
 import { ExamTimeSummary } from '../time/ExamTimeSummary';
-import { ExerciseFrame, StatTile, tint } from './kit';
+import { ExerciseFrame, StatTile, darken, tint } from './kit';
 
 export interface ResultItem {
   question: ExamQuestionPublic;
@@ -187,17 +187,18 @@ export function ResultsView({
           onPress={() =>
             router.replace({ pathname: '/exam-prep/exercise/[exerciseId]', params: { exerciseId: next.id } })
           }
+          color={color}
         />
       ) : (
-        <Button pill label="Fertig" onPress={() => router.back()} />
+        <Button pill label="Fertig" onPress={() => router.back()} color={color} />
       )}
       <View style={styles.footerRow}>
         <View style={{ flex: 1 }}>
-          <Button label="Erneut üben" variant="secondary" onPress={onRetry} />
+          <Button label="Erneut üben" variant="secondary" onPress={onRetry} color={darken(color)} />
         </View>
         {next ? (
           <View style={{ flex: 1 }}>
-            <Button label="Fertig" variant="secondary" onPress={() => router.back()} />
+            <Button label="Fertig" variant="secondary" onPress={() => router.back()} color={darken(color)} />
           </View>
         ) : null}
       </View>
@@ -251,6 +252,7 @@ export function ResultsView({
             label="Transkript anzeigen"
             variant="secondary"
             onPress={() => setTranscriptOpen(true)}
+            color={darken(color)}
           />
           <BottomSheet
             visible={transcriptOpen}
@@ -287,8 +289,8 @@ export function ResultsView({
         </View>
         {wrong > 0 ? (
           <View style={styles.filters}>
-            <Chip label="Alle" selected={filter === 'ALL'} onPress={() => setFilter('ALL')} />
-            <Chip label={`Fehler (${wrong})`} selected={filter === 'WRONG'} onPress={() => setFilter('WRONG')} />
+            <Chip label="Alle" selected={filter === 'ALL'} onPress={() => setFilter('ALL')} color={darken(color)} />
+            <Chip label={`Fehler (${wrong})`} selected={filter === 'WRONG'} onPress={() => setFilter('WRONG')} color={darken(color)} />
           </View>
         ) : (
           <AppText variant="small" color={'#1B7A55'}>

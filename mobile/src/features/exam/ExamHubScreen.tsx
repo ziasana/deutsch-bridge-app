@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
@@ -24,7 +25,7 @@ import { colors, radius, spacing } from '@/theme';
 import type { ExamSection } from '@/types/exam';
 import { pickInitialLevel } from '@/utils/levels';
 import { ExerciseRow } from './components/ExerciseRow';
-import { PressableScale, tint } from './components/kit';
+import { PressableScale, darken, tint } from './components/kit';
 import { WritingLearnCard } from './writing/WritingLearnCard';
 import {
   averageScore,
@@ -43,6 +44,7 @@ import {
 } from './hooks';
 import { useExerciseLastTimes } from './time/hooks';
 import { TeilTimeCard } from './time/TeilTimeCard';
+import { SectionIcon } from './components/SectionIcon';
 
 /** CEFR levels offered in the picker; levels without content stay visible so the learner sees the whole ladder. */
 const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1'];
@@ -239,7 +241,7 @@ function SectionBubble({
             ) : null}
           </Svg>
           <View style={styles.bubbleIcon}>
-            <AppText style={styles.bubbleEmoji}>{meta.emoji}</AppText>
+            <SectionIcon section={section} size={28} />
           </View>
           {done ? (
             <View style={styles.bubbleCheck}>
@@ -272,7 +274,7 @@ function PartCard({
   avg,
   onPress,
 }: {
-  emoji: string;
+  emoji: ReactNode;
   label: string;
   color: string;
   done: boolean;
@@ -290,7 +292,7 @@ function PartCard({
       style={({ pressed }) => [styles.part, pressed && { backgroundColor: tint(color, '14') }]}
     >
       <View style={[styles.partNode, { backgroundColor: tint(color, '1F') }]}>
-        <AppText style={styles.partEmoji}>{emoji}</AppText>
+        {typeof emoji === 'string' ? <AppText style={styles.partEmoji}>{emoji}</AppText> : emoji}
         {done ? (
           <View style={styles.partCheck}>
             <Ionicons name="checkmark" size={14} color="#FFFFFF" />
@@ -422,11 +424,20 @@ export function ExamHubScreen() {
     body = (
       <View style={{ gap: spacing.md }}>
         {level ? <WritingLearnCard level={level} /> : null}
-        <AppText style={styles.heading} accessibilityRole="header">
-          {h.writingTasks}
-        </AppText>
+        <View style={styles.headingRow}>
+          <SectionIcon section={section} size={22} />
+          <AppText style={styles.heading} accessibilityRole="header">
+            {h.writingTasks}
+          </AppText>
+        </View>
         {level ? (
-          <TeilTimeCard section={section} level={level} teil={1} showLastResult={false} />
+          <TeilTimeCard
+            section={section}
+            level={level}
+            teil={1}
+            showLastResult={false}
+            color={color}
+          />
         ) : null}
         {flatItems.length > 0 ? (
           <View>
@@ -491,7 +502,7 @@ export function ExamHubScreen() {
           <PartCard
             key={g.key}
             color={color}
-            emoji={meta.emoji}
+            emoji={<SectionIcon section={section} size={28} />}
             label={tx(g.label)}
             done={g.state === 'completed'}
             mastered={g.mastered}
@@ -532,9 +543,7 @@ export function ExamHubScreen() {
                 { backgroundColor: tint(SECTION_META[target.section].color, '33') },
               ]}
             >
-              <AppText style={{ fontSize: 28, lineHeight: 36 }}>
-                {SECTION_META[target.section].emoji}
-              </AppText>
+              <SectionIcon section={target.section} size={28} />
             </View>
             <View style={{ flex: 1, gap: 4, alignItems: 'flex-start' }}>
               <AppText variant="small" color={colors.ink} style={{ fontWeight: '700' }}>
@@ -593,7 +602,7 @@ export function ExamHubScreen() {
       <View ref={partsRef} collapsable={false} style={{ gap: spacing.md }}>
         <View style={[styles.panel, { backgroundColor: tint(color, '14') }]}>
           <View style={[styles.panelIcon, { backgroundColor: tint(color, '33') }]}>
-            <AppText style={{ fontSize: 30, lineHeight: 38 }}>{meta.emoji}</AppText>
+            <SectionIcon section={section} size={30} />
           </View>
           <View style={{ flex: 1, gap: 2 }}>
             <View style={styles.panelTitleRow}>
@@ -696,10 +705,10 @@ export function ExamHubScreen() {
           accessibilityRole="button"
           accessibilityLabel={`⏱ ${h.timeTitle}`}
           onPress={() => router.push({ pathname: '/exam-prep/zeitmanagement', params: { level } })}
-          style={({ pressed }) => [styles.timeTile, pressed && { backgroundColor: colors.accent }]}
+          style={({ pressed }) => [styles.timeTile, pressed && { backgroundColor: tint(color, '14') }]}
         >
-          <View style={styles.timeIcon}>
-            <Ionicons name="timer-outline" size={26} color={colors.primaryDark} />
+          <View style={[styles.timeIcon, { backgroundColor: tint(color, '1F') }]}>
+            <Ionicons name="timer-outline" size={26} color={darken(color)} />
           </View>
           <View style={{ flex: 1 }}>
             <AppText variant="subheading">{h.timeTitle}</AppText>
@@ -716,6 +725,7 @@ export function ExamHubScreen() {
 
 const styles = StyleSheet.create({
   heading: { fontSize: 22, lineHeight: 28, fontWeight: '700', color: colors.ink },
+  headingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
 
   ready: {
     gap: spacing.md,

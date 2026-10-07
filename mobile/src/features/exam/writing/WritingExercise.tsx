@@ -14,6 +14,8 @@ import { HelpSheet } from './components/HelpSheet';
 import { useWritingDraft } from './draft';
 import { useRequestAiFeedback, useSubmitWriting, useWritingAttempts, useWritingLearning } from './hooks';
 import { HELP_TABS_BY_MODE, WRITING_MODES, countWords } from './writingMeta';
+import { WRITING_COLOR } from '@/features/exam/writing/learn/ui';
+import { darken } from '@/features/exam/components/kit';
 
 type Props = {
   exercise: ExamExercise;
@@ -86,7 +88,7 @@ export function WritingExercise({ exercise, onSubmitted, timeResult }: Props) {
     <View style={{ gap: spacing.xs }}>
       <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
         {WRITING_MODES.map((m) => (
-          <Chip key={m.mode} label={m.label} selected={mode === m.mode} onPress={() => changeMode(m.mode)} />
+          <Chip key={m.mode} label={m.label} selected={mode === m.mode} onPress={() => changeMode(m.mode)} color={darken(WRITING_COLOR)} />
         ))}
       </View>
       <AppText variant="small" color={colors.mutedForeground}>
@@ -110,8 +112,8 @@ export function WritingExercise({ exercise, onSubmitted, timeResult }: Props) {
 
         {attempts.length > 1 ? (
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <Chip label="Feedback" selected={resultTab === 'feedback'} onPress={() => setResultTab('feedback')} />
-            <Chip label="Original vs. Überarbeitung" selected={resultTab === 'compare'} onPress={() => setResultTab('compare')} />
+            <Chip label="Feedback" selected={resultTab === 'feedback'} onPress={() => setResultTab('feedback')} color={darken(WRITING_COLOR)} />
+            <Chip label="Original vs. Überarbeitung" selected={resultTab === 'compare'} onPress={() => setResultTab('compare')} color={darken(WRITING_COLOR)} />
           </View>
         ) : null}
 
@@ -140,6 +142,7 @@ export function WritingExercise({ exercise, onSubmitted, timeResult }: Props) {
                 variant="secondary"
                 loading={ai.isPending}
                 onPress={() => ai.mutate(submitted.id)}
+                color={darken(WRITING_COLOR)}
               />
             </Card>
           )
@@ -165,6 +168,7 @@ export function WritingExercise({ exercise, onSubmitted, timeResult }: Props) {
               setShowSolution(false);
               setDone(false);
             }}
+            color={WRITING_COLOR}
           />
         </Card>
 
@@ -175,7 +179,7 @@ export function WritingExercise({ exercise, onSubmitted, timeResult }: Props) {
               <RichContent content={exercise.modelSolution} />
             </Card>
           ) : (
-            <Button label="Mögliche Lösung anzeigen" variant="secondary" onPress={() => setShowSolution(true)} />
+            <Button label="Mögliche Lösung anzeigen" variant="secondary" onPress={() => setShowSolution(true)} color={darken(WRITING_COLOR)} />
           )
         ) : null}
       </View>
@@ -202,7 +206,7 @@ export function WritingExercise({ exercise, onSubmitted, timeResult }: Props) {
               placeholder="Stichwörter …"
             />
           ))}
-          <Button label="Weiter zum Schreiben" onPress={() => draft.setPlanDone(true)} />
+          <Button label="Weiter zum Schreiben" onPress={() => draft.setPlanDone(true)} color={WRITING_COLOR} />
         </Card>
       ) : (
         <>
@@ -258,9 +262,9 @@ export function WritingExercise({ exercise, onSubmitted, timeResult }: Props) {
             </AppText>
           ) : null}
           {helpTabs.length > 0 ? (
-            <Button label="Hilfe" variant="secondary" onPress={() => setHelpOpen(true)} />
+            <Button label="Hilfe" variant="secondary" onPress={() => setHelpOpen(true)} color={darken(WRITING_COLOR)} />
           ) : null}
-          <Button label="Abgeben" loading={submit.isPending} disabled={words === 0} onPress={confirmSubmit} />
+          <Button label="Abgeben" loading={submit.isPending} disabled={words === 0} onPress={confirmSubmit} color={WRITING_COLOR} />
         </>
       )}
 

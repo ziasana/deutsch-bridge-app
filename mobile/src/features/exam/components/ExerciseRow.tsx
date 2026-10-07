@@ -57,7 +57,7 @@ export function ExerciseRow({
     .join(' · ');
 
   const nodeColor = mastered
-    ? colors.success
+    ? color
     : retry
       ? colors.warning
       : next
@@ -68,7 +68,7 @@ export function ExerciseRow({
       style={[
         styles.node,
         mastered
-          ? { backgroundColor: colors.success, borderColor: colors.success }
+          ? { backgroundColor: color, borderColor: color }
           : { borderColor: nodeColor, backgroundColor: next ? tint(color, '1F') : colors.surface },
       ]}
     >
@@ -91,7 +91,7 @@ export function ExerciseRow({
           {node}
           {!path.last ? (
             <View
-              style={[styles.line, { backgroundColor: mastered ? colors.success : colors.border }]}
+              style={[styles.line, { backgroundColor: mastered ? color : colors.border }]}
             />
           ) : null}
         </View>
@@ -130,7 +130,7 @@ export function ExerciseRow({
               size={50}
               stroke={5}
               textSize={10}
-              color={mastered ? colors.success : colors.warning}
+              color={mastered ? color : colors.warning}
               label={r.lastResult}
             />
           ) : (

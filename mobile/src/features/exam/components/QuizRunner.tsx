@@ -18,6 +18,8 @@ import { BatchQuiz, type BatchVariant } from './BatchQuiz';
 import { ExerciseFrame, TextSizeControl, tint } from './kit';
 import { ResultsView, type ResultsState } from './Results';
 import { StepQuiz } from './StepQuiz';
+import { darken } from '@/features/exam/components/kit';
+import { SectionIcon } from './SectionIcon';
 
 export type QuizKind = 'step' | BatchVariant;
 
@@ -98,18 +100,16 @@ function StartCard({
         error ? (
           <ErrorState error={error} onRetry={onRetryStart} />
         ) : (
-          <Button pill label={run.startButton} loading={loading} onPress={onStart} />
+          <Button pill label={run.startButton} loading={loading} onPress={onStart} color={meta.color} />
         )
       }
     >
       <View style={styles.sizeRow}>
-        <TextSizeControl />
+        <TextSizeControl color={meta.color} />
       </View>
       <View style={[styles.hero, { backgroundColor: tint(meta.color, '14') }]}>
         <View style={[styles.heroIcon, { backgroundColor: tint(meta.color, '33') }]}>
-          <AppText style={{ fontSize: 40, lineHeight: 50 }} accessibilityElementsHidden>
-            {meta.emoji}
-          </AppText>
+          <SectionIcon section={exercise.section} size={40} />
         </View>
         <View style={{ flex: 1, gap: 2 }}>
           <AppText variant="caption" color={meta.color} style={{ fontWeight: '800' }}>

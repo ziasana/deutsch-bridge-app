@@ -22,7 +22,7 @@ type Props = { data: DashboardResponse };
 const ACTIVITY_STYLE: Record<PlanActivityType, { emoji: string; color: string }> = {
   DAILY_WORDS: { emoji: '🌱', color: '#2E8B57' },
   VOCAB_REVIEW: { emoji: '🗂️', color: '#3F86F0' },
-  GRAMMAR: { emoji: '🧩', color: '#7B61D9' },
+  GRAMMAR: { emoji: '🧱', color: '#7B61D9' },
   READING: { emoji: '📖', color: '#E8832E' },
 };
 

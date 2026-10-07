@@ -6,6 +6,7 @@ import { colors, radius, spacing } from '@/theme';
 import { tint } from '../components/kit';
 import { useLearnSummary } from './learn/useLearnSummary';
 import { WRITING_COLOR } from './learn/ui';
+import { darken } from '@/features/exam/components/kit';
 
 /** Entry to "Schreiben lernen" at the top of the Schreiben section: learn the method, then write. */
 export function WritingLearnCard({ level }: { level: string }) {
@@ -54,7 +55,7 @@ export function WritingLearnCard({ level }: { level: string }) {
           {all ? w.allStations : w.stations(finished, total)}
         </AppText>
       ) : null}
-      <Button pill label={all ? w.again : started ? w.continue : w.learn} onPress={open} />
+      <Button pill label={all ? w.again : started ? w.continue : w.learn} onPress={open} color={WRITING_COLOR} />
     </Pressable>
   );
 }

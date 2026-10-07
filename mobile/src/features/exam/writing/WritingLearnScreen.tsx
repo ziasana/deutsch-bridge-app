@@ -14,6 +14,9 @@ import { WRITING_COLOR } from './learn/ui';
 import { useLearnProgress } from './learn/useLearnProgress';
 import { useWritingLearning } from './hooks';
 import type { LearnSectionId } from './writingMeta';
+import { darken } from '@/features/exam/components/kit';
+import { HeroBackdrop } from '@/components/ui/HeroDecor';
+import { SectionIcon } from '@/features/exam/components/SectionIcon';
 
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1'];
 
@@ -74,12 +77,14 @@ function OverviewShell({
     <View style={styles.root}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <View style={[styles.hero, { backgroundColor: tint(WRITING_COLOR, '1F') }]}>
+          <HeroBackdrop color={WRITING_COLOR} />
           <SafeAreaView edges={['top']}>
             <View style={styles.topRow}>
               <IconButton name="arrow-back" label="Zurück" onPress={() => router.back()} />
-              <View style={[styles.tag, { backgroundColor: tint(WRITING_COLOR, '33') }]}>
+              <View style={[styles.tag, styles.tagRow, { backgroundColor: tint(WRITING_COLOR, '33') }]}>
+                <SectionIcon section="SCHRIFTLICHER_AUSDRUCK" size={14} />
                 <AppText variant="caption" color={colors.ink} style={{ fontWeight: '800' }}>
-                  ✍️ SCHREIBEN · {level}
+                  SCHREIBEN · {level}
                 </AppText>
               </View>
             </View>
@@ -94,7 +99,7 @@ function OverviewShell({
         <View style={styles.body}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.levels}>
             {LEVELS.map((l) => (
-              <Chip key={l} label={l} selected={l === level} onPress={() => onLevel(l)} />
+              <Chip key={l} label={l} selected={l === level} onPress={() => onLevel(l)} color={darken(WRITING_COLOR)} />
             ))}
           </ScrollView>
           {children}
@@ -144,9 +149,11 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    overflow: 'hidden',
   },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginLeft: -spacing.sm },
   tag: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill },
+  tagRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   title: { fontSize: 32, lineHeight: 38, fontWeight: '800', color: colors.ink },
   body: { padding: spacing.lg, gap: spacing.lg },
   levels: { gap: spacing.sm },
