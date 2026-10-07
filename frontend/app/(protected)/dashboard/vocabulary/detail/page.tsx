@@ -63,6 +63,7 @@ function VocabularyDetailContent() {
                 <div className="mt-4 rounded-2xl border border-border/60 bg-card p-8 shadow-card">
                     <div className="flex items-center flex-wrap gap-2 mb-3">
                         {item.level && <Badge variant="secondary">{item.level}</Badge>}
+                        {item.wordType && <Badge variant="secondary">{t.vocabulary.wordTypes[item.wordType]}</Badge>}
                         <Badge variant="outline">
                             {item.source === "DICTIONARY"
                                 ? t.vocabulary.sourceTabs.fromReading
@@ -111,7 +112,7 @@ function VocabularyDetailContent() {
                         </section>
                     )}
 
-                    {item.source === "CUSTOM" && item.synonyms && (
+                    {item.synonyms && (
                         <section className="mb-8">
                             <h2 className="text-sm font-semibold text-foreground/50 uppercase tracking-wide mb-2">
                                 {t.vocabulary.detail.synonyms}

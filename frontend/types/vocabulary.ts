@@ -1,3 +1,17 @@
+/** Part of speech of a word, or the kind of a saved expression. */
+export type VocabularyWordType =
+    | "NOUN"
+    | "VERB"
+    | "ADJECTIVE"
+    | "ADVERB"
+    | "PREPOSITION"
+    | "CONJUNCTION"
+    | "PRONOUN"
+    | "OTHER"
+    | "EXPRESSION"
+    | "IDIOM"
+    | "NOUN_VERB_CONNECTION";
+
 export type VocabularySource = "CUSTOM" | "DICTIONARY" | "AI_TUTOR";
 export type VocabularyMasteryLevel = "NEW" | "LEARNING" | "FAMILIAR" | "MASTERED";
 export type LearningLevelCode = "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
@@ -23,6 +37,8 @@ export interface VocabularyItem {
     language: string;
     example: string | null;
     synonyms: string | null;
+    /** Null for words saved before word types existed. */
+    wordType: VocabularyWordType | null;
     level: LearningLevelCode | null;
     audioUrl: string | null;
     /** Only set for source=DICTIONARY. */
@@ -64,7 +80,7 @@ export interface VocabularyFromChatCreateRequest {
     sourceChatId: string | null;
     sourceMessageId: string | null;
     level: LearningLevelCode | null;
-    wordType?: string | null;
+    wordType?: VocabularyWordType | null;
     synonyms?: string | null;
 }
 
@@ -76,7 +92,7 @@ export interface SelectionClassifyResult {
     meaning: string;
     example: string;
     /** Part of speech or expression kind (e.g. NOUN, IDIOM); null if unknown. */
-    wordType?: string | null;
+    wordType?: VocabularyWordType | null;
     synonyms?: string | null;
 }
 

@@ -1,3 +1,4 @@
+import type { VocabularyWordType } from "@/types/vocabulary";
 export type AppLanguage = "en" | "fa";
 
 /** Maps the account's stored preference (User.preferredLanguage: EN/DE/PR) to an app UI language. */
@@ -321,6 +322,7 @@ export interface Dictionary {
         sourceTabs: { myWords: string; fromReading: string; fromAiTutor: string };
         filters: { level: string; all: string; mastery: string; bookmarked: string; bookmarkedOnly: string };
         mastery: { NEW: string; LEARNING: string; FAMILIAR: string; MASTERED: string };
+        wordTypes: Record<VocabularyWordType, string>;
         continueLearning: {
             title: string;
             subtitleReady: (count: number) => string;
@@ -430,6 +432,7 @@ export interface Dictionary {
             alreadySaved: string;
             saving: string;
             savedToVocabulary: string;
+            synonymsLabel: string;
             saveFailed: string;
         };
     };
@@ -1076,6 +1079,19 @@ const en: Dictionary = {
         sourceTabs: { myWords: "My words", fromReading: "From reading", fromAiTutor: "From AI Tutor" },
         filters: { level: "Level", all: "All", mastery: "Progress", bookmarked: "Bookmarked", bookmarkedOnly: "Bookmarked" },
         mastery: { NEW: "New", LEARNING: "Learning", FAMILIAR: "Familiar", MASTERED: "Mastered" },
+        wordTypes: {
+            NOUN: "Noun",
+            VERB: "Verb",
+            ADJECTIVE: "Adjective",
+            ADVERB: "Adverb",
+            PREPOSITION: "Preposition",
+            CONJUNCTION: "Conjunction",
+            PRONOUN: "Pronoun",
+            OTHER: "Other",
+            EXPRESSION: "Expression (Wendung)",
+            IDIOM: "Idiom (Redewendung)",
+            NOUN_VERB_CONNECTION: "Noun-verb phrase (Nomen-Verb-Verbindung)",
+        },
         continueLearning: {
             title: "Continue learning",
             subtitleReady: (count: number) => `You have ${count} words ready to practice.`,
@@ -1201,6 +1217,7 @@ const en: Dictionary = {
             alreadySaved: "Already in Vocabulary",
             saving: "Saving...",
             savedToVocabulary: "Saved to Vocabulary",
+            synonymsLabel: "Synonyms",
             saveFailed: "Couldn't save this item. Please try again.",
         },
     },
@@ -1891,6 +1908,19 @@ const fa: Dictionary = {
         sourceTabs: { myWords: "واژه‌های من", fromReading: "از بخش مطالعه", fromAiTutor: "از مربی هوش مصنوعی" },
         filters: { level: "سطح", all: "همه", mastery: "پیشرفت", bookmarked: "نشان‌شده", bookmarkedOnly: "نشان‌شده" },
         mastery: { NEW: "جدید", LEARNING: "در حال یادگیری", FAMILIAR: "آشنا", MASTERED: "مسلط" },
+        wordTypes: {
+            NOUN: "اسم (Nomen)",
+            VERB: "فعل (Verb)",
+            ADJECTIVE: "صفت (Adjektiv)",
+            ADVERB: "قید (Adverb)",
+            PREPOSITION: "حرف اضافه (Präposition)",
+            CONJUNCTION: "حرف ربط (Konjunktion)",
+            PRONOUN: "ضمیر (Pronomen)",
+            OTHER: "سایر",
+            EXPRESSION: "عبارت (Wendung)",
+            IDIOM: "اصطلاح (Redewendung)",
+            NOUN_VERB_CONNECTION: "ترکیب اسم و فعل (Nomen-Verb-Verbindung)",
+        },
         continueLearning: {
             title: "ادامه یادگیری",
             subtitleReady: (count: number) => `شما ${count} واژه آماده تمرین دارید.`,
@@ -2016,6 +2046,7 @@ const fa: Dictionary = {
             alreadySaved: "قبلاً در واژگان ذخیره شده",
             saving: "در حال ذخیره...",
             savedToVocabulary: "در واژگان ذخیره شد",
+            synonymsLabel: "مترادف‌ها",
             saveFailed: "ذخیره این مورد ممکن نشد. دوباره تلاش کنید.",
         },
     },
