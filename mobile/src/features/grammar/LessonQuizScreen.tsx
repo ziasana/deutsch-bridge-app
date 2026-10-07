@@ -25,6 +25,7 @@ import {
 } from './hooks';
 import { lessonQuestions, localizedHeading, questionKey } from './quiz';
 import { resultTitle } from '@/utils/feedback';
+import { GRAMMAR_COLOR, GRAMMAR_DARK } from './meta';
 
 type Phase = 'idle' | 'active' | 'results';
 
@@ -95,7 +96,7 @@ export function LessonQuizScreen() {
       <Screen>
         <Header title={title} back />
         <EmptyState
-          emoji="🧩"
+          emoji="🧱"
           title={g.noExercisesTitle}
           message={g.noExercisesMessage}
           actionLabel={g.toLesson}
@@ -138,6 +139,7 @@ export function LessonQuizScreen() {
         <Button
           label={answeredCount > 0 ? g.continue : g.start}
           onPress={() => setPhase('active')}
+          color={GRAMMAR_COLOR}
         />
       </Card>
     );

@@ -33,7 +33,9 @@ import {
   TYPE_DESCRIPTION,
   TYPE_EMOJI,
   TYPE_LABEL,
+  EXPRESSION_COLOR,
 } from './labels';
+import { EXPRESSION_DARK } from './labels';
 
 const DEFAULT_FILTERS: Omit<ExpressionFilters, 'search'> = {
   level: 'ALL',
@@ -97,6 +99,7 @@ export function ExpressionListScreen() {
           variant="secondary"
           label={`Filter & Sortierung${activeFilterCount(filters) > 0 ? ` (${activeFilterCount(filters)})` : ''} ${showFilters ? '▴' : '▾'}`}
           onPress={() => setShowFilters((s) => !s)}
+          color={EXPRESSION_DARK}
         />
       </View>
       {showFilters ? (
@@ -106,6 +109,7 @@ export function ExpressionListScreen() {
               label="Alle"
               selected={filters.level === 'ALL'}
               onPress={() => set('level', 'ALL')}
+              color={EXPRESSION_DARK}
             />
             {LEVELS.map((l) => (
               <Chip
@@ -113,6 +117,7 @@ export function ExpressionListScreen() {
                 label={l}
                 selected={filters.level === l}
                 onPress={() => set('level', l)}
+                color={EXPRESSION_DARK}
               />
             ))}
           </ChipRow>
@@ -121,6 +126,7 @@ export function ExpressionListScreen() {
               label="Alle"
               selected={filters.progress === 'ALL'}
               onPress={() => set('progress', 'ALL')}
+              color={EXPRESSION_DARK}
             />
             {MASTERY_ORDER.map((m) => (
               <Chip
@@ -128,6 +134,7 @@ export function ExpressionListScreen() {
                 label={MASTERY_LABEL[m]}
                 selected={filters.progress === m}
                 onPress={() => set('progress', m)}
+                color={EXPRESSION_DARK}
               />
             ))}
           </ChipRow>
@@ -138,15 +145,19 @@ export function ExpressionListScreen() {
                 label={SORT_LABEL[s]}
                 selected={filters.sort === s}
                 onPress={() => set('sort', s)}
+                color={EXPRESSION_DARK}
               />
             ))}
             <Chip
               label="★ Nur Gemerkte"
               selected={filters.bookmarked}
               onPress={() => set('bookmarked', !filters.bookmarked)}
+              color={EXPRESSION_DARK}
             />
           </ChipRow>
-          {filtered ? <Button label="Zurücksetzen" variant="ghost" onPress={reset} /> : null}
+          {filtered ? (
+            <Button label="Zurücksetzen" variant="ghost" onPress={reset} color={EXPRESSION_DARK} />
+          ) : null}
         </View>
       ) : null}
     </View>
@@ -209,7 +220,7 @@ export function ExpressionListScreen() {
               style={{ padding: spacing.lg }}
               accessibilityLabel="Weitere Wendungen werden geladen"
             >
-              <ActivityIndicator color={colors.primary} />
+              <ActivityIndicator color={EXPRESSION_COLOR} />
             </View>
           ) : query.hasNextPage ? null : items.length > 0 ? (
             <AppText

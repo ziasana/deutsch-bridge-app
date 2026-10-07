@@ -21,6 +21,7 @@ import { ContextQuestion } from './components/ContextQuestion';
 import { Flashcard } from './components/Flashcard';
 import { usePracticeSession, useSubmitRound } from './hooks';
 import { initialState, sessionPercent, summarize, trainerReducer } from './trainerLogic';
+import { VOCABULARY_COLOR, VOCABULARY_DARK } from './meta';
 
 function SessionSkeleton() {
   const { t } = useI18n();
@@ -95,7 +96,11 @@ export function VocabularyTrainerScreen() {
         <AppText variant="heading">{tr.ready(items.length)}</AppText>
         <AppText color={colors.mutedForeground}>{tr.counts(newCount, reviewCount)}</AppText>
         <AppText color={colors.mutedForeground}>{tr.intro}</AppText>
-        <Button label={tr.start} onPress={() => dispatch({ type: 'START' })} />
+        <Button
+          label={tr.start}
+          onPress={() => dispatch({ type: 'START' })}
+          color={VOCABULARY_COLOR}
+        />
       </Card>
     );
   } else if (state.stage === 'done') {
@@ -146,12 +151,18 @@ export function VocabularyTrainerScreen() {
                 <AppText variant="small" color={colors.mutedForeground} center>
                   {tr.didYouKnow}
                 </AppText>
-                <Button label={tr.knew} loading={submit.isPending} onPress={() => grade(true)} />
+                <Button
+                  label={tr.knew}
+                  loading={submit.isPending}
+                  onPress={() => grade(true)}
+                  color={VOCABULARY_COLOR}
+                />
                 <Button
                   label={tr.didNotKnow}
                   variant="secondary"
                   disabled={submit.isPending}
                   onPress={() => grade(false)}
+                  color={VOCABULARY_DARK}
                 />
               </View>
             ) : null}
@@ -192,6 +203,7 @@ export function VocabularyTrainerScreen() {
             <Button
               label={state.index + 1 >= items.length ? tr.seeResult : tr.next}
               onPress={() => dispatch({ type: 'NEXT', total: items.length })}
+              color={VOCABULARY_COLOR}
             />
           </Card>
         ) : null}

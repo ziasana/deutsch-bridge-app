@@ -20,6 +20,7 @@ import {
 import { IconButton, StatTile, TextSizeControl, tint } from '@/features/exam/components/kit';
 import { RichContentScale } from '@/features/exam/components/RichContentScale';
 import { rtlText } from '@/i18n/direction';
+import { HeroBackdrop } from '@/components/ui/HeroDecor';
 import { useI18n } from '@/i18n';
 import { useAuthStore } from '@/stores/authStore';
 import { HorizontalScroll } from '@/components/ui/HorizontalScroll';
@@ -43,6 +44,7 @@ import {
   localizedHeading,
   localizedLesson,
 } from './quiz';
+import { GRAMMAR_COLOR, GRAMMAR_DARK } from './meta';
 
 function LessonSkeleton() {
   const { t } = useI18n();
@@ -73,7 +75,7 @@ function GoalCard({ summary, dir }: { summary: string; dir: 'ltr' | 'rtl' }) {
         <AppText variant="subheading" style={{ flex: 1 }}>
           {t.grammar.goalTitle}
         </AppText>
-        <TextSizeControl />
+        <TextSizeControl color={GRAMMAR_COLOR} dark={GRAMMAR_DARK} />
       </View>
       <AppText
         color={colors.ink}
@@ -89,7 +91,7 @@ function GoalCard({ summary, dir }: { summary: string; dir: 'ltr' | 'rtl' }) {
           onPress={() => setExpanded((v) => !v)}
           hitSlop={spacing.sm}
         >
-          <AppText variant="small" color={colors.primaryDark} style={{ fontWeight: '700' }}>
+          <AppText variant="small" color={GRAMMAR_DARK} style={{ fontWeight: '700' }}>
             {expanded ? t.grammar.less : t.grammar.more}
           </AppText>
         </Pressable>
@@ -202,7 +204,8 @@ export function LessonScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scroll}
         >
-          <View style={[styles.hero, { backgroundColor: tint(colors.primary, '1F') }]}>
+          <View style={[styles.hero, { backgroundColor: tint(GRAMMAR_COLOR, '1F') }]}>
+            <HeroBackdrop color={GRAMMAR_COLOR} />
             <SafeAreaView edges={['top']}>
               <View style={styles.topRow}>
                 <IconButton name="arrow-back" label={t.common.back} onPress={() => router.back()} />
@@ -217,9 +220,9 @@ export function LessonScreen() {
               <View style={styles.heroMain}>
                 <View style={{ flex: 1, gap: spacing.xs }}>
                   <View style={styles.meta}>
-                    <View style={[styles.chip, { backgroundColor: tint(colors.primary, '33') }]}>
+                    <View style={[styles.chip, { backgroundColor: tint(GRAMMAR_COLOR, '33') }]}>
                       <AppText variant="caption" color={colors.ink} style={{ fontWeight: '800' }}>
-                        📘 {lesson.level}
+                        🧱 {lesson.level}
                         {lesson.categoryTitle ? ` · ${lesson.categoryTitle}`.toUpperCase() : ''}
                       </AppText>
                     </View>
@@ -236,7 +239,7 @@ export function LessonScreen() {
                   value={progress}
                   size={76}
                   stroke={9}
-                  color={colors.primary}
+                  color={GRAMMAR_COLOR}
                   textSize={18}
                   trackColor="#FFFFFFCC"
                   label={g.lessonProgress}
@@ -256,13 +259,13 @@ export function LessonScreen() {
               icon="layers-outline"
               label={g.steps}
               value={String(sections.length)}
-              color={colors.primary}
+              color={GRAMMAR_COLOR}
             />
             <StatTile
               icon="chatbubbles-outline"
               label={g.examples}
               value={String(examples.length)}
-              color={colors.primary}
+              color={GRAMMAR_COLOR}
             />
             <StatTile
               icon="help-circle-outline"
@@ -281,7 +284,13 @@ export function LessonScreen() {
             {steps
               .filter((s) => s.show)
               .map((s) => (
-                <Chip key={s.key} label={s.label} selected={false} onPress={() => jump(s.key)} />
+                <Chip
+                  key={s.key}
+                  label={s.label}
+                  selected={false}
+                  onPress={() => jump(s.key)}
+                  color={GRAMMAR_DARK}
+                />
               ))}
           </HorizontalScroll>
 
@@ -313,6 +322,7 @@ export function LessonScreen() {
                 label={g.watchVideo}
                 variant="secondary"
                 onPress={() => void Linking.openURL(lesson.videoLink!)}
+                color={GRAMMAR_DARK}
               />
             </View>
           ) : null}
@@ -364,6 +374,7 @@ export function LessonScreen() {
                       params: { lessonId: lesson.id },
                     })
                   }
+                  color={GRAMMAR_COLOR}
                 />
               </Card>
             ) : null}
@@ -389,6 +400,7 @@ export function LessonScreen() {
               variant={learned ? 'secondary' : 'primary'}
               loading={learnedMutation.isPending}
               onPress={() => learnedMutation.mutate(!learned)}
+              color={GRAMMAR_DARK}
             />
 
             {prev || next ? (
@@ -402,6 +414,7 @@ export function LessonScreen() {
                       accessibilityHint={
                         localizedHeading({ ...prev, summary: '', summaryFa: null }, persian).title
                       }
+                      color={GRAMMAR_DARK}
                     />
                   ) : null}
                 </View>
@@ -414,6 +427,7 @@ export function LessonScreen() {
                       accessibilityHint={
                         localizedHeading({ ...next, summary: '', summaryFa: null }, persian).title
                       }
+                      color={GRAMMAR_DARK}
                     />
                   ) : null}
                 </View>
@@ -434,6 +448,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    overflow: 'hidden',
   },
   topRow: {
     flexDirection: 'row',
@@ -460,7 +475,7 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.accent,
+    backgroundColor: tint(GRAMMAR_COLOR, '1F'),
   },
   tiles: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg },
   chips: { gap: spacing.sm, paddingHorizontal: spacing.lg },

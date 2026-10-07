@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText, Button, Card, TextField } from '@/components/ui';
+import { tint } from '@/features/exam/components/kit';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type { PracticeExpression, PracticeQuestion } from '@/types/expression';
 import {
@@ -9,6 +10,7 @@ import {
   useRecallAnswer,
   useTransformationAnswer,
 } from '../hooks';
+import { EXPRESSION_COLOR, EXPRESSION_DARK } from '../labels';
 import { meaningLine, sentenceOutcome } from '../practiceLogic';
 
 /** Every step reports its outcome: true/false = judged, null = informational or skipped. */
@@ -23,7 +25,7 @@ const STEP_INTRO = {
 } as const;
 
 const Eyebrow = ({ children }: { children: string }) => (
-  <AppText variant="caption" color={colors.primaryDark}>
+  <AppText variant="caption" color={EXPRESSION_DARK}>
     {children.toUpperCase()}
   </AppText>
 );
@@ -50,7 +52,11 @@ export function DiscoverStep({
       {!revealed ? (
         <>
           <AppText color={colors.mutedForeground}>Was glaubst du, was bedeutet das?</AppText>
-          <Button label="Bedeutung anzeigen" onPress={() => setRevealed(true)} />
+          <Button
+            label="Bedeutung anzeigen"
+            onPress={() => setRevealed(true)}
+            color={EXPRESSION_COLOR}
+          />
         </>
       ) : (
         <>
@@ -73,7 +79,7 @@ export function DiscoverStep({
           {item.exampleSentence ? (
             <AppText style={{ fontStyle: 'italic' }}>„{item.exampleSentence}“</AppText>
           ) : null}
-          <Button label="Weiter zur Übung" onPress={() => onDone(null)} />
+          <Button label="Weiter zur Übung" onPress={() => onDone(null)} color={EXPRESSION_COLOR} />
         </>
       )}
     </View>
@@ -120,6 +126,7 @@ export function RecallStep({
           loading={recall.isPending}
           disabled={!answer.trim()}
           onPress={submit}
+          color={EXPRESSION_COLOR}
         />
       ) : (
         <>
@@ -127,7 +134,11 @@ export function RecallStep({
             <Verdict ok={result.correct}>{result.correct ? 'Richtig!' : 'Nicht ganz.'}</Verdict>
             {!result.correct ? <AppText>Richtig wäre: {result.correctAnswer}</AppText> : null}
           </Card>
-          <Button label={isLast ? 'Weiter' : 'Weiter'} onPress={() => onDone(result.correct)} />
+          <Button
+            label={isLast ? 'Weiter' : 'Weiter'}
+            onPress={() => onDone(result.correct)}
+            color={EXPRESSION_COLOR}
+          />
         </>
       )}
     </View>
@@ -217,6 +228,7 @@ export function McqStep({
           loading={answer.isPending}
           disabled={!selected}
           onPress={() => selected && answer.mutate({ questionId: question.id, optionId: selected })}
+          color={EXPRESSION_COLOR}
         />
       ) : (
         <>
@@ -224,7 +236,7 @@ export function McqStep({
           {result.explanation ? (
             <AppText color={colors.mutedForeground}>{result.explanation}</AppText>
           ) : null}
-          <Button label="Weiter" onPress={() => onDone(result.correct)} />
+          <Button label="Weiter" onPress={() => onDone(result.correct)} color={EXPRESSION_COLOR} />
         </>
       )}
     </View>
@@ -286,7 +298,12 @@ function SentenceStep({
                 {error}
               </AppText>
               {/* An AI limit or outage must never trap the learner in the last step. */}
-              <Button label="Schritt überspringen" variant="ghost" onPress={() => onDone(null)} />
+              <Button
+                label="Schritt überspringen"
+                variant="ghost"
+                onPress={() => onDone(null)}
+                color={EXPRESSION_DARK}
+              />
             </View>
           ) : null}
           <Button
@@ -294,6 +311,7 @@ function SentenceStep({
             loading={isPending}
             disabled={!sentence.trim()}
             onPress={() => onSubmit(sentence.trim())}
+            color={EXPRESSION_COLOR}
           />
         </>
       ) : (
@@ -318,7 +336,11 @@ function SentenceStep({
               </View>
             ) : null}
           </Card>
-          <Button label={nextLabel} onPress={() => onDone(judged.outcome)} />
+          <Button
+            label={nextLabel}
+            onPress={() => onDone(judged.outcome)}
+            color={EXPRESSION_COLOR}
+          />
         </>
       )}
     </View>
@@ -385,7 +407,7 @@ export function ProductionStep({
       promptNode={
         <AppText variant="heading">
           Schreibe einen eigenen Satz mit:{' '}
-          <AppText variant="heading" color={colors.primaryDark}>
+          <AppText variant="heading" color={EXPRESSION_DARK}>
             {item.expression}
           </AppText>
         </AppText>
@@ -429,7 +451,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  picked: { borderColor: colors.primary, backgroundColor: colors.accent },
+  picked: { borderColor: EXPRESSION_COLOR, backgroundColor: tint(EXPRESSION_COLOR, '1F') },
   right: { borderColor: colors.success, backgroundColor: colors.successSoft },
   wrong: { borderColor: colors.destructive, backgroundColor: colors.destructiveSoft },
   letter: {

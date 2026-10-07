@@ -1,10 +1,12 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText, TextField } from '@/components/ui';
+import { tint } from '@/features/exam/components/kit';
 import { InlineRich } from '@/components/content/RichContent';
 import { useI18n } from '@/i18n';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type { QuizQuestion } from '@/types/grammar';
 import { isCorrectAnswer, localizedQuestion } from '../quiz';
+import { GRAMMAR_COLOR, GRAMMAR_DARK } from '../meta';
 
 type Props = {
   question: QuizQuestion;
@@ -64,7 +66,7 @@ export function QuestionView({
   return (
     <View style={styles.gap}>
       {text.title ? (
-        <AppText variant="caption" color={colors.primaryDark}>
+        <AppText variant="caption" color={GRAMMAR_DARK}>
           {text.title.toUpperCase()}
         </AppText>
       ) : null}
@@ -142,7 +144,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  picked: { borderColor: colors.primary, backgroundColor: colors.accent },
+  picked: { borderColor: GRAMMAR_COLOR, backgroundColor: tint(GRAMMAR_COLOR, '1F') },
   right: { borderColor: colors.success, backgroundColor: colors.successSoft },
   wrong: { borderColor: colors.destructive, backgroundColor: colors.destructiveSoft },
   letter: {

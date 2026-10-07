@@ -19,6 +19,7 @@ import { MasteryDots, VocabularyHero } from './components/VocabularyViz';
 import { WordFormSheet } from './components/WordFormSheet';
 import { useDeleteVocabulary, useToggleVocabularyBookmark, useVocabularyItem } from './listHooks';
 import { ARTICLE_COLOR, masteryOf, wordLabel } from './listLogic';
+import { VOCABULARY_COLOR, VOCABULARY_DARK } from './meta';
 
 function Section({
   icon,
@@ -33,7 +34,7 @@ function Section({
     <View style={styles.section}>
       <View style={styles.sectionHead}>
         <View style={styles.sectionIcon}>
-          <Ionicons name={icon} size={18} color={colors.primary} />
+          <Ionicons name={icon} size={18} color={VOCABULARY_COLOR} />
         </View>
         <AppText variant="subheading">{title}</AppText>
       </View>
@@ -76,7 +77,9 @@ export function VocabularyDetailScreen() {
   const mastery = masteryOf(item);
   const overall = Math.round(item.progress?.overallScore ?? 0);
   const editable = item.source !== 'DICTIONARY';
-  const accent = item.article ? (ARTICLE_COLOR[item.article] ?? colors.primary) : colors.primary;
+  const accent = item.article
+    ? (ARTICLE_COLOR[item.article] ?? VOCABULARY_COLOR)
+    : VOCABULARY_COLOR;
   const confirmDelete = () =>
     Alert.alert(v.deleteTitle, v.deleteMessage(item.word), [
       { text: v.cancel, style: 'cancel' },
@@ -157,7 +160,7 @@ export function VocabularyDetailScreen() {
                   icon="chatbubbles-outline"
                   label={v.context}
                   value={`${Math.round(item.progress.contextScore)}%`}
-                  color={colors.primary}
+                  color={VOCABULARY_COLOR}
                 />
                 <StatTile
                   icon="repeat-outline"
@@ -185,11 +188,18 @@ export function VocabularyDetailScreen() {
             onPress={() =>
               router.push({ pathname: '/learn/review', params: { vocabularyItemId: item.id } })
             }
+            color={VOCABULARY_COLOR}
           />
           {editable ? (
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
-                <Button pill variant="secondary" label={v.edit} onPress={() => setEditing(true)} />
+                <Button
+                  pill
+                  variant="secondary"
+                  label={v.edit}
+                  onPress={() => setEditing(true)}
+                  color={VOCABULARY_DARK}
+                />
               </View>
               <View style={{ flex: 1 }}>
                 <Button
@@ -198,6 +208,7 @@ export function VocabularyDetailScreen() {
                   label={v.delete}
                   loading={remove.isPending}
                   onPress={confirmDelete}
+                  color={VOCABULARY_DARK}
                 />
               </View>
             </View>
@@ -238,14 +249,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: tint(colors.primary, '1F'),
+    backgroundColor: tint(VOCABULARY_COLOR, '1F'),
   },
   meaning: { fontSize: 18, lineHeight: 26, fontWeight: '700', color: colors.foreground },
   bubble: {
     padding: spacing.md,
     borderRadius: radius.lg,
     borderTopStartRadius: 6,
-    backgroundColor: colors.accent,
+    backgroundColor: tint(VOCABULARY_COLOR, '1F'),
   },
   tiles: { flexDirection: 'row', gap: spacing.sm },
   row: { flexDirection: 'row', gap: spacing.md },

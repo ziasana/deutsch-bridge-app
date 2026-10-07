@@ -41,6 +41,7 @@ import {
   masteryCounts,
   sourceCounts,
 } from './listLogic';
+import { VOCABULARY_COLOR, VOCABULARY_DARK } from './meta';
 
 export function VocabularyScreen() {
   const router = useRouter();
@@ -123,10 +124,21 @@ export function VocabularyScreen() {
 
       <View style={[styles.pad, styles.ctaRow]}>
         <View style={{ flex: 1 }}>
-          <Button pill label={v.addWord} onPress={() => setFormOpen(true)} />
+          <Button
+            pill
+            label={v.addWord}
+            onPress={() => setFormOpen(true)}
+            color={VOCABULARY_COLOR}
+          />
         </View>
         <View style={{ flex: 1 }}>
-          <Button pill variant="secondary" label={v.startTraining} onPress={() => practice()} />
+          <Button
+            pill
+            variant="secondary"
+            label={v.startTraining}
+            onPress={() => practice()}
+            color={VOCABULARY_DARK}
+          />
         </View>
       </View>
 
@@ -147,14 +159,10 @@ export function VocabularyScreen() {
               onPress={() => setSource(s)}
               style={[
                 styles.source,
-                on && { backgroundColor: colors.primary, borderColor: colors.primary },
+                on && { backgroundColor: VOCABULARY_COLOR, borderColor: VOCABULARY_COLOR },
               ]}
             >
-              <Ionicons
-                name={SOURCE_ICON[s]}
-                size={18}
-                color={on ? '#FFFFFF' : colors.primaryDark}
-              />
+              <Ionicons name={SOURCE_ICON[s]} size={18} color={on ? '#FFFFFF' : VOCABULARY_DARK} />
               <View>
                 <AppText
                   variant="small"
@@ -223,8 +231,9 @@ export function VocabularyScreen() {
             label={v.onlyBookmarked}
             selected={bookmarkedOnly}
             onPress={() => setBookmarkedOnly((b) => !b)}
+            color={VOCABULARY_DARK}
           />
-          {isFiltered ? <Chip label={v.reset} onPress={reset} /> : null}
+          {isFiltered ? <Chip label={v.reset} onPress={reset} color={VOCABULARY_DARK} /> : null}
         </View>
       </View>
 
@@ -260,12 +269,8 @@ export function VocabularyScreen() {
                   {item.meaning}
                 </AppText>
                 <View style={styles.miniGo}>
-                  <DirectionalIcon name="play" size={12} color={colors.primaryDark} />
-                  <AppText
-                    variant="caption"
-                    color={colors.primaryDark}
-                    style={{ fontWeight: '800' }}
-                  >
+                  <DirectionalIcon name="play" size={12} color={VOCABULARY_DARK} />
+                  <AppText variant="caption" color={VOCABULARY_DARK} style={{ fontWeight: '800' }}>
                     {v.practiceShort}
                   </AppText>
                 </View>

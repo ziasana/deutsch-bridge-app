@@ -43,7 +43,7 @@ export function buildAchievements(
     },
     {
       key: 'grammar',
-      emoji: '🧩',
+      emoji: '🧱',
       title: t.grammar.title,
       description: t.grammar.description(grammar?.lessonsLearned ?? 0, grammar?.lessonsTotal ?? 0),
       stars: grammar ? starsFromPercent(percent(grammar.lessonsLearned, grammar.lessonsTotal)) : 0,

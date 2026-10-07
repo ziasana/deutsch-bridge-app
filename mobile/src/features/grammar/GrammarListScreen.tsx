@@ -16,6 +16,7 @@ import {
   Skeleton,
 } from '@/components/ui';
 import { IconButton, StatTile, tint } from '@/features/exam/components/kit';
+import { HeroBackdrop } from '@/components/ui/HeroDecor';
 import { useI18n } from '@/i18n';
 import { useAuthStore } from '@/stores/authStore';
 import { HorizontalScroll } from '@/components/ui/HorizontalScroll';
@@ -24,6 +25,7 @@ import type { GrammarCategorySummary, GrammarLessonSummary } from '@/types/gramm
 import { pickInitialLevel } from '@/utils/levels';
 import { useLevelSummary, useLevelView } from './hooks';
 import { localizedHeading } from './quiz';
+import { GRAMMAR_COLOR, GRAMMAR_DARK } from './meta';
 
 type Row =
   | { kind: 'category'; category: GrammarCategorySummary; expanded: boolean; index: number }
@@ -153,11 +155,12 @@ export function GrammarListScreen() {
 
   const header = (
     <View style={{ gap: spacing.lg, paddingBottom: spacing.md }}>
-      <View style={[styles.hero, { backgroundColor: tint(colors.primary, '1F') }]}>
+      <View style={[styles.hero, { backgroundColor: tint(GRAMMAR_COLOR, '1F') }]}>
+        <HeroBackdrop color={GRAMMAR_COLOR} />
         <SafeAreaView edges={['top']}>
           <View style={styles.topRow}>
             <IconButton name="arrow-back" label={t.common.back} onPress={() => router.back()} />
-            <View style={[styles.chip, { backgroundColor: tint(colors.primary, '33') }]}>
+            <View style={[styles.chip, { backgroundColor: tint(GRAMMAR_COLOR, '33') }]}>
               <AppText variant="caption" color={colors.ink} style={{ fontWeight: '800' }}>
                 {g.chip(level)}
               </AppText>
@@ -177,7 +180,7 @@ export function GrammarListScreen() {
                 value={percent}
                 size={84}
                 stroke={9}
-                color={colors.primary}
+                color={GRAMMAR_COLOR}
                 textSize={20}
                 trackColor="#FFFFFFCC"
                 label={g.levelProgress(level ?? '')}
@@ -220,7 +223,7 @@ export function GrammarListScreen() {
               icon="folder-open-outline"
               label={g.tileBlocks}
               value={String(categoryCount)}
-              color={colors.primary}
+              color={GRAMMAR_COLOR}
             />
             <StatTile
               icon="star-outline"
@@ -230,11 +233,17 @@ export function GrammarListScreen() {
             />
           </View>
           <View style={styles.filters}>
-            <Chip label={g.allTopics} selected={!onlySaved} onPress={() => setOnlySaved(false)} />
+            <Chip
+              label={g.allTopics}
+              selected={!onlySaved}
+              onPress={() => setOnlySaved(false)}
+              color={GRAMMAR_DARK}
+            />
             <Chip
               label={g.savedFilter(bookmarked)}
               selected={onlySaved}
               onPress={() => setOnlySaved(true)}
+              color={GRAMMAR_DARK}
             />
           </View>
           {nextLesson && !onlySaved ? (
@@ -246,6 +255,7 @@ export function GrammarListScreen() {
                   localizedHeading(nextLesson, persian).title,
                 )}
                 onPress={() => openLesson(nextLesson.id)}
+                color={GRAMMAR_COLOR}
               />
             </View>
           ) : null}
@@ -270,7 +280,7 @@ export function GrammarListScreen() {
       />
     );
   } else if (rows.length === 0) {
-    content = <EmptyState emoji="🧩" title={g.emptyTitle} message={g.emptyMessage} />;
+    content = <EmptyState emoji="🧱" title={g.emptyTitle} message={g.emptyMessage} />;
   } else {
     content = null;
   }
@@ -291,7 +301,7 @@ export function GrammarListScreen() {
               onPress={() => setExpanded((e) => ({ ...e, [category.id]: !e[category.id] }))}
               style={({ pressed }) => [
                 styles.category,
-                item.expanded && { borderColor: colors.primary },
+                item.expanded && { borderColor: GRAMMAR_COLOR },
                 pressed && { opacity: 0.85 },
               ]}
             >
@@ -300,7 +310,7 @@ export function GrammarListScreen() {
                 size={56}
                 stroke={6}
                 textSize={12}
-                color={done ? colors.success : colors.primary}
+                color={done ? colors.success : GRAMMAR_COLOR}
                 label={g.categoryRing(learned, total)}
               />
               <View style={{ flex: 1, gap: 2 }}>
@@ -342,7 +352,7 @@ export function GrammarListScreen() {
         const nodeColor = lesson.learned
           ? colors.success
           : item.next
-            ? colors.primary
+            ? GRAMMAR_COLOR
             : colors.mutedForeground;
         return (
           <View style={[styles.pad, styles.lessonRow]}>
@@ -355,7 +365,7 @@ export function GrammarListScreen() {
                       ? { backgroundColor: colors.success, borderColor: colors.success }
                       : {
                           borderColor: nodeColor,
-                          backgroundColor: item.next ? tint(colors.primary, '1F') : colors.surface,
+                          backgroundColor: item.next ? tint(GRAMMAR_COLOR, '1F') : colors.surface,
                         },
                   ]}
                 >
@@ -383,19 +393,15 @@ export function GrammarListScreen() {
               style={({ pressed }) => [
                 styles.lessonCard,
                 item.next && {
-                  borderColor: colors.primary,
-                  backgroundColor: tint(colors.primary, '14'),
+                  borderColor: GRAMMAR_COLOR,
+                  backgroundColor: tint(GRAMMAR_COLOR, '14'),
                 },
                 pressed && { opacity: 0.8 },
               ]}
             >
               <View style={{ flex: 1, gap: 2 }}>
                 {item.next ? (
-                  <AppText
-                    variant="caption"
-                    color={colors.primaryDark}
-                    style={{ fontWeight: '800' }}
-                  >
+                  <AppText variant="caption" color={GRAMMAR_DARK} style={{ fontWeight: '800' }}>
                     {g.upNext}
                   </AppText>
                 ) : null}
@@ -439,6 +445,7 @@ export function GrammarListScreen() {
                   params: { categoryId: item.category.id },
                 })
               }
+              color={GRAMMAR_DARK}
             />
           </View>
         );
@@ -541,6 +548,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    overflow: 'hidden',
   },
   topRow: {
     flexDirection: 'row',
@@ -561,7 +569,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  levelTileOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  levelTileOn: { backgroundColor: GRAMMAR_COLOR, borderColor: GRAMMAR_COLOR },
   levelText: { fontSize: 24, lineHeight: 30, fontWeight: '800' },
   miniTrack: {
     height: 6,

@@ -6,6 +6,7 @@ import { useI18n } from '@/i18n';
 import { colors, spacing } from '@/theme';
 import type { VocabularyItem } from '@/types/vocabulary';
 import { useGenerateExample, useSaveVocabulary } from '../listHooks';
+import { VOCABULARY_COLOR, VOCABULARY_DARK } from '../meta';
 
 const ARTICLES = ['', 'der', 'die', 'das'] as const;
 
@@ -78,6 +79,7 @@ function WordForm({ item, onClose, onSaved }: Omit<Props, 'visible'>) {
               label={a || f.none}
               selected={article === a}
               onPress={() => setArticle(a)}
+              color={VOCABULARY_DARK}
             />
           ))}
         </View>
@@ -100,8 +102,8 @@ function WordForm({ item, onClose, onSaved }: Omit<Props, 'visible'>) {
           onPress={suggest}
           style={[styles.ai, (!word.trim() || generate.isPending) && { opacity: 0.4 }]}
         >
-          <Ionicons name="sparkles" size={16} color={colors.primaryDark} />
-          <AppText variant="small" color={colors.primaryDark} style={{ fontWeight: '700' }}>
+          <Ionicons name="sparkles" size={16} color={VOCABULARY_DARK} />
+          <AppText variant="small" color={VOCABULARY_DARK} style={{ fontWeight: '700' }}>
             {generate.isPending ? f.generating : f.generate}
           </AppText>
         </Pressable>
@@ -116,8 +118,21 @@ function WordForm({ item, onClose, onSaved }: Omit<Props, 'visible'>) {
           {save.error.message}
         </AppText>
       ) : null}
-      <Button pill label={f.save} onPress={submit} loading={save.isPending} disabled={!valid} />
-      <Button pill variant="ghost" label={t.common.cancel} onPress={onClose} />
+      <Button
+        pill
+        label={f.save}
+        onPress={submit}
+        loading={save.isPending}
+        disabled={!valid}
+        color={VOCABULARY_COLOR}
+      />
+      <Button
+        pill
+        variant="ghost"
+        label={t.common.cancel}
+        onPress={onClose}
+        color={VOCABULARY_DARK}
+      />
     </>
   );
 }

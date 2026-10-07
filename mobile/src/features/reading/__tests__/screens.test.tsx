@@ -230,18 +230,12 @@ describe('ReadingArticleScreen', () => {
     mockedVocab.remove.mockResolvedValue(undefined as never);
     await wrap(<ReadingArticleScreen />);
     await fireEvent.press(await screen.findByText('laut'));
-    await fireEvent.press(
-      await screen.findByRole('button', { name: '＋ Add to vocabulary' }),
-    );
+    await fireEvent.press(await screen.findByRole('button', { name: '＋ Add to vocabulary' }));
     await waitFor(() => expect(mockedVocab.addFromDictionary).toHaveBeenCalledWith('d1'));
 
-    await fireEvent.press(
-      await screen.findByRole('button', { name: '✓ In vocabulary – remove' }),
-    );
+    await fireEvent.press(await screen.findByRole('button', { name: '✓ In vocabulary – remove' }));
     await waitFor(() => expect(mockedVocab.remove).toHaveBeenCalledWith('v9'));
-    expect(
-      await screen.findByRole('button', { name: '＋ Add to vocabulary' }),
-    ).toBeTruthy();
+    expect(await screen.findByRole('button', { name: '＋ Add to vocabulary' })).toBeTruthy();
   });
 
   it('shows an error state when the article fails to load', async () => {

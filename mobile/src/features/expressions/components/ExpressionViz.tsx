@@ -5,10 +5,11 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
 import { AppText } from '@/components/ui';
+import { HeroBackdrop } from '@/components/ui/HeroDecor';
 import { IconButton, tint } from '@/features/exam/components/kit';
 import { colors, radius, spacing } from '@/theme';
 import type { ExpressionMasteryLevel } from '@/types/expression';
-import { MASTERY_COLOR, MASTERY_LABEL, MASTERY_ORDER } from '../labels';
+import { EXPRESSION_COLOR, MASTERY_COLOR, MASTERY_LABEL, MASTERY_ORDER } from '../labels';
 
 /** Two overlapping speech bubbles with quote marks — decoration only. */
 export function BubblesIllustration({ size = 120 }: { size?: number }) {
@@ -68,7 +69,7 @@ export function ExpressionHero({
   title,
   subtitle,
   right,
-  accent = colors.primary,
+  accent = EXPRESSION_COLOR,
   trailing,
   children,
 }: {
@@ -84,6 +85,7 @@ export function ExpressionHero({
   const router = useRouter();
   return (
     <View style={[styles.hero, { backgroundColor: tint(accent, '1F') }]}>
+      <HeroBackdrop color={accent} />
       <SafeAreaView edges={['top']}>
         <View style={styles.topRow}>
           <IconButton name="arrow-back" label="Zurück" onPress={() => router.back()} />
@@ -212,6 +214,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    overflow: 'hidden',
   },
   topRow: {
     flexDirection: 'row',

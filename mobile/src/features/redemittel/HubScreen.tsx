@@ -36,6 +36,7 @@ import {
   recommendedStep,
   type NextStep,
 } from './meta';
+import { REDEMITTEL_DARK } from './meta';
 
 const STATUSES: RedemittelStatus[] = ['NEW', 'LEARNING', 'REVIEW', 'MASTERED'];
 
@@ -322,14 +323,21 @@ export function RedemittelHubScreen() {
             label={`★ Meine Sammlung${h ? ` (${h.savedCount})` : ''}`}
             selected={savedOnly}
             onPress={() => setSavedOnly((v) => !v)}
+            color={REDEMITTEL_DARK}
           />
-          <Chip label="Alle Niveaus" selected={level === 'ALL'} onPress={() => setLevel('ALL')} />
+          <Chip
+            label="Alle Niveaus"
+            selected={level === 'ALL'}
+            onPress={() => setLevel('ALL')}
+            color={REDEMITTEL_DARK}
+          />
           {LEVELS.map((l) => (
             <Chip
               key={l}
               label={l}
               selected={level === l}
               onPress={() => setLevel(level === l ? 'ALL' : l)}
+              color={REDEMITTEL_DARK}
             />
           ))}
         </ScrollView>
@@ -344,6 +352,7 @@ export function RedemittelHubScreen() {
               label="Alle Funktionen"
               selected={category === 'ALL'}
               onPress={() => setCategory('ALL')}
+              color={REDEMITTEL_DARK}
             />
             {h.categories.map((c) => (
               <Chip
@@ -351,6 +360,7 @@ export function RedemittelHubScreen() {
                 label={`${categoryEmoji(c.key)} ${c.label} · ${c.count}`}
                 selected={category === c.key}
                 onPress={() => setCategory(category === c.key ? 'ALL' : c.key)}
+                color={REDEMITTEL_DARK}
               />
             ))}
           </ScrollView>

@@ -42,6 +42,7 @@ import {
   useToggleArticleBookmark,
 } from './hooks';
 import { annotationLabel, buildSegments } from './segments';
+import { READING_DARK } from './components/ReadingViz';
 
 const LEGEND: { type: Annotation['type']; bg: string; fg: string }[] = [
   { type: 'WORD', bg: colors.warningSoft, fg: '#8A5A00' },
@@ -310,6 +311,7 @@ export function ReadingArticleScreen() {
             variant="secondary"
             accessibilityHint={prev.title}
             onPress={() => goTo(prev.id)}
+            color={READING_DARK}
           />
         ) : null}
       </View>
@@ -320,6 +322,7 @@ export function ReadingArticleScreen() {
             variant="secondary"
             accessibilityHint={next.title}
             onPress={() => goTo(next.id)}
+            color={READING_DARK}
           />
         ) : null}
       </View>
@@ -410,7 +413,7 @@ export function ReadingArticleScreen() {
               <AppText variant="small" color={colors.mutedForeground} style={{ flex: 1 }}>
                 {a.tapHint}
               </AppText>
-              <TextSizeControl />
+              <TextSizeControl color={READING_COLOR} dark={READING_DARK} />
             </View>
             <Legend hidden={hidden} onToggle={toggleType} />
             <ArticleText
@@ -444,9 +447,8 @@ export function ReadingArticleScreen() {
                 params: { articleId: article.id },
               })
             }
-            accessibilityHint={
-              article.quizCompleted ? a.quizDoneHint : undefined
-            }
+            accessibilityHint={article.quizCompleted ? a.quizDoneHint : undefined}
+            color={READING_COLOR}
           />
           {article.quizCompleted ? <Badge tone="success" label={a.quizDone} /> : null}
 
@@ -458,6 +460,7 @@ export function ReadingArticleScreen() {
                 variant={learned ? 'secondary' : 'primary'}
                 loading={learnedMutation.isPending}
                 onPress={() => learnedMutation.mutate(!learned)}
+                color={READING_DARK}
               />
             </View>
             <View style={styles.flex}>
@@ -467,6 +470,7 @@ export function ReadingArticleScreen() {
                 variant="secondary"
                 loading={bookmarkMutation.isPending}
                 onPress={() => bookmarkMutation.mutate(article.bookmarked)}
+                color={READING_DARK}
               />
             </View>
           </View>

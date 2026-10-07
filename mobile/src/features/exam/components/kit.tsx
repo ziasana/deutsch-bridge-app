@@ -69,8 +69,14 @@ export function ExerciseFrame({
           edges={['bottom']}
           style={[
             styles.footerSafe,
-            footerTone === 'success' && { backgroundColor: colors.successSoft, borderTopColor: colors.success },
-            footerTone === 'danger' && { backgroundColor: colors.destructiveSoft, borderTopColor: colors.destructive },
+            footerTone === 'success' && {
+              backgroundColor: colors.successSoft,
+              borderTopColor: colors.success,
+            },
+            footerTone === 'danger' && {
+              backgroundColor: colors.destructiveSoft,
+              borderTopColor: colors.destructive,
+            },
           ]}
         >
           <View style={styles.footer}>{footer}</View>
@@ -96,10 +102,20 @@ export function PressableScale({
 }) {
   const [scale] = useState(() => new Animated.Value(1));
   const spring = (to: number) =>
-    Animated.spring(scale, { toValue: to, friction: 7, tension: 240, useNativeDriver: true }).start();
+    Animated.spring(scale, {
+      toValue: to,
+      friction: 7,
+      tension: 240,
+      useNativeDriver: true,
+    }).start();
   return (
     <Animated.View style={[containerStyle, { transform: [{ scale }] }]}>
-      <Pressable {...rest} onPressIn={() => spring(scaleTo)} onPressOut={() => spring(1)} style={style}>
+      <Pressable
+        {...rest}
+        onPressIn={() => spring(scaleTo)}
+        onPressOut={() => spring(1)}
+        style={style}
+      >
         {children}
       </Pressable>
     </Animated.View>
@@ -146,7 +162,9 @@ export function SegmentedProgress({
                   : colors.muted;
         return (
           <View key={i} style={[styles.segment, { backgroundColor: bg }]}>
-            {i === current && !st ? <View style={[styles.segmentNow, { backgroundColor: color }]} /> : null}
+            {i === current && !st ? (
+              <View style={[styles.segmentNow, { backgroundColor: color }]} />
+            ) : null}
           </View>
         );
       })}
@@ -189,14 +207,18 @@ export function IconButton({
  * Text size as a little slider: small "A", four dots showing the current step, large "A".
  * Tap either A to step down / up; the choice is remembered for every exercise.
  */
-export function TextSizeControl() {
+export function TextSizeControl({ color, dark }: { color?: string; dark?: string }) {
   const { t } = useI18n();
   const index = useExamTextSize((s) => s.index);
   const larger = useExamTextSize((s) => s.larger);
   const smaller = useExamTextSize((s) => s.smaller);
   const last = TEXT_SCALES.length - 1;
   return (
-    <View style={styles.sizeRow} accessibilityRole="adjustable" accessibilityLabel={t.common.textSize}>
+    <View
+      style={[styles.sizeRow, color ? { backgroundColor: tint(color, '1F') } : null]}
+      accessibilityRole="adjustable"
+      accessibilityLabel={t.common.textSize}
+    >
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={t.common.smaller}
@@ -206,13 +228,26 @@ export function TextSizeControl() {
         hitSlop={spacing.sm}
         style={[styles.sizeBtn, index === 0 && { opacity: 0.35 }]}
       >
-        <AppText style={[styles.sizeA, { fontSize: 13, lineHeight: 18 }]}>A</AppText>
+        <AppText
+          style={[styles.sizeA, { fontSize: 13, lineHeight: 18 }, dark ? { color: dark } : null]}
+        >
+          A
+        </AppText>
       </Pressable>
-      <View style={styles.sizeDots} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <View
+        style={styles.sizeDots}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      >
         {TEXT_SCALES.map((_, i) => (
           <View
             key={i}
-            style={[styles.sizeDot, { width: 5 + i * 2, height: 5 + i * 2 }, i <= index && styles.sizeDotOn]}
+            style={[
+              styles.sizeDot,
+              { width: 5 + i * 2, height: 5 + i * 2 },
+              i <= index && styles.sizeDotOn,
+              i <= index && color ? { backgroundColor: color } : null,
+            ]}
           />
         ))}
       </View>
@@ -225,7 +260,11 @@ export function TextSizeControl() {
         hitSlop={spacing.sm}
         style={[styles.sizeBtn, index === last && { opacity: 0.35 }]}
       >
-        <AppText style={[styles.sizeA, { fontSize: 21, lineHeight: 26 }]}>A</AppText>
+        <AppText
+          style={[styles.sizeA, { fontSize: 21, lineHeight: 26 }, dark ? { color: dark } : null]}
+        >
+          A
+        </AppText>
       </Pressable>
     </View>
   );
@@ -254,7 +293,12 @@ export function QuizTopBar({
             {title}
           </AppText>
           {subtitle ? (
-            <AppText variant="caption" color={color} numberOfLines={1} style={{ fontWeight: '700' }}>
+            <AppText
+              variant="caption"
+              color={color}
+              numberOfLines={1}
+              style={{ fontWeight: '700' }}
+            >
               {subtitle}
             </AppText>
           ) : null}
@@ -354,5 +398,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
     borderRadius: radius.lg,
   },
-  tileValue: { fontSize: 20, lineHeight: 26, fontWeight: '800', color: colors.ink, fontVariant: ['tabular-nums'] },
+  tileValue: {
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: '800',
+    color: colors.ink,
+    fontVariant: ['tabular-nums'],
+  },
 });

@@ -5,6 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
 import { AppText } from '@/components/ui';
+import { HeroBackdrop } from '@/components/ui/HeroDecor';
 import { IconButton, tint } from '@/features/exam/components/kit';
 import { colors, radius, spacing } from '@/theme';
 import type { RedemittelStatus } from '@/types/redemittel';
@@ -65,6 +66,7 @@ export function RedemittelHero({
   const router = useRouter();
   return (
     <View style={[styles.hero, { backgroundColor: tint(REDEMITTEL_COLOR, '1F') }]}>
+      <HeroBackdrop color={REDEMITTEL_COLOR} />
       <SafeAreaView edges={['top']}>
         <View style={styles.topRow}>
           <IconButton name="arrow-back" label="Zurück" onPress={() => router.back()} />
@@ -136,6 +138,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    overflow: 'hidden',
   },
   topRow: {
     flexDirection: 'row',

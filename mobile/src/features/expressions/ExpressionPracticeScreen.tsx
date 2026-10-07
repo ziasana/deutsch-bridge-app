@@ -25,7 +25,7 @@ import {
   TransformationSentenceStep,
 } from './components/PracticeSteps';
 import { usePracticeSession } from './hooks';
-import { TYPE_SINGULAR } from './labels';
+import { EXPRESSION_COLOR, TYPE_SINGULAR } from './labels';
 import {
   computeSteps,
   initialPractice,
@@ -86,7 +86,11 @@ export function ExpressionPracticeScreen() {
           Zu jeder Wendung: Bedeutung entdecken, Lücken füllen, Kontext erkennen und einen eigenen
           Satz schreiben.
         </AppText>
-        <Button label="Training starten" onPress={() => setStarted(true)} />
+        <Button
+          label="Training starten"
+          onPress={() => setStarted(true)}
+          color={EXPRESSION_COLOR}
+        />
       </Card>
     );
   } else if (state.done) {
@@ -158,7 +162,7 @@ export function ExpressionPracticeScreen() {
           onDone={finish}
         />
       );
-    else stepView = <Button label="Weiter" onPress={() => finish(null)} />; // a step without a question never blocks
+    else stepView = <Button label="Weiter" onPress={() => finish(null)} color={EXPRESSION_COLOR} />; // a step without a question never blocks
 
     body = (
       <View style={{ gap: spacing.lg }}>
@@ -177,6 +181,7 @@ export function ExpressionPracticeScreen() {
           <ProgressBar
             value={state.stepIndex}
             max={steps.length}
+            color={EXPRESSION_COLOR}
             label={`Schritt ${state.stepIndex + 1} von ${steps.length}`}
           />
         </View>

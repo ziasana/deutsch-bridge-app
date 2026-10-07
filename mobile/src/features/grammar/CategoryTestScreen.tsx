@@ -20,6 +20,7 @@ import { colors, spacing } from '@/theme';
 import { QuizRunner } from './components/QuizRunner';
 import { useCategory, useMarkCategoryComplete, useSubmitCategoryTest } from './hooks';
 import { CATEGORY_TEST_MAX_QUESTIONS, lessonQuestions, type RunnerQuestion } from './quiz';
+import { GRAMMAR_COLOR, GRAMMAR_DARK } from './meta';
 
 type Phase = 'idle' | 'active' | 'results';
 
@@ -85,7 +86,7 @@ export function CategoryTestScreen() {
   if (pool.length === 0) {
     body = (
       <EmptyState
-        emoji="🧩"
+        emoji="🧱"
         title={c.noneTitle}
         message={c.noneMessage}
         actionLabel={t.common.back}
@@ -108,7 +109,11 @@ export function CategoryTestScreen() {
         <AppText color={colors.mutedForeground}>
           {c.intro(questionCount, category.passThreshold)}
         </AppText>
-        <Button label={status.attempted ? c.retake : c.start} onPress={begin} />
+        <Button
+          label={status.attempted ? c.retake : c.start}
+          onPress={begin}
+          color={GRAMMAR_COLOR}
+        />
       </Card>
     );
   } else if (phase === 'active') {
@@ -143,6 +148,7 @@ export function CategoryTestScreen() {
               label={c.saveAgain}
               variant="secondary"
               onPress={() => submit.mutate({ score, total: picked.length })}
+              color={GRAMMAR_DARK}
             />
           </View>
         ) : null}
@@ -151,6 +157,7 @@ export function CategoryTestScreen() {
             label={c.markComplete}
             loading={complete.isPending}
             onPress={() => complete.mutate()}
+            color={GRAMMAR_COLOR}
           />
         ) : null}
         {resultStatus.completed ? <Badge tone="success" label={c.categoryCompleted} /> : null}

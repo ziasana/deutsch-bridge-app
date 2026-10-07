@@ -1,3 +1,4 @@
+import { tint } from '@/features/exam/components/kit';
 import * as Speech from 'expo-speech';
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -6,6 +7,7 @@ import { useI18n } from '@/i18n';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type { PracticeVocabularyItem } from '@/types/vocabulary';
 import { splitSynonyms } from '@/features/dailyWords/flow';
+import { VOCABULARY_COLOR, VOCABULARY_DARK } from '../meta';
 
 type Props = { item: PracticeVocabularyItem; flipped: boolean; onFlip: () => void };
 
@@ -59,7 +61,7 @@ export function Flashcard({ item, flipped, onFlip }: Props) {
           </>
         ) : (
           <>
-            <AppText variant="caption" color={colors.primaryDark}>
+            <AppText variant="caption" color={VOCABULARY_DARK}>
               {label.toUpperCase()}
             </AppText>
             <AppText variant="title" center>
@@ -109,7 +111,7 @@ const styles = StyleSheet.create({
     width: MIN_TOUCH,
     height: MIN_TOUCH,
     borderRadius: radius.pill,
-    backgroundColor: colors.accent,
+    backgroundColor: tint(VOCABULARY_COLOR, '1F'),
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -36,6 +36,7 @@ import {
   useReadingList,
   useToggleArticleBookmark,
 } from './hooks';
+import { READING_DARK } from './components/ReadingViz';
 
 function ArticleCard({
   item,
@@ -259,11 +260,17 @@ export function ReadingListScreen() {
           contentContainerStyle={styles.chips}
           style={styles.chipsBleed}
         >
-          <Chip label={r.savedFilter} selected={bookmarked} onPress={() => setBookmarked((b) => !b)} />
+          <Chip
+            label={r.savedFilter}
+            selected={bookmarked}
+            onPress={() => setBookmarked((b) => !b)}
+            color={READING_DARK}
+          />
           <Chip
             label={r.allTopics}
             selected={categoryId === ''}
             onPress={() => setCategoryId('')}
+            color={READING_DARK}
           />
           {(categories.data ?? []).map((c) => (
             <Chip
@@ -271,6 +278,7 @@ export function ReadingListScreen() {
               label={c.title}
               selected={categoryId === c.id}
               onPress={() => setCategoryId(c.id)}
+              color={READING_DARK}
             />
           ))}
         </HorizontalScroll>
@@ -307,11 +315,7 @@ export function ReadingListScreen() {
         onAction={reset}
       />
     ) : (
-      <EmptyState
-        emoji="📖"
-        title={r.emptyTitle}
-        message={r.emptyMessage}
-      />
+      <EmptyState emoji="📖" title={r.emptyTitle} message={r.emptyMessage} />
     );
   }
 

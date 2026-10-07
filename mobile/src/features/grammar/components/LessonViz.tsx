@@ -10,6 +10,7 @@ import { HorizontalScroll } from '@/components/ui/HorizontalScroll';
 import { colors, radius, shadow, spacing } from '@/theme';
 import type { QuizQuestion } from '@/types/grammar';
 import { isCorrectAnswer } from '../quiz';
+import { GRAMMAR_COLOR, GRAMMAR_DARK } from '../meta';
 
 type Dir = 'ltr' | 'rtl';
 
@@ -80,7 +81,7 @@ export function SectionCard({
         onPress={onToggle}
         style={styles.sectionHead}
       >
-        <View style={[styles.badge, open && { backgroundColor: colors.primary }]}>
+        <View style={[styles.badge, open && { backgroundColor: GRAMMAR_COLOR }]}>
           <AppText style={[styles.badgeText, open && { color: '#FFFFFF' }]}>{index}</AppText>
         </View>
         <AppText variant="subheading" style={{ flex: 1 }}>
@@ -262,7 +263,7 @@ export function QuickCheck({
             accessibilityLabel={t.grammar.tryAgain}
             onPress={() => setPicked(null)}
           >
-            <AppText color={colors.primaryDark} style={{ fontWeight: '700' }}>
+            <AppText color={GRAMMAR_DARK} style={{ fontWeight: '700' }}>
               {t.grammar.tryAgain}
             </AppText>
           </Pressable>
@@ -295,9 +296,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.accent,
+    backgroundColor: tint(GRAMMAR_COLOR, '1F'),
   },
-  badgeText: { fontWeight: '800', color: colors.primaryDark },
+  badgeText: { fontWeight: '800', color: GRAMMAR_DARK },
   table: {
     borderWidth: 1,
     borderColor: colors.border,
@@ -305,12 +306,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   tr: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border },
-  trHead: { backgroundColor: colors.accent },
-  trSelected: { backgroundColor: tint(colors.primary, '33') },
+  trHead: { backgroundColor: tint(GRAMMAR_COLOR, '1F') },
+  trSelected: { backgroundColor: tint(GRAMMAR_COLOR, '33') },
   td: { padding: spacing.md, justifyContent: 'center' },
-  tdFirst: { backgroundColor: tint(colors.primary, '14') },
+  tdFirst: { backgroundColor: tint(GRAMMAR_COLOR, '14') },
   bubble: {
-    backgroundColor: colors.accent,
+    backgroundColor: tint(GRAMMAR_COLOR, '1F'),
     borderRadius: radius.lg,
     borderTopStartRadius: 6,
     paddingHorizontal: spacing.lg,

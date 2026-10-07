@@ -1,8 +1,10 @@
+import { tint } from '@/features/exam/components/kit';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText, Card } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type { PracticeContextQuestion } from '@/types/vocabulary';
+import { VOCABULARY_COLOR, VOCABULARY_DARK } from '../meta';
 
 type Props = {
   question: PracticeContextQuestion;
@@ -19,7 +21,7 @@ export function ContextQuestion({ question, selectedKey, correctKey, busy, onSel
   return (
     <View style={styles.gap}>
       <Card style={styles.gap}>
-        <AppText variant="caption" color={colors.primaryDark}>
+        <AppText variant="caption" color={VOCABULARY_DARK}>
           {question.isCloze ? t.vocabulary.trainer.cloze : t.vocabulary.trainer.contextHeading}
         </AppText>
         <AppText variant="heading">{question.prompt}</AppText>
@@ -69,7 +71,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  picked: { borderColor: colors.primary, backgroundColor: colors.accent },
+  picked: { borderColor: VOCABULARY_COLOR, backgroundColor: tint(VOCABULARY_COLOR, '1F') },
   right: { borderColor: colors.success, backgroundColor: colors.successSoft },
   wrong: { borderColor: colors.destructive, backgroundColor: colors.destructiveSoft },
   letter: {

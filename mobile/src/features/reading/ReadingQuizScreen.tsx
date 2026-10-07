@@ -26,6 +26,7 @@ import {
   useStartQuiz,
   useSubmitQuizAnswer,
 } from './hooks';
+import { READING_COLOR, READING_DARK } from './components/ReadingViz';
 
 type Attempt = { attemptId: string; questions: QuizQuestionPublic[] };
 
@@ -69,7 +70,14 @@ export function ReadingQuizScreen() {
       />
     );
   } else {
-    body = <QuizRunner key={attempt.attemptId} attempt={attempt} articleId={articleId} annotations={article.data?.annotations ?? []} />;
+    body = (
+      <QuizRunner
+        key={attempt.attemptId}
+        attempt={attempt}
+        articleId={articleId}
+        annotations={article.data?.annotations ?? []}
+      />
+    );
   }
 
   return (
@@ -87,7 +95,12 @@ function QuizRunner({
 }: {
   attempt: Attempt;
   articleId: string;
-  annotations: { lemma: string; type: 'WORD' | 'NOMEN_VERB_VERBINDUNG' | 'REDEWENDUNG'; exampleSentence: string | null; translationEn: string | null }[];
+  annotations: {
+    lemma: string;
+    type: 'WORD' | 'NOMEN_VERB_VERBINDUNG' | 'REDEWENDUNG';
+    exampleSentence: string | null;
+    translationEn: string | null;
+  }[];
 }) {
   const router = useRouter();
   const { t } = useI18n();
@@ -112,10 +125,18 @@ function QuizRunner({
         onSuccess: (fb) => {
           setFeedback(fb);
           // The word this question tested goes to the learner's review list (like on web).
-          const related = fb.relatedLemma ? annotations.find((a) => a.lemma === fb.relatedLemma) : null;
+          const related = fb.relatedLemma
+            ? annotations.find((a) => a.lemma === fb.relatedLemma)
+            : null;
           if (related && !session.saved.includes(related.lemma)) {
             saveWord.mutate(
-              { lemma: related.lemma, type: related.type, articleId, sentence: related.exampleSentence ?? '', translation: related.translationEn },
+              {
+                lemma: related.lemma,
+                type: related.type,
+                articleId,
+                sentence: related.exampleSentence ?? '',
+                translation: related.translationEn,
+              },
               { onSuccess: () => session.save(related.lemma) },
             );
           }
@@ -150,7 +171,10 @@ function QuizRunner({
           }
           subtitle={r.finished}
           progress={{ value: Math.round(result.comprehensionScore), max: 100 }}
-          progressLabel={r.scores(Math.round(result.comprehensionScore), Math.round(result.vocabScore))}
+          progressLabel={r.scores(
+            Math.round(result.comprehensionScore),
+            Math.round(result.vocabScore),
+          )}
           primaryAction={{ label: r.backToText, onPress: () => router.back() }}
         />
         <Card tone="accent" style={{ gap: spacing.sm }}>
@@ -159,7 +183,13 @@ function QuizRunner({
             <Button
               label={rec.suggestedTitle ? r.continueWith(rec.suggestedTitle) : r.readNext}
               variant="secondary"
-              onPress={() => router.replace({ pathname: '/reading/[articleId]', params: { articleId: rec.suggestedArticleId! } })}
+              onPress={() =>
+                router.replace({
+                  pathname: '/reading/[articleId]',
+                  params: { articleId: rec.suggestedArticleId! },
+                })
+              }
+              color={READING_DARK}
             />
           ) : null}
         </Card>
@@ -170,13 +200,17 @@ function QuizRunner({
   return (
     <View style={{ gap: spacing.lg }}>
       <View style={{ gap: spacing.sm }}>
-        <AppText variant="subheading">
-          {r.question(index + 1, attempt.questions.length)}
-        </AppText>
-        <ProgressBar value={index + (feedback ? 1 : 0)} max={attempt.questions.length} label={r.progress} />
+        <AppText variant="subheading">{r.question(index + 1, attempt.questions.length)}</AppText>
+        <ProgressBar
+          value={index + (feedback ? 1 : 0)}
+          max={attempt.questions.length}
+          label={r.progress}
+        />
       </View>
 
-      <AppText variant="heading" style={ltrText}>{question.prompt}</AppText>
+      <AppText variant="heading" style={ltrText}>
+        {question.prompt}
+      </AppText>
 
       {question.options && question.options.length > 0 ? (
         <View style={{ gap: spacing.md }}>
@@ -193,7 +227,12 @@ function QuizRunner({
                 accessibilityState={{ selected: picked, disabled: !!feedback }}
                 disabled={!!feedback}
                 onPress={() => setSelected(option)}
-                style={[styles.option, !feedback && picked && styles.picked, right && styles.right, wrong && styles.wrong]}
+                style={[
+                  styles.option,
+                  !feedback && picked && styles.picked,
+                  right && styles.right,
+                  wrong && styles.wrong,
+                ]}
               >
                 <View style={styles.letter}>
                   <AppText variant="small" style={{ fontWeight: '700' }}>
@@ -206,7 +245,13 @@ function QuizRunner({
           })}
         </View>
       ) : (
-        <TextField label={r.yourAnswer} value={selected} editable={!feedback} onChangeText={setSelected} autoCapitalize="none" />
+        <TextField
+          label={r.yourAnswer}
+          value={selected}
+          editable={!feedback}
+          onChangeText={setSelected}
+          autoCapitalize="none"
+        />
       )}
 
       {submit.error ? (
@@ -217,13 +262,19 @@ function QuizRunner({
 
       {feedback ? (
         <Card tone="accent" style={{ gap: spacing.sm }}>
-          <AppText variant="subheading" color={feedback.correct ? '#1B7A55' : colors.destructive} accessibilityRole="alert">
+          <AppText
+            variant="subheading"
+            color={feedback.correct ? '#1B7A55' : colors.destructive}
+            accessibilityRole="alert"
+          >
             {feedback.correct ? r.correct : r.wrong}
           </AppText>
           {!feedback.correct ? <AppText>{r.correctIs(feedback.correctAnswer)}</AppText> : null}
           {feedback.explanation ? <AppText>{feedback.explanation}</AppText> : null}
           {!feedback.correct && feedback.supportingSentence ? (
-            <AppText style={[{ fontStyle: 'italic' }, ltrText]}>„{feedback.supportingSentence}“</AppText>
+            <AppText style={[{ fontStyle: 'italic' }, ltrText]}>
+              „{feedback.supportingSentence}“
+            </AppText>
           ) : null}
           {feedback.relatedLemma ? (
             <AppText variant="small" color={colors.mutedForeground}>
@@ -244,9 +295,16 @@ function QuizRunner({
           label={complete.isError ? r.resend : isLast ? r.seeResult : r.nextQuestion}
           loading={complete.isPending}
           onPress={next}
+          color={READING_COLOR}
         />
       ) : (
-        <Button label={r.check} loading={submit.isPending} disabled={!selected.trim()} onPress={check} />
+        <Button
+          label={r.check}
+          loading={submit.isPending}
+          disabled={!selected.trim()}
+          onPress={check}
+          color={READING_COLOR}
+        />
       )}
     </View>
   );
@@ -267,6 +325,13 @@ const styles = StyleSheet.create({
   picked: { borderColor: colors.primary, backgroundColor: colors.accent },
   right: { borderColor: colors.success, backgroundColor: colors.successSoft },
   wrong: { borderColor: colors.destructive, backgroundColor: colors.destructiveSoft },
-  letter: { width: 32, height: 32, borderRadius: radius.pill, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
+  letter: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.pill,
+    backgroundColor: colors.muted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   optionText: { flex: 1, fontSize: 17 },
 });

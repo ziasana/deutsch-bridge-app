@@ -7,6 +7,7 @@ import { colors, spacing } from '@/theme';
 import type { Annotation } from '@/types/reading';
 import { useDictionaryEntry, useToggleDictionarySave } from '../hooks';
 import { annotationLabel } from '../segments';
+import { READING_DARK } from './ReadingViz';
 
 const ARTICLE_TONE = { der: 'primary', die: 'warning', das: 'success' } as const;
 
@@ -73,6 +74,7 @@ export function AnnotationSheet({
             loading={saving}
             disabled={saved}
             onPress={onSave}
+            color={READING_DARK}
           />
         </>
       ) : null}
@@ -97,11 +99,7 @@ export function DictionarySheet({ lemma, onClose }: { lemma: string | null; onCl
       title={data ? `${data.article ? `${data.article} ` : ''}${data.lemma}` : (lemma ?? '')}
     >
       {entry.isPending && lemma ? <LoadingState label={d.loading} /> : null}
-      {entry.isError ? (
-        <AppText color={colors.mutedForeground}>
-          {d.notFound}
-        </AppText>
-      ) : null}
+      {entry.isError ? <AppText color={colors.mutedForeground}>{d.notFound}</AppText> : null}
       {data ? (
         <>
           {data.ipa ? <AppText color={colors.mutedForeground}>/{data.ipa}/</AppText> : null}
@@ -128,13 +126,12 @@ export function DictionarySheet({ lemma, onClose }: { lemma: string | null; onCl
             </AppText>
           ) : null}
           <Button
-            label={
-              data.savedByCurrentUser ? d.remove : d.add
-            }
+            label={data.savedByCurrentUser ? d.remove : d.add}
             variant={data.savedByCurrentUser ? 'secondary' : 'primary'}
             loading={save.isPending}
             onPress={() => save.mutate({ entry: data, lookupKey: lemma! })}
             accessibilityHint={d.addHint}
+            color={READING_DARK}
           />
           <Button
             label={d.listen}
@@ -143,6 +140,7 @@ export function DictionarySheet({ lemma, onClose }: { lemma: string | null; onCl
               void Speech.stop();
               Speech.speak(data.lemma, { language: 'de-DE' });
             }}
+            color={READING_DARK}
           />
         </>
       ) : null}

@@ -13,6 +13,8 @@ type Props = {
   accessibilityHint?: string;
   /** Fully rounded, taller — used on the auth screens. */
   pill?: boolean;
+  /** Section accent: the fill of a primary button, the text of a secondary or ghost one. */
+  color?: string;
 };
 
 const palette: Record<Variant, { bg: string; pressed: string; text: string; border?: string }> = {
@@ -34,9 +36,15 @@ export function Button({
   disabled,
   accessibilityHint,
   pill,
+  color,
 }: Props) {
   const inactive = disabled || loading;
-  const p = palette[variant];
+  const base = palette[variant];
+  const p = !color
+    ? base
+    : variant === 'primary'
+      ? { ...base, bg: color, pressed: `${color}D9` }
+      : { ...base, text: color };
   return (
     <Pressable
       accessibilityRole="button"

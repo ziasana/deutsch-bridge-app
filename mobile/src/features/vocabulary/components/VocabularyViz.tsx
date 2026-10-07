@@ -4,11 +4,13 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
 import { AppText } from '@/components/ui';
+import { HeroBackdrop } from '@/components/ui/HeroDecor';
 import { IconButton, tint } from '@/features/exam/components/kit';
 import { colors, radius, spacing } from '@/theme';
 import type { VocabularyMasteryLevel } from '@/types/vocabulary';
 import { MASTERY_COLOR, MASTERY_ORDER } from '../listLogic';
 import { useI18n } from '@/i18n';
+import { VOCABULARY_COLOR } from '../meta';
 
 /** Two stacked flash cards with an "A" and a tick — decoration only. */
 export function CardsIllustration({ size = 112 }: { size?: number }) {
@@ -19,7 +21,7 @@ export function CardsIllustration({ size = 112 }: { size?: number }) {
         <Path d="M118 12l2.5 5.5 5.5 2.5-5.5 2.5-2.5 5.5-2.5-5.5-5.5-2.5 5.5-2.5z" fill="#FFC53D" />
         <Circle cx="14" cy="90" r="4" fill="#FFFFFF" fillOpacity={0.7} />
         <G rotation={-10} origin="60, 64">
-          <Rect x="26" y="26" width="72" height="62" rx="12" fill="#C9DEFF" />
+          <Rect x="26" y="26" width="72" height="62" rx="12" fill="#DCEBB0" />
         </G>
         <G rotation={6} origin="76, 64">
           <Rect
@@ -29,18 +31,18 @@ export function CardsIllustration({ size = 112 }: { size?: number }) {
             height="66"
             rx="12"
             fill="#FFFFFF"
-            stroke="#4D94FF"
+            stroke={VOCABULARY_COLOR}
             strokeWidth="3"
           />
           <Path
             d="M64 70l7-22 7 22M66.5 63h9"
-            stroke="#4D94FF"
+            stroke={VOCABULARY_COLOR}
             strokeWidth="4"
             strokeLinecap="round"
             strokeLinejoin="round"
             fill="none"
           />
-          <Rect x="56" y="76" width="40" height="5" rx="2.5" fill="#E2EBF6" />
+          <Rect x="56" y="76" width="40" height="5" rx="2.5" fill="#E6EFCC" />
           <Circle cx="104" cy="34" r="9" fill="#27AE7A" />
           <Path
             d="M100 34l3 3 5-6"
@@ -75,12 +77,13 @@ export function VocabularyHero({
   const router = useRouter();
   const { t } = useI18n();
   return (
-    <View style={[styles.hero, { backgroundColor: tint(colors.primary, '1F') }]}>
+    <View style={[styles.hero, { backgroundColor: tint(VOCABULARY_COLOR, '1F') }]}>
+      <HeroBackdrop color={VOCABULARY_COLOR} />
       <SafeAreaView edges={['top']}>
         <View style={styles.topRow}>
           <IconButton name="arrow-back" label={t.common.back} onPress={() => router.back()} />
           {trailing ?? (
-            <View style={[styles.chip, { backgroundColor: tint(colors.primary, '33') }]}>
+            <View style={[styles.chip, { backgroundColor: tint(VOCABULARY_COLOR, '33') }]}>
               <AppText variant="caption" color={colors.ink} style={{ fontWeight: '800' }}>
                 {chip}
               </AppText>
@@ -93,7 +96,7 @@ export function VocabularyHero({
               <View
                 style={[
                   styles.chip,
-                  { backgroundColor: tint(colors.primary, '33'), alignSelf: 'flex-start' },
+                  { backgroundColor: tint(VOCABULARY_COLOR, '33'), alignSelf: 'flex-start' },
                 ]}
               >
                 <AppText variant="caption" color={colors.ink} style={{ fontWeight: '800' }}>
@@ -175,6 +178,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    overflow: 'hidden',
   },
   topRow: {
     flexDirection: 'row',

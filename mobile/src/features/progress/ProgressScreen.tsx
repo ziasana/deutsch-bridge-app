@@ -578,9 +578,9 @@ export function ProgressScreen() {
     },
     {
       key: 'grammar',
-      emoji: '🧩',
+      emoji: '🧱',
       title: t.progress.grammarLessons,
-      color: '#E8892B',
+      color: '#4D94FF',
       progress: o.grammar,
       href: '/learn/grammar',
     },
@@ -643,7 +643,7 @@ export function ProgressScreen() {
 
           <Panel
             icon="school"
-            color="#E8892B"
+            color="#4D94FF"
             title={t.progress.grammar}
             cta={t.progress.grammarCta}
             onCta={() => router.push('/learn/grammar')}
@@ -652,7 +652,7 @@ export function ProgressScreen() {
               label={t.progress.lessons}
               learned={s.grammar.lessonsLearned}
               total={s.grammar.lessonsTotal}
-              color="#E8892B"
+              color="#4D94FF"
             />
             <LabeledBar
               label={t.progress.categoryTestsPassed}

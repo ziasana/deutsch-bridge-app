@@ -107,8 +107,8 @@ export function SavedLessonsBanner() {
 }
 
 const SHORTCUTS = [
-  { key: 'vocab', emoji: '📚', label: 'words', href: '/learn/vocabulary', color: '#4D94FF' },
-  { key: 'grammar', emoji: '🧩', label: 'grammar', href: '/learn/grammar', color: '#E8892B' },
+  { key: 'vocab', emoji: '📚', label: 'words', href: '/learn/vocabulary', color: '#7FAE1B' },
+  { key: 'grammar', emoji: '🧱', label: 'grammar', href: '/learn/grammar', color: '#4D94FF' },
   { key: 'reading', emoji: '📖', label: 'reading', href: '/learn/reading', color: '#8B5CF6' },
   { key: 'expr', emoji: '💬', label: 'expressions', href: '/learn/expressions', color: '#27AE7A' },
   { key: 'exam', emoji: '🎯', label: 'exam', href: '/exam', color: '#EC3E4E' },

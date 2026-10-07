@@ -5,12 +5,15 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
 import { AppText } from '@/components/ui';
+import { HeroBackdrop } from '@/components/ui/HeroDecor';
 import { IconButton, tint } from '@/features/exam/components/kit';
 import { useI18n } from '@/i18n';
 import { colors, radius, spacing } from '@/theme';
 
 /** Accent for everything reading: a soft violet, matching the Lesen tile in the learn tab. */
 export const READING_COLOR = '#8B5CF6';
+/** Darker shade for text and icons on the light violet tint. */
+export const READING_DARK = '#6034C9';
 
 /** An open book with a magnifier — decoration only. */
 export function BookIllustration({ size = 112 }: { size?: number }) {
@@ -80,6 +83,7 @@ export function ReadingHero({
   const { t } = useI18n();
   return (
     <View style={[styles.hero, { backgroundColor: tint(READING_COLOR, '1F') }]}>
+      <HeroBackdrop color={READING_COLOR} />
       <SafeAreaView edges={['top']}>
         <View style={styles.topRow}>
           <IconButton name="arrow-back" label={t.common.back} onPress={() => router.back()} />
@@ -150,6 +154,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    overflow: 'hidden',
   },
   topRow: {
     flexDirection: 'row',

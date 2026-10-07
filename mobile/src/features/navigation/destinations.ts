@@ -25,7 +25,7 @@ export const LEARN_DESTINATIONS: Destination[] = [
   },
   {
     key: 'grammar',
-    emoji: '🧩',
+    emoji: '🧱',
     title: 'Grammar',
     subtitle: 'Von A1 bis C1',
     href: '/learn/grammar',

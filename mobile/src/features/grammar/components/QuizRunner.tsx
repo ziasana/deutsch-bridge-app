@@ -5,6 +5,7 @@ import { useI18n } from '@/i18n';
 import { colors, spacing } from '@/theme';
 import { isCorrectAnswer, type RunnerQuestion } from '../quiz';
 import { QuestionView } from './QuestionView';
+import { GRAMMAR_COLOR, GRAMMAR_DARK } from '../meta';
 
 type Props = {
   questions: RunnerQuestion[];
@@ -78,10 +79,19 @@ export function QuizRunner({
       />
 
       {submitted ? (
-        <Button label={isLast ? t.grammar.seeResult : t.grammar.nextQuestion} onPress={next} />
+        <Button
+          label={isLast ? t.grammar.seeResult : t.grammar.nextQuestion}
+          onPress={next}
+          color={GRAMMAR_COLOR}
+        />
       ) : (
         <>
-          <Button label={t.grammar.checkAnswer} disabled={!selected.trim()} onPress={submit} />
+          <Button
+            label={t.grammar.checkAnswer}
+            disabled={!selected.trim()}
+            onPress={submit}
+            color={GRAMMAR_COLOR}
+          />
           {!selected.trim() ? (
             <AppText variant="small" color={colors.mutedForeground} center>
               {t.grammar.pickAnswer}

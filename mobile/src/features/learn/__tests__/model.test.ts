@@ -17,10 +17,14 @@ const overview = {
 
 describe('learn model', () => {
   it('shows today’s goal and review count', () => {
-    const [daily, review] = featuredCards(overview, {
-      ...baseDashboard,
-      review: { wordsDue: 3, expressionsDue: 2 },
-    }, L);
+    const [daily, review] = featuredCards(
+      overview,
+      {
+        ...baseDashboard,
+        review: { wordsDue: 3, expressionsDue: 2 },
+      },
+      L,
+    );
     expect(daily.headline).toBe('4/10');
     expect(review.headline).toBe('5');
   });

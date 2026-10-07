@@ -96,7 +96,7 @@ export function continueCopy(
       cta: k.ctaStart,
     },
     GRAMMAR: {
-      emoji: '🧩',
+      emoji: '🧱',
       title: c.title ?? t.plan.grammar,
       description: k.grammarDesc,
       cta: k.ctaContinue,
