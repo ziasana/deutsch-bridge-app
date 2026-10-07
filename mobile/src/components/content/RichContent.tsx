@@ -195,6 +195,10 @@ function Blocks({ blocks, dir }: { blocks: BlockNode[]; dir: Direction }) {
                 horizontal
                 showsHorizontalScrollIndicator
                 accessibilityRole="none"
+                // A ScrollView grows to fill spare height by default; here that left a tall empty
+                // gap under the table and made the surrounding list under-measure its content.
+                style={styles.tableScroll}
+                testID="rich-table-scroll"
               >
                 <View style={styles.table}>
                   {b.rows.map((row, r) => (
@@ -305,6 +309,7 @@ export function InlineRich({
 }
 
 const styles = StyleSheet.create({
+  tableScroll: { flexGrow: 0 },
   picked: { backgroundColor: '#CFE2FF', color: colors.primaryDark },
   stack: { gap: spacing.sm },
   para: {
