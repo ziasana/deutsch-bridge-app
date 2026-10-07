@@ -136,7 +136,11 @@ export function SkyScreen({
     <View style={styles.root}>
       <FocusedLightStatusBar dark={scroll.gone} />
       <ScrollView
-        ref={scrollRef}
+        ref={(node) => {
+          scroll.ref.current = node;
+          if (typeof scrollRef === 'function') scrollRef(node);
+          else if (scrollRef) (scrollRef as { current: ScrollView | null }).current = node;
+        }}
         refreshControl={refreshControl}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"

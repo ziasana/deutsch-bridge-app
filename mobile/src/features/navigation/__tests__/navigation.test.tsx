@@ -106,15 +106,15 @@ describe('app navigation', () => {
     expect(await screen.findByText('محتوای یادگیری شما')).toBeTruthy();
 
     await fireEvent.press(screen.getByText('خواندن'));
-    expect(await screen.findByText('Lies Texte auf deinem Niveau')).toBeTruthy();
+    expect(await screen.findByText('متن‌هایی هم‌سطح خودتان بخوانید')).toBeTruthy();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Zurück' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'بازگشت' }));
     expect(await screen.findByText('محتوای یادگیری شما')).toBeTruthy();
 
     await fireEvent.press(screen.getByRole('button', { name: /آزمون/ }));
     expect(await screen.findByText('تمرین آزمون')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: /مربی/ }));
-    expect(await screen.findByText('AI Tutor')).toBeTruthy();
+    expect(await screen.findByText('مربی هوشمند')).toBeTruthy();
 
     await fireEvent.press(screen.getByRole('button', { name: /پروفایل/ }));
     expect(await screen.findByText('ali@example.com')).toBeTruthy();

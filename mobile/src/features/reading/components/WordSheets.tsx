@@ -1,10 +1,12 @@
 import * as Speech from 'expo-speech';
 import { View } from 'react-native';
 import { AppText, Badge, BottomSheet, Button, LoadingState } from '@/components/ui';
+import { useI18n } from '@/i18n';
+import { ltrText } from '@/i18n/direction';
 import { colors, spacing } from '@/theme';
 import type { Annotation } from '@/types/reading';
 import { useDictionaryEntry, useToggleDictionarySave } from '../hooks';
-import { ANNOTATION_LABEL } from '../segments';
+import { annotationLabel } from '../segments';
 
 const ARTICLE_TONE = { der: 'primary', die: 'warning', das: 'success' } as const;
 
@@ -26,12 +28,14 @@ export function AnnotationSheet({
   onSave,
   onClose,
 }: AnnotationSheetProps) {
+  const { t } = useI18n();
+  const r = t.reading.annotation;
   return (
     <BottomSheet visible={!!a} onClose={onClose} title={a?.lemma}>
       {a ? (
         <>
           <View style={{ flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' }}>
-            <Badge tone="primary" label={ANNOTATION_LABEL[a.type]} />
+            <Badge tone="primary" label={annotationLabel(r, a.type)} />
             {a.gender ? (
               <Badge
                 tone={ARTICLE_TONE[a.gender as keyof typeof ARTICLE_TONE] ?? 'neutral'}
@@ -41,21 +45,22 @@ export function AnnotationSheet({
             {a.cefrLevel ? <Badge label={a.cefrLevel} /> : null}
           </View>
           {a.pluralForm ? (
-            <AppText color={colors.mutedForeground}>Plural: {a.pluralForm}</AppText>
+            <AppText color={colors.mutedForeground}>{r.plural(a.pluralForm)}</AppText>
           ) : null}
           {a.type === 'REDEWENDUNG' && a.literalTranslation ? (
             <AppText color={colors.mutedForeground}>
-              Wörtlich: <AppText style={{ fontStyle: 'italic' }}>{a.literalTranslation}</AppText>
+              {r.literal}
+              <AppText style={[{ fontStyle: 'italic' }, ltrText]}>{a.literalTranslation}</AppText>
             </AppText>
           ) : null}
           {a.translationEn ? (
             <AppText variant="subheading">
-              {a.type === 'REDEWENDUNG' ? 'Bedeutung: ' : ''}
+              {a.type === 'REDEWENDUNG' ? r.meaning : ''}
               {a.translationEn}
             </AppText>
           ) : null}
           {a.exampleSentence ? (
-            <AppText style={{ fontStyle: 'italic' }}>„{a.exampleSentence}“</AppText>
+            <AppText style={[{ fontStyle: 'italic' }, ltrText]}>„{a.exampleSentence}“</AppText>
           ) : null}
           {error ? (
             <AppText color={colors.destructive} accessibilityRole="alert">
@@ -63,7 +68,7 @@ export function AnnotationSheet({
             </AppText>
           ) : null}
           <Button
-            label={saved ? '✓ In deiner Wiederholung' : 'Zur Wiederholung speichern'}
+            label={saved ? r.savedReview : r.saveReview}
             variant={saved ? 'secondary' : 'primary'}
             loading={saving}
             disabled={saved}
@@ -77,6 +82,8 @@ export function AnnotationSheet({
 
 /** Dictionary lookup for any tapped word (unknown words get a friendly "not found"). */
 export function DictionarySheet({ lemma, onClose }: { lemma: string | null; onClose: () => void }) {
+  const { t } = useI18n();
+  const d = t.reading.dictionary;
   const entry = useDictionaryEntry(lemma);
   const save = useToggleDictionarySave();
   const data = entry.data;
@@ -89,10 +96,10 @@ export function DictionarySheet({ lemma, onClose }: { lemma: string | null; onCl
       }}
       title={data ? `${data.article ? `${data.article} ` : ''}${data.lemma}` : (lemma ?? '')}
     >
-      {entry.isPending && lemma ? <LoadingState label="Wörterbuch …" /> : null}
+      {entry.isPending && lemma ? <LoadingState label={d.loading} /> : null}
       {entry.isError ? (
         <AppText color={colors.mutedForeground}>
-          Zu diesem Wort gibt es noch keinen Wörterbucheintrag.
+          {d.notFound}
         </AppText>
       ) : null}
       {data ? (
@@ -108,7 +115,7 @@ export function DictionarySheet({ lemma, onClose }: { lemma: string | null; onCl
                 <AppText
                   variant="small"
                   color={colors.mutedForeground}
-                  style={{ fontStyle: 'italic' }}
+                  style={[{ fontStyle: 'italic' }, ltrText]}
                 >
                   „{s.examples[0].de}“ – {s.examples[0].en}
                 </AppText>
@@ -122,17 +129,15 @@ export function DictionarySheet({ lemma, onClose }: { lemma: string | null; onCl
           ) : null}
           <Button
             label={
-              data.savedByCurrentUser
-                ? '✓ Im Wortschatz – entfernen'
-                : '＋ Zum Wortschatz hinzufügen'
+              data.savedByCurrentUser ? d.remove : d.add
             }
             variant={data.savedByCurrentUser ? 'secondary' : 'primary'}
             loading={save.isPending}
             onPress={() => save.mutate({ entry: data, lookupKey: lemma! })}
-            accessibilityHint="Speichert das Wort in deinem Wortschatz"
+            accessibilityHint={d.addHint}
           />
           <Button
-            label="🔊 Anhören"
+            label={d.listen}
             variant="secondary"
             onPress={() => {
               void Speech.stop();

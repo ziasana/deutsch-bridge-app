@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
 import { AppText } from '@/components/ui';
 import { IconButton, tint } from '@/features/exam/components/kit';
+import { useI18n } from '@/i18n';
 import { colors, radius, spacing } from '@/theme';
 
 /** Accent for everything reading: a soft violet, matching the Lesen tile in the learn tab. */
@@ -76,11 +77,12 @@ export function ReadingHero({
   children?: ReactNode;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   return (
     <View style={[styles.hero, { backgroundColor: tint(READING_COLOR, '1F') }]}>
       <SafeAreaView edges={['top']}>
         <View style={styles.topRow}>
-          <IconButton name="arrow-back" label="Zurück" onPress={() => router.back()} />
+          <IconButton name="arrow-back" label={t.common.back} onPress={() => router.back()} />
           {trailing ?? (
             <View style={[styles.chip, { backgroundColor: tint(READING_COLOR, '33') }]}>
               <AppText variant="caption" color={colors.ink} style={{ fontWeight: '800' }}>
@@ -120,7 +122,7 @@ export function ReadingHero({
   );
 }
 
-/** Small pill with an icon, e.g. "3 neue Wörter". */
+/** Small pill with an icon, e.g. "3 new words". */
 export function InfoPill({
   icon,
   text,
@@ -154,7 +156,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginHorizontal: -spacing.sm,
-    paddingRight: spacing.sm,
+    paddingEnd: spacing.sm,
   },
   chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill },
   heroMain: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingTop: spacing.sm },

@@ -4,6 +4,7 @@ import { configureApiClient } from '@/api/client';
 import { ApiError } from '@/api/errors';
 import { queryClient } from '@/api/queryClient';
 import { tokenStorage } from '@/api/tokenStorage';
+import { usePremiumUpsellStore } from '@/stores/premiumUpsellStore';
 import { clearExamLocalData } from '@/features/exam/localData';
 import { unregisterPush } from '@/features/notifications/push';
 import type { MobileAuthData, UserProfile } from '@/types/user';
@@ -62,6 +63,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Drop all cached server data so the next account never sees the previous one's content.
     queryClient.clear();
     await clearExamLocalData();
+    usePremiumUpsellStore.getState().close();
     set({ status: 'unauthenticated', profile: null, error: null });
   },
 
@@ -75,5 +77,7 @@ export function initSession(): void {
     onSessionExpired: () => {
       void useAuthStore.getState().signOut();
     },
+    // A gated AI feature hit its daily limit: offer Premium wherever the learner is.
+    onLimitReached: (message) => usePremiumUpsellStore.getState().open(message),
   });
 }

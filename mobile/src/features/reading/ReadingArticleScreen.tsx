@@ -2,7 +2,16 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import * as Speech from 'expo-speech';
+import {
+  LayoutAnimation,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  UIManager,
+  View,
+} from 'react-native';
 import {
   AppText,
   Badge,
@@ -13,6 +22,8 @@ import {
   Screen,
   Skeleton,
 } from '@/components/ui';
+import { useI18n } from '@/i18n';
+import { ltrText } from '@/i18n/direction';
 import { IconButton, StatTile, TextSizeControl, tint } from '@/features/exam/components/kit';
 import { useExamTextScale } from '@/features/exam/textScale';
 import { InfoPill, READING_COLOR, ReadingHero } from './components/ReadingViz';
@@ -30,7 +41,7 @@ import {
   useSetArticleLearned,
   useToggleArticleBookmark,
 } from './hooks';
-import { ANNOTATION_LABEL, buildSegments } from './segments';
+import { annotationLabel, buildSegments } from './segments';
 
 const LEGEND: { type: Annotation['type']; bg: string; fg: string }[] = [
   { type: 'WORD', bg: colors.warningSoft, fg: '#8A5A00' },
@@ -46,15 +57,18 @@ function Legend({
   hidden: ReadonlySet<Annotation['type']>;
   onToggle: (type: Annotation['type']) => void;
 }) {
+  const { t } = useI18n();
+  const r = t.reading;
   return (
-    <View style={styles.legend} accessibilityLabel="Legende der Markierungen">
+    <View style={styles.legend} accessibilityLabel={r.article.legend}>
       {LEGEND.map(({ type, bg, fg }) => {
         const off = hidden.has(type);
+        const label = annotationLabel(r.annotation, type);
         return (
           <Pressable
             key={type}
             accessibilityRole="button"
-            accessibilityLabel={`${ANNOTATION_LABEL[type]} ${off ? 'einblenden' : 'ausblenden'}`}
+            accessibilityLabel={off ? r.article.show(label) : r.article.hide(label)}
             accessibilityState={{ selected: !off }}
             onPress={() => onToggle(type)}
             style={[styles.legendItem, { backgroundColor: off ? colors.muted : bg }]}
@@ -69,7 +83,7 @@ function Legend({
               color={off ? colors.mutedForeground : fg}
               style={{ fontWeight: '700' }}
             >
-              {ANNOTATION_LABEL[type]}
+              {label}
             </AppText>
           </Pressable>
         );
@@ -78,16 +92,26 @@ function Legend({
   );
 }
 
-/** Key vocabulary as flip cards: tap a word to see its meaning, "Alle zeigen" flips them all. */
+if (Platform.OS === 'android') UIManager.setLayoutAnimationEnabledExperimental?.(true);
+
+/**
+ * Key vocabulary as a list of tap-to-reveal rows: full-width touch targets, the meaning slides
+ * open under the word, a speaker button reads it aloud, and a thin bar tracks how many are open.
+ */
 function Glossary({ items }: { items: { word: string; meaning: string }[] }) {
+  const { t } = useI18n();
+  const a = t.reading.article;
   const [shown, setShown] = useState<ReadonlySet<string>>(new Set());
   const all = shown.size === items.length;
-  const toggle = (word: string) =>
+  const animate = () => LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  const toggle = (word: string) => {
+    animate();
     setShown((prev) => {
       const next = new Set(prev);
       if (!next.delete(word)) next.add(word);
       return next;
     });
+  };
   return (
     <View style={styles.section}>
       <View style={styles.glossaryHead}>
@@ -95,46 +119,84 @@ function Glossary({ items }: { items: { word: string; meaning: string }[] }) {
           <View style={[styles.sectionIcon, { backgroundColor: tint(READING_COLOR, '1F') }]}>
             <Ionicons name="bulb-outline" size={18} color={READING_COLOR} />
           </View>
-          <AppText variant="subheading">💡 Wichtige Wörter</AppText>
+          <AppText variant="subheading">{a.keyWords}</AppText>
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={all ? 'Alle verbergen' : 'Alle zeigen'}
-          onPress={() => setShown(all ? new Set() : new Set(items.map((i) => i.word)))}
+          accessibilityLabel={all ? a.hideAll : a.showAll}
+          onPress={() => {
+            animate();
+            setShown(all ? new Set() : new Set(items.map((i) => i.word)));
+          }}
           hitSlop={spacing.sm}
+          style={styles.toggleAll}
         >
-          <AppText variant="small" color={colors.primaryDark} style={{ fontWeight: '700' }}>
-            {all ? 'Verbergen' : 'Alle zeigen'}
+          <AppText variant="small" color={READING_COLOR} style={{ fontWeight: '700' }}>
+            {all ? a.hideShort : a.showAll}
           </AppText>
         </Pressable>
       </View>
       <AppText variant="small" color={colors.mutedForeground}>
-        Tippe auf ein Wort, um die Bedeutung zu sehen.
+        {a.glossaryHint}
       </AppText>
-      <View style={styles.cards}>
+      <View style={styles.progressRow}>
+        <View style={styles.progressTrack}>
+          <View
+            style={[
+              styles.progressFill,
+              { width: `${(shown.size / items.length) * 100}%`, backgroundColor: READING_COLOR },
+            ]}
+          />
+        </View>
+        <AppText variant="caption" color={colors.mutedForeground}>
+          {a.glossaryCount(shown.size, items.length)}
+        </AppText>
+      </View>
+      <View style={styles.list}>
         {items.map((v) => {
           const open = shown.has(v.word);
           return (
-            <Pressable
+            <View
               key={v.word}
-              accessibilityRole="button"
-              accessibilityLabel={open ? `${v.word}: ${v.meaning}` : v.word}
-              accessibilityState={{ expanded: open }}
-              onPress={() => toggle(v.word)}
               style={[
-                styles.wordCard,
-                open && { backgroundColor: tint(READING_COLOR, '1F'), borderColor: READING_COLOR },
+                styles.row,
+                open && { backgroundColor: tint(READING_COLOR, '14'), borderColor: READING_COLOR },
               ]}
             >
-              <AppText style={styles.bold}>{v.word}</AppText>
-              {open ? (
-                <AppText variant="small" color={colors.ink}>
-                  {v.meaning}
-                </AppText>
-              ) : (
-                <Ionicons name="eye-outline" size={16} color={colors.mutedForeground} />
-              )}
-            </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={open ? `${v.word}: ${v.meaning}` : v.word}
+                accessibilityState={{ expanded: open }}
+                onPress={() => toggle(v.word)}
+                style={styles.rowMain}
+              >
+                <View style={styles.rowText}>
+                  <AppText style={[styles.word, ltrText]}>{v.word}</AppText>
+                  {open ? (
+                    <AppText color={colors.ink} style={styles.meaning}>
+                      {v.meaning}
+                    </AppText>
+                  ) : null}
+                </View>
+                <Ionicons
+                  name={open ? 'chevron-up' : 'chevron-down'}
+                  size={20}
+                  color={open ? READING_COLOR : colors.mutedForeground}
+                />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={a.pronounce(v.word)}
+                onPress={() => {
+                  void Speech.stop();
+                  Speech.speak(v.word, { language: 'de-DE' });
+                }}
+                hitSlop={spacing.xs}
+                style={styles.speak}
+              >
+                <Ionicons name="volume-medium-outline" size={22} color={READING_COLOR} />
+              </Pressable>
+            </View>
           );
         })}
       </View>
@@ -144,6 +206,9 @@ function Glossary({ items }: { items: { word: string; meaning: string }[] }) {
 
 export function ReadingArticleScreen() {
   const router = useRouter();
+  const { t } = useI18n();
+  const r = t.reading;
+  const a = r.article;
   const { articleId } = useLocalSearchParams<{ articleId: string }>();
   const query = useReadingArticle(articleId);
   const navigation = useReadingNavigation(articleId);
@@ -194,8 +259,8 @@ export function ReadingArticleScreen() {
   if (query.isPending) {
     return (
       <Screen>
-        <Header title="Text" back />
-        <View accessibilityLabel="Text wird geladen" style={{ gap: spacing.md }}>
+        <Header title={a.title} back />
+        <View accessibilityLabel={a.loading} style={{ gap: spacing.md }}>
           <Skeleton width="80%" height={32} />
           {[0, 1, 2, 3, 4].map((i) => (
             <Skeleton key={i} height={18} />
@@ -207,7 +272,7 @@ export function ReadingArticleScreen() {
   if (query.isError || !article) {
     return (
       <Screen>
-        <Header title="Text" back />
+        <Header title={a.title} back />
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       </Screen>
     );
@@ -223,16 +288,16 @@ export function ReadingArticleScreen() {
 
   const onSave = () => {
     if (!active) return;
-    const a = active;
+    const act = active;
     saveWord.mutate(
       {
-        lemma: a.lemma,
-        type: a.type,
+        lemma: act.lemma,
+        type: act.type,
         articleId: article.id,
-        sentence: a.exampleSentence ?? '',
-        translation: a.translationEn,
+        sentence: act.exampleSentence ?? '',
+        translation: act.translationEn,
       },
-      { onSuccess: () => session.save(a.lemma) },
+      { onSuccess: () => session.save(act.lemma) },
     );
   };
 
@@ -241,7 +306,7 @@ export function ReadingArticleScreen() {
       <View style={styles.flex}>
         {prev ? (
           <Button
-            label="‹ Vorheriger Text"
+            label={a.prevText}
             variant="secondary"
             accessibilityHint={prev.title}
             onPress={() => goTo(prev.id)}
@@ -251,7 +316,7 @@ export function ReadingArticleScreen() {
       <View style={styles.flex}>
         {next ? (
           <Button
-            label="Nächster Text ›"
+            label={a.nextText}
             variant="secondary"
             accessibilityHint={next.title}
             onPress={() => goTo(next.id)}
@@ -274,7 +339,7 @@ export function ReadingArticleScreen() {
           trailing={
             <IconButton
               name={article.bookmarked ? 'star' : 'star-outline'}
-              label={article.bookmarked ? 'Gemerkt' : 'Merken'}
+              label={article.bookmarked ? r.saved : r.save}
               color={article.bookmarked ? colors.warning : colors.ink}
               busy={bookmarkMutation.isPending}
               onPress={() => bookmarkMutation.mutate(article.bookmarked)}
@@ -289,7 +354,7 @@ export function ReadingArticleScreen() {
                 color={READING_COLOR}
                 textSize={16}
                 trackColor="#FFFFFFCC"
-                label="Entdeckte Wörter"
+                label={a.discoveredRing}
               />
             ) : null
           }
@@ -298,13 +363,13 @@ export function ReadingArticleScreen() {
             {learned ? (
               <InfoPill
                 icon="checkmark-circle"
-                text="✓ Gelesen"
+                text={a.readPill}
                 color="#1B7A55"
                 background={colors.successSoft}
               />
             ) : null}
             {article.newWordCount > 0 ? (
-              <Badge tone="warning" label={`${article.newWordCount} neue Wörter`} />
+              <Badge tone="warning" label={r.newWords(article.newWordCount)} />
             ) : null}
           </View>
         </ReadingHero>
@@ -322,19 +387,19 @@ export function ReadingArticleScreen() {
           <View style={styles.tiles}>
             <StatTile
               icon="sparkles-outline"
-              label="Entdeckt"
+              label={a.tileDiscovered}
               value={`${discovered} / ${total}`}
               color={READING_COLOR}
             />
             <StatTile
               icon="bookmark-outline"
-              label="Gespeichert"
+              label={a.tileSaved}
               value={String(session.saved.length)}
               color={colors.success}
             />
             <StatTile
               icon="eye-outline"
-              label="Gelesen von"
+              label={a.tileReadBy}
               value={String(article.viewCount)}
               color={colors.primary}
             />
@@ -343,7 +408,7 @@ export function ReadingArticleScreen() {
           <View style={styles.section}>
             <View style={styles.sizeRow}>
               <AppText variant="small" color={colors.mutedForeground} style={{ flex: 1 }}>
-                Tippe auf markierte Wörter oder auf jedes Wort.
+                {a.tapHint}
               </AppText>
               <TextSizeControl />
             </View>
@@ -372,7 +437,7 @@ export function ReadingArticleScreen() {
 
           <Button
             pill
-            label="Quiz zum Text starten"
+            label={a.startQuiz}
             onPress={() =>
               router.push({
                 pathname: '/reading/quiz/[articleId]',
@@ -380,16 +445,16 @@ export function ReadingArticleScreen() {
               })
             }
             accessibilityHint={
-              article.quizCompleted ? 'Du hast das Quiz schon einmal abgeschlossen' : undefined
+              article.quizCompleted ? a.quizDoneHint : undefined
             }
           />
-          {article.quizCompleted ? <Badge tone="success" label="✓ Quiz abgeschlossen" /> : null}
+          {article.quizCompleted ? <Badge tone="success" label={a.quizDone} /> : null}
 
           <View style={styles.navRow}>
             <View style={styles.flex}>
               <Button
                 pill
-                label={learned ? '✓ Gelesen' : 'Als gelesen markieren'}
+                label={learned ? a.readPill : a.markRead}
                 variant={learned ? 'secondary' : 'primary'}
                 loading={learnedMutation.isPending}
                 onPress={() => learnedMutation.mutate(!learned)}
@@ -398,7 +463,7 @@ export function ReadingArticleScreen() {
             <View style={styles.flex}>
               <Button
                 pill
-                label={article.bookmarked ? '★ Gemerkt' : '☆ Merken'}
+                label={article.bookmarked ? a.bookmarked : a.bookmark}
                 variant="secondary"
                 loading={bookmarkMutation.isPending}
                 onPress={() => bookmarkMutation.mutate(article.bookmarked)}
@@ -461,18 +526,40 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   glossaryHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  cards: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  wordCard: {
-    gap: 2,
-    minHeight: 48,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+  toggleAll: { minHeight: 36, justifyContent: 'center' },
+  progressRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  progressTrack: {
+    flex: 1,
+    height: 6,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+    backgroundColor: colors.secondary,
+  },
+  progressFill: { height: '100%', borderRadius: radius.pill },
+  list: { gap: spacing.sm },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderRadius: radius.md,
     borderWidth: 1.5,
     borderColor: colors.border,
     backgroundColor: colors.background,
+    overflow: 'hidden',
   },
+  rowMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: 56,
+    paddingVertical: spacing.sm,
+    paddingStart: spacing.md,
+    paddingEnd: spacing.xs,
+  },
+  rowText: { flex: 1, gap: 2 },
+  word: { fontSize: 18, lineHeight: 24, fontWeight: '700' },
+  meaning: { fontSize: 16, lineHeight: 22 },
+  speak: { width: 48, height: 56, alignItems: 'center', justifyContent: 'center' },
   bold: { fontWeight: '700' },
   navRow: { flexDirection: 'row', gap: spacing.md },
   flex: { flex: 1 },

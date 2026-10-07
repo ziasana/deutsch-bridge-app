@@ -16,10 +16,10 @@ describe('groupSessionsByDate', () => {
       ],
       now,
     );
-    expect(groups.map((g) => [g.label, g.sessions.map((x) => x.id)])).toEqual([
-      ['Heute', ['t1', 't2']],
-      ['Gestern', ['y1']],
-      ['Früher', ['old', 'none']],
+    expect(groups.map((g) => [g.key, g.sessions.map((x) => x.id)])).toEqual([
+      ['today', ['t1', 't2']],
+      ['yesterday', ['y1']],
+      ['earlier', ['old', 'none']],
     ]);
   });
 

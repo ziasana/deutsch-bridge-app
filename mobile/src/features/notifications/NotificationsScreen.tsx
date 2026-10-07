@@ -6,12 +6,13 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppText, EmptyState, ErrorState, Skeleton } from '@/components/ui';
+import { AppText, DirectionalIcon, EmptyState, ErrorState, Skeleton } from '@/components/ui';
+import { HorizontalScroll } from '@/components/ui/HorizontalScroll';
+import { useI18n } from '@/i18n';
 import { IconButton, PressableScale, tint } from '@/features/exam/components/kit';
 import { colors, radius, spacing } from '@/theme';
 import type { NotificationCategory, NotificationItem } from '@/types/notification';
@@ -23,18 +24,13 @@ import {
   type Tab,
 } from './hooks';
 import { inAppHref } from './destination';
-import { BUCKET_LABEL, dayBucket, relativeTimeDe, type DayBucket } from './time';
+import { dayBucket, relativeTime, type DayBucket } from './time';
 
 /** Orange: the same colour as the notifications row and badge on the profile tab. */
 const ACCENT = '#F2703D';
 const ACCENT_DARK = '#C4501F';
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'all', label: 'Alle' },
-  { key: 'learning', label: 'Lernen' },
-  { key: 'progress', label: 'Fortschritt' },
-  { key: 'system', label: 'System' },
-];
+const TABS: Tab[] = ['all', 'learning', 'progress', 'system'];
 
 type Row = { kind: 'header'; bucket: DayBucket } | { kind: 'item'; item: NotificationItem };
 
@@ -69,12 +65,13 @@ const TAB_ICON: Record<Tab, keyof typeof Ionicons.glyphMap> = {
 };
 
 function NotificationRow({ item, onPress }: { item: NotificationItem; onPress: () => void }) {
+  const { t } = useI18n();
   const { icon, color } = CATEGORY_STYLE[item.category] ?? CATEGORY_STYLE.SYSTEM;
   const goes = inAppHref(item.actionUrl) !== null;
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel={`${item.read ? '' : 'Ungelesen: '}${item.title}${item.body ? `. ${item.body}` : ''}`}
+      accessibilityLabel={`${item.read ? '' : t.notifications.unreadPrefix}${item.title}${item.body ? `. ${item.body}` : ''}`}
       onPress={onPress}
       style={[
         styles.row,
@@ -98,10 +95,10 @@ function NotificationRow({ item, onPress }: { item: NotificationItem; onPress: (
           </AppText>
         ) : null}
         <AppText variant="caption" color={colors.mutedForeground}>
-          {relativeTimeDe(item.createdAt)}
+          {relativeTime(item.createdAt, t.notifications.time)}
         </AppText>
       </View>
-      {goes ? <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} /> : null}
+      {goes ? <DirectionalIcon name="chevron-forward" size={20} color={colors.mutedForeground} /> : null}
     </PressableScale>
   );
 }
@@ -132,6 +129,8 @@ function BellBadge({ count }: { count: number }) {
 
 export function NotificationsScreen() {
   const router = useRouter();
+  const { t } = useI18n();
+  const n = t.notifications;
   const [tab, setTab] = useState<Tab>('all');
   const list = useNotificationList(tab);
   const unread = useUnreadCount();
@@ -150,7 +149,7 @@ export function NotificationsScreen() {
   let empty = null;
   if (list.isPending) {
     empty = (
-      <View accessibilityLabel="Benachrichtigungen werden geladen" style={{ gap: spacing.md }}>
+      <View accessibilityLabel={n.loading} style={{ gap: spacing.md }}>
         {[0, 1, 2, 3].map((i) => (
           <Skeleton key={i} height={64} />
         ))}
@@ -162,8 +161,8 @@ export function NotificationsScreen() {
     empty = (
       <EmptyState
         emoji="🔔"
-        title="Keine Benachrichtigungen"
-        message="Hier erscheinen Erinnerungen und Fortschritts-Meldungen."
+        title={n.emptyTitle}
+        message={n.emptyMessage}
       />
     );
   }
@@ -173,10 +172,10 @@ export function NotificationsScreen() {
       <View style={[styles.hero, { backgroundColor: tint(ACCENT, '1F') }]}>
         <SafeAreaView edges={['top']}>
           <View style={styles.topRow}>
-            <IconButton name="arrow-back" label="Zurück" onPress={() => router.back()} />
+            <IconButton name="arrow-back" label={n.back} onPress={() => router.back()} />
             <IconButton
               name="settings-outline"
-              label="Benachrichtigungs-Einstellungen"
+              label={n.settingsLabel}
               onPress={() => router.push('/settings/notification-preferences')}
             />
           </View>
@@ -188,10 +187,10 @@ export function NotificationsScreen() {
                 numberOfLines={1}
                 adjustsFontSizeToFit
               >
-                Benachrichtigungen
+                {n.title}
               </AppText>
               <AppText color={colors.ink} style={{ fontWeight: '500' }}>
-                {unread.data ? `${unread.data} ungelesen` : 'Alles gelesen'}
+                {unread.data ? n.unread(unread.data) : n.allRead}
               </AppText>
             </View>
             <BellBadge count={unread.data ?? 0} />
@@ -200,14 +199,14 @@ export function NotificationsScreen() {
             <View style={{ marginTop: spacing.md, alignSelf: 'flex-start' }}>
               <PressableScale
                 accessibilityRole="button"
-                accessibilityLabel="Alle als gelesen markieren"
+                accessibilityLabel={n.markAllRead}
                 disabled={markAll.isPending}
                 onPress={() => markAll.mutate()}
                 style={styles.markAll}
               >
                 <Ionicons name="checkmark-done" size={18} color={ACCENT_DARK} />
                 <AppText variant="small" color={ACCENT_DARK} style={{ fontWeight: '800' }}>
-                  Alle als gelesen markieren
+                  {n.markAllRead}
                 </AppText>
               </PressableScale>
             </View>
@@ -215,35 +214,35 @@ export function NotificationsScreen() {
         </SafeAreaView>
       </View>
 
-      <ScrollView
-        horizontal
+      <HorizontalScroll
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.chips}
         style={{ flexGrow: 0 }}
       >
-        {TABS.map((t) => {
-          const on = tab === t.key;
+        {TABS.map((key) => {
+          const on = tab === key;
+          const label = n.tabs[key];
           return (
             <Pressable
-              key={t.key}
+              key={key}
               accessibilityRole="button"
-              accessibilityLabel={t.label}
+              accessibilityLabel={label}
               accessibilityState={{ selected: on }}
-              onPress={() => setTab(t.key)}
+              onPress={() => setTab(key)}
               style={[styles.tab, on && { backgroundColor: ACCENT, borderColor: ACCENT }]}
             >
-              <Ionicons name={TAB_ICON[t.key]} size={16} color={on ? '#FFFFFF' : colors.ink} />
+              <Ionicons name={TAB_ICON[key]} size={16} color={on ? '#FFFFFF' : colors.ink} />
               <AppText
                 variant="small"
                 color={on ? '#FFFFFF' : colors.ink}
                 style={{ fontWeight: '700' }}
               >
-                {t.label}
+                {label}
               </AppText>
             </Pressable>
           );
         })}
-      </ScrollView>
+      </HorizontalScroll>
     </View>
   );
 
@@ -261,7 +260,7 @@ export function NotificationsScreen() {
                 color={colors.mutedForeground}
                 style={{ fontWeight: '800' }}
               >
-                {BUCKET_LABEL[r.bucket].toUpperCase()}
+                {n.buckets[r.bucket].toUpperCase()}
               </AppText>
             </View>
           ) : (
@@ -277,7 +276,7 @@ export function NotificationsScreen() {
           list.isFetchingNextPage ? (
             <View
               style={{ padding: spacing.lg }}
-              accessibilityLabel="Weitere Benachrichtigungen werden geladen"
+              accessibilityLabel={n.loadingMore}
             >
               <ActivityIndicator color={colors.primary} />
             </View>
@@ -320,7 +319,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginHorizontal: -spacing.sm,
-    paddingRight: spacing.sm,
+    paddingEnd: spacing.sm,
   },
   heroMain: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingTop: spacing.sm },
   title: { fontSize: 30, lineHeight: 36, fontWeight: '800', color: colors.ink },
@@ -335,7 +334,7 @@ const styles = StyleSheet.create({
   bellCount: {
     position: 'absolute',
     top: 2,
-    right: 0,
+    end: 0,
     minWidth: 26,
     height: 26,
     paddingHorizontal: 6,
@@ -387,7 +386,7 @@ const styles = StyleSheet.create({
   dot: {
     position: 'absolute',
     top: 0,
-    right: 0,
+    end: 0,
     width: 12,
     height: 12,
     borderRadius: 6,

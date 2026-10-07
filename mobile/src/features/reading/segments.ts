@@ -83,8 +83,8 @@ export function buildSegments(
 /** Distinct, trimmed lemma keys (tapped/saved sets use the annotation's lemma). */
 export const lemmaKey = (lemma: string) => lemma.trim();
 
-export const ANNOTATION_LABEL: Record<Annotation['type'], string> = {
-  WORD: 'Wort',
-  NOMEN_VERB_VERBINDUNG: 'Nomen-Verb-Verbindung',
-  REDEWENDUNG: 'Redewendung',
-};
+/** Interface-language name of an annotation type. */
+export const annotationLabel = (
+  a: { word: string; nounVerb: string; idiom: string },
+  type: Annotation['type'],
+) => ({ WORD: a.word, NOMEN_VERB_VERBINDUNG: a.nounVerb, REDEWENDUNG: a.idiom })[type];

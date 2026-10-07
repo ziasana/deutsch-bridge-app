@@ -7,7 +7,6 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
@@ -22,6 +21,8 @@ import {
   TextField,
 } from '@/components/ui';
 import { PressableScale, StatTile, tint } from '@/features/exam/components/kit';
+import { HorizontalScroll } from '@/components/ui/HorizontalScroll';
+import { useI18n } from '@/i18n';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useAuthStore } from '@/stores/authStore';
 import { colors, radius, shadow, spacing } from '@/theme';
@@ -45,12 +46,14 @@ function ArticleCard({
   next: boolean;
   onPress: () => void;
 }) {
+  const { t } = useI18n();
+  const r = t.reading;
   const image = resolveUploadUrl(item.thumbnailUrl ?? item.imageUrl);
   const bookmark = useToggleArticleBookmark(item.id);
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel={`${item.title}${item.learned ? ', gelesen' : ''}`}
+      accessibilityLabel={r.cardLabel(item.title, item.learned)}
       onPress={onPress}
       style={[styles.card, next && { borderColor: READING_COLOR, borderWidth: 2 }]}
     >
@@ -70,7 +73,7 @@ function ArticleCard({
           </View>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={item.bookmarked ? 'Gemerkt' : 'Merken'}
+            accessibilityLabel={item.bookmarked ? r.saved : r.save}
             disabled={bookmark.isPending}
             onPress={() => bookmark.mutate(item.bookmarked)}
             hitSlop={spacing.sm}
@@ -87,7 +90,7 @@ function ArticleCard({
           <View style={styles.readBadge}>
             <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
             <AppText variant="caption" color="#FFFFFF" style={{ fontWeight: '800' }}>
-              Gelesen
+              {r.readBadge}
             </AppText>
           </View>
         ) : null}
@@ -95,7 +98,7 @@ function ArticleCard({
       <View style={styles.cardBody}>
         {next ? (
           <AppText variant="caption" color={READING_COLOR} style={{ fontWeight: '800' }}>
-            ALS NÄCHSTES
+            {r.upNext}
           </AppText>
         ) : null}
         <AppText variant="subheading" numberOfLines={2}>
@@ -113,7 +116,7 @@ function ArticleCard({
           {item.newWordCount > 0 ? (
             <InfoPill
               icon="sparkles"
-              text={`${item.newWordCount} neue Wörter`}
+              text={r.newWords(item.newWordCount)}
               color="#8A5A00"
               background={colors.warningSoft}
             />
@@ -126,6 +129,8 @@ function ArticleCard({
 
 export function ReadingListScreen() {
   const router = useRouter();
+  const { t } = useI18n();
+  const r = t.reading;
   const profileLevel = useAuthStore((s) => s.profile?.learningLevel);
   const summary = useReadingLevelSummary();
   const categories = useReadingCategories();
@@ -155,9 +160,9 @@ export function ReadingListScreen() {
   const header = (
     <View style={{ gap: spacing.lg, paddingBottom: spacing.md }}>
       <ReadingHero
-        chip={`📖 LESEN${level ? ` · ${level}` : ''}`}
-        title="Lesen"
-        subtitle="Lies Texte auf deinem Niveau"
+        chip={r.chip(level ?? undefined)}
+        title={r.title}
+        subtitle={r.subtitle}
         right={
           current ? (
             <ProgressRing
@@ -167,7 +172,7 @@ export function ReadingListScreen() {
               color={READING_COLOR}
               textSize={20}
               trackColor="#FFFFFFCC"
-              label={`Fortschritt ${level}`}
+              label={r.progressLabel(level ?? '')}
             />
           ) : (
             <BookIllustration size={104} />
@@ -176,8 +181,7 @@ export function ReadingListScreen() {
       />
 
       {summaries.length > 0 ? (
-        <ScrollView
-          horizontal
+        <HorizontalScroll
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.levels}
           style={{ flexGrow: 0 }}
@@ -201,7 +205,7 @@ export function ReadingListScreen() {
                   {s.level}
                 </AppText>
                 <AppText variant="caption" color={on ? '#FFFFFFD9' : colors.mutedForeground}>
-                  {`${s.learned} von ${s.total}`}
+                  {r.levelCount(s.learned, s.total)}
                 </AppText>
                 <View style={[styles.miniTrack, on && { backgroundColor: '#FFFFFF55' }]}>
                   <View
@@ -214,26 +218,26 @@ export function ReadingListScreen() {
               </Pressable>
             );
           })}
-        </ScrollView>
+        </HorizontalScroll>
       ) : null}
 
       {current ? (
         <View style={[styles.pad, styles.tiles]}>
           <StatTile
             icon="checkmark-circle-outline"
-            label="Gelesen"
+            label={r.tileRead}
             value={`${current.learned} / ${current.total}`}
             color={colors.success}
           />
           <StatTile
             icon="book-outline"
-            label="Noch offen"
+            label={r.tileOpen}
             value={String(Math.max(0, current.total - current.learned))}
             color={READING_COLOR}
           />
           <StatTile
             icon="pricetags-outline"
-            label="Themen"
+            label={r.tileTopics}
             value={String(categories.data?.length ?? 0)}
             color={colors.primary}
           />
@@ -242,23 +246,22 @@ export function ReadingListScreen() {
 
       <View style={[styles.pad, { gap: spacing.md }]}>
         <TextField
-          label="Suchen"
-          placeholder="Text suchen …"
+          label={r.search}
+          placeholder={r.searchPlaceholder}
           value={search}
           onChangeText={setSearch}
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="search"
         />
-        <ScrollView
-          horizontal
+        <HorizontalScroll
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.chips}
           style={styles.chipsBleed}
         >
-          <Chip label="★ Gemerkte" selected={bookmarked} onPress={() => setBookmarked((b) => !b)} />
+          <Chip label={r.savedFilter} selected={bookmarked} onPress={() => setBookmarked((b) => !b)} />
           <Chip
-            label="Alle Themen"
+            label={r.allTopics}
             selected={categoryId === ''}
             onPress={() => setCategoryId('')}
           />
@@ -270,7 +273,7 @@ export function ReadingListScreen() {
               onPress={() => setCategoryId(c.id)}
             />
           ))}
-        </ScrollView>
+        </HorizontalScroll>
       </View>
     </View>
   );
@@ -278,7 +281,7 @@ export function ReadingListScreen() {
   let empty = null;
   if (summary.isPending || (list.isPending && !!params)) {
     empty = (
-      <View accessibilityLabel="Texte werden geladen" style={{ gap: spacing.md }}>
+      <View accessibilityLabel={r.loading} style={{ gap: spacing.md }}>
         {[0, 1, 2].map((i) => (
           <Skeleton key={i} height={200} />
         ))}
@@ -298,16 +301,16 @@ export function ReadingListScreen() {
     empty = filtered ? (
       <EmptyState
         emoji="🔍"
-        title="Keine Texte gefunden"
-        message="Passe Suche oder Filter an."
-        actionLabel="Filter zurücksetzen"
+        title={r.noneTitle}
+        message={r.noneMessage}
+        actionLabel={r.resetFilter}
         onAction={reset}
       />
     ) : (
       <EmptyState
         emoji="📖"
-        title="Noch keine Texte"
-        message="Für dieses Niveau gibt es noch keine Texte. Wähle ein anderes Niveau."
+        title={r.emptyTitle}
+        message={r.emptyMessage}
       />
     );
   }
@@ -334,7 +337,7 @@ export function ReadingListScreen() {
         ListEmptyComponent={empty ? <View style={styles.pad}>{empty}</View> : null}
         ListFooterComponent={
           list.isFetchingNextPage ? (
-            <View style={{ padding: spacing.lg }} accessibilityLabel="Weitere Texte werden geladen">
+            <View style={{ padding: spacing.lg }} accessibilityLabel={r.loadingMore}>
               <ActivityIndicator color={colors.primary} />
             </View>
           ) : null
@@ -400,8 +403,8 @@ const styles = StyleSheet.create({
   coverTop: {
     position: 'absolute',
     top: spacing.sm,
-    left: spacing.sm,
-    right: spacing.sm,
+    start: spacing.sm,
+    end: spacing.sm,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -423,7 +426,7 @@ const styles = StyleSheet.create({
   readBadge: {
     position: 'absolute',
     bottom: spacing.sm,
-    left: spacing.sm,
+    start: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,

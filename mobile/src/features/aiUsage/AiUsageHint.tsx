@@ -1,19 +1,25 @@
 import { AppText } from '@/components/ui';
+import { useI18n } from '@/i18n';
+import type { Dictionary } from '@/i18n/translations';
 import { colors } from '@/theme';
 import type { AiFeature, AiFeatureUsage } from '@/types/aiUsage';
 import { useAiUsage } from './hooks';
 
-export function aiUsageText(usage: AiFeatureUsage): { text: string; warn: boolean } {
-  if (!usage.enabled) return { text: 'Diese Funktion ist derzeit nicht verfügbar.', warn: true };
-  if (usage.remaining <= 0) return { text: 'Tageslimit erreicht – morgen geht es weiter.', warn: true };
-  return { text: `Noch ${usage.remaining} von ${usage.limit} heute`, warn: usage.remaining === 1 };
+export function aiUsageText(
+  usage: AiFeatureUsage,
+  t: Dictionary['aiUsage'],
+): { text: string; warn: boolean } {
+  if (!usage.enabled) return { text: t.unavailable, warn: true };
+  if (usage.remaining <= 0) return { text: t.limitReached, warn: true };
+  return { text: t.remaining(usage.remaining, usage.limit), warn: usage.remaining === 1 };
 }
 
-/** "Noch 3 von 5 heute" for a limited AI feature; renders nothing when there is no limit. */
+/** "3 of 5 left today" for a limited AI feature; renders nothing when there is no limit. */
 export function AiUsageHint({ feature }: { feature: AiFeature }) {
+  const { t } = useI18n();
   const usage = useAiUsage(feature);
   if (!usage) return null;
-  const { text, warn } = aiUsageText(usage);
+  const { text, warn } = aiUsageText(usage, t.aiUsage);
   return (
     <AppText
       variant="small"

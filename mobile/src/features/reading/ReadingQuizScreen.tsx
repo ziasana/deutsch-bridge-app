@@ -14,6 +14,8 @@ import {
   Skeleton,
   TextField,
 } from '@/components/ui';
+import { useI18n } from '@/i18n';
+import { ltrText } from '@/i18n/direction';
 import { useReadingSessionStore } from '@/stores/readingSessionStore';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type { AnswerFeedbackResponse, QuizQuestionPublic } from '@/types/reading';
@@ -29,6 +31,8 @@ type Attempt = { attemptId: string; questions: QuizQuestionPublic[] };
 
 export function ReadingQuizScreen() {
   const router = useRouter();
+  const { t } = useI18n();
+  const q = t.reading.quiz;
   const { articleId } = useLocalSearchParams<{ articleId: string }>();
   const article = useReadingArticle(articleId);
   const start = useStartQuiz();
@@ -46,7 +50,7 @@ export function ReadingQuizScreen() {
     body = <ErrorState error={start.error} onRetry={begin} />;
   } else if (!attempt) {
     body = (
-      <View accessibilityLabel="Quiz wird geladen" style={{ gap: spacing.md }}>
+      <View accessibilityLabel={q.loading} style={{ gap: spacing.md }}>
         <Skeleton height={8} />
         <Card style={{ gap: spacing.md }}>
           <Skeleton height={24} />
@@ -55,14 +59,22 @@ export function ReadingQuizScreen() {
       </View>
     );
   } else if (attempt.questions.length === 0) {
-    body = <EmptyState emoji="📖" title="Noch kein Quiz" message="Zu diesem Text gibt es noch keine Fragen." actionLabel="Zurück zum Text" onAction={() => router.back()} />;
+    body = (
+      <EmptyState
+        emoji="📖"
+        title={q.emptyTitle}
+        message={q.emptyMessage}
+        actionLabel={q.backToText}
+        onAction={() => router.back()}
+      />
+    );
   } else {
     body = <QuizRunner key={attempt.attemptId} attempt={attempt} articleId={articleId} annotations={article.data?.annotations ?? []} />;
   }
 
   return (
     <Screen keyboardAware>
-      <Header title="Quiz" subtitle={article.data?.title} back />
+      <Header title={q.title} subtitle={article.data?.title} back />
       {body}
     </Screen>
   );
@@ -78,6 +90,8 @@ function QuizRunner({
   annotations: { lemma: string; type: 'WORD' | 'NOMEN_VERB_VERBINDUNG' | 'REDEWENDUNG'; exampleSentence: string | null; translationEn: string | null }[];
 }) {
   const router = useRouter();
+  const { t } = useI18n();
+  const r = t.reading.quiz;
   const session = useReadingSessionStore();
   const submit = useSubmitQuizAnswer(attempt.attemptId);
   const complete = useCompleteQuiz(attempt.attemptId, articleId);
@@ -86,14 +100,14 @@ function QuizRunner({
   const [selected, setSelected] = useState('');
   const [feedback, setFeedback] = useState<AnswerFeedbackResponse | null>(null);
 
-  const q = attempt.questions[index];
+  const question = attempt.questions[index];
   const isLast = index === attempt.questions.length - 1;
   const result = complete.data;
 
   const check = () => {
     if (!selected.trim() || submit.isPending) return;
     submit.mutate(
-      { questionId: q.id, answer: selected },
+      { questionId: question.id, answer: selected },
       {
         onSuccess: (fb) => {
           setFeedback(fb);
@@ -127,17 +141,23 @@ function QuizRunner({
     return (
       <View style={{ gap: spacing.md }}>
         <LearningCelebration
-          title={result.comprehensionScore >= 80 ? 'Sehr gut!' : result.comprehensionScore >= 50 ? 'Gut gemacht!' : 'Weiter so!'}
-          subtitle="Quiz abgeschlossen"
+          title={
+            result.comprehensionScore >= 80
+              ? t.common.result.veryGood
+              : result.comprehensionScore >= 50
+                ? t.common.result.wellDone
+                : t.common.result.keepGoing
+          }
+          subtitle={r.finished}
           progress={{ value: Math.round(result.comprehensionScore), max: 100 }}
-          progressLabel={`Textverständnis ${Math.round(result.comprehensionScore)}% · Wortschatz im Kontext ${Math.round(result.vocabScore)}%`}
-          primaryAction={{ label: 'Zurück zum Text', onPress: () => router.back() }}
+          progressLabel={r.scores(Math.round(result.comprehensionScore), Math.round(result.vocabScore))}
+          primaryAction={{ label: r.backToText, onPress: () => router.back() }}
         />
         <Card tone="accent" style={{ gap: spacing.sm }}>
           <AppText>{rec.message}</AppText>
           {rec.suggestedArticleId ? (
             <Button
-              label={rec.suggestedTitle ? `Weiter: ${rec.suggestedTitle}` : 'Nächsten Text lesen'}
+              label={rec.suggestedTitle ? r.continueWith(rec.suggestedTitle) : r.readNext}
               variant="secondary"
               onPress={() => router.replace({ pathname: '/reading/[articleId]', params: { articleId: rec.suggestedArticleId! } })}
             />
@@ -151,16 +171,16 @@ function QuizRunner({
     <View style={{ gap: spacing.lg }}>
       <View style={{ gap: spacing.sm }}>
         <AppText variant="subheading">
-          Frage {index + 1} von {attempt.questions.length}
+          {r.question(index + 1, attempt.questions.length)}
         </AppText>
-        <ProgressBar value={index + (feedback ? 1 : 0)} max={attempt.questions.length} label="Quiz-Fortschritt" />
+        <ProgressBar value={index + (feedback ? 1 : 0)} max={attempt.questions.length} label={r.progress} />
       </View>
 
-      <AppText variant="heading">{q.prompt}</AppText>
+      <AppText variant="heading" style={ltrText}>{question.prompt}</AppText>
 
-      {q.options && q.options.length > 0 ? (
+      {question.options && question.options.length > 0 ? (
         <View style={{ gap: spacing.md }}>
-          {q.options.map((option, i) => {
+          {question.options.map((option, i) => {
             const picked = selected === option;
             const right = !!feedback && option === feedback.correctAnswer;
             const wrong = !!feedback && picked && !right;
@@ -180,13 +200,13 @@ function QuizRunner({
                     {mark}
                   </AppText>
                 </View>
-                <AppText style={styles.optionText}>{option}</AppText>
+                <AppText style={[styles.optionText, ltrText]}>{option}</AppText>
               </Pressable>
             );
           })}
         </View>
       ) : (
-        <TextField label="Deine Antwort" value={selected} editable={!feedback} onChangeText={setSelected} autoCapitalize="none" />
+        <TextField label={r.yourAnswer} value={selected} editable={!feedback} onChangeText={setSelected} autoCapitalize="none" />
       )}
 
       {submit.error ? (
@@ -198,16 +218,16 @@ function QuizRunner({
       {feedback ? (
         <Card tone="accent" style={{ gap: spacing.sm }}>
           <AppText variant="subheading" color={feedback.correct ? '#1B7A55' : colors.destructive} accessibilityRole="alert">
-            {feedback.correct ? '✓ Richtig!' : '✕ Nicht richtig'}
+            {feedback.correct ? r.correct : r.wrong}
           </AppText>
-          {!feedback.correct ? <AppText>Richtig ist: {feedback.correctAnswer}</AppText> : null}
+          {!feedback.correct ? <AppText>{r.correctIs(feedback.correctAnswer)}</AppText> : null}
           {feedback.explanation ? <AppText>{feedback.explanation}</AppText> : null}
           {!feedback.correct && feedback.supportingSentence ? (
-            <AppText style={{ fontStyle: 'italic' }}>„{feedback.supportingSentence}“</AppText>
+            <AppText style={[{ fontStyle: 'italic' }, ltrText]}>„{feedback.supportingSentence}“</AppText>
           ) : null}
           {feedback.relatedLemma ? (
             <AppText variant="small" color={colors.mutedForeground}>
-              „{feedback.relatedLemma}“ wurde zu deiner Wiederholung hinzugefügt.
+              {r.addedToReview(feedback.relatedLemma)}
             </AppText>
           ) : null}
         </Card>
@@ -221,12 +241,12 @@ function QuizRunner({
 
       {feedback ? (
         <Button
-          label={complete.isError ? 'Ergebnis erneut senden' : isLast ? 'Ergebnis ansehen' : 'Nächste Frage'}
+          label={complete.isError ? r.resend : isLast ? r.seeResult : r.nextQuestion}
           loading={complete.isPending}
           onPress={next}
         />
       ) : (
-        <Button label="Antwort prüfen" loading={submit.isPending} disabled={!selected.trim()} onPress={check} />
+        <Button label={r.check} loading={submit.isPending} disabled={!selected.trim()} onPress={check} />
       )}
     </View>
   );

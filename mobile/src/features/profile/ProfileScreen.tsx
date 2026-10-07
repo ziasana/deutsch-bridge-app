@@ -37,12 +37,7 @@ function MenuRow({ row, onPress }: { row: Row; onPress: () => void }) {
       <View style={[styles.rowIcon, { backgroundColor: row.color }]}>
         <Ionicons name={row.icon} size={22} color="#FFFFFF" />
       </View>
-      <AppText
-        style={styles.rowTitle}
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.8}
-      >
+      <AppText style={styles.rowTitle} numberOfLines={2}>
         {row.title}
       </AppText>
       {row.badge ? (
@@ -131,6 +126,7 @@ export function ProfileScreen() {
     <View style={styles.root}>
       <FocusedLightStatusBar dark={header.gone} />
       <ScrollView
+        ref={header.ref}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
         onScroll={header.onScroll}

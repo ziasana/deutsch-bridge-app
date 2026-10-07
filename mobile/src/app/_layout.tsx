@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { queryClient } from '@/api/queryClient';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { ErrorState } from '@/components/ui';
+import { PremiumUpsellModal } from '@/features/premium/PremiumUpsellModal';
 import { OfflineBanner } from '@/features/offline/OfflineBanner';
 import { useConnectivity } from '@/features/offline/useConnectivity';
 import { configurePushHandler } from '@/features/notifications/push';
@@ -80,6 +81,7 @@ export default function RootLayout() {
         <I18nProvider>
           <RootNavigator />
           <ConnectivityNotice />
+          <PremiumUpsellModal />
         </I18nProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

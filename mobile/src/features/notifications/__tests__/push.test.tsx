@@ -189,8 +189,8 @@ describe('PushCard', () => {
     n.getPermissionsAsync.mockResolvedValue(undetermined);
     n.requestPermissionsAsync.mockResolvedValue(granted);
     await wrap();
-    await fireEvent.press(await screen.findByRole('button', { name: 'Push aktivieren' }));
-    expect(await screen.findByText(/Aktiv auf diesem Gerät/)).toBeTruthy();
+    await fireEvent.press(await screen.findByRole('button', { name: 'Enable push' }));
+    expect(await screen.findByText(/Active on this device/)).toBeTruthy();
     expect(api.registerDevice).toHaveBeenCalled();
   });
 
@@ -198,7 +198,7 @@ describe('PushCard', () => {
     n.getPermissionsAsync.mockResolvedValue(denied);
     const open = jest.spyOn(Linking, 'openSettings').mockResolvedValue();
     await wrap();
-    await fireEvent.press(await screen.findByRole('button', { name: 'Einstellungen öffnen' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Open settings' }));
     expect(open).toHaveBeenCalled();
   });
 });

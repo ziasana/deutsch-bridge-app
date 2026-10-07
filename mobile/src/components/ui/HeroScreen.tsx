@@ -107,6 +107,7 @@ export function HeroScreen({
     <View style={styles.root}>
       <FocusedLightStatusBar dark={scroll.gone} />
       <ScrollView
+        ref={scroll.ref}
         refreshControl={refreshControl}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
