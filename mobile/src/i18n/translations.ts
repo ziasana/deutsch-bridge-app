@@ -680,7 +680,7 @@ const en = {
     levelRing: (level: string) => `Progress ${level}`,
     levelTitle: (level: string, mastered: number, total: number) =>
       `${level} · ${mastered} of ${total} mastered`,
-    levelAverage: (avg: number) => `Ø result ${avg}% – goal: everything at 100%.`,
+    levelAverage: (avg: number) => `Average result ${avg}% – goal: everything at 100%.`,
     levelEmpty: 'There are no exercises for this level yet.',
     loading: 'Loading exams',
     info: 'Info',
@@ -689,7 +689,7 @@ const en = {
     partLabel: (label: string, mastered: number, total: number) =>
       `${label}, ${mastered} of ${total} exercises mastered`,
     partCount: (mastered: number, total: number, avg: number) =>
-      `${mastered} / ${total} ${total === 1 ? 'exercise' : 'exercises'} · Ø ${avg}%`,
+      `${mastered} / ${total} ${total === 1 ? 'exercise' : 'exercises'} · Avg. ${avg}%`,
     partProgress: (label: string) => `${label} progress`,
     continue: (section: string) => `Keep learning · ${section}`,
     continueProgress: 'Progress in this exam part',
@@ -715,7 +715,7 @@ const en = {
       TESTFORMAT_INFORMATION: 'Exam structure, points, duration and more.',
     },
     panelLine: (mastered: number, total: number, avg: number, description: string) =>
-      `${mastered} / ${total} tasks · Ø ${avg}% – ${description}`,
+      `${mastered} / ${total} tasks · Avg. ${avg}% – ${description}`,
     searchLabel: 'Search for an exam part or task',
     searchPlaceholder: 'Search exam part or task …',
     clearSearch: 'Clear search',
