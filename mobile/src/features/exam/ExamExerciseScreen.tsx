@@ -5,6 +5,7 @@ import { AppText, Button, Card, ErrorState, Skeleton } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 import type { ExamExercise } from '@/types/exam';
 import type { ExamPracticeSessionResult } from '@/types/examTime';
+import { useExamText } from './examText';
 import { RichContentScale } from './components/RichContentScale';
 import { ExerciseFrame, IconButton, QuizTopBar, TextSizeControl } from './components/kit';
 import { PassageBody } from './components/Passages';
@@ -95,6 +96,7 @@ function WritingBody({ exercise }: { exercise: ExamExercise }) {
  */
 export function ExamExerciseScreen() {
   const router = useRouter();
+  const tx = useExamText();
   const { exerciseId } = useLocalSearchParams<{ exerciseId: string }>();
   const query = useExamExercise(exerciseId);
   const bookmark = useToggleExamBookmark();
@@ -135,8 +137,8 @@ export function ExamExerciseScreen() {
     <RichContentScale>
     <View style={styles.root}>
       <QuizTopBar
-        title={exercise.title}
-        subtitle={`${meta?.label ?? ''}${exercise.level ? ` · ${exercise.level}` : ''}`}
+        title={tx(exercise.title)}
+        subtitle={`${tx(meta?.label ?? '')}${exercise.level ? ` · ${exercise.level}` : ''}`}
         color={meta?.color ?? colors.primary}
         onClose={close}
         right={

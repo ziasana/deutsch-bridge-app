@@ -7,6 +7,7 @@ import {
   AppText,
   Button,
   Card,
+  DirectionalIcon,
   EmptyState,
   ErrorState,
   ListItem,
@@ -15,6 +16,9 @@ import {
   SkyScreen,
   Skeleton,
 } from '@/components/ui';
+import { HorizontalScroll } from '@/components/ui/HorizontalScroll';
+import { useI18n } from '@/i18n';
+import { detectDir } from '@/i18n/direction';
 import { useAuthStore } from '@/stores/authStore';
 import { colors, radius, spacing } from '@/theme';
 import type { ExamSection } from '@/types/exam';
@@ -29,6 +33,7 @@ import {
   groupIntoParts,
   masteredCount,
 } from './examData';
+import { useExamText } from './examText';
 import { SECTION_META, SECTION_ORDER } from './examMeta';
 import {
   useExamExercises,
@@ -56,6 +61,7 @@ function LevelPill({
   selected: boolean;
   onPress: () => void;
 }) {
+  const { t } = useI18n();
   const total = summary?.total ?? 0;
   const mastered = summary?.mastered ?? 0;
   const pct = total > 0 ? Math.round((mastered / total) * 100) : 0;
@@ -79,7 +85,7 @@ function LevelPill({
         />
       </View>
       <AppText variant="caption" color={selected ? '#FFFFFF' : colors.mutedForeground}>
-        {empty ? 'bald' : `${mastered}/${total}`}
+        {empty ? t.examHub.soon : `${mastered}/${total}`}
       </AppText>
     </PressableScale>
   );
@@ -100,6 +106,8 @@ function ReadinessCard({
   loading: boolean;
   onPick: (level: string) => void;
 }) {
+  const { t } = useI18n();
+  const h = t.examHub;
   const current = summaries.find((s) => s.level === level);
   const levels = [
     ...CEFR_LEVELS,
@@ -108,9 +116,9 @@ function ReadinessCard({
   return (
     <View style={styles.ready}>
       <View style={styles.readyHead}>
-        <AppText style={styles.readyKicker}>PRÜFUNGSNIVEAU</AppText>
+        <AppText style={styles.readyKicker}>{h.kicker}</AppText>
         <AppText variant="caption" color={colors.mutedForeground}>
-          Wähle dein Niveau
+          {h.chooseLevel}
         </AppText>
       </View>
       <View style={styles.pills} accessibilityRole="tablist">
@@ -135,16 +143,14 @@ function ReadinessCard({
             stroke={8}
             color={colors.primary}
             textSize={17}
-            label={`Stand ${level ?? ''}`}
+            label={h.levelRing(level ?? '')}
           />
           <View style={{ flex: 1, gap: 2 }}>
             <AppText style={styles.readyTitle}>
-              {level ?? '–'} · {current?.mastered ?? 0} von {current?.total ?? 0} gemeistert
+              {h.levelTitle(level ?? '–', current?.mastered ?? 0, current?.total ?? 0)}
             </AppText>
             <AppText variant="small" color={colors.mutedForeground}>
-              {current && current.total > 0
-                ? `Ø Ergebnis ${current.avgScore}% – Ziel: alles auf 100%.`
-                : 'Für dieses Niveau gibt es noch keine Übungen.'}
+              {current && current.total > 0 ? h.levelAverage(current.avgScore) : h.levelEmpty}
             </AppText>
           </View>
         </View>
@@ -175,11 +181,19 @@ function SectionBubble({
   selected: boolean;
   onPress: () => void;
 }) {
+  const { t } = useI18n();
+  const tx = useExamText();
   const meta = SECTION_META[section];
+  const label = tx(meta.label);
   const color = meta.color;
   const [scale] = useState(() => new Animated.Value(1));
   const spring = (to: number) =>
-    Animated.spring(scale, { toValue: to, friction: 7, tension: 220, useNativeDriver: true }).start();
+    Animated.spring(scale, {
+      toValue: to,
+      friction: 7,
+      tension: 220,
+      useNativeDriver: true,
+    }).start();
   const pct = total > 0 ? Math.min(100, Math.round((mastered / total) * 100)) : 0;
   const r = (BUBBLE - BUBBLE_STROKE) / 2;
   const c = 2 * Math.PI * r;
@@ -190,8 +204,8 @@ function SectionBubble({
         accessibilityRole="button"
         accessibilityLabel={
           meta.informational
-            ? `${meta.emoji} ${meta.label}`
-            : `${meta.emoji} ${meta.label}, ${mastered} von ${total} Aufgaben gemeistert`
+            ? `${meta.emoji} ${label}`
+            : `${meta.emoji} ${t.examHub.bubbleLabel(label, mastered, total)}`
         }
         accessibilityState={{ selected }}
         onPress={onPress}
@@ -237,10 +251,10 @@ function SectionBubble({
           style={[styles.bubbleLabel, selected && { color: colors.ink, fontWeight: '800' }]}
           numberOfLines={2}
         >
-          {BUBBLE_LABEL[section] ?? meta.label}
+          {label === meta.label ? (BUBBLE_LABEL[section] ?? label) : label}
         </AppText>
         <AppText variant="caption" color={colors.mutedForeground} numberOfLines={1}>
-          {meta.informational ? 'Info' : `${mastered}/${total}`}
+          {meta.informational ? t.examHub.info : `${mastered}/${total}`}
         </AppText>
       </Pressable>
     </Animated.View>
@@ -267,10 +281,11 @@ function PartCard({
   avg: number;
   onPress: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${label}, ${mastered} von ${total} Aufgaben gemeistert`}
+      accessibilityLabel={t.examHub.partLabel(label, mastered, total)}
       onPress={onPress}
       style={({ pressed }) => [styles.part, pressed && { backgroundColor: tint(color, '14') }]}
     >
@@ -285,17 +300,24 @@ function PartCard({
       <View style={styles.partBody}>
         <AppText style={styles.partTitle}>{label}</AppText>
         <AppText variant="small" color={colors.mutedForeground}>
-          {mastered} / {total} {total === 1 ? 'Übung' : 'Übungen'} · Ø {avg}%
+          {t.examHub.partCount(mastered, total, avg)}
         </AppText>
-        <ProgressBar value={avg} color={done ? colors.success : color} label={`${label} Fortschritt`} />
+        <ProgressBar
+          value={avg}
+          color={done ? colors.success : color}
+          label={t.examHub.partProgress(label)}
+        />
       </View>
-      <Ionicons name="chevron-forward" size={24} color={colors.mutedForeground} />
+      <DirectionalIcon name="chevron-forward" size={24} color={colors.mutedForeground} />
     </Pressable>
   );
 }
 
 export function ExamHubScreen() {
   const router = useRouter();
+  const { t, dir } = useI18n();
+  const tx = useExamText();
+  const h = t.examHub;
   const profileLevel = useAuthStore((s) => s.profile?.learningLevel);
   const summary = useExamLevelSummary();
   const pending = usePendingExamBookmarks();
@@ -322,9 +344,12 @@ export function ExamHubScreen() {
         (g) =>
           term === '' ||
           g.label.toLowerCase().includes(term) ||
-          g.items.some((i) => i.title.toLowerCase().includes(term)),
+          tx(g.label).toLowerCase().includes(term) ||
+          g.items.some(
+            (i) => i.title.toLowerCase().includes(term) || tx(i.title).toLowerCase().includes(term),
+          ),
       ),
-    [items, section, term],
+    [items, section, term, tx],
   );
   // Schreiben has no Teile: its Übungen are listed directly.
   const isFlat = section === 'SCHRIFTLICHER_AUSDRUCK';
@@ -356,6 +381,7 @@ export function ExamHubScreen() {
     return { mastered: masteredCount(list), total: list.length, avg: averageScore(list) };
   };
   const stats = sectionStats(section);
+  const description = h.descriptions[section];
 
   // Tapping a section card selects it and brings its parts into view.
   const scrollRef = useRef<ScrollView>(null);
@@ -376,7 +402,7 @@ export function ExamHubScreen() {
   let body;
   if (summary.isPending || (!!level && exercises.isPending)) {
     body = (
-      <View accessibilityLabel="Prüfungen werden geladen" style={{ gap: spacing.md }}>
+      <View accessibilityLabel={h.loading} style={{ gap: spacing.md }}>
         {[0, 1, 2].map((i) => (
           <Skeleton key={i} height={72} />
         ))}
@@ -397,7 +423,7 @@ export function ExamHubScreen() {
       <View style={{ gap: spacing.md }}>
         {level ? <WritingLearnCard level={level} /> : null}
         <AppText style={styles.heading} accessibilityRole="header">
-          ✍️ Schreibaufgaben
+          {h.writingTasks}
         </AppText>
         {level ? (
           <TeilTimeCard section={section} level={level} teil={1} showLastResult={false} />
@@ -421,10 +447,8 @@ export function ExamHubScreen() {
         ) : (
           <EmptyState
             emoji="✍️"
-            title={term ? 'Nichts gefunden' : 'Noch keine Schreibaufgaben'}
-            message={
-              term ? 'Passe die Suche an.' : 'Für dieses Niveau gibt es hier noch keine Aufgaben.'
-            }
+            title={term ? h.nothingFound : h.noWritingTitle}
+            message={term ? h.adjustSearch : h.noWritingMessage}
           />
         )}
       </View>
@@ -436,7 +460,7 @@ export function ExamHubScreen() {
           {infoItems.map((i) => (
             <ListItem
               key={i.id}
-              title={i.title}
+              title={tx(i.title)}
               subtitle={i.teilDescription ?? undefined}
               trailing={
                 <AppText color={i.completed ? colors.success : colors.mutedForeground}>
@@ -448,21 +472,15 @@ export function ExamHubScreen() {
           ))}
         </View>
       ) : (
-        <EmptyState
-          emoji="ℹ️"
-          title="Noch keine Informationen"
-          message="Hier gibt es noch keine Inhalte."
-        />
+        <EmptyState emoji="ℹ️" title={h.noInfoTitle} message={h.noInfoMessage} />
       );
   } else if (groups.length === 0) {
     body = (
       <EmptyState
         emoji="🔍"
-        title={term ? 'Nichts gefunden' : 'Noch keine Übungen'}
-        message={
-          term ? 'Passe die Suche an.' : 'Für dieses Niveau gibt es hier noch keine Übungen.'
-        }
-        actionLabel={term ? 'Suche zurücksetzen' : undefined}
+        title={term ? h.nothingFound : h.noExercisesTitle}
+        message={term ? h.adjustSearch : h.noExercisesMessage}
+        actionLabel={term ? h.resetSearch : undefined}
         onAction={term ? () => setSearch('') : undefined}
       />
     );
@@ -474,7 +492,7 @@ export function ExamHubScreen() {
             key={g.key}
             color={color}
             emoji={meta.emoji}
-            label={g.label}
+            label={tx(g.label)}
             done={g.state === 'completed'}
             mastered={g.mastered}
             total={g.total}
@@ -492,8 +510,8 @@ export function ExamHubScreen() {
   return (
     <SkyScreen
       scrollRef={scrollRef}
-      title="Prüfung üben"
-      subtitle="Bereite dich Schritt für Schritt vor."
+      title={h.title}
+      subtitle={h.subtitle}
       floating={
         <ReadinessCard
           level={level}
@@ -504,33 +522,42 @@ export function ExamHubScreen() {
       }
     >
       {target ? (
-        <View style={[styles.cont, { backgroundColor: tint(SECTION_META[target.section].color, '14') }]}>
+        <View
+          style={[styles.cont, { backgroundColor: tint(SECTION_META[target.section].color, '14') }]}
+        >
           <View style={styles.contTop}>
-            <View style={[styles.contIcon, { backgroundColor: tint(SECTION_META[target.section].color, '33') }]}>
-              <AppText style={{ fontSize: 28, lineHeight: 36 }}>{SECTION_META[target.section].emoji}</AppText>
+            <View
+              style={[
+                styles.contIcon,
+                { backgroundColor: tint(SECTION_META[target.section].color, '33') },
+              ]}
+            >
+              <AppText style={{ fontSize: 28, lineHeight: 36 }}>
+                {SECTION_META[target.section].emoji}
+              </AppText>
             </View>
-            <View style={{ flex: 1, gap: 4 }}>
+            <View style={{ flex: 1, gap: 4, alignItems: 'flex-start' }}>
               <AppText variant="small" color={colors.ink} style={{ fontWeight: '700' }}>
-                Weiterlernen · {SECTION_META[target.section].label}
+                {h.continue(tx(SECTION_META[target.section].label))}
               </AppText>
               <AppText style={styles.contTitle} numberOfLines={2}>
-                {target.partLabel}
+                {tx(target.partLabel)}
               </AppText>
             </View>
           </View>
           <ProgressBar
             value={target.avgScore}
             color={SECTION_META[target.section].color}
-            label="Fortschritt im Prüfungsteil"
+            label={h.continueProgress}
           />
           <Button
             pill
             label={
               target.state === 'completed'
-                ? 'Wiederholen'
+                ? h.repeat
                 : target.state === 'in_progress'
-                  ? 'Weiter'
-                  : 'Starten'
+                  ? h.resume
+                  : h.startBtn
             }
             onPress={() => openExercise(target.exerciseId)}
           />
@@ -539,9 +566,9 @@ export function ExamHubScreen() {
 
       <View style={{ gap: spacing.sm }}>
         <AppText style={styles.heading} accessibilityRole="header">
-          Was möchtest du üben?
+          {h.whatPractise}
         </AppText>
-        <ScrollView
+        <HorizontalScroll
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.bubbles}
@@ -560,7 +587,7 @@ export function ExamHubScreen() {
               />
             );
           })}
-        </ScrollView>
+        </HorizontalScroll>
       </View>
 
       <View ref={partsRef} collapsable={false} style={{ gap: spacing.md }}>
@@ -571,7 +598,7 @@ export function ExamHubScreen() {
           <View style={{ flex: 1, gap: 2 }}>
             <View style={styles.panelTitleRow}>
               <AppText style={styles.panelTitle} accessibilityRole="header">
-                {meta.label}
+                {tx(meta.label)}
               </AppText>
               {level ? (
                 <View style={[styles.levelTag, { backgroundColor: color }]}>
@@ -583,8 +610,8 @@ export function ExamHubScreen() {
             </View>
             <AppText variant="small" color={colors.ink}>
               {meta.informational || stats.total === 0
-                ? meta.description
-                : `${stats.mastered} / ${stats.total} Aufgaben · Ø ${stats.avg}% – ${meta.description}`}
+                ? description
+                : h.panelLine(stats.mastered, stats.total, stats.avg, description)}
             </AppText>
           </View>
         </View>
@@ -593,20 +620,23 @@ export function ExamHubScreen() {
           <View style={styles.search}>
             <Ionicons name="search-outline" size={20} color={colors.mutedForeground} />
             <TextInput
-              accessibilityLabel="Suche nach Prüfungsteil oder Aufgabe"
-              placeholder="Prüfungsteil oder Aufgabe suchen …"
+              accessibilityLabel={h.searchLabel}
+              placeholder={h.searchPlaceholder}
               placeholderTextColor={colors.mutedForeground}
               value={search}
               onChangeText={setSearch}
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="search"
-              style={styles.searchInput}
+              style={[
+                styles.searchInput,
+                { writingDirection: search ? detectDir(search, dir) : dir },
+              ]}
             />
             {search ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Suche löschen"
+                accessibilityLabel={h.clearSearch}
                 hitSlop={spacing.sm}
                 onPress={() => setSearch('')}
               >
@@ -623,10 +653,10 @@ export function ExamHubScreen() {
         <Card style={{ gap: spacing.xs }}>
           <View style={styles.savedHead}>
             <Ionicons name="star" size={20} color={colors.warning} />
-            <AppText variant="subheading">Für später gemerkt</AppText>
+            <AppText variant="subheading">{h.savedTitle}</AppText>
           </View>
           <AppText variant="small" color={colors.mutedForeground}>
-            {bookmarksCount} gemerkte {bookmarksCount === 1 ? 'Aufgabe wartet' : 'Aufgaben warten'} noch.
+            {h.savedWaiting(bookmarksCount)}
           </AppText>
           <View style={{ marginTop: spacing.sm }}>
             {saved.slice(0, 3).map((b) => (
@@ -635,7 +665,7 @@ export function ExamHubScreen() {
                 color={SECTION_META[b.section]?.color}
                 item={{
                   id: b.id,
-                  title: `${SECTION_META[b.section]?.label ?? b.section}: ${b.title}`,
+                  title: `${tx(SECTION_META[b.section]?.label ?? b.section)}: ${tx(b.title)}`,
                   section: b.section,
                   taskType: null,
                   level: b.level,
@@ -655,7 +685,7 @@ export function ExamHubScreen() {
           </View>
           {bookmarksCount > 3 ? (
             <AppText variant="small" color={colors.mutedForeground}>
-              +{bookmarksCount - 3} weitere
+              {h.savedMore(bookmarksCount - 3)}
             </AppText>
           ) : null}
         </Card>
@@ -664,7 +694,7 @@ export function ExamHubScreen() {
       {level ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="⏱ Mein Zeitmanagement"
+          accessibilityLabel={`⏱ ${h.timeTitle}`}
           onPress={() => router.push({ pathname: '/exam-prep/zeitmanagement', params: { level } })}
           style={({ pressed }) => [styles.timeTile, pressed && { backgroundColor: colors.accent }]}
         >
@@ -672,12 +702,12 @@ export function ExamHubScreen() {
             <Ionicons name="timer-outline" size={26} color={colors.primaryDark} />
           </View>
           <View style={{ flex: 1 }}>
-            <AppText variant="subheading">Mein Zeitmanagement</AppText>
+            <AppText variant="subheading">{h.timeTitle}</AppText>
             <AppText variant="small" color={colors.mutedForeground}>
-              Deine Zeit pro Teil im Vergleich zur Vorgabe
+              {h.timeSubtitle}
             </AppText>
           </View>
-          <Ionicons name="chevron-forward" size={22} color={colors.mutedForeground} />
+          <DirectionalIcon name="chevron-forward" size={22} color={colors.mutedForeground} />
         </Pressable>
       ) : null}
     </SkyScreen>
@@ -699,7 +729,13 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   readyHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  readyKicker: { fontSize: 13, lineHeight: 18, fontWeight: '800', letterSpacing: 0.8, color: colors.primaryDark },
+  readyKicker: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    color: colors.primaryDark,
+  },
   readyDivider: { height: 1, backgroundColor: colors.border },
   readyTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   readyTitle: { fontSize: 17, lineHeight: 23, fontWeight: '800', color: colors.ink },
@@ -718,12 +754,24 @@ const styles = StyleSheet.create({
   },
   pillOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   pillLevel: { fontSize: 20, lineHeight: 24, fontWeight: '800', color: colors.ink },
-  pillTrack: { width: '70%', height: 4, borderRadius: 2, backgroundColor: colors.border, overflow: 'hidden' },
+  pillTrack: {
+    width: '70%',
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.border,
+    overflow: 'hidden',
+  },
   pillFill: { height: '100%', borderRadius: 2 },
 
   cont: { gap: spacing.md, padding: spacing.lg, borderRadius: radius.lg },
   contTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  contIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  contIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   contTitle: { fontSize: 17, lineHeight: 22, fontWeight: '800', color: colors.ink },
 
   // Bleeds to the screen edges so the row scrolls under the page padding.
@@ -736,7 +784,15 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radius.lg,
   },
-  bubbleIcon: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
+  bubbleIcon: {
+    position: 'absolute',
+    top: 0,
+    start: 0,
+    end: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   bubbleEmoji: { fontSize: 28, lineHeight: 36 },
   bubbleCheck: {
     position: 'absolute',
@@ -768,7 +824,13 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     borderRadius: radius.lg,
   },
-  panelIcon: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center' },
+  panelIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   panelTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   levelTag: { paddingHorizontal: spacing.sm + 2, paddingVertical: 3, borderRadius: radius.pill },
   panelTitle: { fontSize: 24, lineHeight: 30, fontWeight: '800', color: colors.ink },
@@ -794,7 +856,13 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: '#FFFFFF',
   },
-  partNode: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  partNode: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   partEmoji: { fontSize: 28, lineHeight: 36 },
   partCheck: {
     position: 'absolute',
@@ -809,7 +877,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  partBody: { flex: 1, gap: 4 },
+  partBody: { flex: 1, gap: 4, alignItems: 'flex-start' },
   partTitle: { fontSize: 18, lineHeight: 24, fontWeight: '700', color: colors.ink },
 
   savedHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },

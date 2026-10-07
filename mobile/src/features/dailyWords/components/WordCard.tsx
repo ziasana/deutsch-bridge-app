@@ -2,8 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { AppText, Button } from '@/components/ui';
+import { AppText, Button, DirectionalIcon } from '@/components/ui';
 import { PressableScale, tint } from '@/features/exam/components/kit';
+import { rtlText } from '@/i18n/direction';
+import { useI18n } from '@/i18n';
 import { colors, radius, shadow, spacing } from '@/theme';
 import type { DailyWord } from '@/types/dailyWord';
 import { splitSynonyms } from '../flow';
@@ -66,6 +68,8 @@ export function WordCard({
   onSave,
   onContinue,
 }: Props) {
+  const { t } = useI18n();
+  const d = t.daily;
   const synonyms = splitSynonyms(word.synonyms);
 
   // Never leave speech running when the word changes or the screen closes.
@@ -73,25 +77,21 @@ export function WordCard({
 
   const continueLabel = word.learned
     ? isLast
-      ? 'Fertig'
-      : 'Weiter'
+      ? d.done
+      : d.next
     : isLast
-      ? 'Gelernt · Fertig'
-      : 'Gelernt · Weiter';
+      ? d.learnedDone
+      : d.learnedNext;
 
   return (
     <View style={styles.gap}>
-      <View
-        accessible
-        accessibilityLabel={`${learnedCount} von ${total} Wörtern gelernt`}
-        style={styles.gap}
-      >
+      <View accessible accessibilityLabel={d.progress(learnedCount, total)} style={styles.gap}>
         <View style={styles.rowBetween}>
           <AppText variant="subheading">
             {index + 1} / {total}
           </AppText>
           <AppText variant="small" color={colors.mutedForeground}>
-            {learnedCount} gelernt
+            {d.learnedCount(learnedCount)}
           </AppText>
         </View>
       </View>
@@ -108,7 +108,7 @@ export function WordCard({
             <View style={styles.learned}>
               <Ionicons name="checkmark-circle" size={14} color="#1B7A55" />
               <AppText variant="caption" color="#1B7A55" style={{ fontWeight: '800' }}>
-                ✓ Gelernt
+                {d.learnedBadge}
               </AppText>
             </View>
           ) : null}
@@ -120,7 +120,7 @@ export function WordCard({
           </AppText>
           <PressableScale
             accessibilityRole="button"
-            accessibilityLabel={`Aussprache von ${word.word} anhören`}
+            accessibilityLabel={d.listen(word.word)}
             onPress={() => {
               void Speech.stop();
               Speech.speak(word.word, { language: 'de-DE' });
@@ -133,7 +133,7 @@ export function WordCard({
 
         <View style={styles.meaning}>
           <AppText variant="caption" color="#8A5A00" style={{ fontWeight: '800' }}>
-            BEDEUTUNG
+            {d.meaning}
           </AppText>
           <AppText style={styles.meaningText}>{word.meaning}</AppText>
         </View>
@@ -141,7 +141,7 @@ export function WordCard({
         {word.example ? (
           <View style={styles.example}>
             <AppText variant="caption" color={colors.mutedForeground} style={{ fontWeight: '800' }}>
-              BEISPIEL
+              {d.example}
             </AppText>
             <ExampleLine example={word.example} word={word.word} />
           </View>
@@ -150,12 +150,12 @@ export function WordCard({
         {synonyms.length > 0 ? (
           <View style={{ gap: spacing.xs }}>
             <AppText variant="caption" color={colors.mutedForeground} style={{ fontWeight: '800' }}>
-              ÄHNLICH
+              {d.similar}
             </AppText>
             <View
               style={styles.chips}
               accessible
-              accessibilityLabel={`Ähnlich: ${synonyms.join(', ')}`}
+              accessibilityLabel={d.similarLabel(synonyms.join(', '))}
             >
               {synonyms.map((s) => (
                 <View key={s} style={styles.chip}>
@@ -189,14 +189,14 @@ export function WordCard({
       <Button pill label={continueLabel} loading={isMarking} onPress={onContinue} />
       <Button
         pill
-        label={isSaved ? '✓ In Vocabulary gespeichert' : 'Zu Vocabulary hinzufügen'}
+        label={isSaved ? d.savedToVocabulary : d.addToVocabulary}
         variant="secondary"
         loading={isSaving}
         disabled={isSaved}
         onPress={onSave}
       />
       {canGoPrevious ? (
-        <Button pill label="‹ Vorheriges Wort" variant="ghost" onPress={onPrevious} />
+        <Button pill label={d.previousWord} variant="ghost" onPress={onPrevious} />
       ) : null}
     </View>
   );
@@ -254,6 +254,7 @@ const styles = StyleSheet.create({
   },
   meaning: {
     gap: 2,
+    alignItems: 'flex-start',
     padding: spacing.lg,
     borderRadius: radius.lg,
     backgroundColor: tint(DAILY_COLOR, '14'),
@@ -261,9 +262,10 @@ const styles = StyleSheet.create({
   meaningText: { fontSize: 20, lineHeight: 28, fontWeight: '700', color: colors.foreground },
   example: {
     gap: 4,
+    alignItems: 'flex-start',
     padding: spacing.lg,
     borderRadius: radius.lg,
-    borderTopLeftRadius: 6,
+    borderTopStartRadius: 6,
     backgroundColor: colors.accent,
   },
   exampleText: { fontStyle: 'italic', color: colors.ink },
@@ -276,5 +278,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
   },
   fa: { gap: spacing.xs, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.md },
-  rtl: { writingDirection: 'rtl', textAlign: 'right' },
+  rtl: rtlText,
 });

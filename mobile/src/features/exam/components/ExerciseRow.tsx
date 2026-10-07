@@ -1,10 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText, ProgressRing } from '@/components/ui';
+import { DirectionalIcon } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type { ExamExerciseSummary } from '@/types/exam';
 import type { ExamExerciseLastTime } from '@/types/examTime';
 import { effectiveScore } from '../examData';
+import { useExamText } from '../examText';
 import { formatClock } from '../time/examTime';
 import { tint } from './kit';
 
@@ -35,19 +38,31 @@ export function ExerciseRow({
   path,
   next,
 }: Props) {
+  const { t } = useI18n();
+  const tx = useExamText();
+  const r = t.examHub.row;
   const mastered = effectiveScore(item) === 100;
   const retry = item.completed && !mastered;
   const sub = [
-    item.questionsCount > 0 ? `${item.questionsCount} ${item.questionsCount === 1 ? 'Frage' : 'Fragen'}` : null,
-    item.lastScore != null ? `Letztes Ergebnis ${Math.round(item.lastScore)}%` : null,
+    item.questionsCount > 0 ? r.questions(item.questionsCount) : null,
+    item.lastScore != null ? r.lastScore(Math.round(item.lastScore)) : null,
     lastTime
-      ? `Letzte Zeit ${formatClock(lastTime.elapsedSeconds)}${lastTime.targetSeconds != null ? ` von ${formatClock(lastTime.targetSeconds)}` : ''}`
+      ? r.lastTime(
+          formatClock(lastTime.elapsedSeconds),
+          lastTime.targetSeconds != null ? formatClock(lastTime.targetSeconds) : undefined,
+        )
       : null,
   ]
     .filter(Boolean)
     .join(' · ');
 
-  const nodeColor = mastered ? colors.success : retry ? colors.warning : next ? color : colors.mutedForeground;
+  const nodeColor = mastered
+    ? colors.success
+    : retry
+      ? colors.warning
+      : next
+        ? color
+        : colors.mutedForeground;
   const node = (
     <View
       style={[
@@ -75,25 +90,29 @@ export function ExerciseRow({
         <View style={styles.rail}>
           {node}
           {!path.last ? (
-            <View style={[styles.line, { backgroundColor: mastered ? colors.success : colors.border }]} />
+            <View
+              style={[styles.line, { backgroundColor: mastered ? colors.success : colors.border }]}
+            />
           ) : null}
         </View>
       ) : null}
-      <View style={[styles.card, next && { borderColor: color, backgroundColor: tint(color, '14') }]}>
+      <View
+        style={[styles.card, next && { borderColor: color, backgroundColor: tint(color, '14') }]}
+      >
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${item.title}${sub ? `, ${sub}` : ''}${item.completed ? ', erledigt' : ''}`}
+          accessibilityLabel={`${tx(item.title)}${sub ? `, ${sub}` : ''}${item.completed ? `, ${r.done}` : ''}`}
           onPress={onPress}
           style={({ pressed }) => [styles.main, pressed && { opacity: 0.7 }]}
         >
           {!path ? node : null}
-          <View style={{ flex: 1, gap: 2 }}>
+          <View style={{ flex: 1, gap: 2, alignItems: 'flex-start' }}>
             {next ? (
               <AppText variant="caption" color={color} style={{ fontWeight: '800' }}>
-                ALS NÄCHSTES
+                {r.upNext}
               </AppText>
             ) : null}
-            <AppText variant="subheading">{item.title}</AppText>
+            <AppText variant="subheading">{tx(item.title)}</AppText>
             {sub ? (
               <AppText variant="small" color={colors.mutedForeground}>
                 {sub}
@@ -101,7 +120,7 @@ export function ExerciseRow({
             ) : null}
             {retry ? (
               <AppText variant="caption" color="#8A5A00" style={{ fontWeight: '700' }}>
-                Wiederholen lohnt sich
+                {r.retry}
               </AppText>
             ) : null}
           </View>
@@ -112,15 +131,15 @@ export function ExerciseRow({
               stroke={5}
               textSize={10}
               color={mastered ? colors.success : colors.warning}
-              label="Letztes Ergebnis"
+              label={r.lastResult}
             />
           ) : (
-            <Ionicons name="chevron-forward" size={22} color={colors.mutedForeground} />
+            <DirectionalIcon name="chevron-forward" size={22} color={colors.mutedForeground} />
           )}
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={item.bookmarked ? 'Merkzeichen entfernen' : 'Aufgabe merken'}
+          accessibilityLabel={item.bookmarked ? r.unsave : r.save}
           accessibilityState={{ selected: item.bookmarked, busy: bookmarkBusy }}
           disabled={bookmarkBusy}
           onPress={onToggleBookmark}
@@ -169,7 +188,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     paddingVertical: spacing.md,
-    paddingLeft: spacing.md,
+    paddingStart: spacing.md,
   },
-  star: { width: MIN_TOUCH - 4, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
+  star: {
+    width: MIN_TOUCH - 4,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

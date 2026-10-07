@@ -47,7 +47,7 @@ type ExamTimerState = {
   setHasHydrated: (value: boolean) => void;
 };
 
-const union = <T,>(a: T[], b: T[]) => Array.from(new Set([...a, ...b]));
+const union = <T>(a: T[], b: T[]) => Array.from(new Set([...a, ...b]));
 
 export const useExamTimerStore = create<ExamTimerState>()(
   persist(
@@ -79,7 +79,9 @@ export const useExamTimerStore = create<ExamTimerState>()(
 
       pause: (nowMs = Date.now()) =>
         set((s) =>
-          s.active && s.active.pausedAtMs == null ? { active: { ...s.active, pausedAtMs: nowMs } } : s,
+          s.active && s.active.pausedAtMs == null
+            ? { active: { ...s.active, pausedAtMs: nowMs } }
+            : s,
         ),
 
       resume: (nowMs = Date.now()) =>

@@ -122,8 +122,8 @@ describe('ExamHubScreen', () => {
 
   it('continues with the next unmastered exercise', async () => {
     await wrap(<ExamHubScreen />);
-    await screen.findByText('Weiterlernen · Lesen');
-    await fireEvent.press(screen.getByRole('button', { name: 'Weiter' }));
+    await screen.findByText('Keep learning · Lesen');
+    await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
     expect(mockPush).toHaveBeenLastCalledWith({
       pathname: '/exam-prep/exercise/[exerciseId]',
       params: { exerciseId: 'b' },
@@ -132,7 +132,7 @@ describe('ExamHubScreen', () => {
 
   it('lists Testformat info and the Schreiben tasks directly', async () => {
     await wrap(<ExamHubScreen />);
-    await screen.findByText('Weiterlernen · Lesen');
+    await screen.findByText('Keep learning · Lesen');
     await fireEvent.press(screen.getByRole('button', { name: /Testformat/ }));
     expect(await screen.findByText('So läuft die Prüfung')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: /Schreiben/ }));
@@ -142,7 +142,7 @@ describe('ExamHubScreen', () => {
       pathname: '/exam-prep/exercise/[exerciseId]',
       params: { exerciseId: 'w' },
     });
-    await fireEvent.press(screen.getByRole('button', { name: '⏱ Mein Zeitmanagement' }));
+    await fireEvent.press(screen.getByRole('button', { name: '⏱ My time management' }));
     expect(mockPush).toHaveBeenLastCalledWith({
       pathname: '/exam-prep/zeitmanagement',
       params: { level: 'B1' },
@@ -151,11 +151,11 @@ describe('ExamHubScreen', () => {
 
   it('reloads when the level changes and filters by search', async () => {
     await wrap(<ExamHubScreen />);
-    await screen.findByText('Weiterlernen · Lesen');
+    await screen.findByText('Keep learning · Lesen');
     await fireEvent.press(screen.getByRole('button', { name: 'A2 · 0/2' }));
     await waitFor(() => expect(api.exercisesForLevel).toHaveBeenCalledWith('A2'));
-    await fireEvent.changeText(screen.getByLabelText('Suche nach Prüfungsteil oder Aufgabe'), 'zzz');
-    expect(await screen.findByText('Nichts gefunden')).toBeTruthy();
+    await fireEvent.changeText(screen.getByLabelText('Search for an exam part or task'), 'zzz');
+    expect(await screen.findByText('Nothing found')).toBeTruthy();
   });
 
   it('shows saved-for-later bookmarks and can remove one', async () => {
@@ -165,7 +165,7 @@ describe('ExamHubScreen', () => {
     api.removeBookmark.mockResolvedValue(summary('s1'));
     await wrap(<ExamHubScreen />);
     expect(await screen.findByText('Hörverstehen: 3. Übung')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Merkzeichen entfernen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Remove bookmark' }));
     await waitFor(() => expect(api.removeBookmark).toHaveBeenCalledWith('s1'));
   });
 
@@ -192,16 +192,16 @@ describe('ExamTeilScreen', () => {
     expect(await screen.findByText('2. Übung')).toBeTruthy();
     expect(screen.getByText('1 / 2')).toBeTruthy();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Offen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Open' }));
     expect(screen.queryByText('1. Übung')).toBeNull();
-    await fireEvent.press(screen.getByRole('button', { name: 'Abgeschlossen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Completed' }));
     expect(screen.queryByText('2. Übung')).toBeNull();
-    await fireEvent.press(screen.getByRole('button', { name: 'Alle' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'All' }));
 
-    await fireEvent.press(screen.getAllByRole('button', { name: 'Aufgabe merken' })[1]);
+    await fireEvent.press(screen.getAllByRole('button', { name: 'Save task' })[1]);
     await waitFor(() => expect(api.addBookmark).toHaveBeenCalledWith('b'));
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Weiter: 2. Übung' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Continue: 2. Übung' }));
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/exam-prep/exercise/[exerciseId]',
       params: { exerciseId: 'b' },
@@ -211,7 +211,7 @@ describe('ExamTeilScreen', () => {
   it('shows not-found for an unknown part', async () => {
     mockParams = { section: 'LESEVERSTEHEN', level: 'B1', part: '9' };
     await wrap(<ExamTeilScreen />);
-    expect(await screen.findByText('Nicht gefunden')).toBeTruthy();
+    expect(await screen.findByText('Not found')).toBeTruthy();
   });
 });
 
@@ -237,7 +237,7 @@ describe('ExamExerciseScreen', () => {
     attempts.complete.mockResolvedValue({ attemptId: 'at1', score: 50, transcripts: [] });
     await wrap(<ExamExerciseScreen />);
 
-    await fireEvent.press(await screen.findByRole('button', { name: 'Übung starten' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Start exercise' }));
     expect(await screen.findByText('Aufgabe 1 von 2')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Antwort prüfen' })).toBeDisabled();
     await fireEvent.press(screen.getByRole('radio', { name: 'Nein' }));
@@ -258,7 +258,7 @@ describe('ExamExerciseScreen', () => {
     await waitFor(() => expect(api.markCompleted).toHaveBeenCalledWith('e1'));
 
     await fireEvent.press(screen.getByRole('button', { name: 'Erneut üben' }));
-    expect(await screen.findByRole('button', { name: 'Übung starten' })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: 'Start exercise' })).toBeTruthy();
   });
 
   it('offers the next open exercise of the Teil and lets the learner review only mistakes', async () => {
@@ -280,7 +280,7 @@ describe('ExamExerciseScreen', () => {
     attempts.complete.mockResolvedValue({ attemptId: 'at9', score: 50, transcripts: [] });
     await wrap(<ExamExerciseScreen />);
 
-    await fireEvent.press(await screen.findByRole('button', { name: 'Übung starten' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Start exercise' }));
     await fireEvent.press(await screen.findByRole('radio', { name: 'Nein' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Antwort prüfen' }));
     await fireEvent.press(await screen.findByRole('button', { name: 'Nächste Aufgabe' }));
@@ -325,7 +325,7 @@ describe('ExamExerciseScreen', () => {
     attempts.complete.mockResolvedValue({ attemptId: 'at2', score: 50, transcripts: [] });
     await wrap(<ExamExerciseScreen />);
 
-    await fireEvent.press(await screen.findByRole('button', { name: 'Übung starten' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Start exercise' }));
     expect(screen.getByRole('button', { name: 'Antworten abgeben' })).toBeDisabled();
 
     await fireEvent.press(await screen.findByRole('radio', { name: 'Aufgabe 1: a' }));
@@ -358,7 +358,7 @@ describe('ExamExerciseScreen', () => {
     attempts.complete.mockResolvedValue({ attemptId: 'at3', score: 100, transcripts: [{ label: 'Text 1', transcript: 'Der Zug fährt ab.' }] });
     await wrap(<ExamExerciseScreen />);
 
-    await fireEvent.press(await screen.findByRole('button', { name: 'Übung starten' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Start exercise' }));
     expect(await screen.findByText('0:00 / 1:05')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Audio Text 1: Abspielen' }));
     expect(mockPlayer.play).toHaveBeenCalled();
@@ -380,7 +380,7 @@ describe('ExamExerciseScreen', () => {
     });
     attempts.answer.mockRejectedValueOnce(new ApiError('network', 'Keine Verbindung.'));
     await wrap(<ExamExerciseScreen />);
-    await fireEvent.press(await screen.findByRole('button', { name: 'Übung starten' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Start exercise' }));
     await fireEvent.press(await screen.findByRole('radio', { name: 'Aufgabe 1: -' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Antworten abgeben' }));
     expect(await screen.findByText('Keine Verbindung.')).toBeTruthy();
@@ -417,27 +417,27 @@ describe('ExamExerciseScreen', () => {
     attempts.complete.mockResolvedValue({ attemptId: 'at9', score: 100, transcripts: [] });
     await wrap(<ExamExerciseScreen />);
 
-    // Opening the exercise does not start the clock; it waits for "Übung starten".
-    await screen.findByRole('button', { name: 'Übung starten' });
-    expect(screen.queryByText('Zeit für diese Übung')).toBeNull();
-    expect(screen.getByText(/Die Zeit startet mit/)).toBeTruthy();
+    // Opening the exercise does not start the clock; it waits for "Start exercise".
+    await screen.findByRole('button', { name: 'Start exercise' });
+    expect(screen.queryByText('Time for this exercise')).toBeNull();
+    expect(screen.getByText(/The timer starts with/)).toBeTruthy();
     expect(time.startSession).not.toHaveBeenCalled();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Übung starten' }));
-    expect(await screen.findByText('Zeit für diese Übung')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Start exercise' }));
+    expect(await screen.findByText('Time for this exercise')).toBeTruthy();
     expect(time.startSession).toHaveBeenCalledWith({ scope: 'EXERCISE', mode: 'TIME_TRAINING', exerciseId: 'e1' });
-    expect(screen.getByLabelText(/Verstrichene Zeit 00:00/)).toBeTruthy();
+    expect(screen.getByLabelText(/Elapsed time 00:00/)).toBeTruthy();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Zeit pausieren' }));
-    expect(await screen.findByText('Pausiert')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Zeit fortsetzen' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Pause timer' }));
+    expect(await screen.findByText('Paused')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Resume timer' }));
 
     await fireEvent.press(await screen.findByRole('radio', { name: 'Ja' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Antwort prüfen' }));
     await fireEvent.press(await screen.findByRole('button', { name: 'Ergebnis anzeigen' }));
 
     expect(await screen.findByText('07:12')).toBeTruthy();
-    expect(screen.getByText('✓ 2:48 unter der Vorgabe')).toBeTruthy();
+    expect(screen.getByText('✓ 2:48 under the target')).toBeTruthy();
     expect(time.completeSession).toHaveBeenCalledWith('ps1', expect.any(Number));
     expect(useExamTimerStore.getState().active).toBeNull();
     expect(useExamTimerStore.getState().lastResult?.elapsedSeconds).toBe(432);
@@ -447,7 +447,7 @@ describe('ExamExerciseScreen', () => {
     api.byId.mockResolvedValue(exercise());
     useExamTextSize.setState({ index: 1 });
     await wrap(<ExamExerciseScreen />);
-    await screen.findByRole('button', { name: 'Übung starten' });
+    await screen.findByRole('button', { name: 'Start exercise' });
 
     await fireEvent.press(screen.getByRole('button', { name: 'Larger text' }));
     expect(useExamTextSize.getState().index).toBe(2);
@@ -469,7 +469,7 @@ describe('ExamExerciseScreen', () => {
       answerOptionLabels: null,
     });
     await wrap(<ExamExerciseScreen />);
-    await fireEvent.press(await screen.findByRole('button', { name: 'Übung starten' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Start exercise' }));
 
     expect(await screen.findByText(/4 Wörter · ca\. 1 Min\. Lesezeit/)).toBeTruthy();
     const paragraphs = screen.getAllByRole('button', { name: 'Absatz markieren' });
@@ -488,9 +488,9 @@ describe('ExamExerciseScreen', () => {
   it('does not time Hörverstehen', async () => {
     api.byId.mockResolvedValue(exercise({ section: 'HOERVERSTEHEN', taskType: 'TRUE_FALSE_NOT_GIVEN', passages: [] }));
     await wrap(<ExamExerciseScreen />);
-    await screen.findByRole('button', { name: 'Übung starten' });
+    await screen.findByRole('button', { name: 'Start exercise' });
     expect(time.startSession).not.toHaveBeenCalled();
-    expect(screen.queryByText('Zeit für diese Übung')).toBeNull();
+    expect(screen.queryByText('Time for this exercise')).toBeNull();
   });
 
   it('shows an error state when the exercise fails to load', async () => {

@@ -2,12 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AppText, Button, EmptyState, ErrorState, ProgressRing } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { colors, radius, spacing } from '@/theme';
 import type { ExamExercise, StartExamAttemptResponse } from '@/types/exam';
 import type { ExamPracticeSessionResult } from '@/types/examTime';
 import { answerLabelFor } from '../content';
 import { exercisesForSectionAndLevel, groupIntoParts } from '../examData';
-import { HOEREN_HOWTO, SECTION_META, TASK_HOWTO } from '../examMeta';
+import { useExamText } from '../examText';
+import { SECTION_META } from '../examMeta';
 import { useExamExercises, useMarkExamCompleted, useStartExamAttempt } from '../hooks';
 import { useStopExerciseTimer } from '../time/hooks';
 import { BODY_LINE, BODY_SIZE, scaledText, useExamTextScale } from '../textScale';
@@ -45,7 +47,15 @@ function useNextExercise(exercise: ExamExercise) {
   }, [list.data, exercise.id, exercise.level, exercise.section]);
 }
 
-function Step({ icon, text, color }: { icon: keyof typeof Ionicons.glyphMap; text: string; color: string }) {
+function Step({
+  icon,
+  text,
+  color,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  text: string;
+  color: string;
+}) {
   const scale = useExamTextScale();
   return (
     <View style={styles.step}>
@@ -73,9 +83,13 @@ function StartCard({
   onStart: () => void;
   onRetryStart: () => void;
 }) {
+  const tx = useExamText();
+  const { t } = useI18n();
+  const run = t.examRun;
   const meta = SECTION_META[exercise.section];
   const count = exercise.questions.length;
-  const howTo = kind === 'hoeren' ? HOEREN_HOWTO : exercise.taskType ? TASK_HOWTO[exercise.taskType] : null;
+  const howTo =
+    kind === 'hoeren' ? run.listening : exercise.taskType ? run.howto[exercise.taskType] : null;
   const instantFeedback = kind === 'step';
   const scale = useExamTextScale();
   return (
@@ -84,7 +98,7 @@ function StartCard({
         error ? (
           <ErrorState error={error} onRetry={onRetryStart} />
         ) : (
-          <Button pill label="Übung starten" loading={loading} onPress={onStart} />
+          <Button pill label={run.startButton} loading={loading} onPress={onStart} />
         )
       }
     >
@@ -99,13 +113,13 @@ function StartCard({
         </View>
         <View style={{ flex: 1, gap: 2 }}>
           <AppText variant="caption" color={meta.color} style={{ fontWeight: '800' }}>
-            {meta.label.toUpperCase()}
+            {tx(meta.label).toUpperCase()}
             {exercise.level ? ` · ${exercise.level}` : ''}
           </AppText>
-          <AppText style={styles.heroTitle}>{exercise.title}</AppText>
+          <AppText style={styles.heroTitle}>{tx(exercise.title)}</AppText>
           <AppText variant="small" color={colors.mutedForeground}>
-            {count > 0 ? `${count} ${count === 1 ? 'Aufgabe' : 'Aufgaben'}` : 'Aufgaben'}
-            {exercise.lastScore != null ? ' · schon geübt' : ' · neu'}
+            {run.tasks(count)}
+            {exercise.lastScore != null ? run.practised : run.fresh}
           </AppText>
         </View>
         {exercise.lastScore != null ? (
@@ -115,34 +129,28 @@ function StartCard({
             stroke={6}
             textSize={13}
             color={meta.color}
-            label="Letztes Ergebnis"
+            label={t.examHub.row.lastResult}
           />
         ) : null}
       </View>
 
       {exercise.teilDescription ? (
         <View style={styles.desc}>
-          <AppText style={scaledText(BODY_SIZE, BODY_LINE, scale)}>{exercise.teilDescription}</AppText>
+          <AppText style={scaledText(BODY_SIZE, BODY_LINE, scale)}>
+            {exercise.teilDescription}
+          </AppText>
         </View>
       ) : null}
 
       <View style={{ gap: spacing.md }}>
-        <AppText variant="heading">So geht’s</AppText>
+        <AppText variant="heading">{run.howTitle}</AppText>
         {howTo ? <Step icon="create-outline" text={howTo} color={meta.color} /> : null}
         <Step
           icon={instantFeedback ? 'flash-outline' : 'shield-checkmark-outline'}
-          text={
-            instantFeedback
-              ? 'Nach jeder Aufgabe siehst du sofort, ob sie stimmt – mit Erklärung.'
-              : 'Das Ergebnis siehst du erst am Ende – wie in der echten Prüfung.'
-          }
+          text={instantFeedback ? run.instant : run.atEnd}
           color={meta.color}
         />
-        <Step
-          icon="trophy-outline"
-          text="Am Ende bekommst du deine Auswertung mit allen Erklärungen."
-          color={meta.color}
-        />
+        <Step icon="trophy-outline" text={run.summary} color={meta.color} />
       </View>
     </ExerciseFrame>
   );
@@ -164,6 +172,7 @@ export function QuizRunner({
   const markCompleted = useMarkExamCompleted(exercise.id);
   const stopTimer = useStopExerciseTimer(exercise.id);
   const nextExercise = useNextExercise(exercise);
+  const tx = useExamText();
   const [timeResult, setTimeResult] = useState<ExamPracticeSessionResult | null>(null);
   const [attempt, setAttempt] = useState<StartExamAttemptResponse | null>(null);
   const [results, setResults] = useState<ResultsState | null>(null);
@@ -205,7 +214,7 @@ export function QuizRunner({
             : undefined
         }
         timeResult={timeResult}
-        next={nextExercise ? { id: nextExercise.id, title: nextExercise.title } : null}
+        next={nextExercise ? { id: nextExercise.id, title: tx(nextExercise.title) } : null}
         onRetry={retry}
       />
     );
@@ -227,7 +236,11 @@ export function QuizRunner({
   if (attempt.questions.length === 0) {
     return (
       <View style={{ padding: spacing.lg }}>
-        <EmptyState emoji="🗒️" title="Noch keine Aufgaben" message="Diese Übung enthält noch keine Aufgaben." />
+        <EmptyState
+          emoji="🗒️"
+          title="Noch keine Aufgaben"
+          message="Diese Übung enthält noch keine Aufgaben."
+        />
       </View>
     );
   }
@@ -235,7 +248,13 @@ export function QuizRunner({
   return kind === 'step' ? (
     <StepQuiz key={attempt.attemptId} exercise={exercise} attempt={attempt} onFinish={finish} />
   ) : (
-    <BatchQuiz key={attempt.attemptId} variant={kind} exercise={exercise} attempt={attempt} onFinish={finish} />
+    <BatchQuiz
+      key={attempt.attemptId}
+      variant={kind}
+      exercise={exercise}
+      attempt={attempt}
+      onFinish={finish}
+    />
   );
 }
 
@@ -248,7 +267,13 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     borderRadius: radius.lg,
   },
-  heroIcon: { width: 68, height: 68, borderRadius: 34, alignItems: 'center', justifyContent: 'center' },
+  heroIcon: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   heroTitle: { fontSize: 22, lineHeight: 28, fontWeight: '800', color: colors.ink },
   desc: {
     padding: spacing.lg,
@@ -258,5 +283,11 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   step: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  stepIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  stepIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

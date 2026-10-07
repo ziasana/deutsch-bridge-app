@@ -11,6 +11,7 @@ import {
   ProgressRing,
   Skeleton,
 } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { useAuthStore } from '@/stores/authStore';
 import { colors, radius, spacing } from '@/theme';
 import { DAILY_COLOR, DailyHero, SunriseIllustration } from './components/DailyViz';
@@ -29,8 +30,9 @@ import { buildQuestions, type PracticeQuestion } from './practice';
 type Stage = 'learning' | 'celebrate' | 'practice' | 'result';
 
 function WordSkeleton() {
+  const { t } = useI18n();
   return (
-    <View accessibilityLabel="Wörter werden geladen" style={{ gap: spacing.md }}>
+    <View accessibilityLabel={t.daily.loading} style={{ gap: spacing.md }}>
       <Skeleton height={8} />
       <Card style={{ gap: spacing.md }}>
         <Skeleton width="30%" height={20} />
@@ -45,6 +47,8 @@ function WordSkeleton() {
 
 export function DailyWordsScreen() {
   const router = useRouter();
+  const { t } = useI18n();
+  const d = t.daily;
   const { data: words, isPending, isError, error, refetch } = useDailyWords();
   const preferPersian = useAuthStore((s) => s.profile?.preferredLanguage === 'PR');
   const mark = useMarkWordLearned();
@@ -115,9 +119,9 @@ export function DailyWordsScreen() {
     body = (
       <EmptyState
         emoji="🌱"
-        title="Heute keine neuen Wörter"
-        message="Für heute stehen keine Wörter bereit. Schau später wieder vorbei."
-        actionLabel="Zum Dashboard"
+        title={d.emptyTitle}
+        message={d.emptyMessage}
+        actionLabel={d.toDashboard}
         onAction={goToDashboard}
       />
     );
@@ -125,22 +129,22 @@ export function DailyWordsScreen() {
     body = (
       <View style={{ gap: spacing.md }}>
         <LearningCelebration
-          title="Sehr gut!"
-          subtitle="Daily Words abgeschlossen"
+          title={d.veryGood}
+          subtitle={d.completed}
           progress={{ value: learnedCount(list), max: list.length }}
-          progressLabel={`${learnedCount(list)} / ${list.length} Wörter gelernt`}
-          encouragement="Ein kurzes Quiz festigt, was du gerade gelernt hast."
-          primaryAction={{ label: 'Quiz starten', onPress: startQuiz }}
-          secondaryAction={{ label: 'Zum Dashboard', onPress: goToDashboard }}
+          progressLabel={d.learnedOf(learnedCount(list), list.length)}
+          encouragement={d.quizEncouragement}
+          primaryAction={{ label: d.startQuiz, onPress: startQuiz }}
+          secondaryAction={{ label: d.toDashboard, onPress: goToDashboard }}
         />
         <View style={styles.recap}>
-          <AppText variant="subheading">Heute gelernt</AppText>
+          <AppText variant="subheading">{d.learnedToday}</AppText>
           <View style={styles.recapChips}>
             {list.map((w, i) => (
               <Pressable
                 key={w.id}
                 accessibilityRole="button"
-                accessibilityLabel={`${w.word} wiederholen`}
+                accessibilityLabel={d.review(w.word)}
                 onPress={() => {
                   setIndex(i);
                   setStage('learning');
@@ -155,7 +159,7 @@ export function DailyWordsScreen() {
           </View>
         </View>
         <Button
-          label="Wörter noch einmal ansehen"
+          label={d.seeAgain}
           variant="ghost"
           onPress={() => {
             setIndex(0);
@@ -178,15 +182,15 @@ export function DailyWordsScreen() {
   } else if (stage === 'result') {
     body = (
       <LearningCelebration
-        title={resultTitle(score, questions.length)}
-        subtitle="Daily Words – Quiz"
+        title={resultTitle(score, questions.length, t.common.result)}
+        subtitle={d.quizTitle}
         progress={{ value: score, max: questions.length }}
-        progressLabel={`${score} von ${questions.length} richtig`}
+        progressLabel={t.grammar.correctOf(score, questions.length)}
         primaryAction={{
-          label: 'Noch einmal üben',
+          label: d.practiceAgain,
           onPress: startQuiz,
         }}
-        secondaryAction={{ label: 'Zum Dashboard', onPress: goToDashboard }}
+        secondaryAction={{ label: d.toDashboard, onPress: goToDashboard }}
       />
     );
   } else if (current) {
@@ -219,9 +223,9 @@ export function DailyWordsScreen() {
     <View style={styles.root}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <DailyHero
-          chip={`🌅 HEUTE${level ? ` · ${level}` : ''}`}
-          title="Daily Words"
-          subtitle={total > 0 ? `Deine ${total} Wörter für heute` : 'Deine Wörter für heute'}
+          chip={d.chip(level)}
+          title={d.title}
+          subtitle={d.subtitle(total)}
           right={
             total > 0 ? (
               <ProgressRing
@@ -231,7 +235,7 @@ export function DailyWordsScreen() {
                 color={DAILY_COLOR}
                 textSize={18}
                 trackColor="#FFFFFFCC"
-                label="Heute gelernt"
+                label={d.ringLabel}
               />
             ) : (
               <SunriseIllustration size={104} />

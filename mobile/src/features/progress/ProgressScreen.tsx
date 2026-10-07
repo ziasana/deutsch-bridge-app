@@ -7,6 +7,7 @@ import {
   AppText,
   Button,
   EmptyState,
+  DirectionalIcon,
   ErrorState,
   Header,
   ProgressBar,
@@ -17,6 +18,7 @@ import {
 import { useDashboard } from '@/features/dashboard/hooks';
 import { weekDays } from '@/features/dashboard/viewModel';
 import { useI18n } from '@/i18n';
+import { HorizontalScroll } from '@/components/ui/HorizontalScroll';
 import { IconButton, PressableScale, tint } from '@/features/exam/components/kit';
 import { colors, radius, spacing } from '@/theme';
 import type { CategoryProgress, ProgressOverview, ProgressStats } from '@/types/progress';
@@ -46,22 +48,23 @@ function Hero({
   level: string | undefined;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const overall = percent(overview.totalLearned, overview.totalAvailable);
   return (
     <View style={[styles.hero, { backgroundColor: tint(GREEN, '1F') }]}>
       <SafeAreaView edges={['top']}>
         <View style={styles.topRow}>
-          <IconButton name="arrow-back" label="Zurück" onPress={() => router.back()} />
+          <IconButton name="arrow-back" label={t.common.back} onPress={() => router.back()} />
           <View style={[styles.chip, { backgroundColor: tint(GREEN, '33') }]}>
             <AppText variant="caption" color={colors.ink} style={{ fontWeight: '800' }}>
-              📈 DEIN FORTSCHRITT
+              {t.progress.chip}
             </AppText>
           </View>
         </View>
         <View style={styles.heroMain}>
-          <View style={{ flex: 1, gap: 2 }}>
+          <View style={{ flex: 1, gap: 2, alignItems: 'flex-start' }}>
             <AppText variant="caption" color="#1B7A55" style={{ fontWeight: '800' }}>
-              INSGESAMT GELERNT
+              {t.progress.totalLearned}
             </AppText>
             <AppText style={styles.big} accessibilityRole="header">
               {overview.totalLearned}
@@ -75,7 +78,7 @@ function Hero({
                 <View style={styles.pill}>
                   <Ionicons name="flame" size={14} color="#F5762B" />
                   <AppText variant="caption" style={{ fontWeight: '800' }} color={colors.ink}>
-                    {streak} {streak === 1 ? 'Tag' : 'Tage'}
+                    {t.progress.streak(streak)}
                   </AppText>
                 </View>
               ) : null}
@@ -99,7 +102,7 @@ function Hero({
             color={GREEN}
             textSize={22}
             trackColor="#FFFFFFCC"
-            label="Gesamtfortschritt"
+            label={t.progress.overall}
           />
         </View>
       </SafeAreaView>
@@ -116,6 +119,7 @@ function DailyGoalCard({
   overview: ProgressOverview;
   days: { label: string; learned: boolean; isToday: boolean }[] | undefined;
 }) {
+  const { t } = useI18n();
   const goal = overview.dailyGoalWords;
   const pct = goal ? percent(overview.itemsLearnedToday, goal) : 0;
   const learnedDays = days?.filter((d) => d.learned).length ?? 0;
@@ -128,16 +132,16 @@ function DailyGoalCard({
           stroke={9}
           color={colors.primary}
           textSize={18}
-          label="Tagesziel"
+          label={t.progress.dailyGoal}
         />
         <View style={{ flex: 1, gap: 2 }}>
-          <AppText style={styles.cardTitle}>Tagesziel</AppText>
+          <AppText style={styles.cardTitle}>{t.progress.dailyGoal}</AppText>
           {goal ? (
             <AppText color={colors.mutedForeground}>
-              Heute: {overview.itemsLearnedToday} / {goal} Lernziele
+              {t.progress.todayOf(overview.itemsLearnedToday, goal)}
             </AppText>
           ) : (
-            <AppText color={colors.mutedForeground}>Du hast noch kein Tagesziel gesetzt.</AppText>
+            <AppText color={colors.mutedForeground}>{t.progress.noGoal}</AppText>
           )}
         </View>
       </View>
@@ -145,7 +149,7 @@ function DailyGoalCard({
         <View style={{ gap: spacing.sm }}>
           <View
             accessible
-            accessibilityLabel={`${learnedDays} von ${days.length} Tagen gelernt`}
+            accessibilityLabel={t.progress.daysLearned(learnedDays, days.length)}
             style={styles.week}
           >
             {days.map((d, i) => (
@@ -170,7 +174,7 @@ function DailyGoalCard({
             ))}
           </View>
           <AppText variant="small" color={colors.mutedForeground} center>
-            {learnedDays} von {days.length} Tagen gelernt
+            {t.progress.daysLearned(learnedDays, days.length)}
           </AppText>
         </View>
       ) : null}
@@ -191,11 +195,17 @@ type Area = {
 
 /** A colour-coded tile per learning area: ring, title, x / y. Tap to go and learn there. */
 function AreaTile({ area, onPress }: { area: Area; onPress: () => void }) {
+  const { t } = useI18n();
   const pct = percent(area.progress.learned, area.progress.total);
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel={`${area.title}: ${area.progress.learned} von ${area.progress.total}, ${pct} Prozent`}
+      accessibilityLabel={t.progress.areaLabel(
+        area.title,
+        area.progress.learned,
+        area.progress.total,
+        pct,
+      )}
       onPress={onPress}
       containerStyle={styles.tileWrap}
       style={[
@@ -212,7 +222,7 @@ function AreaTile({ area, onPress }: { area: Area; onPress: () => void }) {
           textSize={11}
           color={area.color}
           trackColor="#FFFFFFCC"
-          label={`${area.title} Fortschritt`}
+          label={t.progress.areaProgress(area.title)}
         />
       </View>
       <AppText variant="small" style={{ fontWeight: '700' }} color={colors.ink} numberOfLines={2}>
@@ -276,6 +286,7 @@ function MasteryCard({
   ctaLabel: string;
   onCta: () => void;
 }) {
+  const { t } = useI18n();
   const [focus, setFocus] = useState<string | null>(null);
   const picked = segments.find((s) => s.key === focus);
   return (
@@ -321,7 +332,7 @@ function MasteryCard({
           </View>
           {picked ? (
             <AppText variant="small" color={colors.ink} style={{ fontWeight: '700' }}>
-              {picked.label}: {percent(picked.count, total)}% deiner {total} Einträge
+              {t.progress.share(picked.label, percent(picked.count, total), total)}
             </AppText>
           ) : null}
         </>
@@ -365,7 +376,7 @@ function Panel({
         <AppText variant="small" color={colors.primaryDark} style={{ fontWeight: '800' }}>
           {cta}
         </AppText>
-        <Ionicons name="arrow-forward" size={16} color={colors.primaryDark} />
+        <DirectionalIcon name="arrow-forward" size={16} color={colors.primaryDark} />
       </Pressable>
     </View>
   );
@@ -431,6 +442,7 @@ function PulseRing({ color }: { color: string }) {
 
 /** The vocabulary milestones as a path: reached steps are filled, the next one pulses, the rest are outlined. */
 function Milestones({ stats }: { stats: ProgressStats }) {
+  const { t: tr } = useI18n();
   const m = stats.milestones;
   return (
     <View style={styles.card}>
@@ -439,13 +451,13 @@ function Milestones({ stats }: { stats: ProgressStats }) {
           <Ionicons name="trophy" size={22} color={GOLD} />
         </View>
         <View style={{ flex: 1 }}>
-          <AppText style={styles.cardTitle}>🏅 Meilensteine</AppText>
+          <AppText style={styles.cardTitle}>{tr.progress.milestones}</AppText>
           <AppText variant="small" color={colors.mutedForeground}>
-            {nextMilestoneText(m)}
+            {nextMilestoneText(m, tr.progress)}
           </AppText>
         </View>
       </View>
-      <ScrollView
+      <HorizontalScroll
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.ladder}
@@ -459,7 +471,7 @@ function Milestones({ stats }: { stats: ProgressStats }) {
               <View style={{ alignItems: 'center', gap: 4 }}>
                 <View
                   accessible
-                  accessibilityLabel={`${t} Wörter${reached ? ', erreicht' : ''}`}
+                  accessibilityLabel={tr.progress.milestoneNode(t, reached)}
                   style={[
                     styles.node,
                     reached && { backgroundColor: GOLD, borderColor: GOLD },
@@ -489,7 +501,7 @@ function Milestones({ stats }: { stats: ProgressStats }) {
             </View>
           );
         })}
-      </ScrollView>
+      </HorizontalScroll>
     </View>
   );
 }
@@ -504,8 +516,8 @@ export function ProgressScreen() {
   if (overview.isPending || stats.isPending) {
     return (
       <Screen>
-        <Header title="Progress" subtitle="Dein Lernfortschritt" back />
-        <View accessibilityLabel="Fortschritt wird geladen" style={{ gap: spacing.md }}>
+        <Header title={t.progress.title} subtitle={t.progress.subtitle} back />
+        <View accessibilityLabel={t.progress.loading} style={{ gap: spacing.md }}>
           <Skeleton height={140} />
           <Skeleton height={180} />
           <Skeleton height={120} />
@@ -516,7 +528,7 @@ export function ProgressScreen() {
   if (overview.isError || stats.isError) {
     return (
       <Screen>
-        <Header title="Progress" subtitle="Dein Lernfortschritt" back />
+        <Header title={t.progress.title} subtitle={t.progress.subtitle} back />
         <ErrorState
           error={overview.error ?? stats.error}
           onRetry={() => {
@@ -533,12 +545,12 @@ export function ProgressScreen() {
   if (o.totalAvailable === 0 && o.totalLearned === 0 && s.vocabulary.total === 0) {
     return (
       <Screen>
-        <Header title="Progress" subtitle="Dein Lernfortschritt" back />
+        <Header title={t.progress.title} subtitle={t.progress.subtitle} back />
         <EmptyState
           emoji="🌱"
-          title="Noch kein Fortschritt"
-          message="Lerne dein erstes Wort – dann erscheint hier dein Fortschritt."
-          actionLabel="Jetzt lernen"
+          title={t.progress.emptyTitle}
+          message={t.progress.emptyMessage}
+          actionLabel={t.progress.learnNow}
           onAction={() => router.push('/learn')}
         />
       </Screen>
@@ -551,7 +563,7 @@ export function ProgressScreen() {
     {
       key: 'mastered',
       emoji: '🏆',
-      title: 'Wörter gemeistert',
+      title: t.progress.wordsMastered,
       color: GOLD,
       progress: { learned: o.totalLearned, total: o.totalAvailable },
       href: '/learn/vocabulary',
@@ -559,7 +571,7 @@ export function ProgressScreen() {
     {
       key: 'daily',
       emoji: '🌱',
-      title: 'Daily Words',
+      title: t.progress.dailyWords,
       color: '#F59E0B',
       progress: o.dailyWords,
       href: '/learn/daily-words',
@@ -567,7 +579,7 @@ export function ProgressScreen() {
     {
       key: 'grammar',
       emoji: '🧩',
-      title: 'Grammatik-Lektionen',
+      title: t.progress.grammarLessons,
       color: '#E8892B',
       progress: o.grammar,
       href: '/learn/grammar',
@@ -575,7 +587,7 @@ export function ProgressScreen() {
     {
       key: 'expr',
       emoji: '💬',
-      title: 'Active Expressions',
+      title: t.progress.expressions,
       color: GREEN,
       progress: o.expressions,
       href: '/learn/expressions',
@@ -583,7 +595,7 @@ export function ProgressScreen() {
     {
       key: 'reading',
       emoji: '📖',
-      title: 'Reading',
+      title: t.progress.reading,
       color: '#8B5CF6',
       progress: o.reading,
       href: '/learn/reading',
@@ -603,7 +615,7 @@ export function ProgressScreen() {
 
           <View style={{ gap: spacing.sm }}>
             <AppText style={styles.sectionTitle} accessibilityRole="header">
-              Deine Lernbereiche
+              {t.progress.areas}
             </AppText>
             <View style={styles.tiles}>
               {areas.map((a) => (
@@ -613,57 +625,58 @@ export function ProgressScreen() {
           </View>
 
           <MasteryCard
-            title="📚 Wortschatz"
+            title={t.progress.vocabulary}
             total={s.vocabulary.total}
-            segments={vocabularySegments(s.vocabulary, { new: NEUTRAL, ...CHART })}
-            emptyMessage="Du hast noch keine Wörter im Vokabular."
-            ctaLabel="Vokabeln üben"
+            segments={vocabularySegments(s.vocabulary, { new: NEUTRAL, ...CHART }, t.progress)}
+            emptyMessage={t.progress.vocabularyEmpty}
+            ctaLabel={t.progress.vocabularyCta}
             onCta={() => router.push('/learn/review')}
           />
           <MasteryCard
-            title="💬 Ausdrücke"
+            title={t.progress.expressionsCard}
             total={s.expressions.total}
-            segments={expressionSegments(s.expressions, { new: NEUTRAL, ...CHART })}
-            emptyMessage="Du hast noch keine Ausdrücke gelernt."
-            ctaLabel="Ausdrücke üben"
+            segments={expressionSegments(s.expressions, { new: NEUTRAL, ...CHART }, t.progress)}
+            emptyMessage={t.progress.expressionsEmpty}
+            ctaLabel={t.progress.expressionsCta}
             onCta={() => router.push('/learn/expressions')}
           />
 
           <Panel
             icon="school"
             color="#E8892B"
-            title="Grammatik"
-            cta="Grammatik üben"
+            title={t.progress.grammar}
+            cta={t.progress.grammarCta}
             onCta={() => router.push('/learn/grammar')}
           >
             <LabeledBar
-              label="Lektionen"
+              label={t.progress.lessons}
               learned={s.grammar.lessonsLearned}
               total={s.grammar.lessonsTotal}
               color="#E8892B"
             />
             <LabeledBar
-              label="Kategorie-Tests bestanden"
+              label={t.progress.categoryTestsPassed}
               learned={s.grammar.categoriesPassed}
               total={s.grammar.categoriesTotal}
               color={GREEN}
             />
             <AppText variant="small" color={colors.mutedForeground}>
-              Lektionen: {s.grammar.lessonsLearned} / {s.grammar.lessonsTotal}
+              {t.progress.lessonsLine(s.grammar.lessonsLearned, s.grammar.lessonsTotal)}
             </AppText>
             <AppText variant="small" color={colors.mutedForeground}>
-              Kategorie-Tests bestanden: {s.grammar.categoriesPassed} / {s.grammar.categoriesTotal}
-              {s.grammar.categoriesAttempted > 0
-                ? ` (${s.grammar.categoriesAttempted} versucht)`
-                : ''}
+              {t.progress.testsLine(
+                s.grammar.categoriesPassed,
+                s.grammar.categoriesTotal,
+                s.grammar.categoriesAttempted,
+              )}
             </AppText>
           </Panel>
 
           <Panel
             icon="ribbon"
             color="#EC3E4E"
-            title="Prüfungen"
-            cta={exam.attemptsCompleted > 0 ? 'Weiter üben' : 'Prüfungsvorbereitung starten'}
+            title={t.progress.exams}
+            cta={exam.attemptsCompleted > 0 ? t.progress.examContinue : t.progress.examStart}
             onCta={() => router.push('/exam')}
           >
             {exam.attemptsCompleted > 0 && exam.averageScore != null ? (
@@ -674,19 +687,16 @@ export function ProgressScreen() {
                   stroke={8}
                   textSize={16}
                   color="#6366F1"
-                  label="Durchschnittliche Punktzahl"
+                  label={t.progress.examAverageLabel}
                 />
                 <View style={{ flex: 1 }}>
                   <AppText style={{ fontWeight: '700' }}>
-                    Durchschnitt: {Math.round(exam.averageScore)}% · {exam.attemptsCompleted}{' '}
-                    {exam.attemptsCompleted === 1 ? 'Versuch' : 'Versuche'}
+                    {t.progress.examAverage(Math.round(exam.averageScore), exam.attemptsCompleted)}
                   </AppText>
                 </View>
               </View>
             ) : (
-              <AppText color={colors.mutedForeground}>
-                Noch keine abgeschlossene Prüfungsübung.
-              </AppText>
+              <AppText color={colors.mutedForeground}>{t.progress.examNone}</AppText>
             )}
           </Panel>
 
@@ -712,7 +722,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginHorizontal: -spacing.sm,
-    paddingRight: spacing.sm,
+    paddingEnd: spacing.sm,
   },
   chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill },
   heroMain: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, paddingTop: spacing.md },
@@ -774,6 +784,7 @@ const styles = StyleSheet.create({
   tile: { gap: spacing.xs, padding: spacing.md, borderRadius: radius.lg, borderWidth: 1.5 },
   tileTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   tileValue: {
+    alignSelf: 'flex-start',
     fontSize: 20,
     lineHeight: 26,
     fontWeight: '800',
@@ -813,7 +824,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     minHeight: 36,
   },
-  ladder: { paddingVertical: spacing.sm, paddingRight: spacing.lg },
+  ladder: { paddingVertical: spacing.sm, paddingEnd: spacing.lg },
   step: { flexDirection: 'row', alignItems: 'flex-start' },
   node: {
     width: 44,

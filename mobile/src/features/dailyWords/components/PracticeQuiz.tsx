@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText, Button, ProgressBar } from '@/components/ui';
 import { tint } from '@/features/exam/components/kit';
+import { useI18n } from '@/i18n';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type { PracticeQuestion } from '../practice';
 import { DAILY_COLOR } from './DailyViz';
@@ -9,6 +10,8 @@ import { DAILY_COLOR } from './DailyViz';
 type Props = { questions: PracticeQuestion[]; onComplete: (score: number) => void };
 
 export function PracticeQuiz({ questions, onComplete }: Props) {
+  const { t } = useI18n();
+  const tq = t.daily.quiz;
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [score, setScore] = useState(0);
@@ -37,20 +40,18 @@ export function PracticeQuiz({ questions, onComplete }: Props) {
   return (
     <View style={styles.gap}>
       <View style={styles.gap}>
-        <AppText variant="subheading">
-          Frage {index + 1} von {questions.length}
-        </AppText>
+        <AppText variant="subheading">{tq.questionOf(index + 1, questions.length)}</AppText>
         <ProgressBar
           value={index + (answered ? 1 : 0)}
           max={questions.length}
-          label="Quiz-Fortschritt"
+          label={tq.progress}
           color={DAILY_COLOR}
         />
       </View>
 
       <View style={styles.prompt}>
         <AppText variant="caption" color="#8A5A00" style={{ fontWeight: '800' }}>
-          WELCHES WORT PASST ZU DIESER BEDEUTUNG?
+          {tq.prompt}
         </AppText>
         <AppText style={styles.promptText}>{q.prompt}</AppText>
       </View>
@@ -99,9 +100,9 @@ export function PracticeQuiz({ questions, onComplete }: Props) {
             color={correct ? '#1B7A55' : colors.destructive}
             accessibilityRole="alert"
           >
-            {correct ? '✓ Richtig!' : `✕ Nicht richtig – richtig ist „${q.answer}“.`}
+            {correct ? tq.right : tq.wrong(q.answer)}
           </AppText>
-          <Button pill label={isLast ? 'Ergebnis ansehen' : 'Nächste Frage'} onPress={next} />
+          <Button pill label={isLast ? tq.seeResult : tq.next} onPress={next} />
         </View>
       ) : null}
     </View>

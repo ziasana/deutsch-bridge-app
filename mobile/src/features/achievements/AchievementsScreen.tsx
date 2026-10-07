@@ -3,13 +3,19 @@ import { RefreshControl, StyleSheet, View } from 'react-native';
 import { AppText, Card, ErrorState, Header, ProgressRing, Screen, Skeleton } from '@/components/ui';
 import { useDashboard } from '@/features/dashboard/hooks';
 import { useProgressOverview, useProgressStats } from '@/features/progress/hooks';
+import { useI18n } from '@/i18n';
 import { useAuthStore } from '@/stores/authStore';
 import { colors, radius, spacing } from '@/theme';
 import { MAX_STARS, buildAchievements, totals, type Achievement } from './model';
 
 function Stars({ count, onDark }: { count: number; onDark?: boolean }) {
+  const { t } = useI18n();
   return (
-    <View accessible accessibilityLabel={`${count} von ${MAX_STARS} Sternen`} style={styles.stars}>
+    <View
+      accessible
+      accessibilityLabel={t.achievements.starsLabel(count, MAX_STARS)}
+      style={styles.stars}
+    >
       {Array.from({ length: MAX_STARS }).map((_, i) => (
         <Ionicons
           key={i}
@@ -43,6 +49,8 @@ function AchievementCard({ item }: { item: Achievement }) {
 
 /** Stars collected across vocabulary, grammar, reading, exams and the learning streak. */
 export function AchievementsScreen() {
+  const { t } = useI18n();
+  const a = t.achievements;
   const name = useAuthStore((s) => s.profile?.displayName);
   const stats = useProgressStats();
   const overview = useProgressOverview();
@@ -54,7 +62,7 @@ export function AchievementsScreen() {
     void dashboard.refetch();
   };
 
-  const items = buildAchievements(stats.data, overview.data, dashboard.data?.currentStreak ?? 0);
+  const items = buildAchievements(stats.data, overview.data, dashboard.data?.currentStreak ?? 0, a);
   const sum = totals(items);
 
   return (
@@ -63,7 +71,7 @@ export function AchievementsScreen() {
         <RefreshControl refreshing={stats.isRefetching && !pending} onRefresh={refresh} />
       }
     >
-      <Header title="Erfolge" subtitle="Sammle Sterne beim Lernen" back />
+      <Header title={a.title} subtitle={a.subtitle} back />
       {pending ? (
         <>
           <Skeleton height={130} />
@@ -75,20 +83,16 @@ export function AchievementsScreen() {
       ) : (
         <>
           <Card style={styles.summary}>
-            <ProgressRing value={sum.percent} label="Gesamtfortschritt der Erfolge" />
+            <ProgressRing value={sum.percent} label={a.loadingTotal} />
             <View style={styles.summaryText}>
-              <AppText style={styles.summaryTitle}>
-                Sterne: {sum.earned}/{sum.max}
-              </AppText>
+              <AppText style={styles.summaryTitle}>{a.stars(sum.earned, sum.max)}</AppText>
               <AppText color={colors.mutedForeground}>
-                {sum.percent >= 100
-                  ? 'Alle Sterne gesammelt – unglaublich!'
-                  : `${name ? `Tolle Arbeit, ${name.split(' ')[0]}!` : 'Tolle Arbeit!'} Lerne weiter, um mehr Sterne zu sammeln.`}
+                {sum.percent >= 100 ? a.allStars : a.keepGoing(name?.split(' ')[0])}
               </AppText>
             </View>
           </Card>
-          {items.map((a) => (
-            <AchievementCard key={a.key} item={a} />
+          {items.map((item) => (
+            <AchievementCard key={item.key} item={item} />
           ))}
         </>
       )}

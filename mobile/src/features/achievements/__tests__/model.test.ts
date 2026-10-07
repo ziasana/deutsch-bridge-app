@@ -1,4 +1,5 @@
 import type { ProgressStats } from '@/types/progress';
+import { dictionaries } from '@/i18n';
 import { buildAchievements, totals } from '../model';
 
 const stats = {
@@ -21,18 +22,20 @@ const stats = {
   examPerformance: { averageScore: 80, attemptsCompleted: 7 },
 } as ProgressStats;
 
+const A = dictionaries.en.achievements;
+
 describe('achievements', () => {
   it('turns progress into 0–5 stars per achievement', () => {
     const byKey = Object.fromEntries(
-      buildAchievements(stats, undefined, 8).map((a) => [a.key, a.stars]),
+      buildAchievements(stats, undefined, 8, A).map((a) => [a.key, a.stars]),
     );
     expect(byKey).toEqual({ vocabulary: 3, grammar: 3, reading: 5, exam: 5, streak: 2 });
   });
 
   it('starts at zero with no data and sums totals', () => {
-    const empty = buildAchievements(undefined, undefined, 0);
+    const empty = buildAchievements(undefined, undefined, 0, A);
     expect(empty.every((a) => a.stars === 0)).toBe(true);
-    const sum = totals(buildAchievements(stats, undefined, 8));
+    const sum = totals(buildAchievements(stats, undefined, 8, A));
     expect(sum).toEqual({ earned: 18, max: 25, percent: 72 });
   });
 });
