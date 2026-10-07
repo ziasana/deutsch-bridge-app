@@ -18,7 +18,12 @@ export function FeedbackPanel({
 }) {
   const [enter] = useState(() => new Animated.Value(0));
   useEffect(() => {
-    Animated.spring(enter, { toValue: 1, friction: 8, tension: 120, useNativeDriver: true }).start();
+    Animated.spring(enter, {
+      toValue: 1,
+      friction: 8,
+      tension: 120,
+      useNativeDriver: true,
+    }).start();
   }, [enter]);
   const scale = useExamTextScale();
   const body = scaledText(BODY_SIZE, BODY_LINE, scale);
@@ -28,7 +33,9 @@ export function FeedbackPanel({
     <Animated.View
       style={{
         opacity: enter,
-        transform: [{ translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }],
+        transform: [
+          { translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) },
+        ],
       }}
     >
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -46,7 +53,9 @@ export function FeedbackPanel({
           ) : null}
           {feedback.explanation ? <AppText style={body}>💡 {feedback.explanation}</AppText> : null}
           {feedback.commonMistake ? (
-            <AppText style={[body, { fontStyle: 'italic' }]}>⚠️ Häufiger Fehler: {feedback.commonMistake}</AppText>
+            <AppText style={[body, { fontStyle: 'italic' }]}>
+              ⚠️ Häufiger Fehler: {feedback.commonMistake}
+            </AppText>
           ) : null}
         </View>
       </ScrollView>

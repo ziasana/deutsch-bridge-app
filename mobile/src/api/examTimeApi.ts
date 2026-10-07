@@ -19,7 +19,9 @@ export const examTimeApi = {
   startSession: (request: ExamPracticeSessionStartRequest) =>
     api.post<ExamPracticeSession>('/exam/practice-sessions', request),
   completeSession: (id: string, pausedSeconds: number) =>
-    api.post<ExamPracticeSessionResult>(`/exam/practice-sessions/${id}/complete`, { pausedSeconds }),
+    api.post<ExamPracticeSessionResult>(`/exam/practice-sessions/${id}/complete`, {
+      pausedSeconds,
+    }),
   timeManagement: (level: string) =>
     api.get<ExamTimeManagementRow[]>('/exam/practice-sessions/time-management', { level }),
   lastTimes: (section: ExamSection, level: string) =>

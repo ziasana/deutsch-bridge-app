@@ -50,8 +50,18 @@ function Example({ data }: { data: WritingLearningResponse }) {
             <AppText variant="subheading">{item.title}</AppText>
             {item.content ? <AppText color={colors.mutedForeground}>{item.content}</AppText> : null}
             <View style={styles.row}>
-              <Chip label="Vollständiger Text" selected={view === 'full'} onPress={() => setView('full')} color={darken(WRITING_COLOR)} />
-              <Chip label="Text analysieren" selected={view === 'analyze'} onPress={() => setView('analyze')} color={darken(WRITING_COLOR)} />
+              <Chip
+                label="Vollständiger Text"
+                selected={view === 'full'}
+                onPress={() => setView('full')}
+                color={darken(WRITING_COLOR)}
+              />
+              <Chip
+                label="Text analysieren"
+                selected={view === 'analyze'}
+                onPress={() => setView('analyze')}
+                color={darken(WRITING_COLOR)}
+              />
             </View>
             {view === 'full' ? (
               <AppText>{sections.map((s) => s.text).join('\n\n')}</AppText>
@@ -101,12 +111,24 @@ function Phrases({ data }: { data: WritingLearningResponse }) {
   const categories = Object.keys(labels);
   const [selected, setSelected] = useState<string | null>(null);
   const current = selected && categories.includes(selected) ? selected : categories[0];
-  const shown = data.phrases.filter((p) => p.category === current).sort((a, b) => a.sortOrder - b.sortOrder);
+  const shown = data.phrases
+    .filter((p) => p.category === current)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
   return (
     <View style={{ gap: spacing.md }}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.row}
+      >
         {categories.map((c) => (
-          <Chip key={c} label={labels[c]} selected={c === current} onPress={() => setSelected(c)} color={darken(WRITING_COLOR)} />
+          <Chip
+            key={c}
+            label={labels[c]}
+            selected={c === current}
+            onPress={() => setSelected(c)}
+            color={darken(WRITING_COLOR)}
+          />
         ))}
       </ScrollView>
       {shown.map((p) => (
@@ -143,12 +165,8 @@ function Mistakes({ data }: { data: WritingLearningResponse }) {
       {items.map((m, i) => (
         <Expandable key={m.id} title={`Fehler ${i + 1} – ${m.title}`}>
           {m.content ? <AppText>{m.content}</AppText> : null}
-          {m.data?.wrong ? (
-            <AppText style={[styles.wrong]}>✕ {m.data.wrong}</AppText>
-          ) : null}
-          {m.data?.right ? (
-            <AppText style={[styles.right]}>✓ {m.data.right}</AppText>
-          ) : null}
+          {m.data?.wrong ? <AppText style={[styles.wrong]}>✕ {m.data.wrong}</AppText> : null}
+          {m.data?.right ? <AppText style={[styles.right]}>✓ {m.data.right}</AppText> : null}
         </Expandable>
       ))}
     </View>
@@ -171,9 +189,19 @@ export function HelpSheet({ visible, onClose, tabs, data, loading }: Props) {
 
   return (
     <BottomSheet visible={visible} onClose={onClose} title="Hilfe">
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.row}
+      >
         {tabs.map((t) => (
-          <Chip key={t} label={HELP_TAB_LABELS[t]} selected={t === current} onPress={() => setTab(t)} color={darken(WRITING_COLOR)} />
+          <Chip
+            key={t}
+            label={HELP_TAB_LABELS[t]}
+            selected={t === current}
+            onPress={() => setTab(t)}
+            color={darken(WRITING_COLOR)}
+          />
         ))}
       </ScrollView>
       {loading ? (
@@ -181,7 +209,9 @@ export function HelpSheet({ visible, onClose, tabs, data, loading }: Props) {
       ) : !data ? (
         <AppText color={colors.mutedForeground}>Hilfe ist gerade nicht verfügbar.</AppText>
       ) : !helpTabHasContent(data, current) ? (
-        <AppText color={colors.mutedForeground}>Für dieses Niveau gibt es hier noch keine Inhalte.</AppText>
+        <AppText color={colors.mutedForeground}>
+          Für dieses Niveau gibt es hier noch keine Inhalte.
+        </AppText>
       ) : (
         <>
           {current === 'TIP' ? <Strategy data={data} /> : null}

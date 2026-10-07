@@ -100,7 +100,13 @@ function StartCard({
         error ? (
           <ErrorState error={error} onRetry={onRetryStart} />
         ) : (
-          <Button pill label={run.startButton} loading={loading} onPress={onStart} color={meta.color} />
+          <Button
+            pill
+            label={run.startButton}
+            loading={loading}
+            onPress={onStart}
+            color={meta.color}
+          />
         )
       }
     >

@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
-import { AppText, Button, Card, ErrorState, Skeleton } from '@/components/ui';
+import { AppText, Button, Card, ErrorState, Skeleton, ErrorNotice } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 import type { ExamExercise } from '@/types/exam';
 import type { ExamPracticeSessionResult } from '@/types/examTime';
@@ -24,11 +24,7 @@ function InfoBody({ exercise }: { exercise: ExamExercise }) {
     <ExerciseFrame
       footer={
         <>
-          {mark.error ? (
-            <AppText color={colors.destructive} accessibilityRole="alert">
-              {mark.error.message}
-            </AppText>
-          ) : null}
+          {mark.error ? <ErrorNotice error={mark.error} /> : null}
           <Button
             pill
             label={exercise.completed ? 'Als erledigt markiert ✓' : 'Als erledigt markieren'}
@@ -64,7 +60,10 @@ function WritingBody({ exercise }: { exercise: ExamExercise }) {
   const stopTimer = useStopExerciseTimer(exercise.id);
   const [timeResult, setTimeResult] = useState<ExamPracticeSessionResult | null>(null);
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <ExerciseFrame>
         <View style={styles.sizeRow}>
           <TextSizeControl color={SECTION_META[exercise.section].color} />
@@ -137,28 +136,38 @@ export function ExamExerciseScreen() {
 
   return (
     <RichContentScale>
-    <View style={styles.root}>
-      <QuizTopBar
-        title={tx(exercise.title)}
-        subtitle={`${tx(meta?.label ?? '')}${exercise.level ? ` · ${exercise.level}` : ''}`}
-        color={meta?.color ?? colors.primary}
-        onClose={close}
-        right={
-          <IconButton
-            name={exercise.bookmarked ? 'star' : 'star-outline'}
-            label={exercise.bookmarked ? 'Merkzeichen entfernen' : 'Aufgabe merken'}
-            color={exercise.bookmarked ? colors.warning : colors.mutedForeground}
-            selected={exercise.bookmarked}
-            busy={bookmark.isPending}
-            onPress={() => bookmark.mutate({ id: exercise.id, bookmarked: exercise.bookmarked })}
-          />
-        }
-      />
-      <ExamExerciseTimer exercise={exercise} armed={writing || started} fresh={!writing} />
-      <View style={{ flex: 1 }}>
-        {info ? <InfoBody exercise={exercise} /> : writing ? <WritingBody exercise={exercise} /> : <QuizRunner exercise={exercise} onStarted={() => setStarted(true)} onReset={() => setStarted(false)} />}
+      <View style={styles.root}>
+        <QuizTopBar
+          title={tx(exercise.title)}
+          subtitle={`${tx(meta?.label ?? '')}${exercise.level ? ` · ${exercise.level}` : ''}`}
+          color={meta?.color ?? colors.primary}
+          onClose={close}
+          right={
+            <IconButton
+              name={exercise.bookmarked ? 'star' : 'star-outline'}
+              label={exercise.bookmarked ? 'Merkzeichen entfernen' : 'Aufgabe merken'}
+              color={exercise.bookmarked ? colors.warning : colors.mutedForeground}
+              selected={exercise.bookmarked}
+              busy={bookmark.isPending}
+              onPress={() => bookmark.mutate({ id: exercise.id, bookmarked: exercise.bookmarked })}
+            />
+          }
+        />
+        <ExamExerciseTimer exercise={exercise} armed={writing || started} fresh={!writing} />
+        <View style={{ flex: 1 }}>
+          {info ? (
+            <InfoBody exercise={exercise} />
+          ) : writing ? (
+            <WritingBody exercise={exercise} />
+          ) : (
+            <QuizRunner
+              exercise={exercise}
+              onStarted={() => setStarted(true)}
+              onReset={() => setStarted(false)}
+            />
+          )}
+        </View>
       </View>
-    </View>
     </RichContentScale>
   );
 }

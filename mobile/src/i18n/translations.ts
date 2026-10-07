@@ -1,4 +1,5 @@
 import type { PreferredLanguage } from '@/types/user';
+import { entryEn, entryFa } from './entry';
 
 export type AppLanguage = 'en' | 'fa';
 
@@ -16,6 +17,7 @@ export function toAppLanguage(
 export const isRtlLanguage = (language: AppLanguage) => language === 'fa';
 
 const en = {
+  entry: entryEn,
   common: {
     loading: 'Loading …',
     retry: 'Try again',
@@ -40,7 +42,7 @@ const en = {
     home: 'Home',
     learn: 'Learn',
     exam: 'Exam',
-    tutor: 'Tutor',
+    tutor: 'AI Tutor',
     profile: 'Profile',
   },
   learn: {
@@ -924,8 +926,6 @@ const en = {
     deleteTitle: (title: string) => `Delete “${title}”?`,
     deleteMessage: 'The whole chat will be deleted.',
     cancel: 'Cancel',
-    greeting: 'Guten Tag! 👋',
-    greetingSub: 'I am your German tutor – practise, ask and write with me.',
     startWith: 'What would you like to start with?',
     orWrite: 'Or just write your first message …',
     loadingChat: 'Loading chat …',
@@ -1049,6 +1049,7 @@ const en = {
 export type Dictionary = typeof en;
 
 const fa: Dictionary = {
+  entry: entryFa,
   common: {
     loading: 'در حال بارگذاری …',
     retry: 'تلاش دوباره',
@@ -1073,7 +1074,7 @@ const fa: Dictionary = {
     home: 'خانه',
     learn: 'یادگیری',
     exam: 'آزمون',
-    tutor: 'مربی',
+    tutor: 'مربی Ai',
     profile: 'پروفایل',
   },
   learn: {
@@ -1965,8 +1966,6 @@ const fa: Dictionary = {
     deleteTitle: (title: string) => `«${title}» حذف شود؟`,
     deleteMessage: 'کل گفتگو حذف خواهد شد.',
     cancel: 'انصراف',
-    greeting: 'Guten Tag! 👋',
-    greetingSub: 'من مربی آلمانی شما هستم – با من تمرین کنید، بپرسید و بنویسید.',
     startWith: 'از چه چیزی شروع کنیم؟',
     orWrite: 'یا همین حالا اولین پیام خود را بنویسید …',
     loadingChat: 'در حال بارگذاری گفتگو …',

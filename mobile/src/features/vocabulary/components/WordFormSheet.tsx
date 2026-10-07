@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { AppText, BottomSheet, Button, Chip, TextField } from '@/components/ui';
+import { AppText, BottomSheet, Button, Chip, TextField, ErrorNotice } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { colors, spacing } from '@/theme';
 import type { VocabularyItem } from '@/types/vocabulary';
@@ -113,11 +113,7 @@ function WordForm({ item, onClose, onSaved }: Omit<Props, 'visible'>) {
           </AppText>
         ) : null}
       </View>
-      {save.error ? (
-        <AppText color={colors.destructive} accessibilityRole="alert">
-          {save.error.message}
-        </AppText>
-      ) : null}
+      {save.error ? <ErrorNotice error={save.error} /> : null}
       <Button
         pill
         label={f.save}

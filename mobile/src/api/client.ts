@@ -116,7 +116,12 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
     return await fetch(buildUrl(path, options.query), {
       method: options.method ?? 'GET',
       headers,
-      body: options.body === undefined ? undefined : isForm ? (options.body as FormData) : JSON.stringify(options.body),
+      body:
+        options.body === undefined
+          ? undefined
+          : isForm
+            ? (options.body as FormData)
+            : JSON.stringify(options.body),
       signal: controller.signal,
     });
   } catch {

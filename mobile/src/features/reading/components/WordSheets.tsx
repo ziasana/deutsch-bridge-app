@@ -1,6 +1,14 @@
 import * as Speech from 'expo-speech';
 import { View } from 'react-native';
-import { AppText, Badge, BottomSheet, Button, InlineError, LoadingState } from '@/components/ui';
+import {
+  AppText,
+  Badge,
+  BottomSheet,
+  Button,
+  InlineError,
+  LoadingState,
+  ErrorNotice,
+} from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { ltrText } from '@/i18n/direction';
 import { colors, spacing } from '@/theme';
@@ -63,11 +71,7 @@ export function AnnotationSheet({
           {a.exampleSentence ? (
             <AppText style={[{ fontStyle: 'italic' }, ltrText]}>„{a.exampleSentence}“</AppText>
           ) : null}
-          {error ? (
-            <AppText color={colors.destructive} accessibilityRole="alert">
-              {error}
-            </AppText>
-          ) : null}
+          {error ? <ErrorNotice message={error} /> : null}
           <Button
             label={saved ? r.savedReview : r.saveReview}
             variant={saved ? 'secondary' : 'primary'}

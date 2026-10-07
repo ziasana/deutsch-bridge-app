@@ -4,5 +4,9 @@ import { RICH_BASE_RATIO, useExamTextScale } from '../textScale';
 
 /** Applies the learner's exam text size to all rich text (passages, transcripts, info pages) below. */
 export function RichContentScale({ children }: { children: ReactNode }) {
-  return <ContentScale.Provider value={useExamTextScale() * RICH_BASE_RATIO}>{children}</ContentScale.Provider>;
+  return (
+    <ContentScale.Provider value={useExamTextScale() * RICH_BASE_RATIO}>
+      {children}
+    </ContentScale.Provider>
+  );
 }

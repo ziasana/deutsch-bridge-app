@@ -39,8 +39,18 @@ describe('groupIntoParts', () => {
 
   it('orders Sprachbausteine MC before cloze and tracks state', () => {
     const items = [
-      summary('a', { section: 'SPRACHBAUSTEINE', taskType: 'WORD_BANK_CLOZE', lastScore: 100, completed: true }),
-      summary('b', { section: 'SPRACHBAUSTEINE', taskType: 'MULTIPLE_CHOICE', completed: true, lastScore: 40 }),
+      summary('a', {
+        section: 'SPRACHBAUSTEINE',
+        taskType: 'WORD_BANK_CLOZE',
+        lastScore: 100,
+        completed: true,
+      }),
+      summary('b', {
+        section: 'SPRACHBAUSTEINE',
+        taskType: 'MULTIPLE_CHOICE',
+        completed: true,
+        lastScore: 40,
+      }),
       summary('c', { section: 'SPRACHBAUSTEINE', taskType: 'MULTIPLE_CHOICE' }),
     ];
     const groups = groupIntoParts(items, 'SPRACHBAUSTEINE');
@@ -56,7 +66,10 @@ describe('groupIntoParts', () => {
       summary('b', { partNumber: 1, level: 'A2' }),
       summary('c', { partNumber: 1, level: null }),
     ];
-    expect(exercisesForSectionAndLevel(items, 'LESEVERSTEHEN', 'B1').map((i) => i.id)).toEqual(['a', 'c']);
+    expect(exercisesForSectionAndLevel(items, 'LESEVERSTEHEN', 'B1').map((i) => i.id)).toEqual([
+      'a',
+      'c',
+    ]);
     expect(findGroupByKey(items, 'LESEVERSTEHEN', 'B1', '1')?.total).toBe(2);
     expect(findGroupByKey(items, 'LESEVERSTEHEN', 'B1', '9')).toBeNull();
   });
@@ -77,16 +90,22 @@ describe('findContinueTarget', () => {
   it('falls back to another section, then to review of the last Teil', () => {
     const lesenDone = summary('a', { lastScore: 100, completed: true });
     const hoeren = summary('h', { section: 'HOERVERSTEHEN', taskType: 'TRUE_FALSE_NOT_GIVEN' });
-    expect(findContinueTarget([lesenDone, hoeren], 'B1', 'LESEVERSTEHEN')?.section).toBe('HOERVERSTEHEN');
+    expect(findContinueTarget([lesenDone, hoeren], 'B1', 'LESEVERSTEHEN')?.section).toBe(
+      'HOERVERSTEHEN',
+    );
     expect(findContinueTarget([lesenDone], 'B1', 'LESEVERSTEHEN')?.state).toBe('completed');
     expect(findContinueTarget([], 'B1', 'LESEVERSTEHEN')).toBeNull();
-    expect(findContinueTarget([lesenDone], 'B1', 'SCHRIFTLICHER_AUSDRUCK')?.section).toBe('LESEVERSTEHEN');
+    expect(findContinueTarget([lesenDone], 'B1', 'SCHRIFTLICHER_AUSDRUCK')?.section).toBe(
+      'LESEVERSTEHEN',
+    );
   });
 });
 
 describe('content helpers', () => {
   it('turns gap spans into bold numbers', () => {
-    expect(withGapMarkers('Ich <span data-exam-gap="3" class="x">3</span> gern')).toBe('Ich **(3)** gern');
+    expect(withGapMarkers('Ich <span data-exam-gap="3" class="x">3</span> gern')).toBe(
+      'Ich **(3)** gern',
+    );
   });
   it('detects empty transcripts', () => {
     expect(isEmptyTranscript(null)).toBe(true);

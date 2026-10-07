@@ -12,7 +12,9 @@ describe('forSpeech', () => {
     expect(forSpeech('Das kostet ca. 5 € z. B. im Monat.')).toBe(
       'Das kostet circa 5 Euro zum Beispiel im Monat.',
     );
-    expect(forSpeech('Ich freue mich **(21)** dein Besuch.')).toBe('Ich freue mich Lücke 21. dein Besuch.');
+    expect(forSpeech('Ich freue mich **(21)** dein Besuch.')).toBe(
+      'Ich freue mich Lücke 21. dein Besuch.',
+    );
   });
 
   it('splits paragraphs into separate utterances and drops empty ones', () => {

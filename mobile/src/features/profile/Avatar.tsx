@@ -20,7 +20,10 @@ export function Avatar({ name, email, url, size = 56 }: Props) {
     />
   ) : (
     <View style={[styles.base, styles.fallback, box]} accessibilityLabel="Profilbild nicht gesetzt">
-      <AppText style={{ fontSize: size * 0.36, lineHeight: size * 0.5, fontWeight: '700' }} color={colors.primaryDark}>
+      <AppText
+        style={{ fontSize: size * 0.36, lineHeight: size * 0.5, fontWeight: '700' }}
+        color={colors.primaryDark}
+      >
         {initialsOf(name, email)}
       </AppText>
     </View>

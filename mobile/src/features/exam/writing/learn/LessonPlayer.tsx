@@ -220,10 +220,20 @@ function Celebration({
           />
           <View style={styles.nav}>
             <View style={{ flex: 1 }}>
-              <Button label="Noch einmal" variant="secondary" onPress={onRepeat} color={darken(WRITING_COLOR)} />
+              <Button
+                label="Noch einmal"
+                variant="secondary"
+                onPress={onRepeat}
+                color={darken(WRITING_COLOR)}
+              />
             </View>
             <View style={{ flex: 1 }}>
-              <Button label="Zur Übersicht" variant="secondary" onPress={onOverview} color={darken(WRITING_COLOR)} />
+              <Button
+                label="Zur Übersicht"
+                variant="secondary"
+                onPress={onOverview}
+                color={darken(WRITING_COLOR)}
+              />
             </View>
           </View>
         </>

@@ -106,3 +106,7 @@ notifications:
 app:
   upload:
     dir: ${UPLOAD_DIR:uploads}
+
+google:
+  # Comma-separated OAuth client IDs (web/iOS/Android) whose ID tokens are accepted for mobile Google sign-in.
+  client-ids: ${GOOGLE_CLIENT_IDS:}

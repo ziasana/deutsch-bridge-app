@@ -2,7 +2,16 @@ import { AiUsageHint } from '@/features/aiUsage/AiUsageHint';
 import { useState } from 'react';
 import { Alert, View } from 'react-native';
 import { RichContent } from '@/components/content/RichContent';
-import { AppText, Button, Card, Chip, InlineError, LoadingState, TextField } from '@/components/ui';
+import {
+  AppText,
+  Button,
+  Card,
+  Chip,
+  InlineError,
+  LoadingState,
+  TextField,
+  ErrorNotice,
+} from '@/components/ui';
 import { colors, spacing } from '@/theme';
 import type { ExamExercise } from '@/types/exam';
 import type { ExamPracticeSessionResult } from '@/types/examTime';
@@ -297,11 +306,7 @@ export function WritingExercise({ exercise, onSubmitted, timeResult }: Props) {
             </AppText>
           </View>
 
-          {submit.error ? (
-            <AppText color={colors.destructive} accessibilityRole="alert">
-              {submit.error.message}
-            </AppText>
-          ) : null}
+          {submit.error ? <ErrorNotice error={submit.error} /> : null}
           {helpTabs.length > 0 ? (
             <Button
               label="Hilfe"

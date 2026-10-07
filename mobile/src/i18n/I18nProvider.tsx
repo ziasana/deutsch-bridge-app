@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
 import { I18nManager, View } from 'react-native';
+import { env } from '@/config/env';
+import { useOnboardingStore } from '@/features/onboarding/store';
 import { useAuthStore } from '@/stores/authStore';
 import {
   dictionaries,
@@ -24,14 +26,20 @@ const I18nContext = createContext<I18n>({
 });
 
 /**
- * Interface language + text direction, driven by the account's preferredLanguage exactly like the
+ * Interface language + text direction, driven by the account's preferredLanguage like the
  * web I18nProvider: PR → Persian UI laid out right-to-left, everything else → English, LTR.
  *
  * The direction is applied with the `direction` style on a root View (not I18nManager.forceRTL),
  * so switching the language in Settings re-lays the whole app out immediately, without a restart.
  */
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const preferred = useAuthStore((s) => s.profile?.preferredLanguage);
+  const savedLanguage = useAuthStore((s) => s.profile?.preferredLanguage);
+  const settingUp = useAuthStore((s) => s.profile?.onboardingCompleted === false);
+  const draftLanguage = useOnboardingStore((s) => s.language);
+  // Signed-out screens are English. While the learning plan is being set up, the language the learner
+  // just picked applies right away, before it is saved to the account.
+  const preferred =
+    (settingUp || env.onboardingPreview) && draftLanguage ? draftLanguage : savedLanguage;
   const language = toAppLanguage(preferred);
   const isRTL = isRtlLanguage(language);
   const dir = isRTL ? 'rtl' : 'ltr';

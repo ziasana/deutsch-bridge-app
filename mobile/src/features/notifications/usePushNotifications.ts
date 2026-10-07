@@ -29,7 +29,9 @@ export function usePushNotifications(): void {
       if (id === lastHandledId) return;
       lastHandledId = id;
 
-      const { notificationId, actionUrl } = parsePushData(response.notification.request.content.data);
+      const { notificationId, actionUrl } = parsePushData(
+        response.notification.request.content.data,
+      );
       let destination = actionUrl;
       if (notificationId) {
         try {

@@ -25,6 +25,8 @@ describe('groupSessionsByDate', () => {
 
   it('omits empty groups', () => {
     expect(groupSessionsByDate([], now)).toEqual([]);
-    expect(groupSessionsByDate([s('a', new Date(2026, 9, 5).toISOString())], now).map((g) => g.key)).toEqual(['today']);
+    expect(
+      groupSessionsByDate([s('a', new Date(2026, 9, 5).toISOString())], now).map((g) => g.key),
+    ).toEqual(['today']);
   });
 });

@@ -18,7 +18,12 @@ jest.mock('@/utils/germanSpeech', () => ({ speakGerman: jest.fn(() => jest.fn())
 
 const api = writingApi as jest.Mocked<typeof writingApi>;
 
-const item = (id: string, kind: WritingGuideItem['kind'], title: string, extra: Partial<WritingGuideItem> = {}): WritingGuideItem => ({
+const item = (
+  id: string,
+  kind: WritingGuideItem['kind'],
+  title: string,
+  extra: Partial<WritingGuideItem> = {},
+): WritingGuideItem => ({
   id,
   kind,
   title,
@@ -32,15 +37,23 @@ const DATA: WritingLearningResponse = {
   level: 'B1',
   phrases: [],
   items: [
-    item('f1', 'FORMAT', 'Die Aufgabe', { content: 'Du schreibst eine E-Mail.', data: { time: '30 Min.', requirements: ['Anrede', 'Gruß'] } }),
-    item('m1', 'MISTAKE', 'Anrede', { content: 'Nach der Anrede kommt ein Komma.', data: { wrong: 'Hallo Anna!', right: 'Hallo Anna,' } }),
+    item('f1', 'FORMAT', 'Die Aufgabe', {
+      content: 'Du schreibst eine E-Mail.',
+      data: { time: '30 Min.', requirements: ['Anrede', 'Gruß'] },
+    }),
+    item('m1', 'MISTAKE', 'Anrede', {
+      content: 'Nach der Anrede kommt ein Komma.',
+      data: { wrong: 'Hallo Anna!', right: 'Hallo Anna,' },
+    }),
     item('c1', 'CHECKLIST_ITEM', 'Habe ich alle Leitpunkte?'),
   ],
 };
 
 const wrap = (ui: React.ReactElement) =>
   render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } })}>
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } })}
+    >
       {ui}
     </QueryClientProvider>,
   );
@@ -89,7 +102,9 @@ describe('WritingLearnScreen', () => {
   it('counts a first-try right answer in a quiz and a wrong one against the score', async () => {
     api.learnProgress.mockResolvedValue([{ station: 'format', correct: 0, total: 0 }]);
     await wrap(<WritingLearnScreen />);
-    await fireEvent.press(await screen.findByRole('button', { name: 'Weiterlernen: Typische Fehler' }));
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Weiterlernen: Typische Fehler' }),
+    );
 
     const options = await screen.findAllByRole('radio');
     expect(options).toHaveLength(2);

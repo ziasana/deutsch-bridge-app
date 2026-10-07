@@ -98,7 +98,9 @@ function NotificationRow({ item, onPress }: { item: NotificationItem; onPress: (
           {relativeTime(item.createdAt, t.notifications.time)}
         </AppText>
       </View>
-      {goes ? <DirectionalIcon name="chevron-forward" size={20} color={colors.mutedForeground} /> : null}
+      {goes ? (
+        <DirectionalIcon name="chevron-forward" size={20} color={colors.mutedForeground} />
+      ) : null}
     </PressableScale>
   );
 }
@@ -158,13 +160,7 @@ export function NotificationsScreen() {
   } else if (list.isError) {
     empty = <ErrorState error={list.error} onRetry={() => void list.refetch()} />;
   } else if (items.length === 0) {
-    empty = (
-      <EmptyState
-        emoji="🔔"
-        title={n.emptyTitle}
-        message={n.emptyMessage}
-      />
-    );
+    empty = <EmptyState emoji="🔔" title={n.emptyTitle} message={n.emptyMessage} />;
   }
 
   const header = (
@@ -274,10 +270,7 @@ export function NotificationsScreen() {
         ItemSeparatorComponent={Gap}
         ListFooterComponent={
           list.isFetchingNextPage ? (
-            <View
-              style={{ padding: spacing.lg }}
-              accessibilityLabel={n.loadingMore}
-            >
+            <View style={{ padding: spacing.lg }} accessibilityLabel={n.loadingMore}>
               <ActivityIndicator color={colors.primary} />
             </View>
           ) : null

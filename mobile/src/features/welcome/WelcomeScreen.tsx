@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -14,8 +13,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HexLogo } from '@/components/brand/HexLogo';
-import { AppText } from '@/components/ui';
-import { slides, type Slide } from '@/features/welcome/slides';
+import { AppText, DirectionalIcon } from '@/components/ui';
+import { SLIDE_KEYS, type Slide } from '@/features/welcome/slides';
+import { useI18n } from '@/i18n';
 import { colors, radius, spacing } from '@/theme';
 
 const SHEET_PADDING = spacing.xl;
@@ -108,7 +108,7 @@ function PillButton({
         <AppText variant="subheading" color={fg} style={styles.buttonLabel}>
           {label}
         </AppText>
-        <Ionicons name="caret-forward-outline" size={20} color={fg} />
+        <DirectionalIcon name="caret-forward-outline" size={20} color={fg} />
       </Pressable>
     </Animated.View>
   );
@@ -116,6 +116,9 @@ function PillButton({
 
 /** Welcome / login-options page: brand on top, swipeable value pitch + Register / Login below. */
 export function WelcomeScreen() {
+  const { t } = useI18n();
+  const w = t.entry.welcome;
+  const slides: Slide[] = SLIDE_KEYS.map((key, i) => ({ key, ...w.slides[i] }));
   const { width } = useWindowDimensions();
   const pageWidth = width;
   const [page, setPage] = useState(0);
@@ -188,11 +191,7 @@ export function WelcomeScreen() {
           )}
         />
 
-        <View
-          style={styles.dots}
-          accessible
-          accessibilityLabel={`Seite ${page + 1} von ${slides.length}`}
-        >
+        <View style={styles.dots} accessible accessibilityLabel={w.page(page + 1, slides.length)}>
           {slides.map((s, i) => {
             const input = [(i - 1) * pageWidth, i * pageWidth, (i + 1) * pageWidth];
             return (
@@ -220,14 +219,14 @@ export function WelcomeScreen() {
 
         <SafeAreaView edges={['bottom']} style={styles.actions}>
           <PillButton
-            label="Registrieren"
-            hint="Neues Konto erstellen"
+            label={w.register}
+            hint={w.registerHint}
             onPress={() => router.push('/register')}
           />
           <PillButton
             filled
-            label="Anmelden"
-            hint="Mit bestehendem Konto anmelden"
+            label={w.login}
+            hint={w.loginHint}
             onPress={() => router.push('/login')}
           />
         </SafeAreaView>

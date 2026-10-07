@@ -41,4 +41,6 @@ export const NO_AD_ANSWER = 'X';
 
 /** SITUATION_MATCHING answers are passage ids; show the ad's label ("e") instead of the raw id. */
 export const answerLabelFor = (passages: { id: string; label: string }[], value: string) =>
-  value === NO_AD_ANSWER ? 'x (keine Anzeige)' : (passages.find((p) => p.id === value)?.label ?? value);
+  value === NO_AD_ANSWER
+    ? 'x (keine Anzeige)'
+    : (passages.find((p) => p.id === value)?.label ?? value);

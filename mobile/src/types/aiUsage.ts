@@ -1,4 +1,5 @@
-export type AiFeature = 'AI_CHAT' | 'AI_CORRECTION' | 'AI_WRITING_FEEDBACK' | 'AI_EXAMPLE' | 'AI_SYNONYM';
+export type AiFeature =
+  'AI_CHAT' | 'AI_CORRECTION' | 'AI_WRITING_FEEDBACK' | 'AI_EXAMPLE' | 'AI_SYNONYM';
 
 export interface AiFeatureUsage {
   limit: number;

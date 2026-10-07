@@ -17,7 +17,10 @@ describe('connectivity', () => {
   });
 
   it('follows the network state', async () => {
-    let emit: (s: { isConnected: boolean | null; isInternetReachable: boolean | null }) => void = () => {};
+    let emit: (s: {
+      isConnected: boolean | null;
+      isInternetReachable: boolean | null;
+    }) => void = () => {};
     net.addEventListener.mockImplementation((cb) => {
       emit = cb;
       return jest.fn();

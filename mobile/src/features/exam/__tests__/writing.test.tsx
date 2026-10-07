@@ -36,7 +36,14 @@ const writing = writingApi as jest.Mocked<typeof writingApi>;
 const wrap = (ui: React.ReactElement) =>
   render(
     <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } } })}
+      client={
+        new QueryClient({
+          defaultOptions: {
+            queries: { retry: false, gcTime: Infinity },
+            mutations: { gcTime: Infinity },
+          },
+        })
+      }
     >
       {ui}
     </QueryClientProvider>,
@@ -45,12 +52,31 @@ const wrap = (ui: React.ReactElement) =>
 const feedback = (over: Partial<WritingFeedback> = {}): WritingFeedback => ({
   source: 'RULES',
   dimensions: [
-    { key: 'TASK', title: 'Aufgabenerfüllung', status: 'IMPROVE', positives: [], improvements: ['Gehe auf alle Punkte ein.'] },
-    { key: 'FORM', title: 'Form', status: 'GOOD', positives: ['Anrede vorhanden.'], improvements: [] },
+    {
+      key: 'TASK',
+      title: 'Aufgabenerfüllung',
+      status: 'IMPROVE',
+      positives: [],
+      improvements: ['Gehe auf alle Punkte ein.'],
+    },
+    {
+      key: 'FORM',
+      title: 'Form',
+      status: 'GOOD',
+      positives: ['Anrede vorhanden.'],
+      improvements: [],
+    },
   ],
   highlights: ['Gute Einleitung'],
   nextFocus: ['Verbindungswörter nutzen'],
-  stats: { wordCount: 5, sentenceCount: 1, paragraphCount: 1, connectorCount: 0, usedPhrases: [], uncoveredLeitpunkte: [] },
+  stats: {
+    wordCount: 5,
+    sentenceCount: 1,
+    paragraphCount: 1,
+    connectorCount: 0,
+    usedPhrases: [],
+    uncoveredLeitpunkte: [],
+  },
   ...over,
 });
 
@@ -98,10 +124,30 @@ describe('Schreiben', () => {
   it('writes, autosaves a draft, confirms, submits and shows feedback', async () => {
     api.byId.mockResolvedValue(writingExercise());
     time.startSession.mockResolvedValue({
-      id: 'ps', scope: 'EXERCISE', mode: 'TIME_TRAINING', section: 'SCHRIFTLICHER_AUSDRUCK', level: 'B1', teil: 2, exerciseId: 'w1', startedAt: '', targetSeconds: 1800,
+      id: 'ps',
+      scope: 'EXERCISE',
+      mode: 'TIME_TRAINING',
+      section: 'SCHRIFTLICHER_AUSDRUCK',
+      level: 'B1',
+      teil: 2,
+      exerciseId: 'w1',
+      startedAt: '',
+      targetSeconds: 1800,
     });
     time.completeSession.mockResolvedValue({
-      id: 'ps', scope: 'EXERCISE', mode: 'TIME_TRAINING', section: 'SCHRIFTLICHER_AUSDRUCK', level: 'B1', teil: 2, elapsedSeconds: 1500, targetSeconds: 1800, differenceSeconds: -300, questionsTotal: 0, questionsAnswered: 0, correctAnswers: 0, score: null,
+      id: 'ps',
+      scope: 'EXERCISE',
+      mode: 'TIME_TRAINING',
+      section: 'SCHRIFTLICHER_AUSDRUCK',
+      level: 'B1',
+      teil: 2,
+      elapsedSeconds: 1500,
+      targetSeconds: 1800,
+      differenceSeconds: -300,
+      questionsTotal: 0,
+      questionsAnswered: 0,
+      correctAnswers: 0,
+      score: null,
     });
     writing.submit.mockResolvedValue(attempt(1, 'Sehr geehrte Frau Müller bitte helfen'));
     const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
@@ -114,7 +160,9 @@ describe('Schreiben', () => {
     await fireEvent.changeText(field, 'Sehr geehrte Frau Müller bitte helfen');
     expect(screen.getByText('Wörter: 6')).toBeTruthy();
     await waitFor(async () =>
-      expect(JSON.parse((await AsyncStorage.getItem('writing-draft-w1')) ?? '{}').text).toBe('Sehr geehrte Frau Müller bitte helfen'),
+      expect(JSON.parse((await AsyncStorage.getItem('writing-draft-w1')) ?? '{}').text).toBe(
+        'Sehr geehrte Frau Müller bitte helfen',
+      ),
     );
 
     await fireEvent.press(screen.getByRole('button', { name: 'Abgeben' }));
@@ -154,10 +202,27 @@ describe('Schreiben', () => {
     writing.learning.mockResolvedValue({
       level: 'B1',
       items: [
-        { id: 'i1', kind: 'STRATEGY_STEP', title: 'Aufgabe lesen', content: 'Lies genau.', data: { tips: ['Markiere Leitpunkte'] }, sortOrder: 1 },
+        {
+          id: 'i1',
+          kind: 'STRATEGY_STEP',
+          title: 'Aufgabe lesen',
+          content: 'Lies genau.',
+          data: { tips: ['Markiere Leitpunkte'] },
+          sortOrder: 1,
+        },
       ],
       phrases: [
-        { id: 'p1', category: 'wunsch', categoryLabel: 'Wunsch', phrase: 'Ich würde gern …', explanation: null, example: null, formality: 'FORMAL', usageNote: null, sortOrder: 1 },
+        {
+          id: 'p1',
+          category: 'wunsch',
+          categoryLabel: 'Wunsch',
+          phrase: 'Ich würde gern …',
+          explanation: null,
+          example: null,
+          formality: 'FORMAL',
+          usageNote: null,
+          sortOrder: 1,
+        },
       ],
     });
     await wrap(<ExamExerciseScreen />);
@@ -184,8 +249,18 @@ describe('Schreiben', () => {
       .mockResolvedValueOnce(
         attempt(1, 'Mein Text ist kurz', {
           aiFeedback: {
-            positives: ['Klar formuliert'], missingPoints: [], vocabulary: [], structure: [], improvementExample: null,
-            grammar: [{ original: 'ich bin kurz', corrected: 'ich fasse mich kurz', explanation: 'Reflexiv' }],
+            positives: ['Klar formuliert'],
+            missingPoints: [],
+            vocabulary: [],
+            structure: [],
+            improvementExample: null,
+            grammar: [
+              {
+                original: 'ich bin kurz',
+                corrected: 'ich fasse mich kurz',
+                explanation: 'Reflexiv',
+              },
+            ],
           },
         }),
       );
@@ -215,7 +290,9 @@ describe('Schreiben', () => {
     await fireEvent.changeText(field, 'Ich habe ein großes Problem');
     await fireEvent.press(screen.getByRole('button', { name: 'Abgeben' }));
     await waitFor(() =>
-      expect(writing.submit).toHaveBeenCalledWith(expect.objectContaining({ parentAttemptId: 'a1' })),
+      expect(writing.submit).toHaveBeenCalledWith(
+        expect.objectContaining({ parentAttemptId: 'a1' }),
+      ),
     );
 
     expect(await screen.findByText('Versuch 2 · 5 Wörter')).toBeTruthy();
@@ -248,16 +325,27 @@ describe('wordDiff', () => {
       ['same', 'Problem'],
     ]);
     expect(diffWords('a b', 'a b').every((p) => p.kind === 'same')).toBe(true);
-    expect(diffWords('x', 'y').map((p) => p.kind).sort()).toEqual(['added', 'removed']);
+    expect(
+      diffWords('x', 'y')
+        .map((p) => p.kind)
+        .sort(),
+    ).toEqual(['added', 'removed']);
   });
 });
 
 describe('timing screens', () => {
   it('shows the Teil time card with recommended minutes and last times per exercise', async () => {
     mockParams = { section: 'LESEVERSTEHEN', level: 'B1', part: '1' };
-    api.exercisesForLevel.mockResolvedValue([summary('a', { title: '1. Übung', teil: 1 }), summary('b', { title: '2. Übung', teil: 1 })]);
-    time.configurations.mockResolvedValue([{ examType: 'TELC', level: 'B1', section: 'LESEVERSTEHEN', teil: 1, recommendedMinutes: 15 }]);
-    time.lastTimes.mockResolvedValue([{ exerciseId: 'a', elapsedSeconds: 600, targetSeconds: 900 }]);
+    api.exercisesForLevel.mockResolvedValue([
+      summary('a', { title: '1. Übung', teil: 1 }),
+      summary('b', { title: '2. Übung', teil: 1 }),
+    ]);
+    time.configurations.mockResolvedValue([
+      { examType: 'TELC', level: 'B1', section: 'LESEVERSTEHEN', teil: 1, recommendedMinutes: 15 },
+    ]);
+    time.lastTimes.mockResolvedValue([
+      { exerciseId: 'a', elapsedSeconds: 600, targetSeconds: 900 },
+    ]);
     await wrap(<ExamTeilScreen />);
     expect(await screen.findByText(/Recommended time per exercise: 15 min/)).toBeTruthy();
     expect(await screen.findByText(/Last time 10:00 of 15:00/)).toBeTruthy();
@@ -267,8 +355,22 @@ describe('timing screens', () => {
   it('lists average times per Teil in Zeitmanagement', async () => {
     mockParams = { level: 'B1' };
     time.timeManagement.mockResolvedValue([
-      { section: 'LESEVERSTEHEN', teil: 1, sessions: 3, averageSeconds: 780, targetSeconds: 900, differenceSeconds: -120 },
-      { section: 'SPRACHBAUSTEINE', teil: 2, sessions: 1, averageSeconds: 700, targetSeconds: null, differenceSeconds: null },
+      {
+        section: 'LESEVERSTEHEN',
+        teil: 1,
+        sessions: 3,
+        averageSeconds: 780,
+        targetSeconds: 900,
+        differenceSeconds: -120,
+      },
+      {
+        section: 'SPRACHBAUSTEINE',
+        teil: 2,
+        sessions: 1,
+        averageSeconds: 700,
+        targetSeconds: null,
+        differenceSeconds: null,
+      },
     ]);
     await wrap(<ZeitmanagementScreen />);
     expect(await screen.findByText('Lesen · Teil 1')).toBeTruthy();
@@ -290,7 +392,10 @@ describe('local data on sign-out', () => {
   it('removes writing drafts and the running timer but keeps other keys', async () => {
     await AsyncStorage.setItem('writing-draft-x', '{}');
     await AsyncStorage.setItem('unrelated', '1');
-    useExamTimerStore.setState({ active: { sessionId: 's' } as never, lastResult: { id: 'r' } as never });
+    useExamTimerStore.setState({
+      active: { sessionId: 's' } as never,
+      lastResult: { id: 'r' } as never,
+    });
     await act(async () => clearExamLocalData());
     expect(await AsyncStorage.getItem('writing-draft-x')).toBeNull();
     expect(await AsyncStorage.getItem('unrelated')).toBe('1');

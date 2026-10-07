@@ -33,7 +33,11 @@ export function PushCard() {
             {state.data === 'denied' ? p.denied : p.offer}
           </AppText>
           {state.data === 'denied' ? (
-            <Button label={p.openSettings} variant="secondary" onPress={() => void Linking.openSettings()} />
+            <Button
+              label={p.openSettings}
+              variant="secondary"
+              onPress={() => void Linking.openSettings()}
+            />
           ) : (
             <Button label={p.enable} loading={enable.isPending} onPress={() => enable.mutate()} />
           )}

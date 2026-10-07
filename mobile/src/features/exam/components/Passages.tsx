@@ -58,7 +58,11 @@ const blockText = (b: BlockNode): string => {
 /** Plain text of a passage, for word counts and read-aloud. */
 const plainTextOf = (passages: ExamPassagePublic[]) =>
   passages
-    .map((p) => parseBlocks(withGapMarkers(p.content ?? '')).map(blockText).join('\n'))
+    .map((p) =>
+      parseBlocks(withGapMarkers(p.content ?? ''))
+        .map(blockText)
+        .join('\n'),
+    )
     .join('\n')
     .replace(/\*\*/g, '')
     .trim();
@@ -136,7 +140,11 @@ export function ReadingCard({
               </AppText>
             ) : null}
           </View>
-          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={colors.mutedForeground} />
+          <Ionicons
+            name={open ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            color={colors.mutedForeground}
+          />
         </Pressable>
         {readable && open ? (
           <Pressable
@@ -146,7 +154,11 @@ export function ReadingCard({
             onPress={toggleSpeech}
             style={[styles.speak, { backgroundColor: speaking ? color : tint(color, '33') }]}
           >
-            <Ionicons name={speaking ? 'stop' : 'volume-high'} size={20} color={speaking ? '#FFFFFF' : color} />
+            <Ionicons
+              name={speaking ? 'stop' : 'volume-high'}
+              size={20}
+              color={speaking ? '#FFFFFF' : color}
+            />
           </Pressable>
         ) : null}
       </View>
@@ -166,7 +178,11 @@ export function ReadingCard({
           {words > 0 ? (
             <View style={styles.tip}>
               <Ionicons name="color-wand-outline" size={16} color={colors.mutedForeground} />
-              <AppText variant="caption" color={colors.mutedForeground} style={scaledText(12, 16, Math.min(scale, 1.15))}>
+              <AppText
+                variant="caption"
+                color={colors.mutedForeground}
+                style={scaledText(12, 16, Math.min(scale, 1.15))}
+              >
                 Tippe auf einen Absatz, um ihn zu markieren.
               </AppText>
             </View>
@@ -209,10 +225,19 @@ export function WordBank({
               key={`${i}-${option}`}
               accessible
               accessibilityLabel={`${optionLabelFor(labels, i)}: ${option}${gone ? ', benutzt' : ''}`}
-              style={[styles.wordChip, { backgroundColor: tint(color, '14') }, gone && { opacity: 0.4 }]}
+              style={[
+                styles.wordChip,
+                { backgroundColor: tint(color, '14') },
+                gone && { opacity: 0.4 },
+              ]}
             >
               <AppText style={[styles.wordLetter, { color }]}>{optionLabelFor(labels, i)}</AppText>
-              <AppText style={[scaledText(BODY_SIZE, BODY_LINE, scale), gone && { textDecorationLine: 'line-through' }]}>
+              <AppText
+                style={[
+                  scaledText(BODY_SIZE, BODY_LINE, scale),
+                  gone && { textDecorationLine: 'line-through' },
+                ]}
+              >
                 {option}
               </AppText>
             </View>
@@ -246,8 +271,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
-  readingIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  speak: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  readingIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  speak: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   readingBody: {
     margin: spacing.lg,
     marginTop: spacing.md,

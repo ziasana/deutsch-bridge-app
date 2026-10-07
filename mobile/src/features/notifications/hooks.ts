@@ -105,11 +105,15 @@ export const useNotificationPreferences = () =>
 export function useUpdateNotificationPreferences() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (patch: Partial<NotificationPreferences>) => notificationApi.updatePreferences(patch),
+    mutationFn: (patch: Partial<NotificationPreferences>) =>
+      notificationApi.updatePreferences(patch),
     onMutate: async (patch) => {
       await queryClient.cancelQueries({ queryKey: notificationKeys.preferences });
-      const previous = queryClient.getQueryData<NotificationPreferences>(notificationKeys.preferences);
-      if (previous) queryClient.setQueryData(notificationKeys.preferences, { ...previous, ...patch });
+      const previous = queryClient.getQueryData<NotificationPreferences>(
+        notificationKeys.preferences,
+      );
+      if (previous)
+        queryClient.setQueryData(notificationKeys.preferences, { ...previous, ...patch });
       return { previous };
     },
     onError: (_e, _patch, ctx) => {
@@ -120,7 +124,9 @@ export function useUpdateNotificationPreferences() {
       // The profile's older notificationsEnabled flag mirrors the master switch on the backend.
       const profile = useAuthStore.getState().profile;
       if (patch.learningRemindersEnabled !== undefined && profile) {
-        useAuthStore.getState().setProfile({ ...profile, notificationsEnabled: patch.learningRemindersEnabled });
+        useAuthStore
+          .getState()
+          .setProfile({ ...profile, notificationsEnabled: patch.learningRemindersEnabled });
       }
     },
   });

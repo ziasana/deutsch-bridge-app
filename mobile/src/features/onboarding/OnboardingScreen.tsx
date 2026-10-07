@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState, type ComponentProps, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ComponentProps, type ReactNode } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppText, Button, Chip, ConfirmSheet, TextField } from '@/components/ui';
+import { AppText, Button, Chip, ConfirmSheet, DirectionalIcon, TextField } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { router } from 'expo-router';
 import { env } from '@/config/env';
 import { useAuthStore } from '@/stores/authStore';
@@ -11,14 +12,7 @@ import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import { ChoiceCard } from './ChoiceCard';
 import { useCompleteOnboarding } from './hooks';
 import { OnboardingComplete } from './OnboardingComplete';
-import {
-  DAILY_WORD_OPTIONS,
-  EXAM_OPTIONS,
-  FOCUS_OPTIONS,
-  LANGUAGE_OPTIONS,
-  LEVEL_OPTIONS,
-  REASON_OPTIONS,
-} from './options';
+import { buildOptions } from './options';
 import {
   MAX_FOCUS,
   examDateProblem,
@@ -33,42 +27,14 @@ import { useOnboardingStore } from './store';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
-const STEP_COPY: Record<StepId, { icon: IconName; title: string; subtitle: string }> = {
-  language: {
-    icon: 'language-outline',
-    title: 'Wie sollen wir Deutsch erklären?',
-    subtitle: 'Wähle die Sprache, in der du Erklärungen und Übersetzungen am liebsten liest.',
-  },
-  reason: {
-    icon: 'compass-outline',
-    title: 'Warum lernst du Deutsch?',
-    subtitle: 'Dein Ziel hilft uns, dein Lernen zu personalisieren.',
-  },
-  currentLevel: {
-    icon: 'bar-chart-outline',
-    title: 'Wie gut ist dein Deutsch aktuell?',
-    subtitle: 'Wähle das Niveau, das dein Deutsch heute am besten beschreibt.',
-  },
-  targetLevel: {
-    icon: 'flag-outline',
-    title: 'Welches Niveau möchtest du erreichen?',
-    subtitle: 'Mit diesem Ziel gestalten wir deinen Lernpfad.',
-  },
-  dailyWords: {
-    icon: 'locate-outline',
-    title: 'Wie viele neue Wörter möchtest du pro Tag lernen?',
-    subtitle: 'Wähle ein Tempo, das für dich realistisch ist.',
-  },
-  focus: {
-    icon: 'sparkles-outline',
-    title: 'Was möchtest du verbessern?',
-    subtitle: `Wähle bis zu ${MAX_FOCUS} Bereiche.`,
-  },
-  exam: {
-    icon: 'school-outline',
-    title: 'Auf welche Prüfung bereitest du dich vor?',
-    subtitle: 'So passen wir die Übungen an das Format deiner Prüfung an.',
-  },
+const STEP_ICONS: Record<StepId, IconName> = {
+  language: 'language-outline',
+  reason: 'compass-outline',
+  currentLevel: 'bar-chart-outline',
+  targetLevel: 'flag-outline',
+  dailyWords: 'locate-outline',
+  focus: 'sparkles-outline',
+  exam: 'school-outline',
 };
 
 function FadeIn({ id, children }: { id: string; children: ReactNode }) {
@@ -91,16 +57,17 @@ function FadeIn({ id, children }: { id: string; children: ReactNode }) {
 
 /** One thin bar segment per step, filled up to the current one. */
 function SegmentedProgress({ index, total }: { index: number; total: number }) {
+  const { t } = useI18n();
   return (
     <View
       accessible
       accessibilityRole="progressbar"
-      accessibilityLabel="Einrichtung"
+      accessibilityLabel={t.entry.onboarding.setup}
       accessibilityValue={{
         min: 1,
         max: total,
         now: index + 1,
-        text: `Schritt ${index + 1} von ${total}`,
+        text: t.entry.onboarding.step(index + 1, total),
       }}
       style={styles.segments}
     >
@@ -113,6 +80,9 @@ function SegmentedProgress({ index, total }: { index: number; total: number }) {
 
 function StepBody({ step }: { step: StepId }) {
   const plan = useOnboardingStore();
+  const { t } = useI18n();
+  const ob = t.entry.onboarding;
+  const opts = useMemo(() => buildOptions(ob), [ob]);
   const { patch, toggleReason, toggleFocus } = plan;
   const [showGuide, setShowGuide] = useState(false);
 
@@ -120,7 +90,7 @@ function StepBody({ step }: { step: StepId }) {
     case 'language':
       return (
         <>
-          {LANGUAGE_OPTIONS.map((o) => (
+          {opts.languages.map((o) => (
             <ChoiceCard
               key={o.value}
               option={o}
@@ -129,15 +99,14 @@ function StepBody({ step }: { step: StepId }) {
             />
           ))}
           <AppText variant="caption" color={colors.mutedForeground}>
-            Deutsch bleibt deine Lernsprache – das ändert nur die Sprache von Grammatiktipps,
-            Wortbedeutungen und Anleitungen.
+            {ob.languageNote}
           </AppText>
         </>
       );
     case 'reason':
       return (
         <>
-          {REASON_OPTIONS.map((o) => (
+          {opts.reasons.map((o) => (
             <ChoiceCard
               multi
               key={o.value}
@@ -151,7 +120,7 @@ function StepBody({ step }: { step: StepId }) {
     case 'currentLevel':
       return (
         <>
-          {LEVEL_OPTIONS.map((o) => (
+          {opts.levels.map((o) => (
             <ChoiceCard
               key={o.value}
               option={{ ...o, description: undefined }}
@@ -162,8 +131,8 @@ function StepBody({ step }: { step: StepId }) {
           <ChoiceCard
             option={{
               value: 'unknown',
-              label: 'Nicht sicher',
-              description: 'Wir schlagen einen Startpunkt vor und passen ihn beim Lernen an.',
+              label: ob.notSure.label,
+              description: ob.notSure.description,
             }}
             selected={plan.currentLevelUnknown}
             onPress={() => patch({ currentLevel: null, currentLevelUnknown: true })}
@@ -174,12 +143,12 @@ function StepBody({ step }: { step: StepId }) {
             style={styles.linkBtn}
           >
             <AppText variant="small" color={colors.primaryDark}>
-              Nicht sicher, welches Niveau du hast?
+              {ob.notSureLink}
             </AppText>
           </Pressable>
           {showGuide ? (
             <View style={styles.guide}>
-              {LEVEL_OPTIONS.map((o) => (
+              {opts.levels.map((o) => (
                 <AppText key={o.value} variant="small" color={colors.mutedForeground}>
                   <AppText variant="small" style={styles.bold}>
                     {o.value}
@@ -194,7 +163,7 @@ function StepBody({ step }: { step: StepId }) {
     case 'targetLevel':
       return (
         <>
-          {LEVEL_OPTIONS.map((o) => (
+          {opts.levels.map((o) => (
             <ChoiceCard
               key={o.value}
               option={{ ...o, description: undefined }}
@@ -205,7 +174,7 @@ function StepBody({ step }: { step: StepId }) {
           ))}
           {!plan.currentLevelUnknown && plan.currentLevel ? (
             <AppText variant="caption" color={colors.mutedForeground}>
-              Dein Zielniveau sollte höher sein als dein aktuelles Niveau ({plan.currentLevel}).
+              {ob.targetNote(plan.currentLevel)}
             </AppText>
           ) : null}
         </>
@@ -213,13 +182,13 @@ function StepBody({ step }: { step: StepId }) {
     case 'dailyWords':
       return (
         <View style={styles.grid}>
-          {DAILY_WORD_OPTIONS.map((o) => {
+          {opts.dailyWords.map((o) => {
             const on = plan.dailyWords === o.value;
             return (
               <Pressable
                 key={o.value}
                 accessibilityRole="radio"
-                accessibilityLabel={`${o.value} Wörter pro Tag, ${o.description}`}
+                accessibilityLabel={ob.wordsPerDayLabel(o.value, o.description ?? '')}
                 accessibilityState={{ checked: on }}
                 onPress={() => patch({ dailyWords: o.value })}
                 style={[styles.tile, on && styles.tileOn]}
@@ -228,7 +197,7 @@ function StepBody({ step }: { step: StepId }) {
                   {o.value}
                 </AppText>
                 <AppText variant="small" color={colors.mutedForeground}>
-                  Wörter/Tag
+                  {ob.wordsPerDay}
                 </AppText>
                 <AppText variant="caption" color={on ? colors.primaryDark : colors.mutedForeground}>
                   {o.description}
@@ -242,7 +211,7 @@ function StepBody({ step }: { step: StepId }) {
       const full = plan.focus.length >= MAX_FOCUS;
       return (
         <>
-          {FOCUS_OPTIONS.map((o) => {
+          {opts.focus.map((o) => {
             const on = plan.focus.includes(o.value);
             return (
               <ChoiceCard
@@ -263,7 +232,7 @@ function StepBody({ step }: { step: StepId }) {
       return (
         <View style={styles.examGroup}>
           <View style={styles.chips}>
-            {EXAM_OPTIONS.map((o) => (
+            {opts.exams.map((o) => (
               <Chip
                 key={o.value}
                 label={o.label}
@@ -273,10 +242,10 @@ function StepBody({ step }: { step: StepId }) {
             ))}
           </View>
           <AppText variant="subheading" color={colors.ink}>
-            Für welches Niveau bereitest du dich vor?
+            {ob.examLevelQ}
           </AppText>
           <View style={styles.chips}>
-            {LEVEL_OPTIONS.map((o) => (
+            {opts.levels.map((o) => (
               <Chip
                 key={o.value}
                 label={o.value}
@@ -286,15 +255,15 @@ function StepBody({ step }: { step: StepId }) {
             ))}
           </View>
           <AppText variant="subheading" color={colors.ink}>
-            Hast du schon einen Prüfungstermin?
+            {ob.examDateQ}
           </AppText>
           <ChoiceCard
-            option={{ value: false, label: 'Noch nicht' }}
+            option={{ value: false, label: ob.notYet }}
             selected={!plan.hasExamDate}
             onPress={() => patch({ hasExamDate: false })}
           />
           <ChoiceCard
-            option={{ value: true, label: 'Ja' }}
+            option={{ value: true, label: ob.yes }}
             selected={plan.hasExamDate}
             onPress={() => patch({ hasExamDate: true })}
           />
@@ -302,12 +271,18 @@ function StepBody({ step }: { step: StepId }) {
             <TextField
               pill
               hideLabel
-              label="Prüfungstermin"
-              placeholder="TT.MM.JJJJ"
+              label={ob.examDate}
+              placeholder={ob.examDatePlaceholder}
               keyboardType="numbers-and-punctuation"
               value={plan.examDateText}
               onChangeText={(t) => patch({ examDateText: t })}
-              error={plan.examDateText ? (problem ?? undefined) : undefined}
+              error={
+                plan.examDateText && problem
+                  ? problem === 'format'
+                    ? ob.dateFormat
+                    : ob.datePast
+                  : undefined
+              }
             />
           ) : null}
         </View>
@@ -325,6 +300,8 @@ export function OnboardingScreen() {
   const setProfile = useAuthStore((s) => s.setProfile);
   const signOut = useAuthStore((s) => s.signOut);
   const store = useOnboardingStore();
+  const { t } = useI18n();
+  const ob = t.entry.onboarding;
   const complete = useCompleteOnboarding();
   const [saved, setSaved] = useState<UserProfile | null>(null);
   const [signOutOpen, setSignOutOpen] = useState(false);
@@ -369,7 +346,9 @@ export function OnboardingScreen() {
 
   const confirmSignOut = () => setSignOutOpen(true);
 
-  const copy = STEP_COPY[step];
+  const stepCopy = ob.steps[step];
+  const subtitle =
+    step === 'focus' ? ob.steps.focus.subtitle(MAX_FOCUS) : (stepCopy.subtitle as string);
 
   return (
     <SafeAreaView style={styles.root}>
@@ -377,25 +356,25 @@ export function OnboardingScreen() {
         {index > 0 ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Zurück"
+            accessibilityLabel={t.entry.common.back}
             onPress={() => store.setStep(steps[index - 1])}
             hitSlop={8}
             style={styles.back}
           >
-            <Ionicons name="chevron-back" size={24} color={colors.ink} />
+            <DirectionalIcon name="chevron-back" size={24} color={colors.ink} />
           </Pressable>
         ) : env.onboardingPreview ? (
           <View style={styles.signOut} />
         ) : (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Abmelden"
+            accessibilityLabel={ob.signOut}
             onPress={confirmSignOut}
             hitSlop={8}
             style={styles.signOut}
           >
             <AppText variant="small" color={colors.mutedForeground}>
-              Abmelden
+              {ob.signOut}
             </AppText>
           </Pressable>
         )}
@@ -403,16 +382,16 @@ export function OnboardingScreen() {
           <SegmentedProgress index={index} total={steps.length} />
         </View>
         <AppText variant="caption" color={colors.primaryDark} style={styles.stepPill}>
-          Schritt {index + 1} von {steps.length}
+          {ob.step(index + 1, steps.length)}
         </AppText>
       </View>
 
       <ConfirmSheet
         visible={signOutOpen}
         destructive
-        title="Abmelden?"
-        message="Möchtest du dich wirklich abmelden?"
-        confirmLabel="Abmelden"
+        title={ob.signOutTitle}
+        message={ob.signOutMessage}
+        confirmLabel={ob.signOut}
         onConfirm={() => {
           setSignOutOpen(false);
           void signOut();
@@ -431,18 +410,18 @@ export function OnboardingScreen() {
               <View style={styles.banner}>
                 <Ionicons name="checkmark-circle" size={18} color={colors.success} />
                 <AppText variant="small" color={colors.primaryDark} style={styles.bannerText}>
-                  Konto erstellt – lass uns dein Deutschlernen personalisieren.
+                  {ob.banner}
                 </AppText>
               </View>
             ) : null}
             <View style={styles.heading}>
               <View style={styles.headIcon}>
-                <Ionicons name={copy.icon} size={26} color="#FFFFFF" />
+                <Ionicons name={STEP_ICONS[step]} size={26} color="#FFFFFF" />
               </View>
               <AppText style={styles.title} accessibilityRole="header">
-                {copy.title}
+                {stepCopy.title}
               </AppText>
-              <AppText color={colors.mutedForeground}>{copy.subtitle}</AppText>
+              <AppText color={colors.mutedForeground}>{subtitle}</AppText>
             </View>
             <StepBody step={step} />
           </View>
@@ -457,7 +436,7 @@ export function OnboardingScreen() {
         ) : null}
         <Button
           pill
-          label={last ? 'Fertig' : 'Weiter'}
+          label={last ? ob.done : t.entry.common.next}
           disabled={!valid}
           loading={complete.isPending}
           onPress={next}

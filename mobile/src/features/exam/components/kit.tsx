@@ -240,7 +240,11 @@ export function TextSizeControl({ color, dark }: { color?: string; dark?: string
         style={[styles.sizeBtn, index === 0 && { opacity: 0.35 }]}
       >
         <AppText
-          style={[styles.sizeA, { fontSize: 13, lineHeight: 18 }, textColor ? { color: textColor } : null]}
+          style={[
+            styles.sizeA,
+            { fontSize: 13, lineHeight: 18 },
+            textColor ? { color: textColor } : null,
+          ]}
         >
           A
         </AppText>
@@ -272,7 +276,11 @@ export function TextSizeControl({ color, dark }: { color?: string; dark?: string
         style={[styles.sizeBtn, index === last && { opacity: 0.35 }]}
       >
         <AppText
-          style={[styles.sizeA, { fontSize: 21, lineHeight: 26 }, textColor ? { color: textColor } : null]}
+          style={[
+            styles.sizeA,
+            { fontSize: 21, lineHeight: 26 },
+            textColor ? { color: textColor } : null,
+          ]}
         >
           A
         </AppText>

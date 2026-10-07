@@ -161,13 +161,13 @@ function Character() {
   );
 }
 
-type Props = { onUsePhrase?: (phrase: string) => void };
+type Props = { onUsePhrase?: (phrase: string) => void; scale?: number };
 
 /**
  * Hero illustration for the Tutor: a studying tutor with floating letters and a speech bubble.
  * Tap the tutor for another phrase; tap the bubble to practise that phrase in the chat.
  */
-export function TutorIllustration({ onUsePhrase }: Props) {
+export function TutorIllustration({ onUsePhrase, scale = 1 }: Props) {
   const [index, setIndex] = useState(0);
   const [pop] = useState(() => new Animated.Value(1));
   const phrase = TUTOR_PHRASES[index];
@@ -179,33 +179,35 @@ export function TutorIllustration({ onUsePhrase }: Props) {
   };
 
   return (
-    <View style={styles.box}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Tutor"
-        accessibilityHint="Zeigt einen neuen deutschen Satz"
-        onPress={next}
-        style={styles.fill}
-      >
-        <Character />
-      </Pressable>
-      {DOODLES.map((d) => (
-        <Doodle key={d.text} spec={d} />
-      ))}
-      <Animated.View style={[styles.bubbleWrap, { transform: [{ scale: pop }] }]}>
+    <View style={{ width: W * scale, height: H * scale }}>
+      <View style={[styles.box, { transform: [{ scale }], transformOrigin: 'top left' }]}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Satz üben: ${phrase}`}
-          onPress={() => onUsePhrase?.(phrase)}
-          style={styles.bubble}
+          accessibilityLabel="Tutor"
+          accessibilityHint="Zeigt einen neuen deutschen Satz"
+          onPress={next}
+          style={styles.fill}
         >
-          <AppText style={styles.bubbleText} color={colors.ink} numberOfLines={1}>
-            {phrase}
-          </AppText>
-          <Ionicons name="arrow-forward-circle" size={18} color={colors.brand} />
+          <Character />
         </Pressable>
-        <View style={styles.tail} />
-      </Animated.View>
+        {DOODLES.map((d) => (
+          <Doodle key={d.text} spec={d} />
+        ))}
+        <Animated.View style={[styles.bubbleWrap, { transform: [{ scale: pop }] }]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Satz üben: ${phrase}`}
+            onPress={() => onUsePhrase?.(phrase)}
+            style={styles.bubble}
+          >
+            <AppText style={styles.bubbleText} color={colors.ink} numberOfLines={1}>
+              {phrase}
+            </AppText>
+            <Ionicons name="arrow-forward-circle" size={18} color={colors.brand} />
+          </Pressable>
+          <View style={styles.tail} />
+        </Animated.View>
+      </View>
     </View>
   );
 }

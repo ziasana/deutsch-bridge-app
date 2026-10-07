@@ -64,6 +64,38 @@ public class UserService {
         );
     }
 
+    /**
+     * Sign in (or sign up) with a verified Google identity. New accounts get an unusable random password
+     * and are marked verified, since Google already verified the email. Blocked accounts are rejected.
+     */
+    @Transactional
+    public User findOrCreateGoogleUser(String email, String name, String picture) throws UserVerificationException {
+        Optional<User> existing = userRepository.findByEmail(email);
+        if (existing.isPresent()) {
+            User user = existing.get();
+            if (!user.isEnabled() || user.isDeleted()) {
+                throw new UserVerificationException("Your account isn't active.");
+            }
+            if (!user.isVerified()) {
+                user.setVerified(true);
+                user.setVerificationToken(null);
+                userRepository.save(user);
+            }
+            return user;
+        }
+        String displayName = (name == null || name.isBlank()) ? email.substring(0, email.indexOf('@')) : name;
+        User user = new User(displayName, email, passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
+        user.setVerified(true);
+        user.setAvatarUrl(picture);
+        UserProfile profile = new UserProfile();
+        profile.setDisplayName(displayName);
+        profile.setUser(user);
+        user.setProfile(profile);
+        userRepository.save(user);
+        userProfileRepository.save(profile);
+        return user;
+    }
+
     public User registerUser(UserRegistrationRequest request) throws UserVerificationException {
 
         Optional<User> existingUserOpt =

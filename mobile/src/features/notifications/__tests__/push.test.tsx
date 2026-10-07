@@ -6,7 +6,13 @@ import { Linking } from 'react-native';
 import { notificationApi } from '@/api/notificationApi';
 import { inAppHref } from '../destination';
 import { PushCard } from '../PushCard';
-import { enablePush, getPushState, parsePushData, syncPushRegistration, unregisterPush } from '../push';
+import {
+  enablePush,
+  getPushState,
+  parsePushData,
+  syncPushRegistration,
+  unregisterPush,
+} from '../push';
 import { usePushNotifications } from '../usePushNotifications';
 
 jest.mock('@/api/notificationApi');
@@ -31,9 +37,18 @@ jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
 const api = notificationApi as jest.Mocked<typeof notificationApi>;
 const n = Notifications as jest.Mocked<typeof Notifications>;
 
-const granted = { status: 'granted', canAskAgain: true } as Notifications.NotificationPermissionsStatus;
-const undetermined = { status: 'undetermined', canAskAgain: true } as Notifications.NotificationPermissionsStatus;
-const denied = { status: 'denied', canAskAgain: false } as Notifications.NotificationPermissionsStatus;
+const granted = {
+  status: 'granted',
+  canAskAgain: true,
+} as Notifications.NotificationPermissionsStatus;
+const undetermined = {
+  status: 'undetermined',
+  canAskAgain: true,
+} as Notifications.NotificationPermissionsStatus;
+const denied = {
+  status: 'denied',
+  canAskAgain: false,
+} as Notifications.NotificationPermissionsStatus;
 
 beforeEach(async () => {
   jest.clearAllMocks();
@@ -50,7 +65,10 @@ describe('parsePushData / inAppHref', () => {
       notificationId: 'n1',
       actionUrl: '/dashboard/grammar',
     });
-    expect(parsePushData({ notificationId: 5 })).toEqual({ notificationId: undefined, actionUrl: undefined });
+    expect(parsePushData({ notificationId: 5 })).toEqual({
+      notificationId: undefined,
+      actionUrl: undefined,
+    });
     expect(parsePushData(null)).toEqual({});
   });
   it('follows only known in-app paths', () => {
@@ -64,7 +82,10 @@ describe('parsePushData / inAppHref', () => {
 
 describe('push registration', () => {
   it('reports the permission state', async () => {
-    n.getPermissionsAsync.mockResolvedValueOnce(granted).mockResolvedValueOnce(undetermined).mockResolvedValueOnce(denied);
+    n.getPermissionsAsync
+      .mockResolvedValueOnce(granted)
+      .mockResolvedValueOnce(undetermined)
+      .mockResolvedValueOnce(denied);
     expect(await getPushState()).toBe('granted');
     expect(await getPushState()).toBe('undetermined');
     expect(await getPushState()).toBe('denied');
@@ -73,7 +94,10 @@ describe('push registration', () => {
   it('registers silently when already allowed, and never prompts', async () => {
     n.getPermissionsAsync.mockResolvedValue(granted);
     expect(await syncPushRegistration()).toBe('granted');
-    expect(api.registerDevice).toHaveBeenCalledWith('ExponentPushToken[abc]', expect.stringMatching(/ios|android/));
+    expect(api.registerDevice).toHaveBeenCalledWith(
+      'ExponentPushToken[abc]',
+      expect.stringMatching(/ios|android/),
+    );
     expect(n.requestPermissionsAsync).not.toHaveBeenCalled();
   });
 
@@ -93,7 +117,10 @@ describe('push registration', () => {
 
   it('does not register when the learner declines', async () => {
     n.getPermissionsAsync.mockResolvedValue(undetermined);
-    n.requestPermissionsAsync.mockResolvedValue({ status: 'denied', canAskAgain: false } as Notifications.NotificationPermissionsStatus);
+    n.requestPermissionsAsync.mockResolvedValue({
+      status: 'denied',
+      canAskAgain: false,
+    } as Notifications.NotificationPermissionsStatus);
     n.getPermissionsAsync.mockResolvedValueOnce(undetermined).mockResolvedValueOnce(denied);
     expect(await enablePush()).toBe('denied');
     expect(api.registerDevice).not.toHaveBeenCalled();
@@ -127,7 +154,9 @@ describe('usePushNotifications', () => {
     <QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider>
   );
   const response = (identifier: string, data: Record<string, unknown>) =>
-    ({ notification: { request: { identifier, content: { data } } } }) as unknown as Notifications.NotificationResponse;
+    ({
+      notification: { request: { identifier, content: { data } } },
+    }) as unknown as Notifications.NotificationResponse;
 
   let onTap: (r: Notifications.NotificationResponse) => void;
   beforeEach(() => {
@@ -145,7 +174,10 @@ describe('usePushNotifications', () => {
     await renderHook(usePushNotifications, { wrapper });
     onTap(response('t1', { notificationId: 'ntf-1', actionUrl: '/dashboard/grammar' }));
     await waitFor(() =>
-      expect(mockPush).toHaveBeenCalledWith({ pathname: '/exam-prep/exercise/[exerciseId]', params: { exerciseId: 'e7' } }),
+      expect(mockPush).toHaveBeenCalledWith({
+        pathname: '/exam-prep/exercise/[exerciseId]',
+        params: { exerciseId: 'e7' },
+      }),
     );
     expect(api.click).toHaveBeenCalledWith('ntf-1');
   });
@@ -165,7 +197,9 @@ describe('usePushNotifications', () => {
   });
 
   it('handles the tap that launched the app, once', async () => {
-    n.getLastNotificationResponse.mockReturnValue(response('cold', { notificationId: 'ntf-4', actionUrl: '/dashboard/grammar' }));
+    n.getLastNotificationResponse.mockReturnValue(
+      response('cold', { notificationId: 'ntf-4', actionUrl: '/dashboard/grammar' }),
+    );
     api.click.mockResolvedValue({ actionUrl: '/dashboard/grammar' } as never);
     const first = await renderHook(usePushNotifications, { wrapper });
     await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/learn/grammar'));
@@ -180,7 +214,9 @@ describe('usePushNotifications', () => {
 describe('PushCard', () => {
   const wrap = () =>
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
         <PushCard />
       </QueryClientProvider>,
     );

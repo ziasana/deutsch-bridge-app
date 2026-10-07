@@ -16,7 +16,8 @@ export async function pickAvatar(): Promise<AvatarFile | null> {
   if (result.canceled || result.assets.length === 0) return null;
   const asset = result.assets[0];
   const type = asset.mimeType ?? 'image/jpeg';
-  if (!ALLOWED.includes(type)) throw new UnsupportedImageError('Bitte wähle ein JPG-, PNG- oder WebP-Bild.');
+  if (!ALLOWED.includes(type))
+    throw new UnsupportedImageError('Bitte wähle ein JPG-, PNG- oder WebP-Bild.');
   const extension = type === 'image/png' ? 'png' : type === 'image/webp' ? 'webp' : 'jpg';
   return { uri: asset.uri, name: asset.fileName ?? `avatar.${extension}`, type };
 }

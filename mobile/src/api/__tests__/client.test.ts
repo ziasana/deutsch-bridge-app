@@ -27,11 +27,19 @@ describe('api client', () => {
 
   it('repeats array query params and leaves multipart bodies to fetch', async () => {
     fetchMock.mockImplementation(() => json(200, {}));
-    await request('/notifications', { query: { page: 0, category: ['LEARNING', 'REMINDER'], gone: undefined } });
-    expect(String(fetchMock.mock.calls[0][0])).toMatch(/\?page=0&category=LEARNING&category=REMINDER$/);
+    await request('/notifications', {
+      query: { page: 0, category: ['LEARNING', 'REMINDER'], gone: undefined },
+    });
+    expect(String(fetchMock.mock.calls[0][0])).toMatch(
+      /\?page=0&category=LEARNING&category=REMINDER$/,
+    );
 
     const form = new FormData();
-    form.append('file', { uri: 'file:///a.jpg', name: 'a.jpg', type: 'image/jpeg' } as unknown as Blob);
+    form.append('file', {
+      uri: 'file:///a.jpg',
+      name: 'a.jpg',
+      type: 'image/jpeg',
+    } as unknown as Blob);
     await api.upload('/user/avatar', form);
     const init = fetchMock.mock.calls[1][1];
     expect(init.body).toBe(form); // not JSON-stringified
@@ -44,7 +52,9 @@ describe('api client', () => {
       // Never resolves on its own; resolves (as an abort) only when the signal fires.
       fetchMock.mockImplementation(
         (_url: string, init: { signal: AbortSignal }) =>
-          new Promise((_resolve, reject) => init.signal.addEventListener('abort', () => reject(new Error('aborted')))),
+          new Promise((_resolve, reject) =>
+            init.signal.addEventListener('abort', () => reject(new Error('aborted'))),
+          ),
       );
       const normal = request('/slow').catch((e: ApiError) => e);
       await jest.advanceTimersByTimeAsync(20_001);

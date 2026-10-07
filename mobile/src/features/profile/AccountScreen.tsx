@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { AppText, Button, TextField, WavePage } from '@/components/ui';
+import { AppText, Button, TextField, WavePage, ErrorNotice } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import type { Dictionary } from '@/i18n';
 import { useAuthStore } from '@/stores/authStore';
@@ -117,11 +117,7 @@ function NameSection() {
         value={profile?.email ?? ''}
         editable={false}
       />
-      {update.error ? (
-        <AppText color={colors.destructive} accessibilityRole="alert">
-          {update.error.message}
-        </AppText>
-      ) : null}
+      {update.error ? <ErrorNotice error={update.error} /> : null}
       {update.isSuccess && !dirty ? (
         <AppText color="#1B7A55" accessibilityRole="alert">
           {t.common.saved}
@@ -206,11 +202,7 @@ function PasswordSection() {
         secret
         autoCapitalize="none"
       />
-      {problem || change.error ? (
-        <AppText color={colors.destructive} accessibilityRole="alert">
-          {problem ?? change.error?.message}
-        </AppText>
-      ) : null}
+      {problem || change.error ? <ErrorNotice message={problem ?? change.error?.message} /> : null}
       {change.isSuccess ? (
         <AppText color="#1B7A55" accessibilityRole="alert">
           {t.account.passwordChanged}

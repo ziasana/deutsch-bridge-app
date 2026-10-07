@@ -1,9 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { HexLogo } from '@/components/brand/HexLogo';
-import { AppText, Screen } from '@/components/ui';
+import { AppText, DirectionalIcon, Screen } from '@/components/ui';
+import { useI18n } from '@/i18n';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 
 type Props = { title?: string; subtitle?: string; children: ReactNode };
@@ -20,17 +20,18 @@ const DOTS: [number, number, number, string][] = [
 
 /** Shared frame for the auth screens: back button, brand header, then the form. */
 export function AuthFrame({ title, subtitle, children }: Props) {
+  const { t } = useI18n();
   return (
     <Screen keyboardAware>
       {router.canGoBack() ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Zurück"
+          accessibilityLabel={t.entry.common.back}
           onPress={() => router.back()}
           hitSlop={8}
           style={styles.back}
         >
-          <Ionicons name="chevron-back" size={24} color={colors.foreground} />
+          <DirectionalIcon name="chevron-back" size={24} color={colors.foreground} />
         </Pressable>
       ) : null}
       <View style={styles.brand}>

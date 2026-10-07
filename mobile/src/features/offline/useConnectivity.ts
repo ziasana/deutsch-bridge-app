@@ -3,8 +3,10 @@ import { onlineManager } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
 /** Reachable unless the OS says otherwise; "unknown" (null) must not look like offline. */
-export const isOffline = (s: { isConnected: boolean | null; isInternetReachable: boolean | null }) =>
-  s.isConnected === false || s.isInternetReachable === false;
+export const isOffline = (s: {
+  isConnected: boolean | null;
+  isInternetReachable: boolean | null;
+}) => s.isConnected === false || s.isInternetReachable === false;
 
 /**
  * Tells TanStack Query when the device is (back) online - so stale and failed queries refetch on

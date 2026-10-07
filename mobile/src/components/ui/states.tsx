@@ -1,3 +1,4 @@
+import { ErrorNotice } from './ErrorNotice';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { AppText } from './AppText';
 import { Button } from './Button';
@@ -111,11 +112,7 @@ export function InlineError({ error }: { error: unknown }) {
   if (!error) return null;
   if (error instanceof ApiError && error.kind === 'limit') return <LimitNotice />;
   const message = error instanceof ApiError ? error.message : fallbackMessage('unknown');
-  return (
-    <AppText color={colors.destructive} accessibilityRole="alert">
-      {message}
-    </AppText>
-  );
+  return <ErrorNotice message={message} />;
 }
 
 const styles = StyleSheet.create({

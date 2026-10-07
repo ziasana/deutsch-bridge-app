@@ -1,3 +1,4 @@
+import { ErrorNotice } from '@/components/ui';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -235,11 +236,7 @@ export function ExpressionDetailScreen() {
               />
             </View>
           </View>
-          {bookmark.error ? (
-            <AppText color={colors.destructive} accessibilityRole="alert">
-              {bookmark.error.message}
-            </AppText>
-          ) : null}
+          {bookmark.error ? <ErrorNotice error={bookmark.error} /> : null}
 
           <View style={styles.sizeRow}>
             <AppText variant="small" color={colors.mutedForeground} style={{ fontWeight: '600' }}>

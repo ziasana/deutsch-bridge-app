@@ -1,3 +1,4 @@
+import { ErrorNotice } from '@/components/ui';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -388,11 +389,7 @@ export function LessonScreen() {
               </View>
             ) : null}
 
-            {mutationError ? (
-              <AppText color={colors.destructive} accessibilityRole="alert">
-                {mutationError.message}
-              </AppText>
-            ) : null}
+            {mutationError ? <ErrorNotice message={mutationError.message} /> : null}
 
             <Button
               pill

@@ -1,3 +1,4 @@
+import { ErrorNotice } from '@/components/ui';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useReducer } from 'react';
 import { View } from 'react-native';
@@ -180,11 +181,7 @@ export function VocabularyTrainerScreen() {
           />
         ) : null}
 
-        {submit.error ? (
-          <AppText color={colors.destructive} accessibilityRole="alert">
-            {submit.error.message}
-          </AppText>
-        ) : null}
+        {submit.error ? <ErrorNotice error={submit.error} /> : null}
 
         {judged && state.round ? (
           <Card tone="accent" style={{ gap: spacing.sm }}>
