@@ -13,7 +13,9 @@ export function ProgressBar({ value, max = 100, label = 'Fortschritt', color }: 
       accessibilityValue={{ min: 0, max: 100, now: percent, text: `${percent} Prozent` }}
       style={styles.track}
     >
-      <View style={[styles.fill, { width: `${percent}%` }, color ? { backgroundColor: color } : null]} />
+      <View
+        style={[styles.fill, { width: `${percent}%` }, color ? { backgroundColor: color } : null]}
+      />
     </View>
   );
 }

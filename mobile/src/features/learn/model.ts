@@ -3,6 +3,7 @@ import type { Dictionary } from '@/i18n';
 import type { DashboardResponse } from '@/types/dashboard';
 import type { CategoryProgress, ProgressOverview } from '@/types/progress';
 import { percent } from '@/features/progress/segments';
+import { SECTION_COLOR } from '@/theme/sectionColors';
 
 export type FeaturedCard = {
   key: string;
@@ -76,7 +77,7 @@ export function topicCards(
       percent: pct(overview?.dailyWords),
       href: '/learn/vocabulary',
       tint: '#F0F6E1',
-      color: '#7FAE1B',
+      color: SECTION_COLOR.vocabulary,
       subtitle: t.vocabularyHint,
       detail: detail(overview?.dailyWords),
     },
@@ -87,7 +88,7 @@ export function topicCards(
       percent: pct(overview?.grammar),
       href: '/learn/grammar',
       tint: '#E4EEFF',
-      color: '#4D94FF',
+      color: SECTION_COLOR.grammar,
       subtitle: t.grammarHint,
       detail: detail(overview?.grammar),
     },
@@ -98,7 +99,7 @@ export function topicCards(
       percent: pct(overview?.expressions),
       href: '/learn/expressions',
       tint: '#E4F6EE',
-      color: '#27AE7A',
+      color: SECTION_COLOR.expressions,
       subtitle: t.expressionsHint,
       detail: detail(overview?.expressions),
     },
@@ -109,7 +110,7 @@ export function topicCards(
       percent: pct(overview?.reading),
       href: '/learn/reading',
       tint: '#F1E9FD',
-      color: '#8B5CF6',
+      color: SECTION_COLOR.reading,
       subtitle: t.readingHint,
       detail: detail(overview?.reading),
     },

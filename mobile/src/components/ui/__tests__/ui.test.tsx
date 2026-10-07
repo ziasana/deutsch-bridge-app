@@ -27,9 +27,7 @@ describe('design system', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
     expect(onRetry).toHaveBeenCalled();
 
-    await rerender(
-      <ErrorState error={new ApiError('notFound', 'Not found.')} onRetry={onRetry} />,
-    );
+    await rerender(<ErrorState error={new ApiError('notFound', 'Not found.')} onRetry={onRetry} />);
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
   });
 

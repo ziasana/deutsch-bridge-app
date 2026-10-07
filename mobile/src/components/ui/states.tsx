@@ -1,6 +1,7 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { AppText } from './AppText';
 import { Button } from './Button';
+import { LimitNotice } from './LimitNotice';
 import { ApiError, fallbackMessage, isRetryable } from '@/api/errors';
 import { NoConnectionIllustration, NotFoundIllustration } from './StateIllustrations';
 import { useI18n } from '@/i18n';
@@ -84,6 +85,14 @@ export function ErrorState({ error, onRetry }: ErrorProps) {
     );
   }
 
+  if (kind === 'limit') {
+    return (
+      <View style={styles.limit}>
+        <LimitNotice />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.center} accessibilityRole="alert">
       <AppText style={styles.emoji} accessibilityElementsHidden>
@@ -97,7 +106,20 @@ export function ErrorState({ error, onRetry }: ErrorProps) {
   );
 }
 
+/** A short error under a control: the limit card when a free allowance ran out, red text otherwise. */
+export function InlineError({ error }: { error: unknown }) {
+  if (!error) return null;
+  if (error instanceof ApiError && error.kind === 'limit') return <LimitNotice />;
+  const message = error instanceof ApiError ? error.message : fallbackMessage('unknown');
+  return (
+    <AppText color={colors.destructive} accessibilityRole="alert">
+      {message}
+    </AppText>
+  );
+}
+
 const styles = StyleSheet.create({
+  limit: { padding: spacing.lg },
   center: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
   emoji: { fontSize: 40, lineHeight: 48 },
   page: {

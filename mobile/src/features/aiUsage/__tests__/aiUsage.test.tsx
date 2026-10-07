@@ -23,12 +23,19 @@ const usage = (over: Partial<AiUsage> = {}): AiUsage => ({
 
 describe('aiUsageText', () => {
   it('words the remaining allowance, warning on the last one', () => {
-    expect(aiUsageText({ limit: 5, used: 2, remaining: 3, enabled: true })).toEqual({ text: '3 of 5 left today', warn: false });
+    expect(aiUsageText({ limit: 5, used: 2, remaining: 3, enabled: true })).toEqual({
+      text: '3 of 5 left today',
+      warn: false,
+    });
     expect(aiUsageText({ limit: 5, used: 4, remaining: 1, enabled: true }).warn).toBe(true);
   });
   it('explains an exhausted or disabled feature', () => {
-    expect(aiUsageText({ limit: 5, used: 5, remaining: 0, enabled: true }).text).toMatch(/Daily limit reached/);
-    expect(aiUsageText({ limit: 5, used: 0, remaining: 5, enabled: false }).text).toMatch(/currently unavailable/);
+    expect(aiUsageText({ limit: 5, used: 5, remaining: 0, enabled: true }).text).toMatch(
+      /Daily limit reached/,
+    );
+    expect(aiUsageText({ limit: 5, used: 0, remaining: 5, enabled: false }).text).toMatch(
+      /currently unavailable/,
+    );
   });
 });
 

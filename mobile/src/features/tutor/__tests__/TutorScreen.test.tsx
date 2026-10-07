@@ -85,7 +85,7 @@ describe('TutorScreen', () => {
     await wrap();
     await fireEvent.changeText(await screen.findByLabelText('Message'), 'Noch eine Frage');
     await fireEvent.press(screen.getByRole('button', { name: 'Send' }));
-    expect(await screen.findByText('Dein Tageslimit für den AI Tutor ist erreicht.')).toBeTruthy();
+    expect(await screen.findByText('Daily limit reached')).toBeTruthy();
   });
 
   it('opens a past conversation from the history and loads its messages', async () => {

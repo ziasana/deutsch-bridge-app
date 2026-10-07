@@ -16,14 +16,15 @@ import {
   weekDays,
 } from '../viewModel';
 import { usePressScale } from './Reveal';
+import { SECTION_COLOR } from '@/theme/sectionColors';
 
 type Props = { data: DashboardResponse };
 
 const ACTIVITY_STYLE: Record<PlanActivityType, { emoji: string; color: string }> = {
-  DAILY_WORDS: { emoji: '🌱', color: '#2E8B57' },
-  VOCAB_REVIEW: { emoji: '🗂️', color: '#3F86F0' },
-  GRAMMAR: { emoji: '🧱', color: '#7B61D9' },
-  READING: { emoji: '📖', color: '#E8832E' },
+  DAILY_WORDS: { emoji: '🌱', color: SECTION_COLOR.dailyWords },
+  VOCAB_REVIEW: { emoji: '🗂️', color: SECTION_COLOR.review },
+  GRAMMAR: { emoji: '🧱', color: SECTION_COLOR.grammar },
+  READING: { emoji: '📖', color: SECTION_COLOR.reading },
 };
 
 /** Big brand-blue call to action: what to do next, with its progress as a ring. */
@@ -231,7 +232,7 @@ export function ReviewCard({ data }: Props) {
   const { wordsDue, expressionsDue } = data.review;
   const due = wordsDue + expressionsDue;
   return (
-    <TintCard tint="#3F86F0" emoji="🗂️" title={t.home.review.title}>
+    <TintCard tint={SECTION_COLOR.review} emoji="🗂️" title={t.home.review.title}>
       {due > 0 ? (
         <>
           <AppText style={styles.big}>{reviewSummary(wordsDue, expressionsDue, t.home)}</AppText>

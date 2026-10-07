@@ -19,5 +19,8 @@ export function useAiUsage(feature: AiFeature): AiFeatureUsage | undefined {
 /** Call after an AI request (success or failure) so the counter reflects the server. */
 export function useRefreshAiUsage(): () => void {
   const queryClient = useQueryClient();
-  return useCallback(() => void queryClient.invalidateQueries({ queryKey: AI_USAGE_KEY }), [queryClient]);
+  return useCallback(
+    () => void queryClient.invalidateQueries({ queryKey: AI_USAGE_KEY }),
+    [queryClient],
+  );
 }

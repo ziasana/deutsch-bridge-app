@@ -9,9 +9,10 @@ import { HeroBackdrop } from '@/components/ui/HeroDecor';
 import { IconButton, tint } from '@/features/exam/components/kit';
 import { useI18n } from '@/i18n';
 import { colors, radius, spacing } from '@/theme';
+import { SECTION_COLOR } from '@/theme/sectionColors';
 
 /** Accent for everything reading: a soft violet, matching the Lesen tile in the learn tab. */
-export const READING_COLOR = '#8B5CF6';
+export const READING_COLOR: string = SECTION_COLOR.reading;
 /** Darker shade for text and icons on the light violet tint. */
 export const READING_DARK = '#6034C9';
 

@@ -193,7 +193,7 @@ describe('Schreiben', () => {
     expect(await screen.findByText('✅ Text abgegeben')).toBeTruthy();
 
     await fireEvent.press(screen.getByRole('button', { name: '🤖 KI-Feedback anfordern' }));
-    expect(await screen.findByText('Tageslimit für KI-Korrekturen erreicht.')).toBeTruthy();
+    expect(await screen.findByText('Daily limit reached')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: '🤖 KI-Feedback anfordern' }));
     expect(await screen.findByText('🤖 KI-Feedback')).toBeTruthy();
     expect(screen.getByText('Klar formuliert', { exact: false })).toBeTruthy();

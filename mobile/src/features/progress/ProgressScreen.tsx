@@ -30,6 +30,7 @@ import {
   vocabularySegments,
   type BarSegment,
 } from './segments';
+import { SECTION_COLOR } from '@/theme/sectionColors';
 
 const NEUTRAL = '#D5DBE6';
 const CHART = { learning: '#4C8DFF', familiar: '#F2A93B', active: '#8B5CF6', mastered: '#2DB37A' };
@@ -564,7 +565,7 @@ export function ProgressScreen() {
       key: 'mastered',
       emoji: '🏆',
       title: t.progress.wordsMastered,
-      color: GOLD,
+      color: SECTION_COLOR.vocabulary,
       progress: { learned: o.totalLearned, total: o.totalAvailable },
       href: '/learn/vocabulary',
     },
@@ -572,7 +573,7 @@ export function ProgressScreen() {
       key: 'daily',
       emoji: '🌱',
       title: t.progress.dailyWords,
-      color: '#F59E0B',
+      color: SECTION_COLOR.dailyWords,
       progress: o.dailyWords,
       href: '/learn/daily-words',
     },
@@ -580,7 +581,7 @@ export function ProgressScreen() {
       key: 'grammar',
       emoji: '🧱',
       title: t.progress.grammarLessons,
-      color: '#4D94FF',
+      color: SECTION_COLOR.grammar,
       progress: o.grammar,
       href: '/learn/grammar',
     },
@@ -588,7 +589,7 @@ export function ProgressScreen() {
       key: 'expr',
       emoji: '💬',
       title: t.progress.expressions,
-      color: GREEN,
+      color: SECTION_COLOR.expressions,
       progress: o.expressions,
       href: '/learn/expressions',
     },
@@ -596,7 +597,7 @@ export function ProgressScreen() {
       key: 'reading',
       emoji: '📖',
       title: t.progress.reading,
-      color: '#8B5CF6',
+      color: SECTION_COLOR.reading,
       progress: o.reading,
       href: '/learn/reading',
     },
@@ -643,7 +644,7 @@ export function ProgressScreen() {
 
           <Panel
             icon="school"
-            color="#4D94FF"
+            color={SECTION_COLOR.grammar}
             title={t.progress.grammar}
             cta={t.progress.grammarCta}
             onCta={() => router.push('/learn/grammar')}
@@ -652,7 +653,7 @@ export function ProgressScreen() {
               label={t.progress.lessons}
               learned={s.grammar.lessonsLearned}
               total={s.grammar.lessonsTotal}
-              color="#4D94FF"
+              color={SECTION_COLOR.grammar}
             />
             <LabeledBar
               label={t.progress.categoryTestsPassed}
@@ -674,7 +675,7 @@ export function ProgressScreen() {
 
           <Panel
             icon="ribbon"
-            color="#EC3E4E"
+            color={SECTION_COLOR.exam}
             title={t.progress.exams}
             cta={exam.attemptsCompleted > 0 ? t.progress.examContinue : t.progress.examStart}
             onCta={() => router.push('/exam')}

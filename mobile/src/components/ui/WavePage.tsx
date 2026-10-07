@@ -117,7 +117,11 @@ export function WavePage({ title, variant = 'arc', header, children }: Props) {
                 hitSlop={8}
                 style={styles.squareBtn}
               >
-                <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={24} color={colors.ink} />
+                <Ionicons
+                  name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                  size={24}
+                  color={colors.ink}
+                />
               </Pressable>
               <AppText style={styles.title} color="#FFFFFF" accessibilityRole="header">
                 {title}

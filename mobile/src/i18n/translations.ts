@@ -905,6 +905,10 @@ const en = {
   aiUsage: {
     unavailable: 'This feature is currently unavailable.',
     limitReached: 'Daily limit reached – you can continue tomorrow.',
+    limitTitle: 'Daily limit reached',
+    limitHint: 'Your free requests come back tomorrow.',
+    upgrade: 'Go Premium',
+    upgradeLabel: 'Go Premium for more daily requests',
     remaining: (n: number, limit: number) => `${n} of ${limit} left today`,
   },
   tutor: {
@@ -1942,6 +1946,10 @@ const fa: Dictionary = {
   aiUsage: {
     unavailable: 'این قابلیت فعلاً در دسترس نیست.',
     limitReached: 'سقف روزانه تمام شد – فردا می‌توانید ادامه دهید.',
+    limitTitle: 'سقف روزانه تمام شد',
+    limitHint: 'درخواست‌های رایگان شما فردا برمی‌گردد.',
+    upgrade: 'پریمیوم',
+    upgradeLabel: 'برای درخواست‌های روزانه بیشتر پریمیوم بگیرید',
     remaining: (n: number, limit: number) => `امروز ${n} از ${limit} باقی مانده`,
   },
   tutor: {

@@ -1,6 +1,6 @@
 import * as Speech from 'expo-speech';
 import { View } from 'react-native';
-import { AppText, Badge, BottomSheet, Button, LoadingState } from '@/components/ui';
+import { AppText, Badge, BottomSheet, Button, InlineError, LoadingState } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { ltrText } from '@/i18n/direction';
 import { colors, spacing } from '@/theme';
@@ -120,11 +120,7 @@ export function DictionarySheet({ lemma, onClose }: { lemma: string | null; onCl
               ) : null}
             </View>
           ))}
-          {save.error ? (
-            <AppText color={colors.destructive} accessibilityRole="alert">
-              {save.error.message}
-            </AppText>
-          ) : null}
+          <InlineError error={save.error} />
           <Button
             label={data.savedByCurrentUser ? d.remove : d.add}
             variant={data.savedByCurrentUser ? 'secondary' : 'primary'}

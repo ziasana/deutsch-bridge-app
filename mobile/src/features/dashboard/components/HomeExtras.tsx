@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useRedemittelHub, useTodayPreview } from '@/features/redemittel/hooks';
 import { REDEMITTEL_COLOR } from '@/features/redemittel/meta';
 import { useExamWeekSummary, usePendingBookmarkCount } from '../hooks';
+import { SECTION_COLOR } from '@/theme/sectionColors';
 
 /** A tappable pill that points at something new or waiting. */
 function Banner({
@@ -107,11 +108,11 @@ export function SavedLessonsBanner() {
 }
 
 const SHORTCUTS = [
-  { key: 'vocab', emoji: '📚', label: 'words', href: '/learn/vocabulary', color: '#7FAE1B' },
-  { key: 'grammar', emoji: '🧱', label: 'grammar', href: '/learn/grammar', color: '#4D94FF' },
-  { key: 'reading', emoji: '📖', label: 'reading', href: '/learn/reading', color: '#8B5CF6' },
-  { key: 'expr', emoji: '💬', label: 'expressions', href: '/learn/expressions', color: '#27AE7A' },
-  { key: 'exam', emoji: '🎯', label: 'exam', href: '/exam', color: '#EC3E4E' },
+  { key: 'vocab', emoji: '📚', label: 'words', href: '/learn/vocabulary', color: SECTION_COLOR.vocabulary },
+  { key: 'grammar', emoji: '🧱', label: 'grammar', href: '/learn/grammar', color: SECTION_COLOR.grammar },
+  { key: 'reading', emoji: '📖', label: 'reading', href: '/learn/reading', color: SECTION_COLOR.reading },
+  { key: 'expr', emoji: '💬', label: 'expressions', href: '/learn/expressions', color: SECTION_COLOR.expressions },
+  { key: 'exam', emoji: '🎯', label: 'exam', href: '/exam', color: SECTION_COLOR.exam },
 ] as const;
 
 /** One-tap entry to every learning area: five icons share one card, no sideways scrolling. */

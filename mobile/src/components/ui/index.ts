@@ -4,6 +4,7 @@ export * from './Button';
 export * from './Card';
 export * from './Chip';
 export * from './LearningCelebration';
+export * from './LimitNotice';
 export * from './ListItem';
 export * from './ProgressBar';
 export * from './ProgressRing';
