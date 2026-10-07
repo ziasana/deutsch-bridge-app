@@ -185,6 +185,15 @@ public class OllamaService {
         return callOllama(messages);
     }
 
+    /** The word type of a vocabulary entry (a VocabularyWordType name in free text). Not a metered feature. */
+    public String classifyWordType(String word) {
+        List<OllamaMessage> messages = List.of(
+                new OllamaMessage("system", PromptLibrary.classifyWordType(word)),
+                new OllamaMessage("user", word)
+        );
+        return callOllama(messages);
+    }
+
     public String lemmatizeWords(List<String> words) {
         List<OllamaMessage> messages = List.of(
                 new OllamaMessage("system", PromptLibrary.lemmatizeWords(words)),

@@ -93,6 +93,21 @@ public class PromptLibrary {
         """, level, word, level);
     }
 
+    /** Word type of a vocabulary entry the learner typed in or edited. */
+    public static String classifyWordType(String word) {
+        return String.format("""
+        Bestimme die Wortart bzw. den Typ des folgenden deutschen Wortes oder Ausdrucks:
+
+        "%s"
+
+        Antworte mit GENAU EINEM dieser Werte, ohne weiteren Text:
+        - Einzelnes Wort: NOUN, VERB, ADJECTIVE, ADVERB, PREPOSITION, CONJUNCTION, PRONOUN oder OTHER
+        - Mehrere Wörter: IDIOM (Redewendung, bildlich, z. B. "ins Gras beißen"),
+          NOUN_VERB_CONNECTION (Nomen-Verb-Verbindung, z. B. "eine Entscheidung treffen")
+          oder EXPRESSION (sonstige Wendung oder Kollokation)
+        """, word);
+    }
+
     public static String generateWordSynonyms(String word, String level) {
         return String.format("""
         Erstelle eine Liste von Synonymen für das folgende deutsche Wort,
