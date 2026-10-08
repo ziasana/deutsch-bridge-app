@@ -1,3 +1,5 @@
+import type { ExamContentStatus } from "./examContent";
+
 export type ExamSection =
     | "LESEVERSTEHEN"
     | "SPRACHBAUSTEINE"
@@ -67,6 +69,12 @@ export interface ExamExerciseAdminRow {
     partNumber: number | null;
     published: boolean;
     questionCount: number;
+    examType: string | null;
+    status: ExamContentStatus | null;
+    externalId: string | null;
+    version: number;
+    difficulty: string | null;
+    updatedAt: string | null;
 }
 
 export interface ExamExerciseResponse {
@@ -96,6 +104,11 @@ export interface ExamExerciseResponse {
     leitpunkte: string[] | null;
     published: boolean;
     createdAt: string;
+    examType: string | null;
+    status: ExamContentStatus | null;
+    externalId: string | null;
+    version: number;
+    metadata: Record<string, unknown> | null;
 }
 
 export interface ExamPassagePublic {

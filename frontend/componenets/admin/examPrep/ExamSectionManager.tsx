@@ -270,6 +270,22 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
         }
     }, [hasHydrated, userProfile, router]);
 
+    // Deep link from the Content Library ("?edit=<id>"): open that exercise's editor on arrival. The param is
+    // only removed once the editor is open (not guarded by a ref), so React StrictMode's dev double-mount
+    // still ends with the form open on the surviving instance.
+    useEffect(() => {
+        if (!hasHydrated || userProfile?.role !== "ADMIN") return;
+        const url = new URL(window.location.href);
+        const editId = url.searchParams.get("edit");
+        if (!editId) return;
+        void startEdit({ id: editId } as ExamExerciseAdminRow).then(() => {
+            url.searchParams.delete("edit");
+            window.history.replaceState(null, "", url.pathname + url.search);
+        });
+        // startEdit only reads the row's id; it is re-created each render, so it is intentionally not a dependency.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hasHydrated, userProfile]);
+
     useEffect(() => {
         if (exercisesError) {
             const err = exercisesError as { response?: { data?: { message?: string } } };
@@ -1387,7 +1403,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                             </td>
                                             <td className="px-6 py-4">
                                                 <Badge variant={exercise.published ? "default" : "outline"}>
-                                                    {exercise.published ? "Published" : "Draft"}
+                                                    {exercise.status ? exercise.status.charAt(0) + exercise.status.slice(1).toLowerCase() : exercise.published ? "Published" : "Draft"}
                                                 </Badge>
                                             </td>
                                             <td className="px-6 py-4 space-x-2 whitespace-nowrap">

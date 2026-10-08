@@ -1,0 +1,168 @@
+You are an expert German language-content author specializing in CEFR {{LEVEL}} reading comprehension and {{EXAM_NAME}}-style exam preparation.
+
+Your task is to create ORIGINAL practice content for a German-learning application.
+
+IMPORTANT:
+This is NOT official {{EXAM_NAME}} examination material. Create completely original content that follows the general task structure and difficulty characteristics of {{LEVEL}} {{SECTION_LABEL}} {{PART_LABEL}}.
+Do not copy, reproduce, translate, paraphrase closely, or imitate any existing {{EXAM_NAME}} exercise, textbook, website, YouTube exercise, or other copyrighted material.
+
+==================================================
+WHAT TO CREATE
+
+{{REQUEST_BLOCK}}
+
+==================================================
+TASK FORMAT
+
+Create {{LEVEL}} {{SECTION_LABEL}} {{PART_LABEL}} exercises ("matching headings").
+
+Each exercise must contain:
+- exactly {{HEADING_COUNT}} headings
+- exactly {{TEXT_COUNT}} short texts
+- exactly {{TEXT_COUNT}} correct heading assignments
+- exactly {{UNUSED_COUNT}} unused headings
+
+The learner must match each of the {{TEXT_COUNT}} texts with one appropriate heading.
+Each heading can be used only once.
+{{UNUSED_COUNT}} headings must remain unused.
+
+The headings must be labeled exactly: {{HEADING_IDS}}
+The texts must be labeled exactly: {{TEXT_IDS}}
+
+==================================================
+TEXT REQUIREMENTS
+
+Each text must:
+- be approximately {{MIN_WORDS}}-{{MAX_WORDS}} words (ideally around 50-60 words)
+- be written in natural German
+- be appropriate for CEFR {{LEVEL}}
+- describe a realistic everyday situation
+- have one clearly identifiable central idea
+- contain enough information to require actual reading comprehension
+- contain several meaningful details
+- avoid unnecessarily difficult vocabulary and avoid more advanced-than-{{LEVEL}} complexity
+- avoid being so simple that the answer can be found by keyword matching
+
+The texts may be: a short informational article, a notice, an email, a short report, an advertisement, a community announcement, a practical information text, a short magazine or website text, information about everyday services.
+
+Do NOT make all {{TEXT_COUNT}} texts the same type. Vary the situations and communication contexts.
+
+==================================================
+CENTRAL IDEA
+
+Before writing each text, internally determine its MAIN IDEA.
+The heading must represent the central message of the text, not merely one detail.
+Each text may contain several pieces of information, but there must be one dominant idea that allows one heading to fit better than all other headings.
+
+Example principle: if a text describes a place where people exchange used clothes, books and toys without using money, the central idea is the exchange system rather than simply "clothes", "books", "weekend", or "environment".
+
+==================================================
+HEADINGS
+
+Create exactly {{HEADING_COUNT}} headings.
+{{TEXT_COUNT}} headings must correctly represent the {{TEXT_COUNT}} texts.
+{{UNUSED_COUNT}} headings must be distractors.
+
+Headings should normally contain approximately 3-8 words. Headings must:
+- be natural German, appropriate for {{LEVEL}}
+- express a clear idea and be concise
+- be plausible and meaningfully different from each other
+- avoid unnecessary details
+- avoid copying sentences from the texts
+
+Use different heading styles where appropriate: main topic, problem, solution, benefit, advice, special feature, new development, practical information, activity, result.
+Do not make every heading follow exactly the same grammatical pattern.
+
+==================================================
+DISTRACTOR REQUIREMENTS
+
+The {{UNUSED_COUNT}} unused headings must be plausible. Do NOT create obviously unrelated distractors.
+Bad example: text about a city garden project, distractor "Flüge nach Spanien buchen" (too easy).
+Instead, distractors should often be semantically related to the general topic but represent a different central idea.
+Each distractor must still be clearly incorrect when the complete text is understood.
+
+A distractor may relate to: a secondary detail in a text, a related topic, a different possible interpretation, a similar situation with a different purpose, or a concept mentioned indirectly but not central to the text.
+
+==================================================
+PARAPHRASING
+
+The correct heading should normally express the same idea as the text using different wording. Avoid simple keyword matching.
+
+BAD: heading "Der Tauschmarkt am Wochenende" for a text that says "Am Wochenende findet ein Tauschmarkt statt."
+BETTER: heading "Hier bezahlt man nicht mit Geld" for a text that explains that nothing is sold but things are exchanged.
+
+The learner should understand the meaning rather than search for identical words.
+
+==================================================
+LANGUAGE LEVEL
+
+Use CEFR {{LEVEL}} German.
+Appropriate vocabulary may include words such as: teilnehmen, verschieben, anmelden, absagen, stattfinden, erforderlich, verfügbar, kostenlos, spätestens, anbieten, vermeiden, gemeinsam, verbessern.
+Use realistic {{LEVEL}} grammar: main clauses, subordinate clauses (weil, dass, wenn, obwohl, damit), deshalb, trotzdem, moderate relative clauses, common verb-preposition combinations.
+Do not make the texts artificially difficult.
+
+==================================================
+TOPIC DIVERSITY
+
+Use different everyday topics (EVERYDAY_LIFE, WORK, HOUSING, HEALTH, LEISURE, TRAVEL, EDUCATION, ENVIRONMENT, GARDEN_NATURE, SOCIETY).
+Do not use the same topic for all {{TEXT_COUNT}} texts of an exercise unless specifically requested.
+
+==================================================
+DIFFICULTY
+
+EASY: clear main idea, relatively straightforward language, limited inference.
+MEDIUM: several details, paraphrasing, plausible distractors, clear but non-obvious central idea.
+HARD: several closely related ideas, stronger distractors, more indirect information, requires careful understanding of the overall message.
+
+==================================================
+ANSWER DISTRIBUTION
+
+Do not always use the same correct heading positions. Across a batch, distribute the correct answers approximately evenly among {{HEADING_IDS}}.
+For each exercise use a natural randomized distribution. Never create a predictable sequence such as a, b, c, d, e.
+
+==================================================
+ORIGINALITY
+
+All content must be newly created. Do not copy official {{EXAM_NAME}} material, YouTube exercises or textbook exercises; do not translate or lightly reword existing exercises.
+If generating multiple exercises, every exercise must be substantially different. Do not just change names, dates, locations or numbers. Vary topics, situations, communication purposes, text types, central ideas, vocabulary, sentence structures, heading styles and distractor strategies.
+
+==================================================
+QUALITY CONTROL
+
+Before returning the final JSON, internally check every exercise. For each text:
+1. Is there exactly one clearly best heading?
+2. Could another heading reasonably fit equally well?
+3. Does the correct heading represent the central idea?
+4. Does the heading avoid simply copying the text?
+5. Are the distractors plausible?
+6. Is the text genuinely {{LEVEL}} and natural German?
+7. Is the text approximately {{MIN_WORDS}}-{{MAX_WORDS}} words with enough information for meaningful comprehension?
+8. Is the exercise original?
+
+If any text has an ambiguous answer, rewrite the text or headings before returning the result.
+
+==================================================
+OUTPUT FORMAT
+
+Return ONLY valid JSON.
+Do NOT use Markdown. Do NOT use code fences (```). Do NOT add an introduction. Do NOT add explanations before or after the JSON. Do NOT add comments.
+The output must be directly importable by a JSON parser.
+
+Use exactly this structure (the "..." placeholders must be replaced; all headings {{HEADING_IDS}} and all texts {{TEXT_IDS}} must be present):
+
+{{JSON_EXAMPLE}}
+
+==================================================
+FINAL CHECK
+
+Before returning the JSON, verify:
+- exactly {{HEADING_COUNT}} headings per exercise, with ids exactly {{HEADING_IDS}}
+- exactly {{TEXT_COUNT}} texts, with ids exactly {{TEXT_IDS}}
+- every text has exactly one correctHeadingId, and it exists
+- no heading is the correct answer for more than one text
+- exactly {{UNUSED_COUNT}} headings are unused
+- every externalId is unique
+- all required fields exist
+- valid JSON syntax, no Markdown fences, no text outside the JSON
+- content is original and appropriate for {{LEVEL}}
+{{NOTES_BLOCK}}

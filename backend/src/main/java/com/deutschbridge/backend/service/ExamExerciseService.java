@@ -14,8 +14,10 @@ import com.deutschbridge.backend.model.entity.ExamExerciseBookmark;
 import com.deutschbridge.backend.model.entity.ExamExerciseCompletion;
 import com.deutschbridge.backend.model.entity.ExamPassage;
 import com.deutschbridge.backend.model.entity.ExamQuestion;
+import com.deutschbridge.backend.model.enums.ExamContentStatus;
 import com.deutschbridge.backend.model.enums.ExamSection;
 import com.deutschbridge.backend.model.enums.ExamTaskType;
+import com.deutschbridge.backend.model.enums.ExamType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.ExamAttemptRepository;
 import com.deutschbridge.backend.repository.ExamExerciseBookmarkRepository;
@@ -24,6 +26,7 @@ import com.deutschbridge.backend.repository.ExamExerciseRepository;
 import com.deutschbridge.backend.service.cache.ContentCacheService;
 import com.deutschbridge.backend.service.cache.ExamProgressCacheService;
 import com.deutschbridge.backend.util.ExamExerciseMapper;
+import com.deutschbridge.backend.service.examcontent.ExamContentFingerprint;
 import com.deutschbridge.backend.util.UploadUrlExtractor;
 import jakarta.transaction.Transactional;
 import org.springframework.cache.annotation.CacheEvict;
@@ -99,6 +102,7 @@ public class ExamExerciseService {
 
     public ExamExercisePublicResponse findByIdPublic(String id) throws DataNotFoundException {
         ExamExercise exercise = findById(id);
+        if (!exercise.isPublished()) throw new DataNotFoundException(NOT_FOUND_MSG);
         Map<String, ExamExerciseCompletion> completions = examExerciseCompletionRepository
                 .findByUserIdAndExerciseId(requestContext.getUserId(), id)
                 .map(completion -> Map.of(id, completion))
@@ -195,9 +199,10 @@ public class ExamExerciseService {
      * partNumber matches the effective Teil - Sprachbausteine's Teil follows its task type; search
      * matches the title). Cached per filter combination, cleared by every exam exercise write.
      */
-    @Cacheable(cacheNames = "examAdminList", key = "{#section, #level, #taskType, #partNumber, #published, #search}")
+    @Cacheable(cacheNames = "examAdminList", key = "{#section, #level, #taskType, #partNumber, #published, #search, #examType, #status}")
     public List<ExamExerciseAdminRow> findAdminRows(ExamSection section, String level, ExamTaskType taskType,
-                                                    Integer partNumber, Boolean published, String search) {
+                                                    Integer partNumber, Boolean published, String search,
+                                                    ExamType examType, ExamContentStatus status) {
         String query = search == null ? "" : search.trim().toLowerCase();
         return examExerciseRepository.findAll().stream()
                 .filter(e -> section == null || e.getSection() == section)
@@ -205,6 +210,8 @@ public class ExamExerciseService {
                 .filter(e -> taskType == null || e.getTaskType() == taskType)
                 .filter(e -> partNumber == null || partNumber.equals(effectivePartNumber(e)))
                 .filter(e -> published == null || e.isPublished() == published)
+                .filter(e -> examType == null || e.getExamType() == examType)
+                .filter(e -> status == null || e.getStatus() == status)
                 .filter(e -> query.isEmpty() || (e.getTitle() != null && e.getTitle().toLowerCase().contains(query)))
                 .sorted(Comparator.comparing(ExamExercise::getTitle, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
                 .map(e -> new ExamExerciseAdminRow(
@@ -215,7 +222,14 @@ public class ExamExerciseService {
                         e.getLevel() != null ? e.getLevel().getValue() : null,
                         e.getPartNumber(),
                         e.isPublished(),
-                        e.getQuestions() != null ? e.getQuestions().size() : 0))
+                        e.getQuestions() != null ? e.getQuestions().size() : 0,
+                        e.getExamType() != null ? e.getExamType().name() : null,
+                        e.getStatus() != null ? e.getStatus().name() : null,
+                        e.getExternalId(),
+                        e.getVersion(),
+                        e.getMetadata() != null && e.getMetadata().get("difficulty") != null
+                                ? String.valueOf(e.getMetadata().get("difficulty")) : null,
+                        e.getUpdatedAt()))
                 .toList();
     }
 
@@ -239,6 +253,8 @@ public class ExamExerciseService {
         validateNoDuplicateLevel(request, null);
         ExamExercise exercise = new ExamExercise();
         applyRequest(exercise, request);
+        exercise.setCreatedBy(requestContext.getUserId());
+        exercise.setUpdatedBy(requestContext.getUserId());
         return ExamExerciseMapper.mapToResponse(examExerciseRepository.save(exercise));
     }
 
@@ -252,6 +268,11 @@ public class ExamExerciseService {
         validateNoDuplicateLevel(request, id);
         Set<String> previousUploadUrls = collectUploadUrls(existing);
         applyRequest(existing, request);
+        existing.setVersion(existing.getVersion() + 1);
+        existing.setUpdatedBy(requestContext.getUserId());
+        existing.setUpdatedAt(LocalDateTime.now());
+        // Hand edits change the text, so the duplicate-detection fingerprint must follow.
+        existing.setContentHash(ExamContentFingerprint.hash(existing.getPassages()));
         ExamExercise saved = examExerciseRepository.save(existing);
 
         // Whatever the previous version referenced (a passage image, an inline content/transcript
@@ -327,7 +348,9 @@ public class ExamExerciseService {
         if (request.defaultCommonMistake() != null) exercise.setDefaultCommonMistake(request.defaultCommonMistake());
         if (request.teilDescription() != null) exercise.setTeilDescription(request.teilDescription());
         if (request.modelSolution() != null) exercise.setModelSolution(request.modelSolution());
-        if (request.published() != null) exercise.setPublished(request.published());
+        if (request.published() != null && request.published() != exercise.isPublished()) {
+            exercise.applyStatus(request.published() ? ExamContentStatus.PUBLISHED : ExamContentStatus.DRAFT);
+        }
         if (request.requiresPlanning() != null) exercise.setRequiresPlanning(request.requiresPlanning());
         if (request.leitpunkte() != null) exercise.setLeitpunkte(request.leitpunkte());
     }

@@ -38,7 +38,12 @@ public class ExamExerciseMapper {
                 exercise.isPublished(),
                 exercise.getCreatedAt(),
                 exercise.isRequiresPlanning(),
-                exercise.getLeitpunkte()
+                exercise.getLeitpunkte(),
+                exercise.getExamType() != null ? exercise.getExamType().name() : null,
+                exercise.getStatus() != null ? exercise.getStatus().name() : null,
+                exercise.getExternalId(),
+                exercise.getVersion(),
+                exercise.getMetadata()
         );
     }
 

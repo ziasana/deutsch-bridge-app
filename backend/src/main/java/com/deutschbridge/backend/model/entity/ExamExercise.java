@@ -1,8 +1,10 @@
 package com.deutschbridge.backend.model.entity;
 
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
+import com.deutschbridge.backend.model.enums.ExamContentStatus;
 import com.deutschbridge.backend.model.enums.ExamSection;
 import com.deutschbridge.backend.model.enums.ExamTaskType;
+import com.deutschbridge.backend.model.enums.ExamType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.vladmihalcea.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
@@ -13,6 +15,7 @@ import org.hibernate.annotations.Type;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Entity(name = "examExercises")
 @Table(indexes = @Index(name = "idx_exam_exercises_section_level", columnList = "section, level"))
@@ -79,8 +82,55 @@ public class ExamExercise {
     @Column(columnDefinition = "jsonb")
     private List<String> leitpunkte;
 
+    /** Learner-visibility flag. Always kept in sync with {@code status == PUBLISHED} - see {@link #applyStatus}. */
     private boolean published = true;
     private LocalDateTime createdAt;
+
+    /** Which exam this exercise prepares for (Telc, Goethe, TestDaF ...). Existing content is Telc. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ExamType examType = ExamType.TELC;
+
+    /** Editorial workflow state; null only transiently before {@link #prePersist} derives it from {@code published}. */
+    @Enumerated(EnumType.STRING)
+    private ExamContentStatus status;
+
+    /** Id from the imported JSON file (e.g. "B1-L1-001"); unique per exam type, null for hand-made exercises. */
+    private String externalId;
+
+    /** Import schema / generation-prompt versions the content was produced under. */
+    private String schemaVersion;
+    private String promptVersion;
+
+    /** Free-form import metadata: difficulty, topics, skills, source ... */
+    @Type(JsonType.class)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, Object> metadata;
+
+    /** SHA-256 of the normalised passage texts - cheap exact-duplicate lookup. */
+    private String contentHash;
+
+    /** Bumped on every admin edit so changes to live content are traceable. */
+    @Column(nullable = false)
+    private int version = 1;
+
+    private String createdBy;
+    private String updatedBy;
+    private LocalDateTime updatedAt;
+    private LocalDateTime publishedAt;
+
+    /** Moves the exercise to {@code target}, keeping the learner-facing {@code published} flag and timestamps consistent. */
+    public void applyStatus(ExamContentStatus target) {
+        this.status = target;
+        boolean nowPublished = target == ExamContentStatus.PUBLISHED;
+        if (nowPublished && !this.published) {
+            this.publishedAt = LocalDateTime.now();
+        }
+        if (nowPublished && this.publishedAt == null) {
+            this.publishedAt = LocalDateTime.now();
+        }
+        this.published = nowPublished;
+    }
 
     @PrePersist
     public void prePersist() {
@@ -89,6 +139,15 @@ public class ExamExercise {
         }
         if (this.createdAt == null) {
             this.createdAt = LocalDateTime.now();
+        }
+        if (this.updatedAt == null) {
+            this.updatedAt = this.createdAt;
+        }
+        if (this.examType == null) {
+            this.examType = ExamType.TELC;
+        }
+        if (this.status == null) {
+            applyStatus(this.published ? ExamContentStatus.PUBLISHED : ExamContentStatus.DRAFT);
         }
     }
 }

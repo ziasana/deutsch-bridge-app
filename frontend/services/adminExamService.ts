@@ -24,6 +24,8 @@ export interface ExamExerciseFilters {
     partNumber?: string;
     published?: string;
     search?: string;
+    examType?: string;
+    status?: string;
 }
 
 export const getExamExercisesForAdmin = async (filters: ExamExerciseFilters = {}) => {

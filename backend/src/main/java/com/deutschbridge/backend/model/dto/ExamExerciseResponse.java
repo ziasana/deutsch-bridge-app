@@ -5,6 +5,7 @@ import com.deutschbridge.backend.model.entity.ExamQuestion;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /** Admin-facing response - includes answer keys/explanations, never sent to students directly. */
 public record ExamExerciseResponse(
@@ -25,6 +26,11 @@ public record ExamExerciseResponse(
         boolean published,
         LocalDateTime createdAt,
         boolean requiresPlanning,
-        java.util.List<String> leitpunkte
+        java.util.List<String> leitpunkte,
+        String examType,
+        String status,
+        String externalId,
+        int version,
+        Map<String, Object> metadata
 ) {
 }

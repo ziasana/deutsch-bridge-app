@@ -2,6 +2,7 @@ package com.deutschbridge.backend.repository;
 
 import com.deutschbridge.backend.model.entity.ExamExercise;
 import com.deutschbridge.backend.model.enums.ExamSection;
+import com.deutschbridge.backend.model.enums.ExamType;
 import com.deutschbridge.backend.model.enums.ExamTaskType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -34,6 +35,14 @@ public interface ExamExerciseRepository extends JpaRepository<ExamExercise, Stri
     boolean existsBySectionAndLevelAndIdNot(ExamSection section, LearningLevel level, String id);
 
     long countByPublished(boolean published);
+
+    long countByExamTypeAndSectionAndLevelAndPartNumber(ExamType examType, ExamSection section, LearningLevel level, Integer partNumber);
+
+    /** Candidates for duplicate detection: every exercise of the same section and task type, whatever its level or exam. */
+    List<ExamExercise> findBySectionAndTaskType(ExamSection section, ExamTaskType taskType);
+
+    @Query("SELECT e.externalId FROM examExercises e WHERE e.externalId LIKE CONCAT(:prefix, '%')")
+    List<String> findExternalIdsStartingWith(@Param("prefix") String prefix);
 
     /**
      * Per-level progress for one user, computed entirely in SQL (never loads exercise content)

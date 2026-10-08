@@ -59,6 +59,7 @@ public class ExamAttemptService {
     public StartExamAttemptResponse start(String exerciseId) throws DataNotFoundException {
         User user = userService.findByEmail(requestContext.getUserEmail());
         ExamExercise exercise = examExerciseService.findById(exerciseId);
+        if (!exercise.isPublished()) throw new DataNotFoundException("Exam exercise not found!");
 
         ExamAttempt attempt = new ExamAttempt();
         attempt.setUser(user);
