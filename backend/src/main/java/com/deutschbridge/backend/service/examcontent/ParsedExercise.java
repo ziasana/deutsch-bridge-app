@@ -25,8 +25,19 @@ public record ParsedExercise(
         /** Word-bank exercises (Sprachbausteine Teil 2): the shared words a..o (id = key, text = the word in capitals). */
         List<Option> wordBank,
         /** Word-bank exercises: optional advertisement / information shown before the text. */
-        Context context
+        Context context,
+        /** Writing tasks (Schriftlicher Ausdruck): the incoming email, the four points and the classification. */
+        Writing writing
 ) {
+    /** Everything except the writing task (the pre-writing shapes). */
+    public ParsedExercise(int index, ExamContentSpec spec, String externalId, String title, String instructions,
+                          List<Heading> headings, List<Text> texts, Map<String, Object> metadata,
+                          String readingText, List<Question> questions, List<Situation> situations,
+                          List<Advertisement> advertisements, List<Option> wordBank, Context context) {
+        this(index, spec, externalId, title, instructions, headings, texts, metadata, readingText, questions, situations,
+                advertisements, wordBank, context, null);
+    }
+
     /** Situation matching (12 components, no word bank). */
     public ParsedExercise(int index, ExamContentSpec spec, String externalId, String title, String instructions,
                           List<Heading> headings, List<Text> texts, Map<String, Object> metadata,
@@ -50,12 +61,25 @@ public record ParsedExercise(
 
     /** Every text that identifies this exercise's content: the matching texts, or the single reading text. */
     public List<String> textContents() {
+        if (writing != null) {
+            // Same text the stored passage yields, so duplicate detection compares like with like.
+            return List.of(ExamContentMapper.toPlainText(ExamContentMapper.toWritingHtml(writing, instructions)));
+        }
         if (!wordBank.isEmpty() && readingText != null) {
             return context == null ? List.of(readingText) : List.of(context.title() + "\n" + context.text(), readingText);
         }
         if (readingText != null) return List.of(readingText);
         if (!advertisements.isEmpty()) return advertisements.stream().map(a -> AdvertisementRenderer.toPlainText(a.content())).toList();
         return texts.stream().map(Text::content).toList();
+    }
+
+    /**
+     * A TELC "Schriftlicher Ausdruck" email-response task. {@code points} are in number order.
+     * {@code modelSubject} / {@code modelBody} are the optional model answer.
+     */
+    public record Writing(String taskType, String scenarioType, String topic, String communicationType, String relationship,
+                          String situation, String greeting, String body, String closing, String sender,
+                          List<String> points, String writingGuidance, String modelSubject, String modelBody) {
     }
 
     /** {@code answer} is a..l or x; the profile maps are the optional admin-only matching metadata. */

@@ -55,6 +55,37 @@ const emptyFilters: Filters = { examType: "", level: "", section: "", partNumber
 
 /** Matching exercises as the import format sees them (lettered headings, correct heading per text). */
 function toPreview(exercise: ExamExerciseResponse): ExercisePreviewData | null {
+    if (exercise.taskType === "WRITING_TASK") {
+        const meta = exercise.metadata ?? {};
+        const stored = meta.writing as
+            | { situation?: string; incomingMessage?: { greeting?: string; body?: string; closing?: string; sender?: string }; writingGuidance?: string }
+            | undefined;
+        const text = (key: string) => (typeof meta[key] === "string" ? (meta[key] as string) : null);
+        if (stored?.incomingMessage) {
+            return {
+                title: exercise.title,
+                instructions: exercise.teilDescription,
+                headings: [],
+                texts: [],
+                writing: {
+                    taskType: text("taskType"),
+                    scenarioType: text("scenarioType"),
+                    topic: text("topic"),
+                    communicationType: text("communicationType"),
+                    relationship: text("relationship"),
+                    situation: stored.situation ?? null,
+                    greeting: stored.incomingMessage.greeting ?? null,
+                    body: stored.incomingMessage.body ?? null,
+                    closing: stored.incomingMessage.closing ?? null,
+                    sender: stored.incomingMessage.sender ?? null,
+                    points: exercise.leitpunkte ?? [],
+                    writingGuidance: stored.writingGuidance ?? null,
+                    modelBody: exercise.modelSolution ? htmlToText(exercise.modelSolution) : null,
+                },
+            };
+        }
+        return null; // hand-made task: no structured fields to preview
+    }
     if (exercise.taskType === "WORD_BANK_CLOZE" && exercise.answerOptions?.length && exercise.passages?.length && exercise.questions?.length) {
         const labels = exercise.answerOptions.map((_, i) => exercise.answerOptionLabels?.[i]?.trim().toLowerCase() || String.fromCharCode(97 + i));
         const categories = new Map(

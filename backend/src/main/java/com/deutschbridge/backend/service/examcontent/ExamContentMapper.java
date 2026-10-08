@@ -7,6 +7,7 @@ import com.deutschbridge.backend.model.dto.ExamContentDtos.ContextView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.QuestionView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.SituationView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.TextView;
+import com.deutschbridge.backend.model.dto.ExamContentDtos.WritingView;
 import com.deutschbridge.backend.model.entity.ExamExercise;
 import com.deutschbridge.backend.model.entity.ExamPassage;
 import com.deutschbridge.backend.model.entity.ExamQuestion;
@@ -38,6 +39,9 @@ public final class ExamContentMapper {
     public static ExamExercise toEntity(ParsedExercise ex, ExamType examType, String schemaVersion,
                                         String promptVersion, String hash, String userId) {
         ExamContentSpec spec = ex.spec();
+        if (spec.isWriting()) {
+            return toWritingEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
+        }
         if (spec.isWordBank()) {
             return toWordBankEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
         }
@@ -224,6 +228,82 @@ public final class ExamContentMapper {
     }
 
     /**
+     * Schriftlicher Ausdruck in the existing WRITING_TASK model: the task (situation, email, instruction, points, guidance) is
+     * one passage, exactly like the hand-authored task, and the four points are the Leitpunkte the planner uses. The structured
+     * fields stay in the metadata so the task can be previewed and exported again.
+     */
+    private static ExamExercise toWritingEntity(ParsedExercise ex, ExamType examType, String schemaVersion,
+                                                String promptVersion, String hash, String userId) {
+        ExamContentSpec spec = ex.spec();
+        ParsedExercise.Writing w = ex.writing();
+
+        Map<String, Object> metadata = new LinkedHashMap<>(ex.metadata());
+        metadata.putIfAbsent("source", "AI_IMPORTED");
+        metadata.put("taskType", w.taskType());
+        metadata.put("scenarioType", w.scenarioType());
+        metadata.put("communicationType", w.communicationType());
+        metadata.put("relationship", w.relationship());
+        metadata.put("topic", w.topic());
+        Map<String, Object> message = new LinkedHashMap<>();
+        message.put("greeting", w.greeting());
+        message.put("body", w.body());
+        message.put("closing", w.closing());
+        message.put("sender", w.sender());
+        Map<String, Object> writing = new LinkedHashMap<>();
+        writing.put("situation", w.situation());
+        writing.put("incomingMessage", message);
+        writing.put("writingGuidance", w.writingGuidance());
+        metadata.put("writing", writing);
+
+        ExamExercise exercise = new ExamExercise();
+        exercise.setTitle(ex.title());
+        exercise.setExamType(examType);
+        exercise.setSection(spec.section());
+        exercise.setTaskType(spec.taskType());
+        exercise.setLevel(spec.level());
+        exercise.setPartNumber(spec.part());
+        exercise.setPassages(List.of(new ExamPassage(null, "Aufgabe", toWritingHtml(w, ex.instructions()), null, null, null).ensureId()));
+        exercise.setQuestions(List.of());
+        exercise.setLeitpunkte(w.points());
+        exercise.setRequiresPlanning(true);
+        if (w.modelBody() != null) exercise.setModelSolution(toModelAnswerHtml(w.modelSubject(), w.modelBody()));
+        exercise.setTeilDescription(ex.instructions());
+        exercise.setExternalId(ex.externalId());
+        exercise.setSchemaVersion(schemaVersion);
+        exercise.setPromptVersion(promptVersion);
+        exercise.setMetadata(metadata);
+        exercise.setContentHash(hash);
+        exercise.setCreatedBy(userId);
+        exercise.setUpdatedBy(userId);
+        exercise.applyStatus(ExamContentStatus.DRAFT);
+        return exercise;
+    }
+
+    /** The learner-facing task text, in the same HTML shape as the hand-authored task (plain text is escaped). */
+    static String toWritingHtml(ParsedExercise.Writing w, String instructions) {
+        StringBuilder html = new StringBuilder();
+        if (w.situation() != null) html.append("<p><em>").append(HtmlUtils.htmlEscape(w.situation())).append("</em></p>");
+        html.append("<blockquote>");
+        if (w.greeting() != null) html.append("<p>").append(HtmlUtils.htmlEscape(w.greeting())).append("</p>");
+        html.append(toHtml(w.body()));
+        String sign = (w.closing() == null ? "" : HtmlUtils.htmlEscape(w.closing())) + (w.sender() == null ? "" : "<br>" + HtmlUtils.htmlEscape(w.sender()));
+        if (!sign.isEmpty()) html.append("<p>").append(sign).append("</p>");
+        html.append("</blockquote>");
+        if (instructions != null) html.append("<p><em>").append(HtmlUtils.htmlEscape(instructions)).append("</em></p>");
+        if (!w.points().isEmpty()) {
+            html.append("<ul>");
+            w.points().forEach(point -> html.append("<li>").append(HtmlUtils.htmlEscape(point)).append("</li>"));
+            html.append("</ul>");
+        }
+        if (w.writingGuidance() != null) html.append("<p><em>").append(HtmlUtils.htmlEscape(w.writingGuidance())).append("</em></p>");
+        return html.toString();
+    }
+
+    private static String toModelAnswerHtml(String subject, String body) {
+        return (subject == null ? "" : "<p><strong>Betreff: " + HtmlUtils.htmlEscape(subject) + "</strong></p>") + toHtml(body);
+    }
+
+    /**
      * Sprachbausteine Teil 2 in the existing WORD_BANK_CLOZE model: the (optional) context becomes a first passage, the
      * text a passage with gap badges, the shared words the exercise's answer options (labelled a..o) and each gap a
      * question whose correctAnswer is the word. Categories, focus, translations and the context's structure live in metadata.
@@ -288,6 +368,12 @@ public final class ExamContentMapper {
     }
 
     public static ExercisePreview toPreview(ParsedExercise ex) {
+        if (ex.writing() != null) {
+            ParsedExercise.Writing w = ex.writing();
+            return new ExercisePreview(ex.title(), ex.instructions(), List.of(), List.of(), null, List.of(), List.of(), List.of(), null,
+                    new WritingView(w.taskType(), w.scenarioType(), w.topic(), w.communicationType(), w.relationship(), w.situation(),
+                            w.greeting(), w.body(), w.closing(), w.sender(), w.points(), w.writingGuidance(), w.modelSubject(), w.modelBody()));
+        }
         if (ex.spec() != null && ex.spec().isWordBank()) {
             return new ExercisePreview(ex.title(), ex.instructions(),
                     ex.wordBank().stream().map(w -> new HeadingView(w.id(), w.text())).toList(), List.of(), ex.readingText(),
@@ -320,6 +406,7 @@ public final class ExamContentMapper {
      * labelled headings-matching exercise), so export never emits something re-import would reject.
      */
     public static ObjectNode toExportNode(ObjectMapper mapper, ExamExercise e) {
+        if (e.getTaskType() == ExamTaskType.WRITING_TASK) return toWritingExportNode(mapper, e);
         if (e.getTaskType() == ExamTaskType.WORD_BANK_CLOZE) return toWordBankExportNode(mapper, e);
         if (e.getTaskType() == ExamTaskType.MULTIPLE_CHOICE) return toReadingExportNode(mapper, e);
         if (e.getTaskType() == ExamTaskType.SITUATION_MATCHING) return toSituationExportNode(mapper, e);
@@ -357,6 +444,40 @@ public final class ExamContentMapper {
             t.put("correctHeadingId", headingIndex >= 0 ? labels.get(headingIndex) : "");
         }
         if (e.getMetadata() != null) node.set("metadata", mapper.valueToTree(e.getMetadata()));
+        return node;
+    }
+
+    /**
+     * Email-response task in the import shape. Only tasks that were imported (they carry the structured fields in their metadata)
+     * can be exported; the points are read from the current Leitpunkte so an edit of the points is not lost.
+     */
+    @SuppressWarnings("unchecked")
+    private static ObjectNode toWritingExportNode(ObjectMapper mapper, ExamExercise e) {
+        if (e.getSection() != ExamSection.SCHRIFTLICHER_AUSDRUCK || e.getLevel() == null || e.getPartNumber() == null
+                || e.getLeitpunkte() == null || e.getLeitpunkte().isEmpty() || e.getMetadata() == null
+                || !(e.getMetadata().get("writing") instanceof Map<?, ?> writing)
+                || !(writing.get("incomingMessage") instanceof Map<?, ?> message)) {
+            return null;
+        }
+        Map<String, Object> metadata = e.getMetadata();
+        ObjectNode node = mapper.createObjectNode();
+        if (e.getExternalId() != null) node.put("externalId", e.getExternalId());
+        node.put("title", e.getTitle());
+        node.put("instructions", e.getTeilDescription() == null ? "" : e.getTeilDescription());
+        node.put("taskType", String.valueOf(metadata.getOrDefault("taskType", "EMAIL_RESPONSE")));
+        for (String key : List.of("scenarioType", "topic", "communicationType", "relationship")) {
+            if (metadata.get(key) != null) node.put(key, metadata.get(key).toString());
+        }
+        ObjectNode task = node.putObject("task");
+        task.put("situation", String.valueOf(writing.get("situation")));
+        ObjectNode incoming = task.putObject("incomingMessage");
+        for (String key : List.of("greeting", "body", "closing", "sender")) incoming.put(key, String.valueOf(message.get(key)));
+        ArrayNode points = node.putArray("points");
+        for (int i = 0; i < e.getLeitpunkte().size(); i++) points.addObject().put("number", i + 1).put("text", e.getLeitpunkte().get(i));
+        if (writing.get("writingGuidance") != null) node.put("writingGuidance", writing.get("writingGuidance").toString());
+        Map<String, Object> rest = new LinkedHashMap<>(metadata);
+        for (String key : List.of("writing", "taskType", "scenarioType", "topic", "communicationType", "relationship")) rest.remove(key);
+        if (!rest.isEmpty()) node.set("metadata", mapper.valueToTree(rest));
         return node;
     }
 

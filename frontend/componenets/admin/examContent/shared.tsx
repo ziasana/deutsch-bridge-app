@@ -77,6 +77,7 @@ export function htmlToText(html: string | null | undefined): string {
  * the admin only - the answer key and which headings stay unused.
  */
 export function ExerciseView({ preview, showAnswers = true }: Readonly<{ preview: ExercisePreviewData; showAnswers?: boolean }>) {
+    if (preview.writing) return <WritingTaskView preview={preview} writing={preview.writing} />;
     if (preview.advertisements?.length || preview.situations?.length) return <SituationExerciseView preview={preview} showAnswers={showAnswers} />;
     if (preview.questions?.length || preview.readingText) return <ReadingExerciseView preview={preview} showAnswers={showAnswers} />;
     const used = new Set(preview.texts.map((t) => t.correctHeadingId).filter(Boolean));
@@ -355,6 +356,66 @@ function SituationExerciseView({ preview, showAnswers }: Readonly<{ preview: Exe
                     <span className="font-semibold">Correct answers (admin only): </span>
                     {situations.map((s, i) => `${s.number ?? i + 1} → ${s.correctAdvertisementId || "?"}`).join("  ·  ")}
                     {unused.length > 0 && <span className="block mt-1">Unused advertisements: {unused.join(", ")}</span>}
+                </div>
+            )}
+        </div>
+    );
+}
+
+const WRITING_LABELS: Record<string, string> = {
+    STANDARD_EMAIL: "Standard email",
+    ALTERNATIVE_EMAIL: "Alternative email",
+    INFORMAL_EMAIL: "Informal",
+    SEMI_FORMAL_EMAIL: "Semi-formal",
+    FORMAL_EMAIL: "Formal",
+    FRIEND: "Friend",
+    FAMILY: "Family",
+    ACQUAINTANCE: "Acquaintance",
+    COURSE_COLLEAGUE: "Course colleague",
+    COLLEAGUE: "Colleague",
+    ORGANIZATION: "Organization",
+};
+
+/** Schriftlicher Ausdruck: classification, then the task the way the learner reads it (email, instruction, points, guidance). */
+function WritingTaskView({ preview, writing }: Readonly<{ preview: ExercisePreviewData; writing: NonNullable<ExercisePreviewData["writing"]> }>) {
+    const facts: [string, string | null][] = [
+        ["Topic", writing.topic],
+        ["Scenario", writing.scenarioType ? (WRITING_LABELS[writing.scenarioType] ?? writing.scenarioType) : null],
+        ["Communication", writing.communicationType ? (WRITING_LABELS[writing.communicationType] ?? writing.communicationType) : null],
+        ["Relationship", writing.relationship ? (WRITING_LABELS[writing.relationship] ?? writing.relationship) : null],
+    ];
+    return (
+        <div className="space-y-4">
+            <dl className="grid gap-2 sm:grid-cols-4">
+                {facts.map(([label, value]) => (
+                    <div key={label} className="rounded-md bg-gray-50 px-3 py-2 dark:bg-gray-900/40">
+                        <dt className="text-xs uppercase tracking-wide text-gray-500">{label}</dt>
+                        <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{value ?? "—"}</dd>
+                    </div>
+                ))}
+            </dl>
+
+            <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-700 space-y-3">
+                {writing.situation && <p className="text-sm italic text-gray-700 dark:text-gray-300">{writing.situation}</p>}
+                <blockquote className="rounded-md border-l-4 border-gray-300 bg-gray-50 p-4 text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-900/40 dark:text-gray-200 space-y-2">
+                    <p>{writing.greeting}</p>
+                    <p className="whitespace-pre-line">{writing.body}</p>
+                    <p>
+                        {writing.closing}
+                        <br />
+                        {writing.sender}
+                    </p>
+                </blockquote>
+                {preview.instructions && <p className="text-sm italic text-gray-700 dark:text-gray-300">{preview.instructions}</p>}
+                <ol className="list-decimal space-y-1 pl-6 text-sm text-gray-900 dark:text-gray-100">
+                    {writing.points.map((point) => <li key={point}>{point}</li>)}
+                </ol>
+                {writing.writingGuidance && <p className="text-sm italic text-gray-600 dark:text-gray-400">{writing.writingGuidance}</p>}
+            </div>
+            {writing.modelBody && (
+                <div className="rounded-lg bg-gray-50 p-3 text-sm text-gray-700 dark:bg-gray-900/40 dark:text-gray-300">
+                    <p className="font-semibold">Model answer (admin only){writing.modelSubject ? ` – Betreff: ${writing.modelSubject}` : ""}</p>
+                    <p className="mt-1 whitespace-pre-line">{writing.modelBody}</p>
                 </div>
             )}
         </div>

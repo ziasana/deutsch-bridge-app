@@ -17,6 +17,11 @@ import { cardClass, copyText, downloadTextFile, errorMessage, fieldClass, labelC
 const EXAM_LABELS: Record<string, string> = { TELC: "Telc", GOETHE: "Goethe", TESTDAF: "TestDaF", DSH: "DSH", OTHER: "Other" };
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const DIFFICULTY_LABELS: Record<string, string> = { MIXED: "Mixed (20% easy · 60% medium · 20% hard)", EASY: "Easy", MEDIUM: "Medium", HARD: "Hard" };
+const SCENARIO_CHOICES: { value: string; label: string; hint: string }[] = [
+    { value: "STANDARD_EMAIL", label: "Standard email", hint: "Klassische E-Mail-Situation, z. B. eine Freundin oder ein Freund schreibt dem Lernenden." },
+    { value: "ALTERNATIVE_EMAIL", label: "Alternative email", hint: "Alternative realistische Alltagssituation mit derselben TELC-Schreibstruktur." },
+    { value: "RANDOM", label: "Random", hint: "Der externe KI-Generator wählt eine geeignete B1-Situation." },
+];
 const topicLabel = (topic: string) => topic.charAt(0) + topic.slice(1).toLowerCase().replaceAll("_", " ");
 
 /** Builds the copy-paste prompt for any external AI; the backend never calls an AI itself. */
@@ -39,6 +44,9 @@ export default function ContentGenerator() {
     const [includeVisuals, setIncludeVisuals] = useState(true);
     const [textType, setTextType] = useState("");
     const [contextMode, setContextMode] = useState("RANDOM");
+    const [scenarioType, setScenarioType] = useState("RANDOM");
+    const [relationship, setRelationship] = useState("");
+    const [communicationType, setCommunicationType] = useState("");
     const [wordCats, setWordCats] = useState<string[] | null>(null); // null = all
     const [grammar, setGrammar] = useState<string[] | null>(null); // null = all categories
     const [result, setResult] = useState<PromptResponse | null>(null);
@@ -78,12 +86,16 @@ export default function ContentGenerator() {
             toast.error("Select at least 5 grammar categories so the ten gaps can be varied.");
             return;
         }
+        const writingSpec = spec?.taskType === "WRITING_TASK";
         setGenerating(true);
         try {
             const res = await generateExamContentPrompt({
                 exam, level, section, part, count: n, difficulty, topics, notes: notes.trim() || undefined, includeVisuals,
                 ...(wordBankSpec
                     ? { contextMode, wordCategories: selectedWordCategories.length === allWordCategories.length ? undefined : selectedWordCategories }
+                    : {}),
+                ...(writingSpec
+                    ? { scenarioType, relationship: relationship || undefined, communicationType: communicationType || undefined }
                     : {}),
                 ...(gapSpec ? { textType: textType || undefined, grammarCategories: selectedCategories.length === allCategories.length ? undefined : selectedCategories } : {}),
             });
@@ -156,7 +168,9 @@ export default function ContentGenerator() {
 
                         {spec ? (
                             <p className="text-sm text-green-700 dark:text-green-300">
-                                {spec.taskType === "MULTIPLE_CHOICE"
+                                {spec.taskType === "WRITING_TASK"
+                                    ? `✓ ${spec.label}: one incoming email and exactly ${spec.questionCount} content points to answer in writing.`
+                                    : spec.taskType === "MULTIPLE_CHOICE"
                                     ? `✓ ${spec.label}: one reading text, ${spec.questionCount} questions with ${spec.optionCount} options each.`
                                     : spec.taskType === "WORD_BANK_CLOZE"
                                     ? `✓ ${spec.label}: one text with ${spec.questionCount} gaps (31–40), ${spec.optionCount} words (a–o), ${spec.optionCount - spec.questionCount} stay unused.`
@@ -192,6 +206,50 @@ export default function ContentGenerator() {
                                 </select>
                             </label>
                         </div>
+
+                        {spec?.taskType === "WRITING_TASK" && (
+                            <>
+                                <fieldset>
+                                    <legend className={labelClass}>Scenario type</legend>
+                                    <div className="space-y-1.5">
+                                        {SCENARIO_CHOICES.map((choice) => (
+                                            <label key={choice.value} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                                <input
+                                                    type="radio"
+                                                    name="scenarioType"
+                                                    className="mt-1"
+                                                    checked={scenarioType === choice.value}
+                                                    onChange={() => setScenarioType(choice.value)}
+                                                />
+                                                <span>
+                                                    <span className="font-medium">{choice.label}</span>
+                                                    <span className="block text-xs text-gray-500 dark:text-gray-400">{choice.hint}</span>
+                                                </span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </fieldset>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <label>
+                                        <span className={labelClass}>Relationship</span>
+                                        <select className={fieldClass} value={relationship} onChange={(e) => setRelationship(e.target.value)}>
+                                            <option value="">Chosen by the AI</option>
+                                            {(options?.relationships ?? []).map((x) => <option key={x} value={x}>{topicLabel(x)}</option>)}
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span className={labelClass}>Communication</span>
+                                        <select className={fieldClass} value={communicationType} onChange={(e) => setCommunicationType(e.target.value)}>
+                                            <option value="">Fits the relationship</option>
+                                            {(options?.communicationTypes ?? []).map((x) => <option key={x} value={x}>{topicLabel(x.replace("_EMAIL", ""))}</option>)}
+                                        </select>
+                                    </label>
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Topics below set the theme. The prompt also lists your existing writing tasks, so the AI creates something different.
+                                </p>
+                            </>
+                        )}
 
                         {spec?.taskType === "WORD_BANK_CLOZE" && (
                             <>
@@ -330,6 +388,12 @@ export default function ContentGenerator() {
                                     value={result.prompt}
                                     onFocus={(e) => e.currentTarget.select()}
                                 />
+                                {spec?.taskType === "WRITING_TASK" && (
+                                    <p className="mt-3 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
+                                        ℹ️ Hinweis: Kopieren Sie diesen Prompt und verwenden Sie ihn in ChatGPT, Claude, Gemini oder einem anderen KI-Tool.
+                                        Laden Sie anschließend die erzeugte JSON-Datei hier hoch. Importierte Aufgaben werden immer als Entwurf (DRAFT) gespeichert.
+                                    </p>
+                                )}
                                 <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">
                                     Paste the prompt into your AI, save its answer as a <code>.json</code> file (or copy the text), then{" "}
                                     <Link href="/admin/exam-prep/import" className="underline text-blue-600 dark:text-blue-400">import it</Link>.

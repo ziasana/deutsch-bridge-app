@@ -47,6 +47,18 @@ public class ExamContentValidator {
     private static final Pattern GAP_MARKER = Pattern.compile("\\[(\\d{1,3})]");
     static final Set<String> QUESTION_TYPES = Set.of(
             "EXPLICIT_INFORMATION", "PARAPHRASE", "DETAIL_COMPREHENSION", "MAIN_IDEA", "LOGICAL_UNDERSTANDING", "REFERENCE");
+    static final Set<String> SCENARIO_TYPES = Set.of("STANDARD_EMAIL", "ALTERNATIVE_EMAIL");
+    static final Set<String> COMMUNICATION_TYPES = Set.of("INFORMAL_EMAIL", "SEMI_FORMAL_EMAIL", "FORMAL_EMAIL");
+    static final Set<String> RELATIONSHIPS = Set.of("FRIEND", "FAMILY", "ACQUAINTANCE", "COURSE_COLLEAGUE", "COLLEAGUE", "ORGANIZATION");
+    static final int WRITING_EMAIL_WARN_MIN = 100;
+    static final int WRITING_EMAIL_WARN_MAX = 150;
+    static final double POINT_OVERLAP_THRESHOLD = 0.5;
+    /** Imported text is plain text; anything that looks like markup or script is rejected rather than sanitised. */
+    private static final Pattern MARKUP = Pattern.compile("<\\s*/?\\s*[a-zA-Z!]|javascript:", Pattern.CASE_INSENSITIVE);
+    private static final Pattern FORMAL_PRONOUN = Pattern.compile("\\bIhnen\\b");
+    private static final Pattern INFORMAL_PRONOUN = Pattern.compile("\\b(du|dir|dich|dein|deine|deinen|deinem|deiner|euch|euer|eure)\\b");
+    private static final Pattern INFORMAL_GREETING = Pattern.compile("^(Liebe[rn]?|Hallo|Hi|Hey|Lieber|Servus|Moin)\\b.*", Pattern.DOTALL);
+    private static final Pattern FORMAL_GREETING = Pattern.compile("^(Sehr geehrte[r]?|Guten (Tag|Morgen|Abend)|Liebe[r]? (Frau|Herr)).*", Pattern.DOTALL);
     private static final Pattern EXTERNAL_ID = Pattern.compile("[A-Za-z0-9._-]{1,64}");
 
     /** File-level result: the header values plus the exercises that could be read. */
@@ -152,6 +164,9 @@ public class ExamContentValidator {
 
         if (spec != null && spec.isSituationMatching()) {
             return readSituationExercise(index, spec, node, p, externalId, title, instructions, issues);
+        }
+        if (spec != null && spec.isWriting()) {
+            return readWritingExercise(index, spec, node, p, externalId, title, instructions, issues);
         }
         if (spec != null && spec.isWordBank()) {
             return readWordBankExercise(index, spec, node, p, externalId, title, instructions, issues);
@@ -357,6 +372,213 @@ public class ExamContentValidator {
     // ------------------------------------------------------------------ reading text + multiple choice
 
     // ------------------------------------------------------------------ Sprachbausteine Teil 2 (word bank)
+
+    // ------------------------------------------------------------------ Schriftlicher Ausdruck
+
+    private ParsedExercise readWritingExercise(int index, ExamContentSpec spec, JsonNode node, String p, String externalId,
+                                               String title, String instructions, List<Issue> issues) {
+        String taskType = readEnum(node, "taskType", Set.of("EMAIL_RESPONSE"), p, "TASK_TYPE_INVALID", issues);
+        String scenarioType = readEnum(node, "scenarioType", SCENARIO_TYPES, p, "SCENARIO_TYPE_INVALID", issues);
+        String communicationType = readEnum(node, "communicationType", COMMUNICATION_TYPES, p, "COMMUNICATION_TYPE_INVALID", issues);
+        String relationship = readEnum(node, "relationship", RELATIONSHIPS, p, "RELATIONSHIP_INVALID", issues);
+        String topic = text(node, "topic");
+        if (topic == null) {
+            issues.add(error("TOPIC_MISSING", p + "topic", "topic must not be empty (e.g. \"Reise und Besuch\")."));
+        } else if (topic.length() > 200) {
+            issues.add(error("TOPIC_TOO_LONG", p + "topic", "topic may be at most 200 characters."));
+        }
+
+        JsonNode task = node.get("task");
+        String situation = task == null ? null : text(task, "situation");
+        if (situation == null) {
+            issues.add(error("SITUATION_MISSING", p + "task.situation", "task.situation must not be empty (a short introduction such as \"Sie haben von einer Freundin folgende E-Mail erhalten:\")."));
+        } else if (situation.length() > 500) {
+            issues.add(error("SITUATION_TOO_LONG", p + "task.situation", "task.situation may be at most 500 characters."));
+        }
+        JsonNode message = task == null ? null : task.get("incomingMessage");
+        String greeting = null;
+        String body = null;
+        String closing = null;
+        String sender = null;
+        if (message == null || !message.isObject()) {
+            issues.add(error("EMAIL_MISSING", p + "task.incomingMessage", "task.incomingMessage (greeting, body, closing, sender) is required."));
+        } else {
+            greeting = readEmailPart(message, "greeting", 200, p, issues);
+            body = readEmailPart(message, "body", MAX_FIELD_LENGTH, p, issues);
+            closing = readEmailPart(message, "closing", 200, p, issues);
+            sender = readEmailPart(message, "sender", 200, p, issues);
+        }
+
+        List<String> points = readWritingPoints(node, spec, p, issues);
+
+        String guidance = text(node, "writingGuidance");
+        if (guidance == null && node.get("writingGuidance") != null && node.get("writingGuidance").isObject()) {
+            guidance = text(node.get("writingGuidance"), "de");
+        }
+        if (guidance == null) guidance = ExamContentSpecs.WRITING_GUIDANCE;
+        if (guidance.length() > 1000) issues.add(error("GUIDANCE_TOO_LONG", p + "writingGuidance", "writingGuidance is too long."));
+
+        String modelSubject = null;
+        String modelBody = null;
+        JsonNode model = node.get("modelAnswer");
+        if (model != null && model.isObject()) {
+            modelSubject = text(model, "subject");
+            modelBody = text(model, "body");
+            if (modelBody == null) issues.add(error("MODEL_ANSWER_INVALID", p + "modelAnswer.body", "modelAnswer needs a body (or remove modelAnswer)."));
+        } else if (model != null && !model.isNull()) {
+            issues.add(error("MODEL_ANSWER_INVALID", p + "modelAnswer", "modelAnswer must be an object with subject and body."));
+        }
+
+        Map<String, Object> metadata = readMetadata(node.get("metadata"), p, issues);
+        if (node.get("metadata") != null && node.get("metadata").isObject()) putStringList(node.get("metadata"), "tags", metadata);
+
+        checkWritingConsistency(spec, communicationType, relationship, greeting, body, instructions, guidance, p, issues);
+        if (body != null) checkEmailBody(body, p, issues);
+        warnPoints(points, p, issues);
+        List<String> plainTextFields = new ArrayList<>(java.util.Arrays.asList(title, instructions, topic, situation, greeting, body,
+                closing, sender, guidance, modelSubject, modelBody));
+        plainTextFields.addAll(points);
+        rejectMarkup(p, issues, plainTextFields);
+
+        ParsedExercise.Writing writing = new ParsedExercise.Writing(taskType, scenarioType, topic, communicationType, relationship,
+                situation, greeting, body, closing, sender, points, guidance, modelSubject, modelBody);
+        return new ParsedExercise(index, spec, externalId, title, instructions, List.of(), List.of(), metadata, null, List.of(),
+                List.of(), List.of(), List.of(), null, writing);
+    }
+
+    private String readEnum(JsonNode node, String field, Set<String> allowed, String p, String code, List<Issue> issues) {
+        String value = text(node, field);
+        String normalized = value == null ? null : value.toUpperCase(java.util.Locale.ROOT);
+        if (normalized == null || !allowed.contains(normalized)) {
+            String hint = "RANDOM".equals(normalized) ? " RANDOM is only a generator option - the task itself must state the concrete scenario." : "";
+            issues.add(error(code, p + field, field + " must be one of " + String.join(", ", new java.util.TreeSet<>(allowed))
+                    + " (found: " + value + ")." + hint));
+            return null;
+        }
+        return normalized;
+    }
+
+    private String readEmailPart(JsonNode message, String field, int maxLength, String p, List<Issue> issues) {
+        String value = text(message, field);
+        String path = p + "task.incomingMessage." + field;
+        if (value == null) {
+            issues.add(error("EMAIL_" + field.toUpperCase(java.util.Locale.ROOT) + "_MISSING", path, "The incoming email needs a " + field + "."));
+        } else if (value.length() > maxLength) {
+            issues.add(error("EMAIL_" + field.toUpperCase(java.util.Locale.ROOT) + "_TOO_LONG", path, "The email " + field + " is too long (max " + maxLength + " characters)."));
+        }
+        return value;
+    }
+
+    /** Exactly four distinct points numbered 1-4; returned in number order. */
+    private List<String> readWritingPoints(JsonNode node, ExamContentSpec spec, String p, List<Issue> issues) {
+        JsonNode array = node.get("points");
+        if (array == null || !array.isArray()) {
+            issues.add(error("POINTS_MISSING", p + "points", "points must be an array of exactly " + spec.questionCount() + " content points."));
+            return List.of();
+        }
+        Map<Integer, String> byNumber = new java.util.TreeMap<>();
+        Set<Integer> seen = new LinkedHashSet<>();
+        for (int i = 0; i < array.size(); i++) {
+            JsonNode point = array.get(i);
+            String path = p + "points[" + i + "]";
+            // A bare string is accepted as a point; its number is then its position.
+            String pointText = point.isTextual() ? (point.asText().isBlank() ? null : point.asText().trim()) : text(point, "text");
+            Integer number = point.isTextual() ? i + 1
+                    : point.isObject() && point.get("number") != null && point.get("number").isInt() ? point.get("number").asInt() : null;
+            if (number == null || number < 1 || number > spec.questionCount()) {
+                issues.add(error("POINT_NUMBER_INVALID", path + ".number", "Point " + (i + 1) + " needs a number between 1 and " + spec.questionCount() + "."));
+            } else if (!seen.add(number)) {
+                issues.add(error("POINT_NUMBER_DUPLICATE", path + ".number", "Point number " + number + " is used more than once."));
+            }
+            if (pointText == null) {
+                issues.add(error("POINT_TEXT_EMPTY", path + ".text", "Point " + (i + 1) + " has no text."));
+            } else if (pointText.length() > 300) {
+                issues.add(error("POINT_TEXT_TOO_LONG", path + ".text", "Point " + (i + 1) + " is too long (max 300 characters)."));
+            }
+            if (number != null && pointText != null) byNumber.putIfAbsent(number, pointText);
+        }
+        if (array.size() != spec.questionCount()) {
+            issues.add(error("POINT_COUNT", p + "points", "Exactly " + spec.questionCount() + " content points are required (found " + array.size() + ")."));
+        }
+        return new ArrayList<>(byNumber.values());
+    }
+
+    /** Relationship / style combinations that cannot work, plus softer style hints. */
+    private void checkWritingConsistency(ExamContentSpec spec, String communication, String relationship, String greeting, String body, String instructions,
+                                         String guidance, String p, List<Issue> issues) {
+        if (communication != null && relationship != null) {
+            boolean personal = Set.of("FRIEND", "FAMILY", "COURSE_COLLEAGUE").contains(relationship);
+            if (personal && communication.equals("FORMAL_EMAIL")) {
+                issues.add(error("STYLE_MISMATCH", p + "communicationType",
+                        relationship + " does not fit FORMAL_EMAIL — write to friends, family and course colleagues informally (du)."));
+            } else if (relationship.equals("ORGANIZATION") && communication.equals("INFORMAL_EMAIL")) {
+                issues.add(error("STYLE_MISMATCH", p + "communicationType",
+                        "ORGANIZATION does not fit INFORMAL_EMAIL — use SEMI_FORMAL_EMAIL or FORMAL_EMAIL (Sie)."));
+            } else if (relationship.equals("COLLEAGUE") && communication.equals("INFORMAL_EMAIL")) {
+                issues.add(warning("STYLE_UNUSUAL", p + "communicationType", "COLLEAGUE with INFORMAL_EMAIL is possible but unusual — check that du is natural here."));
+            }
+        }
+        if (communication == null) return;
+        boolean informal = communication.equals("INFORMAL_EMAIL");
+        boolean formal = communication.equals("FORMAL_EMAIL");
+        if (greeting != null) {
+            if (informal && !INFORMAL_GREETING.matcher(greeting).matches()) {
+                issues.add(warning("GREETING_STYLE", p + "task.incomingMessage.greeting", "Greeting '" + greeting + "' does not look informal (e.g. 'Liebe Anna,')."));
+            } else if (formal && !FORMAL_GREETING.matcher(greeting).matches()) {
+                issues.add(warning("GREETING_STYLE", p + "task.incomingMessage.greeting", "Greeting '" + greeting + "' does not look formal (e.g. 'Sehr geehrte Frau Weber,')."));
+            }
+        }
+        if (body != null) {
+            if (informal && FORMAL_PRONOUN.matcher(body).find()) {
+                issues.add(warning("PRONOUN_STYLE", p + "task.incomingMessage.body", "The email addresses the reader with 'Ihnen' although the style is informal (du)."));
+            } else if (formal && INFORMAL_PRONOUN.matcher(body).find()) {
+                issues.add(warning("PRONOUN_STYLE", p + "task.incomingMessage.body", "The email uses du/dein/euch although the style is formal (Sie)."));
+            }
+        }
+        if (instructions != null && !instructions.equals(spec.defaultInstructions())) {
+            issues.add(warning("INSTRUCTIONS_NONSTANDARD", p + "instructions", "The instruction differs from the standard TELC wording."));
+        }
+        if (!ExamContentSpecs.WRITING_GUIDANCE.equals(guidance)) {
+            issues.add(warning("GUIDANCE_NONSTANDARD", p + "writingGuidance", "The writing guidance differs from the standard TELC wording."));
+        }
+    }
+
+    private void checkEmailBody(String body, String p, List<Issue> issues) {
+        int words = TextSimilarity.wordCount(body);
+        if (words < WRITING_EMAIL_WARN_MIN || words > WRITING_EMAIL_WARN_MAX) {
+            issues.add(warning("EMAIL_LENGTH", p + "task.incomingMessage.body", "The incoming email has " + words + " words; the recommended length is approximately "
+                    + WRITING_EMAIL_WARN_MIN + "–" + WRITING_EMAIL_WARN_MAX + "."));
+        }
+        long questions = body.chars().filter(c -> c == '?').count();
+        if (questions >= 4) {
+            issues.add(warning("EMAIL_QUESTION_LIST", p + "task.incomingMessage.body", "The email contains " + questions
+                    + " questions — it should read like a real email, not a list of four questions."));
+        }
+    }
+
+    private void warnPoints(List<String> points, String p, List<Issue> issues) {
+        for (int i = 0; i < points.size(); i++) {
+            if (TextSimilarity.wordCount(points.get(i)) < 3) {
+                issues.add(warning("POINT_TOO_SHORT", p + "points[" + i + "]", "Point " + (i + 1) + " ('" + points.get(i)
+                        + "') is very short — points should ask for meaningful information, not a single question word."));
+            }
+            for (int j = i + 1; j < points.size(); j++) {
+                if (TextSimilarity.similarity(points.get(i), points.get(j)) >= POINT_OVERLAP_THRESHOLD) {
+                    issues.add(warning("POINT_OVERLAP", p + "points", "Point " + (i + 1) + " may overlap with Point " + (j + 1) + ". Please review manually."));
+                }
+            }
+        }
+    }
+
+    private void rejectMarkup(String p, List<Issue> issues, List<String> values) {
+        for (String value : values) {
+            if (value != null && MARKUP.matcher(value).find()) {
+                issues.add(error("HTML_CONTENT", p.isEmpty() ? "$" : p.substring(0, p.length() - 1),
+                        "Content must be plain text — HTML/script was found in: \"" + (value.length() > 60 ? value.substring(0, 60) + "…" : value) + "\"."));
+                return;
+            }
+        }
+    }
 
     private ParsedExercise readWordBankExercise(int index, ExamContentSpec spec, JsonNode node, String p, String externalId,
                                                 String title, String instructions, List<Issue> issues) {

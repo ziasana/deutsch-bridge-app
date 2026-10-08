@@ -17,6 +17,10 @@ public final class ExamContentSpecs {
 
     public static final String SCHEMA_VERSION = "1.0";
 
+    /** Standard hint shown below the task; used when an imported task does not carry its own. */
+    public static final String WRITING_GUIDANCE = "Überlegen Sie sich vor dem Schreiben eine passende Reihenfolge der Punkte, "
+            + "einen passenden Betreff, eine passende Anrede, Einleitung und einen passenden Schluss.";
+
     private static final List<ExamContentSpec> SPECS = List.of(
             new ExamContentSpec(
                     ExamType.TELC, LearningLevel.B1, ExamSection.LESEVERSTEHEN, 1, ExamTaskType.MATCHING,
@@ -54,7 +58,14 @@ public final class ExamContentSpecs {
                             + "Lesen Sie den Text und schließen Sie die Lücken 31–40. Benutzen Sie die Wörter a–o.",
                     "exam-content/prompts/sprachbausteine-wordbank.v1.0.txt",
                     "1.0",
-                    10, 15, 31)
+                    10, 15, 31),
+            new ExamContentSpec(
+                    ExamType.TELC, LearningLevel.B1, ExamSection.SCHRIFTLICHER_AUSDRUCK, 1, ExamTaskType.WRITING_TASK,
+                    0, 0, 100, 150,
+                    "Antworten Sie auf die E-Mail. Schreiben Sie etwas zu allen vier Punkten:",
+                    "exam-content/prompts/schriftlicher-ausdruck.v1.0.txt",
+                    "1.0",
+                    4, 0, 1)
     );
 
     private ExamContentSpecs() {

@@ -58,6 +58,11 @@ public record ExamContentSpec(
         return taskType == ExamTaskType.WORD_BANK_CLOZE;
     }
 
+    /** True for Schriftlicher Ausdruck: an incoming email plus exactly {@code questionCount} content points to answer in writing. */
+    public boolean isWriting() {
+        return taskType == ExamTaskType.WRITING_TASK;
+    }
+
     /** Word bank: words that stay unused. */
     public int unusedWordCount() {
         return optionCount - questionCount;

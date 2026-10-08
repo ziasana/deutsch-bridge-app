@@ -60,9 +60,19 @@ public class ExamContentService {
     private static final Set<String> WORD_ANSWER_ERROR_CODES = Set.of(
             "QUESTIONS_MISSING", "QUESTION_COUNT", "QUESTION_NUMBER_INVALID", "QUESTION_NUMBER_DUPLICATE", "GAP_NUMBER_OUT_OF_RANGE",
             "CORRECT_WORD_MISSING", "CORRECT_OPTION_UNKNOWN", "CORRECT_WORD_MISMATCH", "WORD_REUSED");
+    private static final Set<String> WRITING_TASK_ERROR_CODES = Set.of(
+            "TASK_TYPE_INVALID", "SCENARIO_TYPE_INVALID", "COMMUNICATION_TYPE_INVALID", "RELATIONSHIP_INVALID", "TOPIC_MISSING",
+            "TOPIC_TOO_LONG", "SITUATION_MISSING", "SITUATION_TOO_LONG", "GUIDANCE_TOO_LONG", "MODEL_ANSWER_INVALID", "HTML_CONTENT");
+    private static final Set<String> WRITING_EMAIL_ERROR_CODES = Set.of(
+            "EMAIL_MISSING", "EMAIL_GREETING_MISSING", "EMAIL_BODY_MISSING", "EMAIL_CLOSING_MISSING", "EMAIL_SENDER_MISSING",
+            "EMAIL_GREETING_TOO_LONG", "EMAIL_BODY_TOO_LONG", "EMAIL_CLOSING_TOO_LONG", "EMAIL_SENDER_TOO_LONG");
+    private static final Set<String> WRITING_POINT_ERROR_CODES = Set.of(
+            "POINTS_MISSING", "POINT_COUNT", "POINT_NUMBER_INVALID", "POINT_NUMBER_DUPLICATE", "POINT_TEXT_EMPTY", "POINT_TEXT_TOO_LONG");
     private static final Set<String> OPTION_ERROR_CODES = Set.of(
             "OPTIONS_MISSING", "OPTION_COUNT", "OPTION_IDS", "OPTION_ID_MISSING", "OPTION_ID_DUPLICATE", "OPTION_TEXT_EMPTY",
             "OPTION_TEXT_TOO_LONG", "OPTION_TEXT_DUPLICATE", "CORRECT_OPTION_MISSING", "CORRECT_OPTION_UNKNOWN");
+
+    private static final int EXISTING_SUMMARY_LIMIT = 40;
 
     private final ExamExerciseRepository repository;
     private final RequestContext requestContext;
@@ -93,7 +103,10 @@ public class ExamContentService {
                 ExamContentSpecs.SCHEMA_VERSION,
                 ExamContentPromptBuilder.TEXT_TYPES,
                 ExamContentPromptBuilder.GRAMMAR_CATEGORIES,
-                ExamContentPromptBuilder.WORD_CATEGORIES);
+                ExamContentPromptBuilder.WORD_CATEGORIES,
+                ExamContentPromptBuilder.SCENARIO_TYPES,
+                ExamContentPromptBuilder.RELATIONSHIPS,
+                ExamContentPromptBuilder.COMMUNICATION_TYPES);
     }
 
     @Transactional(readOnly = true)
@@ -103,7 +116,21 @@ public class ExamContentService {
                 spec.examType(), spec.section(), spec.level(), spec.part());
         int next = ExamContentPromptBuilder.nextNumber(spec.externalIdPrefix(),
                 repository.findExternalIdsStartingWith(spec.externalIdPrefix()));
-        return promptBuilder.build(spec, request, existing, next);
+        return promptBuilder.build(spec, request, existing, next, spec.isWriting() ? existingWritingSummaries(spec) : List.of());
+    }
+
+    /** Newest first, capped so the prompt stays a manageable size: "title - topic (scenario)". */
+    private List<String> existingWritingSummaries(ExamContentSpec spec) {
+        return repository.findBySectionAndTaskType(spec.section(), spec.taskType()).stream()
+                .filter(e -> e.getStatus() != ExamContentStatus.ARCHIVED && e.getStatus() != ExamContentStatus.REJECTED)
+                .sorted(java.util.Comparator.comparing(ExamExercise::getCreatedAt, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
+                .limit(EXISTING_SUMMARY_LIMIT)
+                .map(e -> {
+                    Object topic = e.getMetadata() == null ? null : e.getMetadata().get("topic");
+                    Object scenario = e.getMetadata() == null ? null : e.getMetadata().get("scenarioType");
+                    return e.getTitle() + (topic == null ? "" : " - " + topic) + (scenario == null ? "" : " (" + scenario + ")");
+                })
+                .toList();
     }
 
     private ExamContentSpec resolveSpec(PromptRequest request) {
@@ -197,12 +224,14 @@ public class ExamContentService {
                 || reports.stream().anyMatch(r -> !r.valid());
         int headings = file.exercises().stream().mapToInt(e -> e.headings().size()).sum();
         int texts = file.exercises().stream().mapToInt(e -> e.texts().size()).sum();
-        int questions = file.exercises().stream().mapToInt(e -> e.questions().size() + e.situations().size()).sum();
+        int questions = file.exercises().stream().mapToInt(e -> e.questions().size() + e.situations().size()
+                + (e.writing() == null ? 0 : e.writing().points().size())).sum();
         boolean reading = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isMultipleChoice());
         boolean situation = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isSituationMatching());
         boolean wordBank = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isWordBank());
+        boolean writing = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isWriting());
         boolean matching = file.exercises().stream().anyMatch(e -> e.spec() != null && !e.spec().isMultipleChoice()
-                && !e.spec().isSituationMatching() && !e.spec().isWordBank());
+                && !e.spec().isSituationMatching() && !e.spec().isWordBank() && !e.spec().isWriting());
         int situations = file.exercises().stream().mapToInt(e -> e.situations().size()).sum();
         int advertisements = file.exercises().stream().mapToInt(e -> e.advertisements().size()).sum();
 
@@ -218,10 +247,16 @@ public class ExamContentService {
         checks.add(new Check("Section: " + orDash(file.section()), noCode(all, "SECTION_INVALID")));
         checks.add(new Check("Part: " + orDash(file.part()), noCode(all, "PART_INVALID", "SPEC_UNSUPPORTED")));
         checks.add(new Check("Exercises: " + reports.size(), !reports.isEmpty() && noCode(all, "EXERCISE_NOT_OBJECT", "EXTERNAL_ID_INVALID", "EXTERNAL_ID_DUPLICATE_IN_FILE")));
-        if (matching || (!reading && !situation && !wordBank)) {
+        if (matching || (!reading && !situation && !wordBank && !writing)) {
             checks.add(new Check("Headings: " + headings, !reports.isEmpty() && noCode(all, STRUCTURE_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Texts: " + texts, !reports.isEmpty() && noCode(all, TEXT_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Answer assignments valid", !reports.isEmpty() && noCode(all, ANSWER_ERROR_CODES.toArray(String[]::new))));
+        }
+        if (writing) {
+            checks.add(new Check("Task type, scenario, topic, relationship and communication type valid", !reports.isEmpty() && noCode(all, WRITING_TASK_ERROR_CODES.toArray(String[]::new))));
+            checks.add(new Check("Incoming email found (greeting, body, closing, sender)", !reports.isEmpty() && noCode(all, WRITING_EMAIL_ERROR_CODES.toArray(String[]::new))));
+            checks.add(new Check("Exactly 4 content points (numbered 1–4)", !reports.isEmpty() && noCode(all, WRITING_POINT_ERROR_CODES.toArray(String[]::new))));
+            checks.add(new Check("Communication style matches the relationship", !reports.isEmpty() && noCode(all, "STYLE_MISMATCH")));
         }
         if (situation) {
             checks.add(new Check("Situations: " + situations, !reports.isEmpty() && noCode(all, SITUATION_ERROR_CODES.toArray(String[]::new))));
@@ -359,6 +394,14 @@ public class ExamContentService {
     /** Last line of defence against publishing something broken by a hand edit after import. */
     static String publishProblem(ExamExercise e) {
         if (e.getPassages() == null || e.getPassages().isEmpty()) return "Has no texts.";
+        if (e.getTaskType() == ExamTaskType.WRITING_TASK) {
+            // A writing task has no questions. Imported tasks (they carry their structure in the metadata) must keep exactly four points.
+            boolean imported = e.getMetadata() != null && e.getMetadata().get("writing") != null;
+            if (imported && (e.getLeitpunkte() == null || e.getLeitpunkte().size() != 4 || e.getLeitpunkte().stream().anyMatch(p -> p == null || p.isBlank()))) {
+                return "A writing task needs exactly four content points.";
+            }
+            return null;
+        }
         if (e.getQuestions() == null || e.getQuestions().isEmpty()) return "Has no questions.";
         if (e.getTaskType() == ExamTaskType.WORD_BANK_CLOZE) {
             if (e.getAnswerOptions() == null || e.getAnswerOptions().isEmpty()) return "Has no word bank.";

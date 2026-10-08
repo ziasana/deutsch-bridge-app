@@ -12,7 +12,7 @@ export interface ExamContentSpecInfo {
     headingCount: number;
     textCount: number;
     label: string;
-    taskType: "MATCHING" | "MULTIPLE_CHOICE" | "SITUATION_MATCHING" | "WORD_BANK_CLOZE";
+    taskType: "MATCHING" | "MULTIPLE_CHOICE" | "SITUATION_MATCHING" | "WORD_BANK_CLOZE" | "WRITING_TASK";
     questionCount: number;
     optionCount: number;
 }
@@ -28,6 +28,10 @@ export interface ExamContentOptions {
     textTypes?: string[];
     grammarCategories?: string[];
     wordCategories?: string[];
+    /** Schriftlicher Ausdruck generator choices. */
+    scenarioTypes?: string[];
+    relationships?: string[];
+    communicationTypes?: string[];
 }
 
 export interface PromptRequest {
@@ -49,6 +53,11 @@ export interface PromptRequest {
     contextMode?: string;
     /** Sprachbausteine Teil 2: kinds of function words in the word bank; omitted = all. */
     wordCategories?: string[];
+    /** Schriftlicher Ausdruck: RANDOM | STANDARD_EMAIL | ALTERNATIVE_EMAIL. */
+    scenarioType?: string;
+    /** Schriftlicher Ausdruck: omitted = chosen by the AI to fit the situation. */
+    relationship?: string;
+    communicationType?: string;
 }
 
 export interface PromptResponse {
@@ -128,6 +137,24 @@ export interface PreviewAdvertisement {
     matchingProfile?: { primaryService?: string; features?: string[] } | null;
 }
 
+/** Schriftlicher Ausdruck: the incoming email, the four points and how the task is classified. */
+export interface PreviewWriting {
+    taskType: string | null;
+    scenarioType: string | null;
+    topic: string | null;
+    communicationType: string | null;
+    relationship: string | null;
+    situation: string | null;
+    greeting: string | null;
+    body: string | null;
+    closing: string | null;
+    sender: string | null;
+    points: string[];
+    writingGuidance: string | null;
+    modelSubject?: string | null;
+    modelBody?: string | null;
+}
+
 export interface ExercisePreviewData {
     title: string | null;
     instructions: string | null;
@@ -141,6 +168,8 @@ export interface ExercisePreviewData {
     advertisements?: PreviewAdvertisement[];
     /** Word-bank exercises (Sprachbausteine Teil 2): the advertisement / information before the text; the words are in `headings`. */
     context?: { type: string; title: string; text: string } | null;
+    /** Writing tasks (Schriftlicher Ausdruck). */
+    writing?: PreviewWriting | null;
 }
 
 export interface DuplicateMatch {

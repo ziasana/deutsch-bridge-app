@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Builds the copy-paste prompt an admin gives to any AI (Claude, ChatGPT, Gemini ...). The prompt is a
@@ -32,6 +33,9 @@ public class ExamContentPromptBuilder {
             "PERSONALPRONOMEN", "RELATIVPRONOMEN", "POSSESSIVARTIKEL", "VERB_PRAEPOSITION", "SATZSTRUKTUR");
     public static final List<String> WORD_CATEGORIES = List.of(
             "PRAEPOSITIONEN", "KONJUNKTIONEN", "KONNEKTOREN", "PRONOMEN", "FRAGEWOERTER", "FUNKTIONSWOERTER");
+    public static final List<String> SCENARIO_TYPES = List.of("RANDOM", "STANDARD_EMAIL", "ALTERNATIVE_EMAIL");
+    public static final List<String> RELATIONSHIPS = List.of("FRIEND", "FAMILY", "ACQUAINTANCE", "COURSE_COLLEAGUE", "COLLEAGUE", "ORGANIZATION");
+    public static final List<String> COMMUNICATION_TYPES = List.of("INFORMAL_EMAIL", "SEMI_FORMAL_EMAIL", "FORMAL_EMAIL");
     public static final List<String> CONTEXT_MODES = List.of("RANDOM", "WITH_ADVERTISEMENT", "WITHOUT_ADVERTISEMENT");
     public static final List<String> DIFFICULTIES = List.of("MIXED", "EASY", "MEDIUM", "HARD");
     public static final int MAX_COUNT = 50;
@@ -39,6 +43,12 @@ public class ExamContentPromptBuilder {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     public PromptResponse build(ExamContentSpec spec, PromptRequest request, int existingCount, int firstNumber) {
+        return build(spec, request, existingCount, firstNumber, List.of());
+    }
+
+    /** {@code existingSummaries}: one line per task already in the library (writing tasks), so the AI does not repeat them. */
+    public PromptResponse build(ExamContentSpec spec, PromptRequest request, int existingCount, int firstNumber,
+                                List<String> existingSummaries) {
         int count = request.count() == null ? 10 : request.count();
         if (count < 1 || count > MAX_COUNT) {
             throw new IllegalArgumentException("count must be between 1 and " + MAX_COUNT);
@@ -96,7 +106,14 @@ public class ExamContentPromptBuilder {
             throw new IllegalArgumentException("Select at least 3 word categories (or none for all) so the word bank can be varied.");
         }
         boolean includeVisuals = request.includeVisuals() == null || request.includeVisuals();
-        values.put("REQUEST_BLOCK", requestBlock(spec, count, difficulty, topics, firstId, includeVisuals, textType, grammar, contextMode, wordCategories));
+        String scenario = token(request.scenarioType(), "RANDOM", SCENARIO_TYPES, "scenario type");
+        String relationship = token(request.relationship(), null, RELATIONSHIPS, "relationship");
+        String communication = token(request.communicationType(), null, COMMUNICATION_TYPES, "communication type");
+        if (spec.isWriting()) checkWritingStyle(relationship, communication);
+        values.put("INSTRUCTIONS", spec.defaultInstructions());
+        values.put("WRITING_GUIDANCE", ExamContentSpecs.WRITING_GUIDANCE);
+        values.put("REQUEST_BLOCK", requestBlock(spec, count, difficulty, topics, firstId, includeVisuals, textType, grammar, contextMode, wordCategories)
+                + (spec.isWriting() ? writingBlock(scenario, relationship, communication, existingSummaries) : ""));
         values.put("VISUAL_RULES", visualRules(includeVisuals));
         values.put("JSON_EXAMPLE", example);
         values.put("NOTES_BLOCK", request.notes() == null || request.notes().isBlank() ? ""
@@ -129,7 +146,7 @@ public class ExamContentPromptBuilder {
         if (topics.isEmpty()) {
             b.append("Topics: choose a varied, balanced mix of everyday topics across the exercises.\n");
         } else {
-            b.append(spec.isMultipleChoice()
+            b.append(spec.isMultipleChoice() || spec.isWriting()
                     ? "Topics: spread the exercises across the following topics (every exercise needs one clear central topic of its own):\n"
                     : "Topics: spread the exercises across the following topics (each exercise's five texts may touch related sub-topics):\n");
             int base = count / topics.size();
@@ -169,6 +186,50 @@ public class ExamContentPromptBuilder {
         return b.toString();
     }
 
+    private static String token(String raw, String fallback, List<String> allowed, String what) {
+        if (raw == null || raw.isBlank()) return fallback;
+        String value = raw.trim().toUpperCase(Locale.ROOT);
+        if (!allowed.contains(value)) throw new IllegalArgumentException("Unknown " + what + ": " + raw);
+        return value;
+    }
+
+    /** Rejects combinations the importer would reject later anyway, so the admin finds out before asking an AI. */
+    private static void checkWritingStyle(String relationship, String communication) {
+        if (relationship == null || communication == null) return;
+        if (Set.of("FRIEND", "FAMILY", "COURSE_COLLEAGUE").contains(relationship) && communication.equals("FORMAL_EMAIL")) {
+            throw new IllegalArgumentException(relationship + " cannot be combined with FORMAL_EMAIL — choose INFORMAL_EMAIL or another relationship.");
+        }
+        if (relationship.equals("ORGANIZATION") && communication.equals("INFORMAL_EMAIL")) {
+            throw new IllegalArgumentException("ORGANIZATION cannot be combined with INFORMAL_EMAIL — choose SEMI_FORMAL_EMAIL or FORMAL_EMAIL.");
+        }
+    }
+
+    private String writingBlock(String scenario, String relationship, String communication, List<String> existing) {
+        StringBuilder b = new StringBuilder("\n\nWRITING TASK CONFIGURATION\n");
+        b.append(switch (scenario) {
+            case "STANDARD_EMAIL" -> "Scenario type: STANDARD_EMAIL for every task - the classic situation: a friend (or similar) writes to the learner and asks for a reply. "
+                    + "Set scenarioType to STANDARD_EMAIL.\n";
+            case "ALTERNATIVE_EMAIL" -> "Scenario type: ALTERNATIVE_EMAIL for every task - another realistic everyday situation with the same TELC writing structure "
+                    + "(for example a birthday invitation, a weekend trip, helping with a move, a language course, a sport or hobby, a family visit, an appointment, an event, accommodation). "
+                    + "Set scenarioType to ALTERNATIVE_EMAIL.\n";
+            default -> "Scenario type: RANDOM - choose a fitting B1 situation for every task. Use roughly half STANDARD_EMAIL (a friend visits / asks for advice) and half "
+                    + "ALTERNATIVE_EMAIL (another everyday situation such as an invitation, trip, move, course, hobby or event), and write the concrete value you chose "
+                    + "(STANDARD_EMAIL or ALTERNATIVE_EMAIL, never RANDOM) into scenarioType.\n";
+        });
+        b.append(relationship == null
+                ? "Relationship: choose the sender's relationship to the learner (FRIEND, FAMILY, ACQUAINTANCE, COURSE_COLLEAGUE, COLLEAGUE, ORGANIZATION) so that it fits the situation, and vary it across the tasks.\n"
+                : "Relationship: " + relationship + " for every task.\n");
+        b.append(communication == null
+                ? "Communication type: choose the style that fits the relationship (FRIEND / FAMILY / COURSE_COLLEAGUE -> INFORMAL_EMAIL with du; COLLEAGUE / ACQUAINTANCE -> INFORMAL_EMAIL or SEMI_FORMAL_EMAIL; ORGANIZATION -> SEMI_FORMAL_EMAIL or FORMAL_EMAIL with Sie). Prefer INFORMAL_EMAIL and SEMI_FORMAL_EMAIL; use FORMAL_EMAIL only when the situation really requires it.\n"
+                : "Communication type: " + communication + " for every task.\n");
+        b.append("Every task in this batch must use a clearly different situation, different names and different four points.\n");
+        if (!existing.isEmpty()) {
+            b.append("\nEXISTING TASKS (do not repeat these topics, situations or wording; create something clearly different):\n");
+            existing.forEach(line -> b.append("- ").append(line).append("\n"));
+        }
+        return b.toString().stripTrailing();
+    }
+
     private static String visualRules(boolean includeVisuals) {
         if (!includeVisuals) {
             return "Visual briefs are NOT requested: in every advertisement set \"visual\": {\"hasImage\": false, \"imageType\": \"NONE\"} and write all information as text.";
@@ -192,6 +253,26 @@ public class ExamContentPromptBuilder {
         ex.put("externalId", firstId);
         ex.put("title", spec.level().getValue() + " " + ExamContentTokens.sectionLabel(spec.section()) + " Teil " + spec.part() + " – ...");
         ex.put("instructions", spec.defaultInstructions());
+        if (spec.isWriting()) {
+            ex.put("taskType", "EMAIL_RESPONSE");
+            ex.put("scenarioType", "STANDARD_EMAIL");
+            ex.put("topic", "...");
+            ex.put("communicationType", "INFORMAL_EMAIL");
+            ex.put("relationship", "FRIEND");
+            ObjectNode task = ex.putObject("task");
+            task.put("situation", "Sie haben von einer Freundin folgende E-Mail erhalten:");
+            ObjectNode message = task.putObject("incomingMessage");
+            message.put("greeting", "Liebe ...,").put("body", "...").put("closing", "Viele Grüße").put("sender", "...");
+            ArrayNode points = ex.putArray("points");
+            for (int i = 1; i <= spec.questionCount(); i++) points.addObject().put("number", i).put("text", "...");
+            ex.putObject("writingGuidance").put("de", ExamContentSpecs.WRITING_GUIDANCE);
+            ObjectNode meta = ex.putObject("metadata");
+            meta.put("difficulty", difficulty);
+            meta.putArray("topics").add("TRAVEL");
+            meta.putArray("tags").add("reise").add("freundschaft");
+            meta.put("source", "AI_IMPORTED");
+            return write(root);
+        }
         if (spec.isSituationMatching()) {
             ArrayNode situations = ex.putArray("situations");
             for (int i = 0; i < spec.situationCount(); i++) {

@@ -1,0 +1,118 @@
+You are an expert creator of {{EXAM_NAME}} Deutsch {{LEVEL}} exam preparation material.
+
+Your task is to create ORIGINAL {{LEVEL}} {{SECTION_LABEL}} writing tasks ("email response") for a German-learning application.
+
+IMPORTANT:
+This is NOT official {{EXAM_NAME}} examination material. Create completely original situations that follow the general structure and difficulty of an {{EXAM_NAME}} {{LEVEL}} {{SECTION_LABEL}} task. Do not copy, translate or imitate any existing exam, textbook, website or other copyrighted material. Invent new names and situations.
+
+==================================================
+WHAT TO CREATE
+
+{{REQUEST_BLOCK}}
+
+==================================================
+WHAT A WRITING TASK IS
+
+This is a writing task, NOT a multiple-choice exercise.
+The learner receives one realistic incoming email/message and must write a reply that addresses EXACTLY {{QUESTION_COUNT}} required content points. The learner sees: the situation line, the email, the instruction, the {{QUESTION_COUNT}} points and the writing guidance.
+
+Every task has:
+- one realistic communication situation (a short introduction line addressed to the learner, e.g. "Sie haben von einer Freundin folgende E-Mail erhalten:")
+- one realistic incoming email with greeting, body, closing and sender
+- exactly {{QUESTION_COUNT}} content points
+- {{LEVEL}} language
+- a communication style that matches the relationship between sender and learner
+
+"STANDARD_EMAIL" and "ALTERNATIVE_EMAIL" are NOT different exam formats. Both have exactly the same structure; only the situation differs.
+
+==================================================
+THE INCOMING EMAIL
+
+1. It must feel like a real email, not like an artificial language exercise.
+2. The body has approximately {{MIN_WORDS}}-{{MAX_WORDS}} words.
+3. It contains greeting, body, closing and sender (the sender is the first name or the organisation's name).
+4. It gives enough context for the learner to understand the situation, and the learner has a natural reason to answer.
+5. It is NOT a list of four questions. The points arise naturally from what the sender writes, asks or wishes.
+6. Use paragraphs (a blank line = \n\n inside the JSON string) where it helps readability.
+7. Use plain text only: no HTML, no Markdown, no emojis.
+8. Pronouns and style match the relationship:
+   - informal (FRIEND, FAMILY, COURSE_COLLEAGUE, usually ACQUAINTANCE): du / dein / euch, greeting like "Liebe Anna," or "Hallo Tom,", closing like "Viele Grüße" or "Bis bald"
+   - semi-formal / formal (COLLEAGUE, ORGANIZATION): Sie / Ihnen / Ihr, greeting like "Sehr geehrte Frau Weber," or "Guten Tag Herr Kern,", closing like "Mit freundlichen Grüßen"
+   - Never FRIEND + Sie, and never ORGANIZATION + du.
+9. Use {{LEVEL}} vocabulary and grammar. Avoid C1 vocabulary and specialist terms.
+
+==================================================
+THE {{QUESTION_COUNT}} CONTENT POINTS
+
+Exactly {{QUESTION_COUNT}} points, numbered 1 to {{QUESTION_COUNT}}. Each point:
+1. is directly connected to the incoming email and arises naturally from the situation,
+2. is clearly different from the other points - no overlap,
+3. asks for meaningful information the learner can realistically give (an opinion, a plan, a suggestion, an explanation),
+4. is written as a short phrase that continues the sentence "Schreiben Sie ...", the way real exam points are worded.
+
+BAD (one question word each, no real content): "Wann?", "Wo?", "Was?", "Warum?"
+GOOD (for a friend who plans to visit the learner's country):
+1. welche Ausflüge Sie mit Marianne machen wollen
+2. was die beste Jahreszeit für die Reise ist
+3. welche Kleidung sie mitnehmen soll
+4. wie sie sich am besten auf die Reise vorbereiten kann
+
+Do not invent artificial questions only to test a grammar structure.
+
+==================================================
+VARIETY
+
+Because the library will contain many tasks, do not reuse common scenarios or wording. Vary the situation (visit, invitation, trip, move, course, hobby, event, appointment, accommodation, helping someone ...), the sender, the names, the four points and the sentence structure from task to task. Do not copy the examples in this prompt.
+
+==================================================
+STANDARD TEXTS
+
+The instruction is always exactly:
+"{{INSTRUCTIONS}}"
+
+The writing guidance is always exactly:
+"{{WRITING_GUIDANCE}}"
+
+Do NOT provide a model answer. Do NOT provide the learner's response. Do NOT add explanations outside the JSON.
+
+==================================================
+QUALITY CHECK
+
+Before producing the final JSON, silently check every task:
+- Is the communication situation coherent and understandable without additional information?
+- Is the incoming email realistic, and does it have about {{MIN_WORDS}}-{{MAX_WORDS}} words?
+- Is the language {{LEVEL}}?
+- Does the relationship match the communication style, the greeting, the closing and the pronouns?
+- Are there exactly {{QUESTION_COUNT}} content points, numbered 1-{{QUESTION_COUNT}}?
+- Does every point arise naturally from the email, and are all points different?
+- Can the learner realistically answer every point?
+- Is there any contradiction?
+- Is the task different from the other tasks in this batch (and from the existing tasks listed above, if any)?
+If any requirement fails, revise the task before producing the JSON.
+
+==================================================
+OUTPUT FORMAT
+
+Return ONLY valid JSON.
+Do NOT use Markdown. Do NOT use code fences (```). Do NOT add an introduction. Do NOT add explanations before or after the JSON. Do NOT add comments.
+The output must be directly importable by a JSON parser (UTF-8, no trailing commas).
+
+Use exactly this structure (replace the placeholders; repeat the object inside "exercises" once per task). Allowed values:
+- scenarioType: STANDARD_EMAIL, ALTERNATIVE_EMAIL
+- communicationType: INFORMAL_EMAIL, SEMI_FORMAL_EMAIL, FORMAL_EMAIL
+- relationship: FRIEND, FAMILY, ACQUAINTANCE, COURSE_COLLEAGUE, COLLEAGUE, ORGANIZATION
+- topic: a short German title of the theme, e.g. "Reise und Besuch"
+- metadata.difficulty: EASY, MEDIUM, HARD; metadata.tags: 2-4 short lower-case keywords
+
+{{JSON_EXAMPLE}}
+
+==================================================
+FINAL CHECK
+
+- every task has task.situation and task.incomingMessage with greeting, body, closing and sender
+- points: exactly {{QUESTION_COUNT}} objects numbered 1-{{QUESTION_COUNT}}, all different
+- instructions and writingGuidance use the standard texts
+- every externalId is unique
+- valid JSON syntax, no Markdown fences, no text outside the JSON
+- content is original and appropriate for {{LEVEL}}
+{{NOTES_BLOCK}}

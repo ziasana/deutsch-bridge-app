@@ -30,21 +30,34 @@ public final class ExamContentDtos {
             /** Sprachbausteine Teil 2: RANDOM (default) | WITH_ADVERTISEMENT | WITHOUT_ADVERTISEMENT. */
             String contextMode,
             /** Sprachbausteine Teil 2: kinds of function words in the word bank (see ExamContentPromptBuilder.WORD_CATEGORIES); empty = all. */
-            List<String> wordCategories
+            List<String> wordCategories,
+            /** Schriftlicher Ausdruck: STANDARD_EMAIL | ALTERNATIVE_EMAIL | RANDOM (default). */
+            String scenarioType,
+            /** Schriftlicher Ausdruck: FRIEND, FAMILY ... ; null / empty = chosen by the AI to fit the situation. */
+            String relationship,
+            /** Schriftlicher Ausdruck: INFORMAL_EMAIL | SEMI_FORMAL_EMAIL | FORMAL_EMAIL; null / empty = fits the relationship. */
+            String communicationType
     ) {
         public PromptRequest(String exam, String level, String section, String part, Integer count, String difficulty,
                              List<String> topics, String notes) {
-            this(exam, level, section, part, count, difficulty, topics, notes, null, null, null, null, null);
+            this(exam, level, section, part, count, difficulty, topics, notes, null, null, null, null, null, null, null, null);
         }
 
         public PromptRequest(String exam, String level, String section, String part, Integer count, String difficulty,
                              List<String> topics, String notes, Boolean includeVisuals) {
-            this(exam, level, section, part, count, difficulty, topics, notes, includeVisuals, null, null, null, null);
+            this(exam, level, section, part, count, difficulty, topics, notes, includeVisuals, null, null, null, null, null, null, null);
         }
 
         public PromptRequest(String exam, String level, String section, String part, Integer count, String difficulty,
                              List<String> topics, String notes, Boolean includeVisuals, String textType, List<String> grammarCategories) {
-            this(exam, level, section, part, count, difficulty, topics, notes, includeVisuals, textType, grammarCategories, null, null);
+            this(exam, level, section, part, count, difficulty, topics, notes, includeVisuals, textType, grammarCategories, null, null, null, null, null);
+        }
+
+        public PromptRequest(String exam, String level, String section, String part, Integer count, String difficulty,
+                             List<String> topics, String notes, Boolean includeVisuals, String textType, List<String> grammarCategories,
+                             String contextMode, List<String> wordCategories) {
+            this(exam, level, section, part, count, difficulty, topics, notes, includeVisuals, textType, grammarCategories,
+                    contextMode, wordCategories, null, null, null);
         }
     }
 
@@ -84,7 +97,11 @@ public final class ExamContentDtos {
             /** Sprachbausteine generator choices. */
             List<String> textTypes,
             List<String> grammarCategories,
-            List<String> wordCategories
+            List<String> wordCategories,
+            /** Schriftlicher Ausdruck generator choices. */
+            List<String> scenarioTypes,
+            List<String> relationships,
+            List<String> communicationTypes
     ) {
     }
 
@@ -145,6 +162,25 @@ public final class ExamContentDtos {
     public record ContextView(String type, String title, String text) {
     }
 
+    /** Schriftlicher Ausdruck: the task as the learner will see it. */
+    public record WritingView(
+            String taskType,
+            String scenarioType,
+            String topic,
+            String communicationType,
+            String relationship,
+            String situation,
+            String greeting,
+            String body,
+            String closing,
+            String sender,
+            List<String> points,
+            String writingGuidance,
+            String modelSubject,
+            String modelBody
+    ) {
+    }
+
     public record ExercisePreview(
             String title,
             String instructions,
@@ -157,12 +193,20 @@ public final class ExamContentDtos {
             List<SituationView> situations,
             List<AdvertisementView> advertisements,
             /** Word-bank exercises (Sprachbausteine Teil 2): the optional advertisement / information before the text. */
-            ContextView context
+            ContextView context,
+            /** Writing tasks (Schriftlicher Ausdruck) only. */
+            WritingView writing
     ) {
         public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
                                String readingText, List<QuestionView> questions, List<SituationView> situations,
+                               List<AdvertisementView> advertisements, ContextView context) {
+            this(title, instructions, headings, texts, readingText, questions, situations, advertisements, context, null);
+        }
+
+        public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
+                               String readingText, List<QuestionView> questions, List<SituationView> situations,
                                List<AdvertisementView> advertisements) {
-            this(title, instructions, headings, texts, readingText, questions, situations, advertisements, null);
+            this(title, instructions, headings, texts, readingText, questions, situations, advertisements, null, null);
         }
 
         public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
