@@ -24,6 +24,7 @@ import Loading from "@/componenets/Loading";
 import AudioPlayer from "@/componenets/AudioPlayer";
 import LessonMarkdown from "@/componenets/LessonMarkdown";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
+import LesenTeil3Board, { NO_AD_ANSWER as NO_AD_ANSWER_VALUE } from "@/componenets/exam/LesenTeil3Board";
 import TranscriptModal from "@/componenets/exam/TranscriptModal";
 import TranscriptContent from "@/componenets/exam/TranscriptContent";
 import { isEmptyTranscript } from "@/lib/transcriptFormat";
@@ -51,7 +52,7 @@ const TFN_OPTIONS = [
 ];
 
 /** SITUATION_MATCHING's correctAnswer for "no ad fits" (the "x" on the answer sheet). */
-const NO_AD_ANSWER = "X";
+const NO_AD_ANSWER = NO_AD_ANSWER_VALUE;
 
 /** SITUATION_MATCHING answers are passage ids; show the ad's label ("e") instead of the raw id. */
 const answerLabelFor = (passages: ExamPassagePublic[], value: string) =>
@@ -508,6 +509,23 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
                 {isSituationMatching && " Jede Anzeige darf nur einmal benutzt werden. Wenn keine Anzeige passt, wähle x."}
             </p>
 
+            {isSituationMatching ? (
+                <LesenTeil3Board
+                    passages={quiz.passages}
+                    questions={quiz.questions}
+                    answers={quiz.answers}
+                    disabled={quiz.submitting}
+                    onAnswer={(questionId, value) =>
+                        setQuiz((prev) => {
+                            if (!prev) return prev;
+                            const answers = { ...prev.answers };
+                            if (value) answers[questionId] = value;
+                            else delete answers[questionId];
+                            return { ...prev, answers };
+                        })
+                    }
+                />
+            ) : (
             <div className={`grid gap-3 sm:grid-cols-2 ${isSituationMatching ? "" : "lg:grid-cols-3 xl:grid-cols-4"}`}>
                 {quiz.questions.map((question, idx) => {
                     // SITUATION_MATCHING's passages are the answer ads, not a text the question refers to - a leftover
@@ -536,6 +554,7 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
                     );
                 })}
             </div>
+            )}
 
             <div className="flex justify-end pt-2">
                 <button type="button" className={pillPrimary} disabled={!allAnswered || quiz.submitting} onClick={submitAll}>
@@ -1050,7 +1069,10 @@ function ExamExerciseContent() {
                         {(exercise.taskType === "MATCHING" || exercise.taskType === "WORD_BANK_CLOZE") && (
                             <AnswerOptionsPoolView answerOptions={exercise.answerOptions ?? []} answerOptionLabels={exercise.answerOptionLabels ?? []} taskType={exercise.taskType} />
                         )}
-                        <PassagesView passages={exercise.passages} taskType={exercise.taskType ?? ""} />
+                        {/* Lesen Teil 3 shows its advertisements inside the matching board once the exercise is started. */}
+                        {exercise.taskType !== "SITUATION_MATCHING" && (
+                            <PassagesView passages={exercise.passages} taskType={exercise.taskType ?? ""} />
+                        )}
                     </>
                 )}
 
