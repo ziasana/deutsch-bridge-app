@@ -24,7 +24,8 @@ import java.util.Map;
 public class ExamContentPromptBuilder {
 
     public static final List<String> TOPICS = List.of(
-            "EVERYDAY_LIFE", "WORK", "HOUSING", "HEALTH", "LEISURE", "TRAVEL", "EDUCATION", "ENVIRONMENT", "GARDEN_NATURE", "SOCIETY");
+            "EVERYDAY_LIFE", "WORK", "HOUSING", "HEALTH", "LEISURE", "TRAVEL", "EDUCATION", "ENVIRONMENT", "GARDEN_NATURE", "SOCIETY",
+            "FAMILY", "TECHNOLOGY", "MEDIA", "FOOD", "TRAFFIC", "CONSUMPTION", "CLUBS", "GENERATIONS", "CITY_LIFE");
     public static final List<String> DIFFICULTIES = List.of("MIXED", "EASY", "MEDIUM", "HARD");
     public static final int MAX_COUNT = 50;
 
@@ -61,6 +62,11 @@ public class ExamContentPromptBuilder {
         values.put("TEXT_IDS", String.join(", ", spec.textIds()));
         values.put("MIN_WORDS", String.valueOf(spec.minWords()));
         values.put("MAX_WORDS", String.valueOf(spec.maxWords()));
+        values.put("QUESTION_COUNT", String.valueOf(spec.questionCount()));
+        values.put("OPTION_COUNT", String.valueOf(spec.optionCount()));
+        values.put("OPTION_IDS", String.join(", ", spec.optionIds()));
+        values.put("FIRST_QUESTION_NUMBER", String.valueOf(spec.firstQuestionNumber()));
+        values.put("LAST_QUESTION_NUMBER", String.valueOf(spec.lastQuestionNumber()));
         values.put("REQUEST_BLOCK", requestBlock(spec, count, difficulty, topics, firstId));
         values.put("JSON_EXAMPLE", example);
         values.put("NOTES_BLOCK", request.notes() == null || request.notes().isBlank() ? ""
@@ -92,7 +98,9 @@ public class ExamContentPromptBuilder {
         if (topics.isEmpty()) {
             b.append("Topics: choose a varied, balanced mix of everyday topics across the exercises.\n");
         } else {
-            b.append("Topics: spread the exercises across the following topics (each exercise's five texts may touch related sub-topics):\n");
+            b.append(spec.isMultipleChoice()
+                    ? "Topics: spread the exercises across the following topics (every exercise needs one clear central topic of its own):\n"
+                    : "Topics: spread the exercises across the following topics (each exercise's five texts may touch related sub-topics):\n");
             int base = count / topics.size();
             int remainder = count % topics.size();
             for (int i = 0; i < topics.size(); i++) {
@@ -121,6 +129,26 @@ public class ExamContentPromptBuilder {
         ex.put("externalId", firstId);
         ex.put("title", spec.level().getValue() + " " + ExamContentTokens.sectionLabel(spec.section()) + " Teil " + spec.part() + " – ...");
         ex.put("instructions", spec.defaultInstructions());
+        if (spec.isMultipleChoice()) {
+            ex.putObject("text").put("content", "...");
+            ArrayNode questions = ex.putArray("questions");
+            for (int i = 0; i < spec.questionCount(); i++) {
+                ObjectNode q = questions.addObject();
+                q.put("id", "question_" + (i + 1));
+                q.put("number", spec.firstQuestionNumber() + i);
+                q.put("question", "...");
+                ArrayNode options = q.putArray("options");
+                spec.optionIds().forEach(id -> options.addObject().put("id", id).put("text", "..."));
+                q.put("correctOptionId", "...");
+                q.put("questionType", "...");
+            }
+            ObjectNode meta = ex.putObject("metadata");
+            meta.put("difficulty", difficulty);
+            meta.putArray("topics").add("SOCIETY");
+            meta.putArray("skills").add("READING_COMPREHENSION");
+            meta.put("source", "AI_GENERATED_ORIGINAL");
+            return write(root);
+        }
         ArrayNode headings = ex.putArray("headings");
         spec.headingIds().forEach(id -> headings.addObject().put("id", id).put("text", "..."));
         ArrayNode texts = ex.putArray("texts");
@@ -131,6 +159,10 @@ public class ExamContentPromptBuilder {
         ArrayNode skills = metadata.putArray("skills");
         skills.add("MAIN_IDEA").add("SELECTIVE_READING").add("PARAPHRASING");
         metadata.put("source", "AI_GENERATED_ORIGINAL");
+        return write(root);
+    }
+
+    private String write(ObjectNode root) {
         try {
             return MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(root);
         } catch (IOException e) {

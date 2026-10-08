@@ -41,7 +41,11 @@ public final class ExamContentDtos {
             String part,
             int headingCount,
             int textCount,
-            String label
+            String label,
+            /** MATCHING (headings) | MULTIPLE_CHOICE (one text + questions) */
+            String taskType,
+            int questionCount,
+            int optionCount
     ) {
     }
 
@@ -77,11 +81,25 @@ public final class ExamContentDtos {
     public record TextView(String id, String content, String correctHeadingId) {
     }
 
+    /** One multiple-choice question: the options reuse {@link HeadingView} (id + text). */
+    public record QuestionView(
+            String id,
+            Integer number,
+            String question,
+            List<HeadingView> options,
+            String correctOptionId,
+            String questionType
+    ) {
+    }
+
     public record ExercisePreview(
             String title,
             String instructions,
             List<HeadingView> headings,
-            List<TextView> texts
+            List<TextView> texts,
+            /** Multiple-choice exercises only: the reading text and its questions. */
+            String readingText,
+            List<QuestionView> questions
     ) {
     }
 
@@ -126,6 +144,7 @@ public final class ExamContentDtos {
             int exerciseCount,
             int headingCount,
             int textCount,
+            int questionCount,
             int importableCount,
             int similarCount,
             int duplicateCount,

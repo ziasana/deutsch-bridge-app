@@ -13,6 +13,9 @@ import com.deutschbridge.backend.model.enums.LearningLevel;
  *
  * @param headingCount number of candidate headings (answer options) in the shared pool
  * @param textCount    number of texts that have to be matched to a heading
+ * @param questionCount      multiple-choice exercises: number of questions about the one reading text (0 otherwise)
+ * @param optionCount        multiple-choice exercises: answer options per question (0 otherwise)
+ * @param firstQuestionNumber multiple-choice exercises: exam number of the first question (e.g. 6 for Lesen Teil 2)
  */
 public record ExamContentSpec(
         ExamType examType,
@@ -26,8 +29,33 @@ public record ExamContentSpec(
         int maxWords,
         String defaultInstructions,
         String promptTemplate,
-        String promptVersion
+        String promptVersion,
+        int questionCount,
+        int optionCount,
+        int firstQuestionNumber
 ) {
+
+    /** A "match N texts to M headings" spec. */
+    public ExamContentSpec(ExamType examType, LearningLevel level, ExamSection section, int part, ExamTaskType taskType,
+                           int headingCount, int textCount, int minWords, int maxWords,
+                           String defaultInstructions, String promptTemplate, String promptVersion) {
+        this(examType, level, section, part, taskType, headingCount, textCount, minWords, maxWords,
+                defaultInstructions, promptTemplate, promptVersion, 0, 0, 0);
+    }
+
+    /** True for "one reading text + N multiple-choice questions" specs (Lesen Teil 2), false for headings matching. */
+    public boolean isMultipleChoice() {
+        return taskType == ExamTaskType.MULTIPLE_CHOICE;
+    }
+
+    /** Option ids a, b, c ... in order. */
+    public java.util.List<String> optionIds() {
+        return java.util.stream.IntStream.range(0, optionCount).mapToObj(i -> String.valueOf((char) ('a' + i))).toList();
+    }
+
+    public int lastQuestionNumber() {
+        return firstQuestionNumber + questionCount - 1;
+    }
 
     public int unusedHeadingCount() {
         return headingCount - textCount;

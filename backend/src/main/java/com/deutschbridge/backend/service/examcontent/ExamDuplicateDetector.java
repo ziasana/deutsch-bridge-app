@@ -40,7 +40,7 @@ public class ExamDuplicateDetector {
         }
 
         public static Candidate of(ParsedExercise ex, ExamType examType, String hash) {
-            List<Entry> entries = ex.texts().stream().map(t -> entry(t.content())).toList();
+            List<Entry> entries = ex.textContents().stream().map(ExamDuplicateDetector::entry).toList();
             return new Candidate(null, ex.title(), ex.externalId(), examType, hash, entries, true);
         }
     }
@@ -63,9 +63,9 @@ public class ExamDuplicateDetector {
                 matches.add(new DuplicateMatch(where + "EXACT", null, null, c.id(), c.title(), c.externalId(), 1.0));
                 continue;
             }
-            for (ParsedExercise.Text text : exercise.texts()) {
-                if (text.content() == null) continue;
-                Entry mine = entry(text.content());
+            for (String content : exercise.textContents()) {
+                if (content == null) continue;
+                Entry mine = entry(content);
                 Entry best = null;
                 double bestScore = 0;
                 for (Entry theirs : c.texts()) {
@@ -76,7 +76,7 @@ public class ExamDuplicateDetector {
                     }
                 }
                 if (best != null && bestScore >= SIMILAR_THRESHOLD) {
-                    similar.add(new DuplicateMatch(where + "SIMILAR", text.content(), best.raw(), c.id(), c.title(), c.externalId(), round(bestScore)));
+                    similar.add(new DuplicateMatch(where + "SIMILAR", content, best.raw(), c.id(), c.title(), c.externalId(), round(bestScore)));
                 }
             }
         }

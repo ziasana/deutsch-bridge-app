@@ -2,6 +2,7 @@ package com.deutschbridge.backend.service.examcontent;
 
 import com.deutschbridge.backend.model.dto.ExamContentDtos.ExercisePreview;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.HeadingView;
+import com.deutschbridge.backend.model.dto.ExamContentDtos.QuestionView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.TextView;
 import com.deutschbridge.backend.model.entity.ExamExercise;
 import com.deutschbridge.backend.model.entity.ExamPassage;
@@ -33,6 +34,9 @@ public final class ExamContentMapper {
     public static ExamExercise toEntity(ParsedExercise ex, ExamType examType, String schemaVersion,
                                         String promptVersion, String hash, String userId) {
         ExamContentSpec spec = ex.spec();
+        if (spec.isMultipleChoice()) {
+            return toReadingEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
+        }
         Map<String, String> headingTextById = new LinkedHashMap<>();
         ex.headings().forEach(h -> headingTextById.put(h.id(), h.text()));
 
@@ -68,11 +72,69 @@ public final class ExamContentMapper {
         return exercise;
     }
 
+    /**
+     * Lesen Teil 2: one passage and one MULTIPLE_CHOICE question per item, stored the way hand-authored
+     * multiple-choice exercises are (options as plain strings, correctAnswer = the correct option's text).
+     * The option ids (a, b, c) are positional, and the declared question types are kept in the metadata.
+     */
+    private static ExamExercise toReadingEntity(ParsedExercise ex, ExamType examType, String schemaVersion,
+                                                String promptVersion, String hash, String userId) {
+        ExamContentSpec spec = ex.spec();
+        List<ExamQuestion> questions = new ArrayList<>();
+        List<String> types = new ArrayList<>();
+        for (int i = 0; i < ex.questions().size(); i++) {
+            ParsedExercise.Question q = ex.questions().get(i);
+            String correct = q.options().stream().filter(o -> o.id().equals(q.correctOptionId()))
+                    .map(ParsedExercise.Option::text).findFirst().orElse(null);
+            int number = q.number() != null ? q.number() : spec.firstQuestionNumber() + i;
+            questions.add(new ExamQuestion(null, ExamTaskType.MULTIPLE_CHOICE, q.question(), 0,
+                    q.options().stream().map(ParsedExercise.Option::text).toList(), correct, null, number, null, null).ensureId());
+            types.add(q.type() == null ? "" : q.type());
+        }
+        // Questions are shown to learners sorted by number; keep the stored order consistent with that.
+        questions.sort(java.util.Comparator.comparing(ExamQuestion::getQuestionNumber));
+
+        Map<String, Object> metadata = new LinkedHashMap<>(ex.metadata());
+        if (types.stream().anyMatch(t -> !t.isEmpty())) {
+            List<String> ordered = new ArrayList<>(ex.questions().stream()
+                    .sorted(java.util.Comparator.comparing(q -> q.number() != null ? q.number() : Integer.MAX_VALUE))
+                    .map(q -> q.type() == null ? "" : q.type()).toList());
+            metadata.put("questionTypes", ordered);
+        }
+
+        ExamExercise exercise = new ExamExercise();
+        exercise.setTitle(ex.title());
+        exercise.setExamType(examType);
+        exercise.setSection(spec.section());
+        exercise.setTaskType(spec.taskType());
+        exercise.setLevel(spec.level());
+        exercise.setPartNumber(spec.part());
+        exercise.setPassages(new ArrayList<>(List.of(new ExamPassage(null, "Text", toHtml(ex.readingText()), null, null, null).ensureId())));
+        exercise.setQuestions(questions);
+        exercise.setTeilDescription(ex.instructions());
+        exercise.setExternalId(ex.externalId());
+        exercise.setSchemaVersion(schemaVersion);
+        exercise.setPromptVersion(promptVersion);
+        exercise.setMetadata(metadata.isEmpty() ? null : metadata);
+        exercise.setContentHash(hash);
+        exercise.setCreatedBy(userId);
+        exercise.setUpdatedBy(userId);
+        exercise.applyStatus(ExamContentStatus.DRAFT);
+        return exercise;
+    }
+
     public static ExercisePreview toPreview(ParsedExercise ex) {
+        if (ex.readingText() != null || (ex.spec() != null && ex.spec().isMultipleChoice())) {
+            return new ExercisePreview(ex.title(), ex.instructions(), List.of(), List.of(), ex.readingText(),
+                    ex.questions().stream().map(q -> new QuestionView(q.id(), q.number(), q.question(),
+                            q.options().stream().map(o -> new HeadingView(o.id(), o.text())).toList(),
+                            q.correctOptionId(), q.type())).toList());
+        }
         return new ExercisePreview(
                 ex.title(), ex.instructions(),
                 ex.headings().stream().map(h -> new HeadingView(h.id(), h.text())).toList(),
-                ex.texts().stream().map(t -> new TextView(t.id(), t.content(), t.correctHeadingId())).toList());
+                ex.texts().stream().map(t -> new TextView(t.id(), t.content(), t.correctHeadingId())).toList(),
+                null, List.of());
     }
 
     /**
@@ -80,6 +142,7 @@ public final class ExamContentMapper {
      * labelled headings-matching exercise), so export never emits something re-import would reject.
      */
     public static ObjectNode toExportNode(ObjectMapper mapper, ExamExercise e) {
+        if (e.getTaskType() == ExamTaskType.MULTIPLE_CHOICE) return toReadingExportNode(mapper, e);
         if (e.getTaskType() != ExamTaskType.MATCHING || e.getAnswerOptions() == null || e.getPassages() == null
                 || e.getQuestions() == null || e.getSection() == null || e.getLevel() == null || e.getPartNumber() == null) {
             return null;
@@ -114,6 +177,52 @@ public final class ExamContentMapper {
             t.put("correctHeadingId", headingIndex >= 0 ? labels.get(headingIndex) : "");
         }
         if (e.getMetadata() != null) node.set("metadata", mapper.valueToTree(e.getMetadata()));
+        return node;
+    }
+
+    /** Reading text + multiple-choice questions in the import shape; null when the stored exercise does not fit it. */
+    private static ObjectNode toReadingExportNode(ObjectMapper mapper, ExamExercise e) {
+        if (e.getPassages() == null || e.getPassages().size() != 1 || e.getQuestions() == null || e.getQuestions().isEmpty()
+                || e.getSection() == null || e.getLevel() == null || e.getPartNumber() == null) {
+            return null;
+        }
+        for (ExamQuestion q : e.getQuestions()) {
+            if (q.getOptions() == null || q.getOptions().isEmpty() || q.getOptions().size() > 26
+                    || q.getCorrectAnswer() == null || !q.getOptions().contains(q.getCorrectAnswer())) {
+                return null;
+            }
+        }
+        List<ExamQuestion> ordered = e.getQuestions().stream()
+                .sorted(java.util.Comparator.comparing(q -> q.getQuestionNumber() == null ? Integer.MAX_VALUE : q.getQuestionNumber()))
+                .toList();
+        Object storedTypes = e.getMetadata() == null ? null : e.getMetadata().get("questionTypes");
+
+        ObjectNode node = mapper.createObjectNode();
+        if (e.getExternalId() != null) node.put("externalId", e.getExternalId());
+        node.put("title", e.getTitle());
+        node.put("instructions", e.getTeilDescription() == null ? "" : e.getTeilDescription());
+        node.putObject("text").put("content", toPlainText(e.getPassages().get(0).getContent()));
+        ArrayNode questions = node.putArray("questions");
+        for (int i = 0; i < ordered.size(); i++) {
+            ExamQuestion q = ordered.get(i);
+            ObjectNode qn = questions.addObject();
+            qn.put("id", "question_" + (i + 1));
+            qn.put("number", q.getQuestionNumber() != null ? q.getQuestionNumber() : i + 1);
+            qn.put("question", q.getPrompt());
+            ArrayNode options = qn.putArray("options");
+            for (int j = 0; j < q.getOptions().size(); j++) {
+                options.addObject().put("id", String.valueOf((char) ('a' + j))).put("text", q.getOptions().get(j));
+            }
+            qn.put("correctOptionId", String.valueOf((char) ('a' + q.getOptions().indexOf(q.getCorrectAnswer()))));
+            if (storedTypes instanceof List<?> list && list.size() == ordered.size() && list.get(i) instanceof String type && !type.isBlank()) {
+                qn.put("questionType", type);
+            }
+        }
+        if (e.getMetadata() != null) {
+            Map<String, Object> metadata = new LinkedHashMap<>(e.getMetadata());
+            metadata.remove("questionTypes");
+            if (!metadata.isEmpty()) node.set("metadata", mapper.valueToTree(metadata));
+        }
         return node;
     }
 

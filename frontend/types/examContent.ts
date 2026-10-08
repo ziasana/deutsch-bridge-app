@@ -12,6 +12,9 @@ export interface ExamContentSpecInfo {
     headingCount: number;
     textCount: number;
     label: string;
+    taskType: "MATCHING" | "MULTIPLE_CHOICE";
+    questionCount: number;
+    optionCount: number;
 }
 
 export interface ExamContentOptions {
@@ -66,11 +69,23 @@ export interface PreviewText {
     correctHeadingId: string | null;
 }
 
+export interface PreviewQuestion {
+    id: string | null;
+    number: number | null;
+    question: string | null;
+    options: PreviewHeading[];
+    correctOptionId: string | null;
+    questionType: string | null;
+}
+
 export interface ExercisePreviewData {
     title: string | null;
     instructions: string | null;
     headings: PreviewHeading[];
     texts: PreviewText[];
+    /** Multiple-choice exercises (Lesen Teil 2): the one reading text and its questions. */
+    readingText?: string | null;
+    questions?: PreviewQuestion[];
 }
 
 export interface DuplicateMatch {
@@ -109,6 +124,7 @@ export interface ValidationReport {
     exerciseCount: number;
     headingCount: number;
     textCount: number;
+    questionCount: number;
     importableCount: number;
     similarCount: number;
     duplicateCount: number;

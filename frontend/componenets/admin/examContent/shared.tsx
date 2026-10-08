@@ -75,6 +75,7 @@ export function htmlToText(html: string | null | undefined): string {
  * the admin only - the answer key and which headings stay unused.
  */
 export function ExerciseView({ preview, showAnswers = true }: Readonly<{ preview: ExercisePreviewData; showAnswers?: boolean }>) {
+    if (preview.questions?.length || preview.readingText) return <ReadingExerciseView preview={preview} showAnswers={showAnswers} />;
     const used = new Set(preview.texts.map((t) => t.correctHeadingId).filter(Boolean));
     return (
         <div className="space-y-5">
@@ -120,6 +121,60 @@ export function ExerciseView({ preview, showAnswers = true }: Readonly<{ preview
                 <div className="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3 text-sm text-gray-700 dark:text-gray-300">
                     <span className="font-semibold">Correct answers (admin only): </span>
                     {preview.texts.map((t, i) => `Text ${i + 1} → ${t.correctHeadingId || "?"}`).join("  ·  ")}
+                </div>
+            )}
+        </div>
+    );
+}
+
+/** Lesen Teil 2: the reading text followed by its numbered multiple-choice questions (admin sees the key). */
+function ReadingExerciseView({ preview, showAnswers }: Readonly<{ preview: ExercisePreviewData; showAnswers: boolean }>) {
+    const questions = preview.questions ?? [];
+    return (
+        <div className="space-y-5">
+            {preview.instructions && <p className="text-sm italic text-gray-600 dark:text-gray-300">{preview.instructions}</p>}
+
+            <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-line">{preview.readingText}</p>
+            </div>
+
+            <div className="space-y-3">
+                {questions.map((q, i) => (
+                    <div key={q.id ?? i} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{q.number ?? i + 1}. {q.question}</h4>
+                            {showAnswers && q.questionType && (
+                                <span className="shrink-0 text-xs rounded bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200 px-2 py-0.5">
+                                    {q.questionType.replaceAll("_", " ").toLowerCase()}
+                                </span>
+                            )}
+                        </div>
+                        <ul className="space-y-1">
+                            {q.options.map((o) => {
+                                const correct = showAnswers && o.id === q.correctOptionId;
+                                return (
+                                    <li
+                                        key={o.id}
+                                        className={`rounded-md border px-3 py-1.5 text-sm ${
+                                            correct
+                                                ? "border-green-400 bg-green-50 text-green-900 dark:border-green-700 dark:bg-green-900/30 dark:text-green-100"
+                                                : "border-gray-200 text-gray-900 dark:border-gray-700 dark:text-gray-100"
+                                        }`}
+                                    >
+                                        <span className="font-semibold mr-1.5">{o.id})</span>
+                                        {o.text}
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </div>
+                ))}
+            </div>
+
+            {showAnswers && (
+                <div className="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-3 text-sm text-gray-700 dark:text-gray-300">
+                    <span className="font-semibold">Correct answers (admin only): </span>
+                    {questions.map((q, i) => `${q.number ?? i + 1} → ${q.correctOptionId || "?"}`).join("  ·  ")}
                 </div>
             )}
         </div>

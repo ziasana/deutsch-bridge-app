@@ -43,6 +43,14 @@ public class ExamContentService {
     private static final Set<String> ANSWER_ERROR_CODES = Set.of(
             "CORRECT_HEADING_MISSING", "CORRECT_HEADING_UNKNOWN", "CORRECT_HEADING_REUSED", "UNUSED_HEADINGS");
 
+    private static final Set<String> READING_TEXT_ERROR_CODES = Set.of("READING_TEXT_MISSING", "READING_TEXT_TOO_LONG");
+    private static final Set<String> QUESTION_ERROR_CODES = Set.of(
+            "QUESTION_COUNT", "QUESTIONS_MISSING", "QUESTION_ID_MISSING", "QUESTION_ID_DUPLICATE", "QUESTION_NUMBER_DUPLICATE",
+            "QUESTION_NUMBER_INVALID", "QUESTION_TEXT_EMPTY", "QUESTION_TEXT_TOO_LONG", "QUESTION_TEXT_DUPLICATE");
+    private static final Set<String> OPTION_ERROR_CODES = Set.of(
+            "OPTIONS_MISSING", "OPTION_COUNT", "OPTION_IDS", "OPTION_ID_MISSING", "OPTION_ID_DUPLICATE", "OPTION_TEXT_EMPTY",
+            "OPTION_TEXT_TOO_LONG", "OPTION_TEXT_DUPLICATE", "CORRECT_OPTION_MISSING", "CORRECT_OPTION_UNKNOWN");
+
     private final ExamExerciseRepository repository;
     private final RequestContext requestContext;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -61,7 +69,7 @@ public class ExamContentService {
         List<SpecInfo> specs = ExamContentSpecs.all().stream()
                 .map(s -> new SpecInfo(s.examType().name(), s.level().getValue(), ExamContentTokens.sectionToken(s.section()),
                         ExamContentTokens.sectionLabel(s.section()), ExamContentTokens.partToken(s.part()),
-                        s.headingCount(), s.textCount(), s.label()))
+                        s.headingCount(), s.textCount(), s.label(), s.taskType().name(), s.questionCount(), s.optionCount()))
                 .toList();
         return new OptionsResponse(
                 specs,
@@ -110,7 +118,7 @@ public class ExamContentService {
         ExamImportParser.ParseResult parsed = ExamImportParser.parse(json);
         if (!parsed.ok()) {
             Issue issue = new Issue(ExamContentValidator.ERROR, "JSON_SYNTAX", "$", parsed.error());
-            return new Analysis(new ValidationReport(false, false, null, null, null, null, null, null, 0, 0, 0, 0, 0, 0,
+            return new Analysis(new ValidationReport(false, false, null, null, null, null, null, null, 0, 0, 0, 0, 0, 0, 0,
                     List.of(new Check("JSON syntax", false)), List.of(issue), List.of()), null, Map.of());
         }
 
@@ -137,7 +145,7 @@ public class ExamContentService {
             boolean valid = issues.stream().noneMatch(i -> ExamContentValidator.ERROR.equals(i.severity()));
             List<DuplicateMatch> matches = List.of();
             if (valid && ex.spec() != null) {
-                String hash = ExamContentFingerprint.hashTexts(ex.texts().stream().map(ParsedExercise.Text::content).toList());
+                String hash = ExamContentFingerprint.hashTexts(ex.textContents());
                 hashes.put(ex.index(), hash);
                 matches = detector.detect(ex, ex.spec().examType(), hash, candidates);
                 candidates.add(ExamDuplicateDetector.Candidate.of(ex, ex.spec().examType(), hash));
@@ -173,6 +181,9 @@ public class ExamContentService {
                 || reports.stream().anyMatch(r -> !r.valid());
         int headings = file.exercises().stream().mapToInt(e -> e.headings().size()).sum();
         int texts = file.exercises().stream().mapToInt(e -> e.texts().size()).sum();
+        int questions = file.exercises().stream().mapToInt(e -> e.questions().size()).sum();
+        boolean reading = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isMultipleChoice());
+        boolean matching = file.exercises().stream().anyMatch(e -> e.spec() != null && !e.spec().isMultipleChoice());
 
         List<Issue> all = new ArrayList<>(fileIssues);
         reports.forEach(r -> all.addAll(r.issues()));
@@ -186,12 +197,20 @@ public class ExamContentService {
         checks.add(new Check("Section: " + orDash(file.section()), noCode(all, "SECTION_INVALID")));
         checks.add(new Check("Part: " + orDash(file.part()), noCode(all, "PART_INVALID", "SPEC_UNSUPPORTED")));
         checks.add(new Check("Exercises: " + reports.size(), !reports.isEmpty() && noCode(all, "EXERCISE_NOT_OBJECT", "EXTERNAL_ID_INVALID", "EXTERNAL_ID_DUPLICATE_IN_FILE")));
-        checks.add(new Check("Headings: " + headings, !reports.isEmpty() && noCode(all, STRUCTURE_ERROR_CODES.toArray(String[]::new))));
-        checks.add(new Check("Texts: " + texts, !reports.isEmpty() && noCode(all, TEXT_ERROR_CODES.toArray(String[]::new))));
-        checks.add(new Check("Answer assignments valid", !reports.isEmpty() && noCode(all, ANSWER_ERROR_CODES.toArray(String[]::new))));
+        if (matching || !reading) {
+            checks.add(new Check("Headings: " + headings, !reports.isEmpty() && noCode(all, STRUCTURE_ERROR_CODES.toArray(String[]::new))));
+            checks.add(new Check("Texts: " + texts, !reports.isEmpty() && noCode(all, TEXT_ERROR_CODES.toArray(String[]::new))));
+            checks.add(new Check("Answer assignments valid", !reports.isEmpty() && noCode(all, ANSWER_ERROR_CODES.toArray(String[]::new))));
+        }
+        if (reading) {
+            checks.add(new Check("Reading texts: " + file.exercises().stream().filter(e -> e.readingText() != null).count(),
+                    !reports.isEmpty() && noCode(all, READING_TEXT_ERROR_CODES.toArray(String[]::new))));
+            checks.add(new Check("Questions: " + questions, !reports.isEmpty() && noCode(all, QUESTION_ERROR_CODES.toArray(String[]::new))));
+            checks.add(new Check("Options and correct answers valid", !reports.isEmpty() && noCode(all, OPTION_ERROR_CODES.toArray(String[]::new))));
+        }
 
         return new ValidationReport(true, !anyError && !reports.isEmpty(), file.schemaVersion(), file.contentType(), file.exam(),
-                file.level(), file.section(), file.part(), reports.size(), headings, texts, importable, similar, duplicates,
+                file.level(), file.section(), file.part(), reports.size(), headings, texts, questions, importable, similar, duplicates,
                 checks, fileIssues, reports);
     }
 
@@ -310,6 +329,13 @@ public class ExamContentService {
     static String publishProblem(ExamExercise e) {
         if (e.getPassages() == null || e.getPassages().isEmpty()) return "Has no texts.";
         if (e.getQuestions() == null || e.getQuestions().isEmpty()) return "Has no questions.";
+        if (e.getTaskType() == ExamTaskType.MULTIPLE_CHOICE) {
+            for (var q : e.getQuestions()) {
+                String label = "Question " + (q.getQuestionNumber() != null ? q.getQuestionNumber() : "?");
+                if (q.getOptions() == null || q.getOptions().size() < 2) return label + " has fewer than two options.";
+                if (q.getCorrectAnswer() == null || !q.getOptions().contains(q.getCorrectAnswer())) return label + " has no valid correct option.";
+            }
+        }
         if (e.getTaskType() == ExamTaskType.MATCHING) {
             if (e.getAnswerOptions() == null || e.getAnswerOptions().isEmpty()) return "Has no headings.";
             for (var q : e.getQuestions()) {

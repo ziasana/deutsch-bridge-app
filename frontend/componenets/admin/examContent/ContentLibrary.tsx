@@ -55,6 +55,27 @@ const emptyFilters: Filters = { examType: "", level: "", section: "", partNumber
 
 /** Matching exercises as the import format sees them (lettered headings, correct heading per text). */
 function toPreview(exercise: ExamExerciseResponse): ExercisePreviewData | null {
+    if (exercise.taskType === "MULTIPLE_CHOICE" && exercise.passages?.length === 1 && exercise.questions?.length) {
+        const questions = [...exercise.questions].sort((a, b) => (a.questionNumber ?? 0) - (b.questionNumber ?? 0));
+        return {
+            title: exercise.title,
+            instructions: exercise.teilDescription,
+            headings: [],
+            texts: [],
+            readingText: htmlToText(exercise.passages[0].content),
+            questions: questions.map((q, i) => {
+                const options = (q.options ?? []).map((text, j) => ({ id: String.fromCharCode(97 + j), text }));
+                return {
+                    id: q.id,
+                    number: q.questionNumber ?? i + 1,
+                    question: q.prompt,
+                    options,
+                    correctOptionId: options.find((o) => o.text === q.correctAnswer)?.id ?? null,
+                    questionType: null,
+                };
+            }),
+        };
+    }
     if (exercise.taskType !== "MATCHING" || !exercise.answerOptions?.length) return null;
     const labels = exercise.answerOptions.map((_, i) => exercise.answerOptionLabels?.[i]?.trim() || String.fromCharCode(97 + i));
     return {
@@ -289,7 +310,7 @@ function PreviewDialog({ row, onClose, onMove }: Readonly<{ row: ExamExerciseAdm
                 </div>
                 <div className="mt-5">
                     {isLoading && <Loading message="Loading..." />}
-                    {data && (preview ? <ExerciseView preview={preview} /> : <p className="text-sm text-gray-600 dark:text-gray-300">A preview is only available for headings-matching exercises. Use Edit to review this one.</p>)}
+                    {data && (preview ? <ExerciseView preview={preview} /> : <p className="text-sm text-gray-600 dark:text-gray-300">A preview is only available for headings-matching and reading-text multiple-choice exercises. Use Edit to review this one.</p>)}
                 </div>
                 <div className="mt-6 flex flex-wrap justify-end gap-2">
                     {next.map((n) => <Button key={n.status} onClick={() => onMove(n.status)}>{n.label}</Button>)}

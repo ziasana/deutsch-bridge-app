@@ -30,6 +30,8 @@ public class ExamContentValidator {
 
     private static final Set<String> CONTENT_TYPES = Set.of("EXAM_EXERCISE", "EXAM_EXERCISE_BATCH");
     private static final Set<String> DIFFICULTIES = Set.of("EASY", "MEDIUM", "HARD");
+    static final Set<String> QUESTION_TYPES = Set.of(
+            "EXPLICIT_INFORMATION", "PARAPHRASE", "DETAIL_COMPREHENSION", "MAIN_IDEA", "LOGICAL_UNDERSTANDING", "REFERENCE");
     private static final Pattern EXTERNAL_ID = Pattern.compile("[A-Za-z0-9._-]{1,64}");
 
     /** File-level result: the header values plus the exercises that could be read. */
@@ -128,6 +130,10 @@ public class ExamContentValidator {
             issues.add(error("INSTRUCTIONS_MISSING", p + "instructions", "instructions must not be empty."));
         } else if (instructions.length() > MAX_FIELD_LENGTH) {
             issues.add(error("INSTRUCTIONS_TOO_LONG", p + "instructions", "instructions are too long."));
+        }
+
+        if (spec != null && spec.isMultipleChoice()) {
+            return readReadingExercise(index, spec, node, p, externalId, title, instructions, issues);
         }
 
         List<ParsedExercise.Heading> headings = readHeadings(node, p, spec, issues);
@@ -321,6 +327,177 @@ public class ExamContentValidator {
         }
     }
 
+    // ------------------------------------------------------------------ reading text + multiple choice
+
+    private ParsedExercise readReadingExercise(int index, ExamContentSpec spec, JsonNode node, String p, String externalId,
+                                               String title, String instructions, List<Issue> issues) {
+        String readingText = readReadingText(node, p, spec, issues);
+        List<ParsedExercise.Question> questions = readQuestions(node, p, spec, issues);
+        warnAnswerPatterns(questions, p, issues);
+        Map<String, Object> metadata = readMetadata(node.get("metadata"), p, issues);
+        return new ParsedExercise(index, spec, externalId, title, instructions, List.of(), List.of(), metadata, readingText, questions);
+    }
+
+    /** The reading text is {@code "text": {"content": "..."}}; a plain string is accepted as well. */
+    private String readReadingText(JsonNode node, String p, ExamContentSpec spec, List<Issue> issues) {
+        JsonNode textNode = node.get("text");
+        String content = textNode == null || textNode.isNull() ? null
+                : textNode.isObject() ? text(textNode, "content") : text(node, "text");
+        if (content == null) {
+            issues.add(error("READING_TEXT_MISSING", p + "text.content", "The exercise needs exactly one reading text in text.content."));
+            return null;
+        }
+        if (content.length() > MAX_FIELD_LENGTH * 2) {
+            issues.add(error("READING_TEXT_TOO_LONG", p + "text.content", "The reading text is too long (max " + MAX_FIELD_LENGTH * 2 + " characters)."));
+        }
+        int words = TextSimilarity.wordCount(content);
+        if (words < spec.minWords() || words > spec.maxWords()) {
+            issues.add(warning("TEXT_LENGTH", p + "text.content", "The reading text has " + words + " words; the usual range is "
+                    + spec.minWords() + "–" + spec.maxWords() + "."));
+        }
+        return content;
+    }
+
+    private List<ParsedExercise.Question> readQuestions(JsonNode node, String p, ExamContentSpec spec, List<Issue> issues) {
+        List<ParsedExercise.Question> questions = new ArrayList<>();
+        JsonNode array = node.get("questions");
+        if (array == null || !array.isArray()) {
+            issues.add(error("QUESTIONS_MISSING", p + "questions", "questions must be an array."));
+            return questions;
+        }
+        Set<String> ids = new LinkedHashSet<>();
+        Set<Integer> numbers = new LinkedHashSet<>();
+        Set<String> normalizedQuestions = new LinkedHashSet<>();
+        for (int i = 0; i < array.size(); i++) {
+            JsonNode q = array.get(i);
+            String path = p + "questions[" + i + "]";
+            String id = text(q, "id");
+            if (id == null) {
+                issues.add(error("QUESTION_ID_MISSING", path + ".id", "Question " + (i + 1) + " has no id."));
+            } else if (!ids.add(id)) {
+                issues.add(error("QUESTION_ID_DUPLICATE", path + ".id", "Question id '" + id + "' is used more than once."));
+            }
+
+            Integer number = null;
+            JsonNode numberNode = q == null ? null : q.get("number");
+            if (numberNode != null && numberNode.isIntegralNumber()) {
+                number = numberNode.asInt();
+                if (!numbers.add(number)) {
+                    issues.add(error("QUESTION_NUMBER_DUPLICATE", path + ".number", "Question number " + number + " is used more than once."));
+                }
+            } else if (numberNode != null && !numberNode.isNull()) {
+                issues.add(error("QUESTION_NUMBER_INVALID", path + ".number", "number must be a whole number (e.g. " + spec.firstQuestionNumber() + ")."));
+            }
+
+            String questionText = text(q, "question");
+            if (questionText == null) {
+                issues.add(error("QUESTION_TEXT_EMPTY", path + ".question", "Question " + (i + 1) + " has no question text."));
+            } else {
+                if (questionText.length() > 500) {
+                    issues.add(error("QUESTION_TEXT_TOO_LONG", path + ".question", "Question " + (i + 1) + " is too long (max 500 characters)."));
+                }
+                if (!normalizedQuestions.add(TextSimilarity.normalize(questionText))) {
+                    issues.add(error("QUESTION_TEXT_DUPLICATE", path + ".question", "Question " + (i + 1) + " repeats another question."));
+                }
+            }
+
+            List<ParsedExercise.Option> options = readOptions(q, path, spec, issues);
+            String correct = text(q, "correctOptionId");
+            if (correct == null) {
+                issues.add(error("CORRECT_OPTION_MISSING", path + ".correctOptionId", "Question " + (i + 1) + " has no correctOptionId."));
+            } else if (options.stream().noneMatch(o -> correct.equals(o.id()))) {
+                issues.add(error("CORRECT_OPTION_UNKNOWN", path + ".correctOptionId",
+                        "Question " + (i + 1) + " refers to option '" + correct + "', which does not exist."));
+            }
+
+            String type = text(q, "questionType");
+            if (type == null) {
+                issues.add(warning("QUESTION_TYPE_MISSING", path + ".questionType", "Question " + (i + 1) + " has no questionType."));
+            } else if (!QUESTION_TYPES.contains(type.toUpperCase())) {
+                issues.add(warning("QUESTION_TYPE_UNKNOWN", path + ".questionType",
+                        "Unknown questionType '" + type + "' (use " + String.join(", ", QUESTION_TYPES) + "); ignored."));
+                type = null;
+            }
+            questions.add(new ParsedExercise.Question(id, number, questionText, options, correct, type == null ? null : type.toUpperCase()));
+        }
+
+        if (questions.size() != spec.questionCount()) {
+            issues.add(error("QUESTION_COUNT", p + "questions", "Exactly " + spec.questionCount() + " questions are required (found " + questions.size() + ")."));
+        }
+        if (!numbers.isEmpty() && numbers.size() == questions.size()) {
+            List<Integer> sorted = numbers.stream().sorted().toList();
+            boolean expected = sorted.size() == spec.questionCount() && sorted.get(0) == spec.firstQuestionNumber()
+                    && sorted.get(sorted.size() - 1) == spec.lastQuestionNumber();
+            if (!expected) {
+                issues.add(warning("QUESTION_NUMBERS", p + "questions", "Question numbers are usually " + spec.firstQuestionNumber()
+                        + " to " + spec.lastQuestionNumber() + " (found " + sorted.get(0) + " to " + sorted.get(sorted.size() - 1) + ")."));
+            }
+        }
+        return questions;
+    }
+
+    private List<ParsedExercise.Option> readOptions(JsonNode question, String path, ExamContentSpec spec, List<Issue> issues) {
+        List<ParsedExercise.Option> options = new ArrayList<>();
+        JsonNode array = question == null ? null : question.get("options");
+        if (array == null || !array.isArray()) {
+            issues.add(error("OPTIONS_MISSING", path + ".options", "options must be an array."));
+            return options;
+        }
+        Set<String> ids = new LinkedHashSet<>();
+        Set<String> normalized = new LinkedHashSet<>();
+        for (int j = 0; j < array.size(); j++) {
+            JsonNode o = array.get(j);
+            String optionPath = path + ".options[" + j + "]";
+            String id = text(o, "id");
+            String optionText = text(o, "text");
+            if (id == null) {
+                issues.add(error("OPTION_ID_MISSING", optionPath + ".id", "Option " + (j + 1) + " has no id."));
+            } else if (!ids.add(id)) {
+                issues.add(error("OPTION_ID_DUPLICATE", optionPath + ".id", "Option id '" + id + "' is used more than once."));
+            }
+            if (optionText == null) {
+                issues.add(error("OPTION_TEXT_EMPTY", optionPath + ".text", "Option '" + id + "' has empty text."));
+            } else {
+                if (optionText.length() > 300) {
+                    issues.add(error("OPTION_TEXT_TOO_LONG", optionPath + ".text", "Option '" + id + "' is too long (max 300 characters)."));
+                }
+                if (!normalized.add(TextSimilarity.normalize(optionText))) {
+                    issues.add(error("OPTION_TEXT_DUPLICATE", optionPath + ".text", "Option '" + id + "' has the same text as another option."));
+                }
+            }
+            options.add(new ParsedExercise.Option(id, optionText));
+        }
+        List<String> expected = spec.optionIds();
+        if (options.size() != spec.optionCount()) {
+            issues.add(error("OPTION_COUNT", path + ".options", "Exactly " + spec.optionCount() + " options are required (found " + options.size() + ")."));
+        } else if (!ids.equals(new LinkedHashSet<>(expected))) {
+            issues.add(error("OPTION_IDS", path + ".options", "Option ids must be exactly " + String.join(", ", expected) + "."));
+        }
+        return options;
+    }
+
+    /** Quality hints that never block an import: a predictable answer key or an answer that is always the longest. */
+    private void warnAnswerPatterns(List<ParsedExercise.Question> questions, String p, List<Issue> issues) {
+        List<String> keys = questions.stream().map(ParsedExercise.Question::correctOptionId).toList();
+        if (keys.size() >= 3 && keys.stream().noneMatch(java.util.Objects::isNull) && new LinkedHashSet<>(keys).size() == 1) {
+            issues.add(warning("ANSWER_POSITIONS_SAME", p + "questions", "Every correct answer is option '" + keys.get(0) + "'; answer positions should vary."));
+        }
+        int longest = 0;
+        int counted = 0;
+        for (ParsedExercise.Question q : questions) {
+            if (q.correctOptionId() == null || q.options().size() < 2 || q.options().stream().anyMatch(o -> o.text() == null)) continue;
+            counted++;
+            int max = q.options().stream().mapToInt(o -> o.text().length()).max().orElse(0);
+            boolean correctIsLongest = q.options().stream().anyMatch(o -> q.correctOptionId().equals(o.id()) && o.text().length() == max)
+                    && q.options().stream().filter(o -> o.text().length() == max).count() == 1;
+            if (correctIsLongest) longest++;
+        }
+        if (counted >= 4 && longest >= counted - 1) {
+            issues.add(warning("CORRECT_ANSWER_LONGEST", p + "questions", "The correct answer is the longest option in " + longest + " of " + counted
+                    + " questions; answer length should not give the solution away."));
+        }
+    }
+
     private Map<String, Object> readMetadata(JsonNode node, String p, List<Issue> issues) {
         Map<String, Object> metadata = new LinkedHashMap<>();
         if (node == null || node.isNull()) {
@@ -333,6 +510,8 @@ public class ExamContentValidator {
         }
         String difficulty = text(node, "difficulty");
         if (difficulty != null) {
+            // The reading-comprehension prompt family says DIFFICULT; the app's scale says HARD.
+            if (difficulty.equalsIgnoreCase("DIFFICULT")) difficulty = "HARD";
             if (DIFFICULTIES.contains(difficulty.toUpperCase())) {
                 metadata.put("difficulty", difficulty.toUpperCase());
             } else {

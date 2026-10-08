@@ -125,7 +125,9 @@ export default function ContentGenerator() {
 
                         {spec ? (
                             <p className="text-sm text-green-700 dark:text-green-300">
-                                ✓ {spec.label}: {spec.textCount} texts, {spec.headingCount} headings ({spec.headingCount - spec.textCount} unused).
+                                {spec.taskType === "MULTIPLE_CHOICE"
+                                    ? `✓ ${spec.label}: one reading text, ${spec.questionCount} questions with ${spec.optionCount} options each.`
+                                    : `✓ ${spec.label}: ${spec.textCount} texts, ${spec.headingCount} headings (${spec.headingCount - spec.textCount} unused).`}
                             </p>
                         ) : (
                             <p className="text-sm text-amber-700 dark:text-amber-300">
