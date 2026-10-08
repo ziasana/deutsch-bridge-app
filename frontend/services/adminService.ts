@@ -47,6 +47,14 @@ export const updatePremiumSetting = async (enabled: boolean) => {
     return await api.put("/admin/settings/premium", { enabled });
 };
 
+export const getDownloadSetting = async () => {
+    return await api.get("/admin/settings/downloads");
+};
+
+export const updateDownloadSetting = async (premiumOnly: boolean) => {
+    return await api.put("/admin/settings/downloads", { premiumOnly });
+};
+
 export const getFeatureLimits = async () => {
     return await api.get("/admin/settings/feature-limits");
 };

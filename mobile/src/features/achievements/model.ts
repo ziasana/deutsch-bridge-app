@@ -1,9 +1,12 @@
 import type { Dictionary } from '@/i18n';
 import type { ProgressOverview, ProgressStats } from '@/types/progress';
 import { percent } from '@/features/progress/segments';
+import { SECTION_COLOR } from '@/theme/sectionColors';
 
 export const MAX_STARS = 5;
 const STREAK_STEPS = [3, 7, 14, 30, 60];
+/** The flame colour the home screen's streak uses; streaks are not a learning area. */
+const STREAK_COLOR = '#F5762B';
 
 export type Achievement = {
   key: string;
@@ -11,6 +14,9 @@ export type Achievement = {
   title: string;
   description: string;
   stars: number;
+  /** 0-100: how far along the learner is towards all five stars. */
+  progress: number;
+  /** The learning area's accent, the same one its screens and tiles use. */
   color: string;
 };
 
@@ -39,7 +45,8 @@ export function buildAchievements(
         m && m.thresholds.length
           ? Math.min(MAX_STARS, Math.round((reached / m.thresholds.length) * MAX_STARS))
           : 0,
-      color: '#2F6FDB',
+      progress: m && m.thresholds.length ? percent(reached, m.thresholds.length) : 0,
+      color: SECTION_COLOR.vocabulary,
     },
     {
       key: 'grammar',
@@ -47,7 +54,8 @@ export function buildAchievements(
       title: t.grammar.title,
       description: t.grammar.description(grammar?.lessonsLearned ?? 0, grammar?.lessonsTotal ?? 0),
       stars: grammar ? starsFromPercent(percent(grammar.lessonsLearned, grammar.lessonsTotal)) : 0,
-      color: '#B7790A',
+      progress: grammar ? percent(grammar.lessonsLearned, grammar.lessonsTotal) : 0,
+      color: SECTION_COLOR.grammar,
     },
     {
       key: 'reading',
@@ -55,7 +63,8 @@ export function buildAchievements(
       title: t.reading.title,
       description: t.reading.description(reading?.learned ?? 0, reading?.total ?? 0),
       stars: reading ? starsFromPercent(percent(reading.learned, reading.total)) : 0,
-      color: '#2E8B6E',
+      progress: reading ? percent(reading.learned, reading.total) : 0,
+      color: SECTION_COLOR.reading,
     },
     {
       key: 'exam',
@@ -63,7 +72,8 @@ export function buildAchievements(
       title: t.exam.title,
       description: t.exam.description(attempts),
       stars: Math.min(MAX_STARS, attempts),
-      color: '#3B6CA8',
+      progress: percent(Math.min(MAX_STARS, attempts), MAX_STARS),
+      color: SECTION_COLOR.exam,
     },
     {
       key: 'streak',
@@ -71,7 +81,8 @@ export function buildAchievements(
       title: t.streak.title,
       description: t.streak.description(streak),
       stars: STREAK_STEPS.filter((s) => streak >= s).length,
-      color: '#C2531B',
+      progress: percent(streak, STREAK_STEPS[STREAK_STEPS.length - 1]),
+      color: STREAK_COLOR,
     },
   ];
 }

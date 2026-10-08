@@ -97,6 +97,21 @@ describe('VocabularyTrainerScreen', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/home');
   });
 
+  it('shows the word type on the flashcard (front and back) and on the question step', async () => {
+    const session = makeSession(1);
+    session.items[0] = { ...session.items[0], wordType: 'IDIOM' };
+    getSession.mockResolvedValue(session);
+    await renderScreen();
+    await start();
+
+    expect(await screen.findByText('Idiom (Redewendung)')).toBeTruthy(); // front
+    await flip();
+    expect(screen.getByText('Idiom (Redewendung)')).toBeTruthy(); // back
+    await fireEvent.press(screen.getByRole('button', { name: 'Knew it' }));
+    expect(await screen.findByText('Ich suche ___ 1.')).toBeTruthy();
+    expect(screen.getByText('Idiom (Redewendung)')).toBeTruthy(); // header badge
+  });
+
   it('flashcard-only round submits right after the self-grade', async () => {
     getSession.mockResolvedValue(makeSession(1, false));
     submitRound.mockResolvedValue(makeRound({ contextCorrect: null, correctContextKey: null }));

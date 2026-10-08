@@ -115,21 +115,19 @@ describe('ExamHubScreen', () => {
 
   it('opens on the profile level with Teile and a continue card', async () => {
     await wrap(<ExamHubScreen />);
-    expect(
-      await screen.findByRole('button', { name: /^Teil 1 – Zuordnungsaufgaben/ }),
-    ).toBeTruthy();
+    expect(await screen.findByRole('button', { name: /^Part 1 – Matching tasks/ })).toBeTruthy();
     expect(api.exercisesForLevel).toHaveBeenCalledWith('B1');
     expect(screen.getByRole('button', { name: 'B1 · 1/5' }).props.accessibilityState.selected).toBe(
       true,
     );
 
     // Teil 2 has a single exercise: opens it directly. Teil 1 has two: opens the Teil list.
-    await fireEvent.press(screen.getByRole('button', { name: /^Teil 2/ }));
+    await fireEvent.press(screen.getByRole('button', { name: /^Part 2/ }));
     expect(mockPush).toHaveBeenLastCalledWith({
       pathname: '/exam-prep/exercise/[exerciseId]',
       params: { exerciseId: 'c' },
     });
-    await fireEvent.press(screen.getByRole('button', { name: /^Teil 1/ }));
+    await fireEvent.press(screen.getByRole('button', { name: /^Part 1/ }));
     expect(mockPush).toHaveBeenLastCalledWith({
       pathname: '/exam-prep/teil',
       params: { section: 'LESEVERSTEHEN', level: 'B1', part: '1' },
@@ -138,7 +136,7 @@ describe('ExamHubScreen', () => {
 
   it('continues with the next unmastered exercise', async () => {
     await wrap(<ExamHubScreen />);
-    await screen.findByText('Keep learning · Lesen');
+    await screen.findByText('Keep learning · Reading');
     await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
     expect(mockPush).toHaveBeenLastCalledWith({
       pathname: '/exam-prep/exercise/[exerciseId]',
@@ -148,10 +146,10 @@ describe('ExamHubScreen', () => {
 
   it('lists Testformat info and the Schreiben tasks directly', async () => {
     await wrap(<ExamHubScreen />);
-    await screen.findByText('Keep learning · Lesen');
-    await fireEvent.press(screen.getByRole('button', { name: /Testformat/ }));
+    await screen.findByText('Keep learning · Reading');
+    await fireEvent.press(screen.getByRole('button', { name: /Test format/ }));
     expect(await screen.findByText('So läuft die Prüfung')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: /Schreiben/ }));
+    await fireEvent.press(screen.getByRole('button', { name: /Writing/ }));
     expect(await screen.findByText('E-Mail an den Vermieter')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: /E-Mail an den Vermieter/ }));
     expect(mockPush).toHaveBeenLastCalledWith({
@@ -167,7 +165,7 @@ describe('ExamHubScreen', () => {
 
   it('reloads when the level changes and filters by search', async () => {
     await wrap(<ExamHubScreen />);
-    await screen.findByText('Keep learning · Lesen');
+    await screen.findByText('Keep learning · Reading');
     await fireEvent.press(screen.getByRole('button', { name: 'A2 · 0/2' }));
     await waitFor(() => expect(api.exercisesForLevel).toHaveBeenCalledWith('A2'));
     await fireEvent.changeText(screen.getByLabelText('Search for an exam part or task'), 'zzz');
@@ -186,7 +184,7 @@ describe('ExamHubScreen', () => {
     ]);
     api.removeBookmark.mockResolvedValue(summary('s1'));
     await wrap(<ExamHubScreen />);
-    expect(await screen.findByText('Hörverstehen: 3. Übung')).toBeTruthy();
+    expect(await screen.findByText('Listening: Exercise 3')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Remove bookmark' }));
     await waitFor(() => expect(api.removeBookmark).toHaveBeenCalledWith('s1'));
   });
@@ -211,7 +209,7 @@ describe('ExamTeilScreen', () => {
   it('lists exercises, filters by status, bookmarks and opens one', async () => {
     api.addBookmark.mockResolvedValue(summary('b', { bookmarked: true }));
     await wrap(<ExamTeilScreen />);
-    expect(await screen.findByText('2. Übung')).toBeTruthy();
+    expect(await screen.findByText('Exercise 2')).toBeTruthy();
     expect(screen.getByText('1 / 2')).toBeTruthy();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Open' }));
@@ -223,7 +221,7 @@ describe('ExamTeilScreen', () => {
     await fireEvent.press(screen.getAllByRole('button', { name: 'Save task' })[1]);
     await waitFor(() => expect(api.addBookmark).toHaveBeenCalledWith('b'));
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Continue: 2. Übung' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Continue: Exercise 2' }));
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/exam-prep/exercise/[exerciseId]',
       params: { exerciseId: 'b' },

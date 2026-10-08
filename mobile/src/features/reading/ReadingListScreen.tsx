@@ -27,6 +27,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useAuthStore } from '@/stores/authStore';
 import { colors, radius, shadow, spacing } from '@/theme';
 import type { ReadingArticleSummary } from '@/types/reading';
+import { ReadingDownloadBar } from './ReadingDownloadBar';
 import { pickInitialLevel } from '@/utils/levels';
 import { resolveUploadUrl } from '@/utils/urls';
 import { BookIllustration, InfoPill, READING_COLOR, ReadingHero } from './components/ReadingViz';
@@ -146,6 +147,7 @@ export function ReadingListScreen() {
   const params = level ? { level, search: debounced, bookmarked, categoryId } : null;
   const list = useReadingList(params);
   const items = useMemo(() => list.data?.pages.flatMap((p) => p.items) ?? [], [list.data]);
+  const totalMatches = list.data?.pages[0]?.totalElements ?? 0;
   const filtered = !!categoryId || bookmarked || debounced !== '';
   const nextId = !filtered ? items.find((a) => !a.learned)?.id : undefined;
 
@@ -282,6 +284,9 @@ export function ReadingListScreen() {
             />
           ))}
         </HorizontalScroll>
+        {params && (categoryId || bookmarked) && debounced === '' && totalMatches > 0 ? (
+          <ReadingDownloadBar params={params} total={totalMatches} />
+        ) : null}
       </View>
     </View>
   );

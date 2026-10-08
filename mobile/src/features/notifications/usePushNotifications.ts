@@ -2,11 +2,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
 import { notificationApi } from '@/api/notificationApi';
 import { inAppHref, NO_DESTINATION } from './destination';
 import { notificationKeys } from './hooks';
-import { parsePushData, syncPushRegistration } from './push';
+import { parsePushData, pushUnavailable, syncPushRegistration } from './push';
 
 // A tap that launched the app stays available as "last response"; handle each one only once.
 let lastHandledId: string | null = null;
@@ -21,7 +20,7 @@ export function usePushNotifications(): void {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (Platform.OS === 'web') return;
+    if (pushUnavailable()) return;
     void syncPushRegistration();
 
     const open = async (response: Notifications.NotificationResponse) => {

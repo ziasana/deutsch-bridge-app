@@ -4,6 +4,7 @@ import { chatApi, chatVocabularyApi } from '@/api/chatApi';
 import { ApiError, toApiError } from '@/api/errors';
 import { useRefreshAiUsage } from '@/features/aiUsage/hooks';
 import type { ChatMessage, ChatSession } from '@/types/chat';
+import type { VocabularyWordType } from '@/types/vocabulary';
 
 export const SESSIONS_KEY = ['tutor', 'sessions'] as const;
 
@@ -144,7 +145,14 @@ export function useTutorChat() {
 }
 
 export type SaveOutcome =
-  { kind: 'saved'; word: string; meaning: string } | { kind: 'exists'; word: string };
+  | {
+      kind: 'saved';
+      word: string;
+      meaning: string;
+      wordType: VocabularyWordType | null;
+      synonyms: string | null;
+    }
+  | { kind: 'exists'; word: string };
 
 /** Classify → skip duplicates → save a word or phrase from a tutor answer to vocabulary. */
 export function useSaveFromChat(sessionId: string | null, messageId: string) {
@@ -166,8 +174,16 @@ export function useSaveFromChat(sessionId: string | null, messageId: string) {
         sourceChatId: sessionId,
         sourceMessageId: messageId,
         level: null,
+        wordType: classified.wordType,
+        synonyms: classified.synonyms,
       });
-      return { kind: 'saved', word: classified.normalizedText, meaning: classified.meaning };
+      return {
+        kind: 'saved',
+        word: classified.normalizedText,
+        meaning: classified.meaning,
+        wordType: classified.wordType,
+        synonyms: classified.synonyms,
+      };
     },
   });
 }

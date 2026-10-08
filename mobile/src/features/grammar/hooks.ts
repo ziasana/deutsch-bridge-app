@@ -1,6 +1,9 @@
+import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { exerciseProgressApi, grammarApi } from '@/api/grammarApi';
 import { DASHBOARD_KEY } from '@/features/dashboard/hooks';
+import { CONTENT_STALE_MS } from '@/api/queryClient';
+import { deliverOrQueue, loadItem } from '@/features/downloads/offline';
 import type {
   CategoryTestStatus,
   ExerciseAnswer,
@@ -29,20 +32,30 @@ export const useLevelView = (level: string | null) =>
     staleTime: 60_000,
   });
 
-export const useLesson = (id: string) =>
-  useQuery({
-    queryKey: grammarKeys.lesson(id),
-    queryFn: () => grammarApi.lesson(id),
-    enabled: !!id,
-    staleTime: 5 * 60_000,
-  });
+const lessonOptions = (id: string) => ({
+  queryKey: grammarKeys.lesson(id),
+  queryFn: () => loadItem('grammar', id, () => grammarApi.lesson(id)),
+  // Lesson text rarely changes, and learned/bookmark changes update this entry directly.
+  staleTime: CONTENT_STALE_MS,
+});
+
+export const useLesson = (id: string) => useQuery({ ...lessonOptions(id), enabled: !!id });
+
+/** Warms the cache with the neighbouring lessons so "next" / "previous" open instantly. */
+export function usePrefetchNeighbourLessons(neighbours: (string | undefined)[]): void {
+  const queryClient = useQueryClient();
+  const key = neighbours.filter(Boolean).join(',');
+  useEffect(() => {
+    for (const id of key ? key.split(',') : []) void queryClient.prefetchQuery(lessonOptions(id));
+  }, [key, queryClient]);
+}
 
 export const useLessonNavigation = (id: string) =>
   useQuery({
     queryKey: grammarKeys.navigation(id),
     queryFn: () => grammarApi.navigation(id),
     enabled: !!id,
-    staleTime: 5 * 60_000,
+    staleTime: CONTENT_STALE_MS,
   });
 
 export const useCategory = (id: string) =>
@@ -63,7 +76,10 @@ function refreshOverviews(queryClient: QueryClient) {
 export function useSetLessonLearned(lessonId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (learned: boolean) => grammarApi.setLearned(lessonId, learned),
+    mutationFn: (learned: boolean) =>
+      deliverOrQueue({ field: 'learned', kind: 'grammar', id: lessonId, value: learned }, () =>
+        grammarApi.setLearned(lessonId, learned),
+      ),
     onSuccess: (_d, learned) => {
       queryClient.setQueryData<GrammarLesson>(grammarKeys.lesson(lessonId), (lesson) =>
         lesson ? { ...lesson, learningProgresses: [{ id: lessonId, learned }] } : lesson,
@@ -77,7 +93,10 @@ export function useToggleBookmark(lessonId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (bookmarked: boolean) =>
-      bookmarked ? grammarApi.removeBookmark(lessonId) : grammarApi.addBookmark(lessonId),
+      deliverOrQueue(
+        { field: 'bookmarked', kind: 'grammar', id: lessonId, value: !bookmarked },
+        () => (bookmarked ? grammarApi.removeBookmark(lessonId) : grammarApi.addBookmark(lessonId)),
+      ),
     onSuccess: (_lesson, wasBookmarked) => {
       queryClient.setQueryData<GrammarLesson>(grammarKeys.lesson(lessonId), (lesson) =>
         lesson ? { ...lesson, bookmarked: !wasBookmarked } : lesson,

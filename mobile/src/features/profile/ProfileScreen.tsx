@@ -60,7 +60,7 @@ function Stat({ value, label }: { value: string; label: string }) {
   return (
     <View style={styles.stat} accessible accessibilityLabel={`${label}: ${value}`}>
       <AppText style={styles.statValue}>{value}</AppText>
-      <AppText variant="caption" color={colors.mutedForeground}>
+      <AppText variant="caption" color={colors.mutedForeground} center>
         {label}
       </AppText>
     </View>
@@ -112,6 +112,13 @@ export function ProfileScreen() {
       icon: 'stats-chart-outline',
       color: '#2E8B57',
       href: '/progress',
+    },
+    {
+      key: 'downloads',
+      title: t.downloads.profileRow,
+      icon: 'download-outline',
+      color: '#7B61FF',
+      href: '/settings/downloads',
     },
     {
       key: 'notifications',
@@ -308,15 +315,16 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    // Top-aligned so the values line up even when one label wraps onto two lines.
+    alignItems: 'flex-start',
     marginHorizontal: spacing.xl,
     paddingTop: spacing.lg,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  stat: { flex: 1, alignItems: 'center', gap: 2 },
+  stat: { flex: 1, alignItems: 'center', gap: 2, paddingHorizontal: spacing.xs },
   statValue: { fontSize: 24, lineHeight: 30, fontWeight: '700', color: colors.ink },
-  divider: { width: 1, height: 36, backgroundColor: colors.border },
+  divider: { width: 1, height: 36, marginTop: 2, backgroundColor: colors.border },
   card: {
     marginHorizontal: spacing.xl,
     padding: spacing.lg,

@@ -44,7 +44,10 @@ jest.mock('expo-notifications', () => ({
 
 jest.mock('@react-native-community/netinfo', () => ({
   __esModule: true,
-  default: { addEventListener: jest.fn(() => jest.fn()) },
+  default: {
+    addEventListener: jest.fn(() => jest.fn()),
+    fetch: jest.fn(async () => ({ isConnected: true, isInternetReachable: true })),
+  },
 }));
 
 // Icon fonts load through expo-asset, which has no asset registry under Jest; render icons inert.
@@ -52,4 +55,24 @@ jest.mock('@expo/vector-icons', () => {
   const { createElement } = jest.requireActual('react');
   const { Text } = jest.requireActual('react-native');
   return { Ionicons: ({ name }: { name: string }) => createElement(Text, null, name) };
+});
+
+// In-memory stand-in for the on-device downloads folder (the native file system is unavailable).
+jest.mock('@/features/downloads/fileStore', () => {
+  const files = new Map<string, string>();
+  return {
+    fileStore: {
+      readText: async (p: string) => files.get(p) ?? null,
+      writeText: async (p: string, t: string) => void files.set(p, t),
+      download: async (_url: string, p: string) => {
+        files.set(p, 'binary');
+        return { uri: `file:///downloads/${p}`, bytes: 6 };
+      },
+      removeDir: async (p: string) => {
+        for (const k of [...files.keys()]) if (k.startsWith(`${p}/`)) files.delete(k);
+      },
+      remove: async (p: string) => void files.delete(p),
+      removeAll: async () => files.clear(),
+    },
+  };
 });

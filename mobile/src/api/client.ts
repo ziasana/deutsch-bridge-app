@@ -76,8 +76,26 @@ function buildUrl(path: string, query?: RequestOptions['query']): string {
   return url.toString();
 }
 
-async function parseBody(response: Response): Promise<unknown> {
+/** Opt-in (EXPO_PUBLIC_API_TIMING=1, dev builds): logs every request's time and size to find slow screens. */
+const TIMING = __DEV__ && process.env.EXPO_PUBLIC_API_TIMING === '1';
+const SLOW_MS = 1000;
+
+function logTiming(
+  path: string,
+  options: RequestOptions,
+  startedAt: number,
+  status: number,
+  bytes: number,
+) {
+  const ms = Date.now() - startedAt;
+  const line = `[api] ${options.method ?? 'GET'} ${path} ${status} ${ms}ms ${(bytes / 1024).toFixed(1)}KB`;
+  if (ms >= SLOW_MS) console.warn(`${line} (slow)`);
+  else console.log(line);
+}
+
+async function parseBody(response: Response, stats?: { bytes: number }): Promise<unknown> {
   const text = await response.text();
+  if (stats) stats.bytes = text.length;
   if (!text) return undefined;
   try {
     return JSON.parse(text);
@@ -137,6 +155,7 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
  * if the refresh token is rejected.
  */
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const startedAt = Date.now();
   let response = await send(path, options);
 
   if (response.status === 401 && options.auth !== false) {
@@ -154,7 +173,9 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     response = await send(path, options);
   }
 
-  const body = await parseBody(response);
+  const stats = { bytes: 0 };
+  const body = await parseBody(response, TIMING ? stats : undefined);
+  if (TIMING) logTiming(path, options, startedAt, response.status, stats.bytes);
 
   if (!response.ok) {
     const kind = kindFromStatus(response.status);

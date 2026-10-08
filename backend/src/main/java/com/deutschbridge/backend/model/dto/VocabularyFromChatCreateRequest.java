@@ -10,6 +10,10 @@ public record VocabularyFromChatCreateRequest(
         String example,
         String sourceChatId,
         String sourceMessageId,
-        LearningLevel level
+        LearningLevel level,
+        /** Optional VocabularyWordType name, as returned by classify. */
+        String wordType,
+        /** Optional comma-separated synonyms, as returned by classify; generated here when absent. */
+        String synonyms
 ) {
 }

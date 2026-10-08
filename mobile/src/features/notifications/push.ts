@@ -15,9 +15,14 @@ export type PushState = 'unsupported' | 'undetermined' | 'denied' | 'granted';
 const TOKEN_KEY = 'push.expoToken';
 const ANDROID_CHANNEL = 'default';
 
+/** Expo Go on Android dropped remote push in SDK 53; a development build is required there. */
+export const pushUnavailable = (): boolean =>
+  Platform.OS === 'web' ||
+  (Platform.OS === 'android' && Constants.executionEnvironment === 'storeClient');
+
 /** Show a banner while the app is open, so a new notification isn't missed. */
 export function configurePushHandler(): void {
-  if (Platform.OS === 'web') return;
+  if (pushUnavailable()) return;
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldPlaySound: false,
@@ -44,7 +49,7 @@ const projectId = (): string | undefined =>
   Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
 
 export async function getPushState(): Promise<PushState> {
-  if (Platform.OS === 'web' || !projectId()) return 'unsupported';
+  if (pushUnavailable() || !projectId()) return 'unsupported';
   const { status, canAskAgain } = await Notifications.getPermissionsAsync();
   if (status === 'granted') return 'granted';
   return status === 'denied' && !canAskAgain ? 'denied' : 'undetermined';

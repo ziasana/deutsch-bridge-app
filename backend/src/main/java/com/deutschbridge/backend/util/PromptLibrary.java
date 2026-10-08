@@ -93,6 +93,21 @@ public class PromptLibrary {
         """, level, word, level);
     }
 
+    /** Word type of a vocabulary entry the learner typed in or edited. */
+    public static String classifyWordType(String word) {
+        return String.format("""
+        Bestimme die Wortart bzw. den Typ des folgenden deutschen Wortes oder Ausdrucks:
+
+        "%s"
+
+        Antworte mit GENAU EINEM dieser Werte, ohne weiteren Text:
+        - Einzelnes Wort: NOUN, VERB, ADJECTIVE, ADVERB, PREPOSITION, CONJUNCTION, PRONOUN oder OTHER
+        - Mehrere Wörter: IDIOM (Redewendung, bildlich, z. B. "ins Gras beißen"),
+          NOUN_VERB_CONNECTION (Nomen-Verb-Verbindung, z. B. "eine Entscheidung treffen")
+          oder EXPRESSION (sonstige Wendung oder Kollokation)
+        """, word);
+    }
+
     public static String generateWordSynonyms(String word, String level) {
         return String.format("""
         Erstelle eine Liste von Synonymen für das folgende deutsche Wort,
@@ -327,10 +342,17 @@ public class PromptLibrary {
              Satz. Beispiel: "für einen neuen Deutschkurs entschieden" -> "sich für etwas entscheiden".
         3. Gib eine kurze, klare Bedeutung an. %s
         4. Gib einen natürlichen deutschen Beispielsatz mit der normalisierten Form an.
+        5. Bestimme "wordType" - genau einer dieser Werte:
+           - für ein WORD: NOUN, VERB, ADJECTIVE, ADVERB, PREPOSITION, CONJUNCTION, PRONOUN oder OTHER
+           - für eine EXPRESSION: IDIOM (Redewendung, bildlich, z. B. "ins Gras beißen"),
+             NOUN_VERB_CONNECTION (Nomen-Verb-Verbindung, z. B. "eine Entscheidung treffen")
+             oder EXPRESSION (sonstige Wendung oder Kollokation)
+        6. Gib 1-3 deutsche Synonyme oder sinnverwandte Ausdrücke in "synonyms" an, getrennt durch
+           Kommas (bei Nomen ohne Artikel nur wenn nötig). Gibt es keine, ist der Wert ein leerer String.
 
         Antworte AUSSCHLIESSLICH mit einem einzeiligen, gültigen JSON-Objekt, ohne Codeblock, ohne
         Erklärung, in genau diesem Format:
-        {"type":"WORD oder EXPRESSION","normalizedText":"...","meaning":"...","example":"..."}
+        {"type":"WORD oder EXPRESSION","normalizedText":"...","wordType":"...","meaning":"...","example":"...","synonyms":"..."}
         """, selectedText, contextText, meaningLanguageInstruction);
     }
 

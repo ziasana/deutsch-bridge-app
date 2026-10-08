@@ -36,3 +36,14 @@ docker exec -i my-postgres pg_restore -U postgres -d deutschbridge-db --no-owner
 Start the backend with only the three variables from step 2.
 
 MongoDB (daily words, lexicon) is still the hosted instance from `MONGODB_URI`.
+
+## Local email (sign-up needs it)
+
+Registering sends a verification email. The dev profile delivers it to MailHog on `localhost:1025`; if nothing
+listens there, sign-up fails with "Mail service is currently unavailable" (the app says it could not send the
+verification email).
+```bash
+docker compose up -d mailhog       # SMTP on 1025, inbox UI on http://localhost:8025
+```
+Open http://localhost:8025 to read the verification link. To use real SMTP instead, see the `MAIL_*` variables in
+`application-dev.yml`.

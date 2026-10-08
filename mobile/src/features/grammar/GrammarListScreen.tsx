@@ -25,6 +25,7 @@ import type { GrammarCategorySummary, GrammarLessonSummary } from '@/types/gramm
 import { pickInitialLevel } from '@/utils/levels';
 import { useLevelSummary, useLevelView } from './hooks';
 import { localizedHeading } from './quiz';
+import { DownloadAllButton } from '@/features/downloads/DownloadAllButton';
 import { GRAMMAR_COLOR, GRAMMAR_DARK } from './meta';
 
 type Row =
@@ -337,6 +338,7 @@ export function GrammarListScreen() {
                   </View>
                 ) : null}
               </View>
+              <DownloadAllButton kind="grammar" ids={category.lessons.map((l) => l.id)} />
               <DirectionalIcon
                 name={item.expanded ? 'chevron-up' : 'chevron-down'}
                 size={22}

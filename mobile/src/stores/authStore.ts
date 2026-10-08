@@ -5,6 +5,7 @@ import { ApiError } from '@/api/errors';
 import { queryClient } from '@/api/queryClient';
 import { tokenStorage } from '@/api/tokenStorage';
 import { usePremiumUpsellStore } from '@/stores/premiumUpsellStore';
+import { clearDownloads } from '@/features/downloads/clear';
 import { clearExamLocalData } from '@/features/exam/localData';
 import { unregisterPush } from '@/features/notifications/push';
 import type { MobileAuthData, UserProfile } from '@/types/user';
@@ -63,6 +64,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Drop all cached server data so the next account never sees the previous one's content.
     queryClient.clear();
     await clearExamLocalData();
+    await clearDownloads();
     usePremiumUpsellStore.getState().close();
     set({ status: 'unauthenticated', profile: null, error: null });
   },

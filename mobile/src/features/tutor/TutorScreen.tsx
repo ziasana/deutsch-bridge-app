@@ -29,7 +29,6 @@ import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
 import type { ChatMessage } from '@/types/chat';
 import { MessageBubble } from './components/MessageBubble';
 import { TutorIllustration } from './TutorIllustration';
-import { SaveWordSheet } from './components/SaveWordSheet';
 import { SessionsSheet } from './components/SessionsSheet';
 import { STARTERS } from './groups';
 import { useChatSessions, useTutorChat } from './hooks';
@@ -94,16 +93,24 @@ export function TutorScreen() {
   const [input, setInput] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
+  const [optionsOpen, setOptionsOpen] = useState(false);
   const [title, setTitle] = useState('');
-  const [saving, setSaving] = useState<ChatMessage | null>(null);
   const listRef = useRef<FlatList<ChatMessage>>(null);
 
   const active = sessions.data?.find((s) => s.id === chat.sessionId) ?? null;
+  const inConversation = !!chat.sessionId || chat.messages.length > 0;
   const showEmpty = !chat.sessionId && chat.messages.length === 0 && !chat.thinking && !chat.error;
 
   useEffect(() => {
-    listRef.current?.scrollToEnd({ animated: true });
-  }, [chat.messages.length, chat.thinking, chat.error]);
+    const lastIndex = chat.messages.length - 1;
+    const answered =
+      !chat.thinking && !chat.error && chat.messages[lastIndex]?.role === 'assistant';
+    // A new answer opens at its first line (a long one would otherwise start off-screen, scrolled
+    // to its end); while waiting, or after the learner's own message, follow the end of the chat.
+    if (answered)
+      listRef.current?.scrollToIndex({ index: lastIndex, viewPosition: 0, animated: true });
+    else listRef.current?.scrollToEnd({ animated: true });
+  }, [chat.messages, chat.thinking, chat.error]);
 
   const submit = () => {
     const text = input.trim();
@@ -142,43 +149,30 @@ export function TutorScreen() {
           >
             {active?.title || w.title}
           </AppText>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={w.newChat}
-            onPress={chat.newChat}
-            style={styles.headerButton}
-          >
-            <Ionicons name="add" size={26} color={colors.ink} />
-          </Pressable>
+          {active ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={w.chatOptions}
+              onPress={() => setOptionsOpen(true)}
+              style={styles.headerButton}
+            >
+              <Ionicons name="ellipsis-horizontal" size={24} color={colors.ink} />
+            </Pressable>
+          ) : null}
+          {inConversation ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={w.closeChat}
+              onPress={chat.newChat}
+              style={styles.headerButton}
+            >
+              <Ionicons name="close" size={26} color={colors.ink} />
+            </Pressable>
+          ) : (
+            // Keeps the title centred on the start screen, where there is nothing to close.
+            <View style={styles.headerButton} />
+          )}
         </View>
-
-        {active ? (
-          <View style={styles.actions}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={w.renameLabel}
-              onPress={() => {
-                setTitle(active.title ?? '');
-                setRenameOpen(true);
-              }}
-              style={styles.actionPill}
-            >
-              <AppText variant="small" color="#FFFFFF" style={styles.actionText}>
-                {w.rename}
-              </AppText>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={w.deleteLabel}
-              onPress={confirmDeleteActive}
-              style={styles.actionPill}
-            >
-              <AppText variant="small" color="#FFE1DC" style={styles.actionText}>
-                {w.delete}
-              </AppText>
-            </Pressable>
-          </View>
-        ) : null}
 
         {showEmpty ? (
           <View style={styles.hero}>
@@ -203,13 +197,19 @@ export function TutorScreen() {
             ref={listRef}
             data={chat.messages}
             keyExtractor={(m) => m.id}
-            renderItem={({ item }) => (
-              <MessageBubble
-                message={item}
-                onSaveWord={item.role === 'assistant' ? setSaving : undefined}
-              />
-            )}
+            renderItem={({ item }) => <MessageBubble message={item} sessionId={chat.sessionId} />}
             contentContainerStyle={styles.list}
+            onScrollToIndexFailed={({ index, averageItemLength }) => {
+              // The item is not laid out yet: jump near it, then settle on its top.
+              listRef.current?.scrollToOffset({
+                offset: index * averageItemLength,
+                animated: false,
+              });
+              setTimeout(
+                () => listRef.current?.scrollToIndex({ index, viewPosition: 0, animated: true }),
+                120,
+              );
+            }}
             ListFooterComponent={
               <View style={{ gap: spacing.md }}>
                 {chat.thinking ? (
@@ -278,6 +278,32 @@ export function TutorScreen() {
         onNewChat={chat.newChat}
       />
 
+      <BottomSheet
+        visible={optionsOpen}
+        onClose={() => setOptionsOpen(false)}
+        title={w.chatOptions}
+      >
+        <View style={{ gap: spacing.sm }}>
+          <Button
+            variant="secondary"
+            label={w.rename}
+            onPress={() => {
+              setOptionsOpen(false);
+              setTitle(active?.title ?? '');
+              setRenameOpen(true);
+            }}
+          />
+          <Button
+            variant="secondary"
+            label={w.delete}
+            onPress={() => {
+              setOptionsOpen(false);
+              confirmDeleteActive();
+            }}
+          />
+        </View>
+      </BottomSheet>
+
       <BottomSheet visible={renameOpen} onClose={() => setRenameOpen(false)} title={w.renameLabel}>
         <TextField
           label={w.renameTitle}
@@ -295,8 +321,6 @@ export function TutorScreen() {
           }
         />
       </BottomSheet>
-
-      <SaveWordSheet message={saving} sessionId={chat.sessionId} onClose={() => setSaving(null)} />
     </View>
   );
 }
@@ -326,20 +350,6 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   headerTitle: { flex: 1, fontSize: 20, lineHeight: 26, fontWeight: '700' },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.md,
-    paddingBottom: spacing.md,
-  },
-  actionPill: {
-    minHeight: 36,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-  },
-  actionText: { fontWeight: '700' },
   // Bottom-aligned and pulled under the sheet, so the tutor appears to sit behind it.
   hero: { alignItems: 'center', marginBottom: -18 },
   sheet: {

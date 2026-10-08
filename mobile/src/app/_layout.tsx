@@ -1,11 +1,13 @@
-import { QueryClientProvider } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import Constants from 'expo-constants';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { queryClient } from '@/api/queryClient';
+import { CACHE_MAX_AGE, queryClient } from '@/api/queryClient';
+import { createQueryPersister, shouldPersistQuery } from '@/api/queryPersist';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { ErrorState } from '@/components/ui';
 import { PremiumUpsellModal } from '@/features/premium/PremiumUpsellModal';
@@ -73,17 +75,28 @@ function ConnectivityNotice() {
   return <OfflineBanner visible={offline} />;
 }
 
+const persister = createQueryPersister();
+
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{
+          persister,
+          maxAge: CACHE_MAX_AGE,
+          // A new app version may change payload shapes: start from an empty cache.
+          buster: Constants.expoConfig?.version ?? '',
+          dehydrateOptions: { shouldDehydrateQuery: shouldPersistQuery },
+        }}
+      >
         <StatusBar style="dark" />
         <I18nProvider>
           <RootNavigator />
           <ConnectivityNotice />
           <PremiumUpsellModal />
         </I18nProvider>
-      </QueryClientProvider>
+      </PersistQueryClientProvider>
     </SafeAreaProvider>
   );
 }

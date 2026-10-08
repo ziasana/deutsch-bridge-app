@@ -62,12 +62,12 @@ describe('TutorScreen', () => {
     });
     await wrap();
     await screen.findByText('What would you like to start with?');
-    await fireEvent.changeText(screen.getByLabelText('Message'), 'Hallo');
+    await fireEvent.changeText(screen.getByLabelText('Message'), 'Guten Tag');
     await fireEvent.press(screen.getByRole('button', { name: 'Send' }));
 
-    expect(await screen.findByText('Hallo')).toBeTruthy(); // the user's bubble
+    expect(await screen.findByText('Guten Tag')).toBeTruthy(); // the user's bubble
     expect(await screen.findByText('Wie geht’s?', { exact: false })).toBeTruthy();
-    expect(chat.send).toHaveBeenCalledWith('Hallo', '');
+    expect(chat.send).toHaveBeenCalledWith('Guten Tag', '');
     expect(screen.getByLabelText('Message').props.value).toBe('');
     expect(await screen.findByText('Begrüßung')).toBeTruthy(); // header title
 
@@ -127,6 +127,23 @@ describe('TutorScreen', () => {
     expect(screen.getAllByText('Dativ üben').length).toBeGreaterThan(0);
   });
 
+  it('closes the open conversation and goes back to the start screen', async () => {
+    chat.sessions.mockResolvedValue([session('s1', 'Dativ üben')]);
+    chat.messages.mockResolvedValue([{ id: 'm1', role: 'user', content: 'Erkläre Dativ' }]);
+    await wrap();
+    // Nothing to close on the start screen.
+    expect(screen.queryByRole('button', { name: 'Close conversation' })).toBeNull();
+
+    await fireEvent.press(await screen.findByRole('button', { name: 'Show conversations' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Dativ üben' }));
+    expect(await screen.findByText('Erkläre Dativ')).toBeTruthy();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Close conversation' }));
+    expect(await screen.findByText('What would you like to start with?')).toBeTruthy();
+    expect(screen.queryByText('Erkläre Dativ')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Close conversation' })).toBeNull();
+  });
+
   it('renames the open conversation', async () => {
     chat.sessions.mockResolvedValue([session('s1', 'Alt')]);
     chat.messages.mockResolvedValue([{ id: 'm1', role: 'user', content: 'Hi' }]);
@@ -134,7 +151,8 @@ describe('TutorScreen', () => {
     await wrap();
     await fireEvent.press(await screen.findByRole('button', { name: 'Show conversations' }));
     await fireEvent.press(await screen.findByRole('button', { name: 'Alt' }));
-    await fireEvent.press(await screen.findByRole('button', { name: 'Rename chat' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Chat options' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Rename' }));
     await fireEvent.changeText(screen.getByLabelText('Title'), 'Neu');
     await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(chat.rename).toHaveBeenCalledWith('s1', 'Neu'));
@@ -151,13 +169,14 @@ describe('TutorScreen', () => {
     await wrap();
     await fireEvent.press(await screen.findByRole('button', { name: 'Show conversations' }));
     await fireEvent.press(await screen.findByRole('button', { name: 'Weg damit' }));
-    await fireEvent.press(await screen.findByRole('button', { name: 'Delete chat' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Chat options' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Delete' }));
     expect(alert).toHaveBeenCalled();
     await waitFor(() => expect(chat.remove).toHaveBeenCalledWith('s1'));
     expect(await screen.findByText('What would you like to start with?')).toBeTruthy();
   });
 
-  it('saves a word from a tutor answer to vocabulary, and says when it already exists', async () => {
+  const askForAWord = async () => {
     chat.send.mockResolvedValue({
       sessionId: 's1',
       userId: 'u',
@@ -165,25 +184,31 @@ describe('TutorScreen', () => {
       content: 'Das **Fernweh** ist ein schönes Wort.',
       sessionTitle: 'Wörter',
     });
+    await wrap();
+    await fireEvent.changeText(await screen.findByLabelText('Message'), 'Ein Wort bitte');
+    await fireEvent.press(screen.getByRole('button', { name: 'Send' }));
+    await screen.findByText('Fernweh');
+  };
+
+  it('saves a tapped word to vocabulary, and says when it already exists', async () => {
     vocab.classify.mockResolvedValue({
       type: 'WORD',
       normalizedText: 'das Fernweh',
       meaning: 'wanderlust',
       example: 'Ich habe Fernweh.',
+      wordType: 'NOUN',
+      synonyms: 'Reiselust, Wanderlust',
     });
     vocab.exists
       .mockResolvedValueOnce({ exists: false, vocabularyItemId: null })
       .mockResolvedValueOnce({ exists: true, vocabularyItemId: 'v1' });
     vocab.create.mockResolvedValue({});
-    await wrap();
-    await fireEvent.changeText(await screen.findByLabelText('Message'), 'Ein Wort bitte');
-    await fireEvent.press(screen.getByRole('button', { name: 'Send' }));
-    await fireEvent.press(
-      await screen.findByRole('button', { name: 'Save a word from this answer' }),
-    );
+    await askForAWord();
 
-    await fireEvent.changeText(await screen.findByLabelText('Word or phrase'), 'Fernweh');
-    await fireEvent.press(screen.getByRole('button', { name: 'Add to vocabulary' }));
+    expect(screen.queryByRole('button', { name: /^Save/ })).toBeNull();
+    await fireEvent.press(screen.getByText('Fernweh'));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Save “Fernweh”' }));
+
     expect(await screen.findByText(/Added to vocabulary: das Fernweh – wanderlust/)).toBeTruthy();
     expect(vocab.classify).toHaveBeenCalledWith('Fernweh', 'Das **Fernweh** ist ein schönes Wort.');
     expect(vocab.create).toHaveBeenCalledWith(
@@ -192,18 +217,34 @@ describe('TutorScreen', () => {
         meaning: 'wanderlust',
         example: 'Ich habe Fernweh.',
         sourceChatId: 's1',
+        wordType: 'NOUN',
+        synonyms: 'Reiselust, Wanderlust',
       }),
     );
+    expect(screen.getByText('Noun · Synonyms: Reiselust, Wanderlust')).toBeTruthy();
 
     // Saving it again reports the duplicate instead of creating another entry.
-    await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
-    await fireEvent.press(
-      await screen.findByRole('button', { name: 'Save a word from this answer' }),
-    );
-    await fireEvent.changeText(await screen.findByLabelText('Word or phrase'), 'Fernweh');
-    await fireEvent.press(screen.getByRole('button', { name: 'Add to vocabulary' }));
+    await fireEvent.press(screen.getByText('Fernweh'));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Save “Fernweh”' }));
     expect(await screen.findByText(/already in your vocabulary/)).toBeTruthy();
     expect(vocab.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('selects a phrase by tapping neighbouring words, and a second tap on a lone word clears it', async () => {
+    await askForAWord();
+
+    await fireEvent.press(screen.getByText('ein'));
+    await fireEvent.press(screen.getByText('schönes'));
+    expect(screen.getByRole('button', { name: 'Save expression “ein schönes”' })).toBeTruthy();
+
+    // A word further away widens the phrase, so words with others in between are one selection.
+    await fireEvent.press(screen.getByText('Das'));
+    expect(
+      screen.getByRole('button', { name: 'Save expression “Das Fernweh ist ein schönes”' }),
+    ).toBeTruthy();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Clear selection' }));
+    expect(screen.queryByRole('button', { name: /^Save/ })).toBeNull();
   });
 });
 

@@ -1,9 +1,10 @@
 import { Image } from 'expo-image';
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useId, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { detectDir, ltrText, rtlText } from '@/i18n/direction';
 import { HorizontalScroll } from '@/components/ui/HorizontalScroll';
 import { colors, radius, spacing } from '@/theme';
+import { WordTapContext, splitWords } from './WordTap';
 import { parseBlocks, parseInline, type BlockNode, type InlineNode } from './parse';
 
 type Direction = 'ltr' | 'rtl';
@@ -27,25 +28,54 @@ function useScaled(base: object | object[]) {
 
 function Inlines({ nodes, base }: { nodes: InlineNode[]; base: object }) {
   const scaled = useScaled(base);
+  const tap = useContext(WordTapContext);
+  const scope = useId();
+  // Every tappable word of this paragraph in order, so a tap knows its position and neighbours.
+  const words: string[] = [];
+  let position = 0;
   return (
     <Text style={scaled}>
       {nodes.map((n, i) => {
         if (n.t === 'br') return '\n';
+        const style = [
+          n.bold && styles.bold,
+          n.italic && styles.italic,
+          n.code && styles.code,
+          n.underline && styles.underline,
+          n.strike && styles.strike,
+          n.href ? styles.link : null,
+        ];
+        if (!tap || n.href || n.code) {
+          return (
+            <Text
+              key={i}
+              style={style}
+              onPress={n.href ? () => void Linking.openURL(n.href!) : undefined}
+              accessibilityRole={n.href ? 'link' : undefined}
+            >
+              {n.text}
+            </Text>
+          );
+        }
+        const sel = tap.selection?.scope === scope ? tap.selection : null;
         return (
-          <Text
-            key={i}
-            style={[
-              n.bold && styles.bold,
-              n.italic && styles.italic,
-              n.code && styles.code,
-              n.underline && styles.underline,
-              n.strike && styles.strike,
-              n.href ? styles.link : null,
-            ]}
-            onPress={n.href ? () => void Linking.openURL(n.href!) : undefined}
-            accessibilityRole={n.href ? 'link' : undefined}
-          >
-            {n.text}
+          <Text key={i} style={style}>
+            {splitWords(n.text).map((part, j) => {
+              if (!part.word) return part.text;
+              const index = position++;
+              words[index] = part.text;
+              const picked = !!sel && index >= sel.from && index <= sel.to;
+              return (
+                <Text
+                  key={j}
+                  suppressHighlighting
+                  style={picked ? styles.picked : undefined}
+                  onPress={() => tap.onTap(scope, index, words)}
+                >
+                  {part.text}
+                </Text>
+              );
+            })}
           </Text>
         );
       })}
@@ -165,6 +195,10 @@ function Blocks({ blocks, dir }: { blocks: BlockNode[]; dir: Direction }) {
                 horizontal
                 showsHorizontalScrollIndicator
                 accessibilityRole="none"
+                // A ScrollView grows to fill spare height by default; here that left a tall empty
+                // gap under the table and made the surrounding list under-measure its content.
+                style={styles.tableScroll}
+                testID="rich-table-scroll"
               >
                 <View style={styles.table}>
                   {b.rows.map((row, r) => (
@@ -275,6 +309,8 @@ export function InlineRich({
 }
 
 const styles = StyleSheet.create({
+  tableScroll: { flexGrow: 0 },
+  picked: { backgroundColor: '#CFE2FF', color: colors.primaryDark },
   stack: { gap: spacing.sm },
   para: {
     marginHorizontal: -spacing.sm,

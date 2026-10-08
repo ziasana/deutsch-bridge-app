@@ -11,5 +11,15 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql
 
+  # Local mail catcher for development: the backend's dev profile sends verification and
+  # password-reset emails to localhost:1025. Read them at http://localhost:8025.
+  # Without it, sign-up fails with "Mail service is currently unavailable".
+  mailhog:
+    image: mailhog/mailhog
+    container_name: my-mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
 volumes:
   pgdata:

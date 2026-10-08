@@ -16,6 +16,7 @@ import com.deutschbridge.backend.model.entity.VocabularyItem;
 import com.deutschbridge.backend.model.entity.VocabularyProgress;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.model.enums.VocabularySource;
+import com.deutschbridge.backend.model.enums.VocabularyWordType;
 import com.deutschbridge.backend.repository.DictionaryEntryRepository;
 import com.deutschbridge.backend.repository.VocabularyBookmarkRepository;
 import com.deutschbridge.backend.repository.VocabularyItemRepository;
@@ -113,10 +114,25 @@ public class VocabularyService {
         item.setLanguage(language);
         item.setExample(request.example());
         item.setSynonyms(synonyms);
+        item.setWordType(resolveWordType(word, request.article()));
         item.setLevel(request.level());
         item = vocabularyItemRepository.save(item);
 
         return VocabularyMapper.mapToResponse(item, null, false);
+    }
+
+    /**
+     * Part of speech / expression kind for a word the learner typed in or edited. A word with an
+     * article is a noun without asking the AI; otherwise the AI decides. Never blocks saving: if
+     * the AI is unavailable the type stays empty and is filled in the next time the word is edited.
+     */
+    private VocabularyWordType resolveWordType(String word, String article) {
+        if (article != null && !article.isBlank()) return VocabularyWordType.NOUN;
+        try {
+            return VocabularyWordType.fromAiAnswer(ollamaService.classifyWordType(word));
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 
     /** Same shape as createCustom, but source=AI_TUTOR and carries provenance back to the chat message
@@ -132,8 +148,6 @@ public class VocabularyService {
                     throw new IllegalArgumentException("Vocabulary already exists for this word/language.");
                 });
 
-        String synonyms = ollamaService.generateAiSynonyms(word);
-
         VocabularyItem item = new VocabularyItem();
         item.setUser(user);
         item.setSource(VocabularySource.AI_TUTOR);
@@ -141,13 +155,27 @@ public class VocabularyService {
         item.setMeaning(request.meaning());
         item.setLanguage(language);
         item.setExample(request.example());
-        item.setSynonyms(synonyms);
+        item.setSynonyms(synonymsFor(word, request.synonyms()));
+        item.setWordType(VocabularyWordType.parse(request.wordType()));
         item.setLevel(request.level());
         item.setSourceChatId(request.sourceChatId());
         item.setSourceMessageId(request.sourceMessageId());
         item = vocabularyItemRepository.save(item);
 
         return VocabularyMapper.mapToResponse(item, null, false);
+    }
+
+    /**
+     * Synonyms the classify step already produced are used as they are. Otherwise they are generated;
+     * running out of the daily synonym allowance must not stop the learner from saving the word.
+     */
+    private String synonymsFor(String word, String provided) {
+        if (provided != null && !provided.isBlank()) return provided.trim();
+        try {
+            return ollamaService.generateAiSynonyms(word);
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 
     /** Classifies+normalizes a chat text selection via AI, falling back to a simple heuristic if the
@@ -161,8 +189,12 @@ public class VocabularyService {
             String meaning = json.path("meaning").asText("");
             String example = json.path("example").asText("");
             if (normalizedText.isBlank()) normalizedText = selectedText.trim();
-            return new SelectionClassifyResponse("EXPRESSION".equalsIgnoreCase(type) ? "EXPRESSION" : "WORD",
-                    normalizedText, meaning, example);
+            boolean expression = "EXPRESSION".equalsIgnoreCase(type);
+            VocabularyWordType wordType = VocabularyWordType.parse(json.path("wordType").asText(""));
+            if (wordType == null && expression) wordType = VocabularyWordType.EXPRESSION;
+            return new SelectionClassifyResponse(expression ? "EXPRESSION" : "WORD",
+                    normalizedText, meaning, example,
+                    wordType != null ? wordType.name() : null, readSynonyms(json.path("synonyms")));
         } catch (RuntimeException | JsonProcessingException e) {
             return heuristicClassify(selectedText);
         }
@@ -181,7 +213,22 @@ public class VocabularyService {
     private SelectionClassifyResponse heuristicClassify(String selectedText) {
         String trimmed = selectedText.trim();
         boolean isWord = trimmed.split("\\s+").length <= 1;
-        return new SelectionClassifyResponse(isWord ? "WORD" : "EXPRESSION", trimmed, "", "");
+        return new SelectionClassifyResponse(isWord ? "WORD" : "EXPRESSION", trimmed, "", "",
+                isWord ? null : VocabularyWordType.EXPRESSION.name(), null);
+    }
+
+    /** The model may answer with a JSON array or a plain comma-separated string. */
+    private String readSynonyms(JsonNode node) {
+        if (node.isArray()) {
+            List<String> items = new java.util.ArrayList<>();
+            node.forEach(n -> {
+                String s = n.asText("").trim();
+                if (!s.isBlank()) items.add(s);
+            });
+            return items.isEmpty() ? null : String.join(", ", items);
+        }
+        String text = node.asText("").trim();
+        return text.isBlank() ? null : text;
     }
 
     public VocabularyExistsResponse checkExists(String word) {
@@ -209,6 +256,7 @@ public class VocabularyService {
                     created.setAudioUrl(entry.getAudioUrl());
                     created.setLanguage(requestContext.getLanguage());
                     created.setMeaning(firstMeaning(entry));
+                    created.setWordType(resolveWordType(entry.getLemma(), entry.getArticle()));
                     return created;
                 });
         item = vocabularyItemRepository.save(item);
@@ -220,12 +268,22 @@ public class VocabularyService {
         User user = userService.findByEmail(requestContext.getUserEmail());
         VocabularyItem item = ownedEntityById(user, id);
 
+        String previousWord = item.getWord();
         if (request.word() != null) item.setWord(normalize(request.word()));
         if (request.article() != null) item.setArticle(request.article());
         if (request.meaning() != null) item.setMeaning(request.meaning());
         if (request.language() != null) item.setLanguage(request.language());
         if (request.example() != null) item.setExample(request.example());
         if (request.level() != null) item.setLevel(request.level());
+
+        if (!java.util.Objects.equals(previousWord, item.getWord())) {
+            // A different word: the old type and synonyms no longer describe it.
+            item.setWordType(resolveWordType(item.getWord(), item.getArticle()));
+            item.setSynonyms(synonymsFor(item.getWord(), null));
+        } else if (item.getWordType() == null) {
+            // Older entries gain a type the first time they are edited.
+            item.setWordType(resolveWordType(item.getWord(), item.getArticle()));
+        }
         item = vocabularyItemRepository.save(item);
 
         return mapWithCurrentUserProgress(user, List.of(item), bookmarkedItemIds(user, List.of(item))).get(0);

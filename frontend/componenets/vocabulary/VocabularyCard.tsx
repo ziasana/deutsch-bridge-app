@@ -53,6 +53,7 @@ export default function VocabularyCard({
             <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                     {item.level && <Badge variant="secondary">{item.level}</Badge>}
+                    {item.wordType && <Badge variant="secondary">{t.vocabulary.wordTypes[item.wordType]}</Badge>}
                     <Badge variant="outline">
                         {item.source === "DICTIONARY"
                             ? t.vocabulary.sourceTabs.fromReading

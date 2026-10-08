@@ -566,7 +566,8 @@ export function ProgressScreen() {
       emoji: '🏆',
       title: t.progress.wordsMastered,
       color: SECTION_COLOR.vocabulary,
-      progress: { learned: o.totalLearned, total: o.totalAvailable },
+      // The learner's own vocabulary list, not the platform's content (that is what the hero counts).
+      progress: { learned: s.vocabulary.mastered, total: s.vocabulary.total },
       href: '/learn/vocabulary',
     },
     {

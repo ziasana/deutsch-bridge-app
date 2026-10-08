@@ -11,6 +11,8 @@ public record VocabularyItemResponse(
         String language,
         String example,
         String synonyms,
+        /** Part of speech or expression kind (VocabularyWordType name); null for older entries. */
+        String wordType,
         String level,
         String audioUrl,
         /** Only set for source=DICTIONARY. */

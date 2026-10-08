@@ -211,6 +211,7 @@ public class VocabularyPracticeService {
                 item.getMeaning(),
                 item.getExample(),
                 item.getSynonyms(),
+                item.getWordType() != null ? item.getWordType().name() : null,
                 item.getLevel() != null ? item.getLevel().getValue() : null,
                 item.getAudioUrl(),
                 progress != null && progress.getMasteryLevel() != null ? progress.getMasteryLevel().name() : VocabularyMasteryLevel.NEW.name(),

@@ -47,8 +47,18 @@ export default function TutorMessage({ message, sessionId }: Readonly<TutorMessa
                     sourceChatId: sessionId,
                     sourceMessageId: message.id,
                     level: null,
+                    wordType: classified.wordType ?? null,
+                    synonyms: classified.synonyms ?? null,
                 });
-                toast.success(t.chat.selection.savedToVocabulary);
+                const details = [
+                    classified.wordType ? t.vocabulary.wordTypes[classified.wordType] : null,
+                    classified.synonyms ? `${t.chat.selection.synonymsLabel}: ${classified.synonyms}` : null,
+                ].filter(Boolean);
+                toast.success(
+                    details.length > 0
+                        ? `${t.chat.selection.savedToVocabulary}: ${classified.normalizedText} (${details.join(" · ")})`
+                        : t.chat.selection.savedToVocabulary,
+                );
             })
             .catch((err) => {
                 console.error(err);

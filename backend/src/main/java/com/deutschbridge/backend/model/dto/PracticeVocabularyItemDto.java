@@ -8,6 +8,8 @@ public record PracticeVocabularyItemDto(
         String meaning,
         String example,
         String synonyms,
+        /** VocabularyWordType name; null for words saved before word types existed. */
+        String wordType,
         String level,
         String audioUrl,
         String masteryLevel,

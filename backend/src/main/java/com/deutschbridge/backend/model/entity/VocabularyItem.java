@@ -3,6 +3,7 @@ package com.deutschbridge.backend.model.entity;
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.model.enums.VocabularySource;
+import com.deutschbridge.backend.model.enums.VocabularyWordType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -48,6 +49,10 @@ public class VocabularyItem {
 
     @Column(columnDefinition = "TEXT")
     private String synonyms;
+
+    /** Part of speech or expression kind; null for older entries. */
+    @Enumerated(EnumType.STRING)
+    private VocabularyWordType wordType;
 
     @Enumerated(EnumType.STRING)
     private LearningLevel level;

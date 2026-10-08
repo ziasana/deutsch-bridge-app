@@ -373,11 +373,11 @@ describe('timing screens', () => {
       },
     ]);
     await wrap(<ZeitmanagementScreen />);
-    expect(await screen.findByText('Lesen · Teil 1')).toBeTruthy();
+    expect(await screen.findByText('Reading · Part 1')).toBeTruthy();
     expect(screen.getByText('13:00')).toBeTruthy();
     expect(screen.getByText('\u200E-02:00')).toBeTruthy();
     expect(screen.getByText('✓ Within the target')).toBeTruthy();
-    expect(screen.getByText('Sprachbausteine · Teil 2')).toBeTruthy();
+    expect(screen.getByText('Language elements · Part 2')).toBeTruthy();
   });
 
   it('explains an empty Zeitmanagement', async () => {

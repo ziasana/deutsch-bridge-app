@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText, Button, DirectionalIcon, TextField } from '@/components/ui';
 import { GoogleButton } from '@/features/auth/GoogleButton';
 import { useRegister } from '@/features/auth/hooks';
+import { authErrorMessage } from '@/features/auth/serverError';
 import { passwordStrength } from '@/features/auth/passwordStrength';
 import { createAuthSchemas } from '@/features/auth/schemas';
 import { useI18n } from '@/i18n';
@@ -182,7 +183,7 @@ export function RegisterWizard() {
   }[step];
 
   const isPassword = step === 'password';
-  const serverError = isPassword ? register.error?.message : undefined;
+  const serverError = isPassword ? authErrorMessage(register.error, a.serverErrors) : undefined;
 
   return (
     <SafeAreaView style={styles.flex}>
@@ -204,7 +205,6 @@ export function RegisterWizard() {
               <TextField
                 pill
                 hideLabel
-                centered={!isPassword}
                 label={config.label}
                 autoFocus
                 returnKeyType={isPassword ? 'go' : 'next'}

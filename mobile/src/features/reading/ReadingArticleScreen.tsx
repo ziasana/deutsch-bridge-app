@@ -23,6 +23,7 @@ import {
   Screen,
   Skeleton,
 } from '@/components/ui';
+import { DownloadButton } from '@/features/downloads/DownloadButton';
 import { useI18n } from '@/i18n';
 import { ltrText } from '@/i18n/direction';
 import { IconButton, StatTile, TextSizeControl, tint } from '@/features/exam/components/kit';
@@ -37,6 +38,7 @@ import { AnnotationSheet, DictionarySheet } from './components/WordSheets';
 import {
   useReadingArticle,
   useReadingNavigation,
+  usePrefetchNeighbourArticles,
   useRecordView,
   useSaveToLexicon,
   useSetArticleLearned,
@@ -214,6 +216,7 @@ export function ReadingArticleScreen() {
   const { articleId } = useLocalSearchParams<{ articleId: string }>();
   const query = useReadingArticle(articleId);
   const navigation = useReadingNavigation(articleId);
+  usePrefetchNeighbourArticles([navigation.data?.previous?.id, navigation.data?.next?.id]);
   const learnedMutation = useSetArticleLearned(articleId);
   const bookmarkMutation = useToggleArticleBookmark(articleId);
   const recordView = useRecordView();
@@ -341,13 +344,16 @@ export function ReadingArticleScreen() {
           chip={`📖 ${article.level}${article.categoryTitle ? ` · ${article.categoryTitle}`.toUpperCase() : ''}`}
           title={article.title}
           trailing={
-            <IconButton
-              name={article.bookmarked ? 'star' : 'star-outline'}
-              label={article.bookmarked ? r.saved : r.save}
-              color={article.bookmarked ? colors.warning : colors.ink}
-              busy={bookmarkMutation.isPending}
-              onPress={() => bookmarkMutation.mutate(article.bookmarked)}
-            />
+            <View style={{ flexDirection: 'row' }}>
+              <DownloadButton kind="reading" id={article.id} />
+              <IconButton
+                name={article.bookmarked ? 'star' : 'star-outline'}
+                label={article.bookmarked ? r.saved : r.save}
+                color={article.bookmarked ? colors.warning : colors.ink}
+                busy={bookmarkMutation.isPending}
+                onPress={() => bookmarkMutation.mutate(article.bookmarked)}
+              />
+            </View>
           }
           right={
             total > 0 ? (
