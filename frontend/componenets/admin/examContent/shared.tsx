@@ -133,9 +133,20 @@ export function ExerciseView({ preview, showAnswers = true }: Readonly<{ preview
 /** Lesen Teil 2: the reading text followed by its numbered multiple-choice questions (admin sees the key). */
 function ReadingExerciseView({ preview, showAnswers }: Readonly<{ preview: ExercisePreviewData; showAnswers: boolean }>) {
     const questions = preview.questions ?? [];
+    const wordBank = preview.headings ?? [];
+    const usedKeys = new Set(questions.map((q) => q.correctOptionId).filter(Boolean));
+    const wordFor = (key: string | null) => wordBank.find((w) => w.id === key)?.text;
     return (
         <div className="space-y-5">
             {preview.instructions && <p className="text-sm italic text-gray-600 dark:text-gray-300">{preview.instructions}</p>}
+
+            {preview.context && (
+                <div className="rounded-lg border-2 border-double border-gray-300 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-900/40">
+                    <p className="mb-1 text-xs uppercase tracking-wide text-gray-500">{preview.context.type.toLowerCase()}</p>
+                    {preview.context.title && <h4 className="text-base font-bold text-gray-900 dark:text-white">{preview.context.title}</h4>}
+                    <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-line">{preview.context.text}</p>
+                </div>
+            )}
 
             <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                 <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-line">
@@ -149,6 +160,31 @@ function ReadingExerciseView({ preview, showAnswers }: Readonly<{ preview: Exerc
                 </p>
             </div>
 
+            {wordBank.length > 0 && (
+                <div>
+                    <h4 className="mb-2 text-sm font-semibold text-gray-900 dark:text-white">Wörter</h4>
+                    <ul className="grid gap-1.5 sm:grid-cols-3">
+                        {wordBank.map((w) => {
+                            const unused = showAnswers && !usedKeys.has(w.id);
+                            return (
+                                <li
+                                    key={w.id}
+                                    className={`rounded-md border px-3 py-1.5 text-sm ${
+                                        unused
+                                            ? "border-dashed border-gray-300 text-gray-500 dark:border-gray-600 dark:text-gray-400"
+                                            : "border-gray-200 text-gray-900 dark:border-gray-700 dark:text-gray-100"
+                                    }`}
+                                >
+                                    <span className="mr-1.5 font-semibold">{w.id})</span>
+                                    {w.text}
+                                    {unused && <span className="ml-2 text-xs">(unused)</span>}
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </div>
+            )}
+
             <div className="space-y-3">
                 {questions.map((q, i) => (
                     <div key={q.id ?? i} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
@@ -160,6 +196,13 @@ function ReadingExerciseView({ preview, showAnswers }: Readonly<{ preview: Exerc
                                 </span>
                             )}
                         </div>
+                        {wordBank.length > 0 && q.options.length === 0 ? (
+                            showAnswers && (
+                                <p className="rounded-md border border-green-400 bg-green-50 px-3 py-1.5 text-sm text-green-900 dark:border-green-700 dark:bg-green-900/30 dark:text-green-100">
+                                    {q.correctOptionId ? `${q.correctOptionId}) ${wordFor(q.correctOptionId) ?? "?"}` : "?"}
+                                </p>
+                            )
+                        ) : (
                         <ul className="space-y-1">
                             {q.options.map((o) => {
                                 const correct = showAnswers && o.id === q.correctOptionId;
@@ -178,6 +221,7 @@ function ReadingExerciseView({ preview, showAnswers }: Readonly<{ preview: Exerc
                                 );
                             })}
                         </ul>
+                        )}
                     </div>
                 ))}
             </div>

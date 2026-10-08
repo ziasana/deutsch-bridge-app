@@ -46,7 +46,15 @@ public final class ExamContentSpecs {
                             + "Markieren Sie Ihre Lösungen für die Aufgaben 21–30 auf dem Antwortbogen.",
                     "exam-content/prompts/sprachbausteine-gaps.v1.0.txt",
                     "1.0",
-                    10, 3, 21)
+                    10, 3, 21),
+            new ExamContentSpec(
+                    ExamType.TELC, LearningLevel.B1, ExamSection.SPRACHBAUSTEINE, 2, ExamTaskType.WORD_BANK_CLOZE,
+                    0, 0, 120, 220,
+                    "Jedes Wort passt nur einmal. Markieren Sie Ihre Lösungen für die Aufgaben 31–40 auf dem Antwortbogen. "
+                            + "Lesen Sie den Text und schließen Sie die Lücken 31–40. Benutzen Sie die Wörter a–o.",
+                    "exam-content/prompts/sprachbausteine-wordbank.v1.0.txt",
+                    "1.0",
+                    10, 15, 31)
     );
 
     private ExamContentSpecs() {

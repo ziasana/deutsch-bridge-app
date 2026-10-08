@@ -37,6 +37,12 @@ public class ExamContentValidator {
     static final Set<String> GAP_CATEGORIES = Set.of(
             "KONJUNKTION", "ADVERBIEN_KONNEKTOREN", "ARTIKEL", "KASUS", "PRAEPOSITION", "VERBFORM", "ADJEKTIVENDUNG",
             "PERSONALPRONOMEN", "RELATIVPRONOMEN", "POSSESSIVARTIKEL", "VERB_PRAEPOSITION", "SATZSTRUKTUR");
+    /** Function words that mean (almost) the same - two of them in one word bank invite a second valid answer. */
+    private static final List<Set<String>> SYNONYM_GROUPS = List.of(
+            Set.of("DESHALB", "DARUM", "DAHER", "DESWEGEN"),
+            Set.of("TROTZDEM", "DENNOCH", "TROTZ"),
+            Set.of("WEIL", "DA"),
+            Set.of("AUSSERDEM", "ZUDEM"));
     static final Set<String> TEXT_TYPES = Set.of("EMAIL", "NACHRICHT", "BRIEF", "PERSOENLICHER_BERICHT", "INFORMATIONSTEXT");
     private static final Pattern GAP_MARKER = Pattern.compile("\\[(\\d{1,3})]");
     static final Set<String> QUESTION_TYPES = Set.of(
@@ -146,6 +152,9 @@ public class ExamContentValidator {
 
         if (spec != null && spec.isSituationMatching()) {
             return readSituationExercise(index, spec, node, p, externalId, title, instructions, issues);
+        }
+        if (spec != null && spec.isWordBank()) {
+            return readWordBankExercise(index, spec, node, p, externalId, title, instructions, issues);
         }
         if (spec != null && spec.isGapText()) {
             return readGapExercise(index, spec, node, p, externalId, title, instructions, issues);
@@ -346,6 +355,189 @@ public class ExamContentValidator {
     }
 
     // ------------------------------------------------------------------ reading text + multiple choice
+
+    // ------------------------------------------------------------------ Sprachbausteine Teil 2 (word bank)
+
+    private ParsedExercise readWordBankExercise(int index, ExamContentSpec spec, JsonNode node, String p, String externalId,
+                                                String title, String instructions, List<Issue> issues) {
+        ParsedExercise.Context context = readContext(node, p, issues);
+        String text = readReadingText(node, p, spec, issues);
+        if (text != null) checkGapMarkers(text, p, spec, issues);
+        List<ParsedExercise.Option> wordBank = readWordBank(node, p, spec, issues);
+        List<ParsedExercise.Question> questions = readWordQuestions(node, p, spec, wordBank, issues);
+        warnWordBank(wordBank, questions, p, issues);
+        Map<String, Object> metadata = readMetadata(node.get("metadata"), p, issues);
+        String contextType = text(node, "contextType");
+        if (contextType != null) metadata.put("contextType", contextType);
+        String topic = text(node, "topic");
+        if (topic != null) metadata.put("topic", topic);
+        return new ParsedExercise(index, spec, externalId, title, instructions, List.of(), List.of(), metadata, text, questions,
+                List.of(), List.of(), wordBank, context);
+    }
+
+    /** Optional advertisement / information shown before the text; absent or null means "no context". */
+    private ParsedExercise.Context readContext(JsonNode node, String p, List<Issue> issues) {
+        JsonNode context = node.get("context");
+        if (context == null || context.isNull()) return null;
+        if (!context.isObject()) {
+            issues.add(error("CONTEXT_INVALID", p + "context", "context must be an object with type, title and text."));
+            return null;
+        }
+        String contextText = text(context, "text");
+        if (contextText == null) {
+            issues.add(error("CONTEXT_TEXT_EMPTY", p + "context.text", "The context material needs a text (or remove the context object)."));
+            return null;
+        }
+        if (contextText.length() > MAX_FIELD_LENGTH) {
+            issues.add(error("CONTEXT_TEXT_TOO_LONG", p + "context.text", "The context text is too long."));
+        }
+        String type = text(context, "type");
+        String contextTitle = text(context, "title");
+        return new ParsedExercise.Context(type == null ? "ADVERTISEMENT" : type.toUpperCase(java.util.Locale.ROOT), contextTitle == null ? "" : contextTitle, contextText);
+    }
+
+    private List<ParsedExercise.Option> readWordBank(JsonNode node, String p, ExamContentSpec spec, List<Issue> issues) {
+        List<ParsedExercise.Option> words = new ArrayList<>();
+        JsonNode array = node.get("wordBank");
+        if (array == null || !array.isArray()) {
+            issues.add(error("WORD_BANK_MISSING", p + "wordBank", "wordBank must be an array of {key, word}."));
+            return words;
+        }
+        Set<String> keys = new LinkedHashSet<>();
+        Set<String> normalized = new LinkedHashSet<>();
+        for (int i = 0; i < array.size(); i++) {
+            JsonNode w = array.get(i);
+            String path = p + "wordBank[" + i + "]";
+            String key = firstNonNull(text(w, "key"), text(w, "id"));
+            if (key != null) key = key.toLowerCase(java.util.Locale.ROOT);
+            String word = firstNonNull(text(w, "word"), text(w, "text"));
+            if (key == null) {
+                issues.add(error("WORD_KEY_MISSING", path + ".key", "Word " + (i + 1) + " has no key."));
+            } else if (!keys.add(key)) {
+                issues.add(error("WORD_KEY_DUPLICATE", path + ".key", "Word key '" + key + "' is used more than once."));
+            }
+            if (word == null) {
+                issues.add(error("WORD_EMPTY", path + ".word", "Word '" + key + "' is empty."));
+            } else {
+                if (word.length() > 40) {
+                    issues.add(error("WORD_TOO_LONG", path + ".word", "Word '" + key + "' is too long (max 40 characters)."));
+                }
+                if (!word.equals(word.toUpperCase(java.util.Locale.ROOT))) {
+                    issues.add(warning("WORD_NOT_UPPERCASE", path + ".word", "Word '" + word + "' is not written in capital letters; it is stored as " + word.toUpperCase(java.util.Locale.ROOT) + "."));
+                }
+                word = word.toUpperCase(java.util.Locale.ROOT);
+                if (!normalized.add(word)) {
+                    issues.add(error("WORD_DUPLICATE", path + ".word", "The word " + word + " appears more than once in the word bank."));
+                }
+            }
+            words.add(new ParsedExercise.Option(key, word));
+        }
+        if (words.size() != spec.optionCount()) {
+            issues.add(error("WORD_BANK_COUNT", p + "wordBank", "Exactly " + spec.optionCount() + " words are required (found " + words.size() + ")."));
+        } else if (!keys.equals(new LinkedHashSet<>(spec.optionIds()))) {
+            issues.add(error("WORD_BANK_KEYS", p + "wordBank", "Word keys must be exactly " + String.join(", ", spec.optionIds()) + "."));
+        }
+        return words;
+    }
+
+    private List<ParsedExercise.Question> readWordQuestions(JsonNode node, String p, ExamContentSpec spec,
+                                                            List<ParsedExercise.Option> wordBank, List<Issue> issues) {
+        List<ParsedExercise.Question> questions = new ArrayList<>();
+        JsonNode array = node.get("questions");
+        if (array == null || !array.isArray()) {
+            issues.add(error("QUESTIONS_MISSING", p + "questions", "questions must be an array."));
+            return questions;
+        }
+        Map<String, String> wordByKey = new LinkedHashMap<>();
+        wordBank.forEach(w -> {
+            if (w.id() != null) wordByKey.put(w.id(), w.text());
+        });
+        Set<Integer> numbers = new LinkedHashSet<>();
+        Map<String, List<Integer>> usedBy = new LinkedHashMap<>();
+        for (int i = 0; i < array.size(); i++) {
+            JsonNode q = array.get(i);
+            String path = p + "questions[" + i + "]";
+            Integer number = null;
+            JsonNode numberNode = q == null ? null : q.get("number");
+            if (numberNode != null && numberNode.isIntegralNumber()) {
+                number = numberNode.asInt();
+                if (number < spec.firstQuestionNumber() || number > spec.lastQuestionNumber()) {
+                    issues.add(error("GAP_NUMBER_OUT_OF_RANGE", path + ".number", "Gap number " + number + " is outside "
+                            + spec.firstQuestionNumber() + "–" + spec.lastQuestionNumber() + "."));
+                } else if (!numbers.add(number)) {
+                    issues.add(error("QUESTION_NUMBER_DUPLICATE", path + ".number", "Gap number " + number + " is used more than once."));
+                }
+            } else {
+                issues.add(error("QUESTION_NUMBER_INVALID", path + ".number", "Question " + (i + 1) + " needs a whole-number 'number' ("
+                        + spec.firstQuestionNumber() + "–" + spec.lastQuestionNumber() + ")."));
+            }
+            String label = number != null ? "Gap " + number : "Question " + (i + 1);
+
+            String key = firstNonNull(text(q, "correctAnswer"), text(q, "correctOptionId"));
+            if (key != null) key = key.toLowerCase(java.util.Locale.ROOT);
+            if (key == null) {
+                issues.add(error("CORRECT_WORD_MISSING", path + ".correctAnswer", label + " has no correctAnswer (a word-bank key a–o)."));
+            } else if (!spec.optionIds().contains(key)) {
+                issues.add(error("CORRECT_OPTION_UNKNOWN", path + ".correctAnswer", label + " refers to '" + key + "', which is not a word-bank key (a–o)."));
+            } else {
+                usedBy.computeIfAbsent(key, k -> new ArrayList<>()).add(number != null ? number : i + 1);
+                String declared = text(q, "correctWord");
+                String actual = wordByKey.get(key);
+                if (declared != null && actual != null && !declared.equalsIgnoreCase(actual)) {
+                    issues.add(error("CORRECT_WORD_MISMATCH", path + ".correctWord", label + ": correctWord '" + declared + "' does not match word "
+                            + key + " in the word bank ('" + actual + "')."));
+                }
+            }
+            String category = firstNonNull(text(q, "grammarCategory"), text(q, "category"));
+            if (category != null && category.length() > 60) category = category.substring(0, 60);
+            questions.add(new ParsedExercise.Question("question_" + (number != null ? number : i + 1), number, null, List.of(), key,
+                    category == null ? null : category.toUpperCase(java.util.Locale.ROOT), text(q, "grammarFocus"), readExplanations(q)));
+        }
+        if (questions.size() != spec.questionCount()) {
+            issues.add(error("QUESTION_COUNT", p + "questions", "Exactly " + spec.questionCount() + " questions (gaps) are required (found " + questions.size() + ")."));
+        }
+        usedBy.forEach((key, gaps) -> {
+            if (gaps.size() > 1) {
+                issues.add(error("WORD_REUSED", p + "questions", "Word " + key + " (" + wordByKey.getOrDefault(key, "?") + ") is the answer for gaps "
+                        + gaps.stream().map(String::valueOf).reduce((a, b) -> a + " and " + b).orElse("") + ". Every word may be used once."));
+            }
+        });
+        return questions;
+    }
+
+    /** Non-blocking quality hints for a word bank. */
+    private void warnWordBank(List<ParsedExercise.Option> wordBank, List<ParsedExercise.Question> questions, String p, List<Issue> issues) {
+        Set<String> words = new LinkedHashSet<>();
+        wordBank.forEach(w -> {
+            if (w.text() != null) words.add(w.text());
+        });
+        for (Set<String> group : SYNONYM_GROUPS) {
+            List<String> present = group.stream().filter(words::contains).toList();
+            if (present.size() > 1) {
+                issues.add(warning("WORD_BANK_SYNONYMS", p + "wordBank", "The word bank contains near-synonyms (" + String.join(", ", present)
+                        + "); check that only one of them fits its gap."));
+            }
+        }
+        List<String> sortedWords = wordBank.stream().map(ParsedExercise.Option::text).filter(java.util.Objects::nonNull).toList();
+        if (sortedWords.size() == wordBank.size() && sortedWords.size() > 1
+                && !sortedWords.equals(sortedWords.stream().sorted(java.text.Collator.getInstance(java.util.Locale.GERMAN)).toList())) {
+            issues.add(warning("WORD_BANK_ORDER", p + "wordBank", "The word bank is not in alphabetical order, as in the real exam."));
+        }
+        List<String> keys = questions.stream().sorted(java.util.Comparator.comparing(q -> q.number() == null ? 0 : q.number()))
+                .map(ParsedExercise.Question::correctOptionId).toList();
+        if (keys.size() >= 4 && keys.stream().noneMatch(java.util.Objects::isNull)) {
+            boolean ascending = true;
+            for (int i = 1; i < keys.size(); i++) {
+                if (keys.get(i).compareTo(keys.get(i - 1)) <= 0) {
+                    ascending = false;
+                    break;
+                }
+            }
+            if (ascending) {
+                issues.add(warning("ANSWER_SEQUENCE_PREDICTABLE", p + "questions", "The correct words run in word-bank order; answers should look random."));
+            }
+        }
+    }
 
     /** Sprachbausteine Teil 1: text with [21]..[30] markers + one question (a/b/c) per gap. */
     private ParsedExercise readGapExercise(int index, ExamContentSpec spec, JsonNode node, String p, String externalId,

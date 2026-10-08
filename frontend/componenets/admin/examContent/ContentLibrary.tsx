@@ -55,6 +55,35 @@ const emptyFilters: Filters = { examType: "", level: "", section: "", partNumber
 
 /** Matching exercises as the import format sees them (lettered headings, correct heading per text). */
 function toPreview(exercise: ExamExerciseResponse): ExercisePreviewData | null {
+    if (exercise.taskType === "WORD_BANK_CLOZE" && exercise.answerOptions?.length && exercise.passages?.length && exercise.questions?.length) {
+        const labels = exercise.answerOptions.map((_, i) => exercise.answerOptionLabels?.[i]?.trim().toLowerCase() || String.fromCharCode(97 + i));
+        const categories = new Map(
+            ((exercise.metadata?.gapQuestions ?? []) as { number: number; category?: string }[]).map((g) => [g.number, g.category ?? null]),
+        );
+        const stored = exercise.metadata?.context as { type?: string; title?: string; text?: string } | undefined;
+        const first = exercise.passages[0];
+        const context =
+            exercise.passages.length > 1
+                ? { type: stored?.type ?? "ADVERTISEMENT", title: stored?.title ?? "", text: stored?.text ?? htmlToText(first.content) }
+                : null;
+        const questions = [...exercise.questions].sort((a, b) => (a.gapNumber ?? 0) - (b.gapNumber ?? 0));
+        return {
+            title: exercise.title,
+            instructions: exercise.teilDescription,
+            headings: exercise.answerOptions.map((text, i) => ({ id: labels[i], text })),
+            texts: [],
+            context,
+            readingText: htmlToText(exercise.passages[exercise.passages.length - 1].content),
+            questions: questions.map((q, i) => ({
+                id: q.id,
+                number: q.gapNumber ?? i + 1,
+                question: `Lücke ${q.gapNumber ?? i + 1}`,
+                options: [],
+                correctOptionId: labels[exercise.answerOptions!.indexOf(q.correctAnswer)] ?? null,
+                questionType: categories.get(q.gapNumber ?? i + 1) ?? null,
+            })),
+        };
+    }
     if (exercise.taskType === "SITUATION_MATCHING" && exercise.passages?.length && exercise.questions?.length) {
         const teil3 = (exercise.metadata?.teil3 ?? {}) as {
             advertisements?: PreviewAdvertisement[];

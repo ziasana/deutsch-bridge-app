@@ -12,7 +12,7 @@ export interface ExamContentSpecInfo {
     headingCount: number;
     textCount: number;
     label: string;
-    taskType: "MATCHING" | "MULTIPLE_CHOICE" | "SITUATION_MATCHING";
+    taskType: "MATCHING" | "MULTIPLE_CHOICE" | "SITUATION_MATCHING" | "WORD_BANK_CLOZE";
     questionCount: number;
     optionCount: number;
 }
@@ -27,6 +27,7 @@ export interface ExamContentOptions {
     /** Sprachbausteine generator choices. */
     textTypes?: string[];
     grammarCategories?: string[];
+    wordCategories?: string[];
 }
 
 export interface PromptRequest {
@@ -44,6 +45,10 @@ export interface PromptRequest {
     textType?: string;
     /** Sprachbausteine: grammar categories to test; omitted = all. */
     grammarCategories?: string[];
+    /** Sprachbausteine Teil 2: RANDOM | WITH_ADVERTISEMENT | WITHOUT_ADVERTISEMENT. */
+    contextMode?: string;
+    /** Sprachbausteine Teil 2: kinds of function words in the word bank; omitted = all. */
+    wordCategories?: string[];
 }
 
 export interface PromptResponse {
@@ -134,6 +139,8 @@ export interface ExercisePreviewData {
     /** Situation-matching exercises (Lesen Teil 3). */
     situations?: PreviewSituation[];
     advertisements?: PreviewAdvertisement[];
+    /** Word-bank exercises (Sprachbausteine Teil 2): the advertisement / information before the text; the words are in `headings`. */
+    context?: { type: string; title: string; text: string } | null;
 }
 
 export interface DuplicateMatch {

@@ -21,13 +21,25 @@ public record ParsedExercise(
         /** Situation-matching exercises (Lesen Teil 3): the situations to solve. */
         List<Situation> situations,
         /** Situation-matching exercises: the advertisements to choose from. */
-        List<Advertisement> advertisements
+        List<Advertisement> advertisements,
+        /** Word-bank exercises (Sprachbausteine Teil 2): the shared words a..o (id = key, text = the word in capitals). */
+        List<Option> wordBank,
+        /** Word-bank exercises: optional advertisement / information shown before the text. */
+        Context context
 ) {
+    /** Situation matching (12 components, no word bank). */
+    public ParsedExercise(int index, ExamContentSpec spec, String externalId, String title, String instructions,
+                          List<Heading> headings, List<Text> texts, Map<String, Object> metadata,
+                          String readingText, List<Question> questions, List<Situation> situations, List<Advertisement> advertisements) {
+        this(index, spec, externalId, title, instructions, headings, texts, metadata, readingText, questions, situations,
+                advertisements, List.of(), null);
+    }
+
     /** Reading text + multiple choice. */
     public ParsedExercise(int index, ExamContentSpec spec, String externalId, String title, String instructions,
                           List<Heading> headings, List<Text> texts, Map<String, Object> metadata,
                           String readingText, List<Question> questions) {
-        this(index, spec, externalId, title, instructions, headings, texts, metadata, readingText, questions, List.of(), List.of());
+        this(index, spec, externalId, title, instructions, headings, texts, metadata, readingText, questions, List.of(), List.of(), List.of(), null);
     }
 
     /** Headings-matching exercise (no reading text / questions). */
@@ -38,6 +50,9 @@ public record ParsedExercise(
 
     /** Every text that identifies this exercise's content: the matching texts, or the single reading text. */
     public List<String> textContents() {
+        if (!wordBank.isEmpty() && readingText != null) {
+            return context == null ? List.of(readingText) : List.of(context.title() + "\n" + context.text(), readingText);
+        }
         if (readingText != null) return List.of(readingText);
         if (!advertisements.isEmpty()) return advertisements.stream().map(a -> AdvertisementRenderer.toPlainText(a.content())).toList();
         return texts.stream().map(Text::content).toList();
@@ -50,6 +65,10 @@ public record ParsedExercise(
     /** Structured advertisement; content / visual / matchingProfile keep the import JSON shape. */
     public record Advertisement(String id, String type, String layout, Map<String, Object> content,
                                 Map<String, Object> visual, Map<String, Object> matchingProfile) {
+    }
+
+    /** Optional context material (type e.g. ADVERTISEMENT) that the main text refers to. */
+    public record Context(String type, String title, String text) {
     }
 
     public record Option(String id, String text) {

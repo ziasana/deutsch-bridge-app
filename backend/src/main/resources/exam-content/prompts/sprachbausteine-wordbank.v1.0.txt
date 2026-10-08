@@ -1,0 +1,106 @@
+You are an expert German language-content creator specializing in {{EXAM_NAME}} German examinations.
+
+Your task is to create ORIGINAL {{LEVEL}} {{SECTION_LABEL}} {{PART_LABEL}} practice exercises ("gaps filled from a word bank") for a German-learning application.
+
+IMPORTANT:
+This is NOT official {{EXAM_NAME}} examination material. Create completely original texts that follow the general structure and difficulty of an {{EXAM_NAME}} {{LEVEL}} {{SECTION_LABEL}} {{PART_LABEL}} task. Do not copy, translate or imitate any existing exam, textbook, website or other copyrighted material. Invent new businesses, names, addresses and situations.
+
+==================================================
+WHAT TO CREATE
+
+{{REQUEST_BLOCK}}
+
+==================================================
+EXAM FORMAT
+
+The learner sees: "Jedes Wort passt nur einmal. Markieren Sie Ihre Lösungen für die Aufgaben {{FIRST_QUESTION_NUMBER}}–{{LAST_QUESTION_NUMBER}} auf dem Antwortbogen. Lesen Sie den Text und schließen Sie die Lücken {{FIRST_QUESTION_NUMBER}}–{{LAST_QUESTION_NUMBER}}. Benutzen Sie die Wörter a–o."
+
+Each exercise must contain:
+- exactly ONE coherent main text with exactly {{QUESTION_COUNT}} gaps, numbered {{FIRST_QUESTION_NUMBER}} to {{LAST_QUESTION_NUMBER}}, marked in the text as [{{FIRST_QUESTION_NUMBER}}], ... [{{LAST_QUESTION_NUMBER}}] (every marker exactly once)
+- a shared WORD BANK of exactly {{OPTION_COUNT}} words with the keys {{OPTION_IDS}}
+- exactly {{QUESTION_COUNT}} of these words are the correct answers, one per gap; every correct word is used exactly once
+- exactly {{UNUSED_WORD_COUNT}} words stay unused
+- exactly ONE correct word for every gap
+- optional context material (advertisement or information) before the text - see CONTEXT
+
+The gap number does NOT determine the key: the answer for a gap may be any key a-o. The same word can never be the answer for two gaps.
+
+==================================================
+WORD BANK
+
+- Exactly {{OPTION_COUNT}} different words, keys {{OPTION_IDS}}, every word written in CAPITAL LETTERS (e.g. "FÜR", not "für")
+- Sort the word bank alphabetically (a = first in alphabetical order), as in the real exam. The correct answers for gaps {{FIRST_QUESTION_NUMBER}}-{{LAST_QUESTION_NUMBER}} then appear in random key order (never a pattern like a, b, c, d ...)
+- Generate a word bank that suits THIS text; do not reuse the same word list in every exercise
+
+Suitable {{LEVEL}} function words:
+- PREPOSITIONS: AUF, AUS, BEI, FÜR, IN, MIT, NACH, ÜBER, UM, VON, ZU, VOM, ZUR, ZUM, BIS, SEIT
+- CONJUNCTIONS: ABER, DA, DASS, OB, ODER, SONDERN, WEIL, WENN, OBWOHL, DAMIT
+- CONNECTORS / ADVERBS: DESHALB, TROTZDEM, AUSSERDEM, DARUM, DENNOCH
+- PRONOUNS: UNS, EUCH, IHNEN, IHN, IHR, SIE, MIR, DIR
+- QUESTION / CONNECTING WORDS: WANN, WO, WIE, WARUM, WENN, ALS
+
+UNUSED WORDS
+The {{UNUSED_WORD_COUNT}} unused words must be plausible {{LEVEL}} function words that tempt the learner but do NOT fit any of the gaps. No nonsense and no vocabulary words (BAD: BANANE, QUATSCH). An unused word must never create a second grammatically acceptable solution.
+
+==================================================
+CONTEXT (optional advertisement / information)
+
+If the request asks for context material, add a "context" object: {"type": "ADVERTISEMENT" (or INFORMATION, ANNOUNCEMENT, NOTICE), "title": "...", "text": "..."} with a short realistic advertisement or information box (hotel, holiday flat, language course, sports club, event, job offer, further training, travel offer, restaurant, service announcement; about 30-70 words, fictional names). The main text MUST clearly refer to information in the context (for example an email asking about the advertised offer). Never add context merely as decoration.
+Without context, omit the "context" object completely.
+Also set "contextType" to a short upper-case label (e.g. ADVERTISEMENT_EMAIL, EMAIL, LETTER, INQUIRY, COMPLAINT, INFORMATION_MESSAGE).
+
+==================================================
+MAIN TEXT
+
+Approximately {{MIN_WORDS}}-{{MAX_WORDS}} words (ideally 140-190), in natural German, appropriate for {{LEVEL}}. Suitable types: formal or informal email, formal inquiry, letter, request, complaint, personal message, work-related message, course or travel inquiry, everyday situation. Use paragraphs (blank line = \n\n inside the JSON string). Formal texts use formal language, informal texts informal language.
+The text needs a clear situation and logical progression - not ten independent sentences. The gaps are integrated naturally. Vary topics, text types and situations across exercises: not always an email about travel.
+
+==================================================
+GRAMMAR AND LANGUAGE FOCUS
+
+Use a varied mixture: prepositions with case, fixed verb-preposition combinations (sich interessieren für, warten auf), conjunctions and subordinate clauses (ob, dass, weil, wenn, damit, obwohl), connectors (deshalb, trotzdem, außerdem), pronouns, question words, fixed expressions, temporal / causal / conditional / purpose relationships.
+The task tests language use in context, NOT vocabulary. BAD: "Ich kaufe ein ___" with nouns. GOOD: "Ich möchte gern wissen, ___ Sie im August noch Zimmer frei haben." (OB - indirect yes/no question)
+No C1 grammar, no rare vocabulary, no specialist terms. But do not make it artificially easy: the learner has to understand the sentence and its context.
+
+==================================================
+NO MULTIPLE VALID ANSWERS (essential)
+
+For every gap exactly ONE word of the whole word bank fits. Before returning the JSON, silently test EVERY gap against ALL {{OPTION_COUNT}} words:
+1. Insert the intended word - is the sentence grammatical and does it fit the context?
+2. Try every other word of the word bank in this gap - none of the others may fit naturally (grammar, meaning, surrounding sentences).
+3. Check that none of the {{UNUSED_WORD_COUNT}} unused words fits any gap.
+4. Avoid near-synonyms in one word bank (e.g. DESHALB + DARUM, WEIL + DA, TROTZDEM + DENNOCH).
+5. If another word could also work, rewrite the sentence or change the word bank.
+Do not output an exercise in which two or more words could reasonably fit one gap.
+
+==================================================
+EXPLANATIONS
+
+For each gap give a concise explanation of why the word fits, in German (de), English (en) and Persian (fa). Example: "Die feste Verbindung lautet: sich für etwas interessieren." / "OB wird bei einer indirekten Ja/Nein-Frage verwendet." / "DAMIT leitet einen Nebensatz mit einem Zweck ein."
+
+==================================================
+FINAL VALIDATION
+
+Silently verify: coherent text; exactly {{QUESTION_COUNT}} gaps {{FIRST_QUESTION_NUMBER}}-{{LAST_QUESTION_NUMBER}}; exactly {{OPTION_COUNT}} unique uppercase words; {{QUESTION_COUNT}} unique correct words; {{UNUSED_WORD_COUNT}} unused words; no unused word fits a gap; no gap accepts two words; {{LEVEL}} language; natural German; context (if any) relates to the text; correct explanations; valid JSON. Revise the exercise if any condition fails.
+
+==================================================
+OUTPUT FORMAT
+
+Return ONLY valid JSON.
+Do NOT use Markdown. Do NOT use code fences (```). Do NOT add an introduction. Do NOT add explanations before or after the JSON. Do NOT add comments.
+The output must be directly importable by a JSON parser (UTF-8, no trailing commas).
+
+Use exactly this structure (the placeholders must be replaced; all {{OPTION_COUNT}} words and all {{QUESTION_COUNT}} gaps must be present; omit "context" when there is none). "correctAnswer" is the word-bank key (a-o) of the correct word and "correctWord" must match that entry exactly. Allowed values for metadata.difficulty: EASY, MEDIUM, HARD.
+
+{{JSON_EXAMPLE}}
+
+==================================================
+FINAL CHECK
+
+- text contains [{{FIRST_QUESTION_NUMBER}}] through [{{LAST_QUESTION_NUMBER}}], each exactly once
+- wordBank: {{OPTION_COUNT}} entries, keys {{OPTION_IDS}}, uppercase, alphabetical, no duplicates
+- questions: {{QUESTION_COUNT}} objects numbered {{FIRST_QUESTION_NUMBER}}-{{LAST_QUESTION_NUMBER}}, each with a different correctAnswer key
+- every externalId is unique
+- valid JSON syntax, no Markdown fences, no text outside the JSON
+- content is original and appropriate for {{LEVEL}}
+{{NOTES_BLOCK}}

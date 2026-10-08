@@ -30,6 +30,9 @@ public class ExamContentPromptBuilder {
     public static final List<String> GRAMMAR_CATEGORIES = List.of(
             "KONJUNKTION", "ADVERBIEN_KONNEKTOREN", "ARTIKEL", "KASUS", "PRAEPOSITION", "VERBFORM", "ADJEKTIVENDUNG",
             "PERSONALPRONOMEN", "RELATIVPRONOMEN", "POSSESSIVARTIKEL", "VERB_PRAEPOSITION", "SATZSTRUKTUR");
+    public static final List<String> WORD_CATEGORIES = List.of(
+            "PRAEPOSITIONEN", "KONJUNKTIONEN", "KONNEKTOREN", "PRONOMEN", "FRAGEWOERTER", "FUNKTIONSWOERTER");
+    public static final List<String> CONTEXT_MODES = List.of("RANDOM", "WITH_ADVERTISEMENT", "WITHOUT_ADVERTISEMENT");
     public static final List<String> DIFFICULTIES = List.of("MIXED", "EASY", "MEDIUM", "HARD");
     public static final int MAX_COUNT = 50;
 
@@ -67,6 +70,7 @@ public class ExamContentPromptBuilder {
         values.put("MIN_WORDS", String.valueOf(spec.minWords()));
         values.put("MAX_WORDS", String.valueOf(spec.maxWords()));
         values.put("QUESTION_COUNT", String.valueOf(spec.questionCount()));
+        values.put("UNUSED_WORD_COUNT", String.valueOf(spec.unusedWordCount()));
         values.put("OPTION_COUNT", String.valueOf(spec.optionCount()));
         values.put("OPTION_IDS", String.join(", ", spec.optionIds()));
         values.put("FIRST_QUESTION_NUMBER", String.valueOf(spec.firstQuestionNumber()));
@@ -81,8 +85,18 @@ public class ExamContentPromptBuilder {
         if (!grammar.isEmpty() && grammar.size() < 5 && spec.isGapText()) {
             throw new IllegalArgumentException("Select at least 5 grammar categories (or none for all) so the ten gaps can be varied.");
         }
+        String contextMode = request.contextMode() == null || request.contextMode().isBlank() ? "RANDOM" : request.contextMode().trim().toUpperCase(Locale.ROOT);
+        if (!CONTEXT_MODES.contains(contextMode)) throw new IllegalArgumentException("Unknown context mode: " + request.contextMode());
+        List<String> wordCategories = request.wordCategories() == null ? List.of() : request.wordCategories().stream()
+                .map(c -> c.trim().toUpperCase(Locale.ROOT)).distinct().toList();
+        for (String category : wordCategories) {
+            if (!WORD_CATEGORIES.contains(category)) throw new IllegalArgumentException("Unknown word category: " + category);
+        }
+        if (!wordCategories.isEmpty() && wordCategories.size() < 3 && spec.isWordBank()) {
+            throw new IllegalArgumentException("Select at least 3 word categories (or none for all) so the word bank can be varied.");
+        }
         boolean includeVisuals = request.includeVisuals() == null || request.includeVisuals();
-        values.put("REQUEST_BLOCK", requestBlock(spec, count, difficulty, topics, firstId, includeVisuals, textType, grammar));
+        values.put("REQUEST_BLOCK", requestBlock(spec, count, difficulty, topics, firstId, includeVisuals, textType, grammar, contextMode, wordCategories));
         values.put("VISUAL_RULES", visualRules(includeVisuals));
         values.put("JSON_EXAMPLE", example);
         values.put("NOTES_BLOCK", request.notes() == null || request.notes().isBlank() ? ""
@@ -96,7 +110,7 @@ public class ExamContentPromptBuilder {
     }
 
     private String requestBlock(ExamContentSpec spec, int count, String difficulty, List<String> topics, String firstId, boolean includeVisuals,
-                                String textType, List<String> grammar) {
+                                String textType, List<String> grammar, String contextMode, List<String> wordCategories) {
         StringBuilder b = new StringBuilder();
         b.append("Generate exactly ").append(count).append(" exercise set").append(count == 1 ? "" : "s").append(".\n");
         b.append("Number the externalId values consecutively starting with ").append(firstId)
@@ -125,6 +139,16 @@ public class ExamContentPromptBuilder {
                 b.append("- approximately ").append(n).append(" ").append(topics.get(i)).append("\n");
             }
             b.append("List the main topics of each exercise in metadata.topics.\n");
+        }
+        if (spec.isWordBank()) {
+            b.append(switch (contextMode) {
+                case "WITH_ADVERTISEMENT" -> "Context material: every exercise starts with an advertisement or information box (\"context\") that the main text refers to.\n";
+                case "WITHOUT_ADVERTISEMENT" -> "Context material: do NOT include any context material; omit the \"context\" object and set contextType to a plain text type (EMAIL, LETTER, INQUIRY ...).\n";
+                default -> "Context material: about half of the exercises have an advertisement / information box (\"context\") that the main text refers to; the others have none (omit \"context\").\n";
+            });
+            b.append(wordCategories.isEmpty()
+                    ? "Word bank: use a balanced mix of prepositions, conjunctions, connectors, pronouns, question words and other common function words.\n"
+                    : "Word bank: build the word banks mainly from these kinds of words: " + String.join(", ", wordCategories) + ".\n");
         }
         if (spec.isGapText()) {
             b.append(textType == null
@@ -205,6 +229,31 @@ public class ExamContentPromptBuilder {
             meta.put("difficulty", difficulty);
             meta.putArray("topics").add("EVERYDAY_LIFE").add("SERVICES");
             meta.putArray("skills").add("SELECTIVE_READING").add("INFORMATION_MATCHING");
+            meta.put("source", "AI_GENERATED_ORIGINAL");
+            return write(root);
+        }
+        if (spec.isWordBank()) {
+            ex.put("contextType", "ADVERTISEMENT_EMAIL");
+            ex.put("topic", "...");
+            ex.putObject("context").put("type", "ADVERTISEMENT").put("title", "...").put("text", "...");
+            ex.put("text", "Complete German text containing [31] through [40]");
+            ArrayNode bank = ex.putArray("wordBank");
+            spec.optionIds().forEach(id -> bank.addObject().put("key", id).put("word", "WORD"));
+            ArrayNode wordQuestions = ex.putArray("questions");
+            for (int i = 0; i < spec.questionCount(); i++) {
+                ObjectNode q = wordQuestions.addObject();
+                q.put("number", spec.firstQuestionNumber() + i);
+                q.put("correctAnswer", "...");
+                q.put("correctWord", "WORD");
+                q.put("grammarCategory", "PRAEPOSITION");
+                q.put("grammarFocus", "...");
+                q.putObject("explanation").put("de", "Kurze Erklärung auf Deutsch.").put("en", "Short explanation in English.")
+                        .put("fa", "توضیح کوتاه به زبان فارسی.");
+            }
+            ObjectNode meta = ex.putObject("metadata");
+            meta.put("difficulty", difficulty);
+            meta.putArray("topics").add("TRAVEL");
+            meta.putArray("skills").add("GRAMMAR_IN_CONTEXT");
             meta.put("source", "AI_GENERATED_ORIGINAL");
             return write(root);
         }

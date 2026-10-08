@@ -54,6 +54,12 @@ public class ExamContentService {
             "AD_COUNT", "ADVERTISEMENTS_MISSING", "AD_ID_MISSING", "AD_ID_DUPLICATE", "AD_IDS", "AD_CONTENT_MISSING", "AD_CONTENT_EMPTY",
             "AD_DETAILS_INVALID", "AD_CONTACT_INVALID", "AD_CONTENT_TOO_LONG", "AD_VISUAL_INVALID", "AD_IMAGE_TYPE_INVALID", "AD_ALT_TEXT_MISSING");
     private static final Set<String> SITUATION_ANSWER_CODES = Set.of("SITUATION_ANSWER_MISSING", "SITUATION_ANSWER_INVALID", "AD_REUSED");
+    private static final Set<String> WORD_BANK_ERROR_CODES = Set.of(
+            "WORD_BANK_MISSING", "WORD_BANK_COUNT", "WORD_BANK_KEYS", "WORD_KEY_MISSING", "WORD_KEY_DUPLICATE", "WORD_EMPTY",
+            "WORD_TOO_LONG", "WORD_DUPLICATE", "CONTEXT_INVALID", "CONTEXT_TEXT_EMPTY", "CONTEXT_TEXT_TOO_LONG");
+    private static final Set<String> WORD_ANSWER_ERROR_CODES = Set.of(
+            "QUESTIONS_MISSING", "QUESTION_COUNT", "QUESTION_NUMBER_INVALID", "QUESTION_NUMBER_DUPLICATE", "GAP_NUMBER_OUT_OF_RANGE",
+            "CORRECT_WORD_MISSING", "CORRECT_OPTION_UNKNOWN", "CORRECT_WORD_MISMATCH", "WORD_REUSED");
     private static final Set<String> OPTION_ERROR_CODES = Set.of(
             "OPTIONS_MISSING", "OPTION_COUNT", "OPTION_IDS", "OPTION_ID_MISSING", "OPTION_ID_DUPLICATE", "OPTION_TEXT_EMPTY",
             "OPTION_TEXT_TOO_LONG", "OPTION_TEXT_DUPLICATE", "CORRECT_OPTION_MISSING", "CORRECT_OPTION_UNKNOWN");
@@ -86,7 +92,8 @@ public class ExamContentService {
                 Arrays.stream(ExamContentStatus.values()).map(Enum::name).toList(),
                 ExamContentSpecs.SCHEMA_VERSION,
                 ExamContentPromptBuilder.TEXT_TYPES,
-                ExamContentPromptBuilder.GRAMMAR_CATEGORIES);
+                ExamContentPromptBuilder.GRAMMAR_CATEGORIES,
+                ExamContentPromptBuilder.WORD_CATEGORIES);
     }
 
     @Transactional(readOnly = true)
@@ -193,7 +200,9 @@ public class ExamContentService {
         int questions = file.exercises().stream().mapToInt(e -> e.questions().size() + e.situations().size()).sum();
         boolean reading = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isMultipleChoice());
         boolean situation = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isSituationMatching());
-        boolean matching = file.exercises().stream().anyMatch(e -> e.spec() != null && !e.spec().isMultipleChoice() && !e.spec().isSituationMatching());
+        boolean wordBank = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isWordBank());
+        boolean matching = file.exercises().stream().anyMatch(e -> e.spec() != null && !e.spec().isMultipleChoice()
+                && !e.spec().isSituationMatching() && !e.spec().isWordBank());
         int situations = file.exercises().stream().mapToInt(e -> e.situations().size()).sum();
         int advertisements = file.exercises().stream().mapToInt(e -> e.advertisements().size()).sum();
 
@@ -209,7 +218,7 @@ public class ExamContentService {
         checks.add(new Check("Section: " + orDash(file.section()), noCode(all, "SECTION_INVALID")));
         checks.add(new Check("Part: " + orDash(file.part()), noCode(all, "PART_INVALID", "SPEC_UNSUPPORTED")));
         checks.add(new Check("Exercises: " + reports.size(), !reports.isEmpty() && noCode(all, "EXERCISE_NOT_OBJECT", "EXTERNAL_ID_INVALID", "EXTERNAL_ID_DUPLICATE_IN_FILE")));
-        if (matching || (!reading && !situation)) {
+        if (matching || (!reading && !situation && !wordBank)) {
             checks.add(new Check("Headings: " + headings, !reports.isEmpty() && noCode(all, STRUCTURE_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Texts: " + texts, !reports.isEmpty() && noCode(all, TEXT_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Answer assignments valid", !reports.isEmpty() && noCode(all, ANSWER_ERROR_CODES.toArray(String[]::new))));
@@ -218,6 +227,11 @@ public class ExamContentService {
             checks.add(new Check("Situations: " + situations, !reports.isEmpty() && noCode(all, SITUATION_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Advertisements: " + advertisements, !reports.isEmpty() && noCode(all, AD_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Matching valid (each advertisement used once)", !reports.isEmpty() && noCode(all, SITUATION_ANSWER_CODES.toArray(String[]::new))));
+        }
+        if (wordBank) {
+            checks.add(new Check("Text with gaps 31–40", !reports.isEmpty() && noCode(all, READING_TEXT_ERROR_CODES.toArray(String[]::new))));
+            checks.add(new Check("Word bank: 15 words a–o", !reports.isEmpty() && noCode(all, WORD_BANK_ERROR_CODES.toArray(String[]::new))));
+            checks.add(new Check("Gaps and answers: 10 gaps, each word used once", !reports.isEmpty() && noCode(all, WORD_ANSWER_ERROR_CODES.toArray(String[]::new))));
         }
         if (reading) {
             checks.add(new Check("Reading texts: " + file.exercises().stream().filter(e -> e.readingText() != null).count(),
@@ -346,6 +360,15 @@ public class ExamContentService {
     static String publishProblem(ExamExercise e) {
         if (e.getPassages() == null || e.getPassages().isEmpty()) return "Has no texts.";
         if (e.getQuestions() == null || e.getQuestions().isEmpty()) return "Has no questions.";
+        if (e.getTaskType() == ExamTaskType.WORD_BANK_CLOZE) {
+            if (e.getAnswerOptions() == null || e.getAnswerOptions().isEmpty()) return "Has no word bank.";
+            java.util.Set<String> usedWords = new java.util.HashSet<>();
+            for (var q : e.getQuestions()) {
+                String label = "Gap " + (q.getGapNumber() != null ? q.getGapNumber() : "?");
+                if (q.getCorrectAnswer() == null || !e.getAnswerOptions().contains(q.getCorrectAnswer())) return label + " has no valid correct word.";
+                if (!usedWords.add(q.getCorrectAnswer())) return "The word " + q.getCorrectAnswer() + " is the correct answer for more than one gap.";
+            }
+        }
         if (e.getTaskType() == ExamTaskType.SITUATION_MATCHING) {
             java.util.Set<String> used = new java.util.HashSet<>();
             for (var q : e.getQuestions()) {

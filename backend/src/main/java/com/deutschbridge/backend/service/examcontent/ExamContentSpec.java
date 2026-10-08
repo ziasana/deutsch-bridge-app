@@ -53,6 +53,16 @@ public record ExamContentSpec(
         return isMultipleChoice() && section == ExamSection.SPRACHBAUSTEINE;
     }
 
+    /** True for Sprachbausteine Teil 2: one text with gaps [31]..[40] filled from a shared word bank a..o (each word once). */
+    public boolean isWordBank() {
+        return taskType == ExamTaskType.WORD_BANK_CLOZE;
+    }
+
+    /** Word bank: words that stay unused. */
+    public int unusedWordCount() {
+        return optionCount - questionCount;
+    }
+
     /** True for "situations matched to advertisements" specs (Lesen Teil 3). */
     public boolean isSituationMatching() {
         return taskType == ExamTaskType.SITUATION_MATCHING;

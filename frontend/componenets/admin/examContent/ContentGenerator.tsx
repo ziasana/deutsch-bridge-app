@@ -38,6 +38,8 @@ export default function ContentGenerator() {
     const [notes, setNotes] = useState("");
     const [includeVisuals, setIncludeVisuals] = useState(true);
     const [textType, setTextType] = useState("");
+    const [contextMode, setContextMode] = useState("RANDOM");
+    const [wordCats, setWordCats] = useState<string[] | null>(null); // null = all
     const [grammar, setGrammar] = useState<string[] | null>(null); // null = all categories
     const [result, setResult] = useState<PromptResponse | null>(null);
     const [generating, setGenerating] = useState(false);
@@ -52,6 +54,11 @@ export default function ContentGenerator() {
     const toggleCategory = (category: string) =>
         setGrammar(selectedCategories.includes(category) ? selectedCategories.filter((c) => c !== category) : [...selectedCategories, category]);
 
+    const allWordCategories = options?.wordCategories ?? [];
+    const selectedWordCategories = wordCats ?? allWordCategories;
+    const toggleWordCategory = (category: string) =>
+        setWordCats(selectedWordCategories.includes(category) ? selectedWordCategories.filter((c) => c !== category) : [...selectedWordCategories, category]);
+
     const toggleTopic = (topic: string) => setTopics((prev) => (prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]));
 
     const generate = async (e: React.FormEvent) => {
@@ -61,7 +68,12 @@ export default function ContentGenerator() {
             toast.error("Number of exercise sets must be between 1 and 50.");
             return;
         }
-        const gapSpec = spec?.section === "SPRACHBAUSTEINE";
+        const gapSpec = spec?.section === "SPRACHBAUSTEINE" && spec.taskType === "MULTIPLE_CHOICE";
+        const wordBankSpec = spec?.taskType === "WORD_BANK_CLOZE";
+        if (wordBankSpec && selectedWordCategories.length < 3) {
+            toast.error("Select at least 3 word categories so the word bank can be varied.");
+            return;
+        }
         if (gapSpec && selectedCategories.length < 5) {
             toast.error("Select at least 5 grammar categories so the ten gaps can be varied.");
             return;
@@ -70,6 +82,9 @@ export default function ContentGenerator() {
         try {
             const res = await generateExamContentPrompt({
                 exam, level, section, part, count: n, difficulty, topics, notes: notes.trim() || undefined, includeVisuals,
+                ...(wordBankSpec
+                    ? { contextMode, wordCategories: selectedWordCategories.length === allWordCategories.length ? undefined : selectedWordCategories }
+                    : {}),
                 ...(gapSpec ? { textType: textType || undefined, grammarCategories: selectedCategories.length === allCategories.length ? undefined : selectedCategories } : {}),
             });
             setResult(res.data);
@@ -143,6 +158,8 @@ export default function ContentGenerator() {
                             <p className="text-sm text-green-700 dark:text-green-300">
                                 {spec.taskType === "MULTIPLE_CHOICE"
                                     ? `✓ ${spec.label}: one reading text, ${spec.questionCount} questions with ${spec.optionCount} options each.`
+                                    : spec.taskType === "WORD_BANK_CLOZE"
+                                    ? `✓ ${spec.label}: one text with ${spec.questionCount} gaps (31–40), ${spec.optionCount} words (a–o), ${spec.optionCount - spec.questionCount} stay unused.`
                                     : spec.section === "SPRACHBAUSTEINE"
                                     ? `✓ ${spec.label}: one text with ${spec.questionCount} gaps (21–30), ${spec.optionCount} options (a, b, c) each.`
                                     : spec.taskType === "SITUATION_MATCHING"
@@ -176,7 +193,43 @@ export default function ContentGenerator() {
                             </label>
                         </div>
 
-                        {spec?.section === "SPRACHBAUSTEINE" && (
+                        {spec?.taskType === "WORD_BANK_CLOZE" && (
+                            <>
+                                <label className="block">
+                                    <span className={labelClass}>Context material</span>
+                                    <select className={fieldClass} value={contextMode} onChange={(e) => setContextMode(e.target.value)}>
+                                        <option value="RANDOM">Random</option>
+                                        <option value="WITH_ADVERTISEMENT">With advertisement / information</option>
+                                        <option value="WITHOUT_ADVERTISEMENT">Without advertisement</option>
+                                    </select>
+                                </label>
+                                <fieldset>
+                                    <legend className={labelClass}>Word categories <span className="font-normal text-gray-500">({selectedWordCategories.length} selected, min. 3)</span></legend>
+                                    <div className="flex flex-wrap gap-2">
+                                        {allWordCategories.map((category) => {
+                                            const on = selectedWordCategories.includes(category);
+                                            return (
+                                                <button
+                                                    key={category}
+                                                    type="button"
+                                                    aria-pressed={on}
+                                                    onClick={() => toggleWordCategory(category)}
+                                                    className={`rounded-full border px-3 py-1 text-sm transition ${
+                                                        on
+                                                            ? "border-primary bg-primary text-primary-foreground"
+                                                            : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                    }`}
+                                                >
+                                                    {topicLabel(category)}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </fieldset>
+                            </>
+                        )}
+
+                        {spec?.section === "SPRACHBAUSTEINE" && spec.taskType === "MULTIPLE_CHOICE" && (
                             <>
                                 <label className="block">
                                     <span className={labelClass}>Text type</span>
