@@ -94,7 +94,7 @@ public class ExamAttemptService {
         // exercise, not a per-question fallback - they're shown once on the results screen
         // (via ExamExercisePublicResponse) instead of being repeated into every question's
         // feedback here, which used to make the same tip appear on every single question.
-        String explanation = question.getExplanation();
+        String explanation = localizedExplanation(exercise, question, requestContext.getLanguage());
         String commonMistake = question.getCommonMistake();
         String transcript = referencedTranscript(exercise, question);
 
@@ -102,6 +102,30 @@ public class ExamAttemptService {
         attemptRepository.save(attempt);
 
         return new ExamAnswerFeedbackResponse(correct, question.getCorrectAnswer(), explanation, commonMistake, transcript);
+    }
+
+    /**
+     * The question's explanation in the learner's language (Accept-Language: EN, DE, PR = Persian). The German text is the
+     * question's own explanation; imported Sprachbausteine gaps keep their English / Persian versions in the exercise
+     * metadata. A missing translation falls back to German.
+     */
+    static String localizedExplanation(ExamExercise exercise, ExamQuestion question, String language) {
+        String german = question.getExplanation();
+        String key = language == null ? "" : switch (language.trim().toUpperCase(java.util.Locale.ROOT)) {
+            case "PR", "FA" -> "fa";
+            case "EN" -> "en";
+            default -> "";
+        };
+        if (key.isEmpty() || exercise.getMetadata() == null || question.getGapNumber() == null) return german;
+        if (!(exercise.getMetadata().get("gapQuestions") instanceof List<?> gaps)) return german;
+        for (Object gap : gaps) {
+            if (gap instanceof java.util.Map<?, ?> info && info.get("number") instanceof Number n && n.intValue() == question.getGapNumber()
+                    && info.get("explanation") instanceof java.util.Map<?, ?> translations
+                    && translations.get(key) instanceof String text && !text.isBlank()) {
+                return text;
+            }
+        }
+        return german;
     }
 
     private String referencedTranscript(ExamExercise exercise, ExamQuestion question) {

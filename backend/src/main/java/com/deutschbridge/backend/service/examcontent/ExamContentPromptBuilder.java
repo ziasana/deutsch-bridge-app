@@ -26,6 +26,10 @@ public class ExamContentPromptBuilder {
     public static final List<String> TOPICS = List.of(
             "EVERYDAY_LIFE", "WORK", "HOUSING", "HEALTH", "LEISURE", "TRAVEL", "EDUCATION", "ENVIRONMENT", "GARDEN_NATURE", "SOCIETY",
             "SERVICES", "FAMILY", "TECHNOLOGY", "MEDIA", "FOOD", "TRAFFIC", "CONSUMPTION", "CLUBS", "GENERATIONS", "CITY_LIFE");
+    public static final List<String> TEXT_TYPES = List.of("EMAIL", "NACHRICHT", "BRIEF", "PERSOENLICHER_BERICHT", "INFORMATIONSTEXT");
+    public static final List<String> GRAMMAR_CATEGORIES = List.of(
+            "KONJUNKTION", "ADVERBIEN_KONNEKTOREN", "ARTIKEL", "KASUS", "PRAEPOSITION", "VERBFORM", "ADJEKTIVENDUNG",
+            "PERSONALPRONOMEN", "RELATIVPRONOMEN", "POSSESSIVARTIKEL", "VERB_PRAEPOSITION", "SATZSTRUKTUR");
     public static final List<String> DIFFICULTIES = List.of("MIXED", "EASY", "MEDIUM", "HARD");
     public static final int MAX_COUNT = 50;
 
@@ -67,8 +71,18 @@ public class ExamContentPromptBuilder {
         values.put("OPTION_IDS", String.join(", ", spec.optionIds()));
         values.put("FIRST_QUESTION_NUMBER", String.valueOf(spec.firstQuestionNumber()));
         values.put("LAST_QUESTION_NUMBER", String.valueOf(spec.lastQuestionNumber()));
+        String textType = request.textType() == null || request.textType().isBlank() ? null : request.textType().trim().toUpperCase(Locale.ROOT);
+        if (textType != null && !TEXT_TYPES.contains(textType)) throw new IllegalArgumentException("Unknown text type: " + request.textType());
+        List<String> grammar = request.grammarCategories() == null ? List.of() : request.grammarCategories().stream()
+                .map(c -> c.trim().toUpperCase(Locale.ROOT)).distinct().toList();
+        for (String category : grammar) {
+            if (!GRAMMAR_CATEGORIES.contains(category)) throw new IllegalArgumentException("Unknown grammar category: " + category);
+        }
+        if (!grammar.isEmpty() && grammar.size() < 5 && spec.isGapText()) {
+            throw new IllegalArgumentException("Select at least 5 grammar categories (or none for all) so the ten gaps can be varied.");
+        }
         boolean includeVisuals = request.includeVisuals() == null || request.includeVisuals();
-        values.put("REQUEST_BLOCK", requestBlock(spec, count, difficulty, topics, firstId, includeVisuals));
+        values.put("REQUEST_BLOCK", requestBlock(spec, count, difficulty, topics, firstId, includeVisuals, textType, grammar));
         values.put("VISUAL_RULES", visualRules(includeVisuals));
         values.put("JSON_EXAMPLE", example);
         values.put("NOTES_BLOCK", request.notes() == null || request.notes().isBlank() ? ""
@@ -81,7 +95,8 @@ public class ExamContentPromptBuilder {
         return new PromptResponse(prompt.strip() + "\n", spec.promptVersion(), ExamContentSpecs.SCHEMA_VERSION, example, existingCount, firstId);
     }
 
-    private String requestBlock(ExamContentSpec spec, int count, String difficulty, List<String> topics, String firstId, boolean includeVisuals) {
+    private String requestBlock(ExamContentSpec spec, int count, String difficulty, List<String> topics, String firstId, boolean includeVisuals,
+                                String textType, List<String> grammar) {
         StringBuilder b = new StringBuilder();
         b.append("Generate exactly ").append(count).append(" exercise set").append(count == 1 ? "" : "s").append(".\n");
         b.append("Number the externalId values consecutively starting with ").append(firstId)
@@ -110,6 +125,14 @@ public class ExamContentPromptBuilder {
                 b.append("- approximately ").append(n).append(" ").append(topics.get(i)).append("\n");
             }
             b.append("List the main topics of each exercise in metadata.topics.\n");
+        }
+        if (spec.isGapText()) {
+            b.append(textType == null
+                    ? "Text type: vary the text type between the exercises (EMAIL, NACHRICHT, BRIEF, PERSOENLICHER_BERICHT, INFORMATIONSTEXT); set \"textType\" accordingly.\n"
+                    : "Text type: all exercises are of the type " + textType + "; set \"textType\" to " + textType + ".\n");
+            b.append(grammar.isEmpty()
+                    ? "Grammar categories: use a varied mix of all categories listed below.\n"
+                    : "Grammar categories: test ONLY these categories (still a varied mix, no category more than 3 times per exercise): " + String.join(", ", grammar) + ".\n");
         }
         if (spec.isSituationMatching()) {
             b.append(includeVisuals
@@ -182,6 +205,29 @@ public class ExamContentPromptBuilder {
             meta.put("difficulty", difficulty);
             meta.putArray("topics").add("EVERYDAY_LIFE").add("SERVICES");
             meta.putArray("skills").add("SELECTIVE_READING").add("INFORMATION_MATCHING");
+            meta.put("source", "AI_GENERATED_ORIGINAL");
+            return write(root);
+        }
+        if (spec.isGapText()) {
+            ex.put("textType", "EMAIL");
+            ex.put("topic", "...");
+            ex.put("text", "Text with the gaps marked as [21], [22] ... [30]");
+            ArrayNode gapQuestions = ex.putArray("questions");
+            for (int i = 0; i < spec.questionCount(); i++) {
+                ObjectNode q = gapQuestions.addObject();
+                q.put("number", spec.firstQuestionNumber() + i);
+                ArrayNode options = q.putArray("options");
+                spec.optionIds().forEach(id -> options.addObject().put("key", id).put("text", "..."));
+                q.put("correctAnswer", "...");
+                q.put("category", "KONJUNKTION");
+                q.put("grammarFocus", "...");
+                q.putObject("explanation").put("de", "Kurze Erklärung auf Deutsch.").put("en", "Short explanation in English.")
+                        .put("fa", "توضیح کوتاه به زبان فارسی.");
+            }
+            ObjectNode meta = ex.putObject("metadata");
+            meta.put("difficulty", difficulty);
+            meta.putArray("topics").add("EVERYDAY_LIFE");
+            meta.putArray("skills").add("GRAMMAR_IN_CONTEXT");
             meta.put("source", "AI_GENERATED_ORIGINAL");
             return write(root);
         }

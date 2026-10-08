@@ -22,11 +22,20 @@ public final class ExamContentDtos {
             /** Optional free-text extra instructions appended to the prompt. */
             String notes,
             /** Situation-matching specs: ask the AI for image briefs (default true). */
-            Boolean includeVisuals
+            Boolean includeVisuals,
+            /** Sprachbausteine: preferred text type (EMAIL, BRIEF ...); null / empty = varied. */
+            String textType,
+            /** Sprachbausteine: grammar categories to test (see ExamContentPromptBuilder.GRAMMAR_CATEGORIES); empty = all. */
+            List<String> grammarCategories
     ) {
         public PromptRequest(String exam, String level, String section, String part, Integer count, String difficulty,
                              List<String> topics, String notes) {
-            this(exam, level, section, part, count, difficulty, topics, notes, null);
+            this(exam, level, section, part, count, difficulty, topics, notes, null, null, null);
+        }
+
+        public PromptRequest(String exam, String level, String section, String part, Integer count, String difficulty,
+                             List<String> topics, String notes, Boolean includeVisuals) {
+            this(exam, level, section, part, count, difficulty, topics, notes, includeVisuals, null, null);
         }
     }
 
@@ -62,7 +71,10 @@ public final class ExamContentDtos {
             List<String> topics,
             List<String> difficulties,
             List<String> statuses,
-            String schemaVersion
+            String schemaVersion,
+            /** Sprachbausteine generator choices. */
+            List<String> textTypes,
+            List<String> grammarCategories
     ) {
     }
 

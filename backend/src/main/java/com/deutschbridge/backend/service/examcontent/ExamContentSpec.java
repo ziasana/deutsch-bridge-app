@@ -48,6 +48,11 @@ public record ExamContentSpec(
         return taskType == ExamTaskType.MULTIPLE_CHOICE;
     }
 
+    /** True for Sprachbausteine Teil 1: one text with numbered gaps ([21] ...) and a three-option choice per gap. */
+    public boolean isGapText() {
+        return isMultipleChoice() && section == ExamSection.SPRACHBAUSTEINE;
+    }
+
     /** True for "situations matched to advertisements" specs (Lesen Teil 3). */
     public boolean isSituationMatching() {
         return taskType == ExamTaskType.SITUATION_MATCHING;

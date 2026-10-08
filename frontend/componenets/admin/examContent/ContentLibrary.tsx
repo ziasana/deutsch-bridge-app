@@ -84,6 +84,9 @@ function toPreview(exercise: ExamExerciseResponse): ExercisePreviewData | null {
     }
     if (exercise.taskType === "MULTIPLE_CHOICE" && exercise.passages?.length === 1 && exercise.questions?.length) {
         const questions = [...exercise.questions].sort((a, b) => (a.questionNumber ?? 0) - (b.questionNumber ?? 0));
+        const categories = new Map(
+            ((exercise.metadata?.gapQuestions ?? []) as { number: number; category?: string }[]).map((g) => [g.number, g.category ?? null]),
+        );
         return {
             title: exercise.title,
             instructions: exercise.teilDescription,
@@ -98,7 +101,7 @@ function toPreview(exercise: ExamExerciseResponse): ExercisePreviewData | null {
                     question: q.prompt,
                     options,
                     correctOptionId: options.find((o) => o.text === q.correctAnswer)?.id ?? null,
-                    questionType: null,
+                    questionType: categories.get(q.questionNumber ?? i + 1) ?? null,
                 };
             }),
         };

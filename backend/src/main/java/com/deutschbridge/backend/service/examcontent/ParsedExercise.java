@@ -56,7 +56,14 @@ public record ParsedExercise(
     }
 
     /** {@code number} is the exam number (6..10), {@code type} the declared question type (may be null). */
-    public record Question(String id, Integer number, String question, List<Option> options, String correctOptionId, String type) {
+    public record Question(String id, Integer number, String question, List<Option> options, String correctOptionId, String type,
+                           /** Sprachbausteine only: the tested structure, e.g. "adversative_conjunction". */
+                           String grammarFocus,
+                           /** Sprachbausteine only: explanations by language (de, en, fa). */
+                           Map<String, String> explanations) {
+        public Question(String id, Integer number, String question, List<Option> options, String correctOptionId, String type) {
+            this(id, number, question, options, correctOptionId, type, null, Map.of());
+        }
     }
 
     public record Heading(String id, String text) {

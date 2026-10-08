@@ -37,6 +37,8 @@ export default function ContentGenerator() {
     const [topics, setTopics] = useState<string[]>([]);
     const [notes, setNotes] = useState("");
     const [includeVisuals, setIncludeVisuals] = useState(true);
+    const [textType, setTextType] = useState("");
+    const [grammar, setGrammar] = useState<string[] | null>(null); // null = all categories
     const [result, setResult] = useState<PromptResponse | null>(null);
     const [generating, setGenerating] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
@@ -44,6 +46,11 @@ export default function ContentGenerator() {
     const sections = useMemo(() => [...new Map((options?.specs ?? []).map((s) => [s.section, s.sectionLabel])).entries()], [options]);
     const parts = useMemo(() => [...new Set((options?.specs ?? []).filter((s) => s.section === section).map((s) => s.part))], [options, section]);
     const spec = options?.specs.find((s) => s.exam === exam && s.level === level && s.section === section && s.part === part);
+
+    const allCategories = options?.grammarCategories ?? [];
+    const selectedCategories = grammar ?? allCategories;
+    const toggleCategory = (category: string) =>
+        setGrammar(selectedCategories.includes(category) ? selectedCategories.filter((c) => c !== category) : [...selectedCategories, category]);
 
     const toggleTopic = (topic: string) => setTopics((prev) => (prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]));
 
@@ -54,9 +61,17 @@ export default function ContentGenerator() {
             toast.error("Number of exercise sets must be between 1 and 50.");
             return;
         }
+        const gapSpec = spec?.section === "SPRACHBAUSTEINE";
+        if (gapSpec && selectedCategories.length < 5) {
+            toast.error("Select at least 5 grammar categories so the ten gaps can be varied.");
+            return;
+        }
         setGenerating(true);
         try {
-            const res = await generateExamContentPrompt({ exam, level, section, part, count: n, difficulty, topics, notes: notes.trim() || undefined, includeVisuals });
+            const res = await generateExamContentPrompt({
+                exam, level, section, part, count: n, difficulty, topics, notes: notes.trim() || undefined, includeVisuals,
+                ...(gapSpec ? { textType: textType || undefined, grammarCategories: selectedCategories.length === allCategories.length ? undefined : selectedCategories } : {}),
+            });
             setResult(res.data);
         } catch (err) {
             toast.error(errorMessage(err, "Failed to generate the prompt."));
@@ -128,6 +143,8 @@ export default function ContentGenerator() {
                             <p className="text-sm text-green-700 dark:text-green-300">
                                 {spec.taskType === "MULTIPLE_CHOICE"
                                     ? `✓ ${spec.label}: one reading text, ${spec.questionCount} questions with ${spec.optionCount} options each.`
+                                    : spec.section === "SPRACHBAUSTEINE"
+                                    ? `✓ ${spec.label}: one text with ${spec.questionCount} gaps (21–30), ${spec.optionCount} options (a, b, c) each.`
                                     : spec.taskType === "SITUATION_MATCHING"
                                     ? `✓ ${spec.label}: ${spec.questionCount} situations, ${spec.optionCount} advertisements (a–l), x = no advertisement fits.`
                                     : `✓ ${spec.label}: ${spec.textCount} texts, ${spec.headingCount} headings (${spec.headingCount - spec.textCount} unused).`}
@@ -158,6 +175,41 @@ export default function ContentGenerator() {
                                 </select>
                             </label>
                         </div>
+
+                        {spec?.section === "SPRACHBAUSTEINE" && (
+                            <>
+                                <label className="block">
+                                    <span className={labelClass}>Text type</span>
+                                    <select className={fieldClass} value={textType} onChange={(e) => setTextType(e.target.value)}>
+                                        <option value="">Random (varied)</option>
+                                        {(options?.textTypes ?? []).map((x) => <option key={x} value={x}>{topicLabel(x)}</option>)}
+                                    </select>
+                                </label>
+                                <fieldset>
+                                    <legend className={labelClass}>Grammar categories <span className="font-normal text-gray-500">({selectedCategories.length} selected, min. 5)</span></legend>
+                                    <div className="flex flex-wrap gap-2">
+                                        {allCategories.map((category) => {
+                                            const on = selectedCategories.includes(category);
+                                            return (
+                                                <button
+                                                    key={category}
+                                                    type="button"
+                                                    aria-pressed={on}
+                                                    onClick={() => toggleCategory(category)}
+                                                    className={`rounded-full border px-3 py-1 text-sm transition ${
+                                                        on
+                                                            ? "border-primary bg-primary text-primary-foreground"
+                                                            : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                    }`}
+                                                >
+                                                    {topicLabel(category)}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </fieldset>
+                            </>
+                        )}
 
                         <fieldset>
                             <legend className={labelClass}>Topics {topics.length === 0 && <span className="font-normal text-gray-500">(automatic)</span>}</legend>

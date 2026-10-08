@@ -38,7 +38,15 @@ public final class ExamContentSpecs {
                             + "Sie können jede Anzeige nur einmal benutzen. Wenn Sie zu einer Situation keine passende Anzeige finden, markieren Sie x.",
                     "exam-content/prompts/situation-matching-ads.v1.0.txt",
                     "1.0",
-                    10, 12, 11)
+                    10, 12, 11),
+            new ExamContentSpec(
+                    ExamType.TELC, LearningLevel.B1, ExamSection.SPRACHBAUSTEINE, 1, ExamTaskType.MULTIPLE_CHOICE,
+                    0, 0, 120, 220,
+                    "Lesen Sie den Text und schließen Sie die Lücken 21–30. Welche Lösung (a, b oder c) ist jeweils richtig? "
+                            + "Markieren Sie Ihre Lösungen für die Aufgaben 21–30 auf dem Antwortbogen.",
+                    "exam-content/prompts/sprachbausteine-gaps.v1.0.txt",
+                    "1.0",
+                    10, 3, 21)
     );
 
     private ExamContentSpecs() {

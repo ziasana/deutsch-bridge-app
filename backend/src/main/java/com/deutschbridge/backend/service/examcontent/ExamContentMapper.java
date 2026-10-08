@@ -10,6 +10,7 @@ import com.deutschbridge.backend.model.entity.ExamExercise;
 import com.deutschbridge.backend.model.entity.ExamPassage;
 import com.deutschbridge.backend.model.entity.ExamQuestion;
 import com.deutschbridge.backend.model.enums.ExamContentStatus;
+import com.deutschbridge.backend.model.enums.ExamSection;
 import com.deutschbridge.backend.model.enums.ExamTaskType;
 import com.deutschbridge.backend.model.enums.ExamType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -85,22 +86,41 @@ public final class ExamContentMapper {
     private static ExamExercise toReadingEntity(ParsedExercise ex, ExamType examType, String schemaVersion,
                                                 String promptVersion, String hash, String userId) {
         ExamContentSpec spec = ex.spec();
+        boolean gaps = spec.isGapText();
         List<ExamQuestion> questions = new ArrayList<>();
         List<String> types = new ArrayList<>();
+        List<Map<String, Object>> gapInfo = new ArrayList<>();
         for (int i = 0; i < ex.questions().size(); i++) {
             ParsedExercise.Question q = ex.questions().get(i);
             String correct = q.options().stream().filter(o -> o.id().equals(q.correctOptionId()))
                     .map(ParsedExercise.Option::text).findFirst().orElse(null);
             int number = q.number() != null ? q.number() : spec.firstQuestionNumber() + i;
-            questions.add(new ExamQuestion(null, ExamTaskType.MULTIPLE_CHOICE, q.question(), 0,
-                    q.options().stream().map(ParsedExercise.Option::text).toList(), correct, null, number, null, null).ensureId());
+            // A Sprachbausteine question is "Lücke N"; its German explanation is shown after answering.
+            String prompt = q.question() != null ? q.question() : "Lücke " + number;
+            ExamQuestion question = new ExamQuestion(null, ExamTaskType.MULTIPLE_CHOICE, prompt, 0,
+                    q.options().stream().map(ParsedExercise.Option::text).toList(), correct, gaps ? number : null, number,
+                    gaps ? q.explanations().get("de") : null, null).ensureId();
+            questions.add(question);
             types.add(q.type() == null ? "" : q.type());
+            if (gaps) {
+                Map<String, Object> info = new LinkedHashMap<>();
+                info.put("number", number);
+                if (q.type() != null) info.put("category", q.type());
+                if (q.grammarFocus() != null) info.put("grammarFocus", q.grammarFocus());
+                Map<String, String> other = new LinkedHashMap<>(q.explanations());
+                other.remove("de");
+                if (!other.isEmpty()) info.put("explanation", other);
+                gapInfo.add(info);
+            }
         }
         // Questions are shown to learners sorted by number; keep the stored order consistent with that.
         questions.sort(java.util.Comparator.comparing(ExamQuestion::getQuestionNumber));
 
         Map<String, Object> metadata = new LinkedHashMap<>(ex.metadata());
-        if (types.stream().anyMatch(t -> !t.isEmpty())) {
+        if (gaps) {
+            gapInfo.sort(java.util.Comparator.comparing(m -> (Integer) m.get("number")));
+            metadata.put("gapQuestions", gapInfo);
+        } else if (types.stream().anyMatch(t -> !t.isEmpty())) {
             List<String> ordered = new ArrayList<>(ex.questions().stream()
                     .sorted(java.util.Comparator.comparing(q -> q.number() != null ? q.number() : Integer.MAX_VALUE))
                     .map(q -> q.type() == null ? "" : q.type()).toList());
@@ -114,7 +134,8 @@ public final class ExamContentMapper {
         exercise.setTaskType(spec.taskType());
         exercise.setLevel(spec.level());
         exercise.setPartNumber(spec.part());
-        exercise.setPassages(new ArrayList<>(List.of(new ExamPassage(null, "Text", toHtml(ex.readingText()), null, null, null).ensureId())));
+        String html = gaps ? toGapHtml(ex.readingText()) : toHtml(ex.readingText());
+        exercise.setPassages(new ArrayList<>(List.of(new ExamPassage(null, "Text", html, null, null, null).ensureId())));
         exercise.setQuestions(questions);
         exercise.setTeilDescription(ex.instructions());
         exercise.setExternalId(ex.externalId());
@@ -206,7 +227,8 @@ public final class ExamContentMapper {
         }
         if (ex.readingText() != null || (ex.spec() != null && ex.spec().isMultipleChoice())) {
             return new ExercisePreview(ex.title(), ex.instructions(), List.of(), List.of(), ex.readingText(),
-                    ex.questions().stream().map(q -> new QuestionView(q.id(), q.number(), q.question(),
+                    ex.questions().stream().map(q -> new QuestionView(q.id(), q.number(),
+                            q.question() != null ? q.question() : q.number() != null ? "Lücke " + q.number() : null,
                             q.options().stream().map(o -> new HeadingView(o.id(), o.text())).toList(),
                             q.correctOptionId(), q.type())).toList());
         }
@@ -339,6 +361,7 @@ public final class ExamContentMapper {
     }
 
     /** Reading text + multiple-choice questions in the import shape; null when the stored exercise does not fit it. */
+    @SuppressWarnings("unchecked")
     private static ObjectNode toReadingExportNode(ObjectMapper mapper, ExamExercise e) {
         if (e.getPassages() == null || e.getPassages().size() != 1 || e.getQuestions() == null || e.getQuestions().isEmpty()
                 || e.getSection() == null || e.getLevel() == null || e.getPartNumber() == null) {
@@ -350,35 +373,60 @@ public final class ExamContentMapper {
                 return null;
             }
         }
+        boolean gaps = e.getSection() == ExamSection.SPRACHBAUSTEINE;
         List<ExamQuestion> ordered = e.getQuestions().stream()
                 .sorted(java.util.Comparator.comparing(q -> q.getQuestionNumber() == null ? Integer.MAX_VALUE : q.getQuestionNumber()))
                 .toList();
         Object storedTypes = e.getMetadata() == null ? null : e.getMetadata().get("questionTypes");
+        Map<Integer, Map<String, Object>> gapInfo = new LinkedHashMap<>();
+        if (gaps && e.getMetadata() != null && e.getMetadata().get("gapQuestions") instanceof List<?> list) {
+            for (Object o : list) {
+                if (o instanceof Map<?, ?> m && m.get("number") instanceof Number n) gapInfo.put(n.intValue(), (Map<String, Object>) m);
+            }
+        }
 
         ObjectNode node = mapper.createObjectNode();
         if (e.getExternalId() != null) node.put("externalId", e.getExternalId());
         node.put("title", e.getTitle());
         node.put("instructions", e.getTeilDescription() == null ? "" : e.getTeilDescription());
-        node.putObject("text").put("content", toPlainText(e.getPassages().get(0).getContent()));
+        if (gaps && e.getMetadata() != null) {
+            if (e.getMetadata().get("textType") != null) node.put("textType", e.getMetadata().get("textType").toString());
+            if (e.getMetadata().get("topic") != null) node.put("topic", e.getMetadata().get("topic").toString());
+        }
+        String text = toPlainText(e.getPassages().get(0).getContent());
+        if (gaps) node.put("text", text);
+        else node.putObject("text").put("content", text);
         ArrayNode questions = node.putArray("questions");
         for (int i = 0; i < ordered.size(); i++) {
             ExamQuestion q = ordered.get(i);
+            int number = q.getQuestionNumber() != null ? q.getQuestionNumber() : i + 1;
             ObjectNode qn = questions.addObject();
             qn.put("id", "question_" + (i + 1));
-            qn.put("number", q.getQuestionNumber() != null ? q.getQuestionNumber() : i + 1);
-            qn.put("question", q.getPrompt());
+            qn.put("number", number);
+            if (!(gaps && ("Lücke " + number).equals(q.getPrompt()))) qn.put("question", q.getPrompt());
             ArrayNode options = qn.putArray("options");
             for (int j = 0; j < q.getOptions().size(); j++) {
                 options.addObject().put("id", String.valueOf((char) ('a' + j))).put("text", q.getOptions().get(j));
             }
             qn.put("correctOptionId", String.valueOf((char) ('a' + q.getOptions().indexOf(q.getCorrectAnswer()))));
-            if (storedTypes instanceof List<?> list && list.size() == ordered.size() && list.get(i) instanceof String type && !type.isBlank()) {
+            if (gaps) {
+                Map<String, Object> info = gapInfo.getOrDefault(number, Map.of());
+                if (info.get("category") != null) qn.put("category", info.get("category").toString());
+                if (info.get("grammarFocus") != null) qn.put("grammarFocus", info.get("grammarFocus").toString());
+                ObjectNode explanation = mapper.createObjectNode();
+                if (q.getExplanation() != null && !q.getExplanation().isBlank()) explanation.put("de", q.getExplanation());
+                if (info.get("explanation") instanceof Map<?, ?> other) other.forEach((k, v) -> explanation.put(k.toString(), String.valueOf(v)));
+                if (!explanation.isEmpty()) qn.set("explanation", explanation);
+            } else if (storedTypes instanceof List<?> list && list.size() == ordered.size() && list.get(i) instanceof String type && !type.isBlank()) {
                 qn.put("questionType", type);
             }
         }
         if (e.getMetadata() != null) {
             Map<String, Object> metadata = new LinkedHashMap<>(e.getMetadata());
             metadata.remove("questionTypes");
+            metadata.remove("gapQuestions");
+            metadata.remove("textType");
+            metadata.remove("topic");
             if (!metadata.isEmpty()) node.set("metadata", mapper.valueToTree(metadata));
         }
         return node;
@@ -395,8 +443,14 @@ public final class ExamContentMapper {
         return html.toString();
     }
 
+    /** Like {@link #toHtml}, with every {@code [21]} marker turned into the editor's gap badge (the contract in examGap.ts). */
+    static String toGapHtml(String content) {
+        return toHtml(content).replaceAll("\\[(\\d{1,3})]", "<span data-exam-gap=\"$1\" class=\"exam-gap-marker\">$1</span>");
+    }
+
     static String toPlainText(String html) {
         if (html == null) return "";
+        html = html.replaceAll("<span[^>]*data-exam-gap=\"(\\d+)\"[^>]*>\\d+</span>", "[$1]");
         String text = html.replaceAll("(?i)<br\\s*/?>", "\n").replaceAll("(?i)</p>\\s*<p>", "\n\n").replaceAll("<[^>]*>", "");
         return HtmlUtils.htmlUnescape(text).strip();
     }

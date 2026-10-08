@@ -167,7 +167,7 @@ function ResultCard({
                     Richtige Antwort: <span className="font-medium">{formatAnswer ? formatAnswer(feedback.correctAnswer) : feedback.correctAnswer}</span>
                 </p>
             )}
-            {feedback.explanation && <p className="mt-1">💡 {feedback.explanation}</p>}
+            {feedback.explanation && <p dir="auto" className="mt-1">💡 {feedback.explanation}</p>}
             {feedback.commonMistake && <p className="mt-1 italic">⚠️ Häufiger Fehler: {feedback.commonMistake}</p>}
             {!isEmptyTranscript(feedback.transcript) && !hideTranscript && (
                 <div className="mt-2 pt-2 border-t border-current/20">
@@ -635,7 +635,7 @@ function FeedbackCard({ feedback }: Readonly<{ feedback: ExamAnswerFeedbackRespo
                     Richtige Antwort: <span className="font-medium">{feedback.correctAnswer}</span>
                 </p>
             )}
-            {feedback.explanation && <p className="mt-1">💡 {feedback.explanation}</p>}
+            {feedback.explanation && <p dir="auto" className="mt-1">💡 {feedback.explanation}</p>}
             {feedback.commonMistake && <p className="mt-1 italic">⚠️ Häufiger Fehler: {feedback.commonMistake}</p>}
             {!isEmptyTranscript(feedback.transcript) && (
                 <div className="mt-2 pt-2 border-t border-current/20">

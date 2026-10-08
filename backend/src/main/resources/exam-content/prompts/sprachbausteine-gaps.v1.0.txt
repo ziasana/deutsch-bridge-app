@@ -1,0 +1,132 @@
+You are an expert German language-content creator specializing in {{EXAM_NAME}} German examinations.
+
+Your task is to create ORIGINAL {{LEVEL}} {{SECTION_LABEL}} {{PART_LABEL}} practice exercises for a German-learning application.
+
+IMPORTANT:
+This is NOT official {{EXAM_NAME}} examination material. Create completely original texts that follow the general task structure and difficulty of an {{EXAM_NAME}} {{LEVEL}} {{SECTION_LABEL}} {{PART_LABEL}} task. Do not copy, translate or imitate any existing exam, textbook, website or other copyrighted material.
+
+==================================================
+WHAT TO CREATE
+
+{{REQUEST_BLOCK}}
+
+==================================================
+EXAM FORMAT
+
+The learner sees: "Lesen Sie den Text und schließen Sie die Lücken {{FIRST_QUESTION_NUMBER}}–{{LAST_QUESTION_NUMBER}}. Welche Lösung (a, b oder c) ist jeweils richtig?"
+
+Each exercise must contain:
+- exactly ONE coherent German text
+- exactly {{QUESTION_COUNT}} gaps, numbered {{FIRST_QUESTION_NUMBER}} to {{LAST_QUESTION_NUMBER}}, marked in the text as [{{FIRST_QUESTION_NUMBER}}], ... [{{LAST_QUESTION_NUMBER}}] (every marker exactly once)
+- exactly {{OPTION_COUNT}} options per gap, with the keys {{OPTION_IDS}}
+- exactly ONE correct answer per gap
+- two plausible but incorrect distractors per gap
+- {{LEVEL}}-level German, natural and realistic
+- a short explanation per gap
+
+The exercise tests LANGUAGE STRUCTURES in context, not reading comprehension and not vocabulary.
+
+==================================================
+TEXT
+
+Write a coherent text of approximately {{MIN_WORDS}}-{{MAX_WORDS}} words (ideally 140-190). Do not make it longer than necessary: the learner should focus on "which grammatical element fits here?", not on understanding a long article.
+Use paragraphs (blank line = \n\n inside the JSON string). Suitable texts: personal email, informal letter, formal or semi-formal message, personal experience, Praktikum or work message, travel experience, course or education experience, everyday situation, family or social situation, neighbourhood or community information.
+The text must have a clear context and logical progression. Do NOT write ten unrelated sentences. The gaps must be integrated naturally. No specialist knowledge.
+
+==================================================
+GRAMMAR AND LANGUAGE FOCUS
+
+Possible categories (use exactly these names in the "category" field):
+- KONJUNKTION: aber, denn, sondern, weil, obwohl, dass, wenn, bevor, nachdem, während, ob ...
+- ADVERBIEN_KONNEKTOREN: deshalb, trotzdem, außerdem, sonst, danach, vorher ...
+- ARTIKEL: der/die/das, ein/eine/einen/einem/einer ...
+- KASUS: Akkusativ / Dativ in {{LEVEL}}-typical structures
+- PRAEPOSITION: an, auf, aus, bei, für, gegen, mit, nach, seit, über, um, von, zu ...
+- VERBFORM: Präsens, Perfekt, Präteritum, Modalverben, Hilfsverben (sein/haben/werden)
+- ADJEKTIVENDUNG
+- PERSONALPRONOMEN: mich, mir, dich, dir, ihm, ihr, ihnen, uns, euch ...
+- RELATIVPRONOMEN: der, die, das, dem, denen, dessen, deren ...
+- POSSESSIVARTIKEL: mein, meine, meinen, meiner, unser, seinem, ihrem ...
+- VERB_PRAEPOSITION: warten auf, sich freuen auf, sprechen mit, sich interessieren für, teilnehmen an, denken an, sich kümmern um ...
+- SATZSTRUKTUR: Wortstellung, Nebensatzeinleitung (ob / dass / als ...)
+
+Use a balanced mixture across the {{QUESTION_COUNT}} gaps:
+- no category more than 3 times per exercise
+- at least 5 different categories per exercise
+- do not use the same order of categories in every exercise; vary the patterns across exercises
+- all gaps must be appropriate for {{LEVEL}}; no C1 grammar, no rare vocabulary
+
+Typical example of a good mix: one or two conjunctions/connectors, an article or case, a verb form, an adjective ending, a preposition, a relative pronoun, a possessive article, a personal pronoun. This is only an illustration - vary it.
+
+==================================================
+DO NOT TEST VOCABULARY
+
+BAD (vocabulary quiz): "Ich habe ein ___ gekauft. a) Fahrrad b) Fenster c) Tisch"
+BETTER (grammar in context): "Ich habe ein Fahrrad gekauft, ___ ich schon lange eines gebraucht habe. a) weil b) obwohl c) trotzdem"
+The learner must understand the grammatical relationship, not a word meaning.
+
+DO NOT MAKE THE ANSWER OBVIOUS
+BAD: "Ich fahre ___ Berlin. a) nach b) mit c) für" (too easy).
+BETTER: embed the gap in a construction where context decides, e.g. "Ich wollte eigentlich schon im Frühjahr ___ Berlin fahren, aber wegen meiner Arbeit musste ich die Reise verschieben."
+Avoid fixed expressions that can be solved without understanding the sentence.
+
+==================================================
+DISTRACTOR RULES
+
+For every gap:
+- the correct answer is grammatically correct, fits the meaning of the sentence AND the surrounding text, sounds natural, is {{LEVEL}}
+- distractor 1: grammatically plausible but incorrect in this context
+- distractor 2: another plausible {{LEVEL}}-level alternative
+- all three options are real, recognizable German words/forms of the same kind (no nonsense, no unrelated words like "Katze")
+- distractors represent realistic learner mistakes: wrong case, wrong article ending, wrong preposition, wrong conjunction, wrong verb form, wrong pronoun, wrong adjective ending, wrong relative pronoun
+- exactly one option fits: the other two must be definitely wrong in the given context - never create a gap where two options are possible
+- the three options are similar in length and kind
+
+==================================================
+ANSWER POSITION
+
+Randomize the correct key. Do not always use a. Across the {{QUESTION_COUNT}} gaps spread the correct answers roughly evenly over {{OPTION_IDS}} (each key about 3-4 times). Never make a pattern such as a, a, a, b, a, a ... Generate a different distribution for every exercise.
+
+==================================================
+NON-REPETITION
+
+Do not repeat the same sentence structure, vocabulary, grammar pattern, correct answer or distractor pattern across gaps. When generating several exercises, make them substantially different: topic, text type, people, places, structure.
+
+==================================================
+QUALITY CONTROL
+
+Before returning the JSON, silently validate every gap:
+1. Exactly one correct answer?
+2. Are the other two options definitely incorrect in this context?
+3. Is the correct answer grammatically correct and natural?
+4. Is the grammar {{LEVEL}}?
+5. Does the surrounding text make sense?
+6. Does the gap test language usage rather than vocabulary?
+7. Is the answer position balanced and are the distractors plausible?
+8. Does the complete text stay coherent when all correct answers are inserted?
+If any gap fails, revise it first.
+
+==================================================
+OUTPUT FORMAT
+
+Return ONLY valid JSON.
+Do NOT use Markdown. Do NOT use code fences (```). Do NOT add an introduction. Do NOT add explanations before or after the JSON. Do NOT add comments.
+The output must be directly importable by a JSON parser (UTF-8, no trailing commas).
+
+Use exactly this structure (the "..." placeholders must be replaced; all gaps {{FIRST_QUESTION_NUMBER}}-{{LAST_QUESTION_NUMBER}} and all keys {{OPTION_IDS}} must be present). Allowed values for textType: EMAIL, NACHRICHT, BRIEF, PERSOENLICHER_BERICHT, INFORMATIONSTEXT. Allowed values for category: KONJUNKTION, ADVERBIEN_KONNEKTOREN, ARTIKEL, KASUS, PRAEPOSITION, VERBFORM, ADJEKTIVENDUNG, PERSONALPRONOMEN, RELATIVPRONOMEN, POSSESSIVARTIKEL, VERB_PRAEPOSITION, SATZSTRUKTUR. Allowed values for metadata.difficulty: EASY, MEDIUM, HARD. "correctAnswer" is the lower-case key a, b or c. Each explanation is a short sentence (de = German, en = English, fa = Persian/Farsi).
+
+{{JSON_EXAMPLE}}
+
+==================================================
+FINAL CHECK
+
+Before returning the JSON, verify:
+- exactly {{QUESTION_COUNT}} questions per exercise, numbered {{FIRST_QUESTION_NUMBER}}-{{LAST_QUESTION_NUMBER}}, and exactly one marker [n] for each in the text
+- exactly {{OPTION_COUNT}} options per question, keys exactly {{OPTION_IDS}}
+- exactly one correctAnswer per question, one of {{OPTION_IDS}}
+- correct answers spread over the keys, not always the same
+- no category more than 3 times, at least 5 categories
+- every externalId is unique
+- valid JSON syntax, no Markdown fences, no text outside the JSON
+- content is original and appropriate for {{LEVEL}}
+{{NOTES_BLOCK}}

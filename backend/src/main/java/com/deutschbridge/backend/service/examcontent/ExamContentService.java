@@ -43,7 +43,7 @@ public class ExamContentService {
     private static final Set<String> ANSWER_ERROR_CODES = Set.of(
             "CORRECT_HEADING_MISSING", "CORRECT_HEADING_UNKNOWN", "CORRECT_HEADING_REUSED", "UNUSED_HEADINGS");
 
-    private static final Set<String> READING_TEXT_ERROR_CODES = Set.of("READING_TEXT_MISSING", "READING_TEXT_TOO_LONG");
+    private static final Set<String> READING_TEXT_ERROR_CODES = Set.of("READING_TEXT_MISSING", "READING_TEXT_TOO_LONG", "GAP_MARKER_MISSING", "GAP_MARKER_DUPLICATE", "GAP_MARKER_UNEXPECTED");
     private static final Set<String> QUESTION_ERROR_CODES = Set.of(
             "QUESTION_COUNT", "QUESTIONS_MISSING", "QUESTION_ID_MISSING", "QUESTION_ID_DUPLICATE", "QUESTION_NUMBER_DUPLICATE",
             "QUESTION_NUMBER_INVALID", "QUESTION_TEXT_EMPTY", "QUESTION_TEXT_TOO_LONG", "QUESTION_TEXT_DUPLICATE");
@@ -84,7 +84,9 @@ public class ExamContentService {
                 ExamContentPromptBuilder.TOPICS,
                 ExamContentPromptBuilder.DIFFICULTIES,
                 Arrays.stream(ExamContentStatus.values()).map(Enum::name).toList(),
-                ExamContentSpecs.SCHEMA_VERSION);
+                ExamContentSpecs.SCHEMA_VERSION,
+                ExamContentPromptBuilder.TEXT_TYPES,
+                ExamContentPromptBuilder.GRAMMAR_CATEGORIES);
     }
 
     @Transactional(readOnly = true)

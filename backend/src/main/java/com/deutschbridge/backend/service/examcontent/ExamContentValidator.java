@@ -34,6 +34,11 @@ public class ExamContentValidator {
     static final Set<String> AD_LAYOUTS = Set.of("CLASSIC", "IMAGE_TOP", "IMAGE_SIDE", "COMPACT", "PROMO", "NOTICE");
     /** The answer sheet's "no advertisement fits". */
     public static final String NO_ADVERTISEMENT = "x";
+    static final Set<String> GAP_CATEGORIES = Set.of(
+            "KONJUNKTION", "ADVERBIEN_KONNEKTOREN", "ARTIKEL", "KASUS", "PRAEPOSITION", "VERBFORM", "ADJEKTIVENDUNG",
+            "PERSONALPRONOMEN", "RELATIVPRONOMEN", "POSSESSIVARTIKEL", "VERB_PRAEPOSITION", "SATZSTRUKTUR");
+    static final Set<String> TEXT_TYPES = Set.of("EMAIL", "NACHRICHT", "BRIEF", "PERSOENLICHER_BERICHT", "INFORMATIONSTEXT");
+    private static final Pattern GAP_MARKER = Pattern.compile("\\[(\\d{1,3})]");
     static final Set<String> QUESTION_TYPES = Set.of(
             "EXPLICIT_INFORMATION", "PARAPHRASE", "DETAIL_COMPREHENSION", "MAIN_IDEA", "LOGICAL_UNDERSTANDING", "REFERENCE");
     private static final Pattern EXTERNAL_ID = Pattern.compile("[A-Za-z0-9._-]{1,64}");
@@ -130,6 +135,9 @@ public class ExamContentValidator {
             issues.add(error("TITLE_TOO_LONG", p + "title", "title may be at most 200 characters."));
         }
         String instructions = text(node, "instructions");
+        if (instructions == null && node.get("instructions") != null && node.get("instructions").isObject()) {
+            instructions = text(node.get("instructions"), "de");
+        }
         if (instructions == null) {
             issues.add(error("INSTRUCTIONS_MISSING", p + "instructions", "instructions must not be empty."));
         } else if (instructions.length() > MAX_FIELD_LENGTH) {
@@ -138,6 +146,9 @@ public class ExamContentValidator {
 
         if (spec != null && spec.isSituationMatching()) {
             return readSituationExercise(index, spec, node, p, externalId, title, instructions, issues);
+        }
+        if (spec != null && spec.isGapText()) {
+            return readGapExercise(index, spec, node, p, externalId, title, instructions, issues);
         }
         if (spec != null && spec.isMultipleChoice()) {
             return readReadingExercise(index, spec, node, p, externalId, title, instructions, issues);
@@ -336,6 +347,60 @@ public class ExamContentValidator {
 
     // ------------------------------------------------------------------ reading text + multiple choice
 
+    /** Sprachbausteine Teil 1: text with [21]..[30] markers + one question (a/b/c) per gap. */
+    private ParsedExercise readGapExercise(int index, ExamContentSpec spec, JsonNode node, String p, String externalId,
+                                           String title, String instructions, List<Issue> issues) {
+        String text = readReadingText(node, p, spec, issues);
+        if (text != null) checkGapMarkers(text, p, spec, issues);
+        List<ParsedExercise.Question> questions = readQuestions(node, p, spec, issues);
+        warnAnswerPatterns(questions, p, issues);
+        warnCategories(questions, p, issues);
+        Map<String, Object> metadata = readMetadata(node.get("metadata"), p, issues);
+        String textType = text(node, "textType");
+        if (textType != null) {
+            textType = textType.toUpperCase(java.util.Locale.ROOT);
+            if (!TEXT_TYPES.contains(textType)) {
+                issues.add(warning("TEXT_TYPE_UNKNOWN", p + "textType", "Unknown textType '" + textType + "' (use " + String.join(", ", TEXT_TYPES) + ")."));
+            }
+            metadata.put("textType", textType);
+        }
+        String topic = text(node, "topic");
+        if (topic != null) metadata.put("topic", topic);
+        return new ParsedExercise(index, spec, externalId, title, instructions, List.of(), List.of(), metadata, text, questions);
+    }
+
+    /** Every gap number of the spec must appear in the text exactly once, and no other [n] marker may. */
+    private void checkGapMarkers(String text, String p, ExamContentSpec spec, List<Issue> issues) {
+        Map<Integer, Integer> seen = new LinkedHashMap<>();
+        var matcher = GAP_MARKER.matcher(text);
+        while (matcher.find()) seen.merge(Integer.parseInt(matcher.group(1)), 1, Integer::sum);
+        for (int n = spec.firstQuestionNumber(); n <= spec.lastQuestionNumber(); n++) {
+            int count = seen.getOrDefault(n, 0);
+            if (count == 0) {
+                issues.add(error("GAP_MARKER_MISSING", p + "text.content", "The text has no gap marker [" + n + "]."));
+            } else if (count > 1) {
+                issues.add(error("GAP_MARKER_DUPLICATE", p + "text.content", "Gap marker [" + n + "] appears " + count + " times; every gap may appear once."));
+            }
+        }
+        seen.keySet().stream().filter(n -> n < spec.firstQuestionNumber() || n > spec.lastQuestionNumber()).forEach(n ->
+                issues.add(error("GAP_MARKER_UNEXPECTED", p + "text.content", "Unexpected gap marker [" + n + "]; gaps must be numbered "
+                        + spec.firstQuestionNumber() + "–" + spec.lastQuestionNumber() + ".")));
+    }
+
+    /** Quality hints: one grammar category should not dominate, and the ten gaps should test a variety. */
+    private void warnCategories(List<ParsedExercise.Question> questions, String p, List<Issue> issues) {
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        questions.stream().map(ParsedExercise.Question::type).filter(java.util.Objects::nonNull).forEach(c -> counts.merge(c, 1, Integer::sum));
+        counts.forEach((category, count) -> {
+            if (count > 3) {
+                issues.add(warning("CATEGORY_DOMINATES", p + "questions", count + " of " + questions.size() + " gaps test " + category + "; use a more varied mix."));
+            }
+        });
+        if (!counts.isEmpty() && counts.size() < 5 && questions.size() >= 8) {
+            issues.add(warning("CATEGORY_VARIETY", p + "questions", "Only " + counts.size() + " different grammar categories are used; aim for at least 5."));
+        }
+    }
+
     private ParsedExercise readReadingExercise(int index, ExamContentSpec spec, JsonNode node, String p, String externalId,
                                                String title, String instructions, List<Issue> issues) {
         String readingText = readReadingText(node, p, spec, issues);
@@ -379,6 +444,10 @@ public class ExamContentValidator {
             JsonNode q = array.get(i);
             String path = p + "questions[" + i + "]";
             String id = text(q, "id");
+            // Sprachbausteine files identify a gap by its number alone; derive the id instead of requiring one.
+            if (id == null && spec.isGapText() && q != null && q.get("number") != null && q.get("number").isIntegralNumber()) {
+                id = "question_" + q.get("number").asInt();
+            }
             if (id == null) {
                 issues.add(error("QUESTION_ID_MISSING", path + ".id", "Question " + (i + 1) + " has no id."));
             } else if (!ids.add(id)) {
@@ -398,7 +467,10 @@ public class ExamContentValidator {
 
             String questionText = text(q, "question");
             if (questionText == null) {
-                issues.add(error("QUESTION_TEXT_EMPTY", path + ".question", "Question " + (i + 1) + " has no question text."));
+                // A gap question is identified by its number alone ("Lücke 21"); only reading questions need their own text.
+                if (!spec.isGapText()) {
+                    issues.add(error("QUESTION_TEXT_EMPTY", path + ".question", "Question " + (i + 1) + " has no question text."));
+                }
             } else {
                 if (questionText.length() > 500) {
                     issues.add(error("QUESTION_TEXT_TOO_LONG", path + ".question", "Question " + (i + 1) + " is too long (max 500 characters)."));
@@ -409,23 +481,31 @@ public class ExamContentValidator {
             }
 
             List<ParsedExercise.Option> options = readOptions(q, path, spec, issues);
-            String correct = text(q, "correctOptionId");
+            String correct = firstNonNull(text(q, "correctOptionId"), text(q, "correctAnswer"));
+            if (correct != null) correct = correct.toLowerCase(java.util.Locale.ROOT);
+            final String correctId = correct;
             if (correct == null) {
                 issues.add(error("CORRECT_OPTION_MISSING", path + ".correctOptionId", "Question " + (i + 1) + " has no correctOptionId."));
-            } else if (options.stream().noneMatch(o -> correct.equals(o.id()))) {
+            } else if (options.stream().noneMatch(o -> correctId.equals(o.id()))) {
                 issues.add(error("CORRECT_OPTION_UNKNOWN", path + ".correctOptionId",
                         "Question " + (i + 1) + " refers to option '" + correct + "', which does not exist."));
             }
 
-            String type = text(q, "questionType");
+            // Reading questions declare a questionType, Sprachbausteine gaps a grammar category.
+            String typeField = spec.isGapText() ? "category" : "questionType";
+            Set<String> allowedTypes = spec.isGapText() ? GAP_CATEGORIES : QUESTION_TYPES;
+            String type = text(q, typeField);
             if (type == null) {
-                issues.add(warning("QUESTION_TYPE_MISSING", path + ".questionType", "Question " + (i + 1) + " has no questionType."));
-            } else if (!QUESTION_TYPES.contains(type.toUpperCase())) {
-                issues.add(warning("QUESTION_TYPE_UNKNOWN", path + ".questionType",
-                        "Unknown questionType '" + type + "' (use " + String.join(", ", QUESTION_TYPES) + "); ignored."));
+                issues.add(warning(spec.isGapText() ? "CATEGORY_MISSING" : "QUESTION_TYPE_MISSING", path + "." + typeField,
+                        "Question " + (i + 1) + " has no " + typeField + "."));
+            } else if (!allowedTypes.contains(type.toUpperCase())) {
+                issues.add(warning(spec.isGapText() ? "CATEGORY_UNKNOWN" : "QUESTION_TYPE_UNKNOWN", path + "." + typeField,
+                        "Unknown " + typeField + " '" + type + "' (use " + String.join(", ", allowedTypes) + "); ignored."));
                 type = null;
             }
-            questions.add(new ParsedExercise.Question(id, number, questionText, options, correct, type == null ? null : type.toUpperCase()));
+            Map<String, String> explanations = readExplanations(q);
+            questions.add(new ParsedExercise.Question(id, number, questionText, options, correct, type == null ? null : type.toUpperCase(),
+                    text(q, "grammarFocus"), explanations));
         }
 
         if (questions.size() != spec.questionCount()) {
@@ -443,6 +523,22 @@ public class ExamContentValidator {
         return questions;
     }
 
+    /** explanation is {"de": ..., "en": ..., "fa": ...} or a plain German string. */
+    private static Map<String, String> readExplanations(JsonNode question) {
+        Map<String, String> out = new LinkedHashMap<>();
+        JsonNode node = question == null ? null : question.get("explanation");
+        if (node == null || node.isNull()) return out;
+        if (node.isTextual()) {
+            if (!node.asText().isBlank()) out.put("de", node.asText().trim());
+        } else if (node.isObject()) {
+            for (String lang : List.of("de", "en", "fa")) {
+                String value = text(node, lang);
+                if (value != null) out.put(lang, value.length() > 1000 ? value.substring(0, 1000) : value);
+            }
+        }
+        return out;
+    }
+
     private List<ParsedExercise.Option> readOptions(JsonNode question, String path, ExamContentSpec spec, List<Issue> issues) {
         List<ParsedExercise.Option> options = new ArrayList<>();
         JsonNode array = question == null ? null : question.get("options");
@@ -455,7 +551,7 @@ public class ExamContentValidator {
         for (int j = 0; j < array.size(); j++) {
             JsonNode o = array.get(j);
             String optionPath = path + ".options[" + j + "]";
-            String id = text(o, "id");
+            String id = firstNonNull(text(o, "id"), text(o, "key"));
             String optionText = text(o, "text");
             if (id == null) {
                 issues.add(error("OPTION_ID_MISSING", optionPath + ".id", "Option " + (j + 1) + " has no id."));
@@ -489,6 +585,14 @@ public class ExamContentValidator {
         if (keys.size() >= 3 && keys.stream().noneMatch(java.util.Objects::isNull) && new LinkedHashSet<>(keys).size() == 1) {
             issues.add(warning("ANSWER_POSITIONS_SAME", p + "questions", "Every correct answer is option '" + keys.get(0) + "'; answer positions should vary."));
         }
+        Map<String, Integer> byKey = new LinkedHashMap<>();
+        keys.stream().filter(java.util.Objects::nonNull).forEach(k -> byKey.merge(k, 1, Integer::sum));
+        byKey.forEach((key, count) -> {
+            if (keys.size() >= 5 && new LinkedHashSet<>(keys).size() > 1 && count * 10 > keys.size() * 6) {
+                issues.add(warning("ANSWER_POSITIONS_SKEWED", p + "questions", "Option '" + key + "' is correct in " + count + " of " + keys.size()
+                        + " questions; spread the correct answers over the positions."));
+            }
+        });
         int longest = 0;
         int counted = 0;
         for (ParsedExercise.Question q : questions) {

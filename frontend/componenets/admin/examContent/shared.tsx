@@ -65,7 +65,9 @@ export function downloadTextFile(filename: string, text: string, mime = "text/pl
 /** Plain text of the rich-text HTML an exercise passage is stored as (paragraph/line breaks kept). */
 export function htmlToText(html: string | null | undefined): string {
     if (!html) return "";
-    const withBreaks = html.replace(/<br\s*\/?>/gi, "\n").replace(/<\/p>\s*<p[^>]*>/gi, "\n\n");
+    const withBreaks = html
+        .replace(/<span[^>]*data-exam-gap="(\d+)"[^>]*>\d+<\/span>/gi, "[$1]")
+        .replace(/<br\s*\/?>/gi, "\n").replace(/<\/p>\s*<p[^>]*>/gi, "\n\n");
     const doc = new DOMParser().parseFromString(withBreaks, "text/html");
     return (doc.body.textContent ?? "").trim();
 }
@@ -136,7 +138,15 @@ function ReadingExerciseView({ preview, showAnswers }: Readonly<{ preview: Exerc
             {preview.instructions && <p className="text-sm italic text-gray-600 dark:text-gray-300">{preview.instructions}</p>}
 
             <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-                <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-line">{preview.readingText}</p>
+                <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-line">
+                    {(preview.readingText ?? "").split(/(\[\d{1,3}\])/).map((part, i) =>
+                        /^\[\d{1,3}\]$/.test(part) ? (
+                            <span key={i} className="exam-gap-marker">{part.slice(1, -1)}</span>
+                        ) : (
+                            part
+                        ),
+                    )}
+                </p>
             </div>
 
             <div className="space-y-3">

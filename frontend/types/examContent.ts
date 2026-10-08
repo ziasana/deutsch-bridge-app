@@ -24,6 +24,9 @@ export interface ExamContentOptions {
     difficulties: string[];
     statuses: ExamContentStatus[];
     schemaVersion: string;
+    /** Sprachbausteine generator choices. */
+    textTypes?: string[];
+    grammarCategories?: string[];
 }
 
 export interface PromptRequest {
@@ -37,6 +40,10 @@ export interface PromptRequest {
     notes?: string;
     /** Situation-matching parts (Lesen Teil 3): ask the AI for image briefs. */
     includeVisuals?: boolean;
+    /** Sprachbausteine: preferred text type; omitted = varied. */
+    textType?: string;
+    /** Sprachbausteine: grammar categories to test; omitted = all. */
+    grammarCategories?: string[];
 }
 
 export interface PromptResponse {
