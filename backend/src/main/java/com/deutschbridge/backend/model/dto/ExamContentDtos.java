@@ -1,6 +1,7 @@
 package com.deutschbridge.backend.model.dto;
 
 import java.util.List;
+import java.util.Map;
 
 /** Request / response shapes of the admin exam-content (generator / import / review) API. */
 public final class ExamContentDtos {
@@ -19,8 +20,14 @@ public final class ExamContentDtos {
             /** Topic tokens (see ExamContentPromptBuilder.TOPICS); empty = automatic. */
             List<String> topics,
             /** Optional free-text extra instructions appended to the prompt. */
-            String notes
+            String notes,
+            /** Situation-matching specs: ask the AI for image briefs (default true). */
+            Boolean includeVisuals
     ) {
+        public PromptRequest(String exam, String level, String section, String part, Integer count, String difficulty,
+                             List<String> topics, String notes) {
+            this(exam, level, section, part, count, difficulty, topics, notes, null);
+        }
     }
 
     public record PromptResponse(
@@ -92,6 +99,27 @@ public final class ExamContentDtos {
     ) {
     }
 
+    /** Lesen Teil 3: one situation with its (admin-only) answer and matching profile. */
+    public record SituationView(
+            String id,
+            Integer number,
+            String text,
+            String correctAdvertisementId,
+            Map<String, Object> matchingProfile
+    ) {
+    }
+
+    /** Lesen Teil 3: one structured advertisement; content / visual / matchingProfile keep the import JSON shape. */
+    public record AdvertisementView(
+            String id,
+            String type,
+            String layout,
+            Map<String, Object> content,
+            Map<String, Object> visual,
+            Map<String, Object> matchingProfile
+    ) {
+    }
+
     public record ExercisePreview(
             String title,
             String instructions,
@@ -99,8 +127,15 @@ public final class ExamContentDtos {
             List<TextView> texts,
             /** Multiple-choice exercises only: the reading text and its questions. */
             String readingText,
-            List<QuestionView> questions
+            List<QuestionView> questions,
+            /** Situation-matching exercises only (Lesen Teil 3). */
+            List<SituationView> situations,
+            List<AdvertisementView> advertisements
     ) {
+        public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
+                               String readingText, List<QuestionView> questions) {
+            this(title, instructions, headings, texts, readingText, questions, List.of(), List.of());
+        }
     }
 
     public record DuplicateMatch(

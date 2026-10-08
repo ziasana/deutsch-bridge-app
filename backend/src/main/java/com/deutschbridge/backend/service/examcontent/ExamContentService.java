@@ -47,6 +47,13 @@ public class ExamContentService {
     private static final Set<String> QUESTION_ERROR_CODES = Set.of(
             "QUESTION_COUNT", "QUESTIONS_MISSING", "QUESTION_ID_MISSING", "QUESTION_ID_DUPLICATE", "QUESTION_NUMBER_DUPLICATE",
             "QUESTION_NUMBER_INVALID", "QUESTION_TEXT_EMPTY", "QUESTION_TEXT_TOO_LONG", "QUESTION_TEXT_DUPLICATE");
+    private static final Set<String> SITUATION_ERROR_CODES = Set.of(
+            "SITUATION_COUNT", "SITUATIONS_MISSING", "SITUATION_ID_MISSING", "SITUATION_ID_DUPLICATE", "SITUATION_NUMBER_INVALID",
+            "SITUATION_NUMBER_DUPLICATE", "SITUATION_NUMBERS", "SITUATION_TEXT_EMPTY", "SITUATION_TEXT_TOO_LONG");
+    private static final Set<String> AD_ERROR_CODES = Set.of(
+            "AD_COUNT", "ADVERTISEMENTS_MISSING", "AD_ID_MISSING", "AD_ID_DUPLICATE", "AD_IDS", "AD_CONTENT_MISSING", "AD_CONTENT_EMPTY",
+            "AD_DETAILS_INVALID", "AD_CONTACT_INVALID", "AD_CONTENT_TOO_LONG", "AD_VISUAL_INVALID", "AD_IMAGE_TYPE_INVALID", "AD_ALT_TEXT_MISSING");
+    private static final Set<String> SITUATION_ANSWER_CODES = Set.of("SITUATION_ANSWER_MISSING", "SITUATION_ANSWER_INVALID", "AD_REUSED");
     private static final Set<String> OPTION_ERROR_CODES = Set.of(
             "OPTIONS_MISSING", "OPTION_COUNT", "OPTION_IDS", "OPTION_ID_MISSING", "OPTION_ID_DUPLICATE", "OPTION_TEXT_EMPTY",
             "OPTION_TEXT_TOO_LONG", "OPTION_TEXT_DUPLICATE", "CORRECT_OPTION_MISSING", "CORRECT_OPTION_UNKNOWN");
@@ -181,9 +188,12 @@ public class ExamContentService {
                 || reports.stream().anyMatch(r -> !r.valid());
         int headings = file.exercises().stream().mapToInt(e -> e.headings().size()).sum();
         int texts = file.exercises().stream().mapToInt(e -> e.texts().size()).sum();
-        int questions = file.exercises().stream().mapToInt(e -> e.questions().size()).sum();
+        int questions = file.exercises().stream().mapToInt(e -> e.questions().size() + e.situations().size()).sum();
         boolean reading = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isMultipleChoice());
-        boolean matching = file.exercises().stream().anyMatch(e -> e.spec() != null && !e.spec().isMultipleChoice());
+        boolean situation = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isSituationMatching());
+        boolean matching = file.exercises().stream().anyMatch(e -> e.spec() != null && !e.spec().isMultipleChoice() && !e.spec().isSituationMatching());
+        int situations = file.exercises().stream().mapToInt(e -> e.situations().size()).sum();
+        int advertisements = file.exercises().stream().mapToInt(e -> e.advertisements().size()).sum();
 
         List<Issue> all = new ArrayList<>(fileIssues);
         reports.forEach(r -> all.addAll(r.issues()));
@@ -197,10 +207,15 @@ public class ExamContentService {
         checks.add(new Check("Section: " + orDash(file.section()), noCode(all, "SECTION_INVALID")));
         checks.add(new Check("Part: " + orDash(file.part()), noCode(all, "PART_INVALID", "SPEC_UNSUPPORTED")));
         checks.add(new Check("Exercises: " + reports.size(), !reports.isEmpty() && noCode(all, "EXERCISE_NOT_OBJECT", "EXTERNAL_ID_INVALID", "EXTERNAL_ID_DUPLICATE_IN_FILE")));
-        if (matching || !reading) {
+        if (matching || (!reading && !situation)) {
             checks.add(new Check("Headings: " + headings, !reports.isEmpty() && noCode(all, STRUCTURE_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Texts: " + texts, !reports.isEmpty() && noCode(all, TEXT_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Answer assignments valid", !reports.isEmpty() && noCode(all, ANSWER_ERROR_CODES.toArray(String[]::new))));
+        }
+        if (situation) {
+            checks.add(new Check("Situations: " + situations, !reports.isEmpty() && noCode(all, SITUATION_ERROR_CODES.toArray(String[]::new))));
+            checks.add(new Check("Advertisements: " + advertisements, !reports.isEmpty() && noCode(all, AD_ERROR_CODES.toArray(String[]::new))));
+            checks.add(new Check("Matching valid (each advertisement used once)", !reports.isEmpty() && noCode(all, SITUATION_ANSWER_CODES.toArray(String[]::new))));
         }
         if (reading) {
             checks.add(new Check("Reading texts: " + file.exercises().stream().filter(e -> e.readingText() != null).count(),
@@ -329,6 +344,17 @@ public class ExamContentService {
     static String publishProblem(ExamExercise e) {
         if (e.getPassages() == null || e.getPassages().isEmpty()) return "Has no texts.";
         if (e.getQuestions() == null || e.getQuestions().isEmpty()) return "Has no questions.";
+        if (e.getTaskType() == ExamTaskType.SITUATION_MATCHING) {
+            java.util.Set<String> used = new java.util.HashSet<>();
+            for (var q : e.getQuestions()) {
+                String label = "Situation " + (q.getQuestionNumber() != null ? q.getQuestionNumber() : "?");
+                String answer = q.getCorrectAnswer();
+                if (answer == null || answer.isBlank()) return label + " has no correct advertisement.";
+                if ("X".equalsIgnoreCase(answer)) continue;
+                if (e.getPassages().stream().noneMatch(p -> answer.equals(p.getId()))) return label + " refers to an advertisement that does not exist.";
+                if (!used.add(answer)) return "An advertisement is the correct answer for more than one situation.";
+            }
+        }
         if (e.getTaskType() == ExamTaskType.MULTIPLE_CHOICE) {
             for (var q : e.getQuestions()) {
                 String label = "Question " + (q.getQuestionNumber() != null ? q.getQuestionNumber() : "?");

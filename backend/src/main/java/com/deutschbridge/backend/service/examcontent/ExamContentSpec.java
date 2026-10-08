@@ -48,6 +48,20 @@ public record ExamContentSpec(
         return taskType == ExamTaskType.MULTIPLE_CHOICE;
     }
 
+    /** True for "situations matched to advertisements" specs (Lesen Teil 3). */
+    public boolean isSituationMatching() {
+        return taskType == ExamTaskType.SITUATION_MATCHING;
+    }
+
+    /** Situation spec: {@code questionCount} situations numbered from {@code firstQuestionNumber}, {@code optionCount} ads a, b, c ... */
+    public int situationCount() {
+        return questionCount;
+    }
+
+    public int advertisementCount() {
+        return optionCount;
+    }
+
     /** Option ids a, b, c ... in order. */
     public java.util.List<String> optionIds() {
         return java.util.stream.IntStream.range(0, optionCount).mapToObj(i -> String.valueOf((char) ('a' + i))).toList();

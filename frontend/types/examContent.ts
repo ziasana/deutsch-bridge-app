@@ -12,7 +12,7 @@ export interface ExamContentSpecInfo {
     headingCount: number;
     textCount: number;
     label: string;
-    taskType: "MATCHING" | "MULTIPLE_CHOICE";
+    taskType: "MATCHING" | "MULTIPLE_CHOICE" | "SITUATION_MATCHING";
     questionCount: number;
     optionCount: number;
 }
@@ -35,6 +35,8 @@ export interface PromptRequest {
     difficulty: string;
     topics: string[];
     notes?: string;
+    /** Situation-matching parts (Lesen Teil 3): ask the AI for image briefs. */
+    includeVisuals?: boolean;
 }
 
 export interface PromptResponse {
@@ -78,6 +80,42 @@ export interface PreviewQuestion {
     questionType: string | null;
 }
 
+export interface PreviewSituation {
+    id: string | null;
+    number: number | null;
+    text: string | null;
+    /** a–l, or x when no advertisement fits. */
+    correctAdvertisementId: string | null;
+    matchingProfile?: { primaryNeed?: string; requirements?: string[] } | null;
+}
+
+export interface AdvertisementContent {
+    headline?: string;
+    subheadline?: string;
+    description?: string;
+    details?: string[];
+    price?: string;
+    openingHours?: string;
+    contact?: Record<string, string>;
+}
+
+export interface AdvertisementVisual {
+    hasImage?: boolean;
+    imageType?: string;
+    imageUrl?: string | null;
+    imagePrompt?: string | null;
+    altText?: string | null;
+}
+
+export interface PreviewAdvertisement {
+    id: string | null;
+    type?: string | null;
+    layout?: string | null;
+    content: AdvertisementContent;
+    visual?: AdvertisementVisual | null;
+    matchingProfile?: { primaryService?: string; features?: string[] } | null;
+}
+
 export interface ExercisePreviewData {
     title: string | null;
     instructions: string | null;
@@ -86,6 +124,9 @@ export interface ExercisePreviewData {
     /** Multiple-choice exercises (Lesen Teil 2): the one reading text and its questions. */
     readingText?: string | null;
     questions?: PreviewQuestion[];
+    /** Situation-matching exercises (Lesen Teil 3). */
+    situations?: PreviewSituation[];
+    advertisements?: PreviewAdvertisement[];
 }
 
 export interface DuplicateMatch {

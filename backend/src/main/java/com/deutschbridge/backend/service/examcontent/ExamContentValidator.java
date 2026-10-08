@@ -30,6 +30,10 @@ public class ExamContentValidator {
 
     private static final Set<String> CONTENT_TYPES = Set.of("EXAM_EXERCISE", "EXAM_EXERCISE_BATCH");
     private static final Set<String> DIFFICULTIES = Set.of("EASY", "MEDIUM", "HARD");
+    static final Set<String> IMAGE_TYPES = Set.of("PHOTO", "ILLUSTRATION", "LOGO", "ICON", "DECORATIVE", "NONE");
+    static final Set<String> AD_LAYOUTS = Set.of("CLASSIC", "IMAGE_TOP", "IMAGE_SIDE", "COMPACT", "PROMO", "NOTICE");
+    /** The answer sheet's "no advertisement fits". */
+    public static final String NO_ADVERTISEMENT = "x";
     static final Set<String> QUESTION_TYPES = Set.of(
             "EXPLICIT_INFORMATION", "PARAPHRASE", "DETAIL_COMPREHENSION", "MAIN_IDEA", "LOGICAL_UNDERSTANDING", "REFERENCE");
     private static final Pattern EXTERNAL_ID = Pattern.compile("[A-Za-z0-9._-]{1,64}");
@@ -132,6 +136,9 @@ public class ExamContentValidator {
             issues.add(error("INSTRUCTIONS_TOO_LONG", p + "instructions", "instructions are too long."));
         }
 
+        if (spec != null && spec.isSituationMatching()) {
+            return readSituationExercise(index, spec, node, p, externalId, title, instructions, issues);
+        }
         if (spec != null && spec.isMultipleChoice()) {
             return readReadingExercise(index, spec, node, p, externalId, title, instructions, issues);
         }
@@ -496,6 +503,244 @@ public class ExamContentValidator {
             issues.add(warning("CORRECT_ANSWER_LONGEST", p + "questions", "The correct answer is the longest option in " + longest + " of " + counted
                     + " questions; answer length should not give the solution away."));
         }
+    }
+
+    // ------------------------------------------------------------------ situations + advertisements
+
+    private static final com.fasterxml.jackson.databind.ObjectMapper TREE = new com.fasterxml.jackson.databind.ObjectMapper();
+
+    private ParsedExercise readSituationExercise(int index, ExamContentSpec spec, JsonNode node, String p, String externalId,
+                                                 String title, String instructions, List<Issue> issues) {
+        List<ParsedExercise.Advertisement> ads = readAdvertisements(node, p, spec, issues);
+        List<ParsedExercise.Situation> situations = readSituations(node, p, spec, issues);
+        checkSituationAnswers(situations, ads, p, spec, issues);
+        Map<String, Object> metadata = readMetadata(node.get("metadata"), p, issues);
+        return new ParsedExercise(index, spec, externalId, title, instructions, List.of(), List.of(), metadata,
+                null, List.of(), situations, ads);
+    }
+
+    private List<ParsedExercise.Situation> readSituations(JsonNode node, String p, ExamContentSpec spec, List<Issue> issues) {
+        List<ParsedExercise.Situation> situations = new ArrayList<>();
+        JsonNode array = node.get("situations");
+        if (array == null || !array.isArray()) {
+            issues.add(error("SITUATIONS_MISSING", p + "situations", "situations must be an array."));
+            return situations;
+        }
+        Set<String> ids = new LinkedHashSet<>();
+        Set<Integer> numbers = new LinkedHashSet<>();
+        for (int i = 0; i < array.size(); i++) {
+            JsonNode s = array.get(i);
+            String path = p + "situations[" + i + "]";
+            String id = text(s, "id");
+            if (id == null) {
+                issues.add(error("SITUATION_ID_MISSING", path + ".id", "Situation " + (i + 1) + " has no id."));
+            } else if (!ids.add(id)) {
+                issues.add(error("SITUATION_ID_DUPLICATE", path + ".id", "Situation id '" + id + "' is used more than once."));
+            }
+            Integer number = null;
+            JsonNode numberNode = s == null ? null : s.get("number");
+            if (numberNode != null && numberNode.isIntegralNumber()) {
+                number = numberNode.asInt();
+                if (!numbers.add(number)) {
+                    issues.add(error("SITUATION_NUMBER_DUPLICATE", path + ".number", "Situation number " + number + " is used more than once."));
+                }
+            } else {
+                issues.add(error("SITUATION_NUMBER_INVALID", path + ".number", "Situation " + (i + 1) + " needs a whole-number 'number' ("
+                        + spec.firstQuestionNumber() + "–" + spec.lastQuestionNumber() + ")."));
+            }
+            String situationText = text(s, "text");
+            if (situationText == null) {
+                issues.add(error("SITUATION_TEXT_EMPTY", path + ".text", "Situation " + (number != null ? number : i + 1) + " has no text."));
+            } else if (situationText.length() > 1000) {
+                issues.add(error("SITUATION_TEXT_TOO_LONG", path + ".text", "Situation " + (number != null ? number : i + 1) + " is too long (max 1000 characters)."));
+            }
+            String answer = text(s, "correctAdvertisementId");
+            if (answer == null) {
+                issues.add(error("SITUATION_ANSWER_MISSING", path + ".correctAdvertisementId",
+                        "Situation " + (number != null ? number : i + 1) + " has no correctAdvertisementId (a–l or x)."));
+            } else {
+                answer = answer.toLowerCase(java.util.Locale.ROOT);
+                if (!spec.optionIds().contains(answer) && !NO_ADVERTISEMENT.equals(answer)) {
+                    issues.add(error("SITUATION_ANSWER_INVALID", path + ".correctAdvertisementId",
+                            "Situation " + (number != null ? number : i + 1) + " has invalid correctAdvertisementId \"" + answer + "\" (use a–"
+                                    + spec.optionIds().get(spec.optionIds().size() - 1) + " or x)."));
+                }
+            }
+            situations.add(new ParsedExercise.Situation(id, number, situationText, answer, objectMap(s == null ? null : s.get("matchingProfile"))));
+        }
+        if (situations.size() != spec.situationCount()) {
+            issues.add(error("SITUATION_COUNT", p + "situations", "Expected " + spec.situationCount() + " situations. Found " + situations.size() + "."));
+        }
+        List<Integer> expected = java.util.stream.IntStream.rangeClosed(spec.firstQuestionNumber(), spec.lastQuestionNumber()).boxed().toList();
+        if (!numbers.isEmpty() && !numbers.equals(new LinkedHashSet<>(expected))) {
+            issues.add(error("SITUATION_NUMBERS", p + "situations", "Situation numbers must be exactly "
+                    + spec.firstQuestionNumber() + "–" + spec.lastQuestionNumber() + " (found: "
+                    + numbers.stream().sorted().map(String::valueOf).reduce((a, b) -> a + ", " + b).orElse("") + ")."));
+        }
+        return situations;
+    }
+
+    private List<ParsedExercise.Advertisement> readAdvertisements(JsonNode node, String p, ExamContentSpec spec, List<Issue> issues) {
+        List<ParsedExercise.Advertisement> ads = new ArrayList<>();
+        JsonNode array = node.get("advertisements");
+        if (array == null || !array.isArray()) {
+            issues.add(error("ADVERTISEMENTS_MISSING", p + "advertisements", "advertisements must be an array."));
+            return ads;
+        }
+        Set<String> ids = new LinkedHashSet<>();
+        for (int i = 0; i < array.size(); i++) {
+            JsonNode a = array.get(i);
+            String path = p + "advertisements[" + i + "]";
+            String id = text(a, "id");
+            if (id == null) {
+                issues.add(error("AD_ID_MISSING", path + ".id", "Advertisement " + (i + 1) + " has no id."));
+            } else {
+                id = id.toLowerCase(java.util.Locale.ROOT);
+                if (!ids.add(id)) issues.add(error("AD_ID_DUPLICATE", path + ".id", "Advertisement id '" + id + "' is used more than once."));
+            }
+            String type = text(a, "type");
+            String layout = text(a, "layout");
+            if (layout != null) {
+                layout = layout.toUpperCase(java.util.Locale.ROOT);
+                if (!AD_LAYOUTS.contains(layout)) {
+                    issues.add(warning("AD_LAYOUT_UNKNOWN", path + ".layout", "Unknown layout '" + layout + "' (use " + String.join(", ", AD_LAYOUTS) + "); CLASSIC is used."));
+                    layout = null;
+                }
+            }
+
+            Map<String, Object> content = readAdContent(a, path, id, issues);
+            Map<String, Object> visual = readAdVisual(a, path, id, issues);
+            ads.add(new ParsedExercise.Advertisement(id, type, layout, content, visual, objectMap(a == null ? null : a.get("matchingProfile"))));
+        }
+        if (ads.size() != spec.advertisementCount()) {
+            issues.add(error("AD_COUNT", p + "advertisements", "Expected " + spec.advertisementCount() + " advertisements. Found " + ads.size() + "."));
+        }
+        if (!ids.isEmpty() && !ids.equals(new LinkedHashSet<>(spec.optionIds()))) {
+            issues.add(error("AD_IDS", p + "advertisements", "Advertisement ids must be exactly " + String.join(", ", spec.optionIds()) + "."));
+        }
+        return ads;
+    }
+
+    private Map<String, Object> readAdContent(JsonNode ad, String path, String id, List<Issue> issues) {
+        JsonNode content = ad == null ? null : ad.get("content");
+        if (content == null || !content.isObject()) {
+            issues.add(error("AD_CONTENT_MISSING", path + ".content", "Advertisement '" + id + "' needs a content object (headline, description, details ...)."));
+            return Map.of();
+        }
+        Map<String, Object> map = objectMap(content);
+        boolean hasText = map.values().stream().anyMatch(v -> v instanceof String s && !s.isBlank()
+                || v instanceof List<?> l && !l.isEmpty() || v instanceof Map<?, ?> m && !m.isEmpty());
+        if (!hasText) {
+            issues.add(error("AD_CONTENT_EMPTY", path + ".content", "Advertisement '" + id + "' has no content."));
+        }
+        JsonNode details = content.get("details");
+        if (details != null && !details.isNull() && (!details.isArray() || java.util.stream.StreamSupport.stream(details.spliterator(), false).anyMatch(d -> !d.isTextual()))) {
+            issues.add(error("AD_DETAILS_INVALID", path + ".content.details", "details of advertisement '" + id + "' must be an array of strings."));
+        }
+        JsonNode contact = content.get("contact");
+        if (contact != null && !contact.isNull() && !contact.isObject()) {
+            issues.add(error("AD_CONTACT_INVALID", path + ".content.contact", "contact of advertisement '" + id + "' must be an object."));
+        }
+        if (map.toString().length() > MAX_FIELD_LENGTH) {
+            issues.add(error("AD_CONTENT_TOO_LONG", path + ".content", "Advertisement '" + id + "' is too long."));
+        }
+        return map;
+    }
+
+    private Map<String, Object> readAdVisual(JsonNode ad, String path, String id, List<Issue> issues) {
+        JsonNode visual = ad == null ? null : ad.get("visual");
+        if (visual == null || visual.isNull()) return Map.of();
+        if (!visual.isObject()) {
+            issues.add(error("AD_VISUAL_INVALID", path + ".visual", "visual of advertisement '" + id + "' must be an object."));
+            return Map.of();
+        }
+        Map<String, Object> map = objectMap(visual);
+        String imageType = text(visual, "imageType");
+        if (imageType != null) {
+            imageType = imageType.toUpperCase(java.util.Locale.ROOT);
+            if (!IMAGE_TYPES.contains(imageType)) {
+                issues.add(error("AD_IMAGE_TYPE_INVALID", path + ".visual.imageType", "Unknown imageType '" + imageType + "' (use " + String.join(", ", IMAGE_TYPES) + ")."));
+            } else {
+                map.put("imageType", imageType);
+            }
+        }
+        boolean hasImage = visual.path("hasImage").asBoolean(false);
+        if (hasImage && text(visual, "altText") == null) {
+            issues.add(error("AD_ALT_TEXT_MISSING", path + ".visual.altText", "Advertisement '" + id + "' has an image, so visual.altText is required."));
+        }
+        if (hasImage && "NONE".equals(imageType)) {
+            issues.add(warning("AD_IMAGE_TYPE_CONFLICT", path + ".visual", "Advertisement '" + id + "' has hasImage=true but imageType NONE."));
+        }
+        return map;
+    }
+
+    /** One-use rule, x handling and the (non-blocking) ambiguity hints derived from the matching profiles. */
+    private void checkSituationAnswers(List<ParsedExercise.Situation> situations, List<ParsedExercise.Advertisement> ads,
+                                       String p, ExamContentSpec spec, List<Issue> issues) {
+        Map<String, List<Integer>> usedBy = new LinkedHashMap<>();
+        int none = 0;
+        for (ParsedExercise.Situation s : situations) {
+            if (s.correctAdvertisementId() == null) continue;
+            if (NO_ADVERTISEMENT.equals(s.correctAdvertisementId())) {
+                none++;
+            } else if (spec.optionIds().contains(s.correctAdvertisementId())) {
+                usedBy.computeIfAbsent(s.correctAdvertisementId(), k -> new ArrayList<>()).add(s.number());
+            }
+        }
+        usedBy.forEach((adId, numbers) -> {
+            if (numbers.size() > 1) {
+                issues.add(error("AD_REUSED", p + "situations", "Advertisement \"" + adId + "\" is used twice: situations "
+                        + numbers.stream().map(String::valueOf).reduce((a, b) -> a + " and " + b).orElse("") + ". Every advertisement may be used once."));
+            }
+        });
+        if (none > 3) {
+            issues.add(warning("TOO_MANY_NO_MATCH", p + "situations", none + " situations have the answer x; real exercises normally have one or two."));
+        }
+
+        for (ParsedExercise.Situation s : situations) {
+            String need = s.matchingProfile() == null ? null : string(s.matchingProfile().get("primaryNeed"));
+            if (need == null || s.correctAdvertisementId() == null) continue;
+            List<String> requirements = stringList(s.matchingProfile().get("requirements"));
+            for (ParsedExercise.Advertisement ad : ads) {
+                if (ad.id() == null || ad.id().equals(s.correctAdvertisementId())) continue;
+                if (profileFits(ad, need, requirements)) {
+                    issues.add(warning("SITUATION_AMBIGUOUS", p + "situations",
+                            "Situation " + s.number() + " may also match advertisement " + ad.id() + " (same service and all required features)."));
+                }
+            }
+            if (NO_ADVERTISEMENT.equals(s.correctAdvertisementId())) continue;
+            ads.stream().filter(a -> s.correctAdvertisementId().equals(a.id())).findFirst().ifPresent(ad -> {
+                if (!ad.matchingProfile().isEmpty() && !profileFits(ad, need, requirements)) {
+                    issues.add(warning("SITUATION_PROFILE_MISMATCH", p + "situations",
+                            "Situation " + s.number() + " is assigned to advertisement " + ad.id() + ", but its matching profile does not cover the situation's need."));
+                }
+            });
+        }
+    }
+
+    private static boolean profileFits(ParsedExercise.Advertisement ad, String need, List<String> requirements) {
+        Map<String, Object> profile = ad.matchingProfile();
+        if (profile == null || profile.isEmpty()) return false;
+        if (!need.equalsIgnoreCase(string(profile.get("primaryService")) == null ? "" : string(profile.get("primaryService")))) return false;
+        List<String> features = stringList(profile.get("features")).stream().map(f -> f.toUpperCase(java.util.Locale.ROOT)).toList();
+        return requirements.stream().allMatch(r -> features.contains(r.toUpperCase(java.util.Locale.ROOT)));
+    }
+
+    private static Map<String, Object> objectMap(JsonNode node) {
+        if (node == null || !node.isObject()) return new LinkedHashMap<>();
+        return TREE.convertValue(node, new com.fasterxml.jackson.core.type.TypeReference<LinkedHashMap<String, Object>>() {
+        });
+    }
+
+    private static String string(Object value) {
+        if (value == null) return null;
+        String s = value.toString().strip();
+        return s.isEmpty() ? null : s;
+    }
+
+    private static List<String> stringList(Object value) {
+        if (!(value instanceof List<?> list)) return List.of();
+        return list.stream().map(ExamContentValidator::string).filter(java.util.Objects::nonNull).toList();
     }
 
     private Map<String, Object> readMetadata(JsonNode node, String p, List<Issue> issues) {

@@ -30,7 +30,15 @@ public final class ExamContentSpecs {
                     "Lesen Sie den Text und die Aufgaben 6 bis 10. Wählen Sie bei jeder Aufgabe die richtige Lösung.",
                     "exam-content/prompts/multiple-choice-reading.v1.0.txt",
                     "1.0",
-                    5, 3, 6)
+                    5, 3, 6),
+            new ExamContentSpec(
+                    ExamType.TELC, LearningLevel.B1, ExamSection.LESEVERSTEHEN, 3, ExamTaskType.SITUATION_MATCHING,
+                    0, 0, 0, 0,
+                    "Lesen Sie die Situationen 11 bis 20 und die Anzeigen a bis l. Finden Sie für jede Situation die passende Anzeige. "
+                            + "Sie können jede Anzeige nur einmal benutzen. Wenn Sie zu einer Situation keine passende Anzeige finden, markieren Sie x.",
+                    "exam-content/prompts/situation-matching-ads.v1.0.txt",
+                    "1.0",
+                    10, 12, 11)
     );
 
     private ExamContentSpecs() {

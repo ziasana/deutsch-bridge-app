@@ -36,6 +36,7 @@ export default function ContentGenerator() {
     const [difficulty, setDifficulty] = useState("MIXED");
     const [topics, setTopics] = useState<string[]>([]);
     const [notes, setNotes] = useState("");
+    const [includeVisuals, setIncludeVisuals] = useState(true);
     const [result, setResult] = useState<PromptResponse | null>(null);
     const [generating, setGenerating] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
@@ -55,7 +56,7 @@ export default function ContentGenerator() {
         }
         setGenerating(true);
         try {
-            const res = await generateExamContentPrompt({ exam, level, section, part, count: n, difficulty, topics, notes: notes.trim() || undefined });
+            const res = await generateExamContentPrompt({ exam, level, section, part, count: n, difficulty, topics, notes: notes.trim() || undefined, includeVisuals });
             setResult(res.data);
         } catch (err) {
             toast.error(errorMessage(err, "Failed to generate the prompt."));
@@ -127,6 +128,8 @@ export default function ContentGenerator() {
                             <p className="text-sm text-green-700 dark:text-green-300">
                                 {spec.taskType === "MULTIPLE_CHOICE"
                                     ? `✓ ${spec.label}: one reading text, ${spec.questionCount} questions with ${spec.optionCount} options each.`
+                                    : spec.taskType === "SITUATION_MATCHING"
+                                    ? `✓ ${spec.label}: ${spec.questionCount} situations, ${spec.optionCount} advertisements (a–l), x = no advertisement fits.`
                                     : `✓ ${spec.label}: ${spec.textCount} texts, ${spec.headingCount} headings (${spec.headingCount - spec.textCount} unused).`}
                             </p>
                         ) : (
@@ -134,6 +137,13 @@ export default function ContentGenerator() {
                                 No content specification exists for this combination yet. Available:{" "}
                                 {(options?.specs ?? []).map((s) => s.label).join("; ") || "none"}.
                             </p>
+                        )}
+
+                        {spec?.taskType === "SITUATION_MATCHING" && (
+                            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                <input type="checkbox" checked={includeVisuals} onChange={(e) => setIncludeVisuals(e.target.checked)} />
+                                Include visual briefs (image type, image prompt, alt text) for the advertisements
+                            </label>
                         )}
 
                         <div className="grid grid-cols-2 gap-3">

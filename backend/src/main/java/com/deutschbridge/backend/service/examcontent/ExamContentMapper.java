@@ -2,7 +2,9 @@ package com.deutschbridge.backend.service.examcontent;
 
 import com.deutschbridge.backend.model.dto.ExamContentDtos.ExercisePreview;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.HeadingView;
+import com.deutschbridge.backend.model.dto.ExamContentDtos.AdvertisementView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.QuestionView;
+import com.deutschbridge.backend.model.dto.ExamContentDtos.SituationView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.TextView;
 import com.deutschbridge.backend.model.entity.ExamExercise;
 import com.deutschbridge.backend.model.entity.ExamPassage;
@@ -34,6 +36,9 @@ public final class ExamContentMapper {
     public static ExamExercise toEntity(ParsedExercise ex, ExamType examType, String schemaVersion,
                                         String promptVersion, String hash, String userId) {
         ExamContentSpec spec = ex.spec();
+        if (spec.isSituationMatching()) {
+            return toSituationEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
+        }
         if (spec.isMultipleChoice()) {
             return toReadingEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
         }
@@ -123,7 +128,82 @@ public final class ExamContentMapper {
         return exercise;
     }
 
+    /**
+     * Lesen Teil 3 in the existing SITUATION_MATCHING model: each advertisement becomes a passage labelled
+     * a..l (rendered to HTML), each situation a question whose correctAnswer is the matching passage's id or
+     * "X". The structured advertisements and the situations' matching profiles are kept in
+     * {@code metadata.teil3} so the admin preview and the JSON export can show the original structure.
+     */
+    private static ExamExercise toSituationEntity(ParsedExercise ex, ExamType examType, String schemaVersion,
+                                                  String promptVersion, String hash, String userId) {
+        ExamContentSpec spec = ex.spec();
+        Map<String, String> passageIdByAd = new LinkedHashMap<>();
+        List<ExamPassage> passages = new ArrayList<>();
+        List<Map<String, Object>> storedAds = new ArrayList<>();
+        for (ParsedExercise.Advertisement ad : ex.advertisements().stream()
+                .sorted(java.util.Comparator.comparing(ParsedExercise.Advertisement::id)).toList()) {
+            ExamPassage passage = new ExamPassage(null, ad.id(), AdvertisementRenderer.toHtml(ad.content()), null, null, null).ensureId();
+            passageIdByAd.put(ad.id(), passage.getId());
+            passages.add(passage);
+            Map<String, Object> stored = new LinkedHashMap<>();
+            stored.put("id", ad.id());
+            if (ad.type() != null) stored.put("type", ad.type());
+            if (ad.layout() != null) stored.put("layout", ad.layout());
+            stored.put("content", ad.content());
+            if (!ad.visual().isEmpty()) stored.put("visual", ad.visual());
+            if (!ad.matchingProfile().isEmpty()) stored.put("matchingProfile", ad.matchingProfile());
+            storedAds.add(stored);
+        }
+
+        List<ExamQuestion> questions = new ArrayList<>();
+        List<Map<String, Object>> storedSituations = new ArrayList<>();
+        for (ParsedExercise.Situation s : ex.situations().stream()
+                .sorted(java.util.Comparator.comparing(ParsedExercise.Situation::number)).toList()) {
+            String correct = ExamContentValidator.NO_ADVERTISEMENT.equals(s.correctAdvertisementId())
+                    ? "X" : passageIdByAd.get(s.correctAdvertisementId());
+            questions.add(new ExamQuestion(null, ExamTaskType.SITUATION_MATCHING, s.text(), null, null, correct, null,
+                    s.number(), null, null).ensureId());
+            if (!s.matchingProfile().isEmpty()) {
+                Map<String, Object> profile = new LinkedHashMap<>();
+                profile.put("number", s.number());
+                profile.put("matchingProfile", s.matchingProfile());
+                storedSituations.add(profile);
+            }
+        }
+
+        Map<String, Object> metadata = new LinkedHashMap<>(ex.metadata());
+        Map<String, Object> teil3 = new LinkedHashMap<>();
+        teil3.put("advertisements", storedAds);
+        if (!storedSituations.isEmpty()) teil3.put("situations", storedSituations);
+        metadata.put("teil3", teil3);
+
+        ExamExercise exercise = new ExamExercise();
+        exercise.setTitle(ex.title());
+        exercise.setExamType(examType);
+        exercise.setSection(spec.section());
+        exercise.setTaskType(spec.taskType());
+        exercise.setLevel(spec.level());
+        exercise.setPartNumber(spec.part());
+        exercise.setPassages(passages);
+        exercise.setQuestions(questions);
+        exercise.setTeilDescription(ex.instructions());
+        exercise.setExternalId(ex.externalId());
+        exercise.setSchemaVersion(schemaVersion);
+        exercise.setPromptVersion(promptVersion);
+        exercise.setMetadata(metadata);
+        exercise.setContentHash(hash);
+        exercise.setCreatedBy(userId);
+        exercise.setUpdatedBy(userId);
+        exercise.applyStatus(ExamContentStatus.DRAFT);
+        return exercise;
+    }
+
     public static ExercisePreview toPreview(ParsedExercise ex) {
+        if (ex.spec() != null && ex.spec().isSituationMatching()) {
+            return new ExercisePreview(ex.title(), ex.instructions(), List.of(), List.of(), null, List.of(),
+                    ex.situations().stream().map(s -> new SituationView(s.id(), s.number(), s.text(), s.correctAdvertisementId(), s.matchingProfile())).toList(),
+                    ex.advertisements().stream().map(a -> new AdvertisementView(a.id(), a.type(), a.layout(), a.content(), a.visual(), a.matchingProfile())).toList());
+        }
         if (ex.readingText() != null || (ex.spec() != null && ex.spec().isMultipleChoice())) {
             return new ExercisePreview(ex.title(), ex.instructions(), List.of(), List.of(), ex.readingText(),
                     ex.questions().stream().map(q -> new QuestionView(q.id(), q.number(), q.question(),
@@ -143,6 +223,7 @@ public final class ExamContentMapper {
      */
     public static ObjectNode toExportNode(ObjectMapper mapper, ExamExercise e) {
         if (e.getTaskType() == ExamTaskType.MULTIPLE_CHOICE) return toReadingExportNode(mapper, e);
+        if (e.getTaskType() == ExamTaskType.SITUATION_MATCHING) return toSituationExportNode(mapper, e);
         if (e.getTaskType() != ExamTaskType.MATCHING || e.getAnswerOptions() == null || e.getPassages() == null
                 || e.getQuestions() == null || e.getSection() == null || e.getLevel() == null || e.getPartNumber() == null) {
             return null;
@@ -177,6 +258,83 @@ public final class ExamContentMapper {
             t.put("correctHeadingId", headingIndex >= 0 ? labels.get(headingIndex) : "");
         }
         if (e.getMetadata() != null) node.set("metadata", mapper.valueToTree(e.getMetadata()));
+        return node;
+    }
+
+    /** Situations + advertisements in the import shape; null when a stored answer cannot be mapped back to an ad letter. */
+    @SuppressWarnings("unchecked")
+    private static ObjectNode toSituationExportNode(ObjectMapper mapper, ExamExercise e) {
+        if (e.getPassages() == null || e.getPassages().isEmpty() || e.getQuestions() == null || e.getQuestions().isEmpty()
+                || e.getSection() == null || e.getLevel() == null || e.getPartNumber() == null) {
+            return null;
+        }
+        Map<String, String> letterByPassageId = new LinkedHashMap<>();
+        for (int i = 0; i < e.getPassages().size(); i++) {
+            ExamPassage p = e.getPassages().get(i);
+            String label = p.getLabel() != null && !p.getLabel().isBlank() ? p.getLabel().trim().toLowerCase(java.util.Locale.ROOT)
+                    : String.valueOf((char) ('a' + i));
+            letterByPassageId.put(p.getId(), label);
+        }
+        Map<String, Object> teil3 = e.getMetadata() != null && e.getMetadata().get("teil3") instanceof Map<?, ?> m
+                ? (Map<String, Object>) m : Map.of();
+        Map<String, Map<String, Object>> storedAds = new LinkedHashMap<>();
+        if (teil3.get("advertisements") instanceof List<?> list) {
+            for (Object o : list) {
+                if (o instanceof Map<?, ?> m && m.get("id") != null) storedAds.put(m.get("id").toString(), (Map<String, Object>) m);
+            }
+        }
+        Map<Integer, Object> storedProfiles = new LinkedHashMap<>();
+        if (teil3.get("situations") instanceof List<?> list) {
+            for (Object o : list) {
+                if (o instanceof Map<?, ?> m && m.get("number") instanceof Number n) storedProfiles.put(n.intValue(), m.get("matchingProfile"));
+            }
+        }
+
+        ObjectNode node = mapper.createObjectNode();
+        if (e.getExternalId() != null) node.put("externalId", e.getExternalId());
+        node.put("title", e.getTitle());
+        node.put("instructions", e.getTeilDescription() == null ? "" : e.getTeilDescription());
+
+        ArrayNode situations = node.putArray("situations");
+        List<ExamQuestion> ordered = e.getQuestions().stream()
+                .sorted(java.util.Comparator.comparing(q -> q.getQuestionNumber() == null ? Integer.MAX_VALUE : q.getQuestionNumber())).toList();
+        for (int i = 0; i < ordered.size(); i++) {
+            ExamQuestion q = ordered.get(i);
+            String answer = "X".equalsIgnoreCase(q.getCorrectAnswer()) ? "x" : letterByPassageId.get(q.getCorrectAnswer());
+            if (answer == null) return null;
+            int number = q.getQuestionNumber() != null ? q.getQuestionNumber() : i + 1;
+            ObjectNode sn = situations.addObject();
+            sn.put("id", "situation_" + number);
+            sn.put("number", number);
+            sn.put("text", q.getPrompt());
+            sn.put("correctAdvertisementId", answer);
+            if (storedProfiles.get(number) != null) sn.set("matchingProfile", mapper.valueToTree(storedProfiles.get(number)));
+        }
+
+        ArrayNode ads = node.putArray("advertisements");
+        for (ExamPassage p : e.getPassages()) {
+            String letter = letterByPassageId.get(p.getId());
+            Map<String, Object> stored = storedAds.get(letter);
+            ObjectNode an = ads.addObject();
+            an.put("id", letter);
+            // Use the structured ad only while the passage still matches it; after a hand edit fall back to the edited text.
+            boolean intact = stored != null && stored.get("content") instanceof Map<?, ?> c
+                    && AdvertisementRenderer.toHtml((Map<String, Object>) c).equals(p.getContent());
+            if (intact) {
+                if (stored.get("type") != null) an.put("type", stored.get("type").toString());
+                if (stored.get("layout") != null) an.put("layout", stored.get("layout").toString());
+                an.set("content", mapper.valueToTree(stored.get("content")));
+                if (stored.get("visual") != null) an.set("visual", mapper.valueToTree(stored.get("visual")));
+                if (stored.get("matchingProfile") != null) an.set("matchingProfile", mapper.valueToTree(stored.get("matchingProfile")));
+            } else {
+                an.putObject("content").put("description", toPlainText(p.getContent()));
+            }
+        }
+        if (e.getMetadata() != null) {
+            Map<String, Object> metadata = new LinkedHashMap<>(e.getMetadata());
+            metadata.remove("teil3");
+            if (!metadata.isEmpty()) node.set("metadata", mapper.valueToTree(metadata));
+        }
         return node;
     }
 

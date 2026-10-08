@@ -25,7 +25,7 @@ public class ExamContentPromptBuilder {
 
     public static final List<String> TOPICS = List.of(
             "EVERYDAY_LIFE", "WORK", "HOUSING", "HEALTH", "LEISURE", "TRAVEL", "EDUCATION", "ENVIRONMENT", "GARDEN_NATURE", "SOCIETY",
-            "FAMILY", "TECHNOLOGY", "MEDIA", "FOOD", "TRAFFIC", "CONSUMPTION", "CLUBS", "GENERATIONS", "CITY_LIFE");
+            "SERVICES", "FAMILY", "TECHNOLOGY", "MEDIA", "FOOD", "TRAFFIC", "CONSUMPTION", "CLUBS", "GENERATIONS", "CITY_LIFE");
     public static final List<String> DIFFICULTIES = List.of("MIXED", "EASY", "MEDIUM", "HARD");
     public static final int MAX_COUNT = 50;
 
@@ -67,7 +67,9 @@ public class ExamContentPromptBuilder {
         values.put("OPTION_IDS", String.join(", ", spec.optionIds()));
         values.put("FIRST_QUESTION_NUMBER", String.valueOf(spec.firstQuestionNumber()));
         values.put("LAST_QUESTION_NUMBER", String.valueOf(spec.lastQuestionNumber()));
-        values.put("REQUEST_BLOCK", requestBlock(spec, count, difficulty, topics, firstId));
+        boolean includeVisuals = request.includeVisuals() == null || request.includeVisuals();
+        values.put("REQUEST_BLOCK", requestBlock(spec, count, difficulty, topics, firstId, includeVisuals));
+        values.put("VISUAL_RULES", visualRules(includeVisuals));
         values.put("JSON_EXAMPLE", example);
         values.put("NOTES_BLOCK", request.notes() == null || request.notes().isBlank() ? ""
                 : "\nADDITIONAL INSTRUCTIONS FROM THE EDITOR:\n" + request.notes().strip());
@@ -79,7 +81,7 @@ public class ExamContentPromptBuilder {
         return new PromptResponse(prompt.strip() + "\n", spec.promptVersion(), ExamContentSpecs.SCHEMA_VERSION, example, existingCount, firstId);
     }
 
-    private String requestBlock(ExamContentSpec spec, int count, String difficulty, List<String> topics, String firstId) {
+    private String requestBlock(ExamContentSpec spec, int count, String difficulty, List<String> topics, String firstId, boolean includeVisuals) {
         StringBuilder b = new StringBuilder();
         b.append("Generate exactly ").append(count).append(" exercise set").append(count == 1 ? "" : "s").append(".\n");
         b.append("Number the externalId values consecutively starting with ").append(firstId)
@@ -109,10 +111,24 @@ public class ExamContentPromptBuilder {
             }
             b.append("List the main topics of each exercise in metadata.topics.\n");
         }
+        if (spec.isSituationMatching()) {
+            b.append(includeVisuals
+                    ? "Visual briefs: include them (visual.hasImage / imageType / imagePrompt / altText) for advertisements that benefit from a picture.\n"
+                    : "Visual briefs: do not include any; set visual.hasImage to false and imageType to NONE in every advertisement.\n");
+        }
         b.append("\nThe top-level fields exam, level, section and part describe the whole file: ")
                 .append(spec.examType().name()).append(", ").append(spec.level().getValue()).append(", ")
                 .append(ExamContentTokens.sectionToken(spec.section())).append(", ").append(ExamContentTokens.partToken(spec.part())).append(".");
         return b.toString();
+    }
+
+    private static String visualRules(boolean includeVisuals) {
+        if (!includeVisuals) {
+            return "Visual briefs are NOT requested: in every advertisement set \"visual\": {\"hasImage\": false, \"imageType\": \"NONE\"} and write all information as text.";
+        }
+        return "Visual briefs are requested: most advertisements may have an image brief, a few should not. For an advertisement with an image set "
+                + "visual.hasImage to true, imageType (PHOTO, ILLUSTRATION, LOGO, ICON, DECORATIVE), imageUrl null, imagePrompt (a short English or German brief of the picture, "
+                + "no text inside the picture) and altText (German, required). For an advertisement without an image use hasImage false and imageType NONE.";
     }
 
     private String jsonExample(ExamContentSpec spec, String firstId, String difficulty) {
@@ -129,6 +145,46 @@ public class ExamContentPromptBuilder {
         ex.put("externalId", firstId);
         ex.put("title", spec.level().getValue() + " " + ExamContentTokens.sectionLabel(spec.section()) + " Teil " + spec.part() + " – ...");
         ex.put("instructions", spec.defaultInstructions());
+        if (spec.isSituationMatching()) {
+            ArrayNode situations = ex.putArray("situations");
+            for (int i = 0; i < spec.situationCount(); i++) {
+                ObjectNode sit = situations.addObject();
+                sit.put("id", "situation_" + (spec.firstQuestionNumber() + i));
+                sit.put("number", spec.firstQuestionNumber() + i);
+                sit.put("text", "...");
+                sit.put("correctAdvertisementId", "...");
+                ObjectNode profile = sit.putObject("matchingProfile");
+                profile.put("primaryNeed", "...");
+                profile.putArray("requirements").add("...");
+            }
+            ArrayNode ads = ex.putArray("advertisements");
+            for (String id : spec.optionIds()) {
+                ObjectNode ad = ads.addObject();
+                ad.put("id", id);
+                ad.put("type", "RESTAURANT");
+                ad.put("layout", "CLASSIC");
+                ObjectNode content = ad.putObject("content");
+                content.put("headline", "...");
+                content.put("subheadline", "...");
+                content.put("description", "...");
+                content.putArray("details").add("...");
+                content.put("price", "...");
+                content.put("openingHours", "...");
+                content.putObject("contact").put("address", "...").put("phone", "...");
+                ObjectNode visual = ad.putObject("visual");
+                visual.put("hasImage", true).put("imageType", "PHOTO").putNull("imageUrl");
+                visual.put("imagePrompt", "...").put("altText", "...");
+                ObjectNode apf = ad.putObject("matchingProfile");
+                apf.put("primaryService", "...");
+                apf.putArray("features").add("...");
+            }
+            ObjectNode meta = ex.putObject("metadata");
+            meta.put("difficulty", difficulty);
+            meta.putArray("topics").add("EVERYDAY_LIFE").add("SERVICES");
+            meta.putArray("skills").add("SELECTIVE_READING").add("INFORMATION_MATCHING");
+            meta.put("source", "AI_GENERATED_ORIGINAL");
+            return write(root);
+        }
         if (spec.isMultipleChoice()) {
             ex.putObject("text").put("content", "...");
             ArrayNode questions = ex.putArray("questions");

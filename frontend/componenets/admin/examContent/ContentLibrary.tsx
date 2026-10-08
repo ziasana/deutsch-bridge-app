@@ -12,7 +12,7 @@ import useAuthStore from "@/store/useAuthStore";
 import { getExamExerciseForAdmin, getExamExercisesForAdmin } from "@/services/adminExamService";
 import { changeExamContentStatus, downloadExamContentExport } from "@/services/adminExamContentService";
 import { ExamExerciseAdminRow, ExamExerciseResponse, ExamSection } from "@/types/exam";
-import { EXAM_CONTENT_STATUSES, ExamContentStatus, ExercisePreviewData } from "@/types/examContent";
+import { EXAM_CONTENT_STATUSES, ExamContentStatus, ExercisePreviewData, PreviewAdvertisement, PreviewSituation } from "@/types/examContent";
 import ExamContentShell from "./ExamContentShell";
 import { cardClass, errorMessage, ExerciseView, fieldClass, htmlToText, labelClass, StatusBadge } from "./shared";
 
@@ -55,6 +55,33 @@ const emptyFilters: Filters = { examType: "", level: "", section: "", partNumber
 
 /** Matching exercises as the import format sees them (lettered headings, correct heading per text). */
 function toPreview(exercise: ExamExerciseResponse): ExercisePreviewData | null {
+    if (exercise.taskType === "SITUATION_MATCHING" && exercise.passages?.length && exercise.questions?.length) {
+        const teil3 = (exercise.metadata?.teil3 ?? {}) as {
+            advertisements?: PreviewAdvertisement[];
+            situations?: { number: number; matchingProfile?: PreviewSituation["matchingProfile"] }[];
+        };
+        const letterByPassage = new Map(exercise.passages.map((p, i) => [p.id, (p.label?.trim() || String.fromCharCode(97 + i)).toLowerCase()]));
+        const advertisements = exercise.passages.map((p, i) => {
+            const letter = letterByPassage.get(p.id) ?? String.fromCharCode(97 + i);
+            const stored = teil3.advertisements?.find((a) => a.id === letter);
+            return stored ?? { id: letter, content: { description: htmlToText(p.content) } };
+        });
+        const questions = [...exercise.questions].sort((a, b) => (a.questionNumber ?? 0) - (b.questionNumber ?? 0));
+        return {
+            title: exercise.title,
+            instructions: exercise.teilDescription,
+            headings: [],
+            texts: [],
+            advertisements,
+            situations: questions.map((q, i) => ({
+                id: q.id,
+                number: q.questionNumber ?? i + 1,
+                text: q.prompt,
+                correctAdvertisementId: q.correctAnswer?.toUpperCase() === "X" ? "x" : (letterByPassage.get(q.correctAnswer) ?? null),
+                matchingProfile: teil3.situations?.find((s) => s.number === (q.questionNumber ?? i + 1))?.matchingProfile ?? null,
+            })),
+        };
+    }
     if (exercise.taskType === "MULTIPLE_CHOICE" && exercise.passages?.length === 1 && exercise.questions?.length) {
         const questions = [...exercise.questions].sort((a, b) => (a.questionNumber ?? 0) - (b.questionNumber ?? 0));
         return {
@@ -310,7 +337,7 @@ function PreviewDialog({ row, onClose, onMove }: Readonly<{ row: ExamExerciseAdm
                 </div>
                 <div className="mt-5">
                     {isLoading && <Loading message="Loading..." />}
-                    {data && (preview ? <ExerciseView preview={preview} /> : <p className="text-sm text-gray-600 dark:text-gray-300">A preview is only available for headings-matching and reading-text multiple-choice exercises. Use Edit to review this one.</p>)}
+                    {data && (preview ? <ExerciseView preview={preview} /> : <p className="text-sm text-gray-600 dark:text-gray-300">A preview is only available for headings-matching, reading-text multiple-choice and situation-matching exercises. Use Edit to review this one.</p>)}
                 </div>
                 <div className="mt-6 flex flex-wrap justify-end gap-2">
                     {next.map((n) => <Button key={n.status} onClick={() => onMove(n.status)}>{n.label}</Button>)}
