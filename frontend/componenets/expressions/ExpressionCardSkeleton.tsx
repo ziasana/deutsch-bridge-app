@@ -1,6 +1,6 @@
 export default function ExpressionCardSkeleton() {
     return (
-        <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card p-5 shadow-card animate-pulse">
+        <div className="flex flex-col gap-3 rounded-3xl border border-border/60 bg-card p-5 shadow-card animate-pulse">
             <div className="flex items-center justify-between gap-2">
                 <div className="h-5 w-10 rounded-md bg-foreground/10" />
                 <div className="h-5 w-28 rounded-md bg-foreground/10" />

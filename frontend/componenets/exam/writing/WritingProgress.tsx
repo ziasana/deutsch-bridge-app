@@ -9,11 +9,12 @@ const ISSUE_HINTS: Record<string, string> = {
     FORM: "Kontrolliere Groß-/Kleinschreibung und Satzzeichen.",
 };
 
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({ label, value, emoji }: { label: string; value: number; emoji: string }) {
     return (
-        <div className="rounded-xl bg-card p-4 text-center shadow-card">
-            <div className="text-2xl font-bold text-foreground">{value}</div>
-            <div className="mt-0.5 text-xs text-foreground/55">{label}</div>
+        <div className="group relative overflow-hidden rounded-2xl bg-card p-4 text-center shadow-card ring-1 ring-primary/10 transition hover:-translate-y-0.5 hover:shadow-md">
+            <span aria-hidden="true" className="pointer-events-none absolute -bottom-3 -end-1 text-6xl opacity-10 transition group-hover:rotate-6 group-hover:opacity-20">{emoji}</span>
+            <div className="relative bg-gradient-to-r from-(--lesson-from) to-(--lesson-to) bg-clip-text text-3xl font-extrabold tabular-nums text-transparent">{value}</div>
+            <div className="relative mt-0.5 text-xs font-medium text-foreground/60">{label}</div>
         </div>
     );
 }
@@ -22,7 +23,8 @@ function Stat({ label, value }: { label: string; value: number }) {
 export default function WritingProgress({ progress, level }: { progress: Progress; level: string }) {
     if (progress.attemptsCount === 0) {
         return (
-            <div className="rounded-[10px] bg-card p-8 text-center text-sm text-foreground/55 shadow-card">
+            <div className="rounded-3xl bg-card p-8 text-center text-sm text-foreground/60 shadow-card">
+                <span aria-hidden="true" className="mb-2 block text-5xl">📝</span>
                 Du hast noch keinen Text abgegeben. Sobald du eine Schreibaufgabe abgibst, siehst du hier deinen Fortschritt.
             </div>
         );
@@ -30,21 +32,21 @@ export default function WritingProgress({ progress, level }: { progress: Progres
     return (
         <div className="space-y-6">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <Stat label="Texte geschrieben" value={progress.attemptsCount} />
-                <Stat label="Aufgaben bearbeitet" value={progress.exercisesWritten} />
-                <Stat label="Texte überarbeitet" value={progress.revisedTexts} />
-                <Stat label="Wörter insgesamt" value={progress.totalWords} />
+                <Stat emoji="📝" label="Texte geschrieben" value={progress.attemptsCount} />
+                <Stat emoji="✅" label="Aufgaben bearbeitet" value={progress.exercisesWritten} />
+                <Stat emoji="🔄" label="Texte überarbeitet" value={progress.revisedTexts} />
+                <Stat emoji="🔤" label="Wörter insgesamt" value={progress.totalWords} />
             </div>
 
-            <section className="rounded-[10px] bg-card p-5 shadow-card">
-                <h2 className="font-semibold text-foreground">🎯 Dein aktueller Fokus</h2>
+            <section className="rounded-3xl bg-card p-5 shadow-card ring-1 ring-primary/10 sm:p-6">
+                <h2 className="text-lg font-bold text-foreground">🎯 Dein aktueller Fokus</h2>
                 {progress.topIssues.length === 0 ? (
                     <p className="mt-2 text-sm text-foreground/60">In deinen letzten Texten gab es keine wiederkehrenden Probleme. Weiter so!</p>
                 ) : (
                     <ol className="mt-3 space-y-3">
                         {progress.topIssues.map((issue, i) => (
                             <li key={issue.key} className="flex gap-3">
-                                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{i + 1}</span>
+                                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-(--lesson-from) to-(--lesson-to) text-xs font-bold text-white">{i + 1}</span>
                                 <div>
                                     <p className="text-sm font-medium text-foreground">
                                         {issue.title} <span className="text-xs font-normal text-foreground/50">({issue.count}× in den letzten Texten)</span>
@@ -55,14 +57,14 @@ export default function WritingProgress({ progress, level }: { progress: Progres
                         ))}
                     </ol>
                 )}
-                <Link href={`/dashboard/exam-prep/schreiben/lernen?level=${encodeURIComponent(level)}`} className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
+                <Link href={`/dashboard/exam-prep/schreiben/lernen?level=${encodeURIComponent(level)}`} className="mt-4 inline-flex items-center rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary transition hover:bg-primary/20">
                     Im Lernbereich nachlesen →
                 </Link>
             </section>
 
             {progress.recentGrammarFixes.length > 0 && (
-                <section className="rounded-[10px] bg-card p-5 shadow-card">
-                    <h2 className="font-semibold text-foreground">✏️ Zuletzt korrigiert (KI-Feedback)</h2>
+                <section className="rounded-3xl bg-card p-5 shadow-card ring-1 ring-primary/10 sm:p-6">
+                    <h2 className="text-lg font-bold text-foreground">✏️ Zuletzt korrigiert (KI-Feedback)</h2>
                     <ul className="mt-3 space-y-2">
                         {progress.recentGrammarFixes.map((g) => (
                             <li key={g.original + g.corrected} className="rounded-lg bg-accent/40 px-3 py-2 text-sm">

@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import { toast } from "@/lib/toast";
-import { Sparkles, X } from "lucide-react";
+import { Pencil, Plus, Sparkles, X } from "lucide-react";
 import { createVocabulary, updateVocabulary } from "@/services/vocabularyService";
 import { generateAiExample } from "@/services/chatAi";
 import { VocabularyItem } from "@/types/vocabulary";
 import { useI18n } from "@/componenets/I18nProvider";
+import { ARTICLE_TONE, SOURCE_ACCENT } from "@/componenets/vocabulary/sourceColors";
+import { ACCENT_TITLE_COLOR, levelThemeVars } from "@/componenets/learning/levelMeta";
+import { cn } from "@/lib/utils";
 
 interface VocabularyModalProps {
     isOpen: boolean;
@@ -110,57 +113,84 @@ function VocabularyModalForm({
             .finally(() => setSaving(false));
     };
 
+    const field =
+        "mt-1.5 w-full rounded-2xl border border-border/60 bg-background px-3.5 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30";
+    const label = "text-xs font-bold uppercase tracking-wide text-primary";
+    const ARTICLES = [
+        { value: "", text: t.vocabulary.modal.articleNone },
+        { value: "der", text: "der" },
+        { value: "die", text: "die" },
+        { value: "das", text: "das" },
+    ];
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-            <div className="w-full max-w-md rounded-2xl border border-border/60 bg-card p-6 shadow-lg">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-foreground">
-                        {isEdit ? t.vocabulary.modal.editTitle : t.vocabulary.modal.addTitle}
-                    </h2>
+        // The dialog always takes the "My words" colour, whichever source list it was opened from.
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" style={levelThemeVars(SOURCE_ACCENT.CUSTOM)}>
+            <div className="anim-pop w-full max-w-md overflow-hidden rounded-3xl bg-card shadow-2xl ring-1 ring-border/60">
+                <div className="relative flex items-center justify-between gap-3 overflow-hidden px-6 py-5" style={{ backgroundImage: `linear-gradient(135deg, ${SOURCE_ACCENT.CUSTOM}40, ${SOURCE_ACCENT.CUSTOM}14 70%, transparent)` }}>
+                    <div className="flex items-center gap-3">
+                        <span className="flex size-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
+                            {isEdit ? <Pencil className="size-5" aria-hidden="true" /> : <Plus className="size-5" aria-hidden="true" />}
+                        </span>
+                        <h2 className="text-lg font-extrabold" style={{ color: ACCENT_TITLE_COLOR }}>
+                            {isEdit ? t.vocabulary.modal.editTitle : t.vocabulary.modal.addTitle}
+                        </h2>
+                    </div>
                     <button
                         type="button"
                         onClick={handleClose}
                         aria-label={t.vocabulary.modal.cancel}
-                        className="flex size-8 items-center justify-center rounded-full text-foreground/50 transition hover:bg-accent hover:text-foreground"
+                        className="flex size-9 cursor-pointer items-center justify-center rounded-full bg-card/80 text-foreground/60 transition hover:bg-card hover:text-foreground"
                     >
                         <X className="size-4" />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-                    <div className="grid grid-cols-3 gap-3">
-                        <div className="col-span-2">
-                            <label className="text-xs font-medium text-foreground/60" htmlFor="vocab-word">
-                                {t.vocabulary.modal.word}
-                            </label>
-                            <input
-                                id="vocab-word"
-                                required
-                                value={form.word}
-                                onChange={(e) => setForm((f) => ({ ...f, word: e.target.value }))}
-                                className="mt-1 w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/40"
-                            />
-                        </div>
-                        <div>
-                            <label className="text-xs font-medium text-foreground/60" htmlFor="vocab-article">
-                                {t.vocabulary.modal.article}
-                            </label>
-                            <select
-                                id="vocab-article"
-                                value={form.article}
-                                onChange={(e) => setForm((f) => ({ ...f, article: e.target.value }))}
-                                className="mt-1 w-full rounded-lg border border-border/60 bg-background px-2 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/40"
-                            >
-                                <option value="">{t.vocabulary.modal.articleNone}</option>
-                                <option value="der">der</option>
-                                <option value="die">die</option>
-                                <option value="das">das</option>
-                            </select>
+                <form onSubmit={handleSubmit} className="space-y-4 p-6">
+                    <div>
+                        <label className={label} htmlFor="vocab-word">
+                            {t.vocabulary.modal.word}
+                        </label>
+                        <input
+                            id="vocab-word"
+                            required
+                            autoFocus
+                            value={form.word}
+                            onChange={(e) => setForm((f) => ({ ...f, word: e.target.value }))}
+                            className={cn(field, "text-base font-semibold")}
+                        />
+                    </div>
+
+                    <div>
+                        <span id="vocab-article-label" className={label}>
+                            {t.vocabulary.modal.article}
+                        </span>
+                        <div role="radiogroup" aria-labelledby="vocab-article-label" className="mt-1.5 flex flex-wrap gap-2">
+                            {ARTICLES.map((opt) => {
+                                const selected = form.article === opt.value;
+                                const tone = opt.value ? ARTICLE_TONE[opt.value] : "bg-foreground/[0.06] text-foreground/70";
+                                return (
+                                    <button
+                                        key={opt.value || "none"}
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={selected}
+                                        onClick={() => setForm((f) => ({ ...f, article: opt.value }))}
+                                        className={cn(
+                                            "cursor-pointer rounded-full border-2 px-4 py-1.5 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                                            tone,
+                                            selected ? "border-current shadow-sm" : "border-transparent opacity-70 hover:opacity-100",
+                                        )}
+                                    >
+                                        {opt.text}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
                     <div>
-                        <label className="text-xs font-medium text-foreground/60" htmlFor="vocab-meaning">
+                        <label className={label} htmlFor="vocab-meaning">
                             {t.vocabulary.modal.meaning}
                         </label>
                         <input
@@ -168,22 +198,22 @@ function VocabularyModalForm({
                             required
                             value={form.meaning}
                             onChange={(e) => setForm((f) => ({ ...f, meaning: e.target.value }))}
-                            className="mt-1 w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/40"
+                            className={field}
                         />
                     </div>
 
                     <div>
-                        <div className="flex items-center justify-between">
-                            <label className="text-xs font-medium text-foreground/60" htmlFor="vocab-example">
+                        <div className="flex items-center justify-between gap-2">
+                            <label className={label} htmlFor="vocab-example">
                                 {t.vocabulary.modal.example}
                             </label>
                             <button
                                 type="button"
                                 onClick={handleGenerateExample}
                                 disabled={!form.word.trim() || generatingExample}
-                                className="flex items-center gap-1 text-xs font-medium text-primary transition hover:text-primary/80 disabled:opacity-40"
+                                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary transition hover:bg-primary/20 disabled:cursor-default disabled:opacity-40"
                             >
-                                <Sparkles className="size-3.5" />
+                                <Sparkles className={cn("size-3.5", generatingExample && "animate-pulse")} />
                                 {generatingExample ? t.vocabulary.modal.generatingExample : t.vocabulary.modal.generateExample}
                             </button>
                         </div>
@@ -192,7 +222,7 @@ function VocabularyModalForm({
                             rows={3}
                             value={form.example}
                             onChange={(e) => setForm((f) => ({ ...f, example: e.target.value }))}
-                            className="mt-1 w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/40"
+                            className={field}
                         />
                     </div>
 
@@ -200,14 +230,14 @@ function VocabularyModalForm({
                         <button
                             type="button"
                             onClick={handleClose}
-                            className="rounded-lg border border-border/60 bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:bg-accent"
+                            className="cursor-pointer rounded-full border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                         >
                             {t.vocabulary.modal.cancel}
                         </button>
                         <button
                             type="submit"
                             disabled={saving}
-                            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-60"
+                            className="cursor-pointer rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default disabled:opacity-60"
                         >
                             {saving ? t.vocabulary.modal.saving : t.vocabulary.modal.save}
                         </button>

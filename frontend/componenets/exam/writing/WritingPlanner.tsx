@@ -15,16 +15,17 @@ export default function WritingPlanner({ leitpunkte, notes, onChange, onContinue
     const setNote = (i: number, value: string) => onChange(notes.map((n, idx) => (idx === i ? value : n)));
 
     return (
-        <div className="space-y-5 rounded-[10px] bg-card p-5 shadow-card sm:p-6">
+        <div className="space-y-5 rounded-3xl bg-card p-5 shadow-card ring-1 ring-primary/15 sm:p-6">
             <div>
-                <h2 className="text-lg font-semibold text-foreground">📝 Plane deinen Text</h2>
+                <h2 className="text-xl font-extrabold text-foreground">📝 Plane deinen Text</h2>
                 <p className="mt-1 text-sm text-foreground/60">
                     Notiere zu jedem Punkt ein paar Stichwörter – keine ganzen Sätze. Deine Notizen bleiben beim Schreiben sichtbar.
                 </p>
             </div>
             {prompts.map((prompt, i) => (
-                <div key={prompt}>
-                    <label htmlFor={`plan-${i}`} className="block text-sm font-medium text-foreground">
+                <div key={prompt} className="anim-fade-up rounded-2xl bg-gradient-to-br from-(--lesson-from)/10 to-(--lesson-to)/5 p-3 sm:p-4" style={{ animationDelay: `${i * 50}ms` }}>
+                    <label htmlFor={`plan-${i}`} className="flex items-start gap-2.5 text-sm font-semibold text-foreground">
+                        <span aria-hidden="true" className="flex size-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-(--lesson-from) to-(--lesson-to) text-xs font-bold text-white">{i + 1}</span>
                         {prompt}
                     </label>
                     <textarea
@@ -32,7 +33,7 @@ export default function WritingPlanner({ leitpunkte, notes, onChange, onContinue
                         value={notes[i] ?? ""}
                         onChange={(e) => setNote(i, e.target.value)}
                         rows={2}
-                        className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
                         placeholder="Stichwörter…"
                     />
                 </div>
@@ -41,7 +42,7 @@ export default function WritingPlanner({ leitpunkte, notes, onChange, onContinue
                 <button
                     type="button"
                     onClick={onContinue}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 cursor-pointer"
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-gradient-to-r from-(--lesson-from) to-(--lesson-to) px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"
                 >
                     Weiter zum Schreiben <ArrowRight className="size-4" />
                 </button>

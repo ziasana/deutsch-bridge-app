@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Loading from "@/componenets/Loading";
 import { toast } from "@/lib/toast";
 import { PenLine, BookOpen, ArrowRight, ChevronLeft, ChevronRight, Flame, Layers, Sparkles } from "lucide-react";
 import { getVocabulary, addVocabularyBookmark, removeVocabularyBookmark, deleteVocabulary } from "@/services/vocabularyService";
@@ -15,6 +17,8 @@ import VocabularyCardSkeleton from "@/componenets/vocabulary/VocabularyCardSkele
 import VocabularyModal from "@/componenets/vocabulary/VocabularyModal";
 import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
 import { useI18n } from "@/componenets/I18nProvider";
+import { SOURCE_ACCENT } from "@/componenets/vocabulary/sourceColors";
+import { ACCENT_TITLE_COLOR, levelThemeVars } from "@/componenets/learning/levelMeta";
 
 const MASTERY_PRIORITY: Record<VocabularyMasteryLevel, number> = {
     LEARNING: 0,
@@ -26,16 +30,41 @@ const MASTERY_PRIORITY: Record<VocabularyMasteryLevel, number> = {
 const ITEMS_PER_PAGE = 12;
 const CONTINUE_LEARNING_COUNT = 3;
 
+const SOURCES: VocabularySource[] = ["CUSTOM", "DICTIONARY", "AI_TUTOR"];
+const MASTERIES: VocabularyMasteryLevel[] = ["NEW", "LEARNING", "FAMILIAR", "MASTERED"];
+
+/** useSearchParams needs a Suspense boundary. */
 export default function VocabularyPage() {
+    return (
+        <Suspense fallback={<Loading />}>
+            <VocabularyPageContent />
+        </Suspense>
+    );
+}
+
+function VocabularyPageContent() {
     const router = useRouter();
+    const params = useSearchParams();
     const { t } = useI18n();
     const [items, setItems] = useState<VocabularyItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const [source, setSource] = useState<VocabularySource>("CUSTOM");
-    const [search, setSearch] = useState("");
-    const [masteryFilter, setMasteryFilter] = useState("ALL");
-    const [bookmarkFilter, setBookmarkFilter] = useState("ALL");
-    const [page, setPage] = useState(1);
+    // The list state lives in the URL, so "Back" from a word or a practice session returns to the same source, filters and page.
+    const [source, setSource] = useState<VocabularySource>(SOURCES.includes(params.get("source") as VocabularySource) ? (params.get("source") as VocabularySource) : "CUSTOM");
+    const [search, setSearch] = useState(params.get("q") ?? "");
+    const [masteryFilter, setMasteryFilter] = useState(MASTERIES.includes(params.get("mastery") as VocabularyMasteryLevel) ? (params.get("mastery") as string) : "ALL");
+    const [bookmarkFilter, setBookmarkFilter] = useState(params.get("bookmarked") === "1" ? "BOOKMARKED" : "ALL");
+    const [page, setPage] = useState(Math.max(1, Number(params.get("page")) || 1));
+
+    useEffect(() => {
+        const next = new URLSearchParams();
+        if (source !== "CUSTOM") next.set("source", source);
+        if (search.trim()) next.set("q", search.trim());
+        if (masteryFilter !== "ALL") next.set("mastery", masteryFilter);
+        if (bookmarkFilter === "BOOKMARKED") next.set("bookmarked", "1");
+        if (page > 1) next.set("page", String(page));
+        const query = next.toString();
+        router.replace(query ? `/dashboard/vocabulary?${query}` : "/dashboard/vocabulary", { scroll: false });
+    }, [source, search, masteryFilter, bookmarkFilter, page, router]);
     const [addOpen, setAddOpen] = useState(false);
     const [editItem, setEditItem] = useState<VocabularyItem | null>(null);
     const [deleteItem, setDeleteItem] = useState<VocabularyItem | null>(null);
@@ -140,9 +169,9 @@ export default function VocabularyPage() {
     const practiceItem = (item: VocabularyItem) => router.push(`/dashboard/vocabulary/practice?vocabularyItemId=${item.id}`);
 
     return (
-        <div className="min-h-screen bg-background px-6 py-10">
+        <div className="min-h-screen bg-background px-6 py-10" style={levelThemeVars(SOURCE_ACCENT[source])}>
             <div className="max-w-4xl mx-auto">
-                <VocabularyHeader counts={masteryCounts} showcase={showcase} onAdd={() => setAddOpen(true)} onPractice={() => router.push("/dashboard/vocabulary/practice")} />
+                <VocabularyHeader accent={SOURCE_ACCENT[source]} counts={masteryCounts} showcase={showcase} onAdd={() => setAddOpen(true)} onPractice={() => router.push("/dashboard/vocabulary/practice")} />
 
                 <VocabularySourceSelector
                     className="mt-8"
@@ -201,14 +230,14 @@ export default function VocabularyPage() {
                     </div>
                 ) : (
                     <>
-                        <section className="mt-10">
+                        <section className="mt-10 rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/[0.12] via-primary/[0.04] to-transparent p-4 sm:p-6">
                             <div className="flex items-end justify-between gap-4">
                                 <div className="flex items-start gap-3">
-                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent">
-                                        <Flame className="size-5 text-primary" />
+                                    <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
+                                        <Flame className="size-5" />
                                     </div>
                                     <div>
-                                        <h2 className="text-lg font-semibold text-foreground">{t.vocabulary.continueLearning.title}</h2>
+                                        <h2 className="text-lg font-extrabold" style={{ color: ACCENT_TITLE_COLOR }}>{t.vocabulary.continueLearning.title}</h2>
                                         <p className="mt-0.5 text-sm text-foreground/55">
                                             {continueLearning.readyCount > 0
                                                 ? t.vocabulary.continueLearning.subtitleReady(continueLearning.readyCount)
@@ -242,7 +271,7 @@ export default function VocabularyPage() {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="mt-4 rounded-2xl border border-border/60 bg-card p-8 text-center shadow-card">
+                                <div className="mt-4 rounded-3xl border border-border/60 bg-card p-8 text-center shadow-card">
                                     <p className="text-foreground/60 text-sm">{t.vocabulary.continueLearning.subtitleCaughtUp}</p>
                                 </div>
                             )}
@@ -250,11 +279,11 @@ export default function VocabularyPage() {
 
                         <section id="all-vocabulary" className="mt-10 scroll-mt-6">
                             <div className="flex items-center gap-3">
-                                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent">
-                                    <Layers className="size-5 text-primary" />
+                                <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                                    <Layers className="size-5" />
                                 </div>
-                                <h2 className="text-lg font-semibold text-foreground">{t.vocabulary.allWords.title}</h2>
-                                <span className="rounded-full bg-foreground/[0.06] px-2.5 py-0.5 text-xs font-medium text-foreground/60">
+                                <h2 className="text-lg font-extrabold" style={{ color: ACCENT_TITLE_COLOR }}>{t.vocabulary.allWords.title}</h2>
+                                <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
                                     {t.vocabulary.allWords.count(filtered.length)}
                                 </span>
                             </div>
@@ -274,7 +303,7 @@ export default function VocabularyPage() {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="mt-4 rounded-2xl border border-border/60 bg-card p-10 text-center shadow-card">
+                                <div className="mt-4 rounded-3xl border border-border/60 bg-card p-10 text-center shadow-card">
                                     <p className="font-semibold text-foreground">{t.vocabulary.empty.title}</p>
                                     <p className="mt-1 text-sm text-foreground/55">{t.vocabulary.empty.subtitle}</p>
                                 </div>
@@ -285,7 +314,7 @@ export default function VocabularyPage() {
                                     <button
                                         onClick={() => setPage((p) => Math.max(1, p - 1))}
                                         disabled={currentPage === 1}
-                                        className="flex items-center gap-1 px-4 py-2 rounded-lg bg-card shadow-card text-foreground text-sm disabled:opacity-40 hover:bg-accent/50 transition"
+                                        className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/20 disabled:cursor-default disabled:opacity-40"
                                     >
                                         <ChevronLeft className="size-4" />
                                         {t.vocabulary.previous}
@@ -294,7 +323,7 @@ export default function VocabularyPage() {
                                     <button
                                         onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                                         disabled={currentPage === totalPages}
-                                        className="flex items-center gap-1 px-4 py-2 rounded-lg bg-card shadow-card text-foreground text-sm disabled:opacity-40 hover:bg-accent/50 transition"
+                                        className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/20 disabled:cursor-default disabled:opacity-40"
                                     >
                                         {t.vocabulary.next}
                                         <ChevronRight className="size-4" />

@@ -423,7 +423,7 @@ describe("Redemittel hub", () => {
         expect(screen.getByText("Heute alles gelernt")).toBeTruthy();
     });
 
-    it("keeps the hero apart from the content: today's steps and Entdecken are their own white panels", async () => {
+    it("keeps the hero apart from the content: today's steps and Entdecken are their own rounded panels", async () => {
         service.getRedemittelHub.mockReturnValue(ok(hub({ newToday: 2, learnedToday: 1 })));
         service.getRedemittelPage.mockReturnValue(ok({ ...emptyPage, items: [redemittel()], totalElements: 1, totalPages: 1 }));
         service.getTodaysRedemittel.mockReturnValue(ok([redemittel({ id: "t1", phrase: "Heute neu 1" })]));
@@ -438,23 +438,24 @@ describe("Redemittel hub", () => {
         expect(hero.contains(explore)).toBe(false);
         expect(day.contains(explore)).toBe(false);
         expect(day.contains(today)).toBe(true); // today's cards belong to the day panel
-        expect(day.className).toMatch(/rounded-\[10px\]/);
-        expect(explore.firstElementChild?.className).toMatch(/rounded-\[10px\]/);
+        expect(day.className).toMatch(/rounded-3xl/);
+        expect(explore.firstElementChild?.className).toMatch(/rounded-3xl/);
         expect(within(explore).getByRole("heading", { level: 2, name: "Entdecken" })).toBeTruthy();
         expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     });
 
-    it("the hero is the only tinted area; the content panels are plain white", async () => {
+    it("the hero is tinted with the accent colour; the content panels themselves stay plain cards", async () => {
         service.getRedemittelHub.mockReturnValue(ok(hub({ newToday: 2, learnedToday: 1 })));
         service.getRedemittelPage.mockReturnValue(ok({ ...emptyPage, items: [redemittel()], totalElements: 1, totalPages: 1 }));
         withClient(<RedemittelPage />);
         const heading = await screen.findByRole("heading", { level: 1, name: "Redemittel" });
-        expect((heading.closest("header") as HTMLElement).className).toMatch(/bg-gradient/);
+        const hero = heading.closest("header") as HTMLElement;
+        expect(hero.style.backgroundImage).toMatch(/linear-gradient/);
         const day = await screen.findByRole("region", { name: "Heute für dich" });
         const explore = screen.getByRole("region", { name: "Entdecken" });
-        [day, explore].forEach((panel) => {
-            expect(panel.querySelector("[class*='bg-gradient']")).toBeNull();
-            expect(panel.querySelector("[class*='bg-accent/30']")).toBeNull();
+        [day, explore.firstElementChild as HTMLElement].forEach((panel) => {
+            expect(panel.className).toMatch(/bg-card/);
+            expect(panel.className).not.toMatch(/bg-gradient/);
         });
     });
 

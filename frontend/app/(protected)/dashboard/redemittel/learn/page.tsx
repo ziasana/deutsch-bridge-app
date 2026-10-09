@@ -4,9 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, PartyPopper } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { getTodaysRedemittel } from "@/services/redemittelService";
 import LearningProgressBar from "@/componenets/learning/LearningProgressBar";
+import { FinishCard } from "@/componenets/redemittel/RedemittelProgress";
+import { REDEMITTEL_ACCENT } from "@/componenets/redemittel/redemittelMeta";
+import { levelThemeVars } from "@/componenets/learning/levelMeta";
 import RedemittelDetailCard from "@/componenets/redemittel/RedemittelDetailCard";
 import { useRedemittelActions } from "@/componenets/redemittel/useRedemittelActions";
 import Loading from "@/componenets/Loading";
@@ -33,14 +36,14 @@ export default function RedemittelLearnPage() {
     if (isLoading || !today) return <Loading />;
 
     const shell = (children: React.ReactNode) => (
-        <div className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-10" dir="ltr">
+        <div className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-10" dir="ltr" style={levelThemeVars(REDEMITTEL_ACCENT)}>
             <div className="mx-auto max-w-2xl">{children}</div>
         </div>
     );
 
     if (today.length === 0) {
         return shell(
-            <div className="rounded-2xl border border-border/60 bg-card p-8 text-center shadow-card">
+            <div className="rounded-3xl border border-border/60 bg-card p-8 text-center shadow-card">
                 <p className="text-lg font-semibold text-foreground">🎉 Du hast alle neuen Redemittel für heute gelernt.</p>
                 <p className="mt-2 text-sm text-foreground/60">Schau später wieder vorbei oder übe deine bisherigen Redemittel.</p>
                 <div className="mt-6 flex flex-wrap justify-center gap-3">
@@ -57,12 +60,8 @@ export default function RedemittelLearnPage() {
 
     if (index >= today.length) {
         return shell(
-            <div className="rounded-2xl border border-border/60 bg-card p-8 text-center shadow-card">
-                <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-accent">
-                    <PartyPopper className="size-6 text-primary" aria-hidden="true" />
-                </div>
-                <h1 className="mt-4 text-2xl font-bold text-foreground">Gut gemacht!</h1>
-                <p className="mt-2 text-foreground/70">
+            <FinishCard emoji="🎉" title="Gut gemacht!">
+                <p className="text-foreground/70">
                     Du hast heute {learnedIds.length} Redemittel gelernt.
                 </p>
                 <div className="mt-6 flex flex-wrap justify-center gap-3">
@@ -78,7 +77,7 @@ export default function RedemittelLearnPage() {
                     </Link>
                 </div>
                 <p className="mt-4 text-xs text-foreground/50">Die erste Wiederholung ist automatisch für morgen geplant.</p>
-            </div>,
+            </FinishCard>,
         );
     }
 
@@ -102,7 +101,7 @@ export default function RedemittelLearnPage() {
                     <ArrowLeft className="size-4" aria-hidden="true" />
                     Zurück
                 </Link>
-                <span className="text-sm font-medium text-foreground/60">Heute lernen</span>
+                <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">Heute lernen</span>
             </div>
 
             <div className="mt-4">

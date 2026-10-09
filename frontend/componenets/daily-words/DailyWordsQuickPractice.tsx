@@ -5,6 +5,7 @@ import { ArrowRight, Check, X } from "lucide-react";
 import { DailyWord } from "@/types/dailyWord";
 import { useI18n } from "@/componenets/I18nProvider";
 import { cn } from "@/lib/utils";
+import { ACCENT_TITLE_COLOR } from "@/componenets/learning/levelMeta";
 
 interface PracticeQuestion {
     word: DailyWord;
@@ -33,6 +34,8 @@ export default function DailyWordsQuickPractice({ words, onComplete }: DailyWord
     const questions = useMemo(() => buildQuestions(words), [words]);
     const [questionIndex, setQuestionIndex] = useState(0);
     const [selected, setSelected] = useState<string | null>(null);
+    // Right/wrong per answered question, for the progress dots.
+    const [results, setResults] = useState<boolean[]>([]);
 
     if (questions.length === 0) {
         return null;
@@ -48,6 +51,7 @@ export default function DailyWordsQuickPractice({ words, onComplete }: DailyWord
     const handleSelect = (option: string) => {
         if (selected) return;
         setSelected(option);
+        setResults((prev) => [...prev.slice(0, questionIndex), option === question.word.word]);
     };
 
     const handleContinue = () => {
@@ -60,18 +64,33 @@ export default function DailyWordsQuickPractice({ words, onComplete }: DailyWord
     };
 
     return (
-        <div className="anim-fade-up rounded-[10px] border-t-4 border-primary bg-card p-6 shadow-card sm:p-8">
-            <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-foreground">{t.dailyWords.practice.title}</h2>
-                <span className="text-xs font-medium text-foreground/50">
+        <div className="anim-fade-up overflow-hidden rounded-3xl bg-card shadow-card ring-1 ring-border/60">
+            <div className="flex items-center justify-between gap-3 bg-primary/[0.07] px-6 py-4 sm:px-8">
+                <h2 className="text-lg font-extrabold" style={{ color: ACCENT_TITLE_COLOR }}>{t.dailyWords.practice.title}</h2>
+                <span className="rounded-full bg-card/80 px-3 py-1 text-xs font-bold text-primary shadow-sm">
                     {t.dailyWords.practice.questionOf(questionIndex + 1, questions.length)}
                 </span>
             </div>
 
-            <div className="mt-3 flex gap-1.5" aria-hidden="true">
-                {questions.map((q, i) => (
-                    <span key={q.word.id} className={cn("h-1.5 flex-1 rounded-full transition-colors", i <= questionIndex ? "bg-primary" : "bg-foreground/10")} />
-                ))}
+            <div className="p-6 pt-5 sm:p-8 sm:pt-6">
+            <div className="flex flex-wrap items-center gap-2" aria-hidden="true">
+                {questions.map((q, i) => {
+                    const result = results[i];
+                    const current = i === questionIndex;
+                    const showResult = result !== undefined && (!current || selected !== null);
+                    return (
+                        <span
+                            key={q.word.id}
+                            className={cn(
+                                "flex size-8 items-center justify-center rounded-full text-xs font-extrabold transition",
+                                showResult ? (result ? "bg-green-500 text-white" : "bg-red-500 text-white") : "border-2 border-dashed border-primary/40 text-primary",
+                                current && "ring-2 ring-primary ring-offset-2 ring-offset-card",
+                            )}
+                        >
+                            {showResult ? result ? <Check className="size-4" strokeWidth={3} /> : <X className="size-4" strokeWidth={3} /> : i + 1}
+                        </span>
+                    );
+                })}
             </div>
 
             <p className="mt-6 text-xl font-semibold leading-relaxed text-foreground">{t.dailyWords.practice.prompt(promptMeaning)}</p>
@@ -91,9 +110,9 @@ export default function DailyWordsQuickPractice({ words, onComplete }: DailyWord
                             onClick={() => handleSelect(option)}
                             disabled={showResult}
                             className={cn(
-                                "flex w-full cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-medium transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                                "flex w-full cursor-pointer items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left text-sm font-medium transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
                                 !showResult && "border-border/60 bg-background hover:-translate-y-0.5 hover:border-primary/50 hover:bg-accent/50 hover:shadow-card",
-                                showResult && isCorrect && "border-green-500 bg-green-500/10 text-foreground",
+                                showResult && isCorrect && "anim-pop border-green-500 bg-green-500/10 text-foreground",
                                 showResult && isSelected && !isCorrect && "border-red-500 bg-red-500/10 text-foreground",
                                 showResult && !isSelected && !isCorrect && "border-border/40 text-foreground/40",
                             )}
@@ -128,6 +147,7 @@ export default function DailyWordsQuickPractice({ words, onComplete }: DailyWord
                     </button>
                 </div>
             )}
+            </div>
         </div>
     );
 }

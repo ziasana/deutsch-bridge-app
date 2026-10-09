@@ -6,6 +6,8 @@ import RisingBubbles from "@/componenets/learning/RisingBubbles";
 import RisingWords from "@/componenets/learning/RisingWords";
 import MasteryBar from "@/componenets/learning/MasteryBar";
 import CurrentLevelChip from "@/componenets/learning/CurrentLevelChip";
+import { ACCENT_TITLE_COLOR } from "@/componenets/learning/levelMeta";
+import { cn } from "@/lib/utils";
 
 // Sample phrases floating up the hero: a taste of what Redemittel are.
 const SAMPLE_PHRASES = ["Meiner Meinung nach …", "Da stimme ich dir zu!", "Wie wäre es mit …?", "Ich möchte mich entschuldigen", "Darf ich Sie kurz stören?", "Vielen Dank im Voraus"];
@@ -14,10 +16,12 @@ interface Props {
     hub: RedemittelHub | undefined;
     onNavigate: (href: string) => void;
     onDiscover: () => void;
+    /** Tints the hero softly (the Redemittel colour, or the level colour while a level is filtered). */
+    accent?: string;
 }
 
 /** The Redemittel hero, built like the vocabulary and expressions heroes: title, one calm next step and a progress bar. No filters here. */
-export default function RedemittelHeader({ hub, onNavigate, onDiscover }: Readonly<Props>) {
+export default function RedemittelHeader({ hub, onNavigate, onDiscover, accent }: Readonly<Props>) {
     const loading = !hub;
     const dueCount = hub?.dueCount ?? 0;
     const newToday = hub?.newToday ?? 0;
@@ -35,7 +39,11 @@ export default function RedemittelHeader({ hub, onNavigate, onDiscover }: Readon
                 : { label: "Entdecken", run: onDiscover };
 
     return (
-        <header className="relative overflow-hidden rounded-3xl border border-primary/10 bg-gradient-to-br from-primary/[0.03] via-card to-card p-5 sm:p-6">
+        <header
+            className={cn("relative overflow-hidden rounded-3xl border p-5 transition-colors duration-300 sm:p-6", accent ? "border-primary/40 bg-card" : "border-primary/10 bg-gradient-to-br from-primary/[0.03] via-card to-card")}
+            // Re-pointing --primary makes the icon tile, chip, button and bubbles take the accent colour.
+            style={accent ? ({ "--primary": accent, "--primary-foreground": "#ffffff", backgroundImage: `linear-gradient(135deg, ${accent}52, ${accent}1f 60%, ${accent}0d)` } as React.CSSProperties) : undefined}
+        >
             <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-12 size-44 rounded-full bg-primary/[0.06]" />
             <div aria-hidden="true" className="pointer-events-none absolute -bottom-16 right-1/4 size-36 rounded-full bg-primary/[0.04]" />
             <RisingBubbles count={10} />
@@ -48,7 +56,7 @@ export default function RedemittelHeader({ hub, onNavigate, onDiscover }: Readon
                     </span>
                     <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                            <h1 className="text-xl font-bold text-foreground sm:text-2xl">Redemittel</h1>
+                            <h1 className="text-xl font-bold text-foreground sm:text-2xl" style={accent ? { color: ACCENT_TITLE_COLOR } : undefined}>Redemittel</h1>
                             <CurrentLevelChip title="Dein aktuelles Niveau" />
                         </div>
                         <p className="text-sm text-foreground/60">Ausdrücke für Schreiben, Sprechen und Alltag.</p>
@@ -67,6 +75,8 @@ export default function RedemittelHeader({ hub, onNavigate, onDiscover }: Readon
 
             {!loading && (
                 <MasteryBar
+                    slim
+                    className="mt-3"
                     segments={[
                         { key: "MASTERED", label: "Sicher", count: summary.mastered, color: "var(--learning-reading)" },
                         { key: "REVIEW", label: "Wiederholen", count: summary.review, color: "var(--learning-review)" },

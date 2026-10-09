@@ -27,13 +27,17 @@ public final class ExamTimeDefaults {
             new Part(ExamSection.LESEVERSTEHEN, 3),
             new Part(ExamSection.SPRACHBAUSTEINE, 1),
             new Part(ExamSection.SPRACHBAUSTEINE, 2),
-            new Part(ExamSection.SCHRIFTLICHER_AUSDRUCK, 1));
+            new Part(ExamSection.SCHRIFTLICHER_AUSDRUCK, 1),
+            new Part(ExamSection.MUENDLICHER_AUSDRUCK, 1),
+            new Part(ExamSection.MUENDLICHER_AUSDRUCK, 2),
+            new Part(ExamSection.MUENDLICHER_AUSDRUCK, 3));
 
     /**
      * Sections that are NOT part of the exam's total-duration block. Schriftlicher Ausdruck is
-     * written in its own timed slot, so it is excluded from the "sum of Teile vs total" check.
+     * written in its own timed slot and Mündlicher Ausdruck is a separate oral exam, so both are
+     * excluded from the "sum of Teile vs total" check.
      */
-    public static final Set<ExamSection> OUTSIDE_TOTAL_DURATION = Set.of(ExamSection.SCHRIFTLICHER_AUSDRUCK);
+    public static final Set<ExamSection> OUTSIDE_TOTAL_DURATION = Set.of(ExamSection.SCHRIFTLICHER_AUSDRUCK, ExamSection.MUENDLICHER_AUSDRUCK);
 
     public static boolean isSupported(ExamSection section, int teil) {
         return SUPPORTED_PARTS.contains(new Part(section, teil));
@@ -47,7 +51,10 @@ public final class ExamTimeDefaults {
                     new Part(ExamSection.LESEVERSTEHEN, 3), 20,
                     new Part(ExamSection.SPRACHBAUSTEINE, 1), 15,
                     new Part(ExamSection.SPRACHBAUSTEINE, 2), 15,
-                    new Part(ExamSection.SCHRIFTLICHER_AUSDRUCK, 1), 30));
+                    new Part(ExamSection.SCHRIFTLICHER_AUSDRUCK, 1), 30,
+                    new Part(ExamSection.MUENDLICHER_AUSDRUCK, 1), 3,
+                    new Part(ExamSection.MUENDLICHER_AUSDRUCK, 2), 4,
+                    new Part(ExamSection.MUENDLICHER_AUSDRUCK, 3), 5));
 
     public static final Map<LearningLevel, Integer> DEFAULT_TOTAL_MINUTES = Map.of(LearningLevel.B1, 90);
 }

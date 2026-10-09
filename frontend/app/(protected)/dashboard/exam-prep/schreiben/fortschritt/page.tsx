@@ -9,6 +9,7 @@ import Loading from "@/componenets/Loading";
 import useAuthStore from "@/store/useAuthStore";
 import { getWritingProgress } from "@/services/writingAttemptService";
 import WritingProgress from "@/componenets/exam/writing/WritingProgress";
+import { lessonThemeVars } from "@/componenets/exam/lessonTheme";
 
 function FortschrittContent() {
     const searchParams = useSearchParams();
@@ -18,13 +19,18 @@ function FortschrittContent() {
     const { data, isLoading } = useQuery({ queryKey: ["writing", "progress"], queryFn: () => getWritingProgress().then((r) => r.data) });
 
     return (
-        <div className="min-h-screen bg-background px-6 py-10" dir="ltr">
-            <div className="max-w-4xl mx-auto">
-                <Link href={`/dashboard/exam-prep/schreiben?level=${encodeURIComponent(level)}`} className="inline-flex items-center gap-1.5 text-sm text-foreground/60 hover:text-foreground transition">
-                    <ArrowLeft className="size-4" />
+        <div className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10" dir="ltr" style={lessonThemeVars("writing")}>
+            <div className="mx-auto max-w-4xl">
+                <Link href={`/dashboard/exam-prep/schreiben?level=${encodeURIComponent(level)}`} className="inline-flex items-center gap-1.5 text-sm text-foreground/60 transition hover:text-foreground">
+                    <ArrowLeft className="size-4" aria-hidden="true" />
                     Schreiben
                 </Link>
-                <h1 className="mt-4 text-2xl font-bold text-foreground">📈 Mein Schreibfortschritt</h1>
+                <header className="relative mt-4 overflow-hidden rounded-3xl bg-gradient-to-br from-(--lesson-from) to-(--lesson-to) p-5 text-white shadow-md sm:p-6">
+                    <span aria-hidden="true" className="absolute -end-10 -top-12 size-44 rounded-full bg-white/10" />
+                    <span aria-hidden="true" className="absolute end-6 top-3 text-7xl opacity-20">📈</span>
+                    <h1 className="relative text-2xl font-extrabold sm:text-3xl">Mein Schreibfortschritt</h1>
+                    <p className="relative mt-1 text-sm text-white/90">Was du schon geschafft hast – und woran du als Nächstes arbeiten solltest.</p>
+                </header>
                 <div className="mt-6">{isLoading ? <Loading /> : data ? <WritingProgress progress={data} level={level} /> : null}</div>
             </div>
         </div>

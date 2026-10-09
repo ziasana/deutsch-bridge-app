@@ -7,10 +7,10 @@ import { ArrowLeft, ArrowRight, BookOpen } from "lucide-react";
 import Loading from "@/componenets/Loading";
 import useAuthStore from "@/store/useAuthStore";
 import { useSpeakingGuides } from "@/hooks/exam/useSpeakingGuides";
-import { GuideLearnView, SPEAKING_COLOR, SPEAKING_PARTS, SPEAKING_SECTIONS, learnHref, speakingPathTexts } from "@/componenets/exam/speaking";
+import { GuideLearnView, SPEAKING_PARTS, SPEAKING_SECTIONS, learnHref, speakingPathTexts } from "@/componenets/exam/speaking";
 import { buildSpeakingStations } from "@/componenets/exam/speaking/learn/stations";
 import { useSpeakingLearnProgress } from "@/componenets/exam/speaking/learn/useSpeakingLearnProgress";
-import LearnPath from "@/componenets/exam/writing/learn/LearnPath";
+import ThemedLearnPath from "@/componenets/exam/writing/learn/ThemedLearnPath";
 import LessonPlayer from "@/componenets/exam/writing/learn/LessonPlayer";
 import { SpeakingGuideContent } from "@/types/exam";
 import { cn } from "@/lib/utils";
@@ -39,6 +39,7 @@ function PathView({ level, part, guide, stationId, onNavigate }: PathProps) {
                 station={current}
                 nextStationId={stations[idx + 1]?.id ?? null}
                 sections={SPEAKING_SECTIONS}
+                accent="speaking"
                 finishLabel="Jetzt Sprechübungen üben →"
                 onFinished={markDone}
                 onNext={(id) => (id ? onNavigate(id) : router.push(texts.exerciseHref))}
@@ -49,7 +50,20 @@ function PathView({ level, part, guide, stationId, onNavigate }: PathProps) {
     if (stations.length === 0) {
         return <div className="rounded-[10px] bg-card p-8 text-center text-sm text-foreground/55 shadow-card">Für diesen Teil sind noch keine Lerninhalte verfügbar.</div>;
     }
-    return <LearnPath level={level} stations={stations} done={done} onOpen={onNavigate} onReset={reset} sections={SPEAKING_SECTIONS} texts={texts} />;
+    return (
+        <ThemedLearnPath
+            accent="speaking"
+            stations={stations}
+            done={done}
+            onOpen={onNavigate}
+            onReset={reset}
+            sections={SPEAKING_SECTIONS}
+            exerciseHref={texts.exerciseHref}
+            exerciseLabel={texts.exerciseLabel}
+            allDoneHint={texts.allDoneHint}
+            remainingHint={texts.remainingHint}
+        />
+    );
 }
 
 function LernenContent() {
@@ -82,8 +96,8 @@ function LernenContent() {
     const inLesson = !reference && !!stationParam;
 
     return (
-        <div className="min-h-screen bg-background px-6 py-10" dir="ltr">
-            <div className="max-w-4xl mx-auto">
+        <div className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10" dir="ltr">
+            <div className="mx-auto max-w-4xl">
                 {!inLesson && (
                     <>
                         <Link
@@ -94,40 +108,48 @@ function LernenContent() {
                             Mündlicher Ausdruck
                         </Link>
 
-                        <div className="mt-4">
-                            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: SPEAKING_COLOR }}>
-                                Lernen · {level}
-                            </p>
-                            <h1 className="text-2xl font-bold text-foreground">
-                                Teil {part}: {meta.title}
-                            </h1>
-                        </div>
+                        <header className="relative mt-4 overflow-hidden rounded-3xl border border-pink-500/15 bg-card p-5 shadow-card sm:p-6">
+                            <span aria-hidden="true" className="pointer-events-none absolute -end-10 -top-12 size-44 rounded-full bg-gradient-to-br from-pink-500/20 to-orange-400/20" />
+                            <span aria-hidden="true" className="pointer-events-none absolute end-6 top-4 text-7xl opacity-15 sm:text-8xl">{["👋", "💭", "🤝"][part - 1]}</span>
+                            <div className="relative">
+                                <p className="inline-flex rounded-full bg-pink-500/15 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-pink-700 dark:text-pink-300">
+                                    {reference ? "Nachschlagen" : "Lernen"} · {level}
+                                </p>
+                                <h1 className="mt-2 text-2xl font-extrabold text-foreground sm:text-3xl">
+                                    Teil {part}: {meta.title}
+                                </h1>
+                                <p className="mt-0.5 text-sm text-foreground/65">{meta.description}</p>
+                            </div>
 
-                        <nav className="mt-4 flex flex-wrap items-center gap-2" aria-label="Teil wählen">
-                            {SPEAKING_PARTS.map((p) => (
+                            <nav className="relative mt-4 flex flex-wrap items-center gap-2" aria-label="Teil wählen">
+                                {SPEAKING_PARTS.map((p) => (
+                                    <button
+                                        key={p.part}
+                                        type="button"
+                                        aria-current={p.part === part ? "page" : undefined}
+                                        onClick={() => router.replace(learnHref(level, p.part) + (reference ? "&view=nachschlagen" : ""))}
+                                        className={cn(
+                                            "cursor-pointer rounded-full border px-4 py-1.5 text-sm font-semibold transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500/50",
+                                            p.part === part ? "border-transparent bg-gradient-to-r from-pink-500 to-orange-400 text-white shadow-sm" : "border-border bg-card text-foreground/70 hover:border-pink-500/40 hover:bg-pink-500/5",
+                                        )}
+                                    >
+                                        Teil {p.part}
+                                    </button>
+                                ))}
                                 <button
-                                    key={p.part}
                                     type="button"
-                                    aria-current={p.part === part ? "page" : undefined}
-                                    onClick={() => router.replace(learnHref(level, p.part) + (reference ? "&view=nachschlagen" : ""))}
+                                    aria-pressed={reference}
+                                    onClick={() => go(reference ? {} : { view: "nachschlagen" })}
                                     className={cn(
-                                        "cursor-pointer rounded-full border px-4 py-1.5 text-sm font-semibold transition",
-                                        p.part === part ? "border-primary bg-primary text-primary-foreground" : "border-border text-foreground/70 hover:bg-accent",
+                                        "ms-auto inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-semibold transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500/50",
+                                        reference ? "border-pink-500/50 bg-pink-500/10 text-pink-700 dark:text-pink-300" : "border-border bg-card text-foreground/70 hover:border-pink-500/40 hover:bg-pink-500/5",
                                     )}
                                 >
-                                    Teil {p.part}
+                                    <BookOpen className="size-4" aria-hidden="true" />
+                                    {reference ? "Zum Lernpfad" : "Nachschlagen"}
                                 </button>
-                            ))}
-                            <button
-                                type="button"
-                                aria-pressed={reference}
-                                onClick={() => go(reference ? {} : { view: "nachschlagen" })}
-                                className="ms-auto inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border px-4 py-1.5 text-sm font-medium text-foreground/70 transition hover:bg-accent"
-                            >
-                                <BookOpen className="size-4" aria-hidden="true" />
-                                {reference ? "Zum Lernpfad" : "Nachschlagen"}
-                            </button>
-                        </nav>
+                            </nav>
+                        </header>
                     </>
                 )}
 
@@ -151,7 +173,7 @@ function LernenContent() {
                     <div className="mt-6 flex justify-end">
                         <Link
                             href={speakingPathTexts(level, part).exerciseHref}
-                            className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+                            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-pink-500 to-orange-400 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:shadow-md hover:brightness-105"
                         >
                             Zu den Übungen <ArrowRight className="size-4" aria-hidden="true" />
                         </Link>

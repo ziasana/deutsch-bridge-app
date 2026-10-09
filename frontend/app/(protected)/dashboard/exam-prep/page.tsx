@@ -2,10 +2,8 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "@/lib/toast";
-import { ChevronRight } from "lucide-react";
 import { getExamExercisesSummary, getExamLevelSummary } from "@/services/examService";
 import { ExamSection } from "@/types/exam";
 import Loading from "@/componenets/Loading";
@@ -23,7 +21,6 @@ import {
     ContinueLearningCard,
     EXAM_TYPE_META,
     EXAM_TYPE_ORDER,
-    ExamExerciseList,
     ExamPartCard,
     ExamTypeSelector,
     averageScore,
@@ -34,7 +31,10 @@ import {
 } from "@/componenets/exam";
 import { ContentItemRow } from "@/componenets/CategoryAccordion";
 import useAuthStore from "@/store/useAuthStore";
-import TeilTimeCard from "@/componenets/exam/TeilTimeCard";
+import WritingTaskList from "@/componenets/exam/writing/WritingTaskList";
+import ExamPartList from "@/componenets/exam/ExamPartList";
+import { LessonAccent, SECTION_THEME, accentColor, lessonThemeVars } from "@/componenets/exam/lessonTheme";
+import SpeakingExamList from "@/componenets/exam/speaking/SpeakingExamList";
 import { useExerciseLastTimes } from "@/hooks/exam/useExerciseLastTimes";
 import { usePendingExamBookmarks } from "@/hooks/exam/usePendingExamBookmarks";
 import { useExamBookmark } from "@/hooks/exam/useExamBookmark";
@@ -104,6 +104,7 @@ function ExamPrepContent() {
     // The backend can send the literal string "null" for an unset profile level.
     const profileLevel = userProfile?.learningLevel && userProfile.learningLevel !== "null" ? userProfile.learningLevel : null;
     const effectiveLevel = selectedLevel ?? profileLevel ?? levelSummaries[0]?.level ?? "B1";
+    const speakingLastTimes = useExerciseLastTimes("MUENDLICHER_AUSDRUCK", selectedSection === "MUENDLICHER_AUSDRUCK" ? effectiveLevel : null);
     const writingLastTimes = useExerciseLastTimes("SCHRIFTLICHER_AUSDRUCK", selectedSection === "SCHRIFTLICHER_AUSDRUCK" ? effectiveLevel : null);
 
     // Every section at the current level only - never the whole table. Refetches (and caches,
@@ -185,13 +186,23 @@ function ExamPrepContent() {
     }));
     const openSaved = (id: string) => router.push(`/dashboard/exam-prep/exercise?id=${id}`);
 
+    // Each exam section has its colour (Lesen teal, Sprachbausteine violet, Hören green, Sprechen pink, Schreiben orange).
+    const sectionAccent: LessonAccent | undefined =
+        SECTION_THEME[selectedSection]?.accent ??
+        (selectedSection === "MUENDLICHER_AUSDRUCK" ? "speaking" : selectedSection === "SCHRIFTLICHER_AUSDRUCK" ? "writing" : undefined);
+
     return (
-        <div className="min-h-screen bg-background px-6 py-10" dir="ltr">
+        <div
+            className="min-h-screen bg-background px-6 py-10"
+            dir="ltr"
+            style={sectionAccent ? lessonThemeVars(sectionAccent) : undefined}
+        >
             <div className="max-w-4xl mx-auto">
                 <LearningPageHero
                     icon={selectedMeta.icon}
                     title="Prüfungsvorbereitung"
                     subtitle="Bereite dich Schritt für Schritt auf die Deutschprüfung vor."
+                    accent={sectionAccent ? accentColor(sectionAccent) : undefined}
                     bubbles
                     actionsBelow
                     actions={
@@ -310,22 +321,22 @@ function ExamPrepContent() {
                                 )}
                             </>
                         ) : isFlatList ? (
-                            <>
-                                <Link
-                                    href={`/dashboard/exam-prep/schreiben/lernen?level=${encodeURIComponent(effectiveLevel)}`}
-                                    className="flex items-center justify-between rounded-xl bg-accent/50 px-4 py-3 text-sm font-medium text-foreground hover:bg-accent transition"
-                                >
-                                    <span>📚 Erst lernen: So löst du eine Schreibaufgabe</span>
-                                    <ChevronRight className="size-4 text-foreground/40" />
-                                </Link>
-                                <TeilTimeCard section={selectedSection} level={effectiveLevel} teil={1} showLastResult={false} />
-                                <ExamExerciseList
-                                    key={`${selectedSection}-${effectiveLevel}-${searchTerm}`}
-                                    items={flatItems}
-                                    color={selectedMeta.color}
-                                    lastTimes={writingLastTimes}
-                                />
-                            </>
+                            <WritingTaskList
+                                key={`${selectedSection}-${effectiveLevel}-${searchTerm}`}
+                                items={flatItems}
+                                level={effectiveLevel}
+                                lastTimes={writingLastTimes}
+                            />
+                        ) : selectedSection === "MUENDLICHER_AUSDRUCK" ? (
+                            <SpeakingExamList key={`${selectedSection}-${effectiveLevel}-${searchTerm}`} groups={selectedGroups} level={effectiveLevel} lastTimes={speakingLastTimes} />
+                        ) : SECTION_THEME[selectedSection] ? (
+                            <ExamPartList
+                                section={selectedSection}
+                                level={effectiveLevel}
+                                accent={SECTION_THEME[selectedSection]!.accent}
+                                groups={selectedGroups}
+                                onOpen={(group) => openPart(selectedSection, effectiveLevel, group.key, group.items[0].id, group.items.length === 1)}
+                            />
                         ) : (
                             <>
                                 {selectedGroups.map((group, i) => (

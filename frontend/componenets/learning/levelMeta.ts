@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { LucideIcon, Sprout, Leaf, BookOpen, GraduationCap, Star, Trophy } from "lucide-react";
 
 export interface LevelMeta {
@@ -19,3 +20,14 @@ export const FALLBACK_LEVEL_META: LevelMeta = { icon: BookOpen, color: "#6b7280"
 export function getLevelMeta(level: string): LevelMeta {
     return LEVEL_META[level] ?? FALLBACK_LEVEL_META;
 }
+
+/**
+ * Theme variables for a level colour. Put them on a page wrapper and everything inside that uses the primary colour
+ * (buttons, tabs, chips, links, focus rings, quiz) follows the selected level.
+ */
+export function levelThemeVars(color: string): CSSProperties {
+    return { "--primary": color, "--primary-foreground": "#ffffff" } as CSSProperties;
+}
+
+/** Title colour for a level-themed page: the level colour, pulled toward the text colour so it stays readable. */
+export const ACCENT_TITLE_COLOR = "color-mix(in srgb, var(--primary) 70%, var(--foreground))";

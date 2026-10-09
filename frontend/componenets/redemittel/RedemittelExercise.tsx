@@ -62,8 +62,11 @@ export default function RedemittelExercise({ exercise, onAnswer, onNext, isLast,
     const good = result?.correct;
 
     return (
-        <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-card sm:p-7">
-            <p className="text-xs font-semibold uppercase tracking-wide text-primary">{TYPE_LABELS[exercise.type]}</p>
+        <div className="overflow-hidden rounded-3xl bg-card shadow-card ring-1 ring-border/60">
+            <div className="bg-primary/[0.07] px-5 py-3 sm:px-7">
+                <p className="text-xs font-bold uppercase tracking-wide text-primary">{TYPE_LABELS[exercise.type]}</p>
+            </div>
+            <div className="p-5 sm:p-7">
             <p className="mt-3 whitespace-pre-line break-words text-lg font-semibold leading-relaxed text-foreground sm:text-xl">{exercise.prompt}</p>
 
             {isProduction && exercise.phrase && (
@@ -138,7 +141,7 @@ export default function RedemittelExercise({ exercise, onAnswer, onNext, isLast,
                     {words.map((option, i) => {
                         const isChosen = selected === option.id;
                         const isRight = result !== null && option.text === result.correctAnswer;
-                        const state = result === null ? "" : isRight ? "border-green-600 bg-green-500/10" : isChosen ? "border-amber-500 bg-amber-500/10" : "opacity-60";
+                        const state = result === null ? "" : isRight ? "anim-pop border-green-500 bg-green-500/10" : isChosen ? "border-amber-500 bg-amber-500/10" : "opacity-60";
                         return (
                             <li key={option.id}>
                                 <button
@@ -148,11 +151,11 @@ export default function RedemittelExercise({ exercise, onAnswer, onNext, isLast,
                                         setSelected(option.id);
                                         void submit(option.id);
                                     }}
-                                    className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left text-sm text-foreground transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                                        result === null ? "border-border/60 hover:border-primary/50 hover:bg-accent cursor-pointer" : state
+                                    className={`flex w-full items-start gap-3 rounded-2xl border-2 px-4 py-3 text-left text-sm text-foreground transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                                        result === null ? "border-border/60 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/5 hover:shadow-card cursor-pointer" : state
                                     }`}
                                 >
-                                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-primary" aria-hidden="true">
+                                    <span className={`flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${result !== null && isRight ? "bg-green-500 text-white" : "bg-accent text-primary"}`} aria-hidden="true">
                                         {String.fromCharCode(65 + i)}
                                     </span>
                                     <span className="min-w-0 flex-1 break-words">{option.text}</span>
@@ -213,7 +216,7 @@ export default function RedemittelExercise({ exercise, onAnswer, onNext, isLast,
             )}
 
             {result && (
-                <div role="status" aria-live="polite" className="mt-5 space-y-2 rounded-xl bg-accent/50 px-4 py-3.5 text-sm text-foreground/85">
+                <div role="status" aria-live="polite" className={`anim-fade-up mt-5 space-y-2 rounded-2xl px-4 py-3.5 text-sm text-foreground/85 ${result.attempted || good ? "bg-green-500/10 ring-1 ring-green-500/30" : "bg-amber-500/10 ring-1 ring-amber-500/30"}`}>
                     {result.attempted ? (
                         <>
                             <p className="font-semibold text-foreground">✓ Gut gemacht – du hast das Redemittel selbst verwendet.</p>
@@ -255,6 +258,7 @@ export default function RedemittelExercise({ exercise, onAnswer, onNext, isLast,
                     </button>
                 </div>
             )}
+            </div>
         </div>
     );
 }

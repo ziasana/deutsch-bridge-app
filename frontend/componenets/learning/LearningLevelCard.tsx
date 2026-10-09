@@ -1,6 +1,6 @@
 "use client";
 
-import { LucideIcon, ChevronRight } from "lucide-react";
+import { LucideIcon, Check, ChevronRight } from "lucide-react";
 import LearningProgressBar from "./LearningProgressBar";
 import { getLevelMeta } from "./levelMeta";
 import { cn } from "@/lib/utils";
@@ -35,6 +35,7 @@ export default function LearningLevelCard({
     const meta = getLevelMeta(level);
     const Icon = icon ?? meta.icon;
     const color = meta.color;
+    const done = total > 0 && completed >= total;
 
     return (
         <button
@@ -43,42 +44,47 @@ export default function LearningLevelCard({
             onClick={onClick}
             aria-selected={active}
             aria-label={`${level}: ${completed} of ${total} ${unitLabel} completed, ${pct}%${active ? `, ${activeLabel ?? "current level"}` : ""}`}
-            style={{ "--hover-color": color } as React.CSSProperties}
+            style={{
+                "--hover-color": color,
+                ...(active ? { borderColor: `${color}80`, backgroundImage: `linear-gradient(135deg, ${color}40, ${color}14 65%, ${color}0d)` } : {}),
+            } as React.CSSProperties}
             className={cn(
-                "group relative flex shrink-0 flex-col gap-3 rounded-2xl border bg-card p-4 text-left transition-all duration-200 min-w-[176px] sm:min-w-0 sm:flex-1 cursor-pointer",
+                "group relative flex min-w-[176px] shrink-0 cursor-pointer flex-col gap-3 overflow-hidden rounded-3xl border bg-card p-4 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 sm:min-w-0 sm:flex-1",
                 active
-                    ? "border-[var(--hover-color)] bg-[var(--hover-color)]/[0.05]"
+                    ? "shadow-card"
                     : "border-border/60 shadow-card hover:-translate-y-0.5 hover:shadow-lg hover:border-[var(--hover-color)]/40 hover:bg-[var(--hover-color)]/[0.06]",
                 className,
             )}
         >
-            {active && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary px-3 py-1 text-[10px] font-semibold text-primary-foreground shadow-sm">
-                    {activeLabel ?? "Current level"}
-                </span>
-            )}
+            {active && <span aria-hidden="true" className="absolute -end-6 -top-8 size-24 rounded-full" style={{ backgroundColor: `${color}1a` }} />}
 
-            <div className="flex items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-2">
-                    <Icon className="size-6 shrink-0" style={{ color }} />
-                    <span className="font-semibold text-foreground">{level}</span>
+            <div className="relative flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-3">
+                    <span
+                        className={cn("flex size-11 shrink-0 items-center justify-center rounded-2xl transition", active ? "text-white shadow-sm" : "bg-[var(--hover-color)]/10")}
+                        style={active ? { backgroundColor: color } : { color }}
+                    >
+                        {done ? <Check className="size-6" strokeWidth={3} aria-hidden="true" /> : <Icon className="size-6" aria-hidden="true" />}
+                    </span>
+                    <span className="text-xl font-extrabold text-foreground">{level}</span>
                 </div>
-                <ChevronRight
-                    className={cn(
-                        "size-4 shrink-0 text-foreground/25 transition-transform",
-                        active && "translate-x-0.5 text-primary",
-                    )}
-                />
+                {active ? (
+                    <span className="whitespace-nowrap rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm" style={{ backgroundColor: color }}>
+                        {activeLabel ?? "Current level"}
+                    </span>
+                ) : (
+                    <ChevronRight className="size-4 shrink-0 text-foreground/25 transition-transform group-hover:translate-x-0.5 rtl:rotate-180" aria-hidden="true" />
+                )}
             </div>
 
-            <div className="space-y-1.5">
-                <div className="flex items-baseline justify-between text-xs">
+            <div className="relative space-y-1.5">
+                <div className="flex items-baseline justify-between gap-2 text-xs">
                     <span className="truncate text-foreground/55">
                         {completed} / {total} {unitLabel}
                     </span>
-                    <span className="shrink-0 font-medium text-foreground/70">{pct}%</span>
+                    <span className={cn("shrink-0 text-sm font-extrabold tabular-nums", active ? "text-foreground" : "text-foreground/75")}>{pct}%</span>
                 </div>
-                <LearningProgressBar value={pct} color={color} ariaLabel={`${level} progress`} />
+                <LearningProgressBar value={pct} color={color} className="h-2" ariaLabel={`${level} progress`} />
             </div>
         </button>
     );

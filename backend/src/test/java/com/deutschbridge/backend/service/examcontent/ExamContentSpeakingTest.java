@@ -264,6 +264,27 @@ class ExamContentSpeakingTest {
     }
 
     @Test
+    void teil3ValidatesTheSceneImage() throws IOException {
+        ObjectNode ok = sample(3);
+        first(ok).put("image", "/uploads/scenes/party.webp").put("imageAlt", "Freunde essen zusammen im Garten");
+        assertTrue(errors(ok).isEmpty());
+        assertEquals("/uploads/scenes/party.webp", validator.validate(ok).exercises().get(0).speaking().data().get("image"));
+
+        ObjectNode noAlt = sample(3);
+        first(noAlt).put("image", "https://example.org/party.webp").put("imageAlt", "");
+        assertTrue(errors(noAlt).contains("IMAGE_ALT_MISSING"));
+
+        ObjectNode bad = sample(3);
+        first(bad).put("image", "javascript:alert(1)").put("imageAlt", "x");
+        assertTrue(errors(bad).contains("IMAGE_REFERENCE_INVALID"));
+
+        // An empty image is simply "no picture".
+        ObjectNode none = sample(3);
+        first(none).put("image", "").put("imageAlt", "");
+        assertTrue(errors(none).isEmpty());
+    }
+
+    @Test
     void teil2OpinionQualityProblemsAreWarnings() throws IOException {
         ObjectNode file = sample(2);
         first(file).put("opinionText", "Reisen ist gut. Man sieht viel.");

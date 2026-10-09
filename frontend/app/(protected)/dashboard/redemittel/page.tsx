@@ -14,7 +14,8 @@ import RedemittelHeader from "@/componenets/redemittel/RedemittelHeader";
 import RedemittelDayPanel from "@/componenets/redemittel/RedemittelDayPanel";
 import RedemittelDetailDialog from "@/componenets/redemittel/RedemittelDetailDialog";
 import { useRedemittelActions } from "@/componenets/redemittel/useRedemittelActions";
-import { STATUS_LABELS } from "@/componenets/redemittel/redemittelMeta";
+import { REDEMITTEL_ACCENT, STATUS_LABELS } from "@/componenets/redemittel/redemittelMeta";
+import { getLevelMeta, levelThemeVars } from "@/componenets/learning/levelMeta";
 import { cn } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 12;
@@ -75,6 +76,7 @@ export default function RedemittelPage() {
 
     const { toggleSave } = useRedemittelActions();
 
+    const accent = level === "ALL" ? REDEMITTEL_ACCENT : getLevelMeta(level).color;
     const resetPage = () => setPage(0);
     const totalPages = Math.max(1, list?.totalPages ?? 1);
     const items: Redemittel[] = list?.items ?? [];
@@ -91,10 +93,10 @@ export default function RedemittelPage() {
     };
 
     return (
-        <div className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-10" dir="ltr">
+        <div className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-10" dir="ltr" style={levelThemeVars(accent)}>
             <div className="mx-auto max-w-4xl">
                 <div className="space-y-6">
-                    <RedemittelHeader hub={hub} onNavigate={(href) => router.push(href)} onDiscover={() => scrollToList()} />
+                    <RedemittelHeader accent={accent} hub={hub} onNavigate={(href) => router.push(href)} onDiscover={() => scrollToList()} />
 
                     <RedemittelDayPanel hub={hub} onNavigate={(href) => router.push(href)} onDiscover={() => scrollToList()}>
                         <RedemittelTodayStrip onStart={() => router.push("/dashboard/redemittel/learn")} />
@@ -149,7 +151,7 @@ export default function RedemittelPage() {
                                         type="button"
                                         onClick={() => setPage((p) => Math.max(0, p - 1))}
                                         disabled={page === 0}
-                                        className="flex items-center gap-1 rounded-full border border-border/60 bg-card px-4 py-1.5 text-sm font-medium text-foreground transition hover:bg-accent disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer"
+                                        className="flex cursor-pointer items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary transition hover:bg-primary/20 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                                     >
                                         <ChevronLeft className="size-4" aria-hidden="true" />
                                         Zurück
@@ -161,7 +163,7 @@ export default function RedemittelPage() {
                                         type="button"
                                         onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                                         disabled={page + 1 >= totalPages || isPlaceholderData}
-                                        className="flex items-center gap-1 rounded-full border border-border/60 bg-card px-4 py-1.5 text-sm font-medium text-foreground transition hover:bg-accent disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer"
+                                        className="flex cursor-pointer items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary transition hover:bg-primary/20 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                                     >
                                         Weiter
                                         <ChevronRight className="size-4" aria-hidden="true" />

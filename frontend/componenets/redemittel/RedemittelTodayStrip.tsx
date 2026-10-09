@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { getTodaysRedemittel } from "@/services/redemittelService";
 import RedemittelFlipCard from "./RedemittelFlipCard";
+import { ACCENT_TITLE_COLOR } from "@/componenets/learning/levelMeta";
 
 /** Today's new Redemittel as flip cards: a playful preview that leads into the learn flow. Renders nothing when there are none. */
 export default function RedemittelTodayStrip({ onStart }: Readonly<{ onStart: () => void }>) {
@@ -15,14 +16,14 @@ export default function RedemittelTodayStrip({ onStart }: Readonly<{ onStart: ()
     if (!data || data.length === 0) return null;
 
     return (
-        <section aria-label="Heute neu" className="border-t border-border/60 px-4 py-5 sm:px-6">
+        <section aria-label="Heute neu" className="border-t border-border/60 bg-primary/[0.03] px-4 py-5 sm:px-6">
             <div className="flex flex-wrap items-end justify-between gap-3">
                 <div className="flex items-center gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-learning-vocabulary/15">
-                        <Sparkles className="size-5 text-learning-vocabulary" aria-hidden="true" />
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                        <Sparkles className="size-5" aria-hidden="true" />
                     </div>
                     <div>
-                        <h2 className="text-lg font-semibold text-foreground">Heute neu für dich</h2>
+                        <h2 className="text-lg font-bold" style={{ color: ACCENT_TITLE_COLOR }}>Heute neu für dich</h2>
                         <p className="text-sm text-foreground/55">Tippe auf eine Karte, um sie umzudrehen.</p>
                     </div>
                 </div>

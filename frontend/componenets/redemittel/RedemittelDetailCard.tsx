@@ -35,7 +35,7 @@ function Collapsible({ title, children }: Readonly<{ title: string; children: Re
     const [open, setOpen] = useState(false);
     const contentId = useId();
     return (
-        <section className="rounded-[10px] border border-border/60">
+        <section className="rounded-2xl border border-border/60">
             <div className="flex items-center justify-between gap-3 px-4 py-2.5">
                 <h3 className={sectionTitle}>{title}</h3>
                 <button
@@ -70,12 +70,12 @@ export default function RedemittelDetailCard({ redemittel: r, onToggleSave, savi
     const hasFooter = Boolean(onToggleSave || children);
 
     return (
-        <article className={cn(!embedded && "overflow-hidden rounded-[10px] bg-card shadow-card")}>
-            <header className="relative overflow-hidden bg-gradient-to-br from-primary/[0.05] via-card to-card px-5 pb-6 pt-7 sm:px-8">
+        <article className={cn(!embedded && "overflow-hidden rounded-3xl bg-card shadow-card")}>
+            <header className="relative overflow-hidden bg-gradient-to-br from-primary/[0.14] via-primary/[0.05] to-card px-5 pb-6 pt-7 sm:px-8">
                 <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-12 size-40 rounded-full bg-primary/[0.06]" />
                 <div aria-hidden="true" className="pointer-events-none absolute -bottom-14 right-1/4 size-28 rounded-full bg-primary/[0.04]" />
                 <div className="relative flex items-start gap-4">
-                    <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-2xl" aria-hidden="true">
+                    <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-card text-3xl shadow-sm" aria-hidden="true">
                         {categoryEmoji(r.category)}
                     </span>
                     <div className="min-w-0 flex-1 pr-8">

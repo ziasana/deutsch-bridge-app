@@ -4,6 +4,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { BookOpen, Check, Dumbbell, PartyPopper, RefreshCw, type LucideIcon } from "lucide-react";
 import { RedemittelHub } from "@/types/redemittel";
 import { cn } from "@/lib/utils";
+import { ACCENT_TITLE_COLOR } from "@/componenets/learning/levelMeta";
 
 const RING_SIZE = 76;
 const RING_STROKE = 8;
@@ -126,10 +127,10 @@ export default function RedemittelDayPanel({ hub, onNavigate, onDiscover, childr
     ];
 
     return (
-        <section aria-label="Heute für dich" className="overflow-hidden rounded-[10px] bg-card shadow-card">
-            <div className="flex items-center justify-between gap-4 px-5 pb-4 pt-5 sm:px-6 sm:pt-6">
+        <section aria-label="Heute für dich" className="overflow-hidden rounded-3xl bg-card shadow-card ring-1 ring-border/60">
+            <div className="flex items-center justify-between gap-4 bg-primary/[0.06] px-5 pb-4 pt-5 sm:px-6 sm:pt-6">
                 <div className="min-w-0">
-                    <h2 className="text-lg font-semibold text-foreground">Heute für dich</h2>
+                    <h2 className="text-lg font-bold" style={{ color: ACCENT_TITLE_COLOR }}>Heute für dich</h2>
                     <p className="mt-0.5 text-sm text-foreground/60">
                         {allDone ? "Alles erledigt für heute – gut gemacht!" : "Ein Schritt nach dem anderen, in deinem Tempo."}
                     </p>
@@ -149,7 +150,7 @@ export default function RedemittelDayPanel({ hub, onNavigate, onDiscover, childr
                 )}
             </div>
 
-            <div className="grid gap-3 px-5 pb-5 sm:grid-cols-3 sm:px-6 sm:pb-6" role="group" aria-label="Aktionen">
+            <div className="grid gap-3 px-5 pb-5 pt-4 sm:grid-cols-3 sm:px-6 sm:pb-6" role="group" aria-label="Aktionen">
                 {steps.map((step) => {
                     const Icon = step.icon;
                     const isNext = !loading && recommended === step.key;
@@ -161,9 +162,9 @@ export default function RedemittelDayPanel({ hub, onNavigate, onDiscover, childr
                             disabled={loading || step.disabled}
                             aria-label={step.aria}
                             className={cn(
-                                "group relative flex items-center gap-3.5 rounded-2xl p-4 text-left transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                                "group relative flex items-center gap-3.5 rounded-3xl p-4 text-left transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
                                 "cursor-pointer disabled:cursor-not-allowed",
-                                isNext ? "bg-card shadow-card ring-2 ring-primary/40 hover:-translate-y-0.5" : "bg-foreground/[0.04] hover:-translate-y-0.5 hover:bg-card hover:shadow-card disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:bg-foreground/[0.04] disabled:hover:shadow-none",
+                                isNext ? "bg-gradient-to-br from-primary/20 to-primary/5 shadow-card ring-2 ring-primary/50 hover:-translate-y-0.5" : "bg-foreground/[0.04] hover:-translate-y-0.5 hover:bg-card hover:shadow-card disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:bg-foreground/[0.04] disabled:hover:shadow-none",
                             )}
                         >
                             <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-xl transition-transform group-hover:scale-110 group-disabled:group-hover:scale-100", step.bg)} aria-hidden="true">

@@ -7,6 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import { getRedemittelPracticeSession } from "@/services/redemittelService";
 import RedemittelSession from "@/componenets/redemittel/RedemittelSession";
 import Loading from "@/componenets/Loading";
+import { REDEMITTEL_ACCENT } from "@/componenets/redemittel/redemittelMeta";
+import { ACCENT_TITLE_COLOR, levelThemeVars } from "@/componenets/learning/levelMeta";
 
 function PracticeContent() {
     const searchParams = useSearchParams();
@@ -23,10 +25,10 @@ function PracticeContent() {
     if (isLoading || !data) return <Loading />;
 
     return (
-        <div className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-10" dir="ltr">
+        <div className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-10" dir="ltr" style={levelThemeVars(REDEMITTEL_ACCENT)}>
             <div className="mx-auto max-w-2xl">
                 {data.exercises.length === 0 ? (
-                    <div className="rounded-2xl border border-border/60 bg-card p-8 text-center shadow-card">
+                    <div className="rounded-3xl border border-border/60 bg-card p-8 text-center shadow-card">
                         <p className="text-lg font-semibold text-foreground">Noch nichts zu üben</p>
                         <p className="mt-2 text-sm text-foreground/60">
                             Lerne Redemittel oder speichere welche in „Meine Redemittel“. Üben kannst du die Redemittel, für die es Übungen gibt.
@@ -37,7 +39,7 @@ function PracticeContent() {
                     </div>
                 ) : (
                     <>
-                        <h1 className="mb-6 text-2xl font-bold text-foreground">Üben</h1>
+                        <h1 className="mb-6 text-2xl font-extrabold" style={{ color: ACCENT_TITLE_COLOR }}>Üben</h1>
                         <RedemittelSession mode="practice" title="Üben" exercises={data.exercises} backHref="/dashboard/redemittel" />
                     </>
                 )}

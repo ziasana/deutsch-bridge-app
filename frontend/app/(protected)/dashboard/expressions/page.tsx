@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { keepPreviousData, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Loading from "@/componenets/Loading";
 import { toast } from "@/lib/toast";
 import { ThumbsUp, MessageSquare, ArrowRight, ChevronLeft, ChevronRight, Flame, Layers } from "lucide-react";
 import {
@@ -21,6 +23,8 @@ import ExpressionFilterSelect from "@/componenets/expressions/ExpressionFilterSe
 import ExpressionsHeader from "@/componenets/expressions/ExpressionsHeader";
 import ExpressionCard from "@/componenets/expressions/ExpressionCard";
 import ExpressionCardSkeleton from "@/componenets/expressions/ExpressionCardSkeleton";
+import { COLLECTION_ACCENT } from "@/componenets/expressions/expressionMeta";
+import { ACCENT_TITLE_COLOR, levelThemeVars } from "@/componenets/learning/levelMeta";
 
 const COLLECTION_LABEL: Record<ExpressionType, string> = {
     NOMEN_VERB_VERBINDUNG: "Nomen-Verb-Verbindungen",
@@ -58,19 +62,45 @@ const listQueryKey = (
     page: number,
 ) => ["expressions", "list", collection, level, search, progress, bookmarked, sort, page];
 
+/** useSearchParams needs a Suspense boundary. */
 export default function ExpressionsPage() {
+    return (
+        <Suspense fallback={<Loading />}>
+            <ExpressionsPageContent />
+        </Suspense>
+    );
+}
+
+function ExpressionsPageContent() {
     const router = useRouter();
     const queryClient = useQueryClient();
+    const params = useSearchParams();
 
-    const [collection, setCollection] = useState<ExpressionType>("NOMEN_VERB_VERBINDUNG");
-    const [search, setSearch] = useState("");
-    const [debouncedSearch, setDebouncedSearch] = useState("");
-    const [levelFilter, setLevelFilter] = useState("ALL");
-    const [progressFilter, setProgressFilter] = useState("ALL");
-    const [bookmarkFilter, setBookmarkFilter] = useState("ALL");
-    const [sort, setSort] = useState<SortOption>("recommended");
-    // Zero-based, matching the backend.
-    const [page, setPage] = useState(0);
+    // The list state (collection, filters, page) lives in the URL, so "Back" from an expression or a practice
+    // session returns to exactly the list the learner left - e.g. the Redewendungen, not the default collection.
+    const [collection, setCollection] = useState<ExpressionType>(params.get("collection") === "REDEWENDUNG" ? "REDEWENDUNG" : "NOMEN_VERB_VERBINDUNG");
+    const [search, setSearch] = useState(params.get("q") ?? "");
+    const [debouncedSearch, setDebouncedSearch] = useState((params.get("q") ?? "").trim());
+    const [levelFilter, setLevelFilter] = useState(LEVELS.includes(params.get("level") ?? "") ? (params.get("level") as string) : "ALL");
+    const [progressFilter, setProgressFilter] = useState(params.get("progress") && params.get("progress")! in PROGRESS_LABEL ? (params.get("progress") as string) : "ALL");
+    const [bookmarkFilter, setBookmarkFilter] = useState(params.get("bookmarked") === "1" ? "BOOKMARKED" : "ALL");
+    const [sort, setSort] = useState<SortOption>(SORT_OPTIONS.some((o) => o.value === params.get("sort")) ? (params.get("sort") as SortOption) : "recommended");
+    // Zero-based, matching the backend (the URL shows it one-based).
+    const [page, setPage] = useState(Math.max(0, (Number(params.get("page")) || 1) - 1));
+
+    // Mirror the state into the URL (replace, so filtering does not fill the history).
+    useEffect(() => {
+        const next = new URLSearchParams();
+        if (collection !== "NOMEN_VERB_VERBINDUNG") next.set("collection", collection);
+        if (debouncedSearch) next.set("q", debouncedSearch);
+        if (levelFilter !== "ALL") next.set("level", levelFilter);
+        if (progressFilter !== "ALL") next.set("progress", progressFilter);
+        if (bookmarkFilter === "BOOKMARKED") next.set("bookmarked", "1");
+        if (sort !== "recommended") next.set("sort", sort);
+        if (page > 0) next.set("page", String(page + 1));
+        const query = next.toString();
+        router.replace(query ? `/dashboard/expressions?${query}` : "/dashboard/expressions", { scroll: false });
+    }, [collection, debouncedSearch, levelFilter, progressFilter, bookmarkFilter, sort, page, router]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -210,9 +240,9 @@ export default function ExpressionsPage() {
     const totalElements = expressionPage?.totalElements ?? 0;
 
     return (
-        <div className="min-h-screen bg-background px-6 py-10" dir="ltr">
+        <div className="min-h-screen bg-background px-6 py-10" dir="ltr" style={levelThemeVars(COLLECTION_ACCENT[collection])}>
             <div className="max-w-4xl mx-auto">
-                <ExpressionsHeader counts={masteryCounts} words={showcase} onPractice={() => router.push("/dashboard/expressions/practice")} />
+                <ExpressionsHeader accent={COLLECTION_ACCENT[collection]} counts={masteryCounts} words={showcase} onPractice={() => router.push("/dashboard/expressions/practice")} />
 
                 <ExpressionCollectionSelector
                     className="mt-8"
@@ -278,14 +308,14 @@ export default function ExpressionsPage() {
                     />
                 </div>
 
-                <section className="mt-10">
+                <section className="mt-10 rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/[0.12] via-primary/[0.04] to-transparent p-4 sm:p-6">
                     <div className="flex items-end justify-between gap-4">
                         <div className="flex items-start gap-3">
-                            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent">
-                                <Flame className="size-5 text-primary" />
+                            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
+                                <Flame className="size-5" />
                             </div>
                             <div>
-                                <h2 className="text-lg font-semibold text-foreground">Continue learning</h2>
+                                <h2 className="text-lg font-extrabold" style={{ color: ACCENT_TITLE_COLOR }}>Continue learning</h2>
                                 <p className="mt-0.5 text-sm text-foreground/55">
                                     {continueLearning && continueLearning.readyCount > 0
                                         ? `You have ${continueLearning.readyCount} expressions ready to practice.`
@@ -320,7 +350,7 @@ export default function ExpressionsPage() {
                         </div>
                     ) : (
                         continueLearning && (
-                            <div className="mt-4 rounded-2xl border border-border/60 bg-card p-8 text-center shadow-card">
+                            <div className="mt-4 rounded-3xl border border-border/60 bg-card p-8 text-center shadow-card">
                                 <p className="text-foreground/60 text-sm">
                                     Continue exploring expressions below to learn more.
                                 </p>
@@ -332,12 +362,12 @@ export default function ExpressionsPage() {
                 <section id="all-expressions" className="mt-10 scroll-mt-6">
                     <div className="flex items-end justify-between gap-4">
                         <div className="flex items-center gap-3">
-                            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent">
-                                <Layers className="size-5 text-primary" />
+                            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                                <Layers className="size-5" />
                             </div>
-                            <h2 className="text-lg font-semibold text-foreground">All expressions</h2>
+                            <h2 className="text-lg font-extrabold" style={{ color: ACCENT_TITLE_COLOR }}>All expressions</h2>
                         </div>
-                        <span className="text-sm text-foreground/55">{totalElements} expressions</span>
+                        <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">{totalElements} expressions</span>
                     </div>
 
                     {listLoading && !expressionPage ? (
@@ -363,7 +393,7 @@ export default function ExpressionsPage() {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="rounded-2xl border border-border/60 bg-card p-10 text-center shadow-card">
+                                <div className="rounded-3xl border border-border/60 bg-card p-10 text-center shadow-card">
                                     <p className="font-semibold text-foreground">No expressions found</p>
                                     <p className="mt-1 text-sm text-foreground/55">
                                         Try changing your search or filters.
@@ -378,7 +408,7 @@ export default function ExpressionsPage() {
                             <button
                                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                                 disabled={page === 0}
-                                className="flex items-center gap-1 px-4 py-2 rounded-lg bg-card shadow-card text-foreground text-sm disabled:opacity-40 hover:bg-accent/50 transition"
+                                className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/20 disabled:cursor-default disabled:opacity-40"
                             >
                                 <ChevronLeft className="size-4" />
                                 Previous
@@ -389,7 +419,7 @@ export default function ExpressionsPage() {
                             <button
                                 onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                                 disabled={currentPage >= totalPages || isPlaceholderData}
-                                className="flex items-center gap-1 px-4 py-2 rounded-lg bg-card shadow-card text-foreground text-sm disabled:opacity-40 hover:bg-accent/50 transition"
+                                className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/20 disabled:cursor-default disabled:opacity-40"
                             >
                                 Next
                                 <ChevronRight className="size-4" />

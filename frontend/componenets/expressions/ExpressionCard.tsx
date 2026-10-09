@@ -7,6 +7,7 @@ import { ExpressionListItem, ExpressionType } from "@/types/expression";
 import { cn } from "@/lib/utils";
 import { getExpressionImageSrc } from "@/lib/expressionImages";
 import { getIllustrationFor } from "@/componenets/expressions/illustrations";
+import { MASTERY_STYLE } from "@/componenets/expressions/expressionMeta";
 
 const TYPE_LABEL: Record<ExpressionType, string> = {
     NOMEN_VERB_VERBINDUNG: "Nomen-Verb-Verbindung",
@@ -60,6 +61,11 @@ export default function ExpressionCard({
             >
                 {TYPE_LABEL[collectionType]}
             </Badge>
+            {expression.masteryLevel !== "NEW" && (
+                <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", hasVisual ? "bg-white/90 text-foreground shadow-sm backdrop-blur-sm" : MASTERY_STYLE[expression.masteryLevel].chip)}>
+                    {MASTERY_STYLE[expression.masteryLevel].label}
+                </span>
+            )}
         </>
     );
 
@@ -72,8 +78,8 @@ export default function ExpressionCard({
                 if (e.key === "Enter" || e.key === " ") onOpen(expression);
             }}
             className={cn(
-                "flex flex-col gap-3 rounded-2xl border border-border/60 bg-card text-left shadow-card transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-lg hover:border-primary/40 overflow-hidden",
-                hasVisual ? "pb-5" : "p-5",
+                "group flex flex-col gap-3 rounded-3xl border border-border/60 bg-card text-left shadow-card transition-all duration-200 cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                hasVisual ? "pb-5" : "border-t-4 border-t-primary p-5",
                 className,
             )}
         >
@@ -85,19 +91,19 @@ export default function ExpressionCard({
                     ) : (
                         illustrationNode
                     )}
-                    <div className="absolute inset-x-3 top-3 flex items-center justify-between gap-2">{badges}</div>
+                    <div className="absolute inset-x-3 top-3 flex flex-wrap items-center gap-2">{badges}</div>
                 </div>
             ) : (
-                <div className="flex items-center justify-between gap-2">{badges}</div>
+                <div className="flex flex-wrap items-center gap-2">{badges}</div>
             )}
 
             <div className={cn(hasVisual && "px-5")}>
-                <h3 className="text-lg font-semibold text-foreground">{expression.expression}</h3>
+                <h3 className="text-lg font-extrabold leading-snug text-foreground transition group-hover:text-primary">{expression.expression}</h3>
                 <p className="mt-1 text-sm text-foreground/60">{expression.meaningDe}</p>
             </div>
 
             {example && (
-                <div className={cn("rounded-lg bg-accent/50 px-3 py-2.5 text-sm text-foreground/75 italic", hasVisual && "mx-5")}>
+                <div className={cn("rounded-2xl border-s-4 border-primary/40 bg-primary/[0.06] px-3 py-2.5 text-sm italic text-foreground/75", hasVisual && "mx-5")}>
                     „{example}“
                 </div>
             )}
@@ -127,7 +133,7 @@ export default function ExpressionCard({
                         onPractice(expression);
                     }}
                     className={cn(
-                        "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition",
+                        "flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
                         practiceVariant === "primary"
                             ? "bg-primary text-primary-foreground hover:bg-primary/90"
                             : "bg-primary/10 text-primary hover:bg-primary/20",
@@ -145,7 +151,7 @@ export default function ExpressionCard({
                     aria-label={expression.bookmarked ? "Remove bookmark" : "Bookmark this expression"}
                     aria-pressed={expression.bookmarked}
                     className={cn(
-                        "flex size-9 shrink-0 items-center justify-center rounded-lg border transition",
+                        "flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
                         expression.bookmarked
                             ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/20"
                             : "border-border/60 bg-card text-foreground/50 hover:bg-accent hover:text-foreground",

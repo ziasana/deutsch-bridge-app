@@ -122,6 +122,7 @@ public final class SpeakingSchema {
             default -> {
                 ex.put("topic", "...");
                 ex.put("scenario", "...");
+                ex.put("image", "").put("imageAlt", "");
                 ArrayNode points = ex.putArray("planningPoints");
                 points.addObject().put("title", "Wann?").put("hint", "...");
                 points.addObject().put("title", "Wo?");

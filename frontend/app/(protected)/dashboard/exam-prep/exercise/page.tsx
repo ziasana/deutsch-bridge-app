@@ -2,6 +2,9 @@
 
 import { WritingExercise } from "@/componenets/exam/writing";
 import { SpeakingExercise } from "@/componenets/exam/speaking";
+import SpeakingTopHeader from "@/componenets/exam/speaking/SpeakingTopHeader";
+import ExerciseTopHeader from "@/componenets/exam/ExerciseTopHeader";
+import { SECTION_THEME, lessonThemeVars } from "@/componenets/exam/lessonTheme";
 import { useSpeakingGuides } from "@/hooks/exam/useSpeakingGuides";
 import { Suspense, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -20,18 +23,20 @@ import {
     ExamExercisePublicResponse,
     ExamPassagePublic,
     ExamQuestionPublic,
-    ExamTranscript,
-} from "@/types/exam";
+    ExamTranscript, ExamSection } from "@/types/exam";
 import Loading from "@/componenets/Loading";
 import AudioPlayer from "@/componenets/AudioPlayer";
 import LessonMarkdown from "@/componenets/LessonMarkdown";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
+import SprachbausteineClozeBoard, { hasGapText } from "@/componenets/exam/SprachbausteineClozeBoard";
+import HoerenBoard from "@/componenets/exam/HoerenBoard";
+import LesenTextPanel from "@/componenets/exam/LesenTextPanel";
+import LesenTeil1Board from "@/componenets/exam/LesenTeil1Board";
 import LesenTeil3Board, { NO_AD_ANSWER as NO_AD_ANSWER_VALUE } from "@/componenets/exam/LesenTeil3Board";
 import TranscriptModal from "@/componenets/exam/TranscriptModal";
 import TranscriptContent from "@/componenets/exam/TranscriptContent";
 import { isEmptyTranscript } from "@/lib/transcriptFormat";
-import { ArrowLeft, ArrowRight, Bookmark, BookmarkCheck, Check, FileText, Play, RotateCw, X } from "lucide-react";
-import CircularProgress from "@/componenets/CircularProgress";
+import { ArrowLeft, ArrowRight, BookOpen, Bookmark, BookmarkCheck, Check, ChevronDown, FileText, Headphones, PenLine, Play, Puzzle, type LucideIcon, RotateCw, X } from "lucide-react";
 import LearningPageHero from "@/componenets/learning/LearningPageHero";
 import { EXAM_TYPE_META } from "@/componenets/exam";
 import { cn } from "@/lib/utils";
@@ -44,8 +49,6 @@ import { ExamPracticeSessionResult } from "@/types/examTime";
 
 const pillPrimary =
     "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default disabled:opacity-50";
-const pillSecondary =
-    "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-border bg-card px-6 py-2.5 text-sm font-semibold text-foreground transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default disabled:opacity-60";
 
 const TFN_OPTIONS = [
     { value: "RICHTIG", label: "Richtig" },
@@ -95,6 +98,13 @@ function AnswerOptionsPoolView({
     );
 }
 
+/** Sections that use the combined exercise header, with their icon and long name. */
+const SECTION_HEADER: Partial<Record<ExamSection, { icon: LucideIcon; label: string }>> = {
+    LESEVERSTEHEN: { icon: BookOpen, label: "Leseverstehen" },
+    SPRACHBAUSTEINE: { icon: Puzzle, label: "Sprachbausteine" },
+    HOERVERSTEHEN: { icon: Headphones, label: "Hörverstehen" },
+};
+
 function PassageBody({ passage }: Readonly<{ passage: ExamPassagePublic }>) {
     const audioSrc = resolveUploadUrl(passage.audioUrl);
     return (
@@ -138,6 +148,8 @@ function PassagesView({ passages, taskType }: Readonly<{ passages: ExamPassagePu
 interface ResultItem {
     question: ExamQuestionPublic;
     feedback: ExamAnswerFeedbackResponse;
+    /** What the learner answered (empty when left open). */
+    answer?: string;
 }
 
 interface ResultsState {
@@ -146,37 +158,97 @@ interface ResultsState {
     transcripts: ExamTranscript[];
 }
 
+/** Headline, emoji and tone for a score. */
+function verdictFor(score: number) {
+    if (score >= 90) return { emoji: "🏆", title: "Ausgezeichnet!", text: "Das war fast perfekt." };
+    if (score >= 70) return { emoji: "🎉", title: "Sehr gut!", text: "Du bist auf einem guten Weg." };
+    if (score >= 50) return { emoji: "👍", title: "Gut gemacht!", text: "Schau dir die Fehler an, dann klappt es noch besser." };
+    return { emoji: "💪", title: "Weiter üben!", text: "Aus Fehlern lernt man – lies die Erklärungen und versuche es noch einmal." };
+}
+
 function ResultCard({
     index,
     item,
     hideTranscript,
     formatAnswer,
 }: Readonly<{ index: number; item: ResultItem; hideTranscript?: boolean; formatAnswer?: (value: string) => string }>) {
-    const { question, feedback } = item;
+    const { question, feedback, answer } = item;
+    const format = (value: string) => (formatAnswer ? formatAnswer(value) : value);
+    const number = question.questionNumber ?? index + 1;
+    const ok = feedback.correct;
+    const hasDetails = Boolean(feedback.explanation || feedback.commonMistake || (!isEmptyTranscript(feedback.transcript) && !hideTranscript));
+
     return (
-        <div
-            className={`rounded-2xl p-4 text-sm space-y-1 ${
-                feedback.correct
-                    ? "bg-green-500/10 text-green-800 dark:text-green-300"
-                    : "bg-red-500/10 text-red-800 dark:text-red-300"
-            }`}
+        <details
+            id={`result-${question.id}`}
+            open={!ok}
+            className={cn("group scroll-mt-24 overflow-hidden rounded-2xl border-s-4 bg-card shadow-card", ok ? "border-green-500" : "border-red-500")}
         >
-            <p className="font-semibold">
-                Aufgabe {question.questionNumber ?? index + 1}{question.prompt ? ` — ${question.prompt}` : ""}: {feedback.correct ? "Richtig" : "Falsch"}
-            </p>
-            {!feedback.correct && (
-                <p>
-                    Richtige Antwort: <span className="font-medium">{formatAnswer ? formatAnswer(feedback.correctAnswer) : feedback.correctAnswer}</span>
-                </p>
-            )}
-            {feedback.explanation && <p dir="auto" className="mt-1">💡 {feedback.explanation}</p>}
-            {feedback.commonMistake && <p className="mt-1 italic">⚠️ Häufiger Fehler: {feedback.commonMistake}</p>}
-            {!isEmptyTranscript(feedback.transcript) && !hideTranscript && (
-                <div className="mt-2 pt-2 border-t border-current/20">
-                    <p className="font-semibold text-xs uppercase tracking-wide mb-1">Transkript</p>
-                    <TranscriptContent transcript={feedback.transcript ?? ""} variant="compact" />
+            <summary className="flex cursor-pointer list-none items-center gap-3 p-4 [&::-webkit-details-marker]:hidden">
+                <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-xl text-white", ok ? "bg-green-500" : "bg-red-500")} aria-hidden="true">
+                    {ok ? <Check className="size-5" strokeWidth={3} /> : <X className="size-5" strokeWidth={3} />}
+                </span>
+                <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-foreground/50">
+                        Aufgabe {number} · {ok ? "Richtig" : "Falsch"}
+                    </p>
+                    <p className="font-medium leading-snug text-foreground">{question.prompt}</p>
                 </div>
-            )}
+                {hasDetails && <ChevronDown className="size-5 shrink-0 text-foreground/40 transition group-open:rotate-180" aria-hidden="true" />}
+            </summary>
+
+            <div className="space-y-3 px-4 pb-4 text-sm">
+                <div className="flex flex-wrap gap-2">
+                    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-medium", ok ? "bg-green-500/10 text-green-800 dark:text-green-300" : "bg-red-500/10 text-red-800 dark:text-red-300")}>
+                        Deine Antwort: <strong>{answer ? format(answer) : "—"}</strong>
+                    </span>
+                    {!ok && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-green-500/10 px-3 py-1 font-medium text-green-800 dark:text-green-300">
+                            Richtig: <strong>{format(feedback.correctAnswer)}</strong>
+                        </span>
+                    )}
+                </div>
+                {feedback.explanation && (
+                    <p dir="auto" className="rounded-xl bg-primary/[0.07] p-3 text-foreground/85">
+                        💡 {feedback.explanation}
+                    </p>
+                )}
+                {feedback.commonMistake && (
+                    <p className="rounded-xl bg-amber-500/10 p-3 italic text-foreground/80">⚠️ Häufiger Fehler: {feedback.commonMistake}</p>
+                )}
+                {!isEmptyTranscript(feedback.transcript) && !hideTranscript && (
+                    <div className="border-t border-border/60 pt-2">
+                        <p className="mb-1 text-xs font-semibold uppercase tracking-wide">Transkript</p>
+                        <TranscriptContent transcript={feedback.transcript ?? ""} variant="compact" />
+                    </div>
+                )}
+            </div>
+        </details>
+    );
+}
+
+/** The score as a ring on the gradient hero. */
+function ScoreRing({ value, size = 112 }: Readonly<{ value: number; size?: number }>) {
+    const radius = size / 2 - 8;
+    const circumference = 2 * Math.PI * radius;
+    return (
+        <div className="relative shrink-0" style={{ width: size, height: size }} role="img" aria-label={`${Math.round(value)} Prozent`}>
+            <svg width={size} height={size} className="-rotate-90">
+                <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgb(255 255 255 / 0.25)" strokeWidth={8} />
+                <circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    fill="none"
+                    stroke="white"
+                    strokeWidth={8}
+                    strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={circumference - (Math.min(Math.max(value, 0), 100) / 100) * circumference}
+                    className="transition-all duration-1000"
+                />
+            </svg>
+            <span className="absolute inset-0 flex items-center justify-center text-2xl font-extrabold tabular-nums text-white">{Math.round(value)}%</span>
         </div>
     );
 }
@@ -201,7 +273,10 @@ function ResultsView({
     onMarkCompleted: () => void;
 }>) {
     const correctCount = results.items.filter((item) => item.feedback.correct).length;
+    const wrongCount = results.items.length - correctCount;
+    const verdict = verdictFor(results.score);
     const [transcriptOpen, setTranscriptOpen] = useState(false);
+    const [onlyWrong, setOnlyWrong] = useState(false);
     const stopExerciseTimer = useStopExerciseTimer();
     const [timeResult, setTimeResult] = useState<ExamPracticeSessionResult | null>(null);
 
@@ -215,55 +290,109 @@ function ResultsView({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const jumpTo = (id: string) => {
+        const el = document.getElementById(`result-${id}`) as HTMLDetailsElement | null;
+        if (!el) return;
+        el.open = true;
+        el.scrollIntoView?.({ block: "center", behavior: "smooth" });
+    };
+    const shown = results.items.map((item, idx) => ({ item, idx })).filter(({ item }) => !onlyWrong || !item.feedback.correct);
+
     return (
-        <div className="rounded-[10px] bg-card p-6 shadow-card sm:p-8 space-y-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="space-y-4">
-                    <h2 className="text-xl font-bold text-foreground">Ergebnis</h2>
+        <div className="space-y-4">
+            <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-(--lesson-from) to-(--lesson-to) p-5 text-white shadow-md sm:p-7">
+                <span aria-hidden="true" className="absolute -end-10 -top-12 size-48 rounded-full bg-white/10" />
+                <span aria-hidden="true" className="absolute -bottom-16 start-1/3 size-40 rounded-full bg-white/5" />
+                <p className="relative text-xs font-bold uppercase tracking-wider text-white/80">Ergebnis</p>
+                <div className="relative mt-3 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-5">
-                        <CircularProgress value={results.score} size={104} color="hsl(216 100% 62%)" trackColor="hsl(0 0% 50% / 0.15)" showLabel />
-                        <p className="text-sm text-foreground/65">
-                            {correctCount} von {results.items.length} Aufgaben richtig
-                        </p>
+                        <ScoreRing value={results.score} />
+                        <div className="min-w-0">
+                            <p className="anim-pop text-2xl font-extrabold leading-tight sm:text-3xl">
+                                {verdict.emoji} {verdict.title}
+                            </p>
+                            <p className="mt-1 text-sm text-white/90">{verdict.text}</p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-sm font-semibold">
+                                    <Check className="size-4" strokeWidth={3} aria-hidden="true" /> {correctCount} richtig
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-sm font-semibold">
+                                    <X className="size-4" strokeWidth={3} aria-hidden="true" /> {wrongCount} falsch
+                                </span>
+                                <span className="sr-only">
+                                    {correctCount} von {results.items.length} Aufgaben richtig
+                                </span>
+                            </div>
+                        </div>
                     </div>
+                    {timeResult && <ExamTimeSummary result={timeResult} className="sm:min-w-52 sm:shrink-0" />}
                 </div>
-                {timeResult && <ExamTimeSummary result={timeResult} className="sm:min-w-48 sm:shrink-0" />}
+            </section>
+
+            <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-card ring-1 ring-border/60">
+                <nav aria-label="Aufgaben" className="flex flex-wrap items-center gap-1.5">
+                    {results.items.map((item, idx) => (
+                        <button
+                            key={item.question.id}
+                            type="button"
+                            onClick={() => jumpTo(item.question.id)}
+                            aria-label={`Aufgabe ${item.question.questionNumber ?? idx + 1}: ${item.feedback.correct ? "richtig" : "falsch"}`}
+                            className={cn(
+                                "flex size-8 cursor-pointer items-center justify-center rounded-full text-xs font-extrabold text-white transition hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                                item.feedback.correct ? "bg-green-500" : "bg-red-500",
+                            )}
+                        >
+                            {item.question.questionNumber ?? idx + 1}
+                        </button>
+                    ))}
+                </nav>
+                <div className="ms-auto flex flex-wrap items-center gap-2">
+                    {wrongCount > 0 && (
+                        <button
+                            type="button"
+                            aria-pressed={onlyWrong}
+                            onClick={() => setOnlyWrong((v) => !v)}
+                            className={cn(
+                                "cursor-pointer rounded-full border px-3.5 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                                onlyWrong ? "border-red-500 bg-red-500/10 text-red-700 dark:text-red-300" : "border-border bg-background text-foreground/70 hover:bg-accent",
+                            )}
+                        >
+                            {onlyWrong ? "Alle anzeigen" : "Nur Fehler anzeigen"}
+                        </button>
+                    )}
+                    {results.transcripts.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => setTranscriptOpen(true)}
+                            className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-background px-3.5 py-1.5 text-xs font-semibold text-primary transition hover:bg-accent"
+                        >
+                            <FileText className="size-3.5" aria-hidden="true" />
+                            Transkript anzeigen
+                        </button>
+                    )}
+                </div>
+                <TranscriptModal open={transcriptOpen} onClose={() => setTranscriptOpen(false)} transcripts={results.transcripts} />
             </div>
 
-            {results.transcripts.length > 0 && (
-                <>
-                    <button
-                        type="button"
-                        onClick={() => setTranscriptOpen(true)}
-                        className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
-                    >
-                        <FileText className="size-4" />
-                        Transkript anzeigen
-                    </button>
-                    <TranscriptModal
-                        open={transcriptOpen}
-                        onClose={() => setTranscriptOpen(false)}
-                        transcripts={results.transcripts}
-                    />
-                </>
-            )}
-
             {(defaultExplanation || defaultCommonMistake) && (
-                <div className="rounded-2xl p-4 text-sm bg-primary/[0.07] text-foreground/85 space-y-1">
+                <div className="space-y-1 rounded-2xl bg-primary/[0.07] p-4 text-sm text-foreground/85">
+                    <p className="text-xs font-bold uppercase tracking-wide text-primary">Tipp</p>
                     {defaultExplanation && <p>💡 {defaultExplanation}</p>}
                     {defaultCommonMistake && <p className="italic">⚠️ Häufiger Fehler: {defaultCommonMistake}</p>}
                 </div>
             )}
 
-            <div className="space-y-3 pt-2">
-                {results.items.map((item, idx) => (
+            <div className="space-y-3">
+                {shown.map(({ item, idx }) => (
                     // The transcript link above covers every transcript; don't repeat it under each question.
                     <ResultCard key={item.question.id} index={idx} item={item} hideTranscript={results.transcripts.length > 0} formatAnswer={formatAnswer} />
                 ))}
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 flex-wrap">
-                <button type="button" className={pillSecondary}
+            <div className="flex flex-wrap justify-end gap-2 pt-1">
+                <button
+                    type="button"
+                    className={pillPrimary}
                     onClick={() => {
                         onPracticeAgain();
                         useExamTimerStore.getState().requestRestart();
@@ -312,6 +441,8 @@ function MuendlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExercise
     const { completed, marking, markCompleted } = useExerciseCompletion(exercise);
     const level = exercise.level ?? "B1";
     const { guideFor, isLoading: guideLoading } = useSpeakingGuides(level);
+    const stopExerciseTimer = useStopExerciseTimer();
+    const [timeResult, setTimeResult] = useState<ExamPracticeSessionResult | null>(null);
 
     if (!exercise.speaking) {
         return <div className="rounded-[10px] bg-card p-6 shadow-card text-sm text-foreground/60">Diese Übung hat noch keinen Inhalt.</div>;
@@ -326,6 +457,18 @@ function MuendlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExercise
             completed={completed}
             marking={marking}
             onMarkCompleted={markCompleted}
+            timeResult={timeResult}
+            onFinish={() =>
+                stopExerciseTimer().then((result) => {
+                    if (!result) return;
+                    setTimeResult(result);
+                    showZeitCheckToast(result);
+                })
+            }
+            onRepeat={() => {
+                setTimeResult(null);
+                useExamTimerStore.getState().requestRestart();
+            }}
         />
     );
 }
@@ -409,6 +552,16 @@ function QuestionSelect({
     );
 }
 
+/** Leseverstehen Teil 2: one text (with a marker) and the multiple-choice questions below it. */
+const isLesenMultipleChoice = (exercise: ExamExercisePublicResponse) =>
+    exercise.section === "LESEVERSTEHEN" && exercise.taskType === "MULTIPLE_CHOICE";
+
+/** Sprachbausteine Teil 1 (multiple choice per gap) and Teil 2 (shared word bank): a text with numbered gap badges. */
+const isSprachbausteineGapText = (exercise: ExamExercisePublicResponse) =>
+    exercise.section === "SPRACHBAUSTEINE" &&
+    (exercise.taskType === "MULTIPLE_CHOICE" || exercise.taskType === "WORD_BANK_CLOZE") &&
+    exercise.passages.some((p) => p.content?.includes("data-exam-gap"));
+
 /** Shared "mark as completed" state/handler for both quiz flows. */
 function useExerciseCompletion(exercise: ExamExercisePublicResponse) {
     const [completed, setCompleted] = useState(exercise.completed);
@@ -444,6 +597,8 @@ interface GridQuizState {
 function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse }>) {
     const [quiz, setQuiz] = useState<GridQuizState | null>(null);
     const isSituationMatching = exercise.taskType === "SITUATION_MATCHING";
+    const isHeadingMatching = exercise.taskType === "MATCHING";
+    const isGapText = isSprachbausteineGapText(exercise) && (!quiz || hasGapText(quiz.passages, quiz.questions, exercise.taskType === "WORD_BANK_CLOZE"));
     const [results, setResults] = useState<ResultsState | null>(null);
     const [starting, setStarting] = useState(false);
     const { completed, marking, markCompleted } = useExerciseCompletion(exercise);
@@ -481,7 +636,7 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
                     questionId: question.id,
                     answer: quiz.answers[question.id] ?? "",
                 });
-                items.push({ question, feedback: res.data });
+                items.push({ question, feedback: res.data, answer: quiz.answers[question.id] ?? "" });
             }
             const completeRes = await completeExamAttempt(quiz.attemptId);
             setResults({ score: completeRes.data.score, items, transcripts: completeRes.data.transcripts ?? [] });
@@ -526,28 +681,59 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
               ]
             : undefined;
 
+    const setAnswer = (questionId: string, value: string) =>
+        setQuiz((prev) => {
+            if (!prev) return prev;
+            const answers = { ...prev.answers };
+            if (value) answers[questionId] = value;
+            else delete answers[questionId];
+            return { ...prev, answers };
+        });
+
     return (
-        <div className="rounded-[10px] bg-card p-6 shadow-card sm:p-8 space-y-4">
-            <p className="text-sm text-foreground/65">
-                Beantworte alle {quiz.questions.length} Aufgaben und klicke dann auf &quot;Antworten abgeben&quot;.
+        <div className={cn("space-y-4", !isHeadingMatching && !isGapText && "rounded-[10px] bg-card p-6 shadow-card sm:p-8")}>
+            <p className={cn("text-sm text-foreground/65", (isHeadingMatching || isGapText) && "px-1")}>
+                {isGapText
+                    ? `Fülle alle ${quiz.questions.length} Lücken im Text und klicke dann auf "Antworten abgeben".`
+                    : isHeadingMatching
+                    ? `Ordne jedem der ${quiz.questions.length} Texte die passende Überschrift zu und klicke dann auf "Antworten abgeben". Jede Überschrift darf nur einmal benutzt werden.`
+                    : `Beantworte alle ${quiz.questions.length} Aufgaben und klicke dann auf "Antworten abgeben".`}
                 {isSituationMatching && " Jede Anzeige darf nur einmal benutzt werden. Wenn keine Anzeige passt, wähle x."}
             </p>
 
-            {isSituationMatching ? (
+            {isSprachbausteineGapText(exercise) && !isGapText && (
+                <>
+                    <AnswerOptionsPoolView answerOptions={quiz.answerOptions} answerOptionLabels={quiz.answerOptionLabels} taskType={exercise.taskType ?? ""} />
+                    <PassagesView passages={quiz.passages} taskType={exercise.taskType ?? ""} />
+                </>
+            )}
+
+            {isGapText ? (
+                <SprachbausteineClozeBoard
+                    passages={quiz.passages}
+                    questions={quiz.questions}
+                    answers={quiz.answers}
+                    disabled={quiz.submitting}
+                    onAnswer={setAnswer}
+                    wordBank={exercise.taskType === "WORD_BANK_CLOZE" ? { options: quiz.answerOptions, labels: quiz.answerOptionLabels } : undefined}
+                />
+            ) : isHeadingMatching ? (
+                <LesenTeil1Board
+                    passages={quiz.passages}
+                    questions={quiz.questions}
+                    answerOptions={quiz.answerOptions}
+                    answerOptionLabels={quiz.answerOptionLabels}
+                    answers={quiz.answers}
+                    disabled={quiz.submitting}
+                    onAnswer={setAnswer}
+                />
+            ) : isSituationMatching ? (
                 <LesenTeil3Board
                     passages={quiz.passages}
                     questions={quiz.questions}
                     answers={quiz.answers}
                     disabled={quiz.submitting}
-                    onAnswer={(questionId, value) =>
-                        setQuiz((prev) => {
-                            if (!prev) return prev;
-                            const answers = { ...prev.answers };
-                            if (value) answers[questionId] = value;
-                            else delete answers[questionId];
-                            return { ...prev, answers };
-                        })
-                    }
+                    onAnswer={setAnswer}
                 />
             ) : (
             <div className={`grid gap-3 sm:grid-cols-2 ${isSituationMatching ? "" : "lg:grid-cols-3 xl:grid-cols-4"}`}>
@@ -596,6 +782,7 @@ function QuestionInput({
     taskType,
     selectedAnswer,
     disabled,
+    feedback,
     onSelect,
 }: Readonly<{
     question: ExamQuestionPublic;
@@ -604,6 +791,8 @@ function QuestionInput({
     taskType: string;
     selectedAnswer: string;
     disabled: boolean;
+    /** Once answered: the right option turns green, a wrong pick red. */
+    feedback?: ExamAnswerFeedbackResponse | null;
     onSelect: (value: string) => void;
 }>) {
     const options =
@@ -617,6 +806,8 @@ function QuestionInput({
         <div className="space-y-2.5">
             {options.map((option, i) => {
                 const isSelected = selectedAnswer === option.value;
+                const isRight = Boolean(feedback) && option.value === feedback?.correctAnswer;
+                const isWrong = Boolean(feedback) && isSelected && !isRight;
                 return (
                     <button
                         key={option.value}
@@ -625,11 +816,17 @@ function QuestionInput({
                         onClick={() => onSelect(option.value)}
                         className={cn(
                             "flex w-full cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm text-foreground transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default",
-                            isSelected ? "border-primary bg-primary/10" : "border-border/60 bg-background hover:-translate-y-0.5 hover:border-primary/50 hover:bg-accent/50 hover:shadow-card disabled:opacity-60 disabled:hover:translate-y-0",
+                            isRight
+                                ? "anim-pop border-green-500 bg-green-500/10"
+                                : isWrong
+                                    ? "anim-shake border-red-500 bg-red-500/10"
+                                    : isSelected
+                                        ? "border-primary bg-primary/10"
+                                        : "border-border/60 bg-background hover:-translate-y-0.5 hover:border-primary/50 hover:bg-accent/50 hover:shadow-card disabled:opacity-60 disabled:hover:translate-y-0",
                         )}
                     >
-                        <span aria-hidden="true" className={cn("flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold", isSelected ? "bg-primary text-primary-foreground" : "bg-accent text-primary")}>
-                            {String.fromCharCode(65 + i)}
+                        <span aria-hidden="true" className={cn("flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold", isRight ? "bg-green-500 text-white" : isWrong ? "bg-red-500 text-white" : isSelected ? "bg-primary text-primary-foreground" : "bg-accent text-primary")}>
+                            {isRight ? <Check className="size-4" strokeWidth={3} /> : isWrong ? <X className="size-4" strokeWidth={3} /> : String.fromCharCode(65 + i)}
                         </span>
                         <span className="min-w-0 flex-1 break-words">{option.label}</span>
                     </button>
@@ -728,7 +925,7 @@ function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse 
             .then((res) => {
                 setQuiz((prev) =>
                     prev
-                        ? { ...prev, feedback: res.data, submitting: false, items: [...prev.items, { question, feedback: res.data }] }
+                        ? { ...prev, feedback: res.data, submitting: false, items: [...prev.items, { question, feedback: res.data, answer: quiz.selectedAnswer }] }
                         : prev
                 );
             })
@@ -773,14 +970,38 @@ function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse 
 
     const currentPassage =
         exercise.taskType === "MATCHING" && question.sectionIndex != null ? quiz.passages[question.sectionIndex] : null;
+    const isReadingMc = isLesenMultipleChoice(exercise);
 
-    return (
+    const card = (
         <div className="rounded-[10px] bg-card p-6 shadow-card sm:p-8 space-y-3">
-            <div className="flex gap-1.5" role="progressbar" aria-valuenow={quiz.currentIndex + 1} aria-valuemin={1} aria-valuemax={quiz.questions.length}>
-                {quiz.questions.map((q, i) => (
-                    <span key={q.id} className={cn("h-1.5 flex-1 rounded-full transition-colors", i <= quiz.currentIndex ? "bg-primary" : "bg-foreground/10")} />
-                ))}
-            </div>
+            {isReadingMc ? (
+                <nav aria-label="Fragen" className="flex flex-wrap items-center gap-2">
+                    {quiz.questions.map((q, i) => {
+                        const result = quiz.items.find((item) => item.question.id === q.id)?.feedback;
+                        const current = i === quiz.currentIndex;
+                        return (
+                            <span
+                                key={q.id}
+                                aria-current={current ? "step" : undefined}
+                                aria-label={`Frage ${q.questionNumber ?? i + 1}${result ? (result.correct ? ", richtig" : ", falsch") : ""}`}
+                                className={cn(
+                                    "flex size-8 items-center justify-center rounded-full text-xs font-extrabold transition",
+                                    result ? (result.correct ? "bg-green-500 text-white" : "bg-red-500 text-white") : "border-2 border-dashed border-primary/40 text-primary",
+                                    current && "ring-2 ring-primary ring-offset-2 ring-offset-card",
+                                )}
+                            >
+                                {result ? (result.correct ? <Check className="size-4" strokeWidth={3} /> : <X className="size-4" strokeWidth={3} />) : (q.questionNumber ?? i + 1)}
+                            </span>
+                        );
+                    })}
+                </nav>
+            ) : (
+                <div className="flex gap-1.5" role="progressbar" aria-valuenow={quiz.currentIndex + 1} aria-valuemin={1} aria-valuemax={quiz.questions.length}>
+                    {quiz.questions.map((q, i) => (
+                        <span key={q.id} className={cn("h-1.5 flex-1 rounded-full transition-colors", i <= quiz.currentIndex ? "bg-primary" : "bg-foreground/10")} />
+                    ))}
+                </div>
+            )}
             <p className="pt-1 text-xs font-semibold uppercase tracking-wide text-primary">
                 {question.questionNumber != null && question.questionNumber !== quiz.currentIndex + 1
                     ? `Aufgabe ${question.questionNumber} (${quiz.currentIndex + 1} von ${quiz.questions.length})`
@@ -795,9 +1016,11 @@ function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse 
                 </div>
             )}
 
-            <p className="font-medium text-foreground">{question.prompt}</p>
+            <p className={isReadingMc ? "text-lg font-bold leading-snug text-foreground" : "font-medium text-foreground"}>{question.prompt}</p>
 
             <QuestionInput
+                key={question.id}
+                feedback={quiz.feedback}
                 question={question}
                 answerOptions={quiz.answerOptions}
                 answerOptionLabels={quiz.answerOptionLabels}
@@ -824,6 +1047,14 @@ function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse 
                     </button>
                 )}
             </div>
+        </div>
+    );
+
+    if (!isReadingMc) return card;
+    return (
+        <div className="space-y-5">
+            <LesenTextPanel passages={quiz.passages} />
+            <div key={question.id} className="anim-slide-in">{card}</div>
         </div>
     );
 }
@@ -883,7 +1114,7 @@ function HoerenListQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRes
                     questionId: question.id,
                     answer: quiz.answers[question.id] ?? "",
                 });
-                items.push({ question, feedback: res.data });
+                items.push({ question, feedback: res.data, answer: quiz.answers[question.id] ?? "" });
             }
             const completeRes = await completeExamAttempt(quiz.attemptId);
             setResults({ score: completeRes.data.score, items, transcripts: completeRes.data.transcripts ?? [] });
@@ -913,81 +1144,31 @@ function HoerenListQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRes
     }
 
     const allAnswered = quiz.questions.every((q) => quiz.answers[q.id]);
-    const showPassageLabels = quiz.passages.length > 1;
 
     return (
         <div className="space-y-4">
-            <div className="rounded-[10px] bg-card p-6 shadow-card sm:p-8 space-y-3">
-                <p className="text-sm text-foreground/65">
-                    Höre jeden Text an und markiere, ob die Aussage richtig ({quiz.answerOptions[0] ?? "+"}) oder falsch (
-                    {quiz.answerOptions[1] ?? "-"}) ist. Dein Ergebnis siehst du, sobald du alle Antworten abgegeben hast.
-                </p>
-                {quiz.passages.map((passage) => (
-                    <div
-                        key={passage.id}
-                        className="rounded-2xl border-s-4 border-primary/40 bg-primary/[0.06] p-4"
-                    >
-                        <p className="font-semibold text-foreground mb-1">{passage.label}</p>
-                        <PassageBody passage={passage} />
-                    </div>
-                ))}
-            </div>
+            <HoerenBoard
+                teil={exercise.teil ?? exercise.partNumber ?? undefined}
+                passages={quiz.passages}
+                questions={quiz.questions}
+                answerOptions={quiz.answerOptions}
+                answers={quiz.answers}
+                disabled={quiz.submitting}
+                onAnswer={(questionId, value) =>
+                    setQuiz((prev) => {
+                        if (!prev) return prev;
+                        const answers = { ...prev.answers };
+                        if (value) answers[questionId] = value;
+                        else delete answers[questionId];
+                        return { ...prev, answers };
+                    })
+                }
+            />
 
-            <div className="rounded-[10px] bg-card p-6 shadow-card sm:p-8 space-y-4">
-                <ol className="space-y-3">
-                    {quiz.questions.map((question, idx) => {
-                        const passage = question.sectionIndex != null ? quiz.passages[question.sectionIndex] : null;
-                        const selected = quiz.answers[question.id] ?? "";
-                        return (
-                            <li
-                                key={question.id}
-                                className="flex gap-3 items-start rounded-2xl border border-border/60 bg-background p-4"
-                            >
-                                <span className="font-semibold text-foreground/40 pt-1.5 w-5 shrink-0">
-                                    {question.questionNumber ?? idx + 1}.
-                                </span>
-                                <div className="flex gap-2 pt-0.5 shrink-0">
-                                    {quiz.answerOptions.map((option) => (
-                                        <button
-                                            key={option}
-                                            type="button"
-                                            disabled={quiz.submitting}
-                                            onClick={() =>
-                                                setQuiz((prev) =>
-                                                    prev ? { ...prev, answers: { ...prev.answers, [question.id]: option } } : prev
-                                                )
-                                            }
-                                            className={`size-10 cursor-pointer rounded-full border text-sm font-bold transition hover:-translate-y-0.5 ${
-                                                selected === option
-                                                    ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                                                    : "border-border bg-card text-foreground/70 hover:border-primary/50"
-                                            }`}
-                                        >
-                                            {option}
-                                        </button>
-                                    ))}
-                                </div>
-                                <p className="font-medium text-foreground pt-1.5">
-                                    {showPassageLabels && passage && (
-                                        <span className="text-xs font-semibold text-foreground/60">
-                                            {passage.label}:{" "}
-                                        </span>
-                                    )}
-                                    {question.prompt}
-                                </p>
-                            </li>
-                        );
-                    })}
-                </ol>
-
-                <div className="flex justify-end pt-2">
-                    <button type="button" className={pillPrimary}
-                        disabled={!allAnswered || quiz.submitting}
-                        onClick={submitAll}
-                    >
-                        {quiz.submitting ? "Wird geprüft..." : "Antworten abgeben"}
-                    </button>
-                </div>
+            <div className="flex justify-end pt-2">
+                <button type="button" className={pillPrimary} disabled={!allAnswered || quiz.submitting} onClick={submitAll}>
+                    {quiz.submitting ? "Wird geprüft..." : "Antworten abgeben"}
+                </button>
             </div>
         </div>
     );
@@ -1036,7 +1217,7 @@ function ExamExerciseContent() {
 
     return (
         <div dir="ltr" className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10">
-            <div className="mx-auto max-w-4xl space-y-6">
+            <div className="mx-auto max-w-4xl space-y-6" style={SECTION_THEME[exercise.section] ? lessonThemeVars(SECTION_THEME[exercise.section]!.accent) : undefined}>
                 {/* Behaves like the browser's back button (returns to the Teil list this exercise was opened from). */}
                 <button
                     type="button"
@@ -1054,36 +1235,74 @@ function ExamExerciseContent() {
                     Zurück
                 </button>
 
-                <LearningPageHero
-                    icon={sectionMeta?.icon ?? FileText}
-                    title={exercise.title}
-                    subtitle={sectionMeta?.label ?? "Prüfungsvorbereitung"}
-                    meta={<span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">{exercise.level ?? "Alle Niveaus"}</span>}
-                    actions={
-                        <button
-                            type="button"
-                            disabled={bookmarkPendingId === exercise.id}
-                            onClick={() => toggleBookmark(exercise.id, exercise.bookmarked)}
-                            aria-pressed={exercise.bookmarked}
-                            className={cn(
-                                "inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-60",
-                                exercise.bookmarked
-                                    ? "bg-primary/10 text-primary hover:bg-primary/20"
-                                    : "bg-primary text-primary-foreground hover:bg-primary/90",
-                            )}
-                        >
-                            {exercise.bookmarked ? <BookmarkCheck className="size-4" aria-hidden="true" /> : <Bookmark className="size-4" aria-hidden="true" />}
-                            {exercise.bookmarked ? "Gemerkt" : "Merken"}
-                        </button>
-                    }
-                />
+                {SECTION_HEADER[exercise.section] ? (
+                    <ExerciseTopHeader
+                        exercise={exercise}
+                        accent={SECTION_THEME[exercise.section]!.accent}
+                        icon={SECTION_HEADER[exercise.section]!.icon}
+                        kicker={`Teil ${exercise.teil ?? exercise.partNumber ?? 1}`}
+                        sectionLabel={SECTION_HEADER[exercise.section]!.label}
+                        showTimer={exercise.section !== "HOERVERSTEHEN"}
+                        descriptionAs={exercise.section === "HOERVERSTEHEN" || exercise.section === "LESEVERSTEHEN" || exercise.section === "SPRACHBAUSTEINE" ? "paragraph" : "steps"}
+                        title={exercise.title.replace(/^.*?Teil\s+\d\s*[–-]\s*/i, "").trim() || exercise.title}
+                        bookmarked={exercise.bookmarked}
+                        bookmarkPending={bookmarkPendingId === exercise.id}
+                        onToggleBookmark={() => toggleBookmark(exercise.id, exercise.bookmarked)}
+                    />
+                ) : exercise.section === "SCHRIFTLICHER_AUSDRUCK" ? (
+                    <ExerciseTopHeader
+                        exercise={exercise}
+                        accent="writing"
+                        icon={PenLine}
+                        kicker="Schreibaufgabe"
+                        sectionLabel="Schriftlicher Ausdruck"
+                        title={exercise.title.replace(/^.*?Schriftlicher Ausdruck\s*[–-]\s*/i, "").trim() || exercise.title}
+                        bookmarked={exercise.bookmarked}
+                        bookmarkPending={bookmarkPendingId === exercise.id}
+                        onToggleBookmark={() => toggleBookmark(exercise.id, exercise.bookmarked)}
+                    />
+                ) : exercise.section === "MUENDLICHER_AUSDRUCK" ? (
+                    <SpeakingTopHeader
+                        exercise={exercise}
+                        bookmarked={exercise.bookmarked}
+                        bookmarkPending={bookmarkPendingId === exercise.id}
+                        onToggleBookmark={() => toggleBookmark(exercise.id, exercise.bookmarked)}
+                    />
+                ) : (
+                    <>
+                    <LearningPageHero
+                        icon={sectionMeta?.icon ?? FileText}
+                        title={exercise.title}
+                        subtitle={sectionMeta?.label ?? "Prüfungsvorbereitung"}
+                        meta={<span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">{exercise.level ?? "Alle Niveaus"}</span>}
+                        actions={
+                            <button
+                                type="button"
+                                disabled={bookmarkPendingId === exercise.id}
+                                onClick={() => toggleBookmark(exercise.id, exercise.bookmarked)}
+                                aria-pressed={exercise.bookmarked}
+                                className={cn(
+                                    "inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-60",
+                                    exercise.bookmarked
+                                        ? "bg-primary/10 text-primary hover:bg-primary/20"
+                                        : "bg-primary text-primary-foreground hover:bg-primary/90",
+                                )}
+                            >
+                                {exercise.bookmarked ? <BookmarkCheck className="size-4" aria-hidden="true" /> : <Bookmark className="size-4" aria-hidden="true" />}
+                                {exercise.bookmarked ? "Gemerkt" : "Merken"}
+                            </button>
+                        }
+                    />
 
-                <ExamExerciseTimer exercise={exercise} />
+                    <ExamExerciseTimer exercise={exercise} />
 
-                {exercise.teilDescription && (
-                    <div className="rounded-2xl border-s-4 border-primary/40 bg-primary/[0.06] p-4 text-sm text-foreground/80 whitespace-pre-wrap">
-                        {exercise.teilDescription}
-                    </div>
+                    {exercise.teilDescription && (
+                        <div className="rounded-2xl border-s-4 border-primary/40 bg-primary/[0.06] p-4 text-sm text-foreground/80 whitespace-pre-wrap">
+                            {exercise.teilDescription}
+                        </div>
+                    )}
+
+                    </>
                 )}
 
                 {exercise.section !== "HOERVERSTEHEN" &&
@@ -1091,11 +1310,11 @@ function ExamExerciseContent() {
                     exercise.section !== "MUENDLICHER_AUSDRUCK" &&
                     exercise.section !== "TESTFORMAT_INFORMATION" && (
                     <>
-                        {(exercise.taskType === "MATCHING" || exercise.taskType === "WORD_BANK_CLOZE") && (
+                        {exercise.taskType === "WORD_BANK_CLOZE" && !isSprachbausteineGapText(exercise) && (
                             <AnswerOptionsPoolView answerOptions={exercise.answerOptions ?? []} answerOptionLabels={exercise.answerOptionLabels ?? []} taskType={exercise.taskType} />
                         )}
-                        {/* Lesen Teil 3 shows its advertisements inside the matching board once the exercise is started. */}
-                        {exercise.taskType !== "SITUATION_MATCHING" && (
+                        {/* Lesen Teil 1 (headings) and Teil 3 (ads) show their texts inside the matching board once the exercise is started. */}
+                        {exercise.taskType !== "SITUATION_MATCHING" && exercise.taskType !== "MATCHING" && !isLesenMultipleChoice(exercise) && !isSprachbausteineGapText(exercise) && (
                             <PassagesView passages={exercise.passages} taskType={exercise.taskType ?? ""} />
                         )}
                     </>
@@ -1109,7 +1328,7 @@ function ExamExerciseContent() {
                     <MuendlicherAusdruckView exercise={exercise} />
                 ) : exercise.section === "TESTFORMAT_INFORMATION" ? (
                     <TestformatInformationView exercise={exercise} />
-                ) : exercise.taskType === "WORD_BANK_CLOZE" || exercise.taskType === "SITUATION_MATCHING" ? (
+                ) : exercise.taskType === "WORD_BANK_CLOZE" || exercise.taskType === "SITUATION_MATCHING" || exercise.taskType === "MATCHING" || isSprachbausteineGapText(exercise) ? (
                     <ClozeGridQuiz exercise={exercise} />
                 ) : (
                     <StepQuiz exercise={exercise} />

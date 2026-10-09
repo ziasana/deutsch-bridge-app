@@ -48,6 +48,9 @@ export interface SpeakingContent {
     exampleResponse?: string | null;
     // Teil 3
     scenario?: string | null;
+    /** Optional scene picture (uploaded path or https URL) shown above the scenario; imageAlt is its German description. */
+    image?: string | null;
+    imageAlt?: string | null;
     planningPoints?: { id: string; title: string; hint?: string | null }[];
     extraPhrases?: string[];
     decisionCriteria?: string[];

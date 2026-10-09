@@ -8,6 +8,8 @@ import { createVocabulary, getVocabulary } from "@/services/vocabularyService";
 import { DailyWord } from "@/types/dailyWord";
 import Loading from "@/componenets/Loading";
 import { useI18n } from "@/componenets/I18nProvider";
+import { DAILY_WORDS_ACCENT } from "@/componenets/daily-words/dailyWordsAccent";
+import { levelThemeVars } from "@/componenets/learning/levelMeta";
 import {
     DailyWordsHeader,
     DailyWordLearningCard,
@@ -51,7 +53,7 @@ export default function DailyWordsPage() {
     };
 
     const frame = (children: React.ReactNode) => (
-        <div className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10">
+        <div className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10" style={levelThemeVars(DAILY_WORDS_ACCENT)}>
             <div className="mx-auto max-w-3xl">{children}</div>
         </div>
     );
@@ -60,7 +62,7 @@ export default function DailyWordsPage() {
 
     if (error) {
         return frame(
-            <div className="rounded-[10px] bg-card p-10 text-center shadow-card">
+            <div className="rounded-3xl bg-card p-10 text-center shadow-card">
                 <p className="font-semibold text-foreground">{t.dailyWords.loadError}</p>
                 <p className="mt-1 text-sm text-foreground/60">{t.dailyWords.loadErrorSubtitle}</p>
                 <button
@@ -76,7 +78,7 @@ export default function DailyWordsPage() {
 
     if (words.length === 0) {
         return frame(
-            <div className="rounded-[10px] bg-card p-10 text-center shadow-card">
+            <div className="rounded-3xl bg-card p-10 text-center shadow-card">
                 <h1 className="text-2xl font-bold text-foreground">{t.dailyWords.title}</h1>
                 <p className="mt-2 text-foreground/65">{t.dailyWords.emptyTitle}</p>
                 <p className="mt-1 text-sm text-foreground/50">{t.dailyWords.emptySubtitle}</p>

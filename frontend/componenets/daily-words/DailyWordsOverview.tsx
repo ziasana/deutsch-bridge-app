@@ -2,6 +2,7 @@ import { Check, ChevronRight } from "lucide-react";
 import { DailyWord } from "@/types/dailyWord";
 import { useI18n } from "@/componenets/I18nProvider";
 import { cn } from "@/lib/utils";
+import { ACCENT_TITLE_COLOR } from "@/componenets/learning/levelMeta";
 
 interface DailyWordsOverviewProps {
     words: DailyWord[];
@@ -15,10 +16,10 @@ export default function DailyWordsOverview({ words, currentIndex, onSelect }: Re
     const learnedCount = words.filter((w) => w.learned).length;
 
     return (
-        <section aria-label={t.dailyWords.overview.title(words.length)} className="overflow-hidden rounded-[10px] bg-card shadow-card">
-            <div className="flex items-center justify-between px-5 pb-3 pt-5 sm:px-6">
-                <h2 className="text-base font-semibold text-foreground">{t.dailyWords.overview.title(words.length)}</h2>
-                <span className="text-xs font-medium text-foreground/50">{learnedCount} / {words.length}</span>
+        <section aria-label={t.dailyWords.overview.title(words.length)} className="overflow-hidden rounded-3xl bg-card shadow-card">
+            <div className="flex items-center justify-between bg-primary/[0.06] px-5 pb-3 pt-5 sm:px-6">
+                <h2 className="text-base font-extrabold" style={{ color: ACCENT_TITLE_COLOR }}>{t.dailyWords.overview.title(words.length)}</h2>
+                <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">{learnedCount} / {words.length}</span>
             </div>
             <ul className="divide-y divide-border/60 border-t border-border/60">
                 {words.map((word, index) => {

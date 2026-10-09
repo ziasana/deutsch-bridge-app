@@ -56,7 +56,7 @@ export default function DailyWordLearningCard({
     };
 
     const navButton =
-        "flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-card text-foreground/70 shadow-card transition hover:-translate-y-0.5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default disabled:opacity-30 disabled:hover:translate-y-0 disabled:hover:text-foreground/70";
+        "flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-full bg-card text-foreground/70 shadow-card ring-1 ring-border/60 transition hover:-translate-y-0.5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default disabled:opacity-30 disabled:hover:translate-y-0 disabled:hover:text-foreground/70";
 
     return (
         <div className="flex items-center gap-3">
@@ -66,26 +66,26 @@ export default function DailyWordLearningCard({
 
             <article
                 key={word.id}
-                className="anim-fade-up min-w-0 flex-1 rounded-[10px] bg-card p-6 text-center shadow-card sm:p-8"
-                style={{ borderTop: `4px solid ${levelColor}` }}
+                className="anim-fade-up min-w-0 flex-1 overflow-hidden rounded-3xl bg-card text-center shadow-card ring-1 ring-border/60"
             >
-                <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-foreground/45">
+                <div className="flex items-center justify-between px-6 py-3 sm:px-8" style={{ backgroundImage: `linear-gradient(135deg, ${levelColor}33, ${levelColor}0d 70%, transparent)` }}>
+                    <span className="rounded-full bg-card/80 px-3 py-1 text-xs font-bold uppercase tracking-wide text-primary shadow-sm">
                         {t.dailyWords.card.wordOf(index + 1, total)}
                     </span>
-                    <span className="rounded-full px-3 py-1 text-xs font-bold" style={{ backgroundColor: `${levelColor}1f`, color: levelColor }}>
+                    <span className="rounded-full px-3 py-1 text-xs font-extrabold text-white shadow-sm" style={{ backgroundColor: levelColor }}>
                         {word.level}
                     </span>
                 </div>
 
-                <div className="mt-6 flex items-center justify-center gap-3">
-                    <h2 className="break-words text-4xl font-bold text-foreground sm:text-5xl">{word.word}</h2>
+                <div className="p-6 pt-5 sm:p-8 sm:pt-6">
+                <div className="flex items-center justify-center gap-3">
+                    <h2 className="break-words text-4xl font-extrabold text-foreground sm:text-5xl">{word.word}</h2>
                     <button
                         type="button"
                         onClick={handlePlayAudio}
                         aria-label={t.dailyWords.card.playAria(word.word)}
                         className={cn(
-                            "flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary/10 text-primary transition hover:scale-110 hover:bg-primary/20",
+                            "flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary/10 text-primary transition hover:scale-110 hover:bg-primary/20",
                             isPlaying && "bg-primary text-primary-foreground",
                         )}
                     >
@@ -93,10 +93,10 @@ export default function DailyWordLearningCard({
                     </button>
                 </div>
 
-                <p className="mt-5 text-xl font-medium text-foreground/85">{word.meaning}</p>
+                <p className="mx-auto mt-5 max-w-md rounded-3xl border-s-4 border-primary bg-primary/[0.07] px-5 py-3.5 text-start text-xl font-semibold text-foreground">{word.meaning}</p>
 
                 {word.example && (
-                    <p className="mx-auto mt-5 max-w-md border-s-4 border-primary/25 ps-4 text-start text-sm italic leading-relaxed text-foreground/65">
+                    <p className="mx-auto mt-4 max-w-md rounded-2xl border-s-4 border-primary/40 bg-foreground/[0.04] px-4 py-3 text-start text-sm italic leading-relaxed text-foreground/70">
                         &ldquo;{word.example}&rdquo;
                     </p>
                 )}
@@ -143,6 +143,7 @@ export default function DailyWordLearningCard({
                     <button type="button" onClick={onNext} disabled={!canGoNext} aria-label={t.dailyWords.card.nextAria} className={navButton}>
                         <ChevronRight className="size-5" aria-hidden="true" />
                     </button>
+                </div>
                 </div>
             </article>
 

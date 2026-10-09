@@ -9,12 +9,13 @@ import { toast } from "@/lib/toast";
 import { getWritingLearning } from "@/services/writingService";
 import Loading from "@/componenets/Loading";
 import useAuthStore from "@/store/useAuthStore";
-import { WritingLevelChips } from "@/componenets/exam/writing";
-import LearnPath from "@/componenets/exam/writing/learn/LearnPath";
+import ThemedLearnPath from "@/componenets/exam/writing/learn/ThemedLearnPath";
+import { lessonThemeVars } from "@/componenets/exam/lessonTheme";
+import { cn } from "@/lib/utils";
 import LessonPlayer from "@/componenets/exam/writing/learn/LessonPlayer";
 import { buildStations } from "@/componenets/exam/writing/learn/stations";
 import { useLearnProgress } from "@/componenets/exam/writing/learn/useLearnProgress";
-import { LEARN_SECTIONS, LearnSectionId } from "@/componenets/exam/writing/writingMeta";
+import { LEARN_SECTIONS, LearnSectionId, WRITING_LEVELS } from "@/componenets/exam/writing/writingMeta";
 import { WritingLearningResponse } from "@/types/writing";
 
 interface LearnViewProps {
@@ -39,6 +40,7 @@ function LearnView({ level, data, stationId, onNavigate }: LearnViewProps) {
                 key={current.id}
                 station={current}
                 nextStationId={nextId}
+                accent="writing"
                 onFinished={(id, r) => markDone(id as LearnSectionId, r)}
                 onNext={(id) => (id ? onNavigate(id as LearnSectionId) : router.push(`/dashboard/exam-prep?section=SCHRIFTLICHER_AUSDRUCK&level=${encodeURIComponent(level)}`))}
                 onExit={() => onNavigate(null)}
@@ -48,7 +50,21 @@ function LearnView({ level, data, stationId, onNavigate }: LearnViewProps) {
     if (stations.length === 0) {
         return <div className="rounded-[10px] bg-card p-8 text-center text-sm text-foreground/55 shadow-card">Für {level} sind noch keine Lerninhalte verfügbar.</div>;
     }
-    return <LearnPath level={level} stations={stations} done={done} onOpen={(id) => onNavigate(id as LearnSectionId)} onReset={reset} />;
+    const exerciseHref = `/dashboard/exam-prep?section=SCHRIFTLICHER_AUSDRUCK&level=${encodeURIComponent(level)}`;
+    return (
+        <ThemedLearnPath
+            accent="writing"
+            stations={stations}
+            done={done}
+            onOpen={(id) => onNavigate(id as LearnSectionId)}
+            onReset={reset}
+            sections={LEARN_SECTIONS}
+            exerciseHref={exerciseHref}
+            exerciseLabel="Zu den Schreibaufgaben →"
+            allDoneHint="Du kennst jetzt die Methode. Wende sie in den Schreibaufgaben an."
+            remainingHint={(n) => `Noch ${n} ${n === 1 ? "Station" : "Stationen"} bis zum Schreib-Profi.`}
+        />
+    );
 }
 
 function LernenContent() {
@@ -77,21 +93,40 @@ function LernenContent() {
     const inLesson = stationId !== null && !!data;
 
     return (
-        <div className="min-h-screen bg-background px-6 py-6 sm:py-10" dir="ltr">
-            <div className="max-w-4xl mx-auto">
+        <div className="dashboard-atmosphere min-h-screen px-4 py-6 sm:px-6 sm:py-10" dir="ltr" style={lessonThemeVars("writing")}>
+            <div className="mx-auto max-w-4xl">
                 {!inLesson && (
                     <>
-                        <Link href={`/dashboard/exam-prep/schreiben?level=${encodeURIComponent(level)}`} className="inline-flex items-center gap-1.5 text-sm text-foreground/60 hover:text-foreground transition">
-                            <ArrowLeft className="size-4" />
+                        <Link href={`/dashboard/exam-prep/schreiben?level=${encodeURIComponent(level)}`} className="inline-flex items-center gap-1.5 text-sm text-foreground/60 transition hover:text-foreground">
+                            <ArrowLeft className="size-4" aria-hidden="true" />
                             Schreiben
                         </Link>
 
-                        <div className="mt-4">
-                            <h1 className="text-2xl font-bold text-foreground">📚 Schreiben lernen</h1>
-                            <p className="mt-1 text-sm text-foreground/60">{level} · Kleine Schritte, Aufgaben zum Ausprobieren – und du siehst sofort, was du schon kannst.</p>
-                        </div>
-
-                        <WritingLevelChips className="mt-5" level={level} onChange={(l) => router.replace(`/dashboard/exam-prep/schreiben/lernen?level=${encodeURIComponent(l)}`)} />
+                        <header className="relative mt-4 overflow-hidden rounded-3xl border border-primary/15 bg-card p-5 shadow-card sm:p-6">
+                            <span aria-hidden="true" className="pointer-events-none absolute -end-10 -top-12 size-44 rounded-full bg-gradient-to-br from-(--lesson-from)/20 to-(--lesson-to)/20" />
+                            <span aria-hidden="true" className="pointer-events-none absolute end-6 top-4 text-7xl opacity-15 sm:text-8xl">📚</span>
+                            <div className="relative">
+                                <p className="inline-flex rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-primary">Lernen · {level}</p>
+                                <h1 className="mt-2 text-2xl font-extrabold text-foreground sm:text-3xl">Schreiben lernen</h1>
+                                <p className="mt-0.5 text-sm text-foreground/65">Kleine Schritte, Aufgaben zum Ausprobieren – und du siehst sofort, was du schon kannst.</p>
+                            </div>
+                            <div role="group" aria-label="Niveau" className="relative mt-4 flex flex-wrap gap-2">
+                                {WRITING_LEVELS.map((l) => (
+                                    <button
+                                        key={l}
+                                        type="button"
+                                        aria-pressed={l === level}
+                                        onClick={() => router.replace(`/dashboard/exam-prep/schreiben/lernen?level=${encodeURIComponent(l)}`)}
+                                        className={cn(
+                                            "cursor-pointer rounded-full border px-4 py-1.5 text-sm font-semibold transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                                            l === level ? "border-transparent bg-gradient-to-r from-(--lesson-from) to-(--lesson-to) text-white shadow-sm" : "border-border bg-card text-foreground/70 hover:border-primary/40 hover:bg-primary/5",
+                                        )}
+                                    >
+                                        {l}
+                                    </button>
+                                ))}
+                            </div>
+                        </header>
                     </>
                 )}
 

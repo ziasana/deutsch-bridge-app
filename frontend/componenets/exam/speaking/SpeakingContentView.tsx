@@ -81,9 +81,11 @@ export function SpeakingStimulus({ content, guide }: Readonly<{ content: Speakin
         );
     }
 
+    const sceneImage = resolveUploadUrl(content.image ?? null);
     return (
         <section className={card} aria-label="Aufgabe">
             <h2 className={heading}>{content.topic}</h2>
+            {sceneImage && <img src={sceneImage} alt={content.imageAlt ?? ""} className="mt-3 max-h-64 w-full rounded-lg object-cover" />}
             <p className="mt-2 whitespace-pre-line text-sm text-foreground/85">{content.scenario}</p>
             <h3 className={`${heading} mt-4`}>Besprechen Sie:</h3>
             <ul className={list}>

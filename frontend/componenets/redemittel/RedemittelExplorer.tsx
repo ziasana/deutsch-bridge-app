@@ -5,6 +5,7 @@ import { BookOpen, Compass, Dices, RefreshCw, Sparkles, Star, Trophy, X, type Lu
 import { RedemittelStatus } from "@/types/redemittel";
 import { LearningSearch } from "@/componenets/learning";
 import { cn } from "@/lib/utils";
+import { ACCENT_TITLE_COLOR } from "@/componenets/learning/levelMeta";
 import RedemittelCategoryPicker from "./RedemittelCategoryPicker";
 import RedemittelLevelPills from "./RedemittelLevelPills";
 
@@ -56,13 +57,13 @@ interface Props {
  */
 export default function RedemittelExplorer(p: Readonly<Props>) {
     return (
-        <div className="rounded-[10px] bg-card shadow-card">
-            <div className="space-y-3 rounded-t-[10px] border-b border-border/60 p-4 sm:px-6">
+        <div className="rounded-3xl bg-card shadow-card ring-1 ring-border/60">
+            <div className="space-y-3 rounded-t-3xl border-b border-border/60 bg-primary/[0.05] p-4 sm:px-6">
                 <div className="flex items-center gap-3">
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent">
-                        <Compass className="size-4.5 text-primary" aria-hidden="true" />
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                        <Compass className="size-4.5" aria-hidden="true" />
                     </div>
-                    <h2 className="text-lg font-semibold text-foreground">Entdecken</h2>
+                    <h2 className="text-lg font-bold" style={{ color: ACCENT_TITLE_COLOR }}>Entdecken</h2>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -111,12 +112,12 @@ export default function RedemittelExplorer(p: Readonly<Props>) {
                                             onClick={() => p.onStatus(active ? null : chip.status)}
                                             className={cn(
                                                 "inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-                                                active ? "border-primary bg-primary/[0.08] text-primary" : "border-border/60 bg-card text-foreground hover:border-primary/40",
+                                                active ? "border-primary bg-primary text-primary-foreground shadow-sm" : "border-border/60 bg-card text-foreground hover:border-primary/40",
                                             )}
                                         >
-                                            <Icon className={cn("size-3.5", active ? "text-primary" : chip.text)} aria-hidden="true" />
+                                            <Icon className={cn("size-3.5", active ? "text-primary-foreground" : chip.text)} aria-hidden="true" />
                                             <span>{chip.label}</span>
-                                            <span className="text-foreground/50">{p.statusCounts![chip.status]}</span>
+                                            <span className={active ? "text-primary-foreground/80" : "text-foreground/50"}>{p.statusCounts![chip.status]}</span>
                                         </button>
                                     );
                                 })}
@@ -149,7 +150,7 @@ export default function RedemittelExplorer(p: Readonly<Props>) {
 
             {p.children}
 
-            {p.footer && <div className="rounded-b-[10px] border-t border-border/60 px-4 py-3 sm:px-6">{p.footer}</div>}
+            {p.footer && <div className="rounded-b-3xl border-t border-border/60 px-4 py-3 sm:px-6">{p.footer}</div>}
         </div>
     );
 }

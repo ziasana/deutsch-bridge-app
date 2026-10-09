@@ -19,10 +19,12 @@ import {
     ProductionAnswerResponse,
 } from "@/types/expression";
 import Loading from "@/componenets/Loading";
-import { Check, X } from "lucide-react";
+import { ArrowLeft, Check, X } from "lucide-react";
 import { ReactNode } from "react";
 import CircularProgress from "@/componenets/CircularProgress";
 import { cn } from "@/lib/utils";
+import { COLLECTION_ACCENT } from "@/componenets/expressions/expressionMeta";
+import { levelThemeVars } from "@/componenets/learning/levelMeta";
 
 const pillPrimary =
     "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default disabled:opacity-50";
@@ -179,17 +181,23 @@ function ExpressionPracticeContent() {
     const exitTarget =
         expressionId && skipIntro ? `/dashboard/expressions/detail?id=${expressionId}` : "/dashboard/expressions";
 
+    // Back to where the learner came from (the list with its collection and filters, or the expression); a fresh tab uses the default target.
+    const goBack = () => {
+        if (window.history.length > 1) router.back();
+        else router.push(exitTarget);
+    };
+
     if (loading) return <Loading />;
 
     if (!session || session.items.length === 0) {
         return (
             <div className="dashboard-atmosphere flex min-h-screen items-center justify-center p-4 sm:p-6" dir="ltr">
-                <div className="anim-fade-up max-w-md rounded-[10px] bg-card p-10 text-center shadow-card">
+                <div className="anim-fade-up max-w-md rounded-3xl bg-card p-10 text-center shadow-card">
                     <h2 className="text-2xl font-bold text-foreground mb-2">Alles erledigt!</h2>
                     <p className="text-foreground/65 mb-6">
                         Keine Wendungen sind gerade fällig. Schau später wieder vorbei.
                     </p>
-                    <button type="button" className={pillPrimary} onClick={() => router.push(exitTarget)}>
+                    <button type="button" className={pillPrimary} onClick={goBack}>
                         Zurück zur Übersicht
                     </button>
                 </div>
@@ -205,11 +213,19 @@ function ExpressionPracticeContent() {
         const strong = results.filter((r) => r.productionCorrect).map((r) => r.expression.expression);
         const needsPractice = results.filter((r) => r.productionCorrect === false).map((r) => r.expression.expression);
 
+        const finishAccent = COLLECTION_ACCENT[results[0]?.expression.type ?? "NOMEN_VERB_VERBINDUNG"];
+        const finishPercent = totalSteps > 0 ? totalCorrect / totalSteps : 0;
+
         return (
-            <div className="dashboard-atmosphere flex min-h-screen items-center justify-center p-4 sm:p-6" dir="ltr">
-                <div className="anim-fade-up w-full max-w-lg rounded-[10px] bg-card p-6 shadow-card sm:p-8">
-                    <h2 className="text-2xl font-bold text-foreground mb-1">Session complete 🎉</h2>
-                    <p className="text-foreground/65 mb-6">Wendungen geübt: {results.length}</p>
+            <div className="dashboard-atmosphere flex min-h-screen items-center justify-center p-4 sm:p-6" dir="ltr" style={levelThemeVars(finishAccent)}>
+                <div className="anim-fade-up w-full max-w-lg overflow-hidden rounded-3xl bg-card shadow-card">
+                    <div className="relative overflow-hidden px-6 py-7 text-center text-white sm:px-8" style={{ backgroundImage: `linear-gradient(135deg, ${finishAccent}, ${finishAccent}b3)` }}>
+                        <span aria-hidden="true" className="absolute -end-8 -top-10 size-36 rounded-full bg-white/10" />
+                        <p className="anim-pop relative text-5xl" aria-hidden="true">{finishPercent >= 0.9 ? "🏆" : finishPercent >= 0.6 ? "🎉" : "💪"}</p>
+                        <h2 className="relative mt-2 text-2xl font-extrabold">Session complete 🎉</h2>
+                        <p className="relative mt-1 text-white/90">Wendungen geübt: {results.length}</p>
+                    </div>
+                    <div className="p-6 sm:p-8">
 
                     <div className="mb-6 flex justify-center">
                         <div className="relative">
@@ -221,7 +237,7 @@ function ExpressionPracticeContent() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className="bg-accent/50 rounded-2xl p-4 text-center">
+                        <div className="bg-primary/10 rounded-2xl p-4 text-center">
                             <p className="text-2xl font-bold text-foreground">
                                 {totalCorrect}/{totalSteps}
                             </p>
@@ -248,9 +264,10 @@ function ExpressionPracticeContent() {
                         </div>
                     )}
 
-                    <button type="button" className={`${pillPrimary} w-full`} onClick={() => router.push(exitTarget)}>
+                    <button type="button" className={`${pillPrimary} w-full`} onClick={goBack}>
                         Fertig
                     </button>
+                    </div>
                 </div>
             </div>
         );
@@ -345,10 +362,14 @@ function ExpressionPracticeContent() {
     const nextLabel = isLastStep ? "Session beenden" : "Weiter";
 
     return (
-        <div className="dashboard-atmosphere flex min-h-screen items-center justify-center p-4 sm:p-6" dir="ltr">
-            <div className="anim-fade-up w-full max-w-xl rounded-[10px] bg-card p-6 shadow-card sm:p-8">
+        <div className="dashboard-atmosphere flex min-h-screen items-center justify-center p-4 sm:p-6" dir="ltr" style={levelThemeVars(COLLECTION_ACCENT[item.type])}>
+            <div className="anim-fade-up w-full max-w-xl rounded-3xl border-t-4 border-t-primary bg-card p-6 shadow-card sm:p-8">
+                <button type="button" onClick={goBack} className="mb-3 inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-foreground/60 transition hover:text-foreground">
+                    <ArrowLeft className="size-4" aria-hidden="true" />
+                    Zurück
+                </button>
                 <div className="mb-4 flex items-center justify-between gap-3">
-                    <span className="text-sm font-medium text-foreground/60">
+                    <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-bold text-primary">
                         {index + 1} / {session.items.length}
                     </span>
                     <div className="flex gap-2">

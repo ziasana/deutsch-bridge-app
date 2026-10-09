@@ -15,6 +15,7 @@ import PracticeSummary, { practicePrimaryButton, practiceSecondaryButton } from 
 import { playVocabularyAudio } from "@/lib/vocabularyAudio";
 import { useI18n } from "@/componenets/I18nProvider";
 import { cn } from "@/lib/utils";
+import { ARTICLE_TONE as ARTICLE_COLORS, SOURCE_ACCENT } from "@/componenets/vocabulary/sourceColors";
 
 type Step = "flashcard" | "context";
 
@@ -57,8 +58,8 @@ function VocabularyPracticeContent() {
 
     if (!session || session.items.length === 0) {
         return (
-            <PracticeShell>
-                <div className="anim-fade-up rounded-[10px] bg-card p-10 text-center shadow-card">
+            <PracticeShell accent={SOURCE_ACCENT.CUSTOM}>
+                <div className="anim-fade-up rounded-3xl bg-card p-10 text-center shadow-card">
                     <h1 className="text-2xl font-bold text-foreground">{t.vocabulary.practice.noWords}</h1>
                     <p className="mt-2 text-foreground/65">{t.vocabulary.practice.noWordsSubtitle}</p>
                     <button type="button" onClick={() => router.push(exitTarget)} className={`${practicePrimaryButton} mt-7`}>
@@ -78,8 +79,9 @@ function VocabularyPracticeContent() {
         const contextAccuracy = contextAnswered.length > 0 ? Math.round((contextCorrect / contextAnswered.length) * 100) : 0;
 
         return (
-            <PracticeShell>
+            <PracticeShell accent={SOURCE_ACCENT.CUSTOM}>
                 <PracticeSummary
+                    accent={SOURCE_ACCENT.CUSTOM}
                     title={t.vocabulary.practice.sessionComplete}
                     subtitle={`${t.vocabulary.practice.wordsPracticed}: ${total}`}
                     rings={[
@@ -167,12 +169,7 @@ function VocabularyPracticeContent() {
             .finally(() => setSubmitting(false));
     };
 
-    const ARTICLE_TONE: Record<string, string> = {
-        der: "bg-blue-500/12 text-blue-600 dark:text-blue-400",
-        die: "bg-rose-500/12 text-rose-600 dark:text-rose-400",
-        das: "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400",
-    };
-    const articleTone = item.article ? (ARTICLE_TONE[item.article.toLowerCase()] ?? "bg-primary/10 text-primary") : "";
+    const articleTone = item.article ? (ARTICLE_COLORS[item.article.toLowerCase()] ?? "bg-primary/10 text-primary") : "";
 
     // Whole-session progress: completed words plus the share of the current word already answered.
     const percent = ((index + (roundResult ? 1 : step === "context" ? 0.5 : 0)) / session.items.length) * 100;
@@ -185,7 +182,7 @@ function VocabularyPracticeContent() {
     );
 
     return (
-        <PracticeShell>
+        <PracticeShell accent={SOURCE_ACCENT[item.source]}>
             <PracticeHeader
                 exitHref={exitTarget}
                 exitLabel={t.vocabulary.practice.backToVocabulary}
@@ -219,7 +216,7 @@ function VocabularyPracticeContent() {
                                         </span>
                                     )}
                                     <div className="flex items-center gap-2">
-                                        <h2 className="break-words text-4xl font-bold leading-tight text-foreground">{item.word}</h2>
+                                        <h2 className="break-words text-4xl font-extrabold leading-tight text-foreground">{item.word}</h2>
                                         <button
                                             type="button"
                                             onClick={(e) => {
@@ -280,8 +277,8 @@ function VocabularyPracticeContent() {
                 )}
 
                 {step === "context" && item.contextQuestion && (
-                    <div className="anim-fade-up rounded-[10px] border-t-4 border-primary bg-card p-6 shadow-card sm:p-8">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                    <div className="anim-fade-up rounded-3xl border-t-4 border-primary bg-card p-6 shadow-card sm:p-8">
+                        <p className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-primary">
                             {item.contextQuestion.isCloze ? t.vocabulary.practice.contextPromptCloze : t.vocabulary.practice.contextPromptMeaning}
                         </p>
                         <p className="mt-3 text-xl font-semibold leading-relaxed text-foreground">{item.contextQuestion.prompt}</p>
@@ -294,7 +291,7 @@ function VocabularyPracticeContent() {
                                 let letterStyle = "bg-accent text-primary";
                                 if (roundResult) {
                                     if (isCorrectOption) {
-                                        style = "border-green-500 bg-green-500/10";
+                                        style = "anim-pop border-green-500 bg-green-500/10";
                                         letterStyle = "bg-green-500 text-white";
                                     } else if (isSelected) {
                                         style = "border-red-500 bg-red-500/10";
@@ -312,7 +309,7 @@ function VocabularyPracticeContent() {
                                         disabled={submitting || Boolean(roundResult)}
                                         onClick={() => selectContextOption(opt.key)}
                                         className={cn(
-                                            "flex w-full cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm text-foreground transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                                            "flex w-full cursor-pointer items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left text-sm text-foreground transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
                                             style,
                                         )}
                                     >

@@ -10,6 +10,7 @@ import { TIMED_SECTIONS } from "@/lib/examTime";
 import { showTimerStartedToast, showZeitCheckToast } from "@/lib/examTimeToast";
 import { ExamExercisePublicResponse } from "@/types/exam";
 import ExamTimerBar from "./ExamTimerBar";
+import ExamTimerRing from "./ExamTimerRing";
 
 /**
  * Stops the timer of the exercise on this page (if it is running) and returns its Zeit-Check, which
@@ -34,7 +35,7 @@ export function useStopExerciseTimer() {
  * learner leaves (back button, any navigation, reload) and carries on from where it stopped when
  * the same exercise is opened again. Opening a different exercise starts a fresh run.
  */
-export default function ExamExerciseTimer({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse }>) {
+export default function ExamExerciseTimer({ exercise, variant = "bar" }: Readonly<{ exercise: ExamExercisePublicResponse; variant?: "bar" | "ring" }>) {
     const { active, hasHydrated, busy, start, finish } = useExamSession();
     const restartSignal = useExamTimerStore((s) => s.restartSignal);
 
@@ -93,29 +94,51 @@ export default function ExamExerciseTimer({ exercise }: Readonly<{ exercise: Exa
 
     if (!eligible || !hasHydrated) return null;
 
+    const stopButton = (
+        <button
+            type="button"
+            disabled={busy}
+            onClick={async () => {
+                const result = await finish();
+                if (result) {
+                    useExamTimerStore.getState().setLastResult(result);
+                    showZeitCheckToast(result);
+                }
+            }}
+            className={
+                variant === "ring"
+                    ? "inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground/80 transition hover:bg-accent disabled:opacity-50"
+                    : "inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-foreground/70 hover:bg-accent disabled:opacity-50"
+            }
+        >
+            <Square className="size-3" />
+            Stopp
+        </button>
+    );
+
     if (active?.scope === "EXERCISE" && active.exerciseId === exercise.id) {
+        return variant === "ring" ? <ExamTimerRing active={active} actions={stopButton} /> : <ExamTimerBar active={active} title="Zeit für diese Übung" actions={stopButton} />;
+    }
+
+    if (variant === "ring") {
         return (
-            <ExamTimerBar
-                active={active}
-                title="Zeit für diese Übung"
-                actions={
+            <div className="flex items-center gap-4">
+                <span className="flex size-28 shrink-0 items-center justify-center rounded-full border-8 border-foreground/10 text-foreground/40">
+                    <Timer className="size-8" aria-hidden="true" />
+                </span>
+                <div>
+                    <p className="text-sm font-semibold text-foreground/70">Die Zeitmessung ist gestoppt.</p>
                     <button
                         type="button"
                         disabled={busy}
-                        onClick={async () => {
-                            const result = await finish();
-                            if (result) {
-                                useExamTimerStore.getState().setLastResult(result);
-                                showZeitCheckToast(result);
-                            }
-                        }}
-                        className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-foreground/70 hover:bg-accent disabled:opacity-50"
+                        onClick={startRun}
+                        className="mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
                     >
-                        <Square className="size-3" />
-                        Stopp
+                        <Timer className="size-3.5" />
+                        Zeit starten
                     </button>
-                }
-            />
+                </div>
+            </div>
         );
     }
 

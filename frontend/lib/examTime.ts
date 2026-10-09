@@ -20,7 +20,7 @@ export const TIME_THRESHOLDS: TimeThresholds = {
  * Sections that get a Teil timer. Hörverstehen is deliberately absent: it is paced by the audio,
  * so a per-Teil countdown would be an artificial limit.
  */
-export const TIMED_SECTIONS: readonly ExamSection[] = ["LESEVERSTEHEN", "SPRACHBAUSTEINE", "SCHRIFTLICHER_AUSDRUCK"];
+export const TIMED_SECTIONS: readonly ExamSection[] = ["LESEVERSTEHEN", "SPRACHBAUSTEINE", "SCHRIFTLICHER_AUSDRUCK", "MUENDLICHER_AUSDRUCK"];
 
 export type TimeStatus = "ON_TRACK" | "TARGET_REACHED" | "OVER_TIME";
 
