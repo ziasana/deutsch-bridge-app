@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
-import { Newspaper, CheckCircle2, Circle, ChevronRight, RotateCw, ArrowRight } from "lucide-react";
+import { Newspaper, ChevronLeft, ChevronRight, Trophy } from "lucide-react";
 import {
     getReadingArticlesPage,
     getReadingCategories,
@@ -12,7 +12,7 @@ import {
     removeReadingArticleBookmark,
 } from "@/services/readingService";
 import Loading from "@/componenets/Loading";
-import { getArticleImageSrc } from "@/lib/readingImages";
+import ArticleCard from "@/componenets/reading/ArticleCard";
 import {
     CurrentLevelChip,
     LearningLevelOption,
@@ -133,6 +133,10 @@ export default function ReadingPage() {
     }));
 
     const articles = articlePage?.items ?? [];
+    const currentSummary = levelSummaries.find((s) => s.level === effectiveLevel);
+    // The first text still to read is shown big as "up next" - only on the plain first page, not while searching or filtering.
+    const plainList = page === 0 && !debouncedSearch && !bookmarkedOnly && !categoryId;
+    const featuredIndex = plainList ? articles.findIndex((a) => !a.learned) : -1;
     const currentPage = page + 1;
     const openArticle = (id: string) => router.push(`/dashboard/reading/article?id=${id}`);
 
@@ -209,6 +213,31 @@ export default function ReadingPage() {
                     ariaLabel={t.reading.level}
                 />
 
+                {currentSummary && currentSummary.total > 0 && (
+                    <div className="mt-4 flex items-center gap-4 rounded-2xl bg-card px-4 py-3 shadow-card ring-1 ring-border/60">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl text-white" style={{ backgroundColor: getLevelMeta(effectiveLevel).color }}>
+                            <Trophy className="size-5" aria-hidden="true" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-foreground">
+                                {effectiveLevel} · {t.reading.levelProgress(currentSummary.learned, currentSummary.total)}
+                            </p>
+                            <div
+                                className="mt-1.5 h-2 overflow-hidden rounded-full bg-foreground/10"
+                                role="progressbar"
+                                aria-valuemin={0}
+                                aria-valuemax={currentSummary.total}
+                                aria-valuenow={currentSummary.learned}
+                            >
+                                <div
+                                    className="h-full rounded-full transition-all duration-700"
+                                    style={{ width: `${(currentSummary.learned / currentSummary.total) * 100}%`, backgroundColor: getLevelMeta(effectiveLevel).color }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
                     <LearningSearch
                         className="flex-1"
@@ -216,185 +245,103 @@ export default function ReadingPage() {
                         onChange={setSearch}
                         placeholder={t.reading.searchPlaceholder}
                     />
-                    <select
-                        value={categoryId}
-                        onChange={(e) => {
-                            setCategoryId(e.target.value);
-                            setPage(0);
-                        }}
-                        aria-label={t.reading.category}
-                        className="shrink-0 rounded-[10px] border border-border/60 bg-card px-3 py-3 text-sm text-foreground shadow-card outline-none transition focus:ring-2 focus:ring-primary/40"
-                    >
-                        <option value="">{t.reading.allCategories}</option>
-                        {categories.map((category) => (
-                            <option key={category.id} value={category.id}>
-                                {category.title}
-                            </option>
-                        ))}
-                    </select>
                     <div
                         role="tablist"
                         aria-label={t.reading.bookmarkedFilter}
-                        className="inline-flex shrink-0 rounded-[10px] border border-border/60 bg-card p-1 shadow-card"
+                        className="inline-flex shrink-0 rounded-full border border-border/60 bg-card p-1 shadow-card"
                     >
-                        <button
-                            type="button"
-                            role="tab"
-                            aria-selected={!bookmarkedOnly}
-                            onClick={() => {
-                                setBookmarkedOnly(false);
-                                setPage(0);
-                            }}
-                            className={cn(
-                                "rounded-lg px-3 py-1.5 text-sm font-medium transition",
-                                !bookmarkedOnly ? "bg-primary text-primary-foreground" : "text-foreground/60 hover:text-foreground"
-                            )}
-                        >
-                            {t.reading.showAll}
-                        </button>
-                        <button
-                            type="button"
-                            role="tab"
-                            aria-selected={bookmarkedOnly}
-                            onClick={() => {
-                                setBookmarkedOnly(true);
-                                setPage(0);
-                            }}
-                            className={cn(
-                                "rounded-lg px-3 py-1.5 text-sm font-medium transition",
-                                bookmarkedOnly ? "bg-primary text-primary-foreground" : "text-foreground/60 hover:text-foreground"
-                            )}
-                        >
-                            {t.reading.bookmarkedFilter}
-                        </button>
+                        {[
+                            { label: t.reading.showAll, value: false },
+                            { label: t.reading.bookmarkedFilter, value: true },
+                        ].map((tab) => (
+                            <button
+                                key={tab.label}
+                                type="button"
+                                role="tab"
+                                aria-selected={bookmarkedOnly === tab.value}
+                                onClick={() => {
+                                    setBookmarkedOnly(tab.value);
+                                    setPage(0);
+                                }}
+                                className={cn(
+                                    "cursor-pointer rounded-full px-4 py-1.5 text-sm font-semibold transition",
+                                    bookmarkedOnly === tab.value ? "bg-primary text-primary-foreground shadow-sm" : "text-foreground/60 hover:text-foreground"
+                                )}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
-                <div className={`mt-6 space-y-3 transition-opacity ${isPlaceholderData ? "opacity-60" : ""}`}>
-                    {articles.map((article) => {
-                        const learned = article.learned;
-                        const levelColor = getLevelMeta(article.level).color;
-                        return (
-                            <div
-                                key={article.id}
-                                role="button"
-                                tabIndex={0}
-                                onClick={() => openArticle(article.id)}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter" || e.key === " ") {
-                                        openArticle(article.id);
-                                    }
+                {categories.length > 0 && (
+                    <div role="group" aria-label={t.reading.category} className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-1">
+                        {[{ id: "", title: t.reading.allCategories }, ...categories].map((category) => (
+                            <button
+                                key={category.id || "all"}
+                                type="button"
+                                aria-pressed={categoryId === category.id}
+                                onClick={() => {
+                                    setCategoryId(category.id);
+                                    setPage(0);
                                 }}
-                                className={`w-full flex items-center gap-4 rounded-[10px] overflow-hidden p-3 text-left transition cursor-pointer border hover:border-[var(--hover-color)]/40 hover:bg-[var(--hover-color)]/[0.1] ${
-                                    learned
-                                        ? "border-transparent bg-[var(--hover-color)]/[0.08]"
-                                        : "border-border/60 bg-card shadow-card hover:-translate-y-0.5 hover:shadow-lg"
-                                }`}
-                                style={{ "--hover-color": levelColor } as React.CSSProperties}
-                            >
-                                {learned ? (
-                                    <span
-                                        className="flex size-6 shrink-0 items-center justify-center rounded-full"
-                                        style={{ backgroundColor: levelColor }}
-                                    >
-                                        <CheckCircle2 className="size-4 text-white" strokeWidth={2.5} />
-                                    </span>
-                                ) : (
-                                    <Circle className="size-6 shrink-0 text-foreground/25" />
+                                className={cn(
+                                    "shrink-0 cursor-pointer rounded-full border px-3.5 py-1.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                                    categoryId === category.id
+                                        ? "border-primary bg-primary/10 text-primary"
+                                        : "border-border/60 bg-card text-foreground/65 hover:border-primary/40 hover:text-foreground"
                                 )}
+                            >
+                                {category.title}
+                            </button>
+                        ))}
+                    </div>
+                )}
 
-                                <img
-                                    src={getArticleImageSrc(article.thumbnailUrl ?? article.imageUrl, article.level)}
-                                    alt=""
-                                    loading="lazy"
-                                    className="w-28 h-20 object-cover rounded-xl shrink-0"
-                                />
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-lg font-semibold text-foreground truncate">
-                                            {article.title}
-                                        </span>
-                                        {article.newWordCount > 0 && (
-                                            <span className="text-xs text-foreground/50">
-                                                {t.reading.newForYou(article.newWordCount)}
-                                            </span>
-                                        )}
-                                    </div>
-                                    {article.categoryTitle && (
-                                        <p className="text-sm text-foreground/55 truncate mt-1">
-                                            {article.categoryTitle}
-                                        </p>
-                                    )}
-                                    <div className="flex items-center gap-4 mt-2 text-xs text-foreground/50">
-                                        <span>{t.reading.views(article.viewCount)}</span>
-                                        <span>
-                                            {t.reading.posted(
-                                                formatPostedDate(
-                                                    article.createdAt,
-                                                    language === "fa" ? "fa-IR-u-ca-gregory" : "en-US"
-                                                )
-                                            )}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-2 shrink-0">
-                                    <span
-                                        className="rounded-full px-2.5 py-1 text-xs font-medium"
-                                        style={{ backgroundColor: `${levelColor}1a`, color: levelColor }}
-                                    >
-                                        {article.level}
-                                    </span>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            openArticle(article.id);
-                                        }}
-                                        className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full bg-primary/10 text-primary font-medium hover:bg-primary/20 transition shrink-0"
-                                    >
-                                        {learned ? (
-                                            <>
-                                                <RotateCw className="size-3.5" />
-                                                {t.reading.review}
-                                            </>
-                                        ) : (
-                                            <>
-                                                {t.reading.quiz}
-                                                <ArrowRight className="size-3.5" />
-                                            </>
-                                        )}
-                                    </button>
-                                    <ChevronRight className="size-4 text-foreground/30" />
-                                </div>
-                            </div>
-                        );
-                    })}
-
-                    {articlePage && articles.length === 0 && (
-                        <div className="text-center text-foreground/50 py-10">
-                            {t.reading.notFound}
-                        </div>
-                    )}
+                <div className={cn("mt-6 grid grid-flow-dense gap-5 transition-opacity sm:grid-cols-2", isPlaceholderData && "opacity-60")}>
+                    {articles.map((article, idx) => (
+                        <ArticleCard
+                            key={article.id}
+                            article={article}
+                            featured={idx === featuredIndex}
+                            featuredLabel={t.reading.nextForYou}
+                            quizLabel={t.reading.quiz}
+                            reviewLabel={t.reading.review}
+                            newWordsLabel={t.reading.newForYou}
+                            viewsLabel={t.reading.views}
+                            dateLabel={formatPostedDate(article.createdAt, language === "fa" ? "fa-IR-u-ca-gregory" : "en-US")}
+                            onOpen={openArticle}
+                        />
+                    ))}
                 </div>
 
+                {articlePage && articles.length === 0 && (
+                    <div className="mt-6 rounded-3xl bg-card py-12 text-center shadow-card">
+                        <Newspaper className="mx-auto size-10 text-foreground/25" aria-hidden="true" />
+                        <p className="mt-3 text-foreground/55">{t.reading.notFound}</p>
+                    </div>
+                )}
+
                 {totalPages > 1 && (
-                    <div className="flex justify-center items-center gap-3 pt-6">
+                    <div className="flex items-center justify-center gap-3 pt-8">
                         <button
                             onClick={() => setPage((p) => Math.max(0, p - 1))}
                             disabled={page === 0}
-                            className="px-4 py-2 rounded-lg bg-card shadow-card text-foreground text-sm disabled:opacity-40 hover:bg-accent/50 transition"
+                            className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-border/60 bg-card px-4 py-2 text-sm font-medium text-foreground shadow-card transition hover:bg-accent/50 disabled:cursor-default disabled:opacity-40"
                         >
+                            <ChevronLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
                             {t.reading.previous}
                         </button>
-                        <span className="text-sm text-foreground/60">
+                        <span className="text-sm font-medium tabular-nums text-foreground/60">
                             {t.reading.pageOf(currentPage, totalPages)}
                         </span>
                         <button
                             onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                             disabled={currentPage >= totalPages || isPlaceholderData}
-                            className="px-4 py-2 rounded-lg bg-card shadow-card text-foreground text-sm disabled:opacity-40 hover:bg-accent/50 transition"
+                            className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-border/60 bg-card px-4 py-2 text-sm font-medium text-foreground shadow-card transition hover:bg-accent/50 disabled:cursor-default disabled:opacity-40"
                         >
                             {t.reading.next}
+                            <ChevronRight className="size-4 rtl:rotate-180" aria-hidden="true" />
                         </button>
                     </div>
                 )}

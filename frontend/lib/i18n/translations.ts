@@ -217,6 +217,9 @@ export interface Dictionary {
         savedWaiting: (days: number) => string;
         savedMore: (count: number) => string;
         unbookmark: string;
+        nextForYou: string;
+        levelProgress: (learned: number, total: number) => string;
+        readMore: string;
     };
     dailyWords: {
         title: string;
@@ -293,6 +296,14 @@ export interface Dictionary {
         previousArticle: string;
         nextArticle: string;
         quizNotFinishedHint: string;
+        minRead: (minutes: number) => string;
+        wordsCount: (count: number) => string;
+        steps: { read: string; vocabulary: string; quiz: string };
+        legend: { title: string; word: string; phrase: string; idiom: string };
+        tapHint: string;
+        close: string;
+        textSize: { label: string; smaller: string; larger: string };
+        progress: (done: number, total: number) => string;
         quiz: {
             title: string;
             ready: string;
@@ -974,6 +985,9 @@ const en: Dictionary = {
         savedWaiting: (days: number) => `Waiting ${days} days`,
         savedMore: (count: number) => `+${count} more`,
         unbookmark: "Remove bookmark",
+        nextForYou: "Up next for you",
+        levelProgress: (learned: number, total: number) => `${learned} of ${total} texts learned`,
+        readMore: "Start reading",
     },
     dailyWords: {
         title: "Daily Words",
@@ -1050,6 +1064,14 @@ const en: Dictionary = {
         previousArticle: "Previous",
         nextArticle: "Next",
         quizNotFinishedHint: "Quiz not finished",
+        minRead: (minutes: number) => `${minutes} min read`,
+        wordsCount: (count: number) => `${count} words`,
+        steps: { read: "Read", vocabulary: "Vocabulary", quiz: "Quiz" },
+        legend: { title: "Highlight guide", word: "Word", phrase: "Noun-verb phrase", idiom: "Idiom" },
+        tapHint: "Tap a highlighted word to see what it means.",
+        close: "Close",
+        textSize: { label: "Text size", smaller: "Smaller text", larger: "Larger text" },
+        progress: (done: number, total: number) => `${done} of ${total} steps`,
         quiz: {
             title: "Quiz",
             ready: "Ready to check your understanding? Start the quiz for this article.",
@@ -1803,6 +1825,9 @@ const fa: Dictionary = {
         savedWaiting: (days: number) => `${days} روز در انتظار`,
         savedMore: (count: number) => `${count} مقاله دیگر`,
         unbookmark: "حذف نشان",
+        nextForYou: "پیشنهاد بعدی برای شما",
+        levelProgress: (learned: number, total: number) => `${learned} از ${total} متن خوانده شد`,
+        readMore: "شروع خواندن",
     },
     dailyWords: {
         title: "واژه‌های روزانه",
@@ -1879,6 +1904,14 @@ const fa: Dictionary = {
         previousArticle: "قبلی",
         nextArticle: "بعدی",
         quizNotFinishedHint: "آزمون کامل نشده",
+        minRead: (minutes: number) => `${minutes} دقیقه مطالعه`,
+        wordsCount: (count: number) => `${count} کلمه`,
+        steps: { read: "خواندن", vocabulary: "واژگان", quiz: "آزمون" },
+        legend: { title: "راهنمای هایلایت", word: "کلمه", phrase: "ترکیب اسم و فعل", idiom: "اصطلاح" },
+        tapHint: "روی کلمه‌های هایلایت‌شده بزنید تا معنی‌شان را ببینید.",
+        close: "بستن",
+        textSize: { label: "اندازه متن", smaller: "متن کوچک‌تر", larger: "متن بزرگ‌تر" },
+        progress: (done: number, total: number) => `${done} از ${total} مرحله`,
         quiz: {
             title: "آزمون",
             ready: "آماده‌اید درک خود را بسنجید؟ آزمون این مقاله را شروع کنید.",

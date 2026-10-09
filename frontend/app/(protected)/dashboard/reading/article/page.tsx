@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, BookOpen, Bookmark, BookmarkCheck, Calendar, Check, ChevronLeft, ChevronRight, Eye, Lightbulb, Play, X } from "lucide-react";
+import { ArrowRight, BookOpen, Bookmark, BookmarkCheck, Calendar, Check, ChevronLeft, ChevronRight, Clock, Eye, Lightbulb, Minus, Play, Plus, X } from "lucide-react";
 import CircularProgress from "@/componenets/CircularProgress";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -32,6 +32,7 @@ import {
 import Loading from "@/componenets/Loading";
 import DictionaryPanel from "@/componenets/DictionaryPanel";
 import { getArticleImageSrc } from "@/lib/readingImages";
+import { getLevelMeta } from "@/componenets/learning/levelMeta";
 import { useI18n } from "@/componenets/I18nProvider";
 
 const GENDER_COLORS: Record<string, string> = {
@@ -51,6 +52,16 @@ const pillPrimary =
     "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default disabled:opacity-50";
 const pillSmall =
     "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full px-3.5 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default";
+
+/** Reading text sizes (static class names so Tailwind keeps them). The learner's choice is remembered in this browser. */
+const TEXT_SIZES = [
+    "text-base leading-8",
+    "text-[1.15rem] leading-9",
+    "text-[1.35rem] leading-[2.6rem]",
+    "text-[1.6rem] leading-[3rem]",
+] as const;
+const DEFAULT_TEXT_SIZE = 1;
+const TEXT_SIZE_KEY = "reading.textSize";
 
 type Segment =
     | { kind: "annotation"; text: string; annotation: Annotation }
@@ -130,9 +141,11 @@ function ArticleContent({
     annotations,
     activeAnnotationId,
     tappedLemmas,
+    sizeClass,
     onAnnotationClick,
     onWordClick,
 }: Readonly<{
+    sizeClass: string;
     content: string;
     tokens: ArticleToken[];
     annotations: Annotation[];
@@ -147,7 +160,7 @@ function ArticleContent({
     );
 
     return (
-        <p dir="ltr" className="whitespace-pre-line text-left text-lg leading-8 text-foreground/90">
+        <p dir="ltr" className={cn("mx-auto max-w-[68ch] whitespace-pre-line text-left text-foreground/90 transition-[font-size,line-height]", sizeClass)}>
             {segments.map((segment, idx) => {
                 if (segment.kind === "plain") return <span key={idx}>{segment.text}</span>;
 
@@ -184,12 +197,17 @@ function ArticleContent({
 function AnnotationPopup({
     annotation,
     onSave,
+    onClose,
     isSaved,
-}: Readonly<{ annotation: Annotation; onSave: () => void; isSaved: boolean }>) {
+}: Readonly<{ annotation: Annotation; onSave: () => void; onClose: () => void; isSaved: boolean }>) {
     const { t } = useI18n();
     return (
-        <div className="anim-fade-up flex flex-wrap items-start justify-between gap-4 rounded-2xl border-s-4 border-primary bg-primary/[0.06] p-4 sm:p-5">
-            <div className="min-w-0 space-y-1.5">
+        <div
+            role="dialog"
+            aria-label={annotation.lemma}
+            className="anim-fade-up fixed inset-x-3 bottom-3 z-40 mx-auto flex max-w-2xl flex-wrap items-start justify-between gap-4 rounded-3xl border-s-4 border-primary bg-card p-4 shadow-2xl ring-1 ring-border sm:p-5"
+        >
+            <div className="min-w-0 flex-1 space-y-1.5">
                 {annotation.type === "WORD" && (
                     <>
                         <div className="flex flex-wrap items-center gap-2">
@@ -230,15 +248,25 @@ function AnnotationPopup({
                 )}
             </div>
 
-            <button
-                type="button"
-                disabled={isSaved}
-                onClick={onSave}
-                className={cn(pillSmall, "py-2", isSaved ? "border border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400" : "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90")}
-            >
-                {isSaved ? <Check className="mr-1 size-3.5" strokeWidth={3} aria-hidden="true" /> : <Bookmark className="mr-1 size-3.5" aria-hidden="true" />}
-                {isSaved ? t.readingArticle.saved : t.readingArticle.save}
-            </button>
+            <div className="flex shrink-0 items-center gap-2">
+                <button
+                    type="button"
+                    disabled={isSaved}
+                    onClick={onSave}
+                    className={cn(pillSmall, "py-2", isSaved ? "border border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400" : "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90")}
+                >
+                    {isSaved ? <Check className="mr-1 size-3.5" strokeWidth={3} aria-hidden="true" /> : <Bookmark className="mr-1 size-3.5" aria-hidden="true" />}
+                    {isSaved ? t.readingArticle.saved : t.readingArticle.save}
+                </button>
+                <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label={t.readingArticle.close}
+                    className="flex size-8 cursor-pointer items-center justify-center rounded-full bg-foreground/[0.06] text-foreground/60 transition hover:bg-foreground/10 hover:text-foreground"
+                >
+                    <X className="size-4" aria-hidden="true" />
+                </button>
+            </div>
         </div>
     );
 }
@@ -264,8 +292,8 @@ function GlossarySection({
     if (glossary.length === 0) return null;
 
     return (
-        <section className="overflow-hidden rounded-[10px] bg-card shadow-card">
-            <div className="flex items-center gap-3 px-6 pb-4 pt-6 sm:px-8">
+        <section id="step-vocab" className="scroll-mt-24 overflow-hidden rounded-3xl bg-card shadow-card">
+            <div className="flex items-center gap-3 bg-learning-vocabulary/[0.08] px-6 pb-4 pt-6 sm:px-8">
                 <span className="flex size-10 items-center justify-center rounded-xl bg-learning-vocabulary/15">
                     <Lightbulb className="size-5 text-learning-vocabulary" aria-hidden="true" />
                 </span>
@@ -274,13 +302,13 @@ function GlossarySection({
                     <p className="text-sm text-foreground/60">{t.readingArticle.keyVocabularySubtitle}</p>
                 </div>
             </div>
-            <ul className="divide-y divide-border/60 border-t border-border/60">
+            <ul className="grid gap-3 p-5 sm:grid-cols-2 sm:p-6">
                 {glossary.map((v) => {
                     const isSaved = savedLemmas.has(v.word);
                     return (
-                        <li key={v.word} className="flex items-center justify-between gap-4 px-6 py-3.5 sm:px-8">
+                        <li key={v.word} className={cn("flex items-center justify-between gap-3 rounded-2xl border p-4 transition", isSaved ? "border-green-500/30 bg-green-500/[0.06]" : "border-border/60 bg-background hover:border-learning-vocabulary/50 hover:shadow-card")}>
                             <div className="min-w-0">
-                                <span className="font-semibold text-foreground">{v.word}</span>
+                                <span className="font-bold text-foreground">{v.word}</span>
                                 <p className="mt-0.5 text-sm text-foreground/60">{v.meaning}</p>
                             </div>
                             <button
@@ -324,6 +352,8 @@ interface QuizState {
     selectedAnswer: string;
     feedback: AnswerFeedbackResponse | null;
     submitting: boolean;
+    /** Right/wrong per answered question (index = question position), for the progress dots. */
+    correctness: boolean[];
 }
 
 interface ResultsState {
@@ -361,6 +391,7 @@ function QuizSection({
                     selectedAnswer: "",
                     feedback: null,
                     submitting: false,
+                    correctness: [],
                 });
                 setPhase("active");
             })
@@ -374,7 +405,7 @@ function QuizSection({
         setQuiz({ ...quiz, submitting: true });
         submitAnswer(quiz.attemptId, { questionId: question.id, answer: quiz.selectedAnswer })
             .then((res) => {
-                setQuiz((prev) => (prev ? { ...prev, feedback: res.data, submitting: false } : prev));
+                setQuiz((prev) => (prev ? { ...prev, feedback: res.data, submitting: false, correctness: [...prev.correctness.slice(0, prev.currentIndex), res.data.correct] } : prev));
                 if (res.data.relatedLemma) {
                     const relatedAnnotation = article.annotations.find((a) => a.lemma === res.data.relatedLemma);
                     if (relatedAnnotation && !savedLemmas.has(relatedAnnotation.lemma)) {
@@ -412,8 +443,8 @@ function QuizSection({
     const activeQuestion = quiz?.questions[quiz.currentIndex];
 
     return (
-        <section className="rounded-[10px] bg-card p-6 shadow-card sm:p-8">
-            <div className="flex items-center justify-between gap-3">
+        <section id="step-quiz" className="scroll-mt-24 overflow-hidden rounded-3xl bg-card shadow-card">
+            <div className="flex items-center justify-between gap-3 bg-learning-reading/[0.08] px-6 py-5 sm:px-8">
                 <h2 className="flex items-center gap-3 text-xl font-bold text-foreground">
                     <span className="flex size-10 items-center justify-center rounded-xl bg-learning-reading/15">
                         <BookOpen className="size-5 text-learning-reading" aria-hidden="true" />
@@ -424,6 +455,7 @@ function QuizSection({
                     <span className="text-sm font-medium text-foreground/55">{t.readingArticle.quiz.questionOf(quiz.currentIndex + 1, quiz.questions.length)}</span>
                 )}
             </div>
+            <div className="p-6 sm:p-8">
 
             {phase === "idle" && (
                 <div className="mt-5 space-y-4">
@@ -439,10 +471,23 @@ function QuizSection({
 
             {phase === "active" && quiz && activeQuestion && (
                 <div className="mt-5">
-                    <div className="flex gap-1.5" role="progressbar" aria-valuenow={quiz.currentIndex + 1} aria-valuemin={1} aria-valuemax={quiz.questions.length}>
-                        {quiz.questions.map((q, i) => (
-                            <span key={q.id} className={cn("h-1.5 flex-1 rounded-full transition-colors", i <= quiz.currentIndex ? "bg-primary" : "bg-foreground/10")} />
-                        ))}
+                    <div className="flex items-center gap-2" role="progressbar" aria-valuenow={quiz.currentIndex + 1} aria-valuemin={1} aria-valuemax={quiz.questions.length}>
+                        {quiz.questions.map((q, i) => {
+                            const result = quiz.correctness[i];
+                            const current = i === quiz.currentIndex;
+                            return (
+                                <span
+                                    key={q.id}
+                                    className={cn(
+                                        "flex size-8 items-center justify-center rounded-full text-xs font-extrabold transition",
+                                        result === undefined ? "border-2 border-dashed border-primary/40 text-primary" : result ? "bg-green-500 text-white" : "bg-red-500 text-white",
+                                        current && "ring-2 ring-primary ring-offset-2 ring-offset-card",
+                                    )}
+                                >
+                                    {result === undefined ? i + 1 : result ? <Check className="size-4" strokeWidth={3} aria-hidden="true" /> : <X className="size-4" strokeWidth={3} aria-hidden="true" />}
+                                </span>
+                            );
+                        })}
                     </div>
 
                     <div className="anim-fade-up mt-6" key={quiz.currentIndex}>
@@ -526,8 +571,11 @@ function QuizSection({
             )}
 
             {phase === "results" && results && (
-                <div className="anim-fade-up mt-6">
-                    <div className="flex flex-wrap items-start justify-center gap-10">
+                <div className="anim-fade-up">
+                    <p className="text-center text-2xl font-extrabold text-foreground">
+                        {(results.comprehensionScore + results.vocabScore) / 2 >= 70 ? "🎉" : "💪"} {t.readingArticle.quiz.title}
+                    </p>
+                    <div className="mt-5 flex flex-wrap items-start justify-center gap-10 rounded-3xl bg-learning-reading/[0.06] p-6">
                         {[
                             { value: results.comprehensionScore, label: t.readingArticle.quiz.comprehension },
                             { value: results.vocabScore, label: t.readingArticle.quiz.vocabInContext },
@@ -563,12 +611,91 @@ function QuizSection({
                     </div>
                 </div>
             )}
+            </div>
         </section>
     );
 }
 
 function formatPostedDate(iso: string, locale: string): string {
     return new Date(iso).toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
+}
+
+interface StepInfo {
+    id: string;
+    label: string;
+    done: boolean;
+}
+
+/**
+ * Sticky "Lesen → Wortschatz → Quiz" tracker: shows where the learner is in the article, ticks a step off as it is
+ * done, jumps to a step when clicked, and fills a thin bar with how far the text has been read.
+ */
+function ReadingStepper({ steps, progress, label }: Readonly<{ steps: StepInfo[]; progress: number; label: string }>) {
+    return (
+        <nav aria-label={label} className="sticky top-2 z-20 overflow-hidden rounded-2xl bg-card/95 shadow-card ring-1 ring-border/60 backdrop-blur">
+            <ol className="flex items-center gap-1 p-2">
+                {steps.map((step, i) => (
+                    <li key={step.id} className="flex min-w-0 flex-1 items-center gap-1">
+                        <button
+                            type="button"
+                            onClick={() => document.getElementById(step.id)?.scrollIntoView?.({ block: "start", behavior: "smooth" })}
+                            className="flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl px-2 py-1.5 text-sm font-semibold transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                        >
+                            <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-extrabold", step.done ? "bg-green-500 text-white" : "bg-primary/10 text-primary")}>
+                                {step.done ? <Check className="size-3.5" strokeWidth={3} aria-hidden="true" /> : i + 1}
+                            </span>
+                            <span className={cn("truncate", step.done ? "text-foreground" : "text-foreground/70")}>{step.label}</span>
+                        </button>
+                        {i < steps.length - 1 && <ChevronRight className="size-4 shrink-0 text-foreground/25 rtl:rotate-180" aria-hidden="true" />}
+                    </li>
+                ))}
+            </ol>
+            <div className="h-1 bg-foreground/10" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)}>
+                <div className="h-full bg-primary transition-[width] duration-200" style={{ width: `${progress * 100}%` }} />
+            </div>
+        </nav>
+    );
+}
+
+/** A− / Aa / A+ control for the reading text size. */
+function TextSizeControl({ size, onChange }: Readonly<{ size: number; onChange: (size: number) => void }>) {
+    const { t } = useI18n();
+    const btn =
+        "flex size-8 cursor-pointer items-center justify-center rounded-full transition hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default disabled:opacity-35 disabled:hover:bg-transparent";
+    return (
+        <div role="group" aria-label={t.readingArticle.textSize.label} className="flex shrink-0 items-center rounded-full bg-accent/70 p-0.5 text-foreground/80">
+            <button type="button" className={btn} disabled={size <= 0} aria-label={t.readingArticle.textSize.smaller} onClick={() => onChange(size - 1)}>
+                <Minus className="size-4" aria-hidden="true" />
+            </button>
+            <span aria-hidden="true" className="px-1 text-sm font-extrabold">Aa</span>
+            <button type="button" className={btn} disabled={size >= TEXT_SIZES.length - 1} aria-label={t.readingArticle.textSize.larger} onClick={() => onChange(size + 1)}>
+                <Plus className="size-4" aria-hidden="true" />
+            </button>
+        </div>
+    );
+}
+
+/** What the three highlight styles in the text mean. */
+function HighlightLegend() {
+    const { t } = useI18n();
+    const items: { type: Annotation["type"]; label: string }[] = [
+        { type: "WORD", label: t.readingArticle.legend.word },
+        { type: "NOMEN_VERB_VERBINDUNG", label: t.readingArticle.legend.phrase },
+        { type: "REDEWENDUNG", label: t.readingArticle.legend.idiom },
+    ];
+    return (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-accent/50 px-4 py-2.5 text-xs text-foreground/70">
+            <span className="font-semibold">{t.readingArticle.tapHint}</span>
+            <ul aria-label={t.readingArticle.legend.title} className="flex flex-wrap items-center gap-3">
+                {items.map((item) => (
+                    <li key={item.type} className="flex items-center gap-1.5">
+                        <mark className={cn("rounded-sm px-2 text-foreground", ANNOTATION_STYLES[item.type])}>Aa</mark>
+                        {item.label}
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
 }
 
 /**
@@ -643,6 +770,26 @@ function ReadingArticleDetailContent({ articleId }: Readonly<{ articleId: string
     const [tappedLemmas, setTappedLemmas] = useState<Set<string>>(new Set());
     const [savedLemmas, setSavedLemmas] = useState<Set<string>>(new Set());
     const [activeDictionaryLemma, setActiveDictionaryLemma] = useState<string | null>(null);
+    const articleRef = useRef<HTMLElement>(null);
+    const [textSize, setTextSizeState] = useState(DEFAULT_TEXT_SIZE);
+    useEffect(() => {
+        try {
+            const stored = Number(window.localStorage.getItem(TEXT_SIZE_KEY));
+            if (Number.isInteger(stored) && stored >= 0 && stored < TEXT_SIZES.length && window.localStorage.getItem(TEXT_SIZE_KEY) !== null) setTextSizeState(stored);
+        } catch {
+            // Storage can be blocked (private window); the default size is fine.
+        }
+    }, []);
+    const setTextSize = (size: number) => {
+        setTextSizeState(size);
+        try {
+            window.localStorage.setItem(TEXT_SIZE_KEY, String(size));
+        } catch {
+            // Not remembered, still applied.
+        }
+    };
+    // How much of the text has scrolled past the bottom of the screen (0..1).
+    const [readProgress, setReadProgress] = useState(0);
 
     // Full content (text, tokens, annotations, vocabulary) is only fetched here, once per article, and
     // then served from the cache on later opens. Quiz questions are fetched separately on "Start quiz".
@@ -679,6 +826,28 @@ function ReadingArticleDetailContent({ articleId }: Readonly<{ articleId: string
                 // Cosmetic counter - never block reading on it.
             });
     }, [articleId]);
+
+    useEffect(() => {
+        let frame = 0;
+        const update = () => {
+            frame = 0;
+            const el = articleRef.current;
+            if (!el) return;
+            const rect = el.getBoundingClientRect();
+            setReadProgress(Math.min(1, Math.max(0, (window.innerHeight - rect.top) / rect.height)));
+        };
+        const onScroll = () => {
+            if (!frame) frame = requestAnimationFrame(update);
+        };
+        update();
+        window.addEventListener("scroll", onScroll, { passive: true });
+        window.addEventListener("resize", onScroll);
+        return () => {
+            window.removeEventListener("scroll", onScroll);
+            window.removeEventListener("resize", onScroll);
+            if (frame) cancelAnimationFrame(frame);
+        };
+    }, [article]);
 
     const message = (text: string) => (
         <div className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10">
@@ -752,6 +921,15 @@ function ReadingArticleDetailContent({ articleId }: Readonly<{ articleId: string
     };
 
     const chip = "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold";
+    const levelColor = getLevelMeta(article.level).color;
+    const wordTotal = article.content.split(/\s+/).filter(Boolean).length;
+    const minutes = Math.max(1, Math.round(wordTotal / 120));
+    const hasVocabulary = article.keyVocabulary.length > 0;
+    const steps: StepInfo[] = [
+        { id: "step-read", label: t.readingArticle.steps.read, done: learned || readProgress >= 0.95 },
+        ...(hasVocabulary ? [{ id: "step-vocab", label: t.readingArticle.steps.vocabulary, done: savedLemmas.size > 0 }] : []),
+        { id: "step-quiz", label: t.readingArticle.steps.quiz, done: article.quizCompleted },
+    ];
 
     return (
         <div className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10">
@@ -765,10 +943,12 @@ function ReadingArticleDetailContent({ articleId }: Readonly<{ articleId: string
                     </div>
                 </div>
 
-                <article className="overflow-hidden rounded-[10px] bg-card shadow-card">
+                <ReadingStepper steps={steps} progress={readProgress} label={t.readingArticle.progress(steps.filter((step) => step.done).length, steps.length)} />
+
+                <article id="step-read" ref={articleRef} className="scroll-mt-24 overflow-hidden rounded-3xl bg-card shadow-card">
                     <div className="relative">
-                        <img src={getArticleImageSrc(article.imageUrl, article.level)} alt="" className="h-56 w-full object-cover sm:h-72" />
-                        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-card to-transparent" />
+                        <img src={getArticleImageSrc(article.imageUrl, article.level)} alt="" className="h-72 w-full object-cover sm:h-96" />
+                        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                         <button
                             type="button"
                             disabled={updatingBookmark}
@@ -780,22 +960,24 @@ function ReadingArticleDetailContent({ articleId }: Readonly<{ articleId: string
                         >
                             {article.bookmarked ? <BookmarkCheck className="size-5 text-primary" /> : <Bookmark className="size-5" />}
                         </button>
-                    </div>
 
-                    <div className="space-y-6 px-6 pb-8 sm:px-10">
-                        <header className="-mt-6 relative">
+                        <header className="absolute inset-x-0 bottom-0 p-5 text-white sm:p-8">
                             <div className="flex flex-wrap items-center gap-2">
-                                <span className={`${chip} bg-primary/10 text-primary`}>{article.level}</span>
-                                {article.categoryTitle && <span className={`${chip} bg-foreground/[0.06] text-foreground/65`}>{article.categoryTitle}</span>}
+                                <span className={`${chip} text-white shadow-sm`} style={{ backgroundColor: levelColor }}>{article.level}</span>
+                                {article.categoryTitle && <span className={`${chip} bg-white/20 text-white backdrop-blur-sm`}>{article.categoryTitle}</span>}
                                 {learned && (
-                                    <span className={`${chip} bg-green-500/10 text-green-700 dark:text-green-400`}>
+                                    <span className={`${chip} bg-green-500 text-white`}>
                                         <Check className="size-3" strokeWidth={3} aria-hidden="true" />
                                         {t.readingArticle.learned}
                                     </span>
                                 )}
                             </div>
-                            <h1 className="mt-3 text-3xl font-bold leading-tight text-foreground sm:text-4xl">{article.title}</h1>
-                            <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-foreground/55">
+                            <h1 className="mt-3 text-3xl font-extrabold leading-tight drop-shadow sm:text-4xl">{article.title}</h1>
+                            <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-white/80">
+                                <span className="inline-flex items-center gap-1.5">
+                                    <Clock className="size-4" aria-hidden="true" />
+                                    {t.readingArticle.minRead(minutes)} · {t.readingArticle.wordsCount(wordTotal)}
+                                </span>
                                 <span className="inline-flex items-center gap-1.5">
                                     <Eye className="size-4" aria-hidden="true" />
                                     {t.readingArticle.views(viewCount ?? article.viewCount).replace("👁 ", "")}
@@ -806,6 +988,15 @@ function ReadingArticleDetailContent({ articleId }: Readonly<{ articleId: string
                                 </span>
                             </p>
                         </header>
+                    </div>
+
+                    <div className="space-y-6 px-6 py-8 sm:px-10">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="min-w-0 flex-1 basis-72">
+                                <HighlightLegend />
+                            </div>
+                            <TextSizeControl size={textSize} onChange={setTextSize} />
+                        </div>
 
                         <ArticleContent
                             content={article.content}
@@ -813,6 +1004,7 @@ function ReadingArticleDetailContent({ articleId }: Readonly<{ articleId: string
                             annotations={article.annotations}
                             activeAnnotationId={activeAnnotation?.id ?? null}
                             tappedLemmas={tappedLemmas}
+                            sizeClass={TEXT_SIZES[textSize]}
                             onAnnotationClick={handleAnnotationClick}
                             onWordClick={(lemma) => setActiveDictionaryLemma(lemma)}
                         />
@@ -822,6 +1014,7 @@ function ReadingArticleDetailContent({ articleId }: Readonly<{ articleId: string
                                 annotation={activeAnnotation}
                                 isSaved={savedLemmas.has(activeAnnotation.lemma)}
                                 onSave={() => handleSaveWord(activeAnnotation)}
+                                onClose={() => setActiveAnnotation(null)}
                             />
                         )}
 
