@@ -28,6 +28,7 @@ import Loading from "@/componenets/Loading";
 import AudioPlayer from "@/componenets/AudioPlayer";
 import LessonMarkdown from "@/componenets/LessonMarkdown";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
+import LesenTextPanel from "@/componenets/exam/LesenTextPanel";
 import LesenTeil1Board from "@/componenets/exam/LesenTeil1Board";
 import LesenTeil3Board, { NO_AD_ANSWER as NO_AD_ANSWER_VALUE } from "@/componenets/exam/LesenTeil3Board";
 import TranscriptModal from "@/componenets/exam/TranscriptModal";
@@ -433,6 +434,10 @@ function QuestionSelect({
     );
 }
 
+/** Leseverstehen Teil 2: one text (with a marker) and the multiple-choice questions below it. */
+const isLesenMultipleChoice = (exercise: ExamExercisePublicResponse) =>
+    exercise.section === "LESEVERSTEHEN" && exercise.taskType === "MULTIPLE_CHOICE";
+
 /** Shared "mark as completed" state/handler for both quiz flows. */
 function useExerciseCompletion(exercise: ExamExercisePublicResponse) {
     const [completed, setCompleted] = useState(exercise.completed);
@@ -634,6 +639,7 @@ function QuestionInput({
     taskType,
     selectedAnswer,
     disabled,
+    feedback,
     onSelect,
 }: Readonly<{
     question: ExamQuestionPublic;
@@ -642,6 +648,8 @@ function QuestionInput({
     taskType: string;
     selectedAnswer: string;
     disabled: boolean;
+    /** Once answered: the right option turns green, a wrong pick red. */
+    feedback?: ExamAnswerFeedbackResponse | null;
     onSelect: (value: string) => void;
 }>) {
     const options =
@@ -655,6 +663,8 @@ function QuestionInput({
         <div className="space-y-2.5">
             {options.map((option, i) => {
                 const isSelected = selectedAnswer === option.value;
+                const isRight = Boolean(feedback) && option.value === feedback?.correctAnswer;
+                const isWrong = Boolean(feedback) && isSelected && !isRight;
                 return (
                     <button
                         key={option.value}
@@ -663,11 +673,17 @@ function QuestionInput({
                         onClick={() => onSelect(option.value)}
                         className={cn(
                             "flex w-full cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm text-foreground transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default",
-                            isSelected ? "border-primary bg-primary/10" : "border-border/60 bg-background hover:-translate-y-0.5 hover:border-primary/50 hover:bg-accent/50 hover:shadow-card disabled:opacity-60 disabled:hover:translate-y-0",
+                            isRight
+                                ? "anim-pop border-green-500 bg-green-500/10"
+                                : isWrong
+                                    ? "anim-shake border-red-500 bg-red-500/10"
+                                    : isSelected
+                                        ? "border-primary bg-primary/10"
+                                        : "border-border/60 bg-background hover:-translate-y-0.5 hover:border-primary/50 hover:bg-accent/50 hover:shadow-card disabled:opacity-60 disabled:hover:translate-y-0",
                         )}
                     >
-                        <span aria-hidden="true" className={cn("flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold", isSelected ? "bg-primary text-primary-foreground" : "bg-accent text-primary")}>
-                            {String.fromCharCode(65 + i)}
+                        <span aria-hidden="true" className={cn("flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold", isRight ? "bg-green-500 text-white" : isWrong ? "bg-red-500 text-white" : isSelected ? "bg-primary text-primary-foreground" : "bg-accent text-primary")}>
+                            {isRight ? <Check className="size-4" strokeWidth={3} /> : isWrong ? <X className="size-4" strokeWidth={3} /> : String.fromCharCode(65 + i)}
                         </span>
                         <span className="min-w-0 flex-1 break-words">{option.label}</span>
                     </button>
@@ -811,14 +827,38 @@ function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse 
 
     const currentPassage =
         exercise.taskType === "MATCHING" && question.sectionIndex != null ? quiz.passages[question.sectionIndex] : null;
+    const isReadingMc = isLesenMultipleChoice(exercise);
 
-    return (
+    const card = (
         <div className="rounded-[10px] bg-card p-6 shadow-card sm:p-8 space-y-3">
-            <div className="flex gap-1.5" role="progressbar" aria-valuenow={quiz.currentIndex + 1} aria-valuemin={1} aria-valuemax={quiz.questions.length}>
-                {quiz.questions.map((q, i) => (
-                    <span key={q.id} className={cn("h-1.5 flex-1 rounded-full transition-colors", i <= quiz.currentIndex ? "bg-primary" : "bg-foreground/10")} />
-                ))}
-            </div>
+            {isReadingMc ? (
+                <nav aria-label="Fragen" className="flex flex-wrap items-center gap-2">
+                    {quiz.questions.map((q, i) => {
+                        const result = quiz.items.find((item) => item.question.id === q.id)?.feedback;
+                        const current = i === quiz.currentIndex;
+                        return (
+                            <span
+                                key={q.id}
+                                aria-current={current ? "step" : undefined}
+                                aria-label={`Frage ${q.questionNumber ?? i + 1}${result ? (result.correct ? ", richtig" : ", falsch") : ""}`}
+                                className={cn(
+                                    "flex size-8 items-center justify-center rounded-full text-xs font-extrabold transition",
+                                    result ? (result.correct ? "bg-green-500 text-white" : "bg-red-500 text-white") : "border-2 border-dashed border-primary/40 text-primary",
+                                    current && "ring-2 ring-primary ring-offset-2 ring-offset-card",
+                                )}
+                            >
+                                {result ? (result.correct ? <Check className="size-4" strokeWidth={3} /> : <X className="size-4" strokeWidth={3} />) : (q.questionNumber ?? i + 1)}
+                            </span>
+                        );
+                    })}
+                </nav>
+            ) : (
+                <div className="flex gap-1.5" role="progressbar" aria-valuenow={quiz.currentIndex + 1} aria-valuemin={1} aria-valuemax={quiz.questions.length}>
+                    {quiz.questions.map((q, i) => (
+                        <span key={q.id} className={cn("h-1.5 flex-1 rounded-full transition-colors", i <= quiz.currentIndex ? "bg-primary" : "bg-foreground/10")} />
+                    ))}
+                </div>
+            )}
             <p className="pt-1 text-xs font-semibold uppercase tracking-wide text-primary">
                 {question.questionNumber != null && question.questionNumber !== quiz.currentIndex + 1
                     ? `Aufgabe ${question.questionNumber} (${quiz.currentIndex + 1} von ${quiz.questions.length})`
@@ -833,9 +873,11 @@ function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse 
                 </div>
             )}
 
-            <p className="font-medium text-foreground">{question.prompt}</p>
+            <p className={isReadingMc ? "text-lg font-bold leading-snug text-foreground" : "font-medium text-foreground"}>{question.prompt}</p>
 
             <QuestionInput
+                key={question.id}
+                feedback={quiz.feedback}
                 question={question}
                 answerOptions={quiz.answerOptions}
                 answerOptionLabels={quiz.answerOptionLabels}
@@ -862,6 +904,14 @@ function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse 
                     </button>
                 )}
             </div>
+        </div>
+    );
+
+    if (!isReadingMc) return card;
+    return (
+        <div className="space-y-5">
+            <LesenTextPanel passages={quiz.passages} />
+            <div key={question.id} className="anim-slide-in">{card}</div>
         </div>
     );
 }
@@ -1188,7 +1238,7 @@ function ExamExerciseContent() {
                             <AnswerOptionsPoolView answerOptions={exercise.answerOptions ?? []} answerOptionLabels={exercise.answerOptionLabels ?? []} taskType={exercise.taskType} />
                         )}
                         {/* Lesen Teil 1 (headings) and Teil 3 (ads) show their texts inside the matching board once the exercise is started. */}
-                        {exercise.taskType !== "SITUATION_MATCHING" && exercise.taskType !== "MATCHING" && (
+                        {exercise.taskType !== "SITUATION_MATCHING" && exercise.taskType !== "MATCHING" && !isLesenMultipleChoice(exercise) && (
                             <PassagesView passages={exercise.passages} taskType={exercise.taskType ?? ""} />
                         )}
                     </>
