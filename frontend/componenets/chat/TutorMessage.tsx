@@ -74,9 +74,10 @@ export default function TutorMessage({ message, sessionId }: Readonly<TutorMessa
         <div className="flex max-w-[92%] items-start gap-3">
             <TutorAvatar className="mt-0.5" />
             <div className="min-w-0">
+                <p className="mb-1 ps-1 text-xs font-semibold text-primary">{t.chat.yourAiTutor}</p>
                 <div
                     ref={containerRef}
-                    className="select-text space-y-2 break-words rounded-3xl rounded-tl-md bg-card px-5 py-3.5 text-sm leading-relaxed text-foreground shadow-card [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_strong]:font-semibold [&_code]:rounded [&_code]:bg-accent [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs"
+                    className="select-text space-y-2 break-words rounded-3xl rounded-tl-md bg-card px-5 py-3.5 text-sm leading-relaxed text-foreground shadow-card ring-1 ring-primary/10 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_strong]:font-semibold [&_code]:rounded [&_code]:bg-accent [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs"
                 >
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
                 </div>

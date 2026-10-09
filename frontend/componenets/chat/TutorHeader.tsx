@@ -56,7 +56,8 @@ export default function TutorHeader({ title, onRename, onDelete }: Readonly<Tuto
     };
 
     return (
-        <div className="flex items-center justify-between gap-2 bg-card/70 px-4 py-3 shadow-sm backdrop-blur sm:px-6">
+        <div className="relative flex items-center justify-between gap-2 overflow-hidden bg-card/80 px-4 py-3 shadow-sm backdrop-blur sm:px-6">
+            <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,hsl(228_78%_44%),hsl(216_100%_62%))]" />
             <div className="flex min-w-0 items-center gap-3">
                 <TutorAvatar />
                 {renaming ? (
@@ -81,7 +82,10 @@ export default function TutorHeader({ title, onRename, onDelete }: Readonly<Tuto
                         </button>
                     </form>
                 ) : (
-                    <h1 className="truncate text-base font-semibold text-foreground">{title ?? t.chat.yourAiTutor}</h1>
+                    <div className="min-w-0">
+                        <h1 className="truncate text-base font-semibold leading-tight text-foreground">{title ?? t.chat.yourAiTutor}</h1>
+                        {title && <p className="truncate text-xs text-foreground/50">{t.chat.yourAiTutor}</p>}
+                    </div>
                 )}
             </div>
 

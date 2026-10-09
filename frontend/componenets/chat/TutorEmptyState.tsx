@@ -26,7 +26,7 @@ export default function TutorEmptyState({ onStarterSelect }: Readonly<TutorEmpty
                     <Sparkles className="size-9" aria-hidden="true" />
                 </span>
             </div>
-            <h2 className="mt-6 text-3xl font-bold text-foreground">{t.chat.emptyState.greeting}</h2>
+            <h2 className="mt-6 bg-[linear-gradient(135deg,hsl(228_78%_44%),hsl(216_100%_62%))] bg-clip-text text-3xl font-extrabold text-transparent sm:text-4xl">{t.chat.emptyState.greeting}</h2>
             <p className="mt-2 max-w-md text-foreground/65">{t.chat.emptyState.intro}</p>
 
             <div className="mt-8 grid w-full grid-cols-1 gap-3 text-left sm:grid-cols-2">
@@ -35,7 +35,7 @@ export default function TutorEmptyState({ onStarterSelect }: Readonly<TutorEmpty
                         key={s.title}
                         type="button"
                         onClick={() => onStarterSelect(s.prompt)}
-                        className={`group flex cursor-pointer flex-col items-start gap-3 rounded-2xl bg-gradient-to-br ${s.tone} p-5 transition duration-200 hover:-translate-y-1 hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50`}
+                        className={`group flex cursor-pointer flex-col items-start gap-3 rounded-2xl bg-gradient-to-br ${s.tone} p-5 transition duration-200 ring-1 ring-border/40 hover:-translate-y-1 hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50`}
                     >
                         <span className={`flex size-10 items-center justify-center rounded-xl ${s.bg}`}>
                             <s.icon className={`size-5 ${s.text}`} aria-hidden="true" />

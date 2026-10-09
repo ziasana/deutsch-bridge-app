@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, MessageCircle } from "lucide-react";
+import { Plus, Trash2, MessageCircle, Sparkles } from "lucide-react";
 import { useI18n } from "@/componenets/I18nProvider";
 import { cn } from "@/lib/utils";
 import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
@@ -31,11 +31,17 @@ export default function TutorSidebar({
 
     return (
         <aside className="flex h-full w-full flex-col bg-card">
-            <div className="p-3">
+            <div className="space-y-3 p-3 pb-2">
+                <div className="flex items-center gap-2.5 px-1 pt-1">
+                    <span aria-hidden="true" className="flex size-8 items-center justify-center rounded-xl bg-[linear-gradient(135deg,hsl(228_78%_44%),hsl(216_100%_62%))] text-white shadow-sm">
+                        <Sparkles className="size-4" />
+                    </span>
+                    <span className="font-bold text-foreground">{t.chat.yourAiTutor}</span>
+                </div>
                 <button
                     type="button"
                     onClick={onNewChat}
-                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,hsl(228_78%_44%),hsl(216_100%_62%))] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                 >
                     <Plus className="size-4" />
                     {t.chat.newChat}
@@ -63,7 +69,7 @@ export default function TutorSidebar({
                                                 type="button"
                                                 onClick={() => onSelect(session.id)}
                                                 className={cn(
-                                                    "block w-full truncate rounded-xl border-l-[3px] px-3 py-2 pr-8 text-left text-sm transition",
+                                                    "block w-full truncate rounded-xl border-l-[3px] px-3 py-2.5 pr-8 text-left text-sm transition",
                                                     active
                                                         ? "border-primary bg-accent font-medium text-primary"
                                                         : "border-transparent text-foreground/75 hover:bg-accent/60",

@@ -30,7 +30,7 @@ export default function AITutorPage() {
     const [thinking, setThinking] = useState(false);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const scrollRef = useRef<HTMLDivElement | null>(null);
-    const composerRef = useRef<HTMLInputElement | null>(null);
+    const composerRef = useRef<HTMLTextAreaElement | null>(null);
     // Set right before we resolve a brand-new chat's session id ourselves, so the reset-on-switch
     // effect below can tell "the in-progress conversation just got its real id" apart from the
     // user actually picking a different chat in the sidebar - only the latter should clear messages.
