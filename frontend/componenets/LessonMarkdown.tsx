@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentPropsWithoutRef } from "react";
+import { createContext, useContext, type ComponentPropsWithoutRef, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -104,12 +104,37 @@ const autoDirComponents = {
     ),
 };
 
-export default function LessonMarkdown({ content, className = "" }: { content: string; className?: string }) {
+/** Lets a caller replace the exam gap badges (`<span data-exam-gap="N">`) with its own element, e.g. a clickable gap. */
+const GapRenderContext = createContext<((gap: number) => ReactNode) | null>(null);
+
+// A stable component (it reads the renderer from context) so the gaps are not remounted on every render.
+function GapAwareSpan({ node, ...props }: ComponentPropsWithoutRef<"span"> & { node?: HastNode }) {
+    void node; // react-markdown's AST node must not reach the DOM element
+    const renderGap = useContext(GapRenderContext);
+    const gap = (props as Record<string, unknown>)["data-exam-gap"];
+    if (renderGap && gap != null && !Number.isNaN(Number(gap))) return <>{renderGap(Number(gap))}</>;
+    return <span {...props} />;
+}
+
+const gapAwareComponents = { ...autoDirComponents, span: GapAwareSpan };
+
+export default function LessonMarkdown({
+    content,
+    className = "",
+    renderGap,
+}: {
+    content: string;
+    className?: string;
+    /** Replaces each exam gap badge with this element (Sprachbausteine Teil 1). */
+    renderGap?: (gap: number) => ReactNode;
+}) {
     return (
-        <div className={`${markdownClassNames} ${className}`}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={autoDirComponents}>
-                {normalizeLessonMarkdown(resolveUploadUrlsInHtml(content))}
-            </ReactMarkdown>
-        </div>
+        <GapRenderContext.Provider value={renderGap ?? null}>
+            <div className={`${markdownClassNames} ${className}`}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={renderGap ? gapAwareComponents : autoDirComponents}>
+                    {normalizeLessonMarkdown(resolveUploadUrlsInHtml(content))}
+                </ReactMarkdown>
+            </div>
+        </GapRenderContext.Provider>
     );
 }
