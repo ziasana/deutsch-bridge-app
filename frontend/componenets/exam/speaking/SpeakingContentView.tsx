@@ -18,7 +18,7 @@ export function PhraseList({ phrases }: Readonly<{ phrases: string[] }>) {
     return (
         <ul className="mt-2 flex flex-wrap gap-2">
             {phrases.map((phrase) => (
-                <li key={phrase} className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                <li key={phrase} className="rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-semibold leading-snug text-primary ring-1 ring-primary/15">
                     {phrase}
                 </li>
             ))}
@@ -28,7 +28,7 @@ export function PhraseList({ phrases }: Readonly<{ phrases: string[] }>) {
 
 function Tip({ text }: Readonly<{ text?: string | null }>) {
     if (!text) return null;
-    return <p className="mt-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-foreground/80">💡 {text}</p>;
+    return <p className="mt-3 rounded-xl border-s-4 border-amber-400 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed text-foreground/80">💡 {text}</p>;
 }
 
 /** The task: what the learner has to talk about. Never hidden. `guide` supplies the four fixed goals of Teil 2. */
@@ -121,8 +121,9 @@ export function SpeakingTipsPanel({ content, guide }: Readonly<HelpProps>) {
             {tips.length > 0 && (
                 <ul className="space-y-3 text-sm text-foreground/85">
                     {tips.map((tip) => (
-                        <li key={tip.title} className="rounded-xl bg-accent/50 p-3">
-                            <span className="font-semibold">💡 {tip.title}.</span> {tip.text}
+                        <li key={tip.title} className="rounded-2xl border-s-4 border-primary bg-card p-3.5 leading-relaxed shadow-card">
+                            <span className="block font-bold text-foreground">💡 {tip.title}</span>
+                            <span className="text-foreground/75">{tip.text}</span>
                         </li>
                     ))}
                 </ul>
@@ -142,7 +143,7 @@ export function SpeakingPhrasesPanel({ content, guide }: Readonly<HelpProps>) {
         return (
             <div className="space-y-3">
                 {topics.map((g) => (
-                    <details key={g.id} className="rounded-xl border border-border/60 p-3">
+                    <details key={g.id} className="rounded-2xl bg-card p-3.5 shadow-card open:ring-1 open:ring-primary/20">
                         <summary className="cursor-pointer text-sm font-semibold text-foreground">{g.title}</summary>
                         <h3 className={`${heading} mt-3`}>Fragen</h3>
                         <ul className={list}>{g.questions.map((q) => <li key={q}>{q}</li>)}</ul>
@@ -154,7 +155,7 @@ export function SpeakingPhrasesPanel({ content, guide }: Readonly<HelpProps>) {
                     </details>
                 ))}
                 {(guide?.usefulPhrases ?? []).length > 0 && (
-                    <div className="rounded-xl border border-border/60 p-3">
+                    <div className="rounded-2xl bg-card p-3.5 shadow-card">
                         <h3 className={heading}>Im Gespräch</h3>
                         <PhraseList phrases={guide?.usefulPhrases ?? []} />
                     </div>
@@ -173,20 +174,20 @@ export function SpeakingPhrasesPanel({ content, guide }: Readonly<HelpProps>) {
     return (
         <div className="space-y-3">
             {extra.length > 0 && (
-                <div className="rounded-xl border border-border/60 p-3">
+                <div className="rounded-2xl bg-card p-3.5 shadow-card">
                     <h3 className={heading}>Passend zu dieser Aufgabe</h3>
                     <PhraseList phrases={extra} />
                 </div>
             )}
             {groups.map((g) => (
-                <div key={g.key} className="rounded-xl border border-border/60 p-3">
+                <div key={g.key} className="rounded-2xl bg-card p-3.5 shadow-card">
                     <h3 className={heading}>{g.title}</h3>
                     <PhraseList phrases={g.phrases} />
                     <Tip text={g.tip} />
                 </div>
             ))}
             {criteria.length > 0 && (
-                <div className="rounded-xl border border-border/60 p-3">
+                <div className="rounded-2xl bg-card p-3.5 shadow-card">
                     <h3 className={heading}>Woran Sie eine gute Einigung erkennen</h3>
                     <ul className={list}>{criteria.map((c) => <li key={c}>{c}</li>)}</ul>
                 </div>
@@ -199,7 +200,7 @@ export function SpeakingPhrasesPanel({ content, guide }: Readonly<HelpProps>) {
 export function SpeakingMistakesPanel({ guide }: Readonly<{ guide?: SpeakingGuideContent | null }>) {
     const mistakes = guide?.commonMistakes ?? [];
     if (mistakes.length === 0) return <p className="text-sm text-foreground/55">Hier gibt es noch keine Einträge.</p>;
-    return <ul className="space-y-2 text-sm text-foreground/85">{mistakes.map((m) => <li key={m} className="rounded-xl bg-orange-500/10 p-3">⚠️ {m}</li>)}</ul>;
+    return <ul className="space-y-2 text-sm text-foreground/85">{mistakes.map((m) => <li key={m} className="rounded-2xl border-s-4 border-orange-400 bg-orange-500/10 p-3.5 leading-relaxed">⚠️ {m}</li>)}</ul>;
 }
 
 /** True when the exercise has example answers / a dialogue / a model response to reveal. */

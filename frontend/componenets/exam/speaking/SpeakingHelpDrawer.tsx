@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { X } from "lucide-react";
+import { ArrowRight, MessagesSquare, X } from "lucide-react";
 import { SpeakingContent, SpeakingGuideContent } from "@/types/exam";
 import { cn } from "@/lib/utils";
 import { SpeakingMistakesPanel, SpeakingPhrasesPanel, SpeakingTipsPanel } from "./SpeakingContentView";
 import { learnHref } from "./speakingMeta";
+import { lessonThemeVars } from "../lessonTheme";
 
 export type SpeakingHelpTab = "TIPS" | "PHRASES" | "MISTAKES";
 
@@ -49,36 +50,47 @@ export default function SpeakingHelpDrawer({ open, onClose, tabs, content, guide
 
     return (
         <>
-            <button type="button" aria-label="Hilfe schließen" onClick={onClose} className="fixed inset-0 z-40 bg-black/30 lg:hidden" />
+            <button type="button" aria-label="Hilfe schließen" onClick={onClose} className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]" />
             <aside
                 role="dialog"
                 aria-label="Sprechhilfe"
-                className="fixed inset-x-0 bottom-0 z-50 flex max-h-[80vh] flex-col rounded-t-2xl bg-card shadow-2xl lg:inset-y-0 lg:left-auto lg:right-0 lg:max-h-none lg:w-[26rem] lg:rounded-none"
+                style={lessonThemeVars("speaking")}
+                className="anim-slide-in fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col overflow-hidden rounded-t-3xl bg-background shadow-2xl lg:inset-y-0 lg:left-auto lg:right-0 lg:max-h-none lg:w-[28rem] lg:rounded-none lg:rounded-s-3xl"
             >
-                <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
-                    <h2 className="font-semibold text-foreground">Redemittel &amp; Tipps</h2>
-                    <button ref={closeRef} type="button" onClick={onClose} aria-label="Schließen" className="rounded-full p-1.5 hover:bg-accent cursor-pointer">
-                        <X className="size-5" />
-                    </button>
-                </div>
-                <div role="tablist" className="flex gap-2 overflow-x-auto px-4 pt-3">
-                    {tabs.map((t) => (
-                        <button
-                            key={t}
-                            type="button"
-                            role="tab"
-                            aria-selected={t === current}
-                            onClick={() => setTab(t)}
-                            className={cn(
-                                "shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition cursor-pointer",
-                                t === current ? "border-primary bg-primary/10 text-primary" : "border-border text-foreground/65 hover:bg-accent",
-                            )}
-                        >
-                            {SPEAKING_HELP_LABELS[t]}
+                <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-(--lesson-from) to-(--lesson-to) px-5 pb-4 pt-5 text-white">
+                    <span aria-hidden="true" className="absolute -end-8 -top-10 size-36 rounded-full bg-white/10" />
+                    <span aria-hidden="true" className="absolute -bottom-12 start-1/3 size-28 rounded-full bg-white/10" />
+                    <div className="relative flex items-center gap-3">
+                        <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-white/20">
+                            <MessagesSquare className="size-5" aria-hidden="true" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                            <h2 className="text-lg font-bold leading-tight">Redemittel &amp; Tipps</h2>
+                            <p className="text-xs text-white/85">Teil {part} · {level}</p>
+                        </div>
+                        <button ref={closeRef} type="button" onClick={onClose} aria-label="Schließen" className="flex size-9 cursor-pointer items-center justify-center rounded-full bg-white/15 transition hover:bg-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                            <X className="size-5" aria-hidden="true" />
                         </button>
-                    ))}
+                    </div>
+                    <div role="tablist" className="relative mt-4 flex gap-1 rounded-full bg-black/15 p-1">
+                        {tabs.map((t) => (
+                            <button
+                                key={t}
+                                type="button"
+                                role="tab"
+                                aria-selected={t === current}
+                                onClick={() => setTab(t)}
+                                className={cn(
+                                    "min-w-0 flex-1 cursor-pointer whitespace-nowrap rounded-full px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70",
+                                    t === current ? "bg-white text-(--lesson-from) shadow-sm" : "text-white/85 hover:bg-white/15",
+                                )}
+                            >
+                                {SPEAKING_HELP_LABELS[t]}
+                            </button>
+                        ))}
+                    </div>
                 </div>
-                <div className="flex-1 overflow-y-auto p-4">
+                <div key={current} className="anim-fade-up flex-1 overflow-y-auto p-4 sm:p-5">
                     {loading ? (
                         <p className="text-sm text-foreground/55">Wird geladen…</p>
                     ) : (
@@ -90,9 +102,12 @@ export default function SpeakingHelpDrawer({ open, onClose, tabs, content, guide
                         </>
                     )}
                 </div>
-                <div className="border-t border-border/60 px-4 py-2 text-right">
-                    <Link href={learnHref(level, part)} className="text-xs font-semibold text-primary hover:underline">
-                        Zum Lernbereich →
+                <div className="shrink-0 border-t border-border/60 bg-card p-3">
+                    <Link
+                        href={learnHref(level, part)}
+                        className="flex items-center justify-center gap-2 rounded-full bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                    >
+                        Zum Lernbereich <ArrowRight className="size-4" aria-hidden="true" />
                     </Link>
                 </div>
             </aside>
