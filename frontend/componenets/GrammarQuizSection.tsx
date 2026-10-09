@@ -7,9 +7,9 @@ import { getExerciseProgress, saveExerciseAnswer, resetExerciseProgress } from "
 import { useQueryClient } from "@tanstack/react-query";
 import { setLearningProgress } from "@/services/grammarService";
 import { markLessonLearnedInCache } from "@/lib/grammarQueryCache";
-import { ArrowRight, Dumbbell, Play, RotateCw } from "lucide-react";
-import CircularProgress from "@/componenets/CircularProgress";
+import { ArrowRight, Check, Dumbbell, Play, RotateCw, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ScoreRing from "@/componenets/learning/ScoreRing";
 import { useI18n } from "@/componenets/I18nProvider";
 import { localizedQuestionText } from "@/lib/grammarLocalization";
 import { AppLanguage } from "@/lib/i18n/translations";
@@ -147,8 +147,8 @@ export default function GrammarQuizSection({
     };
 
     return (
-        <section ref={sectionRef} className="rounded-[10px] bg-card p-6 shadow-card sm:p-8">
-            <div className="flex items-center justify-between gap-3">
+        <section id="step-practice" ref={sectionRef} className="scroll-mt-24 overflow-hidden rounded-3xl bg-card shadow-card">
+            <div className="flex items-center justify-between gap-3 bg-primary/[0.07] px-6 py-5 sm:px-8">
                 <h2 className="flex items-center gap-3 text-xl font-bold text-foreground">
                     <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
                         <Dumbbell className="size-5 text-primary" aria-hidden="true" />
@@ -158,8 +158,9 @@ export default function GrammarQuizSection({
                 {phase === "active" && <span className="text-sm font-medium text-foreground/55">{t.grammar.questionOf(currentIndex + 1, quiz.length)}</span>}
             </div>
 
+            <div className="p-6 sm:p-8">
             {phase === "idle" && (
-                <div className="mt-5 space-y-4">
+                <div className="space-y-4">
                     <p className="text-sm text-foreground/65">
                         {answeredCount > 0
                             ? `${answeredCount} / ${quiz.length} questions answered - pick up where you left off.`
@@ -173,21 +174,23 @@ export default function GrammarQuizSection({
             )}
 
             {phase === "active" && (
-                <div className="mt-5" dir={localizedQuestion.dir}>
-                    <div className="flex gap-1.5" role="progressbar" aria-valuenow={currentIndex + 1} aria-valuemin={1} aria-valuemax={quiz.length}>
+                <div dir={localizedQuestion.dir}>
+                    <div dir="ltr" className="flex flex-wrap items-center gap-2" role="progressbar" aria-valuenow={currentIndex + 1} aria-valuemin={1} aria-valuemax={quiz.length}>
                         {quiz.map((_, i) => {
                             const result = answered[questionKey(lessonId, i)];
+                            const current = i === currentIndex;
+                            const showResult = result !== undefined && (!current || submitted);
                             return (
                                 <span
                                     key={i}
                                     className={cn(
-                                        "h-1.5 flex-1 rounded-full transition-colors",
-                                        i === currentIndex && !submitted && "bg-primary",
-                                        (i !== currentIndex || submitted) && result === true && "bg-green-500",
-                                        (i !== currentIndex || submitted) && result === false && "bg-red-500",
-                                        i !== currentIndex && result === undefined && "bg-foreground/10",
+                                        "flex size-8 items-center justify-center rounded-full text-xs font-extrabold transition",
+                                        showResult ? (result ? "bg-green-500 text-white" : "bg-red-500 text-white") : "border-2 border-dashed border-primary/40 text-primary",
+                                        current && "ring-2 ring-primary ring-offset-2 ring-offset-card",
                                     )}
-                                />
+                                >
+                                    {showResult ? result ? <Check className="size-4" strokeWidth={3} aria-hidden="true" /> : <X className="size-4" strokeWidth={3} aria-hidden="true" /> : i + 1}
+                                </span>
                             );
                         })}
                     </div>
@@ -220,13 +223,9 @@ export default function GrammarQuizSection({
             )}
 
             {phase === "results" && (
-                <div className="anim-fade-up mt-6 flex flex-col items-center gap-5 text-center">
-                    <div className="relative">
-                        <CircularProgress value={quiz.length > 0 ? (correctCount / quiz.length) * 100 : 0} size={120} color="hsl(216 100% 62%)" trackColor="hsl(0 0% 50% / 0.15)" />
-                        <span className="absolute inset-0 flex items-center justify-center text-2xl font-bold text-foreground">
-                            {correctCount}/{quiz.length}
-                        </span>
-                    </div>
+                <div className="anim-fade-up flex flex-col items-center gap-5 text-center">
+                    <p className="anim-pop text-5xl" aria-hidden="true">{correctCount === quiz.length ? "🏆" : correctCount / quiz.length >= 0.6 ? "🎉" : "💪"}</p>
+                    <ScoreRing correct={correctCount} total={quiz.length} />
                     <p className="text-lg font-semibold text-foreground">{t.grammar.resultsScore(correctCount, quiz.length)}</p>
                     <button type="button" className={quizSecondaryButton} onClick={retryQuiz}>
                         <RotateCw className="size-4" aria-hidden="true" />
@@ -234,6 +233,7 @@ export default function GrammarQuizSection({
                     </button>
                 </div>
             )}
+            </div>
         </section>
     );
 }

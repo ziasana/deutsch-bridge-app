@@ -521,6 +521,12 @@ export interface Dictionary {
         savedChip: (count: number) => string;
         savedChipCta: string;
         previousLesson: string;
+        steps: { explanation: string; example: string; practice: string };
+        minRead: (minutes: number) => string;
+        textSize: { label: string; smaller: string; larger: string };
+        progress: (done: number, total: number) => string;
+        understoodTitle: string;
+        understoodText: string;
         nextLesson: string;
         saving: string;
         watchVideo: string;
@@ -544,6 +550,9 @@ export interface Dictionary {
         notFoundLesson: string;
         topicsCount: (count: number) => string;
         completedOf: (learned: number, total: number) => string;
+        continueLearning: string;
+        nextUp: string;
+        levelProgress: (learned: number, total: number) => string;
         categoryTestCompleted: string;
         lastScore: (score: number, total: number) => string;
         retakeCategoryTest: string;
@@ -569,6 +578,14 @@ export interface Dictionary {
             failedLoadCategory: string;
             failedSaveResult: string;
             failedMarkComplete: string;
+            passMark: (threshold: number) => string;
+            questionsCount: (count: number) => string;
+            lessonsCovered: string;
+            howItWorks: string;
+            yourScore: string;
+            testTitle: string;
+            questionsLabel: string;
+            passMarkLabel: string;
         };
     };
     home: {
@@ -1319,6 +1336,12 @@ const en: Dictionary = {
         savedChip: (count: number) => `${count} saved grammar lesson${count > 1 ? "s" : ""} waiting for you`,
         savedChipCta: "Finish them",
         previousLesson: "Previous lesson",
+        steps: { explanation: "Explanation", example: "Example", practice: "Practice" },
+        minRead: (minutes: number) => `${minutes} min read`,
+        textSize: { label: "Text size", smaller: "Smaller text", larger: "Larger text" },
+        progress: (done: number, total: number) => `${done} of ${total} steps`,
+        understoodTitle: "Got it?",
+        understoodText: "Mark the lesson as learned, then try the exercises.",
         nextLesson: "Next lesson",
         saving: "Saving...",
         watchVideo: "▶ Watch explainer video",
@@ -1343,6 +1366,9 @@ const en: Dictionary = {
         notFoundLesson: "Lesson not found.",
         topicsCount: (count) => `${count} topic${count === 1 ? "" : "s"}`,
         completedOf: (learned, total) => `${learned}/${total} completed`,
+        continueLearning: "Continue learning",
+        nextUp: "Next up",
+        levelProgress: (learned: number, total: number) => `${learned} of ${total} lessons learned`,
         categoryTestCompleted: "Completed",
         lastScore: (score, total) => `Last score: ${score}/${total}`,
         retakeCategoryTest: "Retake category test →",
@@ -1369,6 +1395,14 @@ const en: Dictionary = {
             failedLoadCategory: "Failed to load this category.",
             failedSaveResult: "Failed to save your test result.",
             failedMarkComplete: "Failed to mark this category complete.",
+            passMark: (threshold: number) => `Pass mark ${threshold}%`,
+            questionsCount: (count: number) => `${count} question${count === 1 ? "" : "s"}`,
+            lessonsCovered: "Lessons covered",
+            howItWorks: "Answer the questions one by one - you see right away if you were right.",
+            yourScore: "Your score",
+            testTitle: "Category test",
+            questionsLabel: "questions",
+            passMarkLabel: "to pass",
         },
     },
     home: {
@@ -2158,6 +2192,12 @@ const fa: Dictionary = {
         savedChip: (count: number) => `${count} درس دستور زبان ذخیره‌شده منتظر شماست`,
         savedChipCta: "تمامشان کنید",
         previousLesson: "درس قبلی",
+        steps: { explanation: "توضیح", example: "مثال", practice: "تمرین" },
+        minRead: (minutes: number) => `${minutes} دقیقه مطالعه`,
+        textSize: { label: "اندازه متن", smaller: "متن کوچک‌تر", larger: "متن بزرگ‌تر" },
+        progress: (done: number, total: number) => `${done} از ${total} مرحله`,
+        understoodTitle: "این درس را فهمیدی؟",
+        understoodText: "آن را به‌عنوان یادگرفته‌شده علامت بزن و تمرین‌ها را انجام بده.",
         nextLesson: "درس بعدی",
         saving: "در حال ذخیره...",
         watchVideo: "▶ مشاهده ویدیوی آموزشی",
@@ -2181,6 +2221,9 @@ const fa: Dictionary = {
         notFoundLesson: "درس یافت نشد.",
         topicsCount: (count) => `${count} موضوع`,
         completedOf: (learned, total) => `${learned}/${total} تکمیل‌شده`,
+        continueLearning: "ادامه یادگیری",
+        nextUp: "بعدی",
+        levelProgress: (learned: number, total: number) => `${learned} از ${total} درس یاد گرفته شد`,
         categoryTestCompleted: "تکمیل‌شده",
         lastScore: (score, total) => `آخرین نمره: ${score}/${total}`,
         retakeCategoryTest: "← تکرار آزمون دسته",
@@ -2207,6 +2250,14 @@ const fa: Dictionary = {
             failedLoadCategory: "بارگذاری این دسته با خطا مواجه شد.",
             failedSaveResult: "ذخیره نتیجه آزمون با خطا مواجه شد.",
             failedMarkComplete: "علامت‌گذاری این دسته به‌عنوان تکمیل‌شده با خطا مواجه شد.",
+            passMark: (threshold: number) => `حد نصاب قبولی ${threshold}٪`,
+            questionsCount: (count: number) => `${count} سؤال`,
+            lessonsCovered: "درس‌های این آزمون",
+            howItWorks: "سؤال‌ها را یکی‌یکی جواب بده؛ بلافاصله می‌بینی درست بود یا نه.",
+            yourScore: "امتیاز شما",
+            testTitle: "آزمون دسته",
+            questionsLabel: "سؤال",
+            passMarkLabel: "برای قبولی",
         },
     },
     home: {
