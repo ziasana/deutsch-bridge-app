@@ -2,6 +2,8 @@
 
 import { WritingExercise } from "@/componenets/exam/writing";
 import { SpeakingExercise } from "@/componenets/exam/speaking";
+import SpeakingTopHeader from "@/componenets/exam/speaking/SpeakingTopHeader";
+import ExerciseTopHeader from "@/componenets/exam/ExerciseTopHeader";
 import { useSpeakingGuides } from "@/hooks/exam/useSpeakingGuides";
 import { Suspense, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -30,7 +32,7 @@ import LesenTeil3Board, { NO_AD_ANSWER as NO_AD_ANSWER_VALUE } from "@/componene
 import TranscriptModal from "@/componenets/exam/TranscriptModal";
 import TranscriptContent from "@/componenets/exam/TranscriptContent";
 import { isEmptyTranscript } from "@/lib/transcriptFormat";
-import { ArrowLeft, ArrowRight, Bookmark, BookmarkCheck, Check, FileText, Play, RotateCw, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Bookmark, BookmarkCheck, Check, FileText, PenLine, Play, RotateCw, X } from "lucide-react";
 import CircularProgress from "@/componenets/CircularProgress";
 import LearningPageHero from "@/componenets/learning/LearningPageHero";
 import { EXAM_TYPE_META } from "@/componenets/exam";
@@ -312,6 +314,8 @@ function MuendlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExercise
     const { completed, marking, markCompleted } = useExerciseCompletion(exercise);
     const level = exercise.level ?? "B1";
     const { guideFor, isLoading: guideLoading } = useSpeakingGuides(level);
+    const stopExerciseTimer = useStopExerciseTimer();
+    const [timeResult, setTimeResult] = useState<ExamPracticeSessionResult | null>(null);
 
     if (!exercise.speaking) {
         return <div className="rounded-[10px] bg-card p-6 shadow-card text-sm text-foreground/60">Diese Übung hat noch keinen Inhalt.</div>;
@@ -326,6 +330,18 @@ function MuendlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExercise
             completed={completed}
             marking={marking}
             onMarkCompleted={markCompleted}
+            timeResult={timeResult}
+            onFinish={() =>
+                stopExerciseTimer().then((result) => {
+                    if (!result) return;
+                    setTimeResult(result);
+                    showZeitCheckToast(result);
+                })
+            }
+            onRepeat={() => {
+                setTimeResult(null);
+                useExamTimerStore.getState().requestRestart();
+            }}
         />
     );
 }
@@ -1054,36 +1070,60 @@ function ExamExerciseContent() {
                     Zurück
                 </button>
 
-                <LearningPageHero
-                    icon={sectionMeta?.icon ?? FileText}
-                    title={exercise.title}
-                    subtitle={sectionMeta?.label ?? "Prüfungsvorbereitung"}
-                    meta={<span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">{exercise.level ?? "Alle Niveaus"}</span>}
-                    actions={
-                        <button
-                            type="button"
-                            disabled={bookmarkPendingId === exercise.id}
-                            onClick={() => toggleBookmark(exercise.id, exercise.bookmarked)}
-                            aria-pressed={exercise.bookmarked}
-                            className={cn(
-                                "inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-60",
-                                exercise.bookmarked
-                                    ? "bg-primary/10 text-primary hover:bg-primary/20"
-                                    : "bg-primary text-primary-foreground hover:bg-primary/90",
-                            )}
-                        >
-                            {exercise.bookmarked ? <BookmarkCheck className="size-4" aria-hidden="true" /> : <Bookmark className="size-4" aria-hidden="true" />}
-                            {exercise.bookmarked ? "Gemerkt" : "Merken"}
-                        </button>
-                    }
-                />
+                {exercise.section === "SCHRIFTLICHER_AUSDRUCK" ? (
+                    <ExerciseTopHeader
+                        exercise={exercise}
+                        accent="writing"
+                        icon={PenLine}
+                        kicker="Schreibaufgabe"
+                        sectionLabel="Schriftlicher Ausdruck"
+                        title={exercise.title.replace(/^.*?Schriftlicher Ausdruck\s*[–-]\s*/i, "").trim() || exercise.title}
+                        bookmarked={exercise.bookmarked}
+                        bookmarkPending={bookmarkPendingId === exercise.id}
+                        onToggleBookmark={() => toggleBookmark(exercise.id, exercise.bookmarked)}
+                    />
+                ) : exercise.section === "MUENDLICHER_AUSDRUCK" ? (
+                    <SpeakingTopHeader
+                        exercise={exercise}
+                        bookmarked={exercise.bookmarked}
+                        bookmarkPending={bookmarkPendingId === exercise.id}
+                        onToggleBookmark={() => toggleBookmark(exercise.id, exercise.bookmarked)}
+                    />
+                ) : (
+                    <>
+                    <LearningPageHero
+                        icon={sectionMeta?.icon ?? FileText}
+                        title={exercise.title}
+                        subtitle={sectionMeta?.label ?? "Prüfungsvorbereitung"}
+                        meta={<span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">{exercise.level ?? "Alle Niveaus"}</span>}
+                        actions={
+                            <button
+                                type="button"
+                                disabled={bookmarkPendingId === exercise.id}
+                                onClick={() => toggleBookmark(exercise.id, exercise.bookmarked)}
+                                aria-pressed={exercise.bookmarked}
+                                className={cn(
+                                    "inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-60",
+                                    exercise.bookmarked
+                                        ? "bg-primary/10 text-primary hover:bg-primary/20"
+                                        : "bg-primary text-primary-foreground hover:bg-primary/90",
+                                )}
+                            >
+                                {exercise.bookmarked ? <BookmarkCheck className="size-4" aria-hidden="true" /> : <Bookmark className="size-4" aria-hidden="true" />}
+                                {exercise.bookmarked ? "Gemerkt" : "Merken"}
+                            </button>
+                        }
+                    />
 
-                <ExamExerciseTimer exercise={exercise} />
+                    <ExamExerciseTimer exercise={exercise} />
 
-                {exercise.teilDescription && (
-                    <div className="rounded-2xl border-s-4 border-primary/40 bg-primary/[0.06] p-4 text-sm text-foreground/80 whitespace-pre-wrap">
-                        {exercise.teilDescription}
-                    </div>
+                    {exercise.teilDescription && (
+                        <div className="rounded-2xl border-s-4 border-primary/40 bg-primary/[0.06] p-4 text-sm text-foreground/80 whitespace-pre-wrap">
+                            {exercise.teilDescription}
+                        </div>
+                    )}
+
+                    </>
                 )}
 
                 {exercise.section !== "HOERVERSTEHEN" &&

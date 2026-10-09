@@ -7,7 +7,9 @@ import LessonMarkdown from "@/componenets/LessonMarkdown";
 import { getWritingLearning } from "@/services/writingService";
 import { getWritingAttempts, requestWritingAiFeedback, submitWritingAttempt } from "@/services/writingAttemptService";
 import { WritingAttempt } from "@/types/writing";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { lessonThemeVars } from "../lessonTheme";
 import WritingPlanner from "./WritingPlanner";
 import WritingEditor from "./WritingEditor";
 import WritingHelpDrawer from "./WritingHelpDrawer";
@@ -114,10 +116,39 @@ export default function WritingExercise({ exerciseId, level, requiresPlanning, l
         }
     };
 
+    const stage = done ? 2 : planning ? 0 : 1;
+    const steps = [requiresPlanning && mode !== "EXAM" ? "Planen" : null, "Schreiben", "Abgeben"].filter((x): x is string => x !== null);
+    const activeStep = steps.length === 3 ? stage : Math.max(0, stage - 1);
+
     return (
-        <div className="space-y-4">
+        <div className="space-y-4" style={lessonThemeVars("writing")}>
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-(--lesson-from) to-(--lesson-to) p-4 text-white shadow-md sm:p-5">
+                <span aria-hidden="true" className="absolute -end-8 -top-10 size-36 rounded-full bg-white/10" />
+                <ol className="relative flex items-center gap-2 text-sm font-semibold" aria-label="Ablauf">
+                    {steps.map((label, i) => {
+                        const state = i < activeStep ? "done" : i === activeStep ? "current" : "todo";
+                        return (
+                            <li key={label} aria-current={state === "current" ? "step" : undefined} className="flex items-center gap-2">
+                                {i > 0 && <span aria-hidden="true" className={cn("h-0.5 w-6 rounded sm:w-10", state === "todo" ? "bg-white/30" : "bg-white")} />}
+                                <span
+                                    className={cn(
+                                        "flex size-7 items-center justify-center rounded-full border-2 text-xs",
+                                        state === "done" && "border-white bg-white text-primary",
+                                        state === "current" && "border-white bg-white/25",
+                                        state === "todo" && "border-white/40 text-white/60",
+                                    )}
+                                >
+                                    {state === "done" ? <Check className="size-4" aria-hidden="true" /> : i + 1}
+                                </span>
+                                <span className={state === "todo" ? "text-white/60" : ""}>{label}</span>
+                            </li>
+                        );
+                    })}
+                </ol>
+            </div>
+
             {!done && (
-                <div role="radiogroup" aria-label="Übungsmodus" className="flex flex-wrap gap-2">
+                <div role="radiogroup" aria-label="Übungsmodus" className="inline-flex max-w-full flex-wrap gap-1 rounded-2xl bg-card p-1 shadow-card ring-1 ring-primary/10">
                     {WRITING_MODES.map((m) => (
                         <button
                             key={m.mode}
@@ -126,8 +157,8 @@ export default function WritingExercise({ exerciseId, level, requiresPlanning, l
                             aria-checked={mode === m.mode}
                             onClick={() => changeMode(m.mode)}
                             className={cn(
-                                "rounded-full border px-4 py-1.5 text-left text-sm transition cursor-pointer",
-                                mode === m.mode ? "border-primary bg-primary/10 text-primary" : "border-border text-foreground/65 hover:bg-accent",
+                                "cursor-pointer rounded-xl px-4 py-2 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                                mode === m.mode ? "bg-gradient-to-r from-(--lesson-from) to-(--lesson-to) text-white shadow-sm" : "text-foreground/65 hover:bg-primary/10",
                             )}
                         >
                             <span className="font-medium">{m.label}</span>
@@ -138,9 +169,9 @@ export default function WritingExercise({ exerciseId, level, requiresPlanning, l
             )}
 
             {done && submitted ? (
-                <div className="space-y-4 rounded-[10px] bg-card p-5 shadow-card sm:p-6">
+                <div className="anim-fade-up space-y-4 rounded-3xl bg-card p-5 shadow-card ring-1 ring-primary/15 sm:p-6">
                     <div>
-                        <h2 className="text-lg font-semibold text-foreground">✅ Text abgegeben</h2>
+                        <h2 className="text-xl font-extrabold text-foreground">✅ Text abgegeben</h2>
                         <p className="mt-1 text-sm text-foreground/60">
                             Versuch {submitted.attemptNumber} · {submitted.wordCount} Wörter
                         </p>

@@ -3,9 +3,9 @@ import { ExamTimeEntry } from "@/types/examTime";
 
 /**
  * Sections whose time is NOT part of the exam's total duration (Schriftlicher Ausdruck has its own
- * timed slot). Mirrors ExamTimeDefaults.OUTSIDE_TOTAL_DURATION on the backend, which is what enforces it.
+ * timed slot, Mündlicher Ausdruck is a separate oral exam). Mirrors ExamTimeDefaults.OUTSIDE_TOTAL_DURATION on the backend, which is what enforces it.
  */
-export const OUTSIDE_TOTAL_SECTIONS: readonly ExamSection[] = ["SCHRIFTLICHER_AUSDRUCK"];
+export const OUTSIDE_TOTAL_SECTIONS: readonly ExamSection[] = ["SCHRIFTLICHER_AUSDRUCK", "MUENDLICHER_AUSDRUCK"];
 
 export type ParsedMinutes = { kind: "blank" } | { kind: "invalid" } | { kind: "ok"; value: number };
 

@@ -10,6 +10,7 @@ const SECTION_LABELS: Partial<Record<ExamSection, string>> = {
     LESEVERSTEHEN: "Leseverstehen",
     SPRACHBAUSTEINE: "Sprachbausteine",
     SCHRIFTLICHER_AUSDRUCK: "Schriftlicher Ausdruck",
+    MUENDLICHER_AUSDRUCK: "Mündlicher Ausdruck",
 };
 
 /** Table of every Teil with its recommended time, in the same style as the other admin settings tables. */

@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { LessonAccent } from "../../lessonTheme";
 
 const PARTICLES = ["🎉", "⭐", "✨", "🎊", "💫", "🌟", "✨", "🎉"];
 
@@ -12,16 +13,18 @@ interface CelebrationProps {
     onOverview: () => void;
     /** Text of the final button when there is no next station. */
     finishLabel?: string;
+    accent?: LessonAccent;
 }
 
 /** End-of-lesson reaction: stars, a short message based on the quiz result, and clear next actions. */
-export default function Celebration({ correct, total, stationLabel, nextLabel, onNext, onRepeat, onOverview, finishLabel = "Jetzt Schreibaufgaben üben →" }: CelebrationProps) {
+export default function Celebration({ correct, total, stationLabel, nextLabel, onNext, onRepeat, onOverview, finishLabel = "Jetzt Schreibaufgaben üben →", accent }: CelebrationProps) {
+    const speaking = !!accent;
     const ratio = total === 0 ? 1 : correct / total;
     const stars = ratio >= 0.8 ? 3 : ratio >= 0.5 ? 2 : 1;
     const message = stars === 3 ? "Ausgezeichnet!" : stars === 2 ? "Gut gemacht!" : "Geschafft – Übung macht den Meister!";
 
     return (
-        <div className="relative mx-auto flex max-w-md flex-col items-center py-10 text-center">
+        <div className={cn("relative mx-auto flex max-w-md flex-col items-center py-10 text-center", speaking && "my-6 rounded-3xl bg-card px-6 shadow-card ring-1 ring-primary/15")}>
             <div aria-hidden className="pointer-events-none absolute left-1/2 top-16">
                 {PARTICLES.map((p, i) => {
                     const angle = (i / PARTICLES.length) * Math.PI * 2;
@@ -51,7 +54,7 @@ export default function Celebration({ correct, total, stationLabel, nextLabel, o
             )}
 
             <div className="mt-8 flex w-full flex-col gap-2">
-                <button type="button" onClick={onNext} className="min-h-12 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 cursor-pointer">
+                <button type="button" onClick={onNext} className={cn("min-h-12 cursor-pointer rounded-full px-6 text-sm font-semibold text-primary-foreground transition", speaking ? "bg-gradient-to-r from-(--lesson-from) to-(--lesson-to) text-white shadow-md hover:-translate-y-0.5 hover:shadow-lg" : "bg-primary hover:bg-primary/90")}>
                     {nextLabel ? `Weiter: ${nextLabel} →` : finishLabel}
                 </button>
                 <button type="button" onClick={onRepeat} className="min-h-11 rounded-full border border-border px-6 text-sm font-medium transition hover:bg-accent cursor-pointer">

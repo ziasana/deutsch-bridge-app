@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LessonAccent } from "../../lessonTheme";
 import { LessonStep } from "./types";
 
 export interface LessonResult {
@@ -16,6 +17,8 @@ interface LessonShellProps {
     steps: LessonStep[];
     onExit: () => void;
     onFinish: (result: LessonResult) => void;
+    /** Visual theme: the default (blue) or the pink/orange one of Mündlicher Ausdruck. */
+    accent?: LessonAccent;
 }
 
 /** Keeps the "already solved" flag as it was when the step opened, so a step does not flip into its solved look mid-interaction. */
@@ -36,7 +39,8 @@ function milestone(index: number, total: number): string | null {
  * stays visible, so there is nothing to scroll past on a phone. Gated steps (quizzes/games) must be
  * completed before "Weiter" unlocks.
  */
-export default function LessonShell({ emoji, title, steps, onExit, onFinish }: LessonShellProps) {
+export default function LessonShell({ emoji, title, steps, onExit, onFinish, accent }: LessonShellProps) {
+    const speaking = !!accent;
     const [index, setIndex] = useState(0);
     const [done, setDone] = useState<Record<string, boolean>>({});
     const [results, setResults] = useState<Record<string, boolean>>({});
@@ -94,7 +98,7 @@ export default function LessonShell({ emoji, title, steps, onExit, onFinish }: L
     const progress = ((index + (done[step.id] || !step.gated ? 1 : 0)) / steps.length) * 100;
 
     return (
-        <div className="flex min-h-[calc(100dvh-9rem)] flex-col">
+        <div className="group/lesson flex min-h-[calc(100dvh-9rem)] flex-col" data-accent={accent}>
             <header className="space-y-3">
                 <div className="flex items-center gap-3">
                     <button type="button" onClick={onExit} aria-label="Lektion verlassen" className="rounded-full p-2 text-foreground/55 transition hover:bg-accent hover:text-foreground cursor-pointer">
@@ -108,19 +112,19 @@ export default function LessonShell({ emoji, title, steps, onExit, onFinish }: L
                         aria-label={`Schritt ${index + 1} von ${steps.length}`}
                         className="h-3 flex-1 overflow-hidden rounded-full bg-foreground/10"
                     >
-                        <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${progress}%` }} />
+                        <div className={cn("h-full rounded-full transition-all duration-500", speaking ? "bg-gradient-to-r from-(--lesson-from) to-(--lesson-to) shadow-[0_0_10px_color-mix(in_srgb,var(--lesson-from)_50%,transparent)]" : "bg-primary")} style={{ width: `${progress}%` }} />
                     </div>
-                    <span className="w-12 text-right text-xs font-medium tabular-nums text-foreground/55">
+                    <span className={cn("text-right text-xs font-medium tabular-nums text-foreground/55", speaking ? "rounded-full bg-card px-2.5 py-1 font-bold shadow-sm" : "w-12")}>
                         {index + 1}/{steps.length}
                     </span>
                 </div>
                 <div className="flex h-7 items-center justify-center">
                     {banner ? (
-                        <p role="status" className="anim-pop rounded-full bg-primary px-4 py-1 text-sm font-semibold text-primary-foreground">
+                        <p role="status" className={cn("anim-pop rounded-full px-4 py-1 text-sm font-semibold text-primary-foreground", speaking ? "bg-gradient-to-r from-(--lesson-from) to-(--lesson-to) shadow-md" : "bg-primary")}>
                             {banner}
                         </p>
                     ) : (
-                        <p className="flex items-center gap-1.5 text-xs font-medium text-foreground/50">
+                        <p className={cn("flex items-center gap-1.5 text-xs font-medium text-foreground/50", speaking && "rounded-full bg-primary/10 px-3 py-1 font-bold text-primary")}>
                             <span aria-hidden>{emoji}</span>
                             {title}
                         </p>
@@ -134,7 +138,7 @@ export default function LessonShell({ emoji, title, steps, onExit, onFinish }: L
                 </div>
             </main>
 
-            <footer className="sticky bottom-0 -mx-6 border-t border-border/60 bg-background/95 px-6 py-3 backdrop-blur">
+            <footer className={cn("sticky bottom-0 border-t border-border/60 bg-background/95 py-3 backdrop-blur", speaking ? "-mx-4 px-4 sm:-mx-6 sm:px-6" : "-mx-6 px-6")}>
                 <div className="mx-auto flex w-full max-w-2xl items-center gap-3">
                     <button
                         type="button"
@@ -150,7 +154,11 @@ export default function LessonShell({ emoji, title, steps, onExit, onFinish }: L
                         disabled={!canContinue}
                         className={cn(
                             "inline-flex min-h-12 flex-1 items-center justify-center gap-1.5 rounded-full px-6 text-sm font-semibold transition cursor-pointer",
-                            canContinue ? "bg-primary text-primary-foreground hover:bg-primary/90" : "cursor-not-allowed bg-foreground/10 text-foreground/40",
+                            canContinue
+                                ? speaking
+                                    ? "bg-gradient-to-r from-(--lesson-from) to-(--lesson-to) text-white shadow-md hover:brightness-105 hover:shadow-lg"
+                                    : "bg-primary text-primary-foreground hover:bg-primary/90"
+                                : "cursor-not-allowed bg-foreground/10 text-foreground/40",
                         )}
                     >
                         {isLast ? "Abschließen" : "Weiter"} <ArrowRight className="size-4" />

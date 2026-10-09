@@ -263,7 +263,7 @@ class ExamTimeConfigurationServiceTest {
 
         service.seedDefaults();
 
-        assertEquals(6, stored.size());
+        assertEquals(ExamTimeDefaults.DEFAULT_MINUTES.get(B1).size(), stored.size());
         assertEquals(25, stored.stream().filter(r -> r.getSection() == ExamSection.LESEVERSTEHEN && r.getTeil() == 2)
                 .findFirst().orElseThrow().getRecommendedMinutes());
         ArgumentCaptor<ExamConfiguration> captor = ArgumentCaptor.forClass(ExamConfiguration.class);

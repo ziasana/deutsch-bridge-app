@@ -156,22 +156,7 @@ final class ExamSpeakingReader {
             person.put("name", name);
             person.put("age", age);
             person.put("occupation", occupation);
-            String image = text(personNode, "image");
-            if (image != null) {
-                if (!IMAGE_REFERENCE.matcher(image).matches() || image.contains("..")) {
-                    issues.add(error("IMAGE_REFERENCE_INVALID", p + "person.image",
-                            "person.image must be an uploaded file path (/uploads/...) or an https:// URL without spaces (found: \"" + shorten(image) + "\")."));
-                } else {
-                    person.put("image", image);
-                    String alt = text(personNode, "imageAlt");
-                    if (alt == null) {
-                        issues.add(error("IMAGE_ALT_MISSING", p + "person.imageAlt", "person.imageAlt (a German description of the portrait) is required when person.image is set."));
-                    } else {
-                        person.put("imageAlt", alt);
-                        strings.add(alt);
-                    }
-                }
-            }
+            readImage(personNode, person, "person.", "portrait");
             strings.add(name);
             strings.add(occupation);
         }
@@ -193,8 +178,28 @@ final class ExamSpeakingReader {
         data.put("exampleResponse", optionalText(node, "exampleResponse", SpeakingSchema.MAX_TEXT, "EXAMPLE_RESPONSE"));
     }
 
+    /** Optional picture + required German alt text. `target` receives "image" / "imageAlt" only when the reference is valid. */
+    private void readImage(JsonNode source, Map<String, Object> target, String fieldPrefix, String subject) {
+        String image = text(source, "image");
+        if (image == null) return;
+        if (!IMAGE_REFERENCE.matcher(image).matches() || image.contains("..")) {
+            issues.add(error("IMAGE_REFERENCE_INVALID", p + fieldPrefix + "image",
+                    fieldPrefix + "image must be an uploaded file path (/uploads/...) or an https:// URL without spaces (found: \"" + shorten(image) + "\")."));
+            return;
+        }
+        target.put("image", image);
+        String alt = text(source, "imageAlt");
+        if (alt == null) {
+            issues.add(error("IMAGE_ALT_MISSING", p + fieldPrefix + "imageAlt", fieldPrefix + "imageAlt (a German description of the " + subject + ") is required when " + fieldPrefix + "image is set."));
+        } else {
+            target.put("imageAlt", alt);
+            strings.add(alt);
+        }
+    }
+
     private void readJointPlanning(JsonNode node, Map<String, Object> data) {
         warnMovedFields(node, p.isEmpty() ? "" : p.substring(0, p.length() - 1));
+        readImage(node, data, "", "scene picture");
         data.put("scenario", requiredText(node, "scenario", p, 1500, "SCENARIO"));
 
         List<Map<String, Object>> points = new ArrayList<>();

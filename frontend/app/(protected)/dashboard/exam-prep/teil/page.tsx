@@ -17,6 +17,7 @@ import {
     findGroupByKey,
 } from "@/componenets/exam";
 import TeilTimeCard from "@/componenets/exam/TeilTimeCard";
+import SpeakingTeilOverview from "@/componenets/exam/speaking/SpeakingTeilOverview";
 import { useExerciseLastTimes } from "@/hooks/exam/useExerciseLastTimes";
 import { TIMED_SECTIONS } from "@/lib/examTime";
 
@@ -76,6 +77,25 @@ function TeilContent() {
     const teil = group.items[0]?.teil ?? null;
 
     const backHref = `/dashboard/exam-prep?section=${typedSection}&level=${encodeURIComponent(level)}`;
+
+    if (typedSection === "MUENDLICHER_AUSDRUCK" && teil != null) {
+        return (
+            <div className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10" dir="ltr">
+                <div className="mx-auto max-w-4xl">
+                    <SpeakingTeilOverview
+                        items={group.items}
+                        level={level}
+                        teil={teil}
+                        heading={group.heading}
+                        subheading={group.subheading}
+                        backHref={backHref}
+                        backLabel={meta.label}
+                        lastTimes={lastTimes}
+                    />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-background px-6 py-10" dir="ltr">

@@ -298,4 +298,63 @@ describe("SpeakingExercise", () => {
         fireEvent.click(screen.getByRole("button", { name: /Übung beenden/ }));
         expect(screen.getByRole("button", { name: /Übung wiederholen/ })).toBeTruthy();
     });
+
+    it("shows the Teil 3 scene picture next to the scenario and enlarges it on click", () => {
+        renderExercise({ ...planning, image: "https://example.org/party.webp", imageAlt: "Freunde essen im Garten" }, planningGuide);
+        const picture = screen.getByRole("img", { name: "Freunde essen im Garten" });
+        expect(picture.getAttribute("src")).toBe("https://example.org/party.webp");
+        expect(screen.queryByRole("dialog", { name: "Bild vergrößert" })).toBeNull();
+        fireEvent.click(screen.getByRole("button", { name: "Bild vergrößern" }));
+        expect(screen.getByRole("dialog", { name: "Bild vergrößert" })).toBeTruthy();
+        fireEvent.keyDown(window, { key: "Escape" });
+        expect(screen.queryByRole("dialog", { name: "Bild vergrößert" })).toBeNull();
+    });
+
+    it("falls back to an illustration when Teil 3 has no picture, and when the picture cannot be loaded", () => {
+        renderExercise(planning, planningGuide);
+        expect(screen.queryByRole("img")).toBeNull();
+        expect(screen.queryByRole("button", { name: "Bild vergrößern" })).toBeNull();
+        cleanup();
+        renderExercise({ ...planning, image: "https://example.org/broken.webp", imageAlt: "kaputt" }, planningGuide);
+        fireEvent.error(screen.getByRole("img", { name: "kaputt" }));
+        expect(screen.queryByRole("img")).toBeNull();
+    });
+
+    it("lets the learner tick off planning points, shows the progress and clears it on repeat", () => {
+        renderExercise(planning, planningGuide);
+        const bar = () => screen.getByRole("progressbar", { name: "Geklärte Planungspunkte" });
+        expect(bar().getAttribute("aria-valuenow")).toBe("0");
+        fireEvent.click(screen.getByRole("button", { name: /Wann\?/ }));
+        expect(bar().getAttribute("aria-valuenow")).toBe("1");
+        fireEvent.click(screen.getByRole("button", { name: /Wo\?/ }));
+        expect(screen.getByRole("status").textContent).toContain("Alles geplant");
+        fireEvent.click(screen.getByRole("button", { name: /Wann\?/ }));
+        expect(bar().getAttribute("aria-valuenow")).toBe("1");
+        fireEvent.click(screen.getByRole("button", { name: /Übung beenden/ }));
+        fireEvent.click(screen.getByRole("button", { name: /Übung wiederholen/ }));
+        expect(bar().getAttribute("aria-valuenow")).toBe("0");
+    });
+
+    it("tracks the covered topics (Teil 1) and tasks (Teil 2)", () => {
+        renderExercise(interview, interviewGuide);
+        fireEvent.click(screen.getByRole("button", { name: /Name/ }));
+        expect(screen.getByRole("progressbar", { name: "Besprochene Themen" }).getAttribute("aria-valuenow")).toBe("1");
+        cleanup();
+        renderExercise(opinion, opinionGuide);
+        fireEvent.click(screen.getByRole("button", { name: /Berichten Sie, was Sabine denkt/ }));
+        expect(screen.getByRole("progressbar", { name: "Erledigte Aufgaben" }).getAttribute("aria-valuenow")).toBe("1");
+    });
+
+    it("hands the timer over to the page: onFinish when ending, onRepeat when repeating, and shows the Zeit-Check in the review", () => {
+        const onFinish = vi.fn();
+        const onRepeat = vi.fn();
+        const timeResult = { id: "s1", scope: "EXERCISE", mode: "TIME_TRAINING", section: "MUENDLICHER_AUSDRUCK", level: "B1", teil: 3, elapsedSeconds: 250, targetSeconds: 300, differenceSeconds: -50, questionsTotal: 0, questionsAnswered: 0, correctAnswers: 0, score: null } as const;
+        renderExercise(planning, planningGuide, { onFinish, onRepeat, timeResult });
+        expect(screen.queryByText(/Deine Zeit/)).toBeNull();
+        fireEvent.click(screen.getByRole("button", { name: /Übung beenden/ }));
+        expect(onFinish).toHaveBeenCalledTimes(1);
+        expect(screen.getByText(/Deine Zeit: 04:10/)).toBeTruthy();
+        fireEvent.click(screen.getByRole("button", { name: /Übung wiederholen/ }));
+        expect(onRepeat).toHaveBeenCalledTimes(1);
+    });
 });
