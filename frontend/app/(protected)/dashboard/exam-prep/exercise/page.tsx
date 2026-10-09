@@ -439,10 +439,10 @@ function QuestionSelect({
 const isLesenMultipleChoice = (exercise: ExamExercisePublicResponse) =>
     exercise.section === "LESEVERSTEHEN" && exercise.taskType === "MULTIPLE_CHOICE";
 
-/** Sprachbausteine Teil 1: a text with numbered gap badges and a multiple-choice question per gap. */
+/** Sprachbausteine Teil 1 (multiple choice per gap) and Teil 2 (shared word bank): a text with numbered gap badges. */
 const isSprachbausteineGapText = (exercise: ExamExercisePublicResponse) =>
     exercise.section === "SPRACHBAUSTEINE" &&
-    exercise.taskType === "MULTIPLE_CHOICE" &&
+    (exercise.taskType === "MULTIPLE_CHOICE" || exercise.taskType === "WORD_BANK_CLOZE") &&
     exercise.passages.some((p) => p.content?.includes("data-exam-gap"));
 
 /** Shared "mark as completed" state/handler for both quiz flows. */
@@ -481,7 +481,7 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
     const [quiz, setQuiz] = useState<GridQuizState | null>(null);
     const isSituationMatching = exercise.taskType === "SITUATION_MATCHING";
     const isHeadingMatching = exercise.taskType === "MATCHING";
-    const isGapText = isSprachbausteineGapText(exercise) && (!quiz || hasGapText(quiz.passages, quiz.questions));
+    const isGapText = isSprachbausteineGapText(exercise) && (!quiz || hasGapText(quiz.passages, quiz.questions, exercise.taskType === "WORD_BANK_CLOZE"));
     const [results, setResults] = useState<ResultsState | null>(null);
     const [starting, setStarting] = useState(false);
     const { completed, marking, markCompleted } = useExerciseCompletion(exercise);
@@ -584,7 +584,12 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
                 {isSituationMatching && " Jede Anzeige darf nur einmal benutzt werden. Wenn keine Anzeige passt, wähle x."}
             </p>
 
-            {isSprachbausteineGapText(exercise) && !isGapText && <PassagesView passages={quiz.passages} taskType="MULTIPLE_CHOICE" />}
+            {isSprachbausteineGapText(exercise) && !isGapText && (
+                <>
+                    <AnswerOptionsPoolView answerOptions={quiz.answerOptions} answerOptionLabels={quiz.answerOptionLabels} taskType={exercise.taskType ?? ""} />
+                    <PassagesView passages={quiz.passages} taskType={exercise.taskType ?? ""} />
+                </>
+            )}
 
             {isGapText ? (
                 <SprachbausteineClozeBoard
@@ -593,6 +598,7 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
                     answers={quiz.answers}
                     disabled={quiz.submitting}
                     onAnswer={setAnswer}
+                    wordBank={exercise.taskType === "WORD_BANK_CLOZE" ? { options: quiz.answerOptions, labels: quiz.answerOptionLabels } : undefined}
                 />
             ) : isHeadingMatching ? (
                 <LesenTeil1Board
@@ -1254,7 +1260,7 @@ function ExamExerciseContent() {
                     exercise.section !== "MUENDLICHER_AUSDRUCK" &&
                     exercise.section !== "TESTFORMAT_INFORMATION" && (
                     <>
-                        {exercise.taskType === "WORD_BANK_CLOZE" && (
+                        {exercise.taskType === "WORD_BANK_CLOZE" && !isSprachbausteineGapText(exercise) && (
                             <AnswerOptionsPoolView answerOptions={exercise.answerOptions ?? []} answerOptionLabels={exercise.answerOptionLabels ?? []} taskType={exercise.taskType} />
                         )}
                         {/* Lesen Teil 1 (headings) and Teil 3 (ads) show their texts inside the matching board once the exercise is started. */}

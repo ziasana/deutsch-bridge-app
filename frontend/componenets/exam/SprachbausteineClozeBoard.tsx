@@ -13,14 +13,16 @@ interface Props {
     answers: Record<string, string>;
     disabled: boolean;
     onAnswer: (questionId: string, value: string) => void;
+    /** Teil 2: one shared bank of words (more words than gaps), each usable once. Without it every gap has its own options. */
+    wordBank?: { options: string[]; labels: string[] };
 }
 
-/** Whether an exercise can use the board: a text with numbered gap badges and a question for every gap. */
-export function hasGapText(passages: ExamPassagePublic[], questions: ExamQuestionPublic[]): boolean {
+/** Whether an exercise can use the board: a text with numbered gap badges and a question for every gap (own options, or a word bank). */
+export function hasGapText(passages: ExamPassagePublic[], questions: ExamQuestionPublic[], hasWordBank = false): boolean {
     return (
         passages.some((p) => p.content?.includes("data-exam-gap")) &&
         questions.length > 0 &&
-        questions.every((q) => q.gapNumber != null && (q.options?.length ?? 0) > 0)
+        questions.every((q) => q.gapNumber != null && (hasWordBank || (q.options?.length ?? 0) > 0))
     );
 }
 
@@ -33,7 +35,7 @@ const navButton =
  * the gap inside the sentence, so the learner reads the finished sentence, and the board moves on to the next open gap.
  * A sticky strip shows progress and jumps to any gap.
  */
-export default function SprachbausteineClozeBoard({ passages, questions, answers, disabled, onAnswer }: Readonly<Props>) {
+export default function SprachbausteineClozeBoard({ passages, questions, answers, disabled, onAnswer, wordBank }: Readonly<Props>) {
     const gapOf = (q: ExamQuestionPublic) => q.gapNumber ?? q.questionNumber ?? questions.indexOf(q) + 1;
     const byGap = new Map(questions.map((q) => [gapOf(q), q]));
     const [activeId, setActiveId] = useState<string | null>(questions[0]?.id ?? null);
@@ -58,11 +60,18 @@ export default function SprachbausteineClozeBoard({ passages, questions, answers
 
     if (!active) return null;
 
+    const holderOf = (word: string) => questions.find((q) => answers[q.id] === word);
+
     const choose = (value: string) => {
         const unselect = answers[active.id] === value;
+        // A bank word another gap already holds moves over (one use per word).
+        const holder = wordBank && !unselect ? holderOf(value) : undefined;
+        if (holder && holder.id !== active.id) onAnswer(holder.id, "");
         onAnswer(active.id, unselect ? "" : value);
         if (!unselect) {
-            const next = questions.slice(activeIndex + 1).find((q) => !answers[q.id]) ?? questions.find((q) => q.id !== active.id && !answers[q.id]);
+            const next =
+                questions.slice(activeIndex + 1).find((q) => !answers[q.id] && q.id !== holder?.id) ??
+                questions.find((q) => q.id !== active.id && !answers[q.id]);
             if (next) setActiveId(next.id);
         }
     };
@@ -172,9 +181,16 @@ export default function SprachbausteineClozeBoard({ passages, questions, answers
                         </button>
                     </div>
                 </div>
-                <div role="group" aria-label={`Wort für Lücke ${gapOf(active)} wählen`} className="grid gap-2 sm:grid-cols-3">
-                    {(active.options ?? []).map((option, i) => {
+                {wordBank && <p className="text-xs text-foreground/55">Jedes Wort nur einmal. Nicht jedes Wort passt in eine Lücke.</p>}
+                <div
+                    role="group"
+                    aria-label={`Wort für Lücke ${gapOf(active)} wählen`}
+                    className={wordBank ? "flex max-h-48 flex-wrap gap-2 overflow-y-auto p-0.5" : "grid gap-2 sm:grid-cols-3"}
+                >
+                    {(wordBank ? wordBank.options : (active.options ?? [])).map((option, i) => {
                         const selected = answers[active.id] === option;
+                        const holder = wordBank && !selected ? holderOf(option) : undefined;
+                        const letter = wordBank?.labels?.[i]?.trim() || String.fromCharCode(wordBank ? 97 + i : 65 + i);
                         return (
                             <button
                                 key={option}
@@ -184,13 +200,19 @@ export default function SprachbausteineClozeBoard({ passages, questions, answers
                                 onClick={() => choose(option)}
                                 className={cn(
                                     "flex cursor-pointer items-center gap-3 rounded-2xl border-2 px-3 py-2.5 text-left text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default disabled:opacity-60",
-                                    selected ? "anim-pop border-primary bg-primary/10 text-foreground" : "border-border/60 bg-background text-foreground hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-card",
+                                    wordBank && "py-2",
+                                    selected
+                                        ? "anim-pop border-primary bg-primary/10 text-foreground"
+                                        : holder
+                                            ? "border-border/50 bg-muted/40 text-foreground/50 hover:border-primary/40"
+                                            : "border-border/60 bg-background text-foreground hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-card",
                                 )}
                             >
                                 <span aria-hidden="true" className={cn("flex size-7 shrink-0 items-center justify-center rounded-lg text-xs font-extrabold", selected ? "bg-primary text-primary-foreground" : "bg-accent text-primary")}>
-                                    {String.fromCharCode(65 + i)}
+                                    {letter}
                                 </span>
                                 <span className="min-w-0 flex-1 break-words">{option}</span>
+                                {holder && <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">Lücke {gapOf(holder)}</span>}
                             </button>
                         );
                     })}

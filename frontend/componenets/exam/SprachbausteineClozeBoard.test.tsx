@@ -16,7 +16,7 @@ const questions = [
     { id: "q22", taskType: "MULTIPLE_CHOICE", prompt: "Lücke 22", sectionIndex: 0, options: ["um", "an", "auf"], gapNumber: 22, questionNumber: 22 },
 ] as unknown as ExamQuestionPublic[];
 
-function Harness({ onChange }: Readonly<{ onChange?: (a: Record<string, string>) => void }>) {
+function Harness({ onChange, wordBank }: Readonly<{ onChange?: (a: Record<string, string>) => void; wordBank?: { options: string[]; labels: string[] } }>) {
     const [answers, setAnswers] = useState<Record<string, string>>({});
     return (
         <SprachbausteineClozeBoard
@@ -24,6 +24,7 @@ function Harness({ onChange }: Readonly<{ onChange?: (a: Record<string, string>)
             questions={questions}
             answers={answers}
             disabled={false}
+            wordBank={wordBank}
             onAnswer={(id, value) =>
                 setAnswers((prev) => {
                     const next = { ...prev };
@@ -73,5 +74,49 @@ describe("SprachbausteineClozeBoard", () => {
         expect(screen.getByRole("group", { name: "Wort für Lücke 22 wählen" })).toBeTruthy();
         fireEvent.click(within(screen.getByRole("group", { name: /Wort für Lücke/ })).getByRole("button", { name: /auf/ }));
         expect(onChange).toHaveBeenLastCalledWith({ q22: "auf" });
+    });
+});
+
+describe("SprachbausteineClozeBoard with a word bank", () => {
+    const bank = { options: ["weil", "obwohl", "damit", "denn"], labels: [] };
+    const bankQuestions = questions.map((q) => ({ ...q, options: null })) as unknown as ExamQuestionPublic[];
+
+    it("accepts gap texts whose questions have no own options only with a word bank", () => {
+        expect(hasGapText(passages, bankQuestions)).toBe(false);
+        expect(hasGapText(passages, bankQuestions, true)).toBe(true);
+    });
+
+    function BankHarness({ onChange }: Readonly<{ onChange: (a: Record<string, string>) => void }>) {
+        const [answers, setAnswers] = useState<Record<string, string>>({});
+        return (
+            <SprachbausteineClozeBoard
+                passages={passages}
+                questions={bankQuestions}
+                answers={answers}
+                disabled={false}
+                wordBank={bank}
+                onAnswer={(id, value) =>
+                    setAnswers((prev) => {
+                        const next = { ...prev };
+                        if (value) next[id] = value;
+                        else delete next[id];
+                        onChange(next);
+                        return next;
+                    })
+                }
+            />
+        );
+    }
+
+    it("offers the shared words with letters and moves a used word over to the active gap", () => {
+        const onChange = vi.fn();
+        render(<BankHarness onChange={onChange} />);
+        const word = (name: RegExp) => within(screen.getByRole("group", { name: /Wort für Lücke/ })).getByRole("button", { name });
+        fireEvent.click(word(/weil/));
+        expect(onChange).toHaveBeenLastCalledWith({ q21: "weil" });
+        // Gap 22 is active now; taking the same word moves it from gap 21.
+        fireEvent.click(word(/weil/));
+        expect(onChange).toHaveBeenLastCalledWith({ q22: "weil" });
+        expect(screen.getByRole("button", { name: "Lücke 21, noch offen" })).toBeTruthy();
     });
 });
