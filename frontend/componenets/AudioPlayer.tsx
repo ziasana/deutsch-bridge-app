@@ -1,8 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Pause, Play, RotateCcw, Volume2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const SPEEDS = [0.75, 1, 1.25, 1.5];
+const BARS = [40, 70, 50, 90, 60, 100, 45, 80, 55, 95, 65, 75, 50, 85, 60, 70];
 
 const formatTime = (seconds: number) => {
     if (!Number.isFinite(seconds)) return "0:00";
@@ -12,10 +15,9 @@ const formatTime = (seconds: number) => {
 };
 
 /**
- * Reusable audio player for Hoerverstehen listening clips - play/pause, replay, seek progress,
- * volume, and playback speed. Built on the native <audio> element (no external dependency),
- * intended to be reused for future Hoeren Teil 2-4. Render with `key={src}` at the call site so
- * switching to a different clip remounts this component instead of carrying over stale state.
+ * Audio player for Hörverstehen clips: a big play button, an equalizer that moves while the clip plays, a seek bar,
+ * replay, volume and playback speed. Built on the native <audio> element. Colours follow the surrounding theme
+ * (`primary`, `--lesson-from` / `--lesson-to`). Render with `key={src}` so switching clips remounts it instead of carrying stale state.
  */
 export default function AudioPlayer({ src }: Readonly<{ src: string }>) {
     const audioRef = useRef<HTMLAudioElement>(null);
@@ -59,8 +61,10 @@ export default function AudioPlayer({ src }: Readonly<{ src: string }>) {
         if (audioRef.current) audioRef.current.playbackRate = value;
     };
 
+    const ratio = duration > 0 ? currentTime / duration : 0;
+
     return (
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-3 space-y-2">
+        <div className="space-y-3 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 p-4 ring-1 ring-primary/15">
             <audio
                 ref={audioRef}
                 src={src}
@@ -71,42 +75,63 @@ export default function AudioPlayer({ src }: Readonly<{ src: string }>) {
                 onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
             />
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
                 <button
                     type="button"
                     onClick={togglePlay}
                     aria-label={playing ? "Pause" : "Abspielen"}
-                    className="w-9 h-9 shrink-0 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center"
+                    className={cn(
+                        "flex size-14 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2",
+                        playing && "animate-pulse",
+                    )}
                 >
-                    {playing ? "❚❚" : "▶"}
+                    {playing ? <Pause className="size-6" fill="currentColor" aria-hidden="true" /> : <Play className="size-6 translate-x-0.5" fill="currentColor" aria-hidden="true" />}
                 </button>
+
+                <div className="min-w-0 flex-1">
+                    <div className="flex h-10 items-end gap-1" aria-hidden="true">
+                        {BARS.map((height, i) => {
+                            const reached = i / BARS.length < ratio;
+                            return (
+                                <span
+                                    key={i}
+                                    className={cn("flex-1 rounded-full transition-colors", reached ? "bg-primary" : "bg-primary/25", playing && "animate-bounce")}
+                                    style={{ height: `${height}%`, animationDelay: `${(i % 6) * 90}ms`, animationDuration: "900ms" }}
+                                />
+                            );
+                        })}
+                    </div>
+                    <div className="mt-1 flex items-center gap-3">
+                        <input
+                            type="range"
+                            min={0}
+                            max={duration || 0}
+                            step={0.1}
+                            value={currentTime}
+                            onChange={(e) => seek(Number(e.target.value))}
+                            className="h-1.5 flex-1 cursor-pointer accent-[var(--primary)]"
+                            aria-label="Position"
+                        />
+                        <span className="w-24 text-right text-xs font-semibold tabular-nums text-foreground/60">
+                            {formatTime(currentTime)} / {formatTime(duration)}
+                        </span>
+                    </div>
+                </div>
+
                 <button
                     type="button"
                     onClick={replay}
                     aria-label="Von vorne abspielen"
-                    className="w-9 h-9 shrink-0 rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 flex items-center justify-center"
                     title="Erneut abspielen"
+                    className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-border bg-card text-foreground/70 transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                 >
-                    ⟲
+                    <RotateCcw className="size-4" aria-hidden="true" />
                 </button>
-
-                <input
-                    type="range"
-                    min={0}
-                    max={duration || 0}
-                    step={0.1}
-                    value={currentTime}
-                    onChange={(e) => seek(Number(e.target.value))}
-                    className="flex-1 accent-blue-600"
-                />
-                <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums w-20 text-right">
-                    {formatTime(currentTime)} / {formatTime(duration)}
-                </span>
             </div>
 
-            <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">🔊</span>
+                    <Volume2 className="size-4 text-foreground/50" aria-hidden="true" />
                     <input
                         type="range"
                         min={0}
@@ -114,22 +139,22 @@ export default function AudioPlayer({ src }: Readonly<{ src: string }>) {
                         step={0.05}
                         value={volume}
                         onChange={(e) => changeVolume(Number(e.target.value))}
-                        className="w-20 accent-blue-600"
+                        className="w-24 cursor-pointer accent-[var(--primary)]"
                         aria-label="Lautstärke"
                     />
                 </div>
-                <div className="flex items-center gap-1">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">Tempo:</span>
+                <div className="flex items-center gap-1" role="group" aria-label="Tempo">
+                    <span className="me-1 text-xs font-medium text-foreground/50">Tempo</span>
                     {SPEEDS.map((s) => (
                         <button
                             key={s}
                             type="button"
+                            aria-pressed={speed === s}
                             onClick={() => changeSpeed(s)}
-                            className={`text-xs px-2 py-1 rounded ${
-                                speed === s
-                                    ? "bg-blue-600 text-white"
-                                    : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600"
-                            }`}
+                            className={cn(
+                                "cursor-pointer rounded-full px-2.5 py-1 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                                speed === s ? "bg-primary text-primary-foreground shadow-sm" : "bg-card text-foreground/60 ring-1 ring-border hover:bg-accent",
+                            )}
                         >
                             {s}×
                         </button>

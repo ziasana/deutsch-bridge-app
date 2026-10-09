@@ -24,19 +24,19 @@ export const EXAM_TYPE_META: Record<ExamSection, ExamTypeMeta> = {
         label: "Lesen",
         description: "Trainiere dein Leseverstehen im Prüfungsformat.",
         icon: BookOpen,
-        color: "#3b82f6",
+        color: "#0d9488",
     },
     SPRACHBAUSTEINE: {
         label: "Sprachbausteine",
         description: "Übe Grammatik und Wortschatz im Prüfungsformat.",
         icon: Puzzle,
-        color: "#8b5cf6",
+        color: "#7c3aed",
     },
     HOERVERSTEHEN: {
         label: "Hörverstehen",
         description: "Trainiere dein Hörverstehen mit echten Prüfungsaufgaben.",
         icon: Headphones,
-        color: "#10b981",
+        color: "#059669",
     },
     SCHRIFTLICHER_AUSDRUCK: {
         label: "Schreiben",

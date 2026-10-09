@@ -32,6 +32,8 @@ import {
 import { ContentItemRow } from "@/componenets/CategoryAccordion";
 import useAuthStore from "@/store/useAuthStore";
 import WritingTaskList from "@/componenets/exam/writing/WritingTaskList";
+import ExamPartList from "@/componenets/exam/ExamPartList";
+import { SECTION_THEME, lessonThemeVars } from "@/componenets/exam/lessonTheme";
 import SpeakingExamList from "@/componenets/exam/speaking/SpeakingExamList";
 import { useExerciseLastTimes } from "@/hooks/exam/useExerciseLastTimes";
 import { usePendingExamBookmarks } from "@/hooks/exam/usePendingExamBookmarks";
@@ -185,7 +187,11 @@ function ExamPrepContent() {
     const openSaved = (id: string) => router.push(`/dashboard/exam-prep/exercise?id=${id}`);
 
     return (
-        <div className="min-h-screen bg-background px-6 py-10" dir="ltr">
+        <div
+            className="min-h-screen bg-background px-6 py-10"
+            dir="ltr"
+            style={SECTION_THEME[selectedSection] ? lessonThemeVars(SECTION_THEME[selectedSection]!.accent) : undefined}
+        >
             <div className="max-w-4xl mx-auto">
                 <LearningPageHero
                     icon={selectedMeta.icon}
@@ -317,6 +323,14 @@ function ExamPrepContent() {
                             />
                         ) : selectedSection === "MUENDLICHER_AUSDRUCK" ? (
                             <SpeakingExamList key={`${selectedSection}-${effectiveLevel}-${searchTerm}`} groups={selectedGroups} level={effectiveLevel} lastTimes={speakingLastTimes} />
+                        ) : SECTION_THEME[selectedSection] ? (
+                            <ExamPartList
+                                section={selectedSection}
+                                level={effectiveLevel}
+                                accent={SECTION_THEME[selectedSection]!.accent}
+                                groups={selectedGroups}
+                                onOpen={(group) => openPart(selectedSection, effectiveLevel, group.key, group.items[0].id, group.items.length === 1)}
+                            />
                         ) : (
                             <>
                                 {selectedGroups.map((group, i) => (

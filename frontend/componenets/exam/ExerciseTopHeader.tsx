@@ -20,6 +20,10 @@ interface ExerciseTopHeaderProps {
     sectionLabel: string;
     /** The title without the parts that are already shown as chips. */
     title: string;
+    /** False for sections without a Teil timer (Hörverstehen is paced by the audio). */
+    showTimer?: boolean;
+    /** "steps" (default): one numbered line per sentence. "paragraph": the whole text as one paragraph. */
+    descriptionAs?: "steps" | "paragraph";
     bookmarked: boolean;
     bookmarkPending: boolean;
     onToggleBookmark: () => void;
@@ -29,7 +33,7 @@ interface ExerciseTopHeaderProps {
  * Top of an exercise as ONE card instead of three stacked boxes: title with Teil badge, the timer as a
  * progress ring, and the task description as a collapsible speech bubble with numbered steps.
  */
-export default function ExerciseTopHeader({ exercise, accent, icon: Icon, kicker, sectionLabel, title, bookmarked, bookmarkPending, onToggleBookmark }: Readonly<ExerciseTopHeaderProps>) {
+export default function ExerciseTopHeader({ exercise, accent, icon: Icon, kicker, sectionLabel, title, showTimer = true, descriptionAs = "steps", bookmarked, bookmarkPending, onToggleBookmark }: Readonly<ExerciseTopHeaderProps>) {
     const [open, setOpen] = useState(true);
     const steps = exercise.teilDescription ? instructionSteps(exercise.teilDescription) : [];
 
@@ -38,7 +42,7 @@ export default function ExerciseTopHeader({ exercise, accent, icon: Icon, kicker
             <span aria-hidden="true" className="pointer-events-none absolute -end-10 -top-12 size-44 rounded-full bg-gradient-to-br from-(--lesson-from)/20 to-(--lesson-to)/20" />
             <span aria-hidden="true" className="pointer-events-none absolute -bottom-16 start-1/3 size-40 rounded-full bg-amber-400/10" />
 
-            <div className="relative grid gap-5 p-5 sm:p-6 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div className={cn("relative grid gap-5 p-5 sm:p-6 lg:items-center", showTimer && "lg:grid-cols-[1fr_auto]")}>
                 <div className="flex min-w-0 items-start gap-4">
                     <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-(--lesson-from) to-(--lesson-to) text-white shadow-md sm:size-16">
                         <Icon className="size-7 sm:size-8" aria-hidden="true" />
@@ -66,9 +70,11 @@ export default function ExerciseTopHeader({ exercise, accent, icon: Icon, kicker
                     </div>
                 </div>
 
-                <div className="rounded-2xl bg-accent/50 p-4 lg:min-w-80">
-                    <ExamExerciseTimer exercise={exercise} variant="ring" />
-                </div>
+                {showTimer && (
+                    <div className="rounded-2xl bg-accent/50 p-4 lg:min-w-80">
+                        <ExamExerciseTimer exercise={exercise} variant="ring" />
+                    </div>
+                )}
             </div>
 
             {steps.length > 0 && (
@@ -82,7 +88,12 @@ export default function ExerciseTopHeader({ exercise, accent, icon: Icon, kicker
                         <span className="inline-flex items-center gap-2"><span aria-hidden="true">💬</span>Aufgabenstellung</span>
                         <ChevronDown className={cn("size-4 text-foreground/50 transition-transform", open && "rotate-180")} aria-hidden="true" />
                     </button>
-                    {open && (
+                    {open && descriptionAs === "paragraph" && (
+                        <p className="anim-fade-up mt-3 rounded-2xl rounded-ss-sm bg-gradient-to-r from-(--lesson-from)/10 to-(--lesson-to)/10 p-4 text-sm leading-relaxed text-foreground/85">
+                            {exercise.teilDescription?.replace(/\s*\n+\s*/g, " ").trim()}
+                        </p>
+                    )}
+                    {open && descriptionAs === "steps" && (
                         <ol className="anim-fade-up mt-3 space-y-2">
                             {steps.map((step, index) => (
                                 <li key={step} className="flex items-start gap-3 rounded-2xl rounded-ss-sm bg-gradient-to-r from-(--lesson-from)/10 to-(--lesson-to)/10 p-3 text-sm leading-relaxed text-foreground/85">

@@ -4,6 +4,7 @@ import { WritingExercise } from "@/componenets/exam/writing";
 import { SpeakingExercise } from "@/componenets/exam/speaking";
 import SpeakingTopHeader from "@/componenets/exam/speaking/SpeakingTopHeader";
 import ExerciseTopHeader from "@/componenets/exam/ExerciseTopHeader";
+import { SECTION_THEME, lessonThemeVars } from "@/componenets/exam/lessonTheme";
 import { useSpeakingGuides } from "@/hooks/exam/useSpeakingGuides";
 import { Suspense, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -22,8 +23,7 @@ import {
     ExamExercisePublicResponse,
     ExamPassagePublic,
     ExamQuestionPublic,
-    ExamTranscript,
-} from "@/types/exam";
+    ExamTranscript, ExamSection } from "@/types/exam";
 import Loading from "@/componenets/Loading";
 import AudioPlayer from "@/componenets/AudioPlayer";
 import LessonMarkdown from "@/componenets/LessonMarkdown";
@@ -32,7 +32,7 @@ import LesenTeil3Board, { NO_AD_ANSWER as NO_AD_ANSWER_VALUE } from "@/componene
 import TranscriptModal from "@/componenets/exam/TranscriptModal";
 import TranscriptContent from "@/componenets/exam/TranscriptContent";
 import { isEmptyTranscript } from "@/lib/transcriptFormat";
-import { ArrowLeft, ArrowRight, Bookmark, BookmarkCheck, Check, FileText, PenLine, Play, RotateCw, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Bookmark, BookmarkCheck, Check, FileText, Headphones, PenLine, Play, Puzzle, type LucideIcon, RotateCw, X } from "lucide-react";
 import CircularProgress from "@/componenets/CircularProgress";
 import LearningPageHero from "@/componenets/learning/LearningPageHero";
 import { EXAM_TYPE_META } from "@/componenets/exam";
@@ -96,6 +96,13 @@ function AnswerOptionsPoolView({
         </div>
     );
 }
+
+/** Sections that use the combined exercise header, with their icon and long name. */
+const SECTION_HEADER: Partial<Record<ExamSection, { icon: LucideIcon; label: string }>> = {
+    LESEVERSTEHEN: { icon: BookOpen, label: "Leseverstehen" },
+    SPRACHBAUSTEINE: { icon: Puzzle, label: "Sprachbausteine" },
+    HOERVERSTEHEN: { icon: Headphones, label: "Hörverstehen" },
+};
 
 function PassageBody({ passage }: Readonly<{ passage: ExamPassagePublic }>) {
     const audioSrc = resolveUploadUrl(passage.audioUrl);
@@ -929,27 +936,40 @@ function HoerenListQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRes
     }
 
     const allAnswered = quiz.questions.every((q) => quiz.answers[q.id]);
+    const answeredCount = quiz.questions.filter((q) => quiz.answers[q.id]).length;
     const showPassageLabels = quiz.passages.length > 1;
 
     return (
         <div className="space-y-4">
-            <div className="rounded-[10px] bg-card p-6 shadow-card sm:p-8 space-y-3">
-                <p className="text-sm text-foreground/65">
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-(--lesson-from) to-(--lesson-to) p-5 text-white shadow-md sm:p-6">
+                <span aria-hidden="true" className="absolute -end-8 -top-10 size-40 rounded-full bg-white/10" />
+                <span aria-hidden="true" className="absolute end-5 top-3 text-6xl opacity-20">🎧</span>
+                <p className="relative text-xs font-bold uppercase tracking-wider text-white/80">So geht es</p>
+                <p className="relative mt-1 text-sm leading-relaxed text-white/95">
                     Höre jeden Text an und markiere, ob die Aussage richtig ({quiz.answerOptions[0] ?? "+"}) oder falsch (
                     {quiz.answerOptions[1] ?? "-"}) ist. Dein Ergebnis siehst du, sobald du alle Antworten abgegeben hast.
                 </p>
-                {quiz.passages.map((passage) => (
-                    <div
-                        key={passage.id}
-                        className="rounded-2xl border-s-4 border-primary/40 bg-primary/[0.06] p-4"
-                    >
-                        <p className="font-semibold text-foreground mb-1">{passage.label}</p>
-                        <PassageBody passage={passage} />
-                    </div>
-                ))}
+            </div>
+            {quiz.passages.map((passage) => (
+                <div key={passage.id} className="rounded-3xl bg-card p-5 shadow-card ring-1 ring-primary/15 sm:p-6">
+                    <p className="mb-3 flex items-center gap-2 font-bold text-foreground">
+                        <span className="flex size-8 items-center justify-center rounded-xl bg-primary/15 text-primary" aria-hidden="true">
+                            <Headphones className="size-4" />
+                        </span>
+                        {passage.label}
+                    </p>
+                    <PassageBody passage={passage} />
+                </div>
+            ))}
+
+            <div className="sticky top-2 z-10 flex items-center gap-3 rounded-2xl bg-card/95 px-4 py-2.5 shadow-card ring-1 ring-border/60 backdrop-blur">
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-foreground/10" role="progressbar" aria-label="Beantwortete Aussagen" aria-valuemin={0} aria-valuemax={quiz.questions.length} aria-valuenow={answeredCount}>
+                    <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${(answeredCount / quiz.questions.length) * 100}%` }} />
+                </div>
+                <span className="text-xs font-bold tabular-nums text-foreground/70">{answeredCount}/{quiz.questions.length} beantwortet</span>
             </div>
 
-            <div className="rounded-[10px] bg-card p-6 shadow-card sm:p-8 space-y-4">
+            <div className="space-y-4">
                 <ol className="space-y-3">
                     {quiz.questions.map((question, idx) => {
                         const passage = question.sectionIndex != null ? quiz.passages[question.sectionIndex] : null;
@@ -957,12 +977,21 @@ function HoerenListQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRes
                         return (
                             <li
                                 key={question.id}
-                                className="flex gap-3 items-start rounded-2xl border border-border/60 bg-background p-4"
+                                className={`anim-fade-up flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl bg-card p-4 shadow-card ring-1 transition ${selected ? "ring-primary/40" : "ring-border/60"}`}
+                                style={{ animationDelay: `${idx * 40}ms` }}
                             >
-                                <span className="font-semibold text-foreground/40 pt-1.5 w-5 shrink-0">
-                                    {question.questionNumber ?? idx + 1}.
+                                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-(--lesson-from) to-(--lesson-to) text-sm font-extrabold text-white">
+                                    {question.questionNumber ?? idx + 1}
                                 </span>
-                                <div className="flex gap-2 pt-0.5 shrink-0">
+                                <p className="min-w-0 flex-1 basis-56 font-medium text-foreground">
+                                    {showPassageLabels && passage && (
+                                        <span className="text-xs font-semibold text-foreground/60">
+                                            {passage.label}:{" "}
+                                        </span>
+                                    )}
+                                    {question.prompt}
+                                </p>
+                                <div className="flex shrink-0 gap-2">
                                     {quiz.answerOptions.map((option) => (
                                         <button
                                             key={option}
@@ -973,24 +1002,19 @@ function HoerenListQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRes
                                                     prev ? { ...prev, answers: { ...prev.answers, [question.id]: option } } : prev
                                                 )
                                             }
-                                            className={`size-10 cursor-pointer rounded-full border text-sm font-bold transition hover:-translate-y-0.5 ${
+                                            aria-pressed={selected === option}
+                                            className={`size-12 cursor-pointer rounded-2xl border-2 text-lg font-extrabold transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
                                                 selected === option
-                                                    ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                                                    : "border-border bg-card text-foreground/70 hover:border-primary/50"
+                                                    ? option === (quiz.answerOptions[0] ?? "+")
+                                                        ? "anim-pop border-emerald-500 bg-emerald-500 text-white shadow-md"
+                                                        : "anim-pop border-rose-500 bg-rose-500 text-white shadow-md"
+                                                    : "border-border bg-background text-foreground/60 hover:border-primary/50"
                                             }`}
                                         >
                                             {option}
                                         </button>
                                     ))}
                                 </div>
-                                <p className="font-medium text-foreground pt-1.5">
-                                    {showPassageLabels && passage && (
-                                        <span className="text-xs font-semibold text-foreground/60">
-                                            {passage.label}:{" "}
-                                        </span>
-                                    )}
-                                    {question.prompt}
-                                </p>
                             </li>
                         );
                     })}
@@ -1052,7 +1076,7 @@ function ExamExerciseContent() {
 
     return (
         <div dir="ltr" className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10">
-            <div className="mx-auto max-w-4xl space-y-6">
+            <div className="mx-auto max-w-4xl space-y-6" style={SECTION_THEME[exercise.section] ? lessonThemeVars(SECTION_THEME[exercise.section]!.accent) : undefined}>
                 {/* Behaves like the browser's back button (returns to the Teil list this exercise was opened from). */}
                 <button
                     type="button"
@@ -1070,7 +1094,21 @@ function ExamExerciseContent() {
                     Zurück
                 </button>
 
-                {exercise.section === "SCHRIFTLICHER_AUSDRUCK" ? (
+                {SECTION_HEADER[exercise.section] ? (
+                    <ExerciseTopHeader
+                        exercise={exercise}
+                        accent={SECTION_THEME[exercise.section]!.accent}
+                        icon={SECTION_HEADER[exercise.section]!.icon}
+                        kicker={`Teil ${exercise.teil ?? exercise.partNumber ?? 1}`}
+                        sectionLabel={SECTION_HEADER[exercise.section]!.label}
+                        showTimer={exercise.section !== "HOERVERSTEHEN"}
+                        descriptionAs={exercise.section === "HOERVERSTEHEN" || exercise.section === "LESEVERSTEHEN" || exercise.section === "SPRACHBAUSTEINE" ? "paragraph" : "steps"}
+                        title={exercise.title.replace(/^.*?Teil\s+\d\s*[–-]\s*/i, "").trim() || exercise.title}
+                        bookmarked={exercise.bookmarked}
+                        bookmarkPending={bookmarkPendingId === exercise.id}
+                        onToggleBookmark={() => toggleBookmark(exercise.id, exercise.bookmarked)}
+                    />
+                ) : exercise.section === "SCHRIFTLICHER_AUSDRUCK" ? (
                     <ExerciseTopHeader
                         exercise={exercise}
                         accent="writing"
