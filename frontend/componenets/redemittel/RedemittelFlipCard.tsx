@@ -23,12 +23,12 @@ export default function RedemittelFlipCard({ redemittel: r }: Readonly<{ redemit
                 onClick={() => setFlipped((v) => !v)}
                 aria-pressed={flipped}
                 aria-label={flipped ? `${r.phrase} – Vorderseite zeigen` : `${r.phrase} – Bedeutung zeigen`}
-                className="relative block h-full w-full rounded-2xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 cursor-pointer"
+                className="relative block h-full w-full rounded-3xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 cursor-pointer"
             >
                 <div className="flip-inner relative h-full w-full" data-flipped={flipped}>
                     <div
                         aria-hidden={flipped}
-                        className="flip-face absolute inset-0 flex flex-col justify-between rounded-2xl border border-border/60 bg-card p-4 shadow-card transition-shadow hover:shadow-lg"
+                        className="flip-face absolute inset-0 flex flex-col justify-between rounded-3xl border border-border/60 bg-card p-4 shadow-card transition-shadow hover:shadow-lg"
                         style={{ borderTop: `4px solid ${color}` }}
                     >
                         <div className="flex items-center justify-between gap-2">
@@ -48,7 +48,7 @@ export default function RedemittelFlipCard({ redemittel: r }: Readonly<{ redemit
 
                     <div
                         aria-hidden={!flipped}
-                        className="flip-face flip-back absolute inset-0 flex flex-col justify-between rounded-2xl p-4 text-white shadow-lg"
+                        className="flip-face flip-back absolute inset-0 flex flex-col justify-between rounded-3xl p-4 text-white shadow-lg"
                         style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}
                     >
                         <span className="text-xs font-semibold uppercase tracking-wide text-white/80">{r.categoryLabel}</span>

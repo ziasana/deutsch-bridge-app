@@ -1,6 +1,9 @@
 import { FORMALITY_LABELS } from "@/componenets/exam/writing/writingMeta";
 import { RedemittelContext, RedemittelStatus } from "@/types/redemittel";
 
+/** The Redemittel colour (indigo); the page follows the level colour while a level filter is on. */
+export const REDEMITTEL_ACCENT = "#6366f1";
+
 export const REDEMITTEL_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
 
 export const CONTEXT_LABELS: Record<RedemittelContext, string> = {

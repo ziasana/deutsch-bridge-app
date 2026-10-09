@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, PartyPopper } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import LearningProgressBar from "@/componenets/learning/LearningProgressBar";
+import { FinishCard } from "./RedemittelProgress";
 import { answerRedemittelPractice, answerRedemittelReview } from "@/services/redemittelService";
 import { RedemittelExercise as Exercise, RedemittelAnswer } from "@/types/redemittel";
 import RedemittelExercise from "./RedemittelExercise";
@@ -38,12 +39,8 @@ export default function RedemittelSession({ mode, title, exercises, backHref }: 
 
     if (finished) {
         return (
-            <div className="rounded-2xl border border-border/60 bg-card p-8 text-center shadow-card">
-                <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-accent">
-                    <PartyPopper className="size-6 text-primary" aria-hidden="true" />
-                </div>
-                <h2 className="mt-4 text-2xl font-bold text-foreground">Gut gemacht!</h2>
-                <p className="mt-2 text-foreground/70">
+            <FinishCard emoji={correct === exercises.length ? "🏆" : correct / exercises.length >= 0.6 ? "🎉" : "💪"} title="Gut gemacht!">
+                <p className="text-foreground/70">
                     {correct} von {exercises.length} Antworten waren richtig.
                 </p>
                 {mode === "review" && (
@@ -57,7 +54,7 @@ export default function RedemittelSession({ mode, title, exercises, backHref }: 
                         Zur Übersicht
                     </Link>
                 </div>
-            </div>
+            </FinishCard>
         );
     }
 
@@ -68,7 +65,7 @@ export default function RedemittelSession({ mode, title, exercises, backHref }: 
                     <ArrowLeft className="size-4" aria-hidden="true" />
                     Zurück
                 </Link>
-                <span className="text-sm font-medium text-foreground/60" aria-live="polite">
+                <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary" aria-live="polite">
                     {title}
                 </span>
             </div>
