@@ -210,43 +210,7 @@ export function hasSpeakingModel(content: SpeakingContent): boolean {
     return (content.exampleDialogue ?? []).length > 0;
 }
 
-/** Example answers, the example response or the example dialogue of this exercise. */
-export function SpeakingModel({ content }: Readonly<{ content: SpeakingContent }>) {
-    if (content.taskType === "TOPIC_INTERVIEW") {
-        return (
-            <section className={card} aria-label="Beispielantworten">
-                <h2 className={heading}>Beispielantworten</h2>
-                {content.exampleProfile && <p className="mt-1 text-xs text-foreground/60">{content.exampleProfile}</p>}
-                {(content.topics ?? []).map((topic) => (
-                    <div key={topic.id} className="mt-3">
-                        <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground/50">{topic.title}</h3>
-                        <ul className={list}>{topic.exampleAnswers.map((a) => <li key={a}>{a}</li>)}</ul>
-                    </div>
-                ))}
-            </section>
-        );
-    }
-    if (content.taskType === "OPINION_DISCUSSION") {
-        return (
-            <section className={card} aria-label="Beispielantwort">
-                <h2 className={heading}>Beispielantwort</h2>
-                <p className="mt-2 whitespace-pre-line text-sm text-foreground/85">{content.exampleResponse}</p>
-            </section>
-        );
-    }
-    return (
-        <section className={card} aria-label="Beispieldialog">
-            <h2 className={heading}>Beispieldialog</h2>
-            <ol className="mt-2 space-y-2 text-sm text-foreground/85">
-                {(content.exampleDialogue ?? []).map((turn, index) => (
-                    <li key={`${turn.speaker}-${index}`}>
-                        <span className="font-semibold">{turn.speaker}:</span> {turn.text}
-                    </li>
-                ))}
-            </ol>
-        </section>
-    );
-}
+export { default as SpeakingModel } from "./SpeakingModel";
 
 /** The whole Lernbereich of one Teil, with an anchor on every section so exercises can link straight to it. */
 export function GuideLearnView({ guide, part }: Readonly<{ guide: SpeakingGuideContent; part: number }>) {
