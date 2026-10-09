@@ -9,7 +9,7 @@ import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
 import useAuthStore from "@/store/useAuthStore";
-import { generateExamContentPrompt, getExamContentOptions } from "@/services/adminExamContentService";
+import { generateExamContentPrompt, getExamContentOptions, getSpeakingStarter } from "@/services/adminExamContentService";
 import { PromptResponse } from "@/types/examContent";
 import ExamContentShell from "./ExamContentShell";
 import { cardClass, copyText, downloadTextFile, errorMessage, fieldClass, labelClass } from "./shared";
@@ -22,6 +22,11 @@ const SCENARIO_CHOICES: { value: string; label: string; hint: string }[] = [
     { value: "ALTERNATIVE_EMAIL", label: "Alternative email", hint: "Alternative realistische Alltagssituation mit derselben TELC-Schreibstruktur." },
     { value: "RANDOM", label: "Random", hint: "Der externe KI-Generator wählt eine geeignete B1-Situation." },
 ];
+const SPEAKING_DESCRIPTIONS: Record<string, string> = {
+    TOPIC_INTERVIEW: "seven core topics with questions, follow-up questions, example answers and phrases",
+    OPINION_DISCUSSION: "a person's opinion text and four communication goals with phrases",
+    JOINT_PLANNING: "a planning scenario with planning points, phrases per function and an optional dialogue",
+};
 const topicLabel = (topic: string) => topic.charAt(0) + topic.slice(1).toLowerCase().replaceAll("_", " ");
 
 /** Builds the copy-paste prompt for any external AI; the backend never calls an AI itself. */
@@ -168,7 +173,9 @@ export default function ContentGenerator() {
 
                         {spec ? (
                             <p className="text-sm text-green-700 dark:text-green-300">
-                                {spec.taskType === "WRITING_TASK"
+                                {spec.section === "MUENDLICHER_AUSDRUCK"
+                                    ? `✓ ${spec.label}: ${SPEAKING_DESCRIPTIONS[spec.taskType] ?? "speaking task"} (German-only content, no translations).`
+                                    : spec.taskType === "WRITING_TASK"
                                     ? `✓ ${spec.label}: one incoming email and exactly ${spec.questionCount} content points to answer in writing.`
                                     : spec.taskType === "MULTIPLE_CHOICE"
                                     ? `✓ ${spec.label}: one reading text, ${spec.questionCount} questions with ${spec.optionCount} options each.`
@@ -185,6 +192,24 @@ export default function ContentGenerator() {
                                 No content specification exists for this combination yet. Available:{" "}
                                 {(options?.specs ?? []).map((s) => s.label).join("; ") || "none"}.
                             </p>
+                        )}
+
+                        {spec?.section === "MUENDLICHER_AUSDRUCK" && (
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                className="inline-flex items-center gap-1.5 text-sm"
+                                onClick={async () => {
+                                    try {
+                                        const res = await getSpeakingStarter(Number(part.replace("TEIL_", "")));
+                                        downloadTextFile(`B1-Muendlicher-Ausdruck-${part}-start.json`, res.data, "application/json");
+                                    } catch (err) {
+                                        toast.error(errorMessage(err, "Could not download the starter file."));
+                                    }
+                                }}
+                            >
+                                <Download className="size-4" />Starter exercise (JSON, import-ready)
+                            </Button>
                         )}
 
                         {spec?.taskType === "SITUATION_MATCHING" && (
@@ -388,6 +413,13 @@ export default function ContentGenerator() {
                                     value={result.prompt}
                                     onFocus={(e) => e.currentTarget.select()}
                                 />
+                                {spec?.section === "MUENDLICHER_AUSDRUCK" && (
+                                    <p className="mt-3 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
+                                        ℹ️ Hinweis: Kopieren Sie diesen Prompt und verwenden Sie ihn in ChatGPT, Claude, Gemini oder einem anderen KI-Tool.
+                                        Alle Lerninhalte (Redemittel, Beispielantworten, Dialoge) sind nur auf Deutsch – es gibt keine englischen oder persischen Übersetzungen.
+                                        Laden Sie anschließend die erzeugte JSON-Datei hoch. Importierte Aufgaben werden immer als Entwurf (DRAFT) gespeichert.
+                                    </p>
+                                )}
                                 {spec?.taskType === "WRITING_TASK" && (
                                     <p className="mt-3 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
                                         ℹ️ Hinweis: Kopieren Sie diesen Prompt und verwenden Sie ihn in ChatGPT, Claude, Gemini oder einem anderen KI-Tool.

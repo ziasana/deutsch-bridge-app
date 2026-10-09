@@ -1,0 +1,124 @@
+{
+  "intro": "In Teil 3 planen Sie gemeinsam mit Ihrem Partner etwas, zum Beispiel eine Party oder einen Ausflug. Sie machen Vorschläge, begründen sie, reagieren auf die Ideen Ihres Partners und einigen sich am Ende auf eine gemeinsame Lösung.",
+  "tips": [
+    {
+      "title": "Gehen Sie alle Punkte durch",
+      "text": "Besprechen Sie die Planungspunkte nacheinander, damit nichts fehlt."
+    },
+    {
+      "title": "Machen Sie eigene Vorschläge",
+      "text": "Warten Sie nicht nur ab. Beginnen Sie auch selbst: „Ich schlage vor, dass wir ...“."
+    },
+    {
+      "title": "Begründen Sie kurz",
+      "text": "Mit einem kurzen Grund wirken Ihre Vorschläge überzeugend: „..., weil dort genug Platz ist.“"
+    },
+    {
+      "title": "Widersprechen Sie höflich",
+      "text": "Sagen Sie erst, was gut ist, dann Ihr Aber: „Das ist eine gute Idee, aber ...“."
+    },
+    {
+      "title": "Treffen Sie am Ende eine Entscheidung",
+      "text": "Fassen Sie zusammen, was Sie beschlossen haben."
+    }
+  ],
+  "steps": [
+    {
+      "title": "1. Einstieg",
+      "text": "Sagen Sie, was Sie planen möchten, und beginnen Sie mit dem ersten Punkt."
+    },
+    {
+      "title": "2. Punkt für Punkt",
+      "text": "Vorschlag – Begründung – Reaktion – Einigung."
+    },
+    {
+      "title": "3. Abschluss",
+      "text": "Fassen Sie die Ergebnisse zusammen."
+    }
+  ],
+  "commonMistakes": [
+    "Nur Ja sagen und keine eigenen Vorschläge machen.",
+    "Zu schnell von einem Punkt zum nächsten springen.",
+    "Sich nicht einigen und das Gespräch offen lassen.",
+    "Vorschläge ohne Begründung machen."
+  ],
+  "selfAssessment": [
+    "Ich habe alle Planungspunkte angesprochen.",
+    "Ich habe eigene Vorschläge gemacht und begründet.",
+    "Ich habe auf die Vorschläge meines Partners reagiert.",
+    "Wir haben am Ende eine gemeinsame Entscheidung getroffen."
+  ],
+  "functions": [
+    {
+      "function": "SUGGEST",
+      "title": "Vorschläge machen",
+      "usefulPhrases": [
+        "Wie wäre es, wenn wir ...?",
+        "Ich schlage vor, dass wir ...",
+        "Wir könnten doch ...",
+        "Was hältst du davon, wenn ...?"
+      ],
+      "tip": "Nach „wenn“ und „dass“ steht das Verb am Ende."
+    },
+    {
+      "function": "GIVE_REASON",
+      "title": "Begründen",
+      "usefulPhrases": [
+        "Ich schlage das vor, weil ...",
+        "Das wäre gut, denn ...",
+        "Ein Vorteil davon ist, dass ...",
+        "Das ist praktisch, da ..."
+      ],
+      "tip": "„denn“ verändert die Wortstellung nicht, „weil“ schon."
+    },
+    {
+      "function": "AGREE",
+      "title": "Zustimmen",
+      "usefulPhrases": [
+        "Ja, das ist eine gute Idee.",
+        "Damit bin ich einverstanden.",
+        "Das finde ich auch.",
+        "Genau, so machen wir das."
+      ],
+      "tip": "Zeigen Sie Zustimmung und ergänzen Sie eine eigene Idee."
+    },
+    {
+      "function": "DISAGREE",
+      "title": "Höflich widersprechen",
+      "usefulPhrases": [
+        "Ich verstehe dich, aber ...",
+        "Das ist keine schlechte Idee, aber ...",
+        "Da bin ich nicht ganz sicher, weil ...",
+        "Ich sehe das ein bisschen anders."
+      ],
+      "tip": "Sagen Sie nie nur „Nein“ – bieten Sie eine Alternative an."
+    },
+    {
+      "function": "NEGOTIATE",
+      "title": "Alternativen anbieten und aushandeln",
+      "usefulPhrases": [
+        "Was hältst du davon, wenn wir stattdessen ...?",
+        "Vielleicht können wir uns in der Mitte treffen: ...",
+        "Wären auch ... für dich in Ordnung?",
+        "Wir könnten beides machen: ..."
+      ],
+      "tip": "Ein Kompromiss zeigt, dass Sie zusammenarbeiten."
+    },
+    {
+      "function": "DECIDE",
+      "title": "Eine gemeinsame Entscheidung treffen",
+      "usefulPhrases": [
+        "Dann machen wir es so: ...",
+        "Wir sind uns also einig, dass ...",
+        "Gut, dann ist alles geklärt.",
+        "Dann treffen wir uns am ... um ..."
+      ],
+      "tip": "Wiederholen Sie am Ende kurz alle wichtigen Ergebnisse."
+    }
+  ],
+  "decisionCriteria": [
+    "Wir haben uns auf einen Termin und einen Ort geeinigt.",
+    "Wir haben besprochen, wer was mitbringt oder bezahlt.",
+    "Wir haben am Ende gemeinsam eine Entscheidung getroffen."
+  ]
+}

@@ -5,9 +5,107 @@ export type ExamSection =
     | "SPRACHBAUSTEINE"
     | "HOERVERSTEHEN"
     | "SCHRIFTLICHER_AUSDRUCK"
+    | "MUENDLICHER_AUSDRUCK"
     | "TESTFORMAT_INFORMATION";
 
-export type ExamTaskType = "MATCHING" | "SITUATION_MATCHING" | "MULTIPLE_CHOICE" | "TRUE_FALSE_NOT_GIVEN" | "WORD_BANK_CLOZE" | "WRITING_TASK";
+export type ExamTaskType =
+    | "MATCHING"
+    | "SITUATION_MATCHING"
+    | "MULTIPLE_CHOICE"
+    | "TRUE_FALSE_NOT_GIVEN"
+    | "WORD_BANK_CLOZE"
+    | "WRITING_TASK"
+    | "TOPIC_INTERVIEW"
+    | "OPINION_DISCUSSION"
+    | "JOINT_PLANNING";
+
+/** The three Mündlicher Ausdruck task types, in Teil order. All learning content is German only. */
+export type SpeakingTaskType = "TOPIC_INTERVIEW" | "OPINION_DISCUSSION" | "JOINT_PLANNING";
+
+/** Exercise-specific part of a topic (Teil 1): only the example answers - questions and Redemittel are in the guide. */
+export interface SpeakingTopic {
+    id: string;
+    title: string;
+    exampleAnswers: string[];
+}
+
+/**
+ * The content of ONE imported Mündlicher Ausdruck exercise. It holds only what is specific to the exercise; the questions, Redemittel
+ * and tips shared by all exercises of a Teil are in the {@link SpeakingGuideContent} (Lernbereich).
+ */
+export interface SpeakingContent {
+    taskType: SpeakingTaskType;
+    topic: string | null;
+    /** Optional per-exercise checklist; when empty the guide's checklist is used. */
+    selfAssessment: string[];
+    // Teil 1
+    exampleProfile?: string | null;
+    topics?: SpeakingTopic[];
+    // Teil 2
+    person?: { name: string | null; age: number | null; occupation: string | null; image?: string; imageAlt?: string };
+    opinionText?: string | null;
+    preparationNotes?: string[];
+    exampleResponse?: string | null;
+    // Teil 3
+    scenario?: string | null;
+    planningPoints?: { id: string; title: string; hint?: string | null }[];
+    extraPhrases?: string[];
+    decisionCriteria?: string[];
+    exampleDialogue?: { speaker: "A" | "B"; text: string }[];
+}
+
+export interface SpeakingTitledText {
+    title: string;
+    text: string;
+}
+
+export interface SpeakingGuideTopic {
+    id: string;
+    title: string;
+    questions: string[];
+    followUpQuestions: string[];
+    usefulPhrases: string[];
+    tip?: string | null;
+}
+
+export interface SpeakingGuideGoal {
+    id: string;
+    title: string;
+    description: string;
+    usefulPhrases: string[];
+    tip?: string | null;
+}
+
+export interface SpeakingGuideFunction {
+    function: string;
+    title: string;
+    usefulPhrases: string[];
+    tip?: string | null;
+}
+
+/** The Lernbereich of one Teil: the shared learning content, German only. */
+export interface SpeakingGuideContent {
+    intro: string;
+    tips: SpeakingTitledText[];
+    steps: SpeakingTitledText[];
+    commonMistakes: string[];
+    selfAssessment: string[];
+    // Teil 1
+    topics?: SpeakingGuideTopic[];
+    usefulPhrases?: string[];
+    // Teil 2
+    goals?: SpeakingGuideGoal[];
+    // Teil 3
+    functions?: SpeakingGuideFunction[];
+    decisionCriteria?: string[];
+}
+
+export interface SpeakingGuide {
+    level: string;
+    part: number;
+    content: SpeakingGuideContent;
+    updatedAt: string | null;
+}
 
 export type ExamFieldPresetType = "TEIL_DESCRIPTION" | "DEFAULT_EXPLANATION" | "DEFAULT_COMMON_MISTAKE";
 
@@ -157,6 +255,8 @@ export interface ExamExercisePublicResponse {
     /** Percentage (0-100) from the most recent completed attempt, or null if never attempted. */
     lastScore: number | null;
     bookmarked: boolean;
+    /** MUENDLICHER_AUSDRUCK only: the structured, German-only speaking content. */
+    speaking?: SpeakingContent | null;
 }
 
 /**

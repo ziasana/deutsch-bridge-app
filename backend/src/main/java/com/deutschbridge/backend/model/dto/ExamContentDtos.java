@@ -181,6 +181,14 @@ public final class ExamContentDtos {
     ) {
     }
 
+    /** Mündlicher Ausdruck: the validated, German-only learner content of the part (see SpeakingSchema) as the learner will see it. */
+    public record SpeakingView(
+            String taskType,
+            String topic,
+            Map<String, Object> content
+    ) {
+    }
+
     public record ExercisePreview(
             String title,
             String instructions,
@@ -195,18 +203,26 @@ public final class ExamContentDtos {
             /** Word-bank exercises (Sprachbausteine Teil 2): the optional advertisement / information before the text. */
             ContextView context,
             /** Writing tasks (Schriftlicher Ausdruck) only. */
-            WritingView writing
+            WritingView writing,
+            /** Speaking tasks (Mündlicher Ausdruck) only. */
+            SpeakingView speaking
     ) {
         public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
                                String readingText, List<QuestionView> questions, List<SituationView> situations,
+                               List<AdvertisementView> advertisements, ContextView context, WritingView writing) {
+            this(title, instructions, headings, texts, readingText, questions, situations, advertisements, context, writing, null);
+        }
+
+        public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
+                               String readingText, List<QuestionView> questions, List<SituationView> situations,
                                List<AdvertisementView> advertisements, ContextView context) {
-            this(title, instructions, headings, texts, readingText, questions, situations, advertisements, context, null);
+            this(title, instructions, headings, texts, readingText, questions, situations, advertisements, context, null, null);
         }
 
         public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
                                String readingText, List<QuestionView> questions, List<SituationView> situations,
                                List<AdvertisementView> advertisements) {
-            this(title, instructions, headings, texts, readingText, questions, situations, advertisements, null, null);
+            this(title, instructions, headings, texts, readingText, questions, situations, advertisements, null, null, null);
         }
 
         public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,

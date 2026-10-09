@@ -3,19 +3,28 @@
 import Link from "next/link";
 import { Check, ChevronRight, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { LEARN_SECTIONS, LearnSectionId } from "../writingMeta";
-import { Station } from "./types";
+import { LEARN_SECTIONS } from "../writingMeta";
+import { LearnSectionMeta, Station } from "./types";
 import { StationResult } from "./useLearnProgress";
+
+/** Wording and targets that differ between learning paths. Defaults are Schreiben's. */
+export interface LearnPathTexts {
+    /** Where "all done" leads, with its label. */
+    exerciseHref: string;
+    exerciseLabel: string;
+    allDoneHint: string;
+    remainingHint: (remaining: number) => string;
+}
 
 interface LearnPathProps {
     level: string;
     stations: Station[];
-    done: Partial<Record<LearnSectionId, StationResult>>;
-    onOpen: (id: LearnSectionId) => void;
+    done: Partial<Record<string, StationResult>>;
+    onOpen: (id: string) => void;
     onReset: () => void;
+    sections?: readonly LearnSectionMeta[];
+    texts?: LearnPathTexts;
 }
-
-const meta = (id: LearnSectionId) => LEARN_SECTIONS.find((s) => s.id === id)!;
 /** Rough reading/practice time so the learner knows what they sign up for. */
 const minutes = (steps: number) => Math.max(1, Math.round(steps * 0.6));
 
@@ -36,7 +45,14 @@ function ProgressRing({ value, total }: { value: number; total: number }) {
 }
 
 /** The learning path: stations in the recommended order, with progress, a clear "next" and no walls of text. */
-export default function LearnPath({ level, stations, done, onOpen, onReset }: LearnPathProps) {
+export default function LearnPath({ level, stations, done, onOpen, onReset, sections = LEARN_SECTIONS, texts }: LearnPathProps) {
+    const meta = (id: string) => sections.find((s) => s.id === id)!;
+    const t: LearnPathTexts = texts ?? {
+        exerciseHref: `/dashboard/exam-prep?section=SCHRIFTLICHER_AUSDRUCK&level=${encodeURIComponent(level)}`,
+        exerciseLabel: "Zu den Schreibaufgaben →",
+        allDoneHint: "Du kennst jetzt die Methode. Wende sie in den Schreibaufgaben an.",
+        remainingHint: (n) => `Noch ${n} ${n === 1 ? "Station" : "Stationen"} bis zum Schreib-Profi.`,
+    };
     const doneCount = stations.filter((s) => done[s.id]).length;
     const next = stations.find((s) => !done[s.id]);
     const allDone = doneCount === stations.length;
@@ -48,11 +64,11 @@ export default function LearnPath({ level, stations, done, onOpen, onReset }: Le
                 <div className="min-w-0 flex-1">
                     <h2 className="font-semibold text-foreground">{allDone ? "Alles geschafft! 🎉" : doneCount === 0 ? "Los geht’s!" : "Weiter so!"}</h2>
                     <p className="mt-0.5 text-sm text-foreground/60">
-                        {allDone ? "Du kennst jetzt die Methode. Wende sie in den Schreibaufgaben an." : `Noch ${stations.length - doneCount} ${stations.length - doneCount === 1 ? "Station" : "Stationen"} bis zum Schreib-Profi.`}
+                        {allDone ? t.allDoneHint : t.remainingHint(stations.length - doneCount)}
                     </p>
                     {allDone ? (
-                        <Link href={`/dashboard/exam-prep?section=SCHRIFTLICHER_AUSDRUCK&level=${encodeURIComponent(level)}`} className="mt-3 inline-flex min-h-10 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
-                            Zu den Schreibaufgaben →
+                        <Link href={t.exerciseHref} className="mt-3 inline-flex min-h-10 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
+                            {t.exerciseLabel}
                         </Link>
                     ) : (
                         next && (

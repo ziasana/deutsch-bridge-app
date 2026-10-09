@@ -40,6 +40,9 @@ public class ExamContentPromptBuilder {
     public static final List<String> DIFFICULTIES = List.of("MIXED", "EASY", "MEDIUM", "HARD");
     public static final int MAX_COUNT = 50;
 
+    /** Rules shared by the three Mündlicher Ausdruck templates (language, quality, output); included as {{SPEAKING_COMMON}}. */
+    static final String SPEAKING_COMMON_TEMPLATE = "exam-content/prompts/muendlicher-ausdruck-common.v1.0.txt";
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     public PromptResponse build(ExamContentSpec spec, PromptRequest request, int existingCount, int firstNumber) {
@@ -112,14 +115,23 @@ public class ExamContentPromptBuilder {
         if (spec.isWriting()) checkWritingStyle(relationship, communication);
         values.put("INSTRUCTIONS", spec.defaultInstructions());
         values.put("WRITING_GUIDANCE", ExamContentSpecs.WRITING_GUIDANCE);
+        values.put("TASK_TYPE", SpeakingSchema.taskTypeOf(spec));
+        values.put("CORE_TOPIC_IDS", String.join(", ", SpeakingSchema.CORE_TOPICS.keySet()));
+        values.put("OPTIONAL_TOPIC_IDS", String.join(", ", SpeakingSchema.OPTIONAL_TOPICS.keySet()));
+        values.put("GOAL_IDS", String.join(", ", SpeakingSchema.GOALS.keySet()));
+        values.put("FUNCTION_IDS", String.join(", ", SpeakingSchema.FUNCTIONS.keySet()));
+        values.put("MIN_PLANNING_POINTS", String.valueOf(SpeakingSchema.MIN_PLANNING_POINTS));
+        values.put("MAX_PLANNING_POINTS", String.valueOf(SpeakingSchema.MAX_PLANNING_POINTS));
         values.put("REQUEST_BLOCK", requestBlock(spec, count, difficulty, topics, firstId, includeVisuals, textType, grammar, contextMode, wordCategories)
-                + (spec.isWriting() ? writingBlock(scenario, relationship, communication, existingSummaries) : ""));
+                + (spec.isWriting() ? writingBlock(scenario, relationship, communication, existingSummaries) : "")
+                + (spec.isSpeaking() ? speakingBlock(spec, existingSummaries) : ""));
         values.put("VISUAL_RULES", visualRules(includeVisuals));
         values.put("JSON_EXAMPLE", example);
         values.put("NOTES_BLOCK", request.notes() == null || request.notes().isBlank() ? ""
                 : "\nADDITIONAL INSTRUCTIONS FROM THE EDITOR:\n" + request.notes().strip());
 
         String prompt = loadTemplate(spec.promptTemplate());
+        if (prompt.contains("{{SPEAKING_COMMON}}")) prompt = prompt.replace("{{SPEAKING_COMMON}}", loadTemplate(SPEAKING_COMMON_TEMPLATE));
         for (Map.Entry<String, String> e : values.entrySet()) {
             prompt = prompt.replace("{{" + e.getKey() + "}}", e.getValue());
         }
@@ -146,7 +158,7 @@ public class ExamContentPromptBuilder {
         if (topics.isEmpty()) {
             b.append("Topics: choose a varied, balanced mix of everyday topics across the exercises.\n");
         } else {
-            b.append(spec.isMultipleChoice() || spec.isWriting()
+            b.append(spec.isMultipleChoice() || spec.isWriting() || spec.isSpeaking()
                     ? "Topics: spread the exercises across the following topics (every exercise needs one clear central topic of its own):\n"
                     : "Topics: spread the exercises across the following topics (each exercise's five texts may touch related sub-topics):\n");
             int base = count / topics.size();
@@ -230,6 +242,27 @@ public class ExamContentPromptBuilder {
         return b.toString().stripTrailing();
     }
 
+    private static String speakingBlock(ExamContentSpec spec, List<String> existing) {
+        StringBuilder b = new StringBuilder("\n\nSPEAKING TASK CONFIGURATION\n");
+        b.append("Task type: ").append(SpeakingSchema.taskTypeOf(spec)).append(" for every exercise (set \"taskType\" to this value).\n");
+        b.append("Language: ALL learning content is German. Do not write English or Persian anywhere in the JSON.\n");
+        b.append(switch (spec.part()) {
+            case 1 -> "Every exercise covers all seven core topics (" + String.join(", ", SpeakingSchema.CORE_TOPICS.keySet())
+                    + ") and may add the optional topics (" + String.join(", ", SpeakingSchema.OPTIONAL_TOPICS.keySet())
+                    + "). Vary the example persona (name, country, job, family, languages) from exercise to exercise. "
+                    + "Any selected themes below only colour the example answers and optional topics.\n";
+            case 2 -> "Every exercise has one realistic opinion stimulus: a person (name, age, occupation) states an opinion on a topic in the first person. "
+                    + "Use a different topic, person and opinion in every exercise; opinions should be balanced so that learners can agree or disagree.\n";
+            default -> "Every exercise has one realistic planning scenario with " + SpeakingSchema.MIN_PLANNING_POINTS + "–" + SpeakingSchema.MAX_PLANNING_POINTS
+                    + " planning points. Use a different scenario (party, trip, gift, excursion, project, move ...) in every exercise.\n";
+        });
+        if (!existing.isEmpty()) {
+            b.append("\nEXISTING EXERCISES (do not repeat these topics, scenarios or wording; create something clearly different):\n");
+            existing.forEach(line -> b.append("- ").append(line).append("\n"));
+        }
+        return b.toString().stripTrailing();
+    }
+
     private static String visualRules(boolean includeVisuals) {
         if (!includeVisuals) {
             return "Visual briefs are NOT requested: in every advertisement set \"visual\": {\"hasImage\": false, \"imageType\": \"NONE\"} and write all information as text.";
@@ -253,6 +286,10 @@ public class ExamContentPromptBuilder {
         ex.put("externalId", firstId);
         ex.put("title", spec.level().getValue() + " " + ExamContentTokens.sectionLabel(spec.section()) + " Teil " + spec.part() + " – ...");
         ex.put("instructions", spec.defaultInstructions());
+        if (spec.isSpeaking()) {
+            SpeakingSchema.putExample(ex, spec, difficulty);
+            return write(root);
+        }
         if (spec.isWriting()) {
             ex.put("taskType", "EMAIL_RESPONSE");
             ex.put("scenarioType", "STANDARD_EMAIL");

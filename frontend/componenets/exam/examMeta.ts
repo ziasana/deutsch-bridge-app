@@ -1,4 +1,4 @@
-import { BookOpen, Headphones, Info, LucideIcon, PenLine, Puzzle } from "lucide-react";
+import { BookOpen, Headphones, Info, LucideIcon, Mic, PenLine, Puzzle } from "lucide-react";
 import { ExamSection, ExamTaskType } from "@/types/exam";
 
 export interface ExamTypeMeta {
@@ -15,6 +15,7 @@ export const EXAM_TYPE_ORDER: ExamSection[] = [
     "SPRACHBAUSTEINE",
     "HOERVERSTEHEN",
     "SCHRIFTLICHER_AUSDRUCK",
+    "MUENDLICHER_AUSDRUCK",
     "TESTFORMAT_INFORMATION",
 ];
 
@@ -43,6 +44,12 @@ export const EXAM_TYPE_META: Record<ExamSection, ExamTypeMeta> = {
         icon: PenLine,
         color: "#f97316",
     },
+    MUENDLICHER_AUSDRUCK: {
+        label: "Mündlicher Ausdruck",
+        description: "Übe das Sprechen: Kennenlernen, über ein Thema sprechen und gemeinsam planen.",
+        icon: Mic,
+        color: "#ec4899",
+    },
     TESTFORMAT_INFORMATION: {
         label: "Testformat",
         description: "Prüfungsaufbau, Punkte, Dauer und mehr.",
@@ -59,6 +66,9 @@ export const TASK_TYPE_LABELS: Record<ExamTaskType, string> = {
     TRUE_FALSE_NOT_GIVEN: "Aufgaben richtig/falsch/nicht",
     WORD_BANK_CLOZE: "Lückentext (Wortbank)",
     WRITING_TASK: "Schriftlicher Ausdruck",
+    TOPIC_INTERVIEW: "Einander kennenlernen",
+    OPINION_DISCUSSION: "Über ein Thema sprechen",
+    JOINT_PLANNING: "Gemeinsam etwas planen",
 };
 
 export const SPRACHBAUSTEINE_TASK_TYPE_LABELS: Partial<Record<ExamTaskType, string>> = {

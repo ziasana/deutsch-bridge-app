@@ -65,7 +65,28 @@ public final class ExamContentSpecs {
                     "Antworten Sie auf die E-Mail. Schreiben Sie etwas zu allen vier Punkten:",
                     "exam-content/prompts/schriftlicher-ausdruck.v1.0.txt",
                     "1.0",
-                    4, 0, 1)
+                    4, 0, 1),
+            new ExamContentSpec(
+                    ExamType.TELC, LearningLevel.B1, ExamSection.MUENDLICHER_AUSDRUCK, 1, ExamTaskType.TOPIC_INTERVIEW,
+                    0, 0, 0, 0,
+                    "Stellen Sie sich Ihrer Gesprächspartnerin oder Ihrem Gesprächspartner vor und stellen Sie Fragen zu den folgenden Themen. "
+                            + "Antworten Sie auch auf die Fragen Ihres Partners.",
+                    "exam-content/prompts/muendlicher-ausdruck-teil1.v1.0.txt",
+                    "1.0"),
+            new ExamContentSpec(
+                    ExamType.TELC, LearningLevel.B1, ExamSection.MUENDLICHER_AUSDRUCK, 2, ExamTaskType.OPINION_DISCUSSION,
+                    0, 0, 0, 0,
+                    "Berichten Sie, was die Person zum Thema denkt. Sagen Sie dann Ihre eigene Meinung, erzählen Sie von Ihren Erfahrungen "
+                            + "und reagieren Sie auf die Meinung Ihrer Gesprächspartnerin oder Ihres Gesprächspartners.",
+                    "exam-content/prompts/muendlicher-ausdruck-teil2.v1.0.txt",
+                    "1.0"),
+            new ExamContentSpec(
+                    ExamType.TELC, LearningLevel.B1, ExamSection.MUENDLICHER_AUSDRUCK, 3, ExamTaskType.JOINT_PLANNING,
+                    0, 0, 0, 0,
+                    "Planen Sie gemeinsam mit Ihrer Gesprächspartnerin oder Ihrem Gesprächspartner. Machen Sie Vorschläge, begründen Sie Ihre Meinung, "
+                            + "reagieren Sie auf die Vorschläge Ihres Partners und einigen Sie sich auf eine gemeinsame Lösung.",
+                    "exam-content/prompts/muendlicher-ausdruck-teil3.v1.0.txt",
+                    "1.0")
     );
 
     private ExamContentSpecs() {

@@ -1,0 +1,219 @@
+{
+  "intro": "In Teil 1 lernen Sie Ihre Gesprächspartnerin oder Ihren Gesprächspartner kennen. Sie stellen sich vor, stellen Fragen und antworten auf Fragen. Es ist ein echtes Gespräch – kein auswendig gelernter Vortrag.",
+  "tips": [
+    {
+      "title": "Antworten Sie mit mehr als einem Wort",
+      "text": "Geben Sie immer eine kleine Zusatzinformation: nicht nur „Ich wohne in Berlin.“, sondern „Ich wohne in Berlin, in einer kleinen Wohnung im Zentrum.“"
+    },
+    {
+      "title": "Stellen Sie Gegenfragen",
+      "text": "Nach Ihrer Antwort können Sie sofort zurückfragen: „Und wie ist das bei Ihnen?“ So bleibt das Gespräch lebendig."
+    },
+    {
+      "title": "Hören Sie zu und reagieren Sie",
+      "text": "Zeigen Sie Interesse mit kurzen Reaktionen: „Wirklich?“, „Das klingt interessant.“, „Ach, das wusste ich nicht.“"
+    },
+    {
+      "title": "Sprechen Sie nicht auswendig",
+      "text": "Lernen Sie Redemittel, aber keine ganzen Texte. Formulieren Sie Ihre Sätze neu, damit sie natürlich klingen."
+    },
+    {
+      "title": "Bleiben Sie ruhig, wenn Sie etwas nicht verstehen",
+      "text": "Fragen Sie höflich nach: „Entschuldigung, können Sie das bitte wiederholen?“ Das ist in der Prüfung völlig in Ordnung."
+    }
+  ],
+  "steps": [
+    {
+      "title": "1. Begrüßen und vorstellen",
+      "text": "Sagen Sie Hallo und nennen Sie Ihren Namen."
+    },
+    {
+      "title": "2. Themen besprechen",
+      "text": "Gehen Sie die Themen der Reihe nach durch – erzählen Sie und fragen Sie."
+    },
+    {
+      "title": "3. Gespräch abrunden",
+      "text": "Bedanken Sie sich kurz für das Gespräch."
+    }
+  ],
+  "commonMistakes": [
+    "Nur sehr kurze Antworten geben („Ja.“, „Berlin.“).",
+    "Einen langen Text auswendig aufsagen und dabei nicht zuhören.",
+    "Keine eigenen Fragen stellen.",
+    "Mit „du“ und „Sie“ durcheinanderkommen – entscheiden Sie sich für eine Form."
+  ],
+  "selfAssessment": [
+    "Ich habe mich vorgestellt und alle Themen angesprochen.",
+    "Ich habe meinem Partner mindestens zwei Fragen gestellt.",
+    "Ich habe auf die Antworten meines Partners reagiert.",
+    "Ich habe in ganzen Sätzen gesprochen, nicht nur auswendig Gelerntes aufgesagt."
+  ],
+  "topics": [
+    {
+      "id": "name",
+      "title": "Name",
+      "questions": [
+        "Wie heißen Sie?",
+        "Wie schreibt man Ihren Nachnamen?"
+      ],
+      "followUpQuestions": [
+        "Haben Sie einen Spitznamen?",
+        "Was bedeutet Ihr Name?"
+      ],
+      "usefulPhrases": [
+        "Mein Name ist ...",
+        "Man schreibt das ...",
+        "Sie können mich ... nennen."
+      ],
+      "tip": "Buchstabieren Sie Ihren Namen langsam und deutlich – üben Sie das Alphabet."
+    },
+    {
+      "id": "herkunft",
+      "title": "Woher Sie kommen",
+      "questions": [
+        "Woher kommen Sie?",
+        "Aus welcher Stadt oder Region kommen Sie genau?"
+      ],
+      "followUpQuestions": [
+        "Wie gefällt es Ihnen in Deutschland?",
+        "Was vermissen Sie am meisten aus Ihrer Heimat?"
+      ],
+      "usefulPhrases": [
+        "Ich komme aus ...",
+        "Ursprünglich komme ich aus ...",
+        "Meine Heimatstadt liegt in ..."
+      ],
+      "tip": "Nennen Sie nicht nur das Land, sondern auch eine Stadt oder Region."
+    },
+    {
+      "id": "wohnen",
+      "title": "Wie Sie wohnen",
+      "questions": [
+        "Wo wohnen Sie jetzt?",
+        "Wohnen Sie in einer Wohnung oder in einem Haus?"
+      ],
+      "followUpQuestions": [
+        "Wie lange wohnen Sie schon dort?",
+        "Haben Sie einen Balkon oder einen Garten?"
+      ],
+      "usefulPhrases": [
+        "Ich wohne in ...",
+        "Meine Wohnung hat ... Zimmer.",
+        "Mir gefällt besonders, dass ..."
+      ],
+      "tip": "Beschreiben Sie kurz, was Ihnen an Ihrer Wohnung gefällt."
+    },
+    {
+      "id": "familie",
+      "title": "Familie",
+      "questions": [
+        "Haben Sie Geschwister?",
+        "Wohnt Ihre Familie auch in Deutschland?"
+      ],
+      "followUpQuestions": [
+        "Wie oft sehen Sie Ihre Familie?",
+        "Sind Sie verheiratet?"
+      ],
+      "usefulPhrases": [
+        "Ich habe ... Geschwister.",
+        "Meine Eltern leben in ...",
+        "In meiner Familie gibt es ..."
+      ],
+      "tip": "Sie müssen nicht alles erzählen – wählen Sie, was Sie sagen möchten."
+    },
+    {
+      "id": "deutsch_gelernt",
+      "title": "Wo Sie Deutsch gelernt haben",
+      "questions": [
+        "Wo haben Sie Deutsch gelernt?",
+        "Wie lange lernen Sie schon Deutsch?"
+      ],
+      "followUpQuestions": [
+        "Was fällt Ihnen beim Deutschlernen besonders schwer?",
+        "Wie üben Sie außerhalb des Kurses?"
+      ],
+      "usefulPhrases": [
+        "Ich lerne seit ... Deutsch.",
+        "Ich habe einen Kurs bei ... besucht.",
+        "Am schwierigsten finde ich ..."
+      ],
+      "tip": "Verwenden Sie „seit“ + Dativ für die Dauer: seit zwei Jahren."
+    },
+    {
+      "id": "beruf",
+      "title": "Was Sie machen (Schule, Studium, Beruf)",
+      "questions": [
+        "Was machen Sie beruflich?",
+        "Arbeiten Sie oder studieren Sie?"
+      ],
+      "followUpQuestions": [
+        "Was gefällt Ihnen an Ihrer Arbeit besonders gut?",
+        "Wie sieht ein normaler Arbeitstag bei Ihnen aus?"
+      ],
+      "usefulPhrases": [
+        "Ich arbeite als ...",
+        "Ich studiere ... an der Universität.",
+        "Zu meinen Aufgaben gehört ..."
+      ],
+      "tip": "Im Deutschen sagt man „als“ + Beruf ohne Artikel: Ich arbeite als Lehrerin."
+    },
+    {
+      "id": "sprachen",
+      "title": "Sprachen",
+      "questions": [
+        "Welche Sprachen sprechen Sie?",
+        "Warum lernen Sie Deutsch?"
+      ],
+      "followUpQuestions": [
+        "Welche Sprache würden Sie noch gern lernen?",
+        "Sprechen Sie zu Hause eine andere Sprache?"
+      ],
+      "usefulPhrases": [
+        "Meine Muttersprache ist ...",
+        "Ich spreche auch ...",
+        "Ich lerne Deutsch, weil ..."
+      ],
+      "tip": "Begründen Sie mit „weil“ – das Verb steht am Ende."
+    },
+    {
+      "id": "wochenende",
+      "title": "Wochenende",
+      "questions": [
+        "Was machen Sie normalerweise am Wochenende?",
+        "Verbringen Sie das Wochenende lieber zu Hause oder unterwegs?"
+      ],
+      "followUpQuestions": [
+        "Was haben Sie letztes Wochenende gemacht?"
+      ],
+      "usefulPhrases": [
+        "Am Wochenende ...",
+        "Meistens gehe ich ...",
+        "Wenn das Wetter schön ist, ..."
+      ],
+      "tip": "Für Vergangenes verwenden Sie das Perfekt: Ich bin ... gegangen."
+    },
+    {
+      "id": "hobbys",
+      "title": "Hobbys",
+      "questions": [
+        "Welche Hobbys haben Sie?",
+        "Wie sind Sie zu Ihrem Hobby gekommen?"
+      ],
+      "followUpQuestions": [
+        "Machen Sie Ihr Hobby allein oder mit anderen?"
+      ],
+      "usefulPhrases": [
+        "In meiner Freizeit ...",
+        "Ich interessiere mich für ...",
+        "Das macht mir viel Spaß, weil ..."
+      ],
+      "tip": "Nennen Sie ein Hobby und einen Grund – das macht Ihre Antwort lebendig."
+    }
+  ],
+  "usefulPhrases": [
+    "Und was ist mit Ihnen?",
+    "Das ist ja interessant!",
+    "Entschuldigung, können Sie das bitte wiederholen?",
+    "Wie meinen Sie das?"
+  ]
+}

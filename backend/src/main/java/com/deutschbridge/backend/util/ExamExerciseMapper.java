@@ -9,6 +9,7 @@ import com.deutschbridge.backend.model.entity.ExamExercise;
 import com.deutschbridge.backend.model.entity.ExamExerciseCompletion;
 import com.deutschbridge.backend.model.entity.ExamPassage;
 import com.deutschbridge.backend.model.entity.ExamQuestion;
+import com.deutschbridge.backend.model.enums.ExamSection;
 
 import java.util.Comparator;
 import java.util.List;
@@ -81,8 +82,16 @@ public class ExamExerciseMapper {
                 completion != null ? completion.getLastScore() : null,
                 exercise.isRequiresPlanning(),
                 exercise.getLeitpunkte(),
-                bookmarked
+                bookmarked,
+                speakingOf(exercise)
         );
+    }
+
+    /** The stored speaking content of an imported Mündlicher Ausdruck exercise; null for everything else. */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> speakingOf(ExamExercise exercise) {
+        if (exercise.getSection() != ExamSection.MUENDLICHER_AUSDRUCK || exercise.getMetadata() == null) return null;
+        return exercise.getMetadata().get("speaking") instanceof Map<?, ?> speaking ? (Map<String, Object>) speaking : null;
     }
 
     /**

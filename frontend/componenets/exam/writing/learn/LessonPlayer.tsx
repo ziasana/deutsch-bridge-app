@@ -1,23 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { LEARN_SECTIONS, LearnSectionId } from "../writingMeta";
+import { LEARN_SECTIONS } from "../writingMeta";
 import Celebration from "./Celebration";
 import LessonShell, { LessonResult } from "./LessonShell";
-import { Station } from "./types";
+import { LearnSectionMeta, Station } from "./types";
 
 interface LessonPlayerProps {
     station: Station;
-    nextStationId: LearnSectionId | null;
-    onFinished: (id: LearnSectionId, result: LessonResult) => void;
-    onNext: (id: LearnSectionId | null) => void;
+    nextStationId: string | null;
+    onFinished: (id: string, result: LessonResult) => void;
+    onNext: (id: string | null) => void;
     onExit: () => void;
+    /** Display data of the path's stations; defaults to Schreiben's. */
+    sections?: readonly LearnSectionMeta[];
+    /** Text of the final button after the last station. */
+    finishLabel?: string;
 }
 
 /** Runs one station, then shows the end-of-lesson reaction. "Noch einmal" restarts the lesson from the first step. */
-export default function LessonPlayer({ station, nextStationId, onFinished, onNext, onExit }: LessonPlayerProps) {
-    const meta = LEARN_SECTIONS.find((s) => s.id === station.id)!;
-    const nextMeta = nextStationId ? LEARN_SECTIONS.find((s) => s.id === nextStationId)! : null;
+export default function LessonPlayer({ station, nextStationId, onFinished, onNext, onExit, sections = LEARN_SECTIONS, finishLabel }: LessonPlayerProps) {
+    const meta = sections.find((s) => s.id === station.id)!;
+    const nextMeta = nextStationId ? (sections.find((s) => s.id === nextStationId) ?? null) : null;
     const [result, setResult] = useState<LessonResult | null>(null);
     const [run, setRun] = useState(0);
 
@@ -34,6 +38,7 @@ export default function LessonPlayer({ station, nextStationId, onFinished, onNex
                     setRun((r) => r + 1);
                 }}
                 onOverview={onExit}
+                finishLabel={finishLabel}
             />
         );
     }

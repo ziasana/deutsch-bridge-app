@@ -14,6 +14,10 @@ export const getExamContentOptions = async () => api.get<ExamContentOptions>("/a
 export const generateExamContentPrompt = async (request: PromptRequest) =>
     api.post<PromptResponse>("/admin/exam-content/prompt", request);
 
+/** The starter file (import format) of a Mündlicher Ausdruck Teil, as text. */
+export const getSpeakingStarter = async (part: number) =>
+    api.get<string>(`/admin/exam-content/speaking-starter/${part}`, { responseType: "text", transformResponse: (data) => data });
+
 export const validateExamContent = async (json: string) => api.post<ValidationReport>("/admin/exam-content/validate", { json });
 
 export const importExamContent = async (json: string, selectedIndexes: number[]) =>

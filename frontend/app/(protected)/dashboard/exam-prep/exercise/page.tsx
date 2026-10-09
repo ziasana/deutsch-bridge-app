@@ -1,6 +1,8 @@
 "use client";
 
 import { WritingExercise } from "@/componenets/exam/writing";
+import { SpeakingExercise } from "@/componenets/exam/speaking";
+import { useSpeakingGuides } from "@/hooks/exam/useSpeakingGuides";
 import { Suspense, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -303,6 +305,28 @@ function SchriftlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExerci
                 }}
             />
         </div>
+    );
+}
+
+function MuendlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse }>) {
+    const { completed, marking, markCompleted } = useExerciseCompletion(exercise);
+    const level = exercise.level ?? "B1";
+    const { guideFor, isLoading: guideLoading } = useSpeakingGuides(level);
+
+    if (!exercise.speaking) {
+        return <div className="rounded-[10px] bg-card p-6 shadow-card text-sm text-foreground/60">Diese Übung hat noch keinen Inhalt.</div>;
+    }
+    return (
+        <SpeakingExercise
+            exerciseId={exercise.id}
+            content={exercise.speaking}
+            guide={guideFor(exercise.teil ?? 1)?.content}
+            guideLoading={guideLoading}
+            level={level}
+            completed={completed}
+            marking={marking}
+            onMarkCompleted={markCompleted}
+        />
     );
 }
 
@@ -1064,6 +1088,7 @@ function ExamExerciseContent() {
 
                 {exercise.section !== "HOERVERSTEHEN" &&
                     exercise.section !== "SCHRIFTLICHER_AUSDRUCK" &&
+                    exercise.section !== "MUENDLICHER_AUSDRUCK" &&
                     exercise.section !== "TESTFORMAT_INFORMATION" && (
                     <>
                         {(exercise.taskType === "MATCHING" || exercise.taskType === "WORD_BANK_CLOZE") && (
@@ -1080,6 +1105,8 @@ function ExamExerciseContent() {
                     <HoerenListQuiz exercise={exercise} />
                 ) : exercise.section === "SCHRIFTLICHER_AUSDRUCK" ? (
                     <SchriftlicherAusdruckView exercise={exercise} />
+                ) : exercise.section === "MUENDLICHER_AUSDRUCK" ? (
+                    <MuendlicherAusdruckView exercise={exercise} />
                 ) : exercise.section === "TESTFORMAT_INFORMATION" ? (
                     <TestformatInformationView exercise={exercise} />
                 ) : exercise.taskType === "WORD_BANK_CLOZE" || exercise.taskType === "SITUATION_MATCHING" ? (

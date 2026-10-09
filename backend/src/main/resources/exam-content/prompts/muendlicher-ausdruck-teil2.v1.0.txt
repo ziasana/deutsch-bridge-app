@@ -1,0 +1,39 @@
+Create original {{LEVEL}} {{SECTION_LABEL}} exercises for {{PART_LABEL}} "Über ein Thema sprechen".
+
+==================================================
+WHAT TO CREATE
+
+{{REQUEST_BLOCK}}
+
+==================================================
+WHAT A TEIL 2 EXERCISE IS
+
+In Teil 2 the learner receives a short opinion text from a person (a name, an age, an occupation and a statement about a topic, sometimes with a portrait photo). The learner then talks to a partner and must:
+1. report the person's opinion (REPORT_OPINION),
+2. express their own opinion (EXPRESS_OWN_OPINION),
+3. describe their own experiences with the topic (DESCRIBE_EXPERIENCE),
+4. react to the partner's opinion (REACT_TO_PARTNER).
+These four communication goals and their useful phrases are the same in every exercise and live in the Lernbereich - do NOT generate them.
+
+Every exercise provides:
+- "topic": a short German title of the theme (e.g. "Gruppenreisen").
+- "person": {"name": full name, "age": whole number, "occupation": job, "image": optional, "imageAlt": German description}. Use "image": "" and "imageAlt": "" when there is no portrait. If you give an image it must be an uploaded file path starting with /uploads/ or an https:// URL; imageAlt is then required.
+- "opinionText": a coherent first-person opinion of about 60-120 words in {{LEVEL}} German. It gives the person's view with two or three reasons or examples (ich finde ..., weil ...). It must be balanced enough that learners can agree or disagree.
+- "preparationNotes": optional, 0-8 short German hints for the preparation time (e.g. "Überlegen Sie, wann Sie zuletzt verreist sind.").
+- "exampleResponse": optional, one coherent spoken example (about 120-200 words) that covers all four goals in a natural order.
+Use different topics, persons and opinions in every exercise (travel, work, housing, learning, media, food, sport, shopping, free time ...).
+
+The "instructions" text is exactly: "{{INSTRUCTIONS}}"
+
+{{SPEAKING_COMMON}}
+
+==================================================
+FINAL CHECK
+
+- person has name, age (a number), occupation; image only with imageAlt
+- opinionText is written in the first person and is understandable without further context
+- there is no communicationGoals field and no useful phrases in the exercise
+- exampleResponse (if present) is consistent with opinionText and covers all four goals
+- no English, no Persian, no "en"/"fa" fields
+- every externalId is unique; valid JSON syntax, no Markdown fences, no text outside the JSON
+{{NOTES_BLOCK}}

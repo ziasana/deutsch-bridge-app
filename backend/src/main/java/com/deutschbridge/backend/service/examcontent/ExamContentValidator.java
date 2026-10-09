@@ -165,6 +165,9 @@ public class ExamContentValidator {
         if (spec != null && spec.isSituationMatching()) {
             return readSituationExercise(index, spec, node, p, externalId, title, instructions, issues);
         }
+        if (spec != null && spec.isSpeaking()) {
+            return readSpeakingExercise(index, spec, node, p, externalId, title, instructions, issues);
+        }
         if (spec != null && spec.isWriting()) {
             return readWritingExercise(index, spec, node, p, externalId, title, instructions, issues);
         }
@@ -372,6 +375,17 @@ public class ExamContentValidator {
     // ------------------------------------------------------------------ reading text + multiple choice
 
     // ------------------------------------------------------------------ Sprachbausteine Teil 2 (word bank)
+
+    // ------------------------------------------------------------------ Mündlicher Ausdruck
+
+    private ParsedExercise readSpeakingExercise(int index, ExamContentSpec spec, JsonNode node, String p, String externalId,
+                                                String title, String instructions, List<Issue> issues) {
+        ExamSpeakingReader.Result result = new ExamSpeakingReader(p, issues).read(spec, node, title, instructions);
+        Map<String, Object> metadata = readMetadata(node.get("metadata"), p, issues);
+        if (node.get("metadata") != null && node.get("metadata").isObject()) putStringList(node.get("metadata"), "tags", metadata);
+        return new ParsedExercise(index, spec, externalId, title, instructions, List.of(), List.of(), metadata, null, List.of(),
+                List.of(), List.of(), List.of(), null, null, result.speaking());
+    }
 
     // ------------------------------------------------------------------ Schriftlicher Ausdruck
 

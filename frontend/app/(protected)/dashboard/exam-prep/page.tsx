@@ -88,6 +88,11 @@ function ExamPrepContent() {
             router.push(`/dashboard/exam-prep/schreiben?level=${encodeURIComponent(effectiveLevel)}`);
             return;
         }
+        // Mündlicher Ausdruck too: learn each Teil first (Lernbereich), then practise.
+        if (section === "MUENDLICHER_AUSDRUCK" && selectedSection !== section) {
+            router.push(`/dashboard/exam-prep/sprechen?level=${encodeURIComponent(effectiveLevel)}`);
+            return;
+        }
         setSelectedSection(section);
         syncUrl({ section });
     };

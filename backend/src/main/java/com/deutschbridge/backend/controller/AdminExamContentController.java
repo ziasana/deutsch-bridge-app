@@ -38,6 +38,15 @@ public class AdminExamContentController {
         return ResponseEntity.ok(service.buildPrompt(request));
     }
 
+    @GetMapping("/speaking-starter/{part}")
+    public ResponseEntity<byte[]> speakingStarter(@PathVariable int part) throws DataNotFoundException {
+        String json = service.speakingStarter(part);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename("B1-Muendlicher-Ausdruck-Teil" + part + "-start.json").build().toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(json.getBytes(StandardCharsets.UTF_8));
+    }
+
     @PostMapping("/validate")
     public ResponseEntity<ValidationReport> validate(@RequestBody ValidateRequest request) {
         return ResponseEntity.ok(service.validate(request.json()));

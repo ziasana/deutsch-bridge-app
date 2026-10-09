@@ -1,3 +1,5 @@
+import type { SpeakingContent } from "./exam";
+
 /** Editorial lifecycle of an exam exercise; only PUBLISHED reaches learners. */
 export type ExamContentStatus = "DRAFT" | "REVIEW" | "APPROVED" | "PUBLISHED" | "REJECTED" | "ARCHIVED";
 
@@ -12,7 +14,15 @@ export interface ExamContentSpecInfo {
     headingCount: number;
     textCount: number;
     label: string;
-    taskType: "MATCHING" | "MULTIPLE_CHOICE" | "SITUATION_MATCHING" | "WORD_BANK_CLOZE" | "WRITING_TASK";
+    taskType:
+        | "MATCHING"
+        | "MULTIPLE_CHOICE"
+        | "SITUATION_MATCHING"
+        | "WORD_BANK_CLOZE"
+        | "WRITING_TASK"
+        | "TOPIC_INTERVIEW"
+        | "OPINION_DISCUSSION"
+        | "JOINT_PLANNING";
     questionCount: number;
     optionCount: number;
 }
@@ -155,6 +165,13 @@ export interface PreviewWriting {
     modelBody?: string | null;
 }
 
+/** Mündlicher Ausdruck: the validated, German-only content of the part, exactly as the learner screens render it. */
+export interface PreviewSpeaking {
+    taskType: SpeakingContent["taskType"];
+    topic: string | null;
+    content: SpeakingContent;
+}
+
 export interface ExercisePreviewData {
     title: string | null;
     instructions: string | null;
@@ -170,6 +187,8 @@ export interface ExercisePreviewData {
     context?: { type: string; title: string; text: string } | null;
     /** Writing tasks (Schriftlicher Ausdruck). */
     writing?: PreviewWriting | null;
+    /** Speaking tasks (Mündlicher Ausdruck). */
+    speaking?: PreviewSpeaking | null;
 }
 
 export interface DuplicateMatch {

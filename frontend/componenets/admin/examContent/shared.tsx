@@ -1,5 +1,6 @@
 "use client";
 
+import { SpeakingModel, SpeakingStimulus, hasSpeakingModel } from "@/componenets/exam/speaking";
 import { ExamContentStatus, ExercisePreviewData, PreviewAdvertisement } from "@/types/examContent";
 
 export const cardClass =
@@ -77,6 +78,7 @@ export function htmlToText(html: string | null | undefined): string {
  * the admin only - the answer key and which headings stay unused.
  */
 export function ExerciseView({ preview, showAnswers = true }: Readonly<{ preview: ExercisePreviewData; showAnswers?: boolean }>) {
+    if (preview.speaking) return <SpeakingTaskView preview={preview} speaking={preview.speaking} />;
     if (preview.writing) return <WritingTaskView preview={preview} writing={preview.writing} />;
     if (preview.advertisements?.length || preview.situations?.length) return <SituationExerciseView preview={preview} showAnswers={showAnswers} />;
     if (preview.questions?.length || preview.readingText) return <ReadingExerciseView preview={preview} showAnswers={showAnswers} />;
@@ -418,6 +420,44 @@ function WritingTaskView({ preview, writing }: Readonly<{ preview: ExercisePrevi
                     <p className="mt-1 whitespace-pre-line">{writing.modelBody}</p>
                 </div>
             )}
+        </div>
+    );
+}
+
+const SPEAKING_TYPE_LABELS: Record<string, string> = {
+    TOPIC_INTERVIEW: "Teil 1 · Einander kennenlernen",
+    OPINION_DISCUSSION: "Teil 2 · Über ein Thema sprechen",
+    JOINT_PLANNING: "Teil 3 · Gemeinsam etwas planen",
+};
+
+/** Mündlicher Ausdruck: the task, the learning aids and the example, exactly as the learner screens show them (admin sees everything). */
+function SpeakingTaskView({ preview, speaking }: Readonly<{ preview: ExercisePreviewData; speaking: NonNullable<ExercisePreviewData["speaking"]> }>) {
+    const content = speaking.content;
+    return (
+        <div className="space-y-4">
+            <dl className="grid gap-2 sm:grid-cols-2">
+                <div className="rounded-md bg-gray-50 px-3 py-2 dark:bg-gray-900/40">
+                    <dt className="text-xs uppercase tracking-wide text-gray-500">Task type</dt>
+                    <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{SPEAKING_TYPE_LABELS[speaking.taskType] ?? speaking.taskType}</dd>
+                </div>
+                <div className="rounded-md bg-gray-50 px-3 py-2 dark:bg-gray-900/40">
+                    <dt className="text-xs uppercase tracking-wide text-gray-500">Topic</dt>
+                    <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{speaking.topic ?? "—"}</dd>
+                </div>
+            </dl>
+            {preview.instructions && <p className="text-sm italic text-gray-700 dark:text-gray-300">{preview.instructions}</p>}
+            <SpeakingStimulus content={content} />
+            {hasSpeakingModel(content) && <SpeakingModel content={content} />}
+            {content.taskType === "JOINT_PLANNING" && (content.extraPhrases ?? []).length > 0 && (
+                <p className="text-sm text-gray-700 dark:text-gray-300">Extra phrases: {(content.extraPhrases ?? []).join(" · ")}</p>
+            )}
+            {(content.preparationNotes ?? []).length > 0 && (
+                <p className="text-sm text-gray-700 dark:text-gray-300">Preparation: {(content.preparationNotes ?? []).join(" · ")}</p>
+            )}
+            <p className="rounded-md bg-blue-50 p-3 text-xs text-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
+                Questions, Redemittel, tips and the checklist come from the Lernbereich of this Teil
+                (Exam Prep → Sprechen lernen) and are shown to learners next to this exercise.
+            </p>
         </div>
     );
 }

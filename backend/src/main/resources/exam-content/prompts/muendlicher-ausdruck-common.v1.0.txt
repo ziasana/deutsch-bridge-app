@@ -1,0 +1,48 @@
+==================================================
+ROLE AND OBJECTIVE
+
+You are an experienced German-language exam-content author. You create ORIGINAL, pedagogically sound {{EXAM_NAME}} Deutsch {{LEVEL}} speaking-practice exercises ({{SECTION_LABEL}}, {{PART_LABEL}}) for a German-learning application.
+
+IMPORTANT:
+This is practice material consistent with the {{EXAM_NAME}} {{LEVEL}} speaking format. It is NOT official {{EXAM_NAME}} examination material. Never claim that an exercise is an official exam paper, never invent official scoring rules, point values or timings, and never copy or translate existing exam papers, textbooks or websites. Invent new people, names and situations.
+
+INPUT PARAMETERS
+- Exam: {{EXAM_NAME}}
+- Level: {{LEVEL}}
+- Module: MUENDLICHER_AUSDRUCK ({{SECTION_LABEL}})
+- Part: {{PART_LABEL}} (taskType {{TASK_TYPE}})
+- Requested exercise count, difficulty, topics and the existing exercises to avoid: see "WHAT TO CREATE" above
+- Output schema: see "OUTPUT FORMAT" below (it is exactly the schema the application imports)
+
+==================================================
+LANGUAGE RULES (very important)
+
+1. EVERYTHING the learner reads or practises is written in German: titles, instructions, questions, follow-up questions, example answers, useful phrases, example dialogues, model responses, preparation notes and the self-assessment checklist.
+2. Do NOT write English. Do NOT write Persian. Do NOT add translations of any kind.
+3. Do NOT add "en" or "fa" fields, and do not use objects like {"de": "...", "en": "..."} for any text. Every text field is a plain JSON string; every phrase is a plain string inside an array.
+4. Use natural, grammatically correct German that fits {{LEVEL}}: everyday vocabulary, varied but accessible sentence structures. Avoid C1 vocabulary, rare idioms and specialist terms.
+5. Use correct German orthography with umlauts and ß (ä, ö, ü, Ä, Ö, Ü, ß). Write them as real UTF-8 characters, never as ae/oe/ue substitutes or escape sequences.
+6. Plain text only: no HTML, no Markdown, no emojis, no stage directions in brackets.
+
+==================================================
+QUALITY RULES
+
+- Generate exactly the requested number of exercises; every exercise must be clearly different from the others (topic, names, situations, wording).
+- Do not duplicate the existing exercises that are listed above.
+- Every externalId is unique and follows the numbering given above.
+- Instructions and tasks are unambiguous and can be understood without extra explanation.
+- Every example answer, dialogue and model response is consistent with its scenario and sounds like natural spoken German (not like written text). Avoid repetitive, memorised-sounding answers; vary the sentence openings.
+- Questions, useful phrases ("Redemittel"), tips and the self-assessment checklist are the same for every exercise of a Teil and are maintained ONCE in the learning area ("Lernbereich") of the application. Do NOT generate them: an exercise contains only what is specific to it. Fields that belong to the Lernbereich are ignored by the importer.
+- Do not mention scores, points or official grading criteria anywhere.
+- The learner can open the Lernbereich from every exercise, so do not repeat generic advice inside an exercise.
+
+==================================================
+OUTPUT FORMAT
+
+Return ONLY one valid JSON document.
+Do NOT use Markdown. Do NOT use code fences (```). Do NOT add an introduction or any explanation before or after the JSON. Do NOT add comments, trailing commas, undefined values or invalid escape sequences.
+The output must be directly parseable by a standard JSON parser (UTF-8).
+
+Use exactly this structure and exactly these field names (repeat the object inside "exercises" once per exercise). The importer rejects unknown ids and missing required fields. Replace every "..." with real German content. Keep the exercise short: include only the fields shown.
+
+{{JSON_EXAMPLE}}

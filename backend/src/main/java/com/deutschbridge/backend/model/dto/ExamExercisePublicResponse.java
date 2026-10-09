@@ -1,6 +1,7 @@
 package com.deutschbridge.backend.model.dto;
 
 import java.util.List;
+import java.util.Map;
 
 /** Student-facing response - answer keys/explanations stripped. */
 public record ExamExercisePublicResponse(
@@ -28,6 +29,11 @@ public record ExamExercisePublicResponse(
         Double lastScore,
         boolean requiresPlanning,
         List<String> leitpunkte,
-        boolean bookmarked
+        boolean bookmarked,
+        /**
+         * MUENDLICHER_AUSDRUCK only: the structured, German-only speaking content (topics / person + opinion + goals / scenario +
+         * planning points, useful phrases, example answers, self-assessment). Null for every other section.
+         */
+        Map<String, Object> speaking
 ) {
 }

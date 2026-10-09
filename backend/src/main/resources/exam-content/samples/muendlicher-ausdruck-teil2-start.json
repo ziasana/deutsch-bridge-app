@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "1.0",
+  "promptVersion": "1.0",
+  "contentType": "EXAM_EXERCISE_BATCH",
+  "exam": "TELC",
+  "level": "B1",
+  "section": "MUENDLICHER_AUSDRUCK",
+  "part": "TEIL_2",
+  "exercises": [
+    {
+      "externalId": "B1-M2-001",
+      "title": "B1 Mündlicher Ausdruck Teil 2 – Gruppenreisen",
+      "instructions": "Berichten Sie, was die Person zum Thema denkt. Sagen Sie dann Ihre eigene Meinung, erzählen Sie von Ihren Erfahrungen und reagieren Sie auf die Meinung Ihrer Gesprächspartnerin oder Ihres Gesprächspartners.",
+      "taskType": "OPINION_DISCUSSION",
+      "topic": "Gruppenreisen",
+      "person": {
+        "name": "Sabine Klostermann",
+        "age": 33,
+        "occupation": "Bürokauffrau",
+        "image": "",
+        "imageAlt": ""
+      },
+      "opinionText": "Ich reise sehr gern in einer Gruppe. Man lernt dabei viele nette Leute kennen und ist nie allein. Außerdem fahre ich am liebsten mit einem Reiseleiter, weil er mir alles erklärt und ich mich um nichts kümmern muss. Ich muss keine Hotels suchen und keine Fahrpläne lesen. Natürlich kann man nicht immer machen, was man will, aber dafür hat man abends immer Gesellschaft und jemanden zum Reden.",
+      "preparationNotes": [
+        "Überlegen Sie, ob Sie schon einmal in einer Gruppe gereist sind.",
+        "Sammeln Sie Vorteile und Nachteile von Gruppenreisen.",
+        "Denken Sie an eine Reise, von der Sie erzählen können."
+      ],
+      "exampleResponse": "Sabine Klostermann reist gern in der Gruppe, weil sie dort nette Leute kennenlernt und abends nicht allein ist. Sie fährt auch am liebsten mit einem Reiseleiter, der alles organisiert. Ich sehe das ein bisschen anders. Ich plane meine Reisen lieber selbst, weil ich dann frei entscheiden kann, was ich sehen möchte. Ich habe aber einmal eine Busreise durch Italien gemacht und fand es dort ganz praktisch, dass der Reiseleiter uns viel erklärt hat. Und wie ist das bei dir? Reist du lieber allein oder mit anderen?",
+      "metadata": {
+        "difficulty": "MEDIUM",
+        "topics": [
+          "TRAVEL"
+        ],
+        "tags": [
+          "reisen",
+          "gruppe"
+        ],
+        "source": "STARTER_SAMPLE"
+      }
+    }
+  ]
+}

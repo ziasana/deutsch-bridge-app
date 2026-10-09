@@ -10,10 +10,12 @@ interface CelebrationProps {
     onNext: () => void;
     onRepeat: () => void;
     onOverview: () => void;
+    /** Text of the final button when there is no next station. */
+    finishLabel?: string;
 }
 
 /** End-of-lesson reaction: stars, a short message based on the quiz result, and clear next actions. */
-export default function Celebration({ correct, total, stationLabel, nextLabel, onNext, onRepeat, onOverview }: CelebrationProps) {
+export default function Celebration({ correct, total, stationLabel, nextLabel, onNext, onRepeat, onOverview, finishLabel = "Jetzt Schreibaufgaben üben →" }: CelebrationProps) {
     const ratio = total === 0 ? 1 : correct / total;
     const stars = ratio >= 0.8 ? 3 : ratio >= 0.5 ? 2 : 1;
     const message = stars === 3 ? "Ausgezeichnet!" : stars === 2 ? "Gut gemacht!" : "Geschafft – Übung macht den Meister!";
@@ -50,7 +52,7 @@ export default function Celebration({ correct, total, stationLabel, nextLabel, o
 
             <div className="mt-8 flex w-full flex-col gap-2">
                 <button type="button" onClick={onNext} className="min-h-12 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 cursor-pointer">
-                    {nextLabel ? `Weiter: ${nextLabel} →` : "Jetzt Schreibaufgaben üben →"}
+                    {nextLabel ? `Weiter: ${nextLabel} →` : finishLabel}
                 </button>
                 <button type="button" onClick={onRepeat} className="min-h-11 rounded-full border border-border px-6 text-sm font-medium transition hover:bg-accent cursor-pointer">
                     Noch einmal

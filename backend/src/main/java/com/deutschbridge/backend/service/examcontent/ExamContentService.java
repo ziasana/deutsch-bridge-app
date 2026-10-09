@@ -68,6 +68,25 @@ public class ExamContentService {
             "EMAIL_GREETING_TOO_LONG", "EMAIL_BODY_TOO_LONG", "EMAIL_CLOSING_TOO_LONG", "EMAIL_SENDER_TOO_LONG");
     private static final Set<String> WRITING_POINT_ERROR_CODES = Set.of(
             "POINTS_MISSING", "POINT_COUNT", "POINT_NUMBER_INVALID", "POINT_NUMBER_DUPLICATE", "POINT_TEXT_EMPTY", "POINT_TEXT_TOO_LONG");
+    /** Every error code of ExamSpeakingReader that is about the part-specific content (not task type, topic, self-assessment or German-only). */
+    private static final Set<String> SPEAKING_CONTENT_ERROR_CODES = Set.of(
+            "TOPICS_MISSING", "TOPIC_NOT_OBJECT", "TOPIC_ID_INVALID", "TOPIC_ID_DUPLICATE", "CORE_TOPIC_MISSING", "TOPIC_QUESTIONS_MISSING",
+            "TOPIC_QUESTIONS_COUNT", "TOPIC_QUESTIONS_INVALID", "TOPIC_QUESTIONS_EMPTY", "TOPIC_QUESTIONS_TOO_LONG", "TOPIC_FOLLOW_UPS_MISSING",
+            "TOPIC_FOLLOW_UPS_COUNT", "TOPIC_FOLLOW_UPS_INVALID", "TOPIC_FOLLOW_UPS_EMPTY", "TOPIC_FOLLOW_UPS_TOO_LONG", "TOPIC_EXAMPLES_MISSING",
+            "TOPIC_EXAMPLES_COUNT", "TOPIC_EXAMPLES_INVALID", "TOPIC_EXAMPLES_EMPTY", "TOPIC_EXAMPLES_TOO_LONG", "TOPIC_PHRASES_MISSING",
+            "TOPIC_PHRASES_COUNT", "TOPIC_PHRASES_INVALID", "TOPIC_PHRASES_EMPTY", "TOPIC_PHRASES_TOO_LONG", "PHRASES_COUNT", "PHRASES_INVALID",
+            "PHRASES_EMPTY", "PHRASES_TOO_LONG",
+            "PERSON_MISSING", "PERSON_NAME_MISSING", "PERSON_NAME_TOO_LONG", "PERSON_OCCUPATION_MISSING", "PERSON_OCCUPATION_TOO_LONG",
+            "PERSON_AGE_INVALID", "IMAGE_REFERENCE_INVALID", "IMAGE_ALT_MISSING", "OPINION_TEXT_MISSING", "OPINION_TEXT_TOO_LONG",
+            "GOALS_MISSING", "GOAL_ID_INVALID", "GOAL_ID_DUPLICATE", "GOAL_MISSING", "GOAL_DESCRIPTION_TOO_LONG", "GOAL_PHRASES_MISSING",
+            "GOAL_PHRASES_COUNT", "GOAL_PHRASES_INVALID", "GOAL_PHRASES_EMPTY", "GOAL_PHRASES_TOO_LONG", "PREPARATION_NOTES_COUNT",
+            "PREPARATION_NOTES_INVALID", "PREPARATION_NOTES_EMPTY", "PREPARATION_NOTES_TOO_LONG", "EXAMPLE_RESPONSE_INVALID", "EXAMPLE_RESPONSE_TOO_LONG",
+            "SCENARIO_MISSING", "SCENARIO_TOO_LONG", "PLANNING_POINTS_MISSING", "PLANNING_POINTS_COUNT", "PLANNING_POINT_EMPTY",
+            "PLANNING_POINT_TOO_LONG", "PLANNING_POINT_DUPLICATE", "PLANNING_HINT_INVALID", "PLANNING_HINT_TOO_LONG", "PHRASE_GROUPS_MISSING",
+            "FUNCTION_INVALID", "FUNCTION_DUPLICATE", "FUNCTION_MISSING", "FUNCTION_PHRASES_MISSING", "FUNCTION_PHRASES_COUNT",
+            "FUNCTION_PHRASES_INVALID", "FUNCTION_PHRASES_EMPTY", "FUNCTION_PHRASES_TOO_LONG", "DECISION_CRITERIA_MISSING", "DECISION_CRITERIA_COUNT",
+            "DECISION_CRITERIA_INVALID", "DECISION_CRITERIA_EMPTY", "DECISION_CRITERIA_TOO_LONG", "DIALOGUE_INVALID", "DIALOGUE_LENGTH",
+            "DIALOGUE_SPEAKER_INVALID", "DIALOGUE_TEXT_EMPTY", "DIALOGUE_TEXT_TOO_LONG", "DIALOGUE_ONE_SPEAKER");
     private static final Set<String> OPTION_ERROR_CODES = Set.of(
             "OPTIONS_MISSING", "OPTION_COUNT", "OPTION_IDS", "OPTION_ID_MISSING", "OPTION_ID_DUPLICATE", "OPTION_TEXT_EMPTY",
             "OPTION_TEXT_TOO_LONG", "OPTION_TEXT_DUPLICATE", "CORRECT_OPTION_MISSING", "CORRECT_OPTION_UNKNOWN");
@@ -116,7 +135,7 @@ public class ExamContentService {
                 spec.examType(), spec.section(), spec.level(), spec.part());
         int next = ExamContentPromptBuilder.nextNumber(spec.externalIdPrefix(),
                 repository.findExternalIdsStartingWith(spec.externalIdPrefix()));
-        return promptBuilder.build(spec, request, existing, next, spec.isWriting() ? existingWritingSummaries(spec) : List.of());
+        return promptBuilder.build(spec, request, existing, next, spec.isWriting() || spec.isSpeaking() ? existingWritingSummaries(spec) : List.of());
     }
 
     /** Newest first, capped so the prompt stays a manageable size: "title - topic (scenario)". */
@@ -145,6 +164,20 @@ public class ExamContentService {
         return ExamContentSpecs.find(exam, level, section, part)
                 .orElseThrow(() -> new IllegalArgumentException("No content specification registered for "
                         + exam.getValue() + " " + level.getValue() + " " + ExamContentTokens.sectionLabel(section) + " Teil " + part));
+    }
+
+    /**
+     * The starter exercise file of a Mündlicher Ausdruck part (the Gruppenreisen / Abschiedsparty material and a Teil 1 example) in the
+     * import format: the admin downloads it, then validates and imports it like any AI-generated file.
+     */
+    public String speakingStarter(int part) throws DataNotFoundException {
+        if (part < 1 || part > 3) throw new DataNotFoundException("No starter file for Teil " + part + ".");
+        try {
+            return new org.springframework.core.io.ClassPathResource("exam-content/samples/muendlicher-ausdruck-teil" + part + "-start.json")
+                    .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        } catch (java.io.IOException e) {
+            throw new DataNotFoundException("No starter file for Teil " + part + ".");
+        }
     }
 
     // ------------------------------------------------------------------ validation
@@ -230,8 +263,9 @@ public class ExamContentService {
         boolean situation = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isSituationMatching());
         boolean wordBank = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isWordBank());
         boolean writing = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isWriting());
+        boolean speaking = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isSpeaking());
         boolean matching = file.exercises().stream().anyMatch(e -> e.spec() != null && !e.spec().isMultipleChoice()
-                && !e.spec().isSituationMatching() && !e.spec().isWordBank() && !e.spec().isWriting());
+                && !e.spec().isSituationMatching() && !e.spec().isWordBank() && !e.spec().isWriting() && !e.spec().isSpeaking());
         int situations = file.exercises().stream().mapToInt(e -> e.situations().size()).sum();
         int advertisements = file.exercises().stream().mapToInt(e -> e.advertisements().size()).sum();
 
@@ -247,10 +281,17 @@ public class ExamContentService {
         checks.add(new Check("Section: " + orDash(file.section()), noCode(all, "SECTION_INVALID")));
         checks.add(new Check("Part: " + orDash(file.part()), noCode(all, "PART_INVALID", "SPEC_UNSUPPORTED")));
         checks.add(new Check("Exercises: " + reports.size(), !reports.isEmpty() && noCode(all, "EXERCISE_NOT_OBJECT", "EXTERNAL_ID_INVALID", "EXTERNAL_ID_DUPLICATE_IN_FILE")));
-        if (matching || (!reading && !situation && !wordBank && !writing)) {
+        if (matching || (!reading && !situation && !wordBank && !writing && !speaking)) {
             checks.add(new Check("Headings: " + headings, !reports.isEmpty() && noCode(all, STRUCTURE_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Texts: " + texts, !reports.isEmpty() && noCode(all, TEXT_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Answer assignments valid", !reports.isEmpty() && noCode(all, ANSWER_ERROR_CODES.toArray(String[]::new))));
+        }
+        if (speaking) {
+            checks.add(new Check("Task type and topic valid", !reports.isEmpty() && noCode(all, "TASK_TYPE_INVALID", "TOPIC_MISSING", "TOPIC_TOO_LONG")));
+            checks.add(new Check("German only (no translation fields, no markup)", !reports.isEmpty() && noCode(all, "TRANSLATION_NOT_ALLOWED", "NON_GERMAN_TEXT", "HTML_CONTENT", "NOT_A_STRING")));
+            checks.add(new Check("Part-specific content complete", !reports.isEmpty() && noCode(all, SPEAKING_CONTENT_ERROR_CODES.toArray(String[]::new))));
+            checks.add(new Check("Self-assessment checklist (" + SpeakingSchema.MIN_SELF_ASSESSMENT + "–" + SpeakingSchema.MAX_SELF_ASSESSMENT + " items)",
+                    !reports.isEmpty() && noCode(all, "SELF_ASSESSMENT_MISSING", "SELF_ASSESSMENT_COUNT", "SELF_ASSESSMENT_INVALID", "SELF_ASSESSMENT_EMPTY", "SELF_ASSESSMENT_TOO_LONG")));
         }
         if (writing) {
             checks.add(new Check("Task type, scenario, topic, relationship and communication type valid", !reports.isEmpty() && noCode(all, WRITING_TASK_ERROR_CODES.toArray(String[]::new))));
@@ -394,6 +435,11 @@ public class ExamContentService {
     /** Last line of defence against publishing something broken by a hand edit after import. */
     static String publishProblem(ExamExercise e) {
         if (e.getPassages() == null || e.getPassages().isEmpty()) return "Has no texts.";
+        if (e.getSection() == ExamSection.MUENDLICHER_AUSDRUCK) {
+            // A speaking task has no questions. Imported tasks carry their structure in the metadata; one that lost it cannot be shown.
+            boolean structured = e.getMetadata() != null && e.getMetadata().get("speaking") instanceof Map<?, ?>;
+            return structured ? null : "A speaking task needs its structured content (metadata.speaking).";
+        }
         if (e.getTaskType() == ExamTaskType.WRITING_TASK) {
             // A writing task has no questions. Imported tasks (they carry their structure in the metadata) must keep exactly four points.
             boolean imported = e.getMetadata() != null && e.getMetadata().get("writing") != null;

@@ -21,5 +21,11 @@ public enum ExamTaskType {
     /** Sprachbausteine Teil 2: one running text with numbered gaps filled from a shared word pool. */
     WORD_BANK_CLOZE,
     /** Schriftlicher Ausdruck: a writing prompt with no grading, just a revealable model solution. */
-    WRITING_TASK
+    WRITING_TASK,
+    /** Mündlicher Ausdruck Teil 1: introduce yourself and ask / answer questions on set topics. Not graded. */
+    TOPIC_INTERVIEW,
+    /** Mündlicher Ausdruck Teil 2: report another person's opinion, give your own, share experiences, react. Not graded. */
+    OPINION_DISCUSSION,
+    /** Mündlicher Ausdruck Teil 3: plan something together with a partner and reach a joint decision. Not graded. */
+    JOINT_PLANNING
 }

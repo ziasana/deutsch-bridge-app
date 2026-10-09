@@ -115,6 +115,21 @@ export function groupIntoParts(items: ExamExerciseSummaryResponse[], section: Ex
             });
     }
 
+    if (section === "MUENDLICHER_AUSDRUCK") {
+        const byPart = new Map<string, ExamExerciseSummaryResponse[]>();
+        items.forEach((e) => {
+            const key = String(e.partNumber ?? 1);
+            (byPart.get(key) ?? byPart.set(key, []).get(key)!).push(e);
+        });
+        return Array.from(byPart.entries())
+            .sort(([a], [b]) => Number(a) - Number(b))
+            .map(([key, groupItems]) => {
+                const taskType = groupItems[0]?.taskType ?? null;
+                const suffix = (taskType && TASK_TYPE_LABELS[taskType]) || "Mündlicher Ausdruck";
+                return buildGroup(key, `Teil ${key} – ${suffix}`, `Teil ${key}`, suffix, groupItems);
+            });
+    }
+
     if (section === "SCHRIFTLICHER_AUSDRUCK") {
         if (items.length === 0) return [];
         return [buildGroup("SCHRIFTLICHER_AUSDRUCK", "Schriftlicher Ausdruck", "Schriftlicher Ausdruck", undefined, items)];
@@ -210,4 +225,5 @@ const EXAM_TYPE_ORDER_PRACTICABLE: ExamSection[] = [
     "SPRACHBAUSTEINE",
     "HOERVERSTEHEN",
     "SCHRIFTLICHER_AUSDRUCK",
+    "MUENDLICHER_AUSDRUCK",
 ];

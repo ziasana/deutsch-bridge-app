@@ -27,15 +27,26 @@ public record ParsedExercise(
         /** Word-bank exercises: optional advertisement / information shown before the text. */
         Context context,
         /** Writing tasks (Schriftlicher Ausdruck): the incoming email, the four points and the classification. */
-        Writing writing
+        Writing writing,
+        /** Speaking tasks (Mündlicher Ausdruck): the validated, part-specific learner content. */
+        Speaking speaking
 ) {
-    /** Everything except the writing task (the pre-writing shapes). */
+    /** Everything except the speaking task (the writing task and the pre-writing shapes). */
+    public ParsedExercise(int index, ExamContentSpec spec, String externalId, String title, String instructions,
+                          List<Heading> headings, List<Text> texts, Map<String, Object> metadata,
+                          String readingText, List<Question> questions, List<Situation> situations,
+                          List<Advertisement> advertisements, List<Option> wordBank, Context context, Writing writing) {
+        this(index, spec, externalId, title, instructions, headings, texts, metadata, readingText, questions, situations,
+                advertisements, wordBank, context, writing, null);
+    }
+
+    /** Everything except the writing and speaking tasks (the pre-writing shapes). */
     public ParsedExercise(int index, ExamContentSpec spec, String externalId, String title, String instructions,
                           List<Heading> headings, List<Text> texts, Map<String, Object> metadata,
                           String readingText, List<Question> questions, List<Situation> situations,
                           List<Advertisement> advertisements, List<Option> wordBank, Context context) {
         this(index, spec, externalId, title, instructions, headings, texts, metadata, readingText, questions, situations,
-                advertisements, wordBank, context, null);
+                advertisements, wordBank, context, null, null);
     }
 
     /** Situation matching (12 components, no word bank). */
@@ -61,6 +72,10 @@ public record ParsedExercise(
 
     /** Every text that identifies this exercise's content: the matching texts, or the single reading text. */
     public List<String> textContents() {
+        if (speaking != null) {
+            // Same text the stored passage yields, so duplicate detection compares like with like.
+            return List.of(ExamContentMapper.toPlainText(ExamContentMapper.toSpeakingHtml(speaking, instructions)));
+        }
         if (writing != null) {
             // Same text the stored passage yields, so duplicate detection compares like with like.
             return List.of(ExamContentMapper.toPlainText(ExamContentMapper.toWritingHtml(writing, instructions)));
@@ -71,6 +86,14 @@ public record ParsedExercise(
         if (readingText != null) return List.of(readingText);
         if (!advertisements.isEmpty()) return advertisements.stream().map(a -> AdvertisementRenderer.toPlainText(a.content())).toList();
         return texts.stream().map(Text::content).toList();
+    }
+
+    /**
+     * A TELC "Mündlicher Ausdruck" task. {@code data} is the complete, validated learner content of the part (German text only):
+     * topic, selfAssessment and the part-specific fields (topics / person + opinionText + communicationGoals / scenario + planningPoints ...).
+     * Only whitelisted keys, strings, lists and maps are ever put in here by the validator.
+     */
+    public record Speaking(String taskType, String topic, Map<String, Object> data) {
     }
 
     /**

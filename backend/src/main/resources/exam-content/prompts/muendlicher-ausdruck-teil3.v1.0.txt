@@ -1,0 +1,35 @@
+Create original {{LEVEL}} {{SECTION_LABEL}} exercises for {{PART_LABEL}} "Gemeinsam etwas planen".
+
+==================================================
+WHAT TO CREATE
+
+{{REQUEST_BLOCK}}
+
+==================================================
+WHAT A TEIL 3 EXERCISE IS
+
+In Teil 3 the learner and a partner plan something together (for example a farewell party, an excursion or a gift). They make suggestions, give reasons, agree or disagree politely, negotiate alternatives and finally reach a joint decision.
+
+Every exercise provides:
+- "topic": a short German title of the activity (e.g. "Abschiedsparty").
+- "scenario": 2-5 German sentences in the "Sie"-form that put the learner in the situation, name the occasion and the partner and say what must be organised. It must contain enough detail for a real discussion of about 3-4 minutes.
+- "planningPoints": {{MIN_PLANNING_POINTS}}-{{MAX_PLANNING_POINTS}} points the learner has to discuss. Each is an object {"title": "Wann?", "hint": optional short German hint}. Use short titles such as "Wann?", "Wo?", "Essen", "Getränke", "Wer bezahlt wofür?" and add other sensible organisational points that fit the scenario (Einladungen, Musik, Aufräumen ...). The points must be different from each other.
+- "extraPhrases": optional, 0-8 phrases that are specific to THIS scenario (e.g. for a party: "Wer bringt den Kuchen mit?"). The general phrases for suggesting, agreeing, disagreeing, negotiating and deciding are the same for every exercise and live in the Lernbereich - do NOT generate them.
+- "decisionCriteria": optional, 0-6 short German statements that describe when THIS plan is successful (e.g. "Wir haben uns auf einen Termin geeinigt.").
+- "exampleDialogue": optional, 6-16 turns between speaker "A" (the learner) and speaker "B" (the partner), natural turn-taking, ending with a joint decision. Every planning point must be touched. Each turn is {"speaker": "A" or "B", "text": German}.
+Use a different scenario in every exercise.
+
+The "instructions" text is exactly: "{{INSTRUCTIONS}}"
+
+{{SPEAKING_COMMON}}
+
+==================================================
+FINAL CHECK
+
+- scenario is detailed enough for a real discussion and is written in the "Sie"-form
+- planningPoints: {{MIN_PLANNING_POINTS}}-{{MAX_PLANNING_POINTS}} different points
+- there is no phraseGroups field; scenario-specific phrases (if any) are in extraPhrases
+- exampleDialogue (if present) uses only the speakers A and B, is consistent with the scenario and reaches a decision
+- no English, no Persian, no "en"/"fa" fields
+- every externalId is unique; valid JSON syntax, no Markdown fences, no text outside the JSON
+{{NOTES_BLOCK}}

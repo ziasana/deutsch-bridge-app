@@ -39,8 +39,8 @@ function LearnView({ level, data, stationId, onNavigate }: LearnViewProps) {
                 key={current.id}
                 station={current}
                 nextStationId={nextId}
-                onFinished={(id, r) => markDone(id, r)}
-                onNext={(id) => (id ? onNavigate(id) : router.push(`/dashboard/exam-prep?section=SCHRIFTLICHER_AUSDRUCK&level=${encodeURIComponent(level)}`))}
+                onFinished={(id, r) => markDone(id as LearnSectionId, r)}
+                onNext={(id) => (id ? onNavigate(id as LearnSectionId) : router.push(`/dashboard/exam-prep?section=SCHRIFTLICHER_AUSDRUCK&level=${encodeURIComponent(level)}`))}
                 onExit={() => onNavigate(null)}
             />
         );
@@ -48,7 +48,7 @@ function LearnView({ level, data, stationId, onNavigate }: LearnViewProps) {
     if (stations.length === 0) {
         return <div className="rounded-[10px] bg-card p-8 text-center text-sm text-foreground/55 shadow-card">Für {level} sind noch keine Lerninhalte verfügbar.</div>;
     }
-    return <LearnPath level={level} stations={stations} done={done} onOpen={onNavigate} onReset={reset} />;
+    return <LearnPath level={level} stations={stations} done={done} onOpen={(id) => onNavigate(id as LearnSectionId)} onReset={reset} />;
 }
 
 function LernenContent() {

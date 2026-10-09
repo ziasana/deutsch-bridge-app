@@ -1,0 +1,105 @@
+{
+  "intro": "In Teil 2 lesen Sie die Meinung einer Person zu einem Thema. Danach sprechen Sie mit Ihrem Partner: Sie berichten, was die Person denkt, sagen Ihre eigene Meinung, erzählen von Ihren Erfahrungen und reagieren auf die Meinung Ihres Partners.",
+  "tips": [
+    {
+      "title": "Lesen Sie den Text mit einem Stift",
+      "text": "Markieren Sie die Hauptaussage und zwei bis drei Gründe der Person."
+    },
+    {
+      "title": "Geben Sie die Meinung in eigenen Worten wieder",
+      "text": "Schreiben Sie nicht ab. Verwenden Sie Berichtsätze: „Frau X findet, dass ...“ oder „Sie sagt, man ...“."
+    },
+    {
+      "title": "Begründen Sie Ihre Meinung",
+      "text": "Eine Meinung ohne Grund wirkt kurz. Nutzen Sie „weil“ und „denn“ und ein Beispiel."
+    },
+    {
+      "title": "Erzählen Sie eine kleine Geschichte",
+      "text": "Eine echte Erfahrung (auch eine kurze!) ist leichter zu erzählen als eine allgemeine Aussage."
+    },
+    {
+      "title": "Gehen Sie auf Ihren Partner ein",
+      "text": "Stimmen Sie zu oder widersprechen Sie höflich – und fragen Sie nach seiner Meinung."
+    }
+  ],
+  "steps": [
+    {
+      "title": "1. Lesen und vorbereiten",
+      "text": "Verstehen Sie die Meinung und überlegen Sie Ihre eigene."
+    },
+    {
+      "title": "2. Die vier Aufgaben nacheinander",
+      "text": "Meinung berichten – eigene Meinung – Erfahrungen – Reaktion."
+    },
+    {
+      "title": "3. Gespräch führen",
+      "text": "Hören Sie zu, wenn Ihr Partner spricht, und reagieren Sie."
+    }
+  ],
+  "commonMistakes": [
+    "Den Text Wort für Wort vorlesen statt ihn zu berichten.",
+    "Nur „Ich finde das gut.“ sagen, ohne Grund.",
+    "Keine eigene Erfahrung erzählen.",
+    "Nicht auf die Aussagen des Partners reagieren."
+  ],
+  "selfAssessment": [
+    "Ich habe die Meinung der Person verständlich wiedergegeben.",
+    "Ich habe meine eigene Meinung gesagt und begründet.",
+    "Ich habe von einer eigenen Erfahrung erzählt.",
+    "Ich habe auf die Meinung meines Partners reagiert."
+  ],
+  "goals": [
+    {
+      "id": "REPORT_OPINION",
+      "title": "Die Meinung der Person wiedergeben",
+      "description": "Berichten Sie, was die Person über das Thema denkt.",
+      "usefulPhrases": [
+        "... findet, dass ...",
+        "Sie sagt, dass man ...",
+        "Für sie ist wichtig, dass ...",
+        "Ihrer Meinung nach ...",
+        "Sie ist der Ansicht, dass ..."
+      ],
+      "tip": "Wechseln Sie in die dritte Person: ich → sie/er."
+    },
+    {
+      "id": "EXPRESS_OWN_OPINION",
+      "title": "Die eigene Meinung sagen",
+      "description": "Sagen Sie, was Sie selbst über das Thema denken, und begründen Sie es.",
+      "usefulPhrases": [
+        "Ich finde, dass ...",
+        "Meiner Meinung nach ...",
+        "Ich sehe das ähnlich/anders, weil ...",
+        "Für mich ist ... wichtiger als ...",
+        "Ich bin (nicht) dafür, denn ..."
+      ],
+      "tip": "Nennen Sie mindestens einen Grund und ein Beispiel."
+    },
+    {
+      "id": "DESCRIBE_EXPERIENCE",
+      "title": "Eigene Erfahrungen erzählen",
+      "description": "Erzählen Sie von Ihren Erfahrungen mit dem Thema.",
+      "usefulPhrases": [
+        "Ich habe einmal ... erlebt.",
+        "Dabei habe ich erlebt, dass ...",
+        "Ich habe die Erfahrung gemacht, dass ...",
+        "Das hat mir (nicht) gefallen, weil ...",
+        "Letztes Jahr war ich ..."
+      ],
+      "tip": "Benutzen Sie das Perfekt oder das Präteritum von „sein“ und „haben“."
+    },
+    {
+      "id": "REACT_TO_PARTNER",
+      "title": "Auf die Meinung des Partners reagieren",
+      "description": "Reagieren Sie auf das, was Ihre Gesprächspartnerin oder Ihr Gesprächspartner sagt.",
+      "usefulPhrases": [
+        "Da stimme ich dir/Ihnen zu.",
+        "Das sehe ich genauso.",
+        "Da bin ich anderer Meinung.",
+        "Das ist ein guter Punkt, aber ...",
+        "Und wie ist das bei dir/Ihnen?"
+      ],
+      "tip": "Stellen Sie am Ende eine Frage, damit Ihr Partner weitersprechen kann."
+    }
+  ]
+}

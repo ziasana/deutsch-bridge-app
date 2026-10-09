@@ -1,5 +1,4 @@
 import { ReactNode } from "react";
-import { LearnSectionId } from "../writingMeta";
 
 /** What a step receives from the lesson shell. */
 export interface StepApi {
@@ -16,7 +15,15 @@ export interface LessonStep {
     render: (api: StepApi) => ReactNode;
 }
 
+/** Display data of one station of a learning path (Schreiben or Mündlicher Ausdruck). */
+export interface LearnSectionMeta {
+    id: string;
+    label: string;
+    emoji: string;
+    hint: string;
+}
+
 export interface Station {
-    id: LearnSectionId;
+    id: string;
     steps: LessonStep[];
 }

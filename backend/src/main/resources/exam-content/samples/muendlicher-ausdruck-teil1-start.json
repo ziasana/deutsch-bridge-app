@@ -1,0 +1,86 @@
+{
+  "schemaVersion": "1.0",
+  "promptVersion": "1.0",
+  "contentType": "EXAM_EXERCISE_BATCH",
+  "exam": "TELC",
+  "level": "B1",
+  "section": "MUENDLICHER_AUSDRUCK",
+  "part": "TEIL_1",
+  "exercises": [
+    {
+      "externalId": "B1-M1-001",
+      "title": "B1 Mündlicher Ausdruck Teil 1 – Einander kennenlernen",
+      "instructions": "Stellen Sie sich Ihrer Gesprächspartnerin oder Ihrem Gesprächspartner vor und stellen Sie Fragen zu den folgenden Themen. Antworten Sie auch auf die Fragen Ihres Partners.",
+      "taskType": "TOPIC_INTERVIEW",
+      "topic": "Sich kennenlernen",
+      "topics": [
+        {
+          "id": "name",
+          "exampleAnswers": [
+            "Ich heiße Elena Petrova. Man schreibt das P-E-T-R-O-V-A. Meine Freunde sagen einfach Lena zu mir."
+          ]
+        },
+        {
+          "id": "herkunft",
+          "exampleAnswers": [
+            "Ich komme aus Bulgarien, aus einer Stadt am Meer, die Varna heißt. Dort habe ich bis zu meinem Studium gelebt."
+          ]
+        },
+        {
+          "id": "wohnen",
+          "exampleAnswers": [
+            "Ich wohne in einer kleinen Zweizimmerwohnung in der Nähe vom Bahnhof. Leider habe ich keinen Garten, aber einen schönen Balkon mit vielen Pflanzen."
+          ]
+        },
+        {
+          "id": "familie",
+          "exampleAnswers": [
+            "Ich habe einen jüngeren Bruder und eine ältere Schwester. Meine Eltern wohnen noch in Bulgarien, aber wir telefonieren fast jeden Tag."
+          ]
+        },
+        {
+          "id": "deutsch_gelernt",
+          "exampleAnswers": [
+            "Ich habe vor zwei Jahren in einer Sprachschule in Sofia angefangen. Seit ich hier lebe, besuche ich einen Abendkurs und spreche so oft wie möglich mit meinen Kollegen."
+          ]
+        },
+        {
+          "id": "beruf",
+          "exampleAnswers": [
+            "Ich arbeite als Krankenschwester in einem Krankenhaus. Die Arbeit ist anstrengend, aber ich helfe gern Menschen. Zurzeit mache ich auch eine Weiterbildung."
+          ]
+        },
+        {
+          "id": "sprachen",
+          "exampleAnswers": [
+            "Ich spreche Bulgarisch, Russisch und ein bisschen Englisch. Deutsch lerne ich, weil ich in Deutschland arbeite und mich im Alltag sicher verständigen möchte."
+          ]
+        },
+        {
+          "id": "wochenende",
+          "exampleAnswers": [
+            "Am Samstag erledige ich meistens den Einkauf und treffe Freunde im Café. Sonntags schlafe ich lange und gehe gern im Park spazieren."
+          ]
+        },
+        {
+          "id": "hobbys",
+          "exampleAnswers": [
+            "Ich fotografiere sehr gern, vor allem Landschaften. Mit meiner Kamera bin ich fast jedes Wochenende in der Natur unterwegs."
+          ]
+        }
+      ],
+      "metadata": {
+        "difficulty": "EASY",
+        "topics": [
+          "EVERYDAY_LIFE"
+        ],
+        "tags": [
+          "vorstellung",
+          "smalltalk"
+        ],
+        "source": "STARTER_SAMPLE"
+      },
+      "exampleProfile": "Elena Petrova, 29, Krankenschwester aus Varna in Bulgarien"
+    }
+  ]
+}

@@ -12,13 +12,15 @@ import useAuthStore from "@/store/useAuthStore";
 import { getExamExerciseForAdmin, getExamExercisesForAdmin } from "@/services/adminExamService";
 import { changeExamContentStatus, downloadExamContentExport } from "@/services/adminExamContentService";
 import { ExamExerciseAdminRow, ExamExerciseResponse, ExamSection } from "@/types/exam";
+import type { SpeakingContent } from "@/types/exam";
 import { EXAM_CONTENT_STATUSES, ExamContentStatus, ExercisePreviewData, PreviewAdvertisement, PreviewSituation } from "@/types/examContent";
 import ExamContentShell from "./ExamContentShell";
 import { cardClass, errorMessage, ExerciseView, fieldClass, htmlToText, labelClass, StatusBadge } from "./shared";
 
 const PAGE_SIZE = 15;
 const EXAM_LABELS: Record<string, string> = { TELC: "Telc", GOETHE: "Goethe", TESTDAF: "TestDaF", DSH: "DSH", OTHER: "Other" };
-const SECTION_PATHS: Record<ExamSection, string> = {
+/** Sections with a manual editor; Mündlicher Ausdruck is import-only and has none. */
+const SECTION_PATHS: Partial<Record<ExamSection, string>> = {
     LESEVERSTEHEN: "leseverstehen",
     SPRACHBAUSTEINE: "sprachbausteine",
     HOERVERSTEHEN: "hoerverstehen",
@@ -30,6 +32,7 @@ const SECTION_LABELS: Record<ExamSection, string> = {
     SPRACHBAUSTEINE: "Sprachbausteine",
     HOERVERSTEHEN: "Hören",
     SCHRIFTLICHER_AUSDRUCK: "Schreiben",
+    MUENDLICHER_AUSDRUCK: "Mündlicher Ausdruck",
     TESTFORMAT_INFORMATION: "Testformat",
 };
 
@@ -55,6 +58,17 @@ const emptyFilters: Filters = { examType: "", level: "", section: "", partNumber
 
 /** Matching exercises as the import format sees them (lettered headings, correct heading per text). */
 function toPreview(exercise: ExamExerciseResponse): ExercisePreviewData | null {
+    if (exercise.section === "MUENDLICHER_AUSDRUCK") {
+        const stored = exercise.metadata?.speaking as SpeakingContent | undefined;
+        if (!stored?.taskType) return null; // hand-made: nothing structured to preview
+        return {
+            title: exercise.title,
+            instructions: exercise.teilDescription,
+            headings: [],
+            texts: [],
+            speaking: { taskType: stored.taskType, topic: stored.topic ?? null, content: stored },
+        };
+    }
     if (exercise.taskType === "WRITING_TASK") {
         const meta = exercise.metadata ?? {};
         const stored = meta.writing as
@@ -342,7 +356,9 @@ export default function ContentLibrary() {
                                         <td className="px-3 py-3">v{r.version}</td>
                                         <td className="px-3 py-3 whitespace-nowrap space-x-1.5">
                                             <Button variant="secondary" className="px-2.5 py-1 text-xs inline-flex items-center gap-1" onClick={() => setPreviewRow(r)}><Eye className="size-3.5" />Preview</Button>
-                                            <Link href={`/admin/exam-prep/${SECTION_PATHS[r.section]}?edit=${r.id}`} className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent"><Pencil className="size-3.5" />Edit</Link>
+                                            {SECTION_PATHS[r.section] && (
+                                                <Link href={`/admin/exam-prep/${SECTION_PATHS[r.section]}?edit=${r.id}`} className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent"><Pencil className="size-3.5" />Edit</Link>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}

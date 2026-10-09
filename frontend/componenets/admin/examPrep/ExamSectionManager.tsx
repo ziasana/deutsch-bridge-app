@@ -41,6 +41,8 @@ const TASK_TYPES_BY_SECTION: Record<ExamSection, ExamTaskType[]> = {
     SPRACHBAUSTEINE: ["MULTIPLE_CHOICE", "WORD_BANK_CLOZE"],
     HOERVERSTEHEN: ["MATCHING", "MULTIPLE_CHOICE", "TRUE_FALSE_NOT_GIVEN"],
     SCHRIFTLICHER_AUSDRUCK: ["WRITING_TASK"],
+    // Mündlicher Ausdruck is import-only (Content Generator → Import): its structured content has no manual form.
+    MUENDLICHER_AUSDRUCK: [],
     TESTFORMAT_INFORMATION: [],
 };
 
@@ -59,6 +61,9 @@ const TASK_TYPE_LABELS: Record<ExamTaskType, string> = {
     TRUE_FALSE_NOT_GIVEN: "Aufgaben richtig/falsch/nicht",
     WORD_BANK_CLOZE: "Lückentext (Wortbank)",
     WRITING_TASK: "Schriftlicher Ausdruck",
+    TOPIC_INTERVIEW: "Einander kennenlernen",
+    OPINION_DISCUSSION: "Über ein Thema sprechen",
+    JOINT_PLANNING: "Gemeinsam etwas planen",
 };
 
 /** Pre-seeded answer options for TRUE_FALSE_NOT_GIVEN - still editable by the admin. */
@@ -102,7 +107,7 @@ const defaultTeil = (section: ExamSection, taskType: ExamTaskType | null): strin
     return "1";
 };
 
-const SECTION_META: Record<Exclude<ExamSection, "TESTFORMAT_INFORMATION">, { heading: string; description: string }> = {
+const SECTION_META: Record<Exclude<ExamSection, "TESTFORMAT_INFORMATION" | "MUENDLICHER_AUSDRUCK">, { heading: string; description: string }> = {
     LESEVERSTEHEN: {
         heading: "Leseverstehen",
         description: "Create Leseverstehen exercises per Teil: Zuordnungsaufgaben, Multiple-Choice-Aufgaben, and richtig/falsch/nicht.",
@@ -199,7 +204,7 @@ function syncGapQuestions(passagesList: ExamPassage[], existingQuestions: ExamQu
 }
 
 interface ExamSectionManagerProps {
-    section: Exclude<ExamSection, "TESTFORMAT_INFORMATION">;
+    section: Exclude<ExamSection, "TESTFORMAT_INFORMATION" | "MUENDLICHER_AUSDRUCK">;
 }
 
 /** Admin CRUD for one exam section (Leseverstehen, Sprachbausteine, Hörverstehen, or Schriftlicher

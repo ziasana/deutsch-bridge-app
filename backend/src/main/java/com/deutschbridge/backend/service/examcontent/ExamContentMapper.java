@@ -7,6 +7,7 @@ import com.deutschbridge.backend.model.dto.ExamContentDtos.ContextView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.QuestionView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.SituationView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.TextView;
+import com.deutschbridge.backend.model.dto.ExamContentDtos.SpeakingView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.WritingView;
 import com.deutschbridge.backend.model.entity.ExamExercise;
 import com.deutschbridge.backend.model.entity.ExamPassage;
@@ -39,6 +40,9 @@ public final class ExamContentMapper {
     public static ExamExercise toEntity(ParsedExercise ex, ExamType examType, String schemaVersion,
                                         String promptVersion, String hash, String userId) {
         ExamContentSpec spec = ex.spec();
+        if (spec.isSpeaking()) {
+            return toSpeakingEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
+        }
         if (spec.isWriting()) {
             return toWritingEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
         }
@@ -279,6 +283,80 @@ public final class ExamContentMapper {
         return exercise;
     }
 
+    /**
+     * Mündlicher Ausdruck in the existing exercise model: one passage holds a readable summary of the task (for the admin list,
+     * duplicate detection and as a fallback view), the structured, German-only learner content lives in {@code metadata.speaking}
+     * and is what the learner screens render and what export writes back. There is nothing to grade, so there are no questions.
+     */
+    private static ExamExercise toSpeakingEntity(ParsedExercise ex, ExamType examType, String schemaVersion,
+                                                 String promptVersion, String hash, String userId) {
+        ExamContentSpec spec = ex.spec();
+        ParsedExercise.Speaking s = ex.speaking();
+
+        Map<String, Object> speaking = new LinkedHashMap<>();
+        speaking.put("taskType", s.taskType());
+        speaking.putAll(s.data());
+        Map<String, Object> metadata = new LinkedHashMap<>(ex.metadata());
+        metadata.putIfAbsent("source", "AI_IMPORTED");
+        metadata.put("taskType", s.taskType());
+        metadata.put("topic", s.topic());
+        metadata.put("speaking", speaking);
+
+        ExamExercise exercise = new ExamExercise();
+        exercise.setTitle(ex.title());
+        exercise.setExamType(examType);
+        exercise.setSection(spec.section());
+        exercise.setTaskType(spec.taskType());
+        exercise.setLevel(spec.level());
+        exercise.setPartNumber(spec.part());
+        exercise.setPassages(List.of(new ExamPassage(null, "Aufgabe", toSpeakingHtml(s, ex.instructions()), null, null, null).ensureId()));
+        exercise.setQuestions(List.of());
+        exercise.setTeilDescription(ex.instructions());
+        exercise.setExternalId(ex.externalId());
+        exercise.setSchemaVersion(schemaVersion);
+        exercise.setPromptVersion(promptVersion);
+        exercise.setMetadata(metadata);
+        exercise.setContentHash(hash);
+        exercise.setCreatedBy(userId);
+        exercise.setUpdatedBy(userId);
+        exercise.applyStatus(ExamContentStatus.DRAFT);
+        return exercise;
+    }
+
+    /** A readable, escaped HTML summary of a speaking task: what the learner is asked to talk about. */
+    @SuppressWarnings("unchecked")
+    static String toSpeakingHtml(ParsedExercise.Speaking s, String instructions) {
+        StringBuilder html = new StringBuilder();
+        if (s.topic() != null) html.append("<p><strong>").append(HtmlUtils.htmlEscape(s.topic())).append("</strong></p>");
+        if (instructions != null) html.append("<p><em>").append(HtmlUtils.htmlEscape(instructions)).append("</em></p>");
+        Map<String, Object> d = s.data();
+        if (d.get("topics") instanceof List<?> topics) {
+            html.append("<ul>");
+            for (Object t : topics) {
+                if (!(t instanceof Map<?, ?> topic)) continue;
+                html.append("<li>").append(HtmlUtils.htmlEscape(String.valueOf(topic.get("title"))));
+                if (topic.get("questions") instanceof List<?> questions) {
+                    questions.forEach(q -> html.append("<br>").append(HtmlUtils.htmlEscape(String.valueOf(q))));
+                }
+                html.append("</li>");
+            }
+            html.append("</ul>");
+        }
+        if (d.get("person") instanceof Map<?, ?> person) {
+            html.append("<p>").append(HtmlUtils.htmlEscape(person.get("name") + ", " + person.get("age") + " Jahre, " + person.get("occupation"))).append("</p>");
+        }
+        if (d.get("opinionText") instanceof String opinion) html.append(toHtml(opinion));
+        if (d.get("scenario") instanceof String scenario) html.append(toHtml(scenario));
+        if (d.get("planningPoints") instanceof List<?> points) {
+            html.append("<ul>");
+            points.forEach(pt -> {
+                if (pt instanceof Map<?, ?> point) html.append("<li>").append(HtmlUtils.htmlEscape(String.valueOf(point.get("title")))).append("</li>");
+            });
+            html.append("</ul>");
+        }
+        return html.toString();
+    }
+
     /** The learner-facing task text, in the same HTML shape as the hand-authored task (plain text is escaped). */
     static String toWritingHtml(ParsedExercise.Writing w, String instructions) {
         StringBuilder html = new StringBuilder();
@@ -368,6 +446,11 @@ public final class ExamContentMapper {
     }
 
     public static ExercisePreview toPreview(ParsedExercise ex) {
+        if (ex.speaking() != null) {
+            ParsedExercise.Speaking s = ex.speaking();
+            return new ExercisePreview(ex.title(), ex.instructions(), List.of(), List.of(), null, List.of(), List.of(), List.of(), null, null,
+                    new SpeakingView(s.taskType(), s.topic(), s.data()));
+        }
         if (ex.writing() != null) {
             ParsedExercise.Writing w = ex.writing();
             return new ExercisePreview(ex.title(), ex.instructions(), List.of(), List.of(), null, List.of(), List.of(), List.of(), null,
@@ -406,6 +489,7 @@ public final class ExamContentMapper {
      * labelled headings-matching exercise), so export never emits something re-import would reject.
      */
     public static ObjectNode toExportNode(ObjectMapper mapper, ExamExercise e) {
+        if (e.getSection() == ExamSection.MUENDLICHER_AUSDRUCK) return toSpeakingExportNode(mapper, e);
         if (e.getTaskType() == ExamTaskType.WRITING_TASK) return toWritingExportNode(mapper, e);
         if (e.getTaskType() == ExamTaskType.WORD_BANK_CLOZE) return toWordBankExportNode(mapper, e);
         if (e.getTaskType() == ExamTaskType.MULTIPLE_CHOICE) return toReadingExportNode(mapper, e);
@@ -444,6 +528,47 @@ public final class ExamContentMapper {
             t.put("correctHeadingId", headingIndex >= 0 ? labels.get(headingIndex) : "");
         }
         if (e.getMetadata() != null) node.set("metadata", mapper.valueToTree(e.getMetadata()));
+        return node;
+    }
+
+    /**
+     * Speaking task in the import shape, read back from {@code metadata.speaking}. Hand-made exercises without that structure
+     * cannot be exported. Null values are left out so the file passes the importer again unchanged.
+     */
+    private static ObjectNode toSpeakingExportNode(ObjectMapper mapper, ExamExercise e) {
+        if (e.getLevel() == null || e.getPartNumber() == null || e.getMetadata() == null
+                || !(e.getMetadata().get("speaking") instanceof Map<?, ?> speaking)) {
+            return null;
+        }
+        ObjectNode node = mapper.createObjectNode();
+        if (e.getExternalId() != null) node.put("externalId", e.getExternalId());
+        node.put("title", e.getTitle());
+        node.put("instructions", e.getTeilDescription() == null ? "" : e.getTeilDescription());
+        ObjectNode content = (ObjectNode) stripNulls(mapper.valueToTree(speaking));
+        // planning points are stored with a generated id that the importer derives again
+        if (content.get("planningPoints") instanceof ArrayNode points) {
+            points.forEach(pt -> {
+                if (pt instanceof ObjectNode o) o.remove("id");
+            });
+        }
+        node.setAll(content);
+        Map<String, Object> rest = new LinkedHashMap<>(e.getMetadata());
+        for (String key : List.of("speaking", "taskType", "topic")) rest.remove(key);
+        if (!rest.isEmpty()) node.set("metadata", mapper.valueToTree(rest));
+        return node;
+    }
+
+    private static com.fasterxml.jackson.databind.JsonNode stripNulls(com.fasterxml.jackson.databind.JsonNode node) {
+        if (node instanceof ObjectNode object) {
+            List<String> remove = new ArrayList<>();
+            object.fields().forEachRemaining(f -> {
+                if (f.getValue().isNull()) remove.add(f.getKey());
+                else stripNulls(f.getValue());
+            });
+            remove.forEach(object::remove);
+        } else if (node instanceof ArrayNode array) {
+            array.forEach(ExamContentMapper::stripNulls);
+        }
         return node;
     }
 

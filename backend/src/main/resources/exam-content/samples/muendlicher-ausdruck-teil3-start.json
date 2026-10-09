@@ -1,0 +1,102 @@
+{
+  "schemaVersion": "1.0",
+  "promptVersion": "1.0",
+  "contentType": "EXAM_EXERCISE_BATCH",
+  "exam": "TELC",
+  "level": "B1",
+  "section": "MUENDLICHER_AUSDRUCK",
+  "part": "TEIL_3",
+  "exercises": [
+    {
+      "externalId": "B1-M3-001",
+      "title": "B1 Mündlicher Ausdruck Teil 3 – Abschiedsparty",
+      "instructions": "Planen Sie gemeinsam mit Ihrer Gesprächspartnerin oder Ihrem Gesprächspartner. Machen Sie Vorschläge, begründen Sie Ihre Meinung, reagieren Sie auf die Vorschläge Ihres Partners und einigen Sie sich auf eine gemeinsame Lösung.",
+      "taskType": "JOINT_PLANNING",
+      "topic": "Abschiedsparty",
+      "scenario": "Sie haben zwei Wochen Urlaub gemacht und dabei einige nette Deutsche kennengelernt. Bevor alle wieder nach Hause fahren, möchten Sie mit Ihrer Gesprächspartnerin oder Ihrem Gesprächspartner eine Abschiedsparty organisieren.",
+      "planningPoints": [
+        {
+          "title": "Wann?"
+        },
+        {
+          "title": "Wo?"
+        },
+        {
+          "title": "Essen"
+        },
+        {
+          "title": "Getränke"
+        },
+        {
+          "title": "Wer bezahlt wofür?"
+        },
+        {
+          "title": "Einladungen",
+          "hint": "Wer lädt die anderen ein und wie?"
+        },
+        {
+          "title": "Musik und Programm"
+        },
+        {
+          "title": "Aufräumen",
+          "hint": "Wer hilft am Ende?"
+        }
+      ],
+      "exampleDialogue": [
+        {
+          "speaker": "A",
+          "text": "Hallo! Ich würde gern eine Abschiedsparty für unsere neuen Freunde organisieren. Wann wäre denn ein guter Termin?"
+        },
+        {
+          "speaker": "B",
+          "text": "Gute Idee! Wie wäre es am vorletzten Abend, also am Donnerstag? Dann sind noch alle da."
+        },
+        {
+          "speaker": "A",
+          "text": "Ja, einverstanden. Und wo könnten wir feiern? Ich schlage den Garten vom Hotel vor, weil es dort genug Platz gibt."
+        },
+        {
+          "speaker": "B",
+          "text": "Ich verstehe dich, aber wenn es regnet, wird das schwierig. Was hältst du davon, wenn wir stattdessen den Gemeinschaftsraum nehmen?"
+        },
+        {
+          "speaker": "A",
+          "text": "Das ist besser, denn dort sind wir vor dem Wetter geschützt. Und was machen wir mit dem Essen? Wir könnten ein Buffet machen, bei dem jeder etwas mitbringt."
+        },
+        {
+          "speaker": "B",
+          "text": "Das finde ich auch gut. Ich kümmere mich um Salate und Brot, und du kaufst die Getränke. Wer bezahlt dann wofür?"
+        },
+        {
+          "speaker": "A",
+          "text": "Wir könnten die Kosten teilen und am Ende alles zusammenrechnen. Die Einladungen schreibe ich heute Abend."
+        },
+        {
+          "speaker": "B",
+          "text": "Super. Dann machen wir es so: Donnerstag um 19 Uhr im Gemeinschaftsraum, und beim Aufräumen helfen alle mit."
+        }
+      ],
+      "decisionCriteria": [
+        "Wir haben uns auf einen Termin und einen Ort geeinigt.",
+        "Wir haben besprochen, wer was mitbringt und bezahlt.",
+        "Wir haben am Ende gemeinsam eine Entscheidung getroffen."
+      ],
+      "metadata": {
+        "difficulty": "MEDIUM",
+        "topics": [
+          "TRAVEL",
+          "LEISURE"
+        ],
+        "tags": [
+          "planung",
+          "party"
+        ],
+        "source": "STARTER_SAMPLE"
+      },
+      "extraPhrases": [
+        "Wir könnten ein Buffet machen, bei dem jeder etwas mitbringt.",
+        "Wer kann die Einladungen schreiben?"
+      ]
+    }
+  ]
+}

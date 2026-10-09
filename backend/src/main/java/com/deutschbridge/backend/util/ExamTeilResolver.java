@@ -21,6 +21,7 @@ public final class ExamTeilResolver {
             case LESEVERSTEHEN, HOERVERSTEHEN -> exercise.getPartNumber() != null ? exercise.getPartNumber() : 1;
             case SPRACHBAUSTEINE -> sprachbausteineTeil(exercise);
             case SCHRIFTLICHER_AUSDRUCK -> 1;
+            case MUENDLICHER_AUSDRUCK -> exercise.getPartNumber() != null ? exercise.getPartNumber() : 1;
             case TESTFORMAT_INFORMATION -> null;
         };
     }
