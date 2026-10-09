@@ -20,11 +20,11 @@ export default function ExpressionFilterSelect({ label, value, options, onChange
     return (
         <div
             className={cn(
-                "relative min-w-[140px] rounded-[10px] border border-border/60 bg-card px-3 py-2 shadow-card transition-colors hover:border-primary/40",
+                "relative min-w-[140px] rounded-2xl border border-border/60 bg-card px-3.5 py-2 shadow-card transition-colors focus-within:border-primary hover:border-primary/40",
                 className,
             )}
         >
-            <label className="block text-[11px] text-foreground/50" htmlFor={`expression-filter-${label}`}>
+            <label className="block text-[10px] font-bold uppercase tracking-wide text-primary/80" htmlFor={`expression-filter-${label}`}>
                 {label}
             </label>
             <select
