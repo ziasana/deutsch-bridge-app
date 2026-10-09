@@ -28,6 +28,7 @@ import Loading from "@/componenets/Loading";
 import AudioPlayer from "@/componenets/AudioPlayer";
 import LessonMarkdown from "@/componenets/LessonMarkdown";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
+import LesenTeil1Board from "@/componenets/exam/LesenTeil1Board";
 import LesenTeil3Board, { NO_AD_ANSWER as NO_AD_ANSWER_VALUE } from "@/componenets/exam/LesenTeil3Board";
 import TranscriptModal from "@/componenets/exam/TranscriptModal";
 import TranscriptContent from "@/componenets/exam/TranscriptContent";
@@ -467,6 +468,7 @@ interface GridQuizState {
 function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse }>) {
     const [quiz, setQuiz] = useState<GridQuizState | null>(null);
     const isSituationMatching = exercise.taskType === "SITUATION_MATCHING";
+    const isHeadingMatching = exercise.taskType === "MATCHING";
     const [results, setResults] = useState<ResultsState | null>(null);
     const [starting, setStarting] = useState(false);
     const { completed, marking, markCompleted } = useExerciseCompletion(exercise);
@@ -549,28 +551,41 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
               ]
             : undefined;
 
+    const setAnswer = (questionId: string, value: string) =>
+        setQuiz((prev) => {
+            if (!prev) return prev;
+            const answers = { ...prev.answers };
+            if (value) answers[questionId] = value;
+            else delete answers[questionId];
+            return { ...prev, answers };
+        });
+
     return (
-        <div className="rounded-[10px] bg-card p-6 shadow-card sm:p-8 space-y-4">
-            <p className="text-sm text-foreground/65">
-                Beantworte alle {quiz.questions.length} Aufgaben und klicke dann auf &quot;Antworten abgeben&quot;.
+        <div className={cn("space-y-4", !isHeadingMatching && "rounded-[10px] bg-card p-6 shadow-card sm:p-8")}>
+            <p className={cn("text-sm text-foreground/65", isHeadingMatching && "px-1")}>
+                {isHeadingMatching
+                    ? `Ordne jedem der ${quiz.questions.length} Texte die passende Überschrift zu und klicke dann auf "Antworten abgeben". Jede Überschrift darf nur einmal benutzt werden.`
+                    : `Beantworte alle ${quiz.questions.length} Aufgaben und klicke dann auf "Antworten abgeben".`}
                 {isSituationMatching && " Jede Anzeige darf nur einmal benutzt werden. Wenn keine Anzeige passt, wähle x."}
             </p>
 
-            {isSituationMatching ? (
+            {isHeadingMatching ? (
+                <LesenTeil1Board
+                    passages={quiz.passages}
+                    questions={quiz.questions}
+                    answerOptions={quiz.answerOptions}
+                    answerOptionLabels={quiz.answerOptionLabels}
+                    answers={quiz.answers}
+                    disabled={quiz.submitting}
+                    onAnswer={setAnswer}
+                />
+            ) : isSituationMatching ? (
                 <LesenTeil3Board
                     passages={quiz.passages}
                     questions={quiz.questions}
                     answers={quiz.answers}
                     disabled={quiz.submitting}
-                    onAnswer={(questionId, value) =>
-                        setQuiz((prev) => {
-                            if (!prev) return prev;
-                            const answers = { ...prev.answers };
-                            if (value) answers[questionId] = value;
-                            else delete answers[questionId];
-                            return { ...prev, answers };
-                        })
-                    }
+                    onAnswer={setAnswer}
                 />
             ) : (
             <div className={`grid gap-3 sm:grid-cols-2 ${isSituationMatching ? "" : "lg:grid-cols-3 xl:grid-cols-4"}`}>
@@ -1169,11 +1184,11 @@ function ExamExerciseContent() {
                     exercise.section !== "MUENDLICHER_AUSDRUCK" &&
                     exercise.section !== "TESTFORMAT_INFORMATION" && (
                     <>
-                        {(exercise.taskType === "MATCHING" || exercise.taskType === "WORD_BANK_CLOZE") && (
+                        {exercise.taskType === "WORD_BANK_CLOZE" && (
                             <AnswerOptionsPoolView answerOptions={exercise.answerOptions ?? []} answerOptionLabels={exercise.answerOptionLabels ?? []} taskType={exercise.taskType} />
                         )}
-                        {/* Lesen Teil 3 shows its advertisements inside the matching board once the exercise is started. */}
-                        {exercise.taskType !== "SITUATION_MATCHING" && (
+                        {/* Lesen Teil 1 (headings) and Teil 3 (ads) show their texts inside the matching board once the exercise is started. */}
+                        {exercise.taskType !== "SITUATION_MATCHING" && exercise.taskType !== "MATCHING" && (
                             <PassagesView passages={exercise.passages} taskType={exercise.taskType ?? ""} />
                         )}
                     </>
@@ -1187,7 +1202,7 @@ function ExamExerciseContent() {
                     <MuendlicherAusdruckView exercise={exercise} />
                 ) : exercise.section === "TESTFORMAT_INFORMATION" ? (
                     <TestformatInformationView exercise={exercise} />
-                ) : exercise.taskType === "WORD_BANK_CLOZE" || exercise.taskType === "SITUATION_MATCHING" ? (
+                ) : exercise.taskType === "WORD_BANK_CLOZE" || exercise.taskType === "SITUATION_MATCHING" || exercise.taskType === "MATCHING" ? (
                     <ClozeGridQuiz exercise={exercise} />
                 ) : (
                     <StepQuiz exercise={exercise} />
