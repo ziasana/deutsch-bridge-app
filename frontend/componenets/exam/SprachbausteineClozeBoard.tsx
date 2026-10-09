@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, PartyPopper, Puzzle } from "lucide-react";
 import LessonMarkdown from "@/componenets/LessonMarkdown";
 import { cn } from "@/lib/utils";
+import { hasGapMarkers, withGapMarkers } from "@/lib/examGap";
 import { ExamPassagePublic, ExamQuestionPublic } from "@/types/exam";
 
 interface Props {
@@ -20,9 +21,9 @@ interface Props {
 /** Whether an exercise can use the board: a text with numbered gap badges and a question for every gap (own options, or a word bank). */
 export function hasGapText(passages: ExamPassagePublic[], questions: ExamQuestionPublic[], hasWordBank = false): boolean {
     return (
-        passages.some((p) => p.content?.includes("data-exam-gap")) &&
+        passages.some((p) => hasGapMarkers(p.content)) &&
         questions.length > 0 &&
-        questions.every((q) => q.gapNumber != null && (hasWordBank || (q.options?.length ?? 0) > 0))
+        questions.every((q) => (q.gapNumber ?? q.questionNumber) != null && (hasWordBank || (q.options?.length ?? 0) > 0))
     );
 }
 
@@ -149,7 +150,7 @@ export default function SprachbausteineClozeBoard({ passages, questions, answers
                 </header>
                 <div ref={textRef} className="space-y-4 px-5 py-5 sm:px-6">
                     {passages.map((p) => (
-                        <LessonMarkdown key={p.id} content={p.content} renderGap={renderGap} className="text-base leading-[2.4] text-foreground/90" />
+                        <LessonMarkdown key={p.id} content={withGapMarkers(p.content)} renderGap={renderGap} className="text-base leading-[2.4] text-foreground/90" />
                     ))}
                 </div>
             </article>

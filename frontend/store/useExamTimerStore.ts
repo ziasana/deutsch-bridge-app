@@ -27,6 +27,8 @@ interface ExamTimerState {
     lastResult: ExamPracticeSessionResult | null;
     /** Bumped when the learner restarts an exercise ("Erneut üben") so its timer starts a fresh run. Not persisted. */
     restartSignal: number;
+    /** Bumped when the learner presses "Übung starten" on a section whose clock only runs once the Übung begins. Not persisted. */
+    startSignal: number;
     hasHydrated: boolean;
 
     start: (session: ExamPracticeSession, nowMs?: number) => void;
@@ -37,6 +39,7 @@ interface ExamTimerState {
     clear: () => void;
     setLastResult: (result: ExamPracticeSessionResult | null) => void;
     requestRestart: () => void;
+    requestStart: () => void;
     setHasHydrated: (value: boolean) => void;
 }
 
@@ -46,6 +49,7 @@ const useExamTimerStore = create<ExamTimerState>()(
             active: null,
             lastResult: null,
             restartSignal: 0,
+            startSignal: 0,
             hasHydrated: false,
 
             // The UI clock starts when the response arrives; the server keeps its own authoritative start.
@@ -105,6 +109,7 @@ const useExamTimerStore = create<ExamTimerState>()(
             clear: () => set({ active: null }),
             setLastResult: (lastResult) => set({ lastResult }),
             requestRestart: () => set((state) => ({ restartSignal: state.restartSignal + 1 })),
+            requestStart: () => set((state) => ({ startSignal: state.startSignal + 1 })),
             setHasHydrated: (hasHydrated) => set({ hasHydrated }),
         }),
         {

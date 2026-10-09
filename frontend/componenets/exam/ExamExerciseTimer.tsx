@@ -6,7 +6,7 @@ import { Square, Timer } from "lucide-react";
 import { toast } from "@/lib/toast";
 import useExamTimerStore from "@/store/useExamTimerStore";
 import { useExamSession } from "@/hooks/exam/useExamSession";
-import { TIMED_SECTIONS } from "@/lib/examTime";
+import { MANUAL_START_SECTIONS, TIMED_SECTIONS } from "@/lib/examTime";
 import { showTimerStartedToast, showZeitCheckToast } from "@/lib/examTimeToast";
 import { ExamExercisePublicResponse } from "@/types/exam";
 import ExamTimerBar from "./ExamTimerBar";
@@ -31,18 +31,22 @@ export function useStopExerciseTimer() {
 }
 
 /**
- * Timer strip on an exercise page. The clock starts as soon as the exercise opens, pauses when the
+ * Timer strip on an exercise page. The clock starts as soon as the exercise opens (Lesen and Sprachbausteine:
+ * when the learner presses "Übung starten"), pauses when the
  * learner leaves (back button, any navigation, reload) and carries on from where it stopped when
  * the same exercise is opened again. Opening a different exercise starts a fresh run.
  */
 export default function ExamExerciseTimer({ exercise, variant = "bar" }: Readonly<{ exercise: ExamExercisePublicResponse; variant?: "bar" | "ring" }>) {
     const { active, hasHydrated, busy, start, finish } = useExamSession();
     const restartSignal = useExamTimerStore((s) => s.restartSignal);
+    const startSignal = useExamTimerStore((s) => s.startSignal);
 
     const eligible = TIMED_SECTIONS.includes(exercise.section) && exercise.teil != null;
+    const manualStart = MANUAL_START_SECTIONS.includes(exercise.section);
     const mounted = useRef(false);
     const starting = useRef(false);
     const seenRestartSignal = useRef(restartSignal);
+    const seenStartSignal = useRef(startSignal);
 
     const startRun = useCallback(async () => {
         if (starting.current) return;
@@ -50,27 +54,32 @@ export default function ExamExerciseTimer({ exercise, variant = "bar" }: Readonl
         try {
             await start({ scope: "EXERCISE", mode: "TIME_TRAINING", exerciseId: exercise.id });
             // The learner may have left while the request was in flight - do not let the clock run unseen.
-            if (mounted.current) showTimerStartedToast();
+            if (mounted.current) showTimerStartedToast(exercise.section);
             else useExamTimerStore.getState().pause();
         } catch {
             toast.error("Die Zeitmessung konnte nicht gestartet werden.");
         } finally {
             starting.current = false;
         }
-    }, [exercise.id, start]);
+    }, [exercise.id, exercise.section, start]);
 
-    // Open: continue this exercise's run if it is still the active one, otherwise begin a new run.
+    // Continue this exercise's run if it is still the active one, otherwise begin a new run.
+    const openRun = useCallback(() => {
+        const current = useExamTimerStore.getState().active;
+        if (current?.scope === "EXERCISE" && current.exerciseId === exercise.id) {
+            useExamTimerStore.getState().resume();
+            showTimerStartedToast(exercise.section);
+        } else {
+            startRun();
+        }
+    }, [exercise.id, exercise.section, startRun]);
+
+    // Open: the clock starts right away, except where it waits for "Übung starten".
     useEffect(() => {
         mounted.current = true;
         if (!eligible || !hasHydrated) return;
 
-        const current = useExamTimerStore.getState().active;
-        if (current?.scope === "EXERCISE" && current.exerciseId === exercise.id) {
-            useExamTimerStore.getState().resume();
-            showTimerStartedToast();
-        } else {
-            startRun();
-        }
+        if (!manualStart) openRun();
 
         // Leave: pause this exercise's run, also when the page is reloaded or closed.
         const pauseThisRun = () => {
@@ -83,16 +92,25 @@ export default function ExamExerciseTimer({ exercise, variant = "bar" }: Readonl
             window.removeEventListener("pagehide", pauseThisRun);
             pauseThisRun();
         };
-    }, [eligible, hasHydrated, exercise.id, startRun]);
+    }, [eligible, hasHydrated, manualStart, exercise.id, openRun]);
 
     // "Erneut üben": the previous run ended on the result page, so begin a new one.
     useEffect(() => {
         if (restartSignal === seenRestartSignal.current) return;
         seenRestartSignal.current = restartSignal;
-        if (eligible && !useExamTimerStore.getState().active) startRun();
-    }, [restartSignal, eligible, startRun]);
+        if (eligible && !manualStart && !useExamTimerStore.getState().active) startRun();
+    }, [restartSignal, eligible, manualStart, startRun]);
+
+    // "Übung starten" (Lesen, Sprachbausteine): the clock starts with the Übung, not with the page.
+    useEffect(() => {
+        if (startSignal === seenStartSignal.current) return;
+        seenStartSignal.current = startSignal;
+        if (eligible && manualStart && hasHydrated) openRun();
+    }, [startSignal, eligible, manualStart, hasHydrated, openRun]);
 
     if (!eligible || !hasHydrated) return null;
+
+    const waitingForStart = manualStart && !(active?.scope === "EXERCISE" && active.exerciseId === exercise.id);
 
     const stopButton = (
         <button
@@ -127,7 +145,7 @@ export default function ExamExerciseTimer({ exercise, variant = "bar" }: Readonl
                     <Timer className="size-8" aria-hidden="true" />
                 </span>
                 <div>
-                    <p className="text-sm font-semibold text-foreground/70">Die Zeitmessung ist gestoppt.</p>
+                    <p className="text-sm font-semibold text-foreground/70">{waitingForStart ? "Die Zeit startet mit „Übung starten“." : "Die Zeitmessung ist gestoppt."}</p>
                     <button
                         type="button"
                         disabled={busy}
@@ -144,7 +162,7 @@ export default function ExamExerciseTimer({ exercise, variant = "bar" }: Readonl
 
     return (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-[10px] bg-card shadow-card px-4 py-3">
-            <p className="text-xs text-foreground/60">Die Zeitmessung ist gestoppt.</p>
+            <p className="text-xs text-foreground/60">{waitingForStart ? "Die Zeit startet mit „Übung starten“." : "Die Zeitmessung ist gestoppt."}</p>
             <button
                 type="button"
                 disabled={busy}

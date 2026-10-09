@@ -32,3 +32,25 @@ export const SECTION_THEME: Partial<Record<ExamSection, { accent: LessonAccent; 
     SPRACHBAUSTEINE: { accent: "grammar", emoji: "🧩" },
     HOERVERSTEHEN: { accent: "listening", emoji: "🎧" },
 };
+
+/** The accent of any exam section, including the writing and speaking pages that are themed outside SECTION_THEME. */
+export function accentForSection(section: ExamSection): LessonAccent | null {
+    if (section === "SCHRIFTLICHER_AUSDRUCK") return "writing";
+    if (section === "MUENDLICHER_AUSDRUCK") return "speaking";
+    return SECTION_THEME[section]?.accent ?? null;
+}
+
+/** Style for a toast opened from a section's page: its icon, border and accent follow the section's colour. */
+export function toastThemeStyle(accent: LessonAccent | null): CSSProperties | undefined {
+    if (!accent) return undefined;
+    const t = THEMES[accent];
+    return {
+        "--toastify-color-info": t.primary,
+        "--toastify-color-success": t.primary,
+        "--toastify-icon-color-info": t.primary,
+        "--toastify-icon-color-success": t.primary,
+        borderColor: `color-mix(in srgb, ${t.from} 45%, transparent)`,
+        borderInlineStartWidth: 5,
+        borderInlineStartColor: t.from,
+    } as CSSProperties;
+}

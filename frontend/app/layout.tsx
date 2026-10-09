@@ -47,7 +47,7 @@ export default function RootLayout({
         <I18nProvider>
           <DarkModeProvider>
               <AppChrome>{children}</AppChrome>
-              <ToastContainer position="top-right" hideProgressBar closeOnClick pauseOnHover newestOnTop />
+              <ToastContainer position="top-right" style={{ top: "calc(4rem + 15px)" }} hideProgressBar closeOnClick pauseOnHover newestOnTop />
               <PremiumUpsellModal />
           </DarkModeProvider>
         </I18nProvider>

@@ -28,6 +28,7 @@ import Loading from "@/componenets/Loading";
 import AudioPlayer from "@/componenets/AudioPlayer";
 import LessonMarkdown from "@/componenets/LessonMarkdown";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
+import { hasGapMarkers } from "@/lib/examGap";
 import SprachbausteineClozeBoard, { hasGapText } from "@/componenets/exam/SprachbausteineClozeBoard";
 import HoerenBoard from "@/componenets/exam/HoerenBoard";
 import LesenTextPanel from "@/componenets/exam/LesenTextPanel";
@@ -560,7 +561,7 @@ const isLesenMultipleChoice = (exercise: ExamExercisePublicResponse) =>
 const isSprachbausteineGapText = (exercise: ExamExercisePublicResponse) =>
     exercise.section === "SPRACHBAUSTEINE" &&
     (exercise.taskType === "MULTIPLE_CHOICE" || exercise.taskType === "WORD_BANK_CLOZE") &&
-    exercise.passages.some((p) => p.content?.includes("data-exam-gap"));
+    exercise.passages.some((p) => hasGapMarkers(p.content));
 
 /** Shared "mark as completed" state/handler for both quiz flows. */
 function useExerciseCompletion(exercise: ExamExercisePublicResponse) {
@@ -607,6 +608,7 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
         setStarting(true);
         startExamAttempt(exercise.id)
             .then((res) => {
+                useExamTimerStore.getState().requestStart();
                 setQuiz({
                     attemptId: res.data.attemptId,
                     passages: res.data.passages,
@@ -900,6 +902,7 @@ function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse 
         setStarting(true);
         startExamAttempt(exercise.id)
             .then((res) => {
+                useExamTimerStore.getState().requestStart();
                 setQuiz({
                     attemptId: res.data.attemptId,
                     passages: res.data.passages,
@@ -1085,6 +1088,7 @@ function HoerenListQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRes
         setStarting(true);
         startExamAttempt(exercise.id)
             .then((res) => {
+                useExamTimerStore.getState().requestStart();
                 setQuiz({
                     attemptId: res.data.attemptId,
                     passages: res.data.passages,

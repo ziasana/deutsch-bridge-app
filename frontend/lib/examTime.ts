@@ -22,6 +22,9 @@ export const TIME_THRESHOLDS: TimeThresholds = {
  */
 export const TIMED_SECTIONS: readonly ExamSection[] = ["LESEVERSTEHEN", "SPRACHBAUSTEINE", "SCHRIFTLICHER_AUSDRUCK", "MUENDLICHER_AUSDRUCK"];
 
+/** Sections whose clock starts when the learner presses "Übung starten", not when the page opens. */
+export const MANUAL_START_SECTIONS: readonly ExamSection[] = ["LESEVERSTEHEN", "SPRACHBAUSTEINE"];
+
 export type TimeStatus = "ON_TRACK" | "TARGET_REACHED" | "OVER_TIME";
 
 export interface TimeStatusResult {
