@@ -12,6 +12,11 @@ const THEMES: Record<LessonAccent, { primary: string; from: string; to: string }
     reading: { primary: "hsl(175 84% 32%)", from: "#0d9488", to: "#22d3ee" },
 };
 
+/** The solid colour of an accent (hex), for tinting a panel such as the page hero. */
+export function accentColor(accent: LessonAccent): string {
+    return THEMES[accent].from;
+}
+
 /**
  * CSS variables of a theme. Set them on a wrapper: every `primary` colour inside follows the section, and
  * `from-(--lesson-from) to-(--lesson-to)` draws the section's gradient.

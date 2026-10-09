@@ -33,7 +33,7 @@ import { ContentItemRow } from "@/componenets/CategoryAccordion";
 import useAuthStore from "@/store/useAuthStore";
 import WritingTaskList from "@/componenets/exam/writing/WritingTaskList";
 import ExamPartList from "@/componenets/exam/ExamPartList";
-import { SECTION_THEME, lessonThemeVars } from "@/componenets/exam/lessonTheme";
+import { LessonAccent, SECTION_THEME, accentColor, lessonThemeVars } from "@/componenets/exam/lessonTheme";
 import SpeakingExamList from "@/componenets/exam/speaking/SpeakingExamList";
 import { useExerciseLastTimes } from "@/hooks/exam/useExerciseLastTimes";
 import { usePendingExamBookmarks } from "@/hooks/exam/usePendingExamBookmarks";
@@ -186,17 +186,23 @@ function ExamPrepContent() {
     }));
     const openSaved = (id: string) => router.push(`/dashboard/exam-prep/exercise?id=${id}`);
 
+    // Each exam section has its colour (Lesen teal, Sprachbausteine violet, Hören green, Sprechen pink, Schreiben orange).
+    const sectionAccent: LessonAccent | undefined =
+        SECTION_THEME[selectedSection]?.accent ??
+        (selectedSection === "MUENDLICHER_AUSDRUCK" ? "speaking" : selectedSection === "SCHRIFTLICHER_AUSDRUCK" ? "writing" : undefined);
+
     return (
         <div
             className="min-h-screen bg-background px-6 py-10"
             dir="ltr"
-            style={SECTION_THEME[selectedSection] ? lessonThemeVars(SECTION_THEME[selectedSection]!.accent) : undefined}
+            style={sectionAccent ? lessonThemeVars(sectionAccent) : undefined}
         >
             <div className="max-w-4xl mx-auto">
                 <LearningPageHero
                     icon={selectedMeta.icon}
                     title="Prüfungsvorbereitung"
                     subtitle="Bereite dich Schritt für Schritt auf die Deutschprüfung vor."
+                    accent={sectionAccent ? accentColor(sectionAccent) : undefined}
                     bubbles
                     actionsBelow
                     actions={
