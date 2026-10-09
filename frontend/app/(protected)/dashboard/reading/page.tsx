@@ -22,7 +22,7 @@ import {
     SavedItemsLabels,
     SavedItemsPanel,
 } from "@/componenets/learning";
-import { getLevelMeta } from "@/componenets/learning/levelMeta";
+import { getLevelMeta, levelThemeVars } from "@/componenets/learning/levelMeta";
 import LearningPageHero from "@/componenets/learning/LearningPageHero";
 import { useI18n } from "@/componenets/I18nProvider";
 import useAuthStore from "@/store/useAuthStore";
@@ -160,12 +160,13 @@ export default function ReadingPage() {
     };
 
     return (
-        <div className="min-h-screen bg-background px-6 py-10">
+        <div className="min-h-screen bg-background px-6 py-10" style={levelThemeVars(getLevelMeta(effectiveLevel).color)}>
             <div className="max-w-4xl mx-auto">
                 <LearningPageHero
                     icon={Newspaper}
                     title={t.reading.title}
                     subtitle={t.reading.subtitle}
+                    accent={getLevelMeta(effectiveLevel).color}
                     bubbles
                     meta={
                         <CurrentLevelChip

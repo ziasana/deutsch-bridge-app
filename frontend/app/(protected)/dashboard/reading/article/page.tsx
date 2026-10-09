@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, BookOpen, Bookmark, BookmarkCheck, Calendar, Check, ChevronLeft, ChevronRight, Clock, Eye, Lightbulb, Minus, Play, Plus, X } from "lucide-react";
+import { ArrowRight, BookOpen, Bookmark, BookmarkCheck, Calendar, Check, ChevronLeft, ChevronRight, Clock, Eye, Lightbulb, Play, X } from "lucide-react";
 import CircularProgress from "@/componenets/CircularProgress";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -32,7 +32,9 @@ import {
 import Loading from "@/componenets/Loading";
 import DictionaryPanel from "@/componenets/DictionaryPanel";
 import { getArticleImageSrc } from "@/lib/readingImages";
-import { getLevelMeta } from "@/componenets/learning/levelMeta";
+import { getLevelMeta, levelThemeVars } from "@/componenets/learning/levelMeta";
+import LessonStepper, { StepInfo } from "@/componenets/learning/LessonStepper";
+import { TEXT_SIZES, TextSizeControl, useTextSize } from "@/componenets/learning/TextSize";
 import { useI18n } from "@/componenets/I18nProvider";
 
 const GENDER_COLORS: Record<string, string> = {
@@ -52,16 +54,6 @@ const pillPrimary =
     "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default disabled:opacity-50";
 const pillSmall =
     "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full px-3.5 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default";
-
-/** Reading text sizes (static class names so Tailwind keeps them). The learner's choice is remembered in this browser. */
-const TEXT_SIZES = [
-    "text-base leading-8",
-    "text-[1.15rem] leading-9",
-    "text-[1.35rem] leading-[2.6rem]",
-    "text-[1.6rem] leading-[3rem]",
-] as const;
-const DEFAULT_TEXT_SIZE = 1;
-const TEXT_SIZE_KEY = "reading.textSize";
 
 type Segment =
     | { kind: "annotation"; text: string; annotation: Annotation }
@@ -620,61 +612,6 @@ function formatPostedDate(iso: string, locale: string): string {
     return new Date(iso).toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
 }
 
-interface StepInfo {
-    id: string;
-    label: string;
-    done: boolean;
-}
-
-/**
- * Sticky "Lesen → Wortschatz → Quiz" tracker: shows where the learner is in the article, ticks a step off as it is
- * done, jumps to a step when clicked, and fills a thin bar with how far the text has been read.
- */
-function ReadingStepper({ steps, progress, label }: Readonly<{ steps: StepInfo[]; progress: number; label: string }>) {
-    return (
-        <nav aria-label={label} className="sticky top-2 z-20 overflow-hidden rounded-2xl bg-card/95 shadow-card ring-1 ring-border/60 backdrop-blur">
-            <ol className="flex items-center gap-1 p-2">
-                {steps.map((step, i) => (
-                    <li key={step.id} className="flex min-w-0 flex-1 items-center gap-1">
-                        <button
-                            type="button"
-                            onClick={() => document.getElementById(step.id)?.scrollIntoView?.({ block: "start", behavior: "smooth" })}
-                            className="flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl px-2 py-1.5 text-sm font-semibold transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-                        >
-                            <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-extrabold", step.done ? "bg-green-500 text-white" : "bg-primary/10 text-primary")}>
-                                {step.done ? <Check className="size-3.5" strokeWidth={3} aria-hidden="true" /> : i + 1}
-                            </span>
-                            <span className={cn("truncate", step.done ? "text-foreground" : "text-foreground/70")}>{step.label}</span>
-                        </button>
-                        {i < steps.length - 1 && <ChevronRight className="size-4 shrink-0 text-foreground/25 rtl:rotate-180" aria-hidden="true" />}
-                    </li>
-                ))}
-            </ol>
-            <div className="h-1 bg-foreground/10" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)}>
-                <div className="h-full bg-primary transition-[width] duration-200" style={{ width: `${progress * 100}%` }} />
-            </div>
-        </nav>
-    );
-}
-
-/** A− / Aa / A+ control for the reading text size. */
-function TextSizeControl({ size, onChange }: Readonly<{ size: number; onChange: (size: number) => void }>) {
-    const { t } = useI18n();
-    const btn =
-        "flex size-8 cursor-pointer items-center justify-center rounded-full transition hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default disabled:opacity-35 disabled:hover:bg-transparent";
-    return (
-        <div role="group" aria-label={t.readingArticle.textSize.label} className="flex shrink-0 items-center rounded-full bg-accent/70 p-0.5 text-foreground/80">
-            <button type="button" className={btn} disabled={size <= 0} aria-label={t.readingArticle.textSize.smaller} onClick={() => onChange(size - 1)}>
-                <Minus className="size-4" aria-hidden="true" />
-            </button>
-            <span aria-hidden="true" className="px-1 text-sm font-extrabold">Aa</span>
-            <button type="button" className={btn} disabled={size >= TEXT_SIZES.length - 1} aria-label={t.readingArticle.textSize.larger} onClick={() => onChange(size + 1)}>
-                <Plus className="size-4" aria-hidden="true" />
-            </button>
-        </div>
-    );
-}
-
 /** What the three highlight styles in the text mean. */
 function HighlightLegend() {
     const { t } = useI18n();
@@ -771,23 +708,7 @@ function ReadingArticleDetailContent({ articleId }: Readonly<{ articleId: string
     const [savedLemmas, setSavedLemmas] = useState<Set<string>>(new Set());
     const [activeDictionaryLemma, setActiveDictionaryLemma] = useState<string | null>(null);
     const articleRef = useRef<HTMLElement>(null);
-    const [textSize, setTextSizeState] = useState(DEFAULT_TEXT_SIZE);
-    useEffect(() => {
-        try {
-            const stored = Number(window.localStorage.getItem(TEXT_SIZE_KEY));
-            if (Number.isInteger(stored) && stored >= 0 && stored < TEXT_SIZES.length && window.localStorage.getItem(TEXT_SIZE_KEY) !== null) setTextSizeState(stored);
-        } catch {
-            // Storage can be blocked (private window); the default size is fine.
-        }
-    }, []);
-    const setTextSize = (size: number) => {
-        setTextSizeState(size);
-        try {
-            window.localStorage.setItem(TEXT_SIZE_KEY, String(size));
-        } catch {
-            // Not remembered, still applied.
-        }
-    };
+    const [textSize, setTextSize] = useTextSize("reading.textSize");
     // How much of the text has scrolled past the bottom of the screen (0..1).
     const [readProgress, setReadProgress] = useState(0);
 
@@ -932,7 +853,7 @@ function ReadingArticleDetailContent({ articleId }: Readonly<{ articleId: string
     ];
 
     return (
-        <div className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10">
+        <div className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10" style={levelThemeVars(levelColor)}>
             <div className="mx-auto max-w-4xl space-y-6">
                 <div className="flex items-center justify-between gap-4">
                     <Link href="/dashboard/reading" className="inline-block shrink-0 text-sm font-medium text-foreground/60 transition hover:text-foreground">
@@ -943,7 +864,7 @@ function ReadingArticleDetailContent({ articleId }: Readonly<{ articleId: string
                     </div>
                 </div>
 
-                <ReadingStepper steps={steps} progress={readProgress} label={t.readingArticle.progress(steps.filter((step) => step.done).length, steps.length)} />
+                <LessonStepper steps={steps} progress={readProgress} label={t.readingArticle.progress(steps.filter((step) => step.done).length, steps.length)} />
 
                 <article id="step-read" ref={articleRef} className="scroll-mt-24 overflow-hidden rounded-3xl bg-card shadow-card">
                     <div className="relative">
@@ -995,7 +916,7 @@ function ReadingArticleDetailContent({ articleId }: Readonly<{ articleId: string
                             <div className="min-w-0 flex-1 basis-72">
                                 <HighlightLegend />
                             </div>
-                            <TextSizeControl size={textSize} onChange={setTextSize} />
+                            <TextSizeControl size={textSize} onChange={setTextSize} labels={t.readingArticle.textSize} />
                         </div>
 
                         <ArticleContent
