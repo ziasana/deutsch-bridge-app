@@ -81,10 +81,16 @@ export default function ExamExerciseList({ items, color, className, lastTimes }:
                         )}
                         <div className="min-w-0 flex-1">
                             <div className="font-semibold text-foreground">{item.title}</div>
-                            {(item.questionsCount > 0 || lastTimes?.[item.id]) && (
+                            {(item.questionsCount > 0 || lastTimes?.[item.id] || item.lastScore != null) && (
                                 <div className="text-xs text-foreground/50">
                                     {item.questionsCount > 0 && `${item.questionsCount} ${item.questionsCount === 1 ? "Frage" : "Fragen"}`}
-                                    {item.questionsCount > 0 && lastTimes?.[item.id] && " · "}
+                                    {item.lastScore != null && (
+                                        <>
+                                            {item.questionsCount > 0 && " · "}
+                                            Letztes Ergebnis: <span className="font-semibold text-foreground/70">{Math.round(item.lastScore)}%</span>
+                                        </>
+                                    )}
+                                    {(item.questionsCount > 0 || item.lastScore != null) && lastTimes?.[item.id] && " · "}
                                     {lastTimes?.[item.id] && (
                                         <>
                                             Letzte Zeit: {formatClock(lastTimes[item.id].elapsedSeconds)}

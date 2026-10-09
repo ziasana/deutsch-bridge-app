@@ -28,7 +28,9 @@ import Loading from "@/componenets/Loading";
 import AudioPlayer from "@/componenets/AudioPlayer";
 import LessonMarkdown from "@/componenets/LessonMarkdown";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
+import { scoreTone } from "@/lib/examScore";
 import { hasGapMarkers } from "@/lib/examGap";
+import WritingTaskCard from "@/componenets/exam/writing/WritingTaskCard";
 import SprachbausteineClozeBoard, { hasGapText } from "@/componenets/exam/SprachbausteineClozeBoard";
 import HoerenBoard from "@/componenets/exam/HoerenBoard";
 import LesenTextPanel from "@/componenets/exam/LesenTextPanel";
@@ -263,8 +265,11 @@ function ResultsView({
     onPracticeAgain,
     onMarkCompleted,
     formatAnswer,
+    previousScore,
 }: Readonly<{
     formatAnswer?: (value: string) => string;
+    /** The score of the attempt before this one, when there was one. */
+    previousScore?: number | null;
     results: ResultsState;
     defaultExplanation?: string | null;
     defaultCommonMistake?: string | null;
@@ -324,6 +329,19 @@ function ResultsView({
                                     {correctCount} von {results.items.length} Aufgaben richtig
                                 </span>
                             </div>
+                            {previousScore != null && (
+                                <p className="mt-3 inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-full bg-white/20 px-3 py-1 text-sm font-semibold">
+                                    <span>Letztes Mal: {Math.round(previousScore)}%</span>
+                                    <span aria-hidden="true">→</span>
+                                    <span>Jetzt: {Math.round(results.score)}%</span>
+                                    {Math.round(results.score) !== Math.round(previousScore) && (
+                                        <span className="rounded-full bg-white px-2 py-0.5 text-xs font-extrabold text-(--lesson-from)">
+                                            {results.score > previousScore ? "▲ +" : "▼ "}
+                                            {Math.round(results.score - previousScore)}
+                                        </span>
+                                    )}
+                                </p>
+                            )}
                         </div>
                     </div>
                     {timeResult && <ExamTimeSummary result={timeResult} className="sm:min-w-52 sm:shrink-0" />}
@@ -417,11 +435,7 @@ function SchriftlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExerci
 
     return (
         <div className="space-y-4">
-            <div className="rounded-[10px] bg-card p-6 shadow-card sm:p-8 space-y-2">
-                {exercise.passages.map((p) => (
-                    <PassageBody key={p.id} passage={p} />
-                ))}
-            </div>
+            <WritingTaskCard passages={exercise.passages} />
 
             <WritingExercise
                 exerciseId={exercise.id}
@@ -494,9 +508,21 @@ function TestformatInformationView({ exercise }: Readonly<{ exercise: ExamExerci
     );
 }
 
-function StartCard({ starting, onStart }: Readonly<{ starting: boolean; onStart: () => void }>) {
+function StartCard({ starting, onStart, lastScore }: Readonly<{ starting: boolean; onStart: () => void; lastScore?: number | null }>) {
     return (
-        <div className="rounded-[10px] bg-card p-6 shadow-card sm:p-8 space-y-3">
+        <div className="rounded-[10px] bg-card p-6 shadow-card sm:p-8 space-y-4">
+            {lastScore != null && (
+                <div className="flex items-center gap-4 rounded-2xl bg-primary/[0.06] p-4 ring-1 ring-primary/15">
+                    <span className={cn("flex size-14 shrink-0 items-center justify-center rounded-2xl text-lg font-extrabold tabular-nums", scoreTone(lastScore))}>{Math.round(lastScore)}%</span>
+                    <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-foreground">Letztes Ergebnis</p>
+                        <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-foreground/10" role="progressbar" aria-label="Letztes Ergebnis" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(lastScore)}>
+                            <div className="h-full rounded-full bg-gradient-to-r from-primary to-primary/60" style={{ width: `${Math.min(100, Math.max(0, lastScore))}%` }} />
+                        </div>
+                        <p className="mt-1 text-xs text-foreground/55">{lastScore >= 100 ? "Perfekt! Wiederhole zur Sicherheit." : "Kannst du dich diesmal verbessern?"}</p>
+                    </div>
+                </div>
+            )}
             <p className="text-sm text-foreground/65">
                 Bereit? Starte die Übung und bearbeite die Aufgaben der Reihe nach.
             </p>
@@ -601,6 +627,7 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
     const isHeadingMatching = exercise.taskType === "MATCHING";
     const isGapText = isSprachbausteineGapText(exercise) && (!quiz || hasGapText(quiz.passages, quiz.questions, exercise.taskType === "WORD_BANK_CLOZE"));
     const [results, setResults] = useState<ResultsState | null>(null);
+    const [previousScore, setPreviousScore] = useState(exercise.lastScore);
     const [starting, setStarting] = useState(false);
     const { completed, marking, markCompleted } = useExerciseCompletion(exercise);
 
@@ -624,6 +651,7 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
     };
 
     const practiceAgain = () => {
+        setPreviousScore(results?.score ?? previousScore);
         setResults(null);
         setQuiz(null);
     };
@@ -658,12 +686,13 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
                 completed={completed}
                 markingCompleted={marking}
                 onPracticeAgain={practiceAgain}
+                previousScore={previousScore}
                 onMarkCompleted={markCompleted}
                 formatAnswer={isSituationMatching ? (value) => answerLabelFor(exercise.passages, value) : undefined}
             />
         );
     }
-    if (!quiz) return <StartCard starting={starting} onStart={beginAttempt} />;
+    if (!quiz) return <StartCard starting={starting} onStart={beginAttempt} lastScore={previousScore} />;
     if (quiz.questions.length === 0) {
         return <p className="text-sm text-foreground/60">Diese Übung enthält noch keine Aufgaben.</p>;
     }
@@ -890,10 +919,12 @@ interface StepQuizState {
 function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse }>) {
     const [quiz, setQuiz] = useState<StepQuizState | null>(null);
     const [results, setResults] = useState<ResultsState | null>(null);
+    const [previousScore, setPreviousScore] = useState(exercise.lastScore);
     const [starting, setStarting] = useState(false);
     const { completed, marking, markCompleted } = useExerciseCompletion(exercise);
 
     const practiceAgain = () => {
+        setPreviousScore(results?.score ?? previousScore);
         setResults(null);
         setQuiz(null);
     };
@@ -960,11 +991,12 @@ function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse 
                 completed={completed}
                 markingCompleted={marking}
                 onPracticeAgain={practiceAgain}
+                previousScore={previousScore}
                 onMarkCompleted={markCompleted}
             />
         );
     }
-    if (!quiz) return <StartCard starting={starting} onStart={beginAttempt} />;
+    if (!quiz) return <StartCard starting={starting} onStart={beginAttempt} lastScore={previousScore} />;
 
     const question = quiz.questions[quiz.currentIndex];
     if (!question) {
@@ -1081,6 +1113,7 @@ interface HoerenListQuizState {
 function HoerenListQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse }>) {
     const [quiz, setQuiz] = useState<HoerenListQuizState | null>(null);
     const [results, setResults] = useState<ResultsState | null>(null);
+    const [previousScore, setPreviousScore] = useState(exercise.lastScore);
     const [starting, setStarting] = useState(false);
     const { completed, marking, markCompleted } = useExerciseCompletion(exercise);
 
@@ -1104,6 +1137,7 @@ function HoerenListQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRes
     };
 
     const practiceAgain = () => {
+        setPreviousScore(results?.score ?? previousScore);
         setResults(null);
         setQuiz(null);
     };
@@ -1138,11 +1172,12 @@ function HoerenListQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRes
                 completed={completed}
                 markingCompleted={marking}
                 onPracticeAgain={practiceAgain}
+                previousScore={previousScore}
                 onMarkCompleted={markCompleted}
             />
         );
     }
-    if (!quiz) return <StartCard starting={starting} onStart={beginAttempt} />;
+    if (!quiz) return <StartCard starting={starting} onStart={beginAttempt} lastScore={previousScore} />;
     if (quiz.questions.length === 0) {
         return <p className="text-sm text-foreground/60">Diese Übung enthält noch keine Aufgaben.</p>;
     }

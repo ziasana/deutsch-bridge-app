@@ -3,9 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Bookmark, BookmarkCheck, Check, ChevronRight, Clock, Play, RotateCw } from "lucide-react";
+import { ArrowLeft, Bookmark, BookmarkCheck, Check, ChevronRight, Clock, Play, RotateCw, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatClock } from "@/lib/examTime";
+import { scoreTone } from "@/lib/examScore";
 import { ExamExerciseSummaryResponse, ExamSection } from "@/types/exam";
 import { ExamExerciseLastTime } from "@/types/examTime";
 import { useExamBookmark } from "@/hooks/exam/useExamBookmark";
@@ -177,6 +178,12 @@ export default function ExamTeilOverview({ section, accent, sectionLabel, emoji,
                                             {item.questionsCount > 0 && ` · ${item.questionsCount} ${item.questionsCount === 1 ? "Frage" : "Fragen"}`}
                                         </p>
                                     </div>
+                                    {item.lastScore != null && (
+                                        <span className={cn("inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums", scoreTone(item.lastScore))} title="Letztes Ergebnis">
+                                            <Trophy className="size-3" aria-hidden="true" />
+                                            {Math.round(item.lastScore)}%
+                                        </span>
+                                    )}
                                     {time ? (
                                         <span className={cn("inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold", time.targetSeconds == null ? "bg-accent text-foreground/70" : within ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : "bg-amber-500/15 text-amber-700 dark:text-amber-300")}>
                                             <Clock className="size-3" aria-hidden="true" />

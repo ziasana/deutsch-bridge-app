@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/lib/toast";
-import LessonMarkdown from "@/componenets/LessonMarkdown";
 import { getWritingLearning } from "@/services/writingService";
 import { getWritingAttempts, requestWritingAiFeedback, submitWritingAttempt } from "@/services/writingAttemptService";
 import { WritingAttempt } from "@/types/writing";
@@ -16,6 +15,7 @@ import WritingHelpDrawer from "./WritingHelpDrawer";
 import WritingSubmitDialog from "./WritingSubmitDialog";
 import WritingFeedback from "./WritingFeedback";
 import WritingRevision from "./WritingRevision";
+import WritingModelSolution from "./WritingModelSolution";
 import WritingCompare from "./WritingCompare";
 import WritingAiFeedback from "./WritingAiFeedback";
 import { useWritingDraft } from "./useWritingDraft";
@@ -38,7 +38,6 @@ export default function WritingExercise({ exerciseId, level, requiresPlanning, l
     const [helpOpen, setHelpOpen] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    const [showSolution, setShowSolution] = useState(false);
     const [aiLoading, setAiLoading] = useState(false);
     const [resultTab, setResultTab] = useState<"feedback" | "compare">("feedback");
     const queryClient = useQueryClient();
@@ -228,22 +227,11 @@ export default function WritingExercise({ exerciseId, level, requiresPlanning, l
                         onRevise={() => {
                             // After a reload the editor state is empty, so start from the last submitted text.
                             if (!text.trim()) draft.setText(submitted.text);
-                            setShowSolution(false);
                             setDone(false);
                         }}
                     />
 
-                    {modelSolution && (
-                        <div>
-                            {showSolution ? (
-                                <LessonMarkdown content={modelSolution} className="text-sm text-gray-700 dark:text-gray-300" />
-                            ) : (
-                                <button type="button" onClick={() => setShowSolution(true)} className="rounded-full border border-border px-4 py-2 text-sm font-medium hover:bg-accent cursor-pointer">
-                                    Mögliche Lösung anzeigen
-                                </button>
-                            )}
-                        </div>
-                    )}
+                    {modelSolution && <WritingModelSolution key={submitted.id} solution={modelSolution} ownText={submitted.text} />}
                 </div>
             ) : planning ? (
                 <WritingPlanner leitpunkte={leitpunkte} notes={draft.plan} onChange={draft.setPlan} onContinue={() => draft.setPlanDone(true)} />
