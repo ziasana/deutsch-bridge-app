@@ -29,14 +29,14 @@ import AudioPlayer from "@/componenets/AudioPlayer";
 import LessonMarkdown from "@/componenets/LessonMarkdown";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
 import SprachbausteineClozeBoard, { hasGapText } from "@/componenets/exam/SprachbausteineClozeBoard";
+import HoerenBoard from "@/componenets/exam/HoerenBoard";
 import LesenTextPanel from "@/componenets/exam/LesenTextPanel";
 import LesenTeil1Board from "@/componenets/exam/LesenTeil1Board";
 import LesenTeil3Board, { NO_AD_ANSWER as NO_AD_ANSWER_VALUE } from "@/componenets/exam/LesenTeil3Board";
 import TranscriptModal from "@/componenets/exam/TranscriptModal";
 import TranscriptContent from "@/componenets/exam/TranscriptContent";
 import { isEmptyTranscript } from "@/lib/transcriptFormat";
-import { ArrowLeft, ArrowRight, BookOpen, Bookmark, BookmarkCheck, Check, FileText, Headphones, PenLine, Play, Puzzle, type LucideIcon, RotateCw, X } from "lucide-react";
-import CircularProgress from "@/componenets/CircularProgress";
+import { ArrowLeft, ArrowRight, BookOpen, Bookmark, BookmarkCheck, Check, ChevronDown, FileText, Headphones, PenLine, Play, Puzzle, type LucideIcon, RotateCw, X } from "lucide-react";
 import LearningPageHero from "@/componenets/learning/LearningPageHero";
 import { EXAM_TYPE_META } from "@/componenets/exam";
 import { cn } from "@/lib/utils";
@@ -49,8 +49,6 @@ import { ExamPracticeSessionResult } from "@/types/examTime";
 
 const pillPrimary =
     "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default disabled:opacity-50";
-const pillSecondary =
-    "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-border bg-card px-6 py-2.5 text-sm font-semibold text-foreground transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default disabled:opacity-60";
 
 const TFN_OPTIONS = [
     { value: "RICHTIG", label: "Richtig" },
@@ -150,6 +148,8 @@ function PassagesView({ passages, taskType }: Readonly<{ passages: ExamPassagePu
 interface ResultItem {
     question: ExamQuestionPublic;
     feedback: ExamAnswerFeedbackResponse;
+    /** What the learner answered (empty when left open). */
+    answer?: string;
 }
 
 interface ResultsState {
@@ -158,37 +158,97 @@ interface ResultsState {
     transcripts: ExamTranscript[];
 }
 
+/** Headline, emoji and tone for a score. */
+function verdictFor(score: number) {
+    if (score >= 90) return { emoji: "🏆", title: "Ausgezeichnet!", text: "Das war fast perfekt." };
+    if (score >= 70) return { emoji: "🎉", title: "Sehr gut!", text: "Du bist auf einem guten Weg." };
+    if (score >= 50) return { emoji: "👍", title: "Gut gemacht!", text: "Schau dir die Fehler an, dann klappt es noch besser." };
+    return { emoji: "💪", title: "Weiter üben!", text: "Aus Fehlern lernt man – lies die Erklärungen und versuche es noch einmal." };
+}
+
 function ResultCard({
     index,
     item,
     hideTranscript,
     formatAnswer,
 }: Readonly<{ index: number; item: ResultItem; hideTranscript?: boolean; formatAnswer?: (value: string) => string }>) {
-    const { question, feedback } = item;
+    const { question, feedback, answer } = item;
+    const format = (value: string) => (formatAnswer ? formatAnswer(value) : value);
+    const number = question.questionNumber ?? index + 1;
+    const ok = feedback.correct;
+    const hasDetails = Boolean(feedback.explanation || feedback.commonMistake || (!isEmptyTranscript(feedback.transcript) && !hideTranscript));
+
     return (
-        <div
-            className={`rounded-2xl p-4 text-sm space-y-1 ${
-                feedback.correct
-                    ? "bg-green-500/10 text-green-800 dark:text-green-300"
-                    : "bg-red-500/10 text-red-800 dark:text-red-300"
-            }`}
+        <details
+            id={`result-${question.id}`}
+            open={!ok}
+            className={cn("group scroll-mt-24 overflow-hidden rounded-2xl border-s-4 bg-card shadow-card", ok ? "border-green-500" : "border-red-500")}
         >
-            <p className="font-semibold">
-                Aufgabe {question.questionNumber ?? index + 1}{question.prompt ? ` — ${question.prompt}` : ""}: {feedback.correct ? "Richtig" : "Falsch"}
-            </p>
-            {!feedback.correct && (
-                <p>
-                    Richtige Antwort: <span className="font-medium">{formatAnswer ? formatAnswer(feedback.correctAnswer) : feedback.correctAnswer}</span>
-                </p>
-            )}
-            {feedback.explanation && <p dir="auto" className="mt-1">💡 {feedback.explanation}</p>}
-            {feedback.commonMistake && <p className="mt-1 italic">⚠️ Häufiger Fehler: {feedback.commonMistake}</p>}
-            {!isEmptyTranscript(feedback.transcript) && !hideTranscript && (
-                <div className="mt-2 pt-2 border-t border-current/20">
-                    <p className="font-semibold text-xs uppercase tracking-wide mb-1">Transkript</p>
-                    <TranscriptContent transcript={feedback.transcript ?? ""} variant="compact" />
+            <summary className="flex cursor-pointer list-none items-center gap-3 p-4 [&::-webkit-details-marker]:hidden">
+                <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-xl text-white", ok ? "bg-green-500" : "bg-red-500")} aria-hidden="true">
+                    {ok ? <Check className="size-5" strokeWidth={3} /> : <X className="size-5" strokeWidth={3} />}
+                </span>
+                <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-foreground/50">
+                        Aufgabe {number} · {ok ? "Richtig" : "Falsch"}
+                    </p>
+                    <p className="font-medium leading-snug text-foreground">{question.prompt}</p>
                 </div>
-            )}
+                {hasDetails && <ChevronDown className="size-5 shrink-0 text-foreground/40 transition group-open:rotate-180" aria-hidden="true" />}
+            </summary>
+
+            <div className="space-y-3 px-4 pb-4 text-sm">
+                <div className="flex flex-wrap gap-2">
+                    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-medium", ok ? "bg-green-500/10 text-green-800 dark:text-green-300" : "bg-red-500/10 text-red-800 dark:text-red-300")}>
+                        Deine Antwort: <strong>{answer ? format(answer) : "—"}</strong>
+                    </span>
+                    {!ok && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-green-500/10 px-3 py-1 font-medium text-green-800 dark:text-green-300">
+                            Richtig: <strong>{format(feedback.correctAnswer)}</strong>
+                        </span>
+                    )}
+                </div>
+                {feedback.explanation && (
+                    <p dir="auto" className="rounded-xl bg-primary/[0.07] p-3 text-foreground/85">
+                        💡 {feedback.explanation}
+                    </p>
+                )}
+                {feedback.commonMistake && (
+                    <p className="rounded-xl bg-amber-500/10 p-3 italic text-foreground/80">⚠️ Häufiger Fehler: {feedback.commonMistake}</p>
+                )}
+                {!isEmptyTranscript(feedback.transcript) && !hideTranscript && (
+                    <div className="border-t border-border/60 pt-2">
+                        <p className="mb-1 text-xs font-semibold uppercase tracking-wide">Transkript</p>
+                        <TranscriptContent transcript={feedback.transcript ?? ""} variant="compact" />
+                    </div>
+                )}
+            </div>
+        </details>
+    );
+}
+
+/** The score as a ring on the gradient hero. */
+function ScoreRing({ value, size = 112 }: Readonly<{ value: number; size?: number }>) {
+    const radius = size / 2 - 8;
+    const circumference = 2 * Math.PI * radius;
+    return (
+        <div className="relative shrink-0" style={{ width: size, height: size }} role="img" aria-label={`${Math.round(value)} Prozent`}>
+            <svg width={size} height={size} className="-rotate-90">
+                <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgb(255 255 255 / 0.25)" strokeWidth={8} />
+                <circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    fill="none"
+                    stroke="white"
+                    strokeWidth={8}
+                    strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={circumference - (Math.min(Math.max(value, 0), 100) / 100) * circumference}
+                    className="transition-all duration-1000"
+                />
+            </svg>
+            <span className="absolute inset-0 flex items-center justify-center text-2xl font-extrabold tabular-nums text-white">{Math.round(value)}%</span>
         </div>
     );
 }
@@ -213,7 +273,10 @@ function ResultsView({
     onMarkCompleted: () => void;
 }>) {
     const correctCount = results.items.filter((item) => item.feedback.correct).length;
+    const wrongCount = results.items.length - correctCount;
+    const verdict = verdictFor(results.score);
     const [transcriptOpen, setTranscriptOpen] = useState(false);
+    const [onlyWrong, setOnlyWrong] = useState(false);
     const stopExerciseTimer = useStopExerciseTimer();
     const [timeResult, setTimeResult] = useState<ExamPracticeSessionResult | null>(null);
 
@@ -227,55 +290,109 @@ function ResultsView({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const jumpTo = (id: string) => {
+        const el = document.getElementById(`result-${id}`) as HTMLDetailsElement | null;
+        if (!el) return;
+        el.open = true;
+        el.scrollIntoView?.({ block: "center", behavior: "smooth" });
+    };
+    const shown = results.items.map((item, idx) => ({ item, idx })).filter(({ item }) => !onlyWrong || !item.feedback.correct);
+
     return (
-        <div className="rounded-[10px] bg-card p-6 shadow-card sm:p-8 space-y-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="space-y-4">
-                    <h2 className="text-xl font-bold text-foreground">Ergebnis</h2>
+        <div className="space-y-4">
+            <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-(--lesson-from) to-(--lesson-to) p-5 text-white shadow-md sm:p-7">
+                <span aria-hidden="true" className="absolute -end-10 -top-12 size-48 rounded-full bg-white/10" />
+                <span aria-hidden="true" className="absolute -bottom-16 start-1/3 size-40 rounded-full bg-white/5" />
+                <p className="relative text-xs font-bold uppercase tracking-wider text-white/80">Ergebnis</p>
+                <div className="relative mt-3 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-5">
-                        <CircularProgress value={results.score} size={104} color="hsl(216 100% 62%)" trackColor="hsl(0 0% 50% / 0.15)" showLabel />
-                        <p className="text-sm text-foreground/65">
-                            {correctCount} von {results.items.length} Aufgaben richtig
-                        </p>
+                        <ScoreRing value={results.score} />
+                        <div className="min-w-0">
+                            <p className="anim-pop text-2xl font-extrabold leading-tight sm:text-3xl">
+                                {verdict.emoji} {verdict.title}
+                            </p>
+                            <p className="mt-1 text-sm text-white/90">{verdict.text}</p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-sm font-semibold">
+                                    <Check className="size-4" strokeWidth={3} aria-hidden="true" /> {correctCount} richtig
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-sm font-semibold">
+                                    <X className="size-4" strokeWidth={3} aria-hidden="true" /> {wrongCount} falsch
+                                </span>
+                                <span className="sr-only">
+                                    {correctCount} von {results.items.length} Aufgaben richtig
+                                </span>
+                            </div>
+                        </div>
                     </div>
+                    {timeResult && <ExamTimeSummary result={timeResult} className="sm:min-w-52 sm:shrink-0" />}
                 </div>
-                {timeResult && <ExamTimeSummary result={timeResult} className="sm:min-w-48 sm:shrink-0" />}
+            </section>
+
+            <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-card ring-1 ring-border/60">
+                <nav aria-label="Aufgaben" className="flex flex-wrap items-center gap-1.5">
+                    {results.items.map((item, idx) => (
+                        <button
+                            key={item.question.id}
+                            type="button"
+                            onClick={() => jumpTo(item.question.id)}
+                            aria-label={`Aufgabe ${item.question.questionNumber ?? idx + 1}: ${item.feedback.correct ? "richtig" : "falsch"}`}
+                            className={cn(
+                                "flex size-8 cursor-pointer items-center justify-center rounded-full text-xs font-extrabold text-white transition hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                                item.feedback.correct ? "bg-green-500" : "bg-red-500",
+                            )}
+                        >
+                            {item.question.questionNumber ?? idx + 1}
+                        </button>
+                    ))}
+                </nav>
+                <div className="ms-auto flex flex-wrap items-center gap-2">
+                    {wrongCount > 0 && (
+                        <button
+                            type="button"
+                            aria-pressed={onlyWrong}
+                            onClick={() => setOnlyWrong((v) => !v)}
+                            className={cn(
+                                "cursor-pointer rounded-full border px-3.5 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                                onlyWrong ? "border-red-500 bg-red-500/10 text-red-700 dark:text-red-300" : "border-border bg-background text-foreground/70 hover:bg-accent",
+                            )}
+                        >
+                            {onlyWrong ? "Alle anzeigen" : "Nur Fehler anzeigen"}
+                        </button>
+                    )}
+                    {results.transcripts.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => setTranscriptOpen(true)}
+                            className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-background px-3.5 py-1.5 text-xs font-semibold text-primary transition hover:bg-accent"
+                        >
+                            <FileText className="size-3.5" aria-hidden="true" />
+                            Transkript anzeigen
+                        </button>
+                    )}
+                </div>
+                <TranscriptModal open={transcriptOpen} onClose={() => setTranscriptOpen(false)} transcripts={results.transcripts} />
             </div>
 
-            {results.transcripts.length > 0 && (
-                <>
-                    <button
-                        type="button"
-                        onClick={() => setTranscriptOpen(true)}
-                        className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
-                    >
-                        <FileText className="size-4" />
-                        Transkript anzeigen
-                    </button>
-                    <TranscriptModal
-                        open={transcriptOpen}
-                        onClose={() => setTranscriptOpen(false)}
-                        transcripts={results.transcripts}
-                    />
-                </>
-            )}
-
             {(defaultExplanation || defaultCommonMistake) && (
-                <div className="rounded-2xl p-4 text-sm bg-primary/[0.07] text-foreground/85 space-y-1">
+                <div className="space-y-1 rounded-2xl bg-primary/[0.07] p-4 text-sm text-foreground/85">
+                    <p className="text-xs font-bold uppercase tracking-wide text-primary">Tipp</p>
                     {defaultExplanation && <p>💡 {defaultExplanation}</p>}
                     {defaultCommonMistake && <p className="italic">⚠️ Häufiger Fehler: {defaultCommonMistake}</p>}
                 </div>
             )}
 
-            <div className="space-y-3 pt-2">
-                {results.items.map((item, idx) => (
+            <div className="space-y-3">
+                {shown.map(({ item, idx }) => (
                     // The transcript link above covers every transcript; don't repeat it under each question.
                     <ResultCard key={item.question.id} index={idx} item={item} hideTranscript={results.transcripts.length > 0} formatAnswer={formatAnswer} />
                 ))}
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 flex-wrap">
-                <button type="button" className={pillSecondary}
+            <div className="flex flex-wrap justify-end gap-2 pt-1">
+                <button
+                    type="button"
+                    className={pillPrimary}
                     onClick={() => {
                         onPracticeAgain();
                         useExamTimerStore.getState().requestRestart();
@@ -519,7 +636,7 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
                     questionId: question.id,
                     answer: quiz.answers[question.id] ?? "",
                 });
-                items.push({ question, feedback: res.data });
+                items.push({ question, feedback: res.data, answer: quiz.answers[question.id] ?? "" });
             }
             const completeRes = await completeExamAttempt(quiz.attemptId);
             setResults({ score: completeRes.data.score, items, transcripts: completeRes.data.transcripts ?? [] });
@@ -808,7 +925,7 @@ function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse 
             .then((res) => {
                 setQuiz((prev) =>
                     prev
-                        ? { ...prev, feedback: res.data, submitting: false, items: [...prev.items, { question, feedback: res.data }] }
+                        ? { ...prev, feedback: res.data, submitting: false, items: [...prev.items, { question, feedback: res.data, answer: quiz.selectedAnswer }] }
                         : prev
                 );
             })
@@ -997,7 +1114,7 @@ function HoerenListQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRes
                     questionId: question.id,
                     answer: quiz.answers[question.id] ?? "",
                 });
-                items.push({ question, feedback: res.data });
+                items.push({ question, feedback: res.data, answer: quiz.answers[question.id] ?? "" });
             }
             const completeRes = await completeExamAttempt(quiz.attemptId);
             setResults({ score: completeRes.data.score, items, transcripts: completeRes.data.transcripts ?? [] });
@@ -1027,98 +1144,31 @@ function HoerenListQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicRes
     }
 
     const allAnswered = quiz.questions.every((q) => quiz.answers[q.id]);
-    const answeredCount = quiz.questions.filter((q) => quiz.answers[q.id]).length;
-    const showPassageLabels = quiz.passages.length > 1;
 
     return (
         <div className="space-y-4">
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-(--lesson-from) to-(--lesson-to) p-5 text-white shadow-md sm:p-6">
-                <span aria-hidden="true" className="absolute -end-8 -top-10 size-40 rounded-full bg-white/10" />
-                <span aria-hidden="true" className="absolute end-5 top-3 text-6xl opacity-20">🎧</span>
-                <p className="relative text-xs font-bold uppercase tracking-wider text-white/80">So geht es</p>
-                <p className="relative mt-1 text-sm leading-relaxed text-white/95">
-                    Höre jeden Text an und markiere, ob die Aussage richtig ({quiz.answerOptions[0] ?? "+"}) oder falsch (
-                    {quiz.answerOptions[1] ?? "-"}) ist. Dein Ergebnis siehst du, sobald du alle Antworten abgegeben hast.
-                </p>
-            </div>
-            {quiz.passages.map((passage) => (
-                <div key={passage.id} className="rounded-3xl bg-card p-5 shadow-card ring-1 ring-primary/15 sm:p-6">
-                    <p className="mb-3 flex items-center gap-2 font-bold text-foreground">
-                        <span className="flex size-8 items-center justify-center rounded-xl bg-primary/15 text-primary" aria-hidden="true">
-                            <Headphones className="size-4" />
-                        </span>
-                        {passage.label}
-                    </p>
-                    <PassageBody passage={passage} />
-                </div>
-            ))}
+            <HoerenBoard
+                teil={exercise.teil ?? exercise.partNumber ?? undefined}
+                passages={quiz.passages}
+                questions={quiz.questions}
+                answerOptions={quiz.answerOptions}
+                answers={quiz.answers}
+                disabled={quiz.submitting}
+                onAnswer={(questionId, value) =>
+                    setQuiz((prev) => {
+                        if (!prev) return prev;
+                        const answers = { ...prev.answers };
+                        if (value) answers[questionId] = value;
+                        else delete answers[questionId];
+                        return { ...prev, answers };
+                    })
+                }
+            />
 
-            <div className="sticky top-2 z-10 flex items-center gap-3 rounded-2xl bg-card/95 px-4 py-2.5 shadow-card ring-1 ring-border/60 backdrop-blur">
-                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-foreground/10" role="progressbar" aria-label="Beantwortete Aussagen" aria-valuemin={0} aria-valuemax={quiz.questions.length} aria-valuenow={answeredCount}>
-                    <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${(answeredCount / quiz.questions.length) * 100}%` }} />
-                </div>
-                <span className="text-xs font-bold tabular-nums text-foreground/70">{answeredCount}/{quiz.questions.length} beantwortet</span>
-            </div>
-
-            <div className="space-y-4">
-                <ol className="space-y-3">
-                    {quiz.questions.map((question, idx) => {
-                        const passage = question.sectionIndex != null ? quiz.passages[question.sectionIndex] : null;
-                        const selected = quiz.answers[question.id] ?? "";
-                        return (
-                            <li
-                                key={question.id}
-                                className={`anim-fade-up flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl bg-card p-4 shadow-card ring-1 transition ${selected ? "ring-primary/40" : "ring-border/60"}`}
-                                style={{ animationDelay: `${idx * 40}ms` }}
-                            >
-                                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-(--lesson-from) to-(--lesson-to) text-sm font-extrabold text-white">
-                                    {question.questionNumber ?? idx + 1}
-                                </span>
-                                <p className="min-w-0 flex-1 basis-56 font-medium text-foreground">
-                                    {showPassageLabels && passage && (
-                                        <span className="text-xs font-semibold text-foreground/60">
-                                            {passage.label}:{" "}
-                                        </span>
-                                    )}
-                                    {question.prompt}
-                                </p>
-                                <div className="flex shrink-0 gap-2">
-                                    {quiz.answerOptions.map((option) => (
-                                        <button
-                                            key={option}
-                                            type="button"
-                                            disabled={quiz.submitting}
-                                            onClick={() =>
-                                                setQuiz((prev) =>
-                                                    prev ? { ...prev, answers: { ...prev.answers, [question.id]: option } } : prev
-                                                )
-                                            }
-                                            aria-pressed={selected === option}
-                                            className={`size-12 cursor-pointer rounded-2xl border-2 text-lg font-extrabold transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                                                selected === option
-                                                    ? option === (quiz.answerOptions[0] ?? "+")
-                                                        ? "anim-pop border-emerald-500 bg-emerald-500 text-white shadow-md"
-                                                        : "anim-pop border-rose-500 bg-rose-500 text-white shadow-md"
-                                                    : "border-border bg-background text-foreground/60 hover:border-primary/50"
-                                            }`}
-                                        >
-                                            {option}
-                                        </button>
-                                    ))}
-                                </div>
-                            </li>
-                        );
-                    })}
-                </ol>
-
-                <div className="flex justify-end pt-2">
-                    <button type="button" className={pillPrimary}
-                        disabled={!allAnswered || quiz.submitting}
-                        onClick={submitAll}
-                    >
-                        {quiz.submitting ? "Wird geprüft..." : "Antworten abgeben"}
-                    </button>
-                </div>
+            <div className="flex justify-end pt-2">
+                <button type="button" className={pillPrimary} disabled={!allAnswered || quiz.submitting} onClick={submitAll}>
+                    {quiz.submitting ? "Wird geprüft..." : "Antworten abgeben"}
+                </button>
             </div>
         </div>
     );
