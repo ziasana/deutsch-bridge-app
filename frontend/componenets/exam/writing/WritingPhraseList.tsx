@@ -37,7 +37,7 @@ export default function WritingPhraseList({ phrases }: { phrases: WritingPhrase[
             </div>
             <ul className="mt-4 space-y-2">
                 {shown.map((p) => (
-                    <li key={p.id} className="rounded-lg bg-accent/40 px-4 py-3">
+                    <li key={p.id} className="rounded-2xl border-s-4 border-primary bg-card px-4 py-3 shadow-card">
                         <div className="flex flex-wrap items-center gap-2">
                             <button
                                 type="button"

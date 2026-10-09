@@ -13,11 +13,11 @@ function ExampleCard({ item }: { item: WritingGuideItem<WritingExampleData> }) {
     const active = sections.find((s) => s.key === activeKey) ?? sections[0];
 
     return (
-        <div className="rounded-xl border border-border/60 bg-background/40 p-4">
+        <div className="rounded-2xl bg-card p-4 shadow-card">
             <h4 className="font-semibold text-foreground">{item.title}</h4>
             {item.content && <p className="mt-1 text-sm leading-relaxed text-foreground/65">{item.content}</p>}
 
-            <div role="tablist" aria-label="Ansicht" className="mt-4 inline-flex rounded-full bg-accent p-1 text-xs font-medium">
+            <div role="tablist" aria-label="Ansicht" className="mt-4 inline-flex rounded-full bg-primary/10 p-1 text-xs font-medium">
                 {(["full", "analyze"] as const).map((v) => (
                     <button
                         key={v}
@@ -27,7 +27,7 @@ function ExampleCard({ item }: { item: WritingGuideItem<WritingExampleData> }) {
                         onClick={() => setView(v)}
                         className={cn(
                             "rounded-full px-3 py-1.5 transition cursor-pointer",
-                            view === v ? "bg-card text-foreground shadow-card" : "text-foreground/60 hover:text-foreground",
+                            view === v ? "bg-primary text-primary-foreground shadow-sm" : "text-foreground/60 hover:text-foreground",
                         )}
                     >
                         {v === "full" ? "Vollständiger Text" : "Text analysieren"}
@@ -36,7 +36,7 @@ function ExampleCard({ item }: { item: WritingGuideItem<WritingExampleData> }) {
             </div>
 
             {view === "full" ? (
-                <div className="mt-4 whitespace-pre-line rounded-lg bg-card p-4 text-sm leading-relaxed text-foreground/85 shadow-card">
+                <div className="mt-4 whitespace-pre-line rounded-xl bg-primary/[0.04] p-4 text-sm leading-relaxed text-foreground/85 ring-1 ring-primary/15">
                     {sections.map((s) => s.text).join("\n\n")}
                 </div>
             ) : (
@@ -60,7 +60,7 @@ function ExampleCard({ item }: { item: WritingGuideItem<WritingExampleData> }) {
                         ))}
                     </div>
                     {active && (
-                        <div className="rounded-lg bg-card p-4 shadow-card">
+                        <div className="rounded-xl bg-primary/[0.04] p-4 ring-1 ring-primary/15">
                             <p className="whitespace-pre-line rounded-md border-l-4 border-primary bg-primary/5 px-3 py-2 text-sm text-foreground/85">
                                 {active.text}
                             </p>

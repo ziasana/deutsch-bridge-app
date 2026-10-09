@@ -17,7 +17,7 @@ export default function Expandable({ title, children, defaultOpen = false, class
     const panelId = useId();
 
     return (
-        <div className={cn("rounded-xl border border-border/60 bg-background/40", className)}>
+        <div className={cn("rounded-2xl bg-card shadow-card", className)}>
             <button
                 type="button"
                 aria-expanded={open}
