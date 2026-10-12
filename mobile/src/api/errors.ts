@@ -11,12 +11,23 @@ export type ApiErrorKind =
 export class ApiError extends Error {
   readonly kind: ApiErrorKind;
   readonly status: number | null;
+  /** Machine-readable reason some endpoints add to their error body (e.g. ACTIVE_ATTEMPT_EXISTS). */
+  readonly code: string | null;
+  readonly details: Record<string, unknown> | null;
 
-  constructor(kind: ApiErrorKind, message: string, status: number | null = null) {
+  constructor(
+    kind: ApiErrorKind,
+    message: string,
+    status: number | null = null,
+    code: string | null = null,
+    details: Record<string, unknown> | null = null,
+  ) {
     super(message);
     this.name = 'ApiError';
     this.kind = kind;
     this.status = status;
+    this.code = code;
+    this.details = details;
   }
 }
 

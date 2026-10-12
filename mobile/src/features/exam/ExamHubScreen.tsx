@@ -26,6 +26,7 @@ import type { ExamSection } from '@/types/exam';
 import { pickInitialLevel } from '@/utils/levels';
 import { ExerciseRow } from './components/ExerciseRow';
 import { PressableScale, darken, tint } from './components/kit';
+import { SimulationHubCard } from '@/features/examSimulation/HubCard';
 import { WritingLearnCard } from './writing/WritingLearnCard';
 import {
   averageScore,
@@ -572,6 +573,8 @@ export function ExamHubScreen() {
           />
         </View>
       ) : null}
+
+      <SimulationHubCard />
 
       <View style={{ gap: spacing.sm }}>
         <AppText style={styles.heading} accessibilityRole="header">

@@ -112,6 +112,22 @@ function messageFrom(body: unknown): string | null {
   return null;
 }
 
+function codeFrom(body: unknown): string | null {
+  if (body && typeof body === 'object' && 'code' in body) {
+    const code = (body as { code: unknown }).code;
+    if (typeof code === 'string') return code;
+  }
+  return null;
+}
+
+function detailsFrom(body: unknown): Record<string, unknown> | null {
+  if (body && typeof body === 'object' && 'details' in body) {
+    const details = (body as { details: unknown }).details;
+    if (details && typeof details === 'object') return details as Record<string, unknown>;
+  }
+  return null;
+}
+
 async function send(path: string, options: RequestOptions): Promise<Response> {
   const headers: Record<string, string> = { Accept: 'application/json' };
   // FormData sets its own multipart Content-Type (with the boundary); never override it.
@@ -183,7 +199,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     if (kind === 'limit') hooks.onLimitReached?.(message ?? fallbackMessage('limit'));
     // Server-provided messages are trusted for 4xx (validation/limit); 5xx get a friendly fallback.
     const text = kind === 'server' ? fallbackMessage(kind) : (message ?? fallbackMessage(kind));
-    throw new ApiError(kind, text, response.status);
+    throw new ApiError(kind, text, response.status, codeFrom(body), detailsFrom(body));
   }
 
   return body as T;
