@@ -51,6 +51,17 @@ const toRequest = (p: ExamProfileResponse): ExamProfileRequest => ({
     config: p.config,
 });
 
+const REASON_LABEL: Record<string, string> = {
+    NOT_PUBLISHED: "nicht veröffentlicht",
+    QUESTION_COUNT: "falsche Fragenanzahl",
+    MISSING_ANSWER_KEY: "Lösung fehlt bei einer Frage",
+    NO_AUDIO: "keine Audiodatei",
+    NO_CONTENT: "kein Inhalt",
+    TASK_TYPE: "anderer Aufgabentyp",
+    OTHER_LEVEL: "anderes Niveau",
+    OTHER_EXAM_TYPE: "andere Prüfung",
+};
+
 function IssueList({ issues, tone }: Readonly<{ issues: ValidationIssue[]; tone: "error" | "warning" }>) {
     if (issues.length === 0) return null;
     return (
@@ -70,6 +81,7 @@ function Detail({ profile, onClose }: Readonly<{ profile: ExamProfileResponse | 
     const [draft, setDraft] = useState<ExamProfileRequest>(profile ? toRequest(profile) : EMPTY_PROFILE);
     const [validation, setValidation] = useState<ValidationResponse | null>(null);
     const [note, setNote] = useState(profile?.verificationNote ?? "");
+    const [acceptGaps, setAcceptGaps] = useState(false);
     const [confirm, setConfirm] = useState<"deactivate" | "archive" | null>(null);
 
     const refresh = () => queryClient.invalidateQueries({ queryKey: ["admin-exam-profiles"] });
@@ -106,7 +118,7 @@ function Detail({ profile, onClose }: Readonly<{ profile: ExamProfileResponse | 
         onError: fail("Die Prüfung ist fehlgeschlagen."),
     });
     const publish = useMutation({
-        mutationFn: () => adminPublishExamProfile(profile!.id, note),
+        mutationFn: () => adminPublishExamProfile(profile!.id, note, acceptGaps),
         onSuccess: () => {
             toast.success("Profil veröffentlicht.");
             setValidation(null);
@@ -169,6 +181,13 @@ function Detail({ profile, onClose }: Readonly<{ profile: ExamProfileResponse | 
                             </>
                         )}
                     </div>
+                    {profile.status !== "PUBLISHED" && note.trim() === "" && <p className="text-xs text-amber-700 dark:text-amber-400">Zum Veröffentlichen zuerst die Verifizierungsnotiz ausfüllen.</p>}
+                    {profile.status !== "PUBLISHED" && (
+                        <label className="flex items-center gap-2 text-xs text-foreground/75">
+                            <input type="checkbox" checked={acceptGaps} onChange={(e) => setAcceptGaps(e.target.checked)} />
+                            Trotz fehlender Aufgaben veröffentlichen (Lernende sehen die Prüfung, können sie aber erst starten, wenn genug Aufgaben vorhanden sind)
+                        </label>
+                    )}
                     {profile.verificationNote && <p className="text-xs text-foreground/60">Verifizierung: {profile.verificationNote}</p>}
                     {validation && (
                         <div className="space-y-2" role="status">
@@ -191,6 +210,7 @@ function Detail({ profile, onClose }: Readonly<{ profile: ExamProfileResponse | 
                                     <th className="p-1 text-end">Benötigt</th>
                                     <th className="p-1 text-end">Geeignet (veröffentlicht)</th>
                                     <th className="p-1 text-end">Übrig für Lernende mit dem höchsten Verbrauch</th>
+                                    <th className="p-1 text-start">Warum nicht geeignet?</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -200,6 +220,14 @@ function Detail({ profile, onClose }: Readonly<{ profile: ExamProfileResponse | 
                                         <td className="p-1 text-end tabular-nums">{p.required}</td>
                                         <td className={`p-1 text-end tabular-nums ${p.eligible < p.required ? "font-bold text-red-600" : ""}`}>{p.eligible}</td>
                                         <td className={`p-1 text-end tabular-nums ${p.minRemainingAcrossUsers < p.required ? "font-bold text-amber-700 dark:text-amber-400" : ""}`}>{p.minRemainingAcrossUsers}</td>
+                                        <td className="p-1 text-xs text-foreground/70">
+                                            {Object.entries(p.ineligibleReasons ?? {}).map(([reason, n]) => (
+                                                <span key={reason} className="me-2 inline-block">
+                                                    {n}× {REASON_LABEL[reason] ?? reason}
+                                                    {reason === "QUESTION_COUNT" && p.expectedQuestions ? ` (nötig: ${p.expectedQuestions} Fragen, vorhanden: ${Object.entries(p.questionCounts ?? {}).map(([q, c]) => `${c}× ${q}`).join(", ")})` : ""}
+                                                </span>
+                                            ))}
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>

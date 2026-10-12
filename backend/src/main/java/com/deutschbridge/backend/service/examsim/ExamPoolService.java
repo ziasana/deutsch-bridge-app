@@ -22,7 +22,12 @@ import java.util.stream.Collectors;
 public class ExamPoolService {
 
     /** Availability of one part. unusedForUser is -1 when computed without a user (admin overview). */
-    public record PartAvailability(String partKey, String label, int required, int eligible, int unusedForUser, int minRemainingAcrossUsers) {
+    public record PartAvailability(String partKey, String label, int required, int eligible, int unusedForUser, int minRemainingAcrossUsers,
+                                   int expectedQuestions, Map<String, Integer> ineligibleReasons, Map<Integer, Integer> questionCounts) {
+        public PartAvailability(String partKey, String label, int required, int eligible, int unusedForUser, int minRemainingAcrossUsers) {
+            this(partKey, label, required, eligible, unusedForUser, minRemainingAcrossUsers, 0, Map.of(), Map.of());
+        }
+
         public boolean sufficientFor(int needed) {
             return unusedForUser >= needed;
         }
@@ -86,9 +91,28 @@ public class ExamPoolService {
                 maxUsed = usageRepository.countByUserForExercises(profile.getCode(), ids).stream()
                         .mapToInt(u -> (int) u.getUsed()).max().orElse(0);
             }
-            result.add(new PartAvailability(part.key(), part.label(), part.effectiveExerciseCount(), eligible.size(), -1, eligible.size() - maxUsed));
+            result.add(diagnose(profile, part, new PartAvailability(part.key(), part.label(), part.effectiveExerciseCount(), eligible.size(), -1, eligible.size() - maxUsed)));
         }
         return result;
+    }
+
+    /**
+     * Admin diagnostics for a part: of the exercises of this exam type / level that belong to the part's section (any status),
+     * how many are rejected for which reason, and which question counts exist - so a shortage can be fixed.
+     */
+    public PartAvailability diagnose(ExamProfile profile, ExamPartConfig part, PartAvailability base) {
+        Map<String, Integer> reasons = new java.util.TreeMap<>();
+        Map<Integer, Integer> counts = new java.util.TreeMap<>();
+        for (ExamExercise e : exerciseRepository.findFiltered(part.section(), profile.getLevel(), null)) {
+            if (e.getExamType() != profile.getExamType()) continue;
+            String reason = ExamExerciseEligibility.rejection(e, profile.getExamType(), profile.getLevel(), part);
+            if (reason == null) continue;
+            if ("OTHER_TEIL".equals(reason) || "OTHER_SECTION".equals(reason)) continue;
+            reasons.merge(reason, 1, Integer::sum);
+            if (e.getQuestions() != null && "QUESTION_COUNT".equals(reason)) counts.merge(e.getQuestions().size(), 1, Integer::sum);
+        }
+        int expected = part.questionCount() != null ? part.questionCount() / part.effectiveExerciseCount() : 0;
+        return new PartAvailability(base.partKey(), base.label(), base.required(), base.eligible(), base.unusedForUser(), base.minRemainingAcrossUsers(), expected, reasons, counts);
     }
 
     public Map<String, ExamExercise> byId(List<ExamExercise> exercises) {

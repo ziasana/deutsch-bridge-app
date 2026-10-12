@@ -146,6 +146,15 @@ public class ExamProfileService {
 
     @Transactional
     public ExamProfile publish(String id, String verificationNote, String actor) throws DataNotFoundException {
+        return publish(id, verificationNote, false, actor);
+    }
+
+    /**
+     * @param acceptContentGaps publish although some parts have too little eligible content (only that error may be waived);
+     *                          learners then see why the exam cannot start until content exists. Structural errors can never be waived.
+     */
+    @Transactional
+    public ExamProfile publish(String id, String verificationNote, boolean acceptContentGaps, String actor) throws DataNotFoundException {
         ExamProfile profile = lock(id);
         if (profile.getStatus() != ExamProfileStatus.DRAFT && profile.getStatus() != ExamProfileStatus.DEACTIVATED) {
             throw ExamSimulationException.conflict("PROFILE_NOT_PUBLISHABLE", "Only draft or deactivated profiles can be published.");
@@ -156,7 +165,8 @@ public class ExamProfileService {
                     "Record the official exam documentation this profile was verified against before publishing.");
         }
         ProfileValidationResult result = validateProfile(profile);
-        if (!result.isValid()) {
+        boolean onlyContentGaps = !result.isValid() && result.errors().stream().allMatch(e -> "CONTENT_MISSING".equals(e.code()));
+        if (!result.isValid() && !(acceptContentGaps && onlyContentGaps)) {
             throw new ExamSimulationException(HttpStatus.UNPROCESSABLE_ENTITY, "PROFILE_INVALID", "The profile is invalid and cannot be published.",
                     Map.of("errors", result.errors(), "warnings", result.warnings()));
         }

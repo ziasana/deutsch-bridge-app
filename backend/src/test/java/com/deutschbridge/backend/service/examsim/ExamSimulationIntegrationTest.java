@@ -799,4 +799,43 @@ class ExamSimulationIntegrationTest {
                 new AssessmentRequest(Map.of("AUFGABENERFUELLUNG", BigDecimal.TEN, "KOMMUNIKATIVE_GESTALTUNG", BigDecimal.TEN, "FORMALE_RICHTIGKEIT", BigDecimal.TEN), null));
         assertEquals(0, new BigDecimal("30").compareTo(official.parts().stream().filter(p -> p.key().equals("SCHRIFTLICHER_AUSDRUCK")).findFirst().orElseThrow().score()));
     }
+
+    @Test
+    @DisplayName("Content gaps can be accepted explicitly at publication; learners then see why the exam cannot start. Structural errors can never be waived")
+    void publishWithAcceptedContentGaps() throws Exception {
+        ExamProfileRequest base = TelcB1ProfileFactory.request();
+        ExamProfile draft = profileService.create(new ExamProfileRequest("TEST_GAP_" + UUID.randomUUID(), base.provider(), base.examName(), "Lücken", null, base.examType(),
+                LearningLevel.A2, false, base.writtenMaxPoints(), base.writtenPassThreshold(), base.oralMaxPoints(), base.oralPassThreshold(),
+                base.overallResultPolicy(), base.answerReleasePolicy(), null, false, base.config()), "admin-1");
+        assertCode("PROFILE_INVALID", () -> profileService.publish(draft.getId(), "geprüft", "admin-1"));
+        ExamProfile published = profileService.publish(draft.getId(), "geprüft", true, "admin-1");
+        assertEquals(com.deutschbridge.backend.model.enums.ExamProfileStatus.PUBLISHED, published.getStatus());
+
+        ProfileOverview overview = overviewService.get(user(), published.getId());
+        assertFalse(overview.canStart());
+        assertEquals("INSUFFICIENT_CONTENT", overview.blockedReason());
+        assertCode("INSUFFICIENT_CONTENT", () -> service.start(user(), published.getId()));
+
+        // structural problems are never waived
+        ExamPartConfig lesen1 = base.config().parts().get(0);
+        List<ExamPartConfig> parts = new ArrayList<>(base.config().parts());
+        parts.set(0, new ExamPartConfig(lesen1.key(), lesen1.label(), lesen1.module(), lesen1.section(), lesen1.teil(), null, 1, 5, new BigDecimal("4"), lesen1.maxPoints(),
+                lesen1.scoringMethod(), lesen1.timerKey(), null));
+        ExamProfile broken = profileService.create(new ExamProfileRequest("TEST_BROKEN_" + UUID.randomUUID(), base.provider(), base.examName(), "Kaputt", null, base.examType(),
+                LearningLevel.A2, false, base.writtenMaxPoints(), base.writtenPassThreshold(), base.oralMaxPoints(), base.oralPassThreshold(), base.overallResultPolicy(),
+                base.answerReleasePolicy(), null, false, new ExamProfileConfig(parts, base.config().timers(), 1, "HALF_UP")), "admin-1");
+        assertCode("PROFILE_INVALID", () -> profileService.publish(broken.getId(), "geprüft", true, "admin-1"));
+    }
+
+    @Test
+    @DisplayName("Availability explains why exercises were rejected, including the question counts found")
+    void availabilityDiagnostics() throws Exception {
+        ExamExercise wrong = ExamSimulationFixtures.pooledExercise("zu-kurz", ExamSection.LESEVERSTEHEN, 3, ExamTaskType.MULTIPLE_CHOICE, 8, LEVEL);
+        createdExerciseIds.add(exerciseRepository.save(wrong).getId());
+        var lesen3 = adminService.availability(profile.getId()).parts().stream().filter(p -> p.partKey().equals("LESEN_3")).findFirst().orElseThrow();
+        assertEquals(POOL, lesen3.eligible());
+        assertEquals(10, lesen3.expectedQuestions());
+        assertEquals(1, lesen3.ineligibleReasons().get("QUESTION_COUNT"));
+        assertEquals(1, lesen3.questionCounts().get(8));
+    }
 }

@@ -21,25 +21,32 @@ public final class ExamExerciseEligibility {
     }
 
     public static boolean isEligible(ExamExercise e, ExamType examType, LearningLevel level, ExamPartConfig part) {
-        if (e.getStatus() != ExamContentStatus.PUBLISHED || !e.isPublished()) return false;
-        if (e.getExamType() != examType || e.getLevel() != level || e.getSection() != part.section()) return false;
-        if (!Objects.equals(ExamTeilResolver.teilOf(e), part.teil())) return false;
-        if (part.taskTypes() != null && !part.taskTypes().isEmpty() && !part.taskTypes().contains(e.getTaskType())) return false;
+        return rejection(e, examType, level, part) == null;
+    }
+
+    /** Why an exercise cannot be used for a part (a stable code), or null when it is eligible. */
+    public static String rejection(ExamExercise e, ExamType examType, LearningLevel level, ExamPartConfig part) {
+        if (e.getStatus() != ExamContentStatus.PUBLISHED || !e.isPublished()) return "NOT_PUBLISHED";
+        if (e.getExamType() != examType) return "OTHER_EXAM_TYPE";
+        if (e.getLevel() != level) return "OTHER_LEVEL";
+        if (e.getSection() != part.section()) return "OTHER_SECTION";
+        if (!Objects.equals(ExamTeilResolver.teilOf(e), part.teil())) return "OTHER_TEIL";
+        if (part.taskTypes() != null && !part.taskTypes().isEmpty() && !part.taskTypes().contains(e.getTaskType())) return "TASK_TYPE";
 
         List<ExamQuestion> questions = e.getQuestions() != null ? e.getQuestions() : List.of();
         List<ExamPassage> passages = e.getPassages() != null ? e.getPassages() : List.of();
 
         if (part.scoringMethod() == PartScoringMethod.PER_QUESTION) {
-            if (part.questionCount() == null || questions.size() != part.questionCount() / part.effectiveExerciseCount()) return false;
-            if (questions.stream().anyMatch(q -> q.getId() == null || q.getCorrectAnswer() == null || q.getCorrectAnswer().isBlank())) return false;
+            if (part.questionCount() == null || questions.size() != part.questionCount() / part.effectiveExerciseCount()) return "QUESTION_COUNT";
+            if (questions.stream().anyMatch(q -> q.getId() == null || q.getCorrectAnswer() == null || q.getCorrectAnswer().isBlank())) return "MISSING_ANSWER_KEY";
         }
         if (part.section() == ExamSection.HOERVERSTEHEN && passages.stream().noneMatch(p -> p.getAudioUrl() != null && !p.getAudioUrl().isBlank())) {
-            return false;
+            return "NO_AUDIO";
         }
         if (part.section() == ExamSection.SCHRIFTLICHER_AUSDRUCK || part.section() == ExamSection.MUENDLICHER_AUSDRUCK) {
             boolean hasSpeaking = e.getMetadata() != null && e.getMetadata().get("speaking") != null;
-            return !passages.isEmpty() || hasSpeaking;
+            if (passages.isEmpty() && !hasSpeaking) return "NO_CONTENT";
         }
-        return true;
+        return null;
     }
 }

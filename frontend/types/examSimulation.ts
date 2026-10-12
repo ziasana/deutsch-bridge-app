@@ -107,6 +107,12 @@ export interface PartAvailability {
     eligible: number;
     unusedForUser: number;
     minRemainingAcrossUsers: number;
+    /** Questions an exercise needs to fit this part. */
+    expectedQuestions?: number;
+    /** Exercises of this exam/level rejected for this part, by reason code. */
+    ineligibleReasons?: Record<string, number>;
+    /** Question counts of the exercises rejected for having the wrong number of questions. */
+    questionCounts?: Record<string, number>;
 }
 
 export interface AvailabilityResponse {

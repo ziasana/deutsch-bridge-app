@@ -68,7 +68,7 @@ public class AdminExamSimulationController {
 
     @PostMapping("/profiles/{id}/publish")
     public ResponseEntity<ExamProfileResponse> publish(@PathVariable String id, @RequestBody(required = false) PublishProfileRequest request) throws DataNotFoundException {
-        return ResponseEntity.ok(ExamProfileResponse.of(profileService.publish(id, request != null ? request.verificationNote() : null, requestContext.getUserId())));
+        return ResponseEntity.ok(ExamProfileResponse.of(profileService.publish(id, request != null ? request.verificationNote() : null, request != null && request.acceptContentGaps(), requestContext.getUserId())));
     }
 
     @PostMapping("/profiles/{id}/deactivate")

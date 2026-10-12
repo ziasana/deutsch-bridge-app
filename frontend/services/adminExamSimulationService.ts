@@ -19,8 +19,8 @@ export const adminCreateExamProfile = (request: ExamProfileRequest) => api.post<
 export const adminUpdateExamProfile = (id: string, request: ExamProfileRequest) => api.put<ExamProfileResponse>(`${base}/profiles/${id}`, request);
 export const adminDuplicateExamProfile = (id: string) => api.post<ExamProfileResponse>(`${base}/profiles/${id}/duplicate`);
 export const adminValidateExamProfile = (id: string) => api.post<ValidationResponse>(`${base}/profiles/${id}/validate`);
-export const adminPublishExamProfile = (id: string, verificationNote: string) =>
-    api.post<ExamProfileResponse>(`${base}/profiles/${id}/publish`, { verificationNote });
+export const adminPublishExamProfile = (id: string, verificationNote: string, acceptContentGaps = false) =>
+    api.post<ExamProfileResponse>(`${base}/profiles/${id}/publish`, { verificationNote, acceptContentGaps });
 export const adminDeactivateExamProfile = (id: string) => api.post<ExamProfileResponse>(`${base}/profiles/${id}/deactivate`);
 export const adminArchiveExamProfile = (id: string) => api.post<ExamProfileResponse>(`${base}/profiles/${id}/archive`);
 export const adminExamProfileAvailability = (id: string) => api.get<AvailabilityResponse>(`${base}/profiles/${id}/availability`);
