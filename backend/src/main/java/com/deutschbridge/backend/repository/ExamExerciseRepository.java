@@ -29,6 +29,16 @@ public interface ExamExerciseRepository extends JpaRepository<ExamExercise, Stri
                                      @Param("level") LearningLevel level,
                                      @Param("taskType") ExamTaskType taskType);
 
+    /** Published exercises of one exam / level / section: the candidate pool of the full exam simulation. */
+    @Query("""
+            SELECT e FROM examExercises e
+            WHERE e.status = com.deutschbridge.backend.model.enums.ExamContentStatus.PUBLISHED
+              AND e.examType = :examType AND e.level = :level AND e.section = :section
+            """)
+    List<ExamExercise> findPublishedFor(@Param("examType") ExamType examType,
+                                        @Param("level") LearningLevel level,
+                                        @Param("section") ExamSection section);
+
     /** Used to enforce one Testformat Information entry per level (see ExamExerciseService). */
     boolean existsBySectionAndLevel(ExamSection section, LearningLevel level);
 

@@ -16,6 +16,9 @@ interface Props {
     onAnswer: (questionId: string, value: string) => void;
     /** Teil 2: one shared bank of words (more words than gaps), each usable once. Without it every gap has its own options. */
     wordBank?: { options: string[]; labels: string[] };
+    /** Tailwind `top-*` / `bottom-*` classes of the sticky strip and the choice dock, to make room for an exam header and bottom bar. */
+    stickyClassName?: string;
+    dockClassName?: string;
 }
 
 /** Whether an exercise can use the board: a text with numbered gap badges and a question for every gap (own options, or a word bank). */
@@ -36,7 +39,7 @@ const navButton =
  * the gap inside the sentence, so the learner reads the finished sentence, and the board moves on to the next open gap.
  * A sticky strip shows progress and jumps to any gap.
  */
-export default function SprachbausteineClozeBoard({ passages, questions, answers, disabled, onAnswer, wordBank }: Readonly<Props>) {
+export default function SprachbausteineClozeBoard({ passages, questions, answers, disabled, onAnswer, wordBank, stickyClassName = "top-2", dockClassName = "bottom-3" }: Readonly<Props>) {
     const gapOf = (q: ExamQuestionPublic) => q.gapNumber ?? q.questionNumber ?? questions.indexOf(q) + 1;
     const byGap = new Map(questions.map((q) => [gapOf(q), q]));
     const [activeId, setActiveId] = useState<string | null>(questions[0]?.id ?? null);
@@ -45,6 +48,16 @@ export default function SprachbausteineClozeBoard({ passages, questions, answers
     const activeIndex = active ? questions.indexOf(active) : -1;
     const answeredCount = questions.filter((q) => answers[q.id]).length;
     const allDone = questions.length > 0 && answeredCount === questions.length;
+
+    // The exam's side navigation asks for a question by id.
+    useEffect(() => {
+        const onGoto = (e: Event) => {
+            const id = (e as CustomEvent<string>).detail;
+            if (questions.some((q) => q.id === id)) setActiveId(id);
+        };
+        window.addEventListener("exam:goto", onGoto);
+        return () => window.removeEventListener("exam:goto", onGoto);
+    }, [questions]);
 
     // Keep the active gap in view when the board moves on by itself or the learner jumps.
     const firstRender = useRef(true);
@@ -105,7 +118,7 @@ export default function SprachbausteineClozeBoard({ passages, questions, answers
 
     return (
         <div className="space-y-4">
-            <div className="sticky top-2 z-10 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-card/95 px-4 py-2.5 shadow-card ring-1 ring-border/60 backdrop-blur">
+            <div className={cn("sticky z-10 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-card/95 px-4 py-2.5 shadow-card ring-1 ring-border/60 backdrop-blur", stickyClassName)}>
                 <nav aria-label="Lücken" className="flex flex-wrap items-center gap-1.5">
                     {questions.map((q) => {
                         const done = Boolean(answers[q.id]);
@@ -167,7 +180,7 @@ export default function SprachbausteineClozeBoard({ passages, questions, answers
                 key={active.id}
                 aria-label={`Auswahl für Lücke ${gapOf(active)}`}
                 aria-live="polite"
-                className="anim-slide-in sticky bottom-3 z-10 space-y-3 rounded-3xl bg-card/95 p-4 shadow-lg ring-2 ring-primary/30 backdrop-blur"
+                className={cn("anim-slide-in sticky z-10 space-y-3 rounded-3xl bg-card/95 p-4 shadow-lg ring-2 ring-primary/30 backdrop-blur", dockClassName)}
             >
                 <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-bold uppercase tracking-wider text-primary">

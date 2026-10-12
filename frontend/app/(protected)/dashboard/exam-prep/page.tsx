@@ -2,6 +2,8 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
+import { ClipboardCheck } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { getExamExercisesSummary, getExamLevelSummary } from "@/services/examService";
@@ -228,6 +230,22 @@ function ExamPrepContent() {
                         removingId={bookmarkPendingId}
                     />
                 )}
+
+                <Link
+                    href="/dashboard/exam-prep/pruefung"
+                    className="mt-6 flex items-center justify-between gap-4 rounded-2xl border border-primary/30 bg-primary/5 px-5 py-4 transition hover:bg-primary/10"
+                >
+                    <span className="flex items-center gap-3">
+                        <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                            <ClipboardCheck className="size-5" aria-hidden="true" />
+                        </span>
+                        <span>
+                            <span className="block text-sm font-bold text-foreground">Probeprüfung</span>
+                            <span className="block text-xs text-foreground/60">Eine komplette Prüfung mit Zeitlimit und Auswertung – ohne Wiederholung von Aufgaben.</span>
+                        </span>
+                    </span>
+                    <span className="text-sm font-semibold text-primary">Starten →</span>
+                </Link>
 
                 <ExamTypeSelector
                     className="mt-6"

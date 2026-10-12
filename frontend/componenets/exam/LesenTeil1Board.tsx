@@ -19,6 +19,9 @@ interface Props {
     answers: Record<string, string>;
     disabled: boolean;
     onAnswer: (questionId: string, value: string) => void;
+    /** Tailwind `top-*` class of the sticky strip and `lg:top-*` class of the heading list, to sit below a sticky exam header. */
+    stickyClassName?: string;
+    asideStickyClassName?: string;
 }
 
 const wordCount = (html: string) => html.replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
@@ -29,7 +32,7 @@ const wordCount = (html: string) => html.replace(/<[^>]+>/g, " ").split(/\s+/).f
  * the slot in that text's colour. Each heading can be used once - a used heading shows which text holds it and can be
  * taken over by the active text. A sticky strip shows the progress and jumps to any text.
  */
-export default function LesenTeil1Board({ passages, questions, answerOptions, answerOptionLabels, answers, disabled, onAnswer }: Readonly<Props>) {
+export default function LesenTeil1Board({ passages, questions, answerOptions, answerOptionLabels, answers, disabled, onAnswer, stickyClassName = "top-2", asideStickyClassName = "lg:top-20" }: Readonly<Props>) {
     const [activeId, setActiveId] = useState<string | null>(questions[0]?.id ?? null);
     const cardRefs = useRef<Record<string, HTMLLIElement | null>>({});
     const active = questions.find((q) => q.id === activeId) ?? questions[0];
@@ -41,6 +44,16 @@ export default function LesenTeil1Board({ passages, questions, answerOptions, an
     const holderOf = (heading: string) => questions.find((q) => answers[q.id] === heading);
     const answeredCount = questions.filter((q) => answers[q.id]).length;
     const allDone = questions.length > 0 && answeredCount === questions.length;
+
+    // The exam's side navigation asks for a text by id.
+    useEffect(() => {
+        const onGoto = (e: Event) => {
+            const id = (e as CustomEvent<string>).detail;
+            if (questions.some((q) => q.id === id)) setActiveId(id);
+        };
+        window.addEventListener("exam:goto", onGoto);
+        return () => window.removeEventListener("exam:goto", onGoto);
+    }, [questions]);
 
     // Bring the active text into view when the learner jumps or the board moves on by itself.
     const firstRender = useRef(true);
@@ -84,7 +97,7 @@ export default function LesenTeil1Board({ passages, questions, answerOptions, an
 
     return (
         <div className="space-y-4">
-            <div className="sticky top-2 z-10 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-card/95 px-4 py-2.5 shadow-card ring-1 ring-border/60 backdrop-blur">
+            <div className={cn("sticky z-10 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-card/95 px-4 py-2.5 shadow-card ring-1 ring-border/60 backdrop-blur", stickyClassName)}>
                 <nav aria-label="Texte" className="flex flex-wrap items-center gap-1.5">
                     {questions.map((q, i) => {
                         const c = colorAt(i);
@@ -211,7 +224,7 @@ export default function LesenTeil1Board({ passages, questions, answerOptions, an
                     })}
                 </ol>
 
-                <aside aria-label="Überschriften" className="hidden rounded-3xl bg-card p-5 shadow-card ring-1 ring-border/60 lg:sticky lg:top-20 lg:block">
+                <aside aria-label="Überschriften" className={cn("hidden rounded-3xl bg-card p-5 shadow-card ring-1 ring-border/60 lg:sticky lg:block", asideStickyClassName)}>
                     <div className="mb-3 flex items-center justify-between gap-2">
                         <p className="font-bold text-foreground">Überschriften</p>
                         <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-bold", colorAt(activeIndex).soft, colorAt(activeIndex).text)}>

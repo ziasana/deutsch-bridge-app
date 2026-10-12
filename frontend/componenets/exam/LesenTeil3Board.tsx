@@ -18,6 +18,9 @@ interface Props {
     answers: Record<string, string>;
     disabled: boolean;
     onAnswer: (questionId: string, value: string) => void;
+    /** Tailwind `top-*` class of the sticky strip, and the `lg:top-*` class of the situation panel, to sit below a sticky exam header. */
+    stickyClassName?: string;
+    panelStickyClassName?: string;
 }
 
 const navButton =
@@ -29,7 +32,7 @@ const navButton =
  * forth. A chosen advertisement turns into the situation's colour. Each ad can be used once - a used ad shows which
  * situation holds it and can be taken over by the active situation. A sticky strip shows progress and jumps anywhere.
  */
-export default function LesenTeil3Board({ passages, questions, answers, disabled, onAnswer }: Readonly<Props>) {
+export default function LesenTeil3Board({ passages, questions, answers, disabled, onAnswer, stickyClassName = "top-2", panelStickyClassName = "lg:top-20" }: Readonly<Props>) {
     const [activeId, setActiveId] = useState<string | null>(questions[0]?.id ?? null);
     const panelRef = useRef<HTMLDivElement>(null);
     const active = questions.find((q) => q.id === activeId) ?? questions[0];
@@ -42,6 +45,16 @@ export default function LesenTeil3Board({ passages, questions, answers, disabled
     const colorOfQuestion = (q: ExamQuestionPublic) => colorAt(questions.indexOf(q));
     const answeredCount = questions.filter((q) => answers[q.id]).length;
     const allDone = questions.length > 0 && answeredCount === questions.length;
+
+    // The exam's side navigation asks for a question by id.
+    useEffect(() => {
+        const onGoto = (e: Event) => {
+            const id = (e as CustomEvent<string>).detail;
+            if (questions.some((q) => q.id === id)) setActiveId(id);
+        };
+        window.addEventListener("exam:goto", onGoto);
+        return () => window.removeEventListener("exam:goto", onGoto);
+    }, [questions]);
 
     // Keep the active situation in view on small screens when moving through the list.
     const firstRender = useRef(true);
@@ -76,7 +89,7 @@ export default function LesenTeil3Board({ passages, questions, answers, disabled
 
     return (
         <div className="space-y-4">
-            <div className="sticky top-2 z-10 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-card/95 px-4 py-2.5 shadow-card ring-1 ring-border/60 backdrop-blur">
+            <div className={cn("sticky z-10 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-card/95 px-4 py-2.5 shadow-card ring-1 ring-border/60 backdrop-blur", stickyClassName)}>
                 <nav aria-label="Situationen" className="flex flex-wrap items-center gap-1.5">
                     {questions.map((q) => {
                         const c = colorOfQuestion(q);
@@ -109,7 +122,7 @@ export default function LesenTeil3Board({ passages, questions, answers, disabled
             </div>
 
             <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
-                <div ref={panelRef} className="lg:sticky lg:top-20">
+                <div ref={panelRef} className={cn("lg:sticky", panelStickyClassName)}>
                     <section aria-live="polite" key={active.id} className="anim-slide-in overflow-hidden rounded-3xl bg-card shadow-card ring-1 ring-border/60">
                         <div className="relative overflow-hidden bg-gradient-to-br from-(--lesson-from) to-(--lesson-to) px-5 py-4 text-white">
                             <span aria-hidden="true" className="absolute -end-6 -top-8 size-28 rounded-full bg-white/10" />
