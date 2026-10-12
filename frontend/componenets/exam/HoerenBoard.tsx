@@ -195,8 +195,8 @@ export default function HoerenBoard({
             const q = questions.find((x) => x.id === (e as CustomEvent<string>).detail);
             if (q) jumpRef.current(q);
         };
-        window.addEventListener("hoeren:goto", onJump);
-        return () => window.removeEventListener("hoeren:goto", onJump);
+        window.addEventListener("exam:goto", onJump);
+        return () => window.removeEventListener("exam:goto", onJump);
     }, [questions]);
 
     const renderCard = (card: (typeof cards)[number], idx: number) => {

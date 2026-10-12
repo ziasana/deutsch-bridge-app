@@ -48,6 +48,7 @@ export function getUserNavItems(t: Dictionary): NavItem[] {
         { href: "/dashboard/grammar", label: t.dashboard.modules.grammarLessons.title, icon: BookOpen },
         { href: "/dashboard/reading", label: t.dashboard.modules.reading.title, icon: Newspaper },
         { href: "/dashboard/exam-prep", label: t.nav.sidebarExamPrep, icon: GraduationCap },
+        { href: "/dashboard/exam-prep/pruefung", label: "Probeprüfung", icon: Timer },
         { href: "/dashboard/chat", label: t.nav.sidebarAiChat, icon: MessageSquare },
         { href: "/dashboard/reading/review", label: t.nav.sidebarWordReview, icon: Brain },
         { href: "/user-progress", label: t.nav.sidebarProgress, icon: TrendingUp },

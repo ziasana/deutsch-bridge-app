@@ -2,13 +2,14 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, LogOut, Send } from "lucide-react";
+import { ArrowRight, Check, LogOut, Send } from "lucide-react";
 import Loading from "@/componenets/Loading";
 import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
 import SimExerciseView from "@/componenets/exam/simulation/SimExerciseView";
 import SimExitDialog from "@/componenets/exam/simulation/SimExitDialog";
 import SimPauseScreen from "@/componenets/exam/simulation/SimPauseScreen";
-import SimQuestionNav from "@/componenets/exam/simulation/SimQuestionNav";
+import SimBottomBar from "@/componenets/exam/simulation/SimBottomBar";
+import SimQuestionNav, { partItems } from "@/componenets/exam/simulation/SimQuestionNav";
 import SimReviewDialog from "@/componenets/exam/simulation/SimReviewDialog";
 import SimTimerBar from "@/componenets/exam/simulation/SimTimerBar";
 import { accentForSection, lessonThemeVars, type LessonAccent } from "@/componenets/exam/lessonTheme";
@@ -24,6 +25,7 @@ import {
 } from "@/services/examSimulationService";
 import { enterFullscreen, exitFullscreen } from "@/lib/fullscreen";
 import { simulationError, simulationErrorMessage } from "@/lib/examSimulation";
+import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import type { AttemptState, SavedAnswer } from "@/types/examSimulation";
 
@@ -47,6 +49,7 @@ function ExamRunContent() {
     const [confirmExit, setConfirmExit] = useState(false);
     const [reviewState, setReviewState] = useState<AttemptState | null>(null);
     const [busy, setBusy] = useState(false);
+    const [activePartKey, setActivePartKey] = useState<string | null>(null);
     // The tasks (and so the section colour) are not sent while paused; keep the last colour for the pause screen.
     const [pausedAccent, setPausedAccent] = useState<LessonAccent | null>(null);
     const finishing = useRef(false);
@@ -68,6 +71,7 @@ function ExamRunContent() {
                 if (prev && prev.currentStageIndex !== next.currentStageIndex) {
                     toast.info(`Neuer Abschnitt: ${next.stages[next.currentStageIndex]?.label ?? ""}`);
                     window.scrollTo({ top: 0 });
+                    setActivePartKey(null);
                 }
                 return next;
             });
@@ -118,6 +122,18 @@ function ExamRunContent() {
         // Display only: when the browser countdown ends, ask the server what happens next.
         void autosave.flushNow().then(() => refreshFromServer());
     });
+
+    // A heads-up at 5 and 1 minute left, once per section.
+    const warned = useRef<string>("");
+    useEffect(() => {
+        if (!state || state.paused || !stage) return;
+        const mark = remainingSeconds <= 60 ? "1" : remainingSeconds <= 300 ? "5" : "";
+        if (!mark || remainingSeconds <= 0) return;
+        const key = `${state.currentStageIndex}:${mark}`;
+        if (warned.current.split(",").includes(key)) return;
+        warned.current += `,${key}`;
+        toast.info(mark === "1" ? "Noch 1 Minute in diesem Abschnitt!" : "Noch 5 Minuten in diesem Abschnitt.");
+    }, [remainingSeconds, state, stage]);
 
     // All sections used up: the server expects the exam to be finalised.
     useEffect(() => {
@@ -252,50 +268,96 @@ function ExamRunContent() {
     const isLastStage = state.currentStageIndex === state.stages.length - 1;
     const accent = state.parts[0] ? accentForSection(state.parts[0].section) : null;
 
+    const parts = state.parts;
+    const activeIdx = Math.max(0, parts.findIndex((p) => p.key === activePartKey));
+    const activePart = parts[activeIdx];
+    const countAnswered = (part: (typeof parts)[number]) => partItems(part).filter((i) => !!answers[part.key]?.[i.id]?.answer?.trim()).length;
+    const stageTotal = parts.reduce((n, p) => n + partItems(p).length, 0);
+    const stageAnswered = parts.reduce((n, p) => n + countAnswered(p), 0);
+    const selectPart = (key: string) => {
+        setActivePartKey(key);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
     const finishActions = (
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
             {!isLastStage && (
-                <button type="button" disabled={busy} onClick={() => setConfirmSection(true)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground transition hover:bg-accent disabled:opacity-50">
+                <button type="button" disabled={busy} onClick={() => setConfirmSection(true)} className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-card px-5 py-2 text-sm font-semibold text-foreground transition hover:bg-accent disabled:opacity-50">
                     Abschnitt beenden <ArrowRight className="size-4" aria-hidden />
                 </button>
             )}
-            <button type="button" disabled={busy} onClick={openReview} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:opacity-50">
+            <button type="button" disabled={busy} onClick={openReview} className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:opacity-50">
                 <Send className="size-4" aria-hidden /> Prüfung abgeben
             </button>
         </div>
     );
 
     return (
-        <div className="min-h-screen bg-background px-4 pb-16 sm:px-6" style={accent ? lessonThemeVars(accent) : undefined} dir="ltr">
+        <div className="min-h-screen bg-background px-4 pb-28 sm:px-6" style={accent ? lessonThemeVars(accent) : undefined} dir="ltr">
             <SimTimerBar
                 stageLabel={stage.label}
                 stageIndex={state.currentStageIndex}
                 stageCount={state.stages.length}
+                stages={state.stages}
                 remainingSeconds={remainingSeconds}
                 totalSeconds={stage.minutes * 60}
                 autosave={autosave.status}
                 actions={
-                    <button type="button" onClick={() => setConfirmExit(true)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium text-foreground transition hover:bg-accent">
+                    <button type="button" onClick={() => setConfirmExit(true)} className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium text-foreground transition hover:bg-accent">
                         <LogOut className="size-4" aria-hidden /> Verlassen
                     </button>
                 }
             />
 
-            <div className="mx-auto mt-6 grid max-w-6xl gap-6 lg:grid-cols-[1fr_16rem]">
-                <main className="min-w-0 space-y-10">
-                    {state.parts.map((part) => (
-                        <SimExerciseView key={part.key} attemptId={attemptId} part={part} answers={answers[part.key] ?? {}} disabled={remainingSeconds <= 0} onAnswer={onAnswer(part.key)} />
-                    ))}
-                    <div className="rounded-3xl bg-card p-5 shadow-card ring-1 ring-border/60 lg:hidden">{finishActions}</div>
+            <div className="mx-auto mt-6 grid max-w-6xl gap-6 lg:grid-cols-[1fr_17rem]">
+                <main className="min-w-0 space-y-5">
+                    {parts.length > 1 && (
+                        <div role="tablist" aria-label="Teile" className="flex gap-2 overflow-x-auto pb-1">
+                            {parts.map((p, i) => {
+                                const total = partItems(p).length;
+                                const done = countAnswered(p);
+                                const complete = total > 0 && done === total;
+                                return (
+                                    <button
+                                        key={p.key}
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={i === activeIdx}
+                                        onClick={() => selectPart(p.key)}
+                                        className={cn(
+                                            "inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-full border-2 px-4 py-2 text-sm font-semibold transition",
+                                            i === activeIdx ? "border-primary bg-primary text-primary-foreground shadow-sm" : "border-border bg-card text-foreground/80 hover:border-primary/50",
+                                        )}
+                                    >
+                                        {complete && <Check className="size-4" strokeWidth={3} aria-hidden />}
+                                        {p.label}
+                                        <span className={cn("rounded-full px-2 py-0.5 text-xs tabular-nums", i === activeIdx ? "bg-white/25" : "bg-foreground/10")}>{done}/{total}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
+                    {activePart && (
+                        <SimExerciseView key={activePart.key} attemptId={attemptId} part={activePart} answers={answers[activePart.key] ?? {}} disabled={remainingSeconds <= 0} onAnswer={onAnswer(activePart.key)} />
+                    )}
                 </main>
-                <aside className="lg:sticky lg:top-24 lg:self-start">
+                <aside className="hidden lg:sticky lg:top-24 lg:block lg:self-start">
                     <div className="space-y-4 rounded-3xl bg-card p-4 shadow-card ring-1 ring-border/60">
                         <h2 className="text-sm font-bold text-foreground">Übersicht</h2>
-                        <SimQuestionNav parts={state.parts} answers={answers} />
-                        <div className="hidden border-t border-border/60 pt-4 lg:block [&>div]:flex-col [&>div]:items-stretch [&_button]:justify-center">{finishActions}</div>
+                        <SimQuestionNav parts={parts} answers={answers} activePartKey={activePart?.key} onSelectPart={setActivePartKey} />
                     </div>
                 </aside>
             </div>
+
+            <SimBottomBar
+                answered={stageAnswered}
+                total={stageTotal}
+                prevLabel={activeIdx > 0 ? parts[activeIdx - 1].label : null}
+                nextLabel={activeIdx < parts.length - 1 ? parts[activeIdx + 1].label : null}
+                onPrev={() => selectPart(parts[activeIdx - 1].key)}
+                onNext={() => selectPart(parts[activeIdx + 1].key)}
+                finish={finishActions}
+            />
 
             {confirmExit && <SimExitDialog busy={busy} onPause={pauseExam} onFinish={finishExam} onCancel={() => setConfirmExit(false)} />}
             <ConfirmDialog

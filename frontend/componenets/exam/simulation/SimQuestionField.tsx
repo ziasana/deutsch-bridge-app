@@ -1,6 +1,6 @@
 "use client";
 
-import { Flag } from "lucide-react";
+import { Check, Flag, Minus, X } from "lucide-react";
 import LessonMarkdown from "@/componenets/LessonMarkdown";
 import { cn } from "@/lib/utils";
 import type { ExamPassagePublic, ExamQuestionPublic, ExamTaskType } from "@/types/exam";
@@ -10,9 +10,9 @@ import type { ExercisePublic } from "@/types/examSimulation";
 export const NO_AD_ANSWER = "X";
 
 const TFN_OPTIONS = [
-    { value: "RICHTIG", label: "Richtig" },
-    { value: "FALSCH", label: "Falsch" },
-    { value: "NICHT_IM_TEXT", label: "Nicht im Text" },
+    { value: "RICHTIG", label: "Richtig", icon: Check, on: "border-emerald-500 bg-emerald-500 text-white" },
+    { value: "FALSCH", label: "Falsch", icon: X, on: "border-rose-500 bg-rose-500 text-white" },
+    { value: "NICHT_IM_TEXT", label: "Nicht im Text", icon: Minus, on: "border-slate-500 bg-slate-500 text-white" },
 ];
 
 /** Label in front of a shared answer option: the admin-edited label, else a, b, c ... */
@@ -27,14 +27,15 @@ export function questionType(exercise: ExercisePublic, question: ExamQuestionPub
 
 const choice = (selected: boolean) =>
     cn(
-        "flex w-full cursor-pointer items-start gap-3 rounded-xl border px-3 py-2.5 text-left text-sm transition",
-        selected ? "border-primary bg-primary/10 text-foreground" : "border-border bg-card text-foreground/85 hover:bg-accent",
+        "flex w-full cursor-pointer items-start gap-3 rounded-2xl border-2 px-3.5 py-3 text-left text-sm transition hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default disabled:opacity-60",
+        selected ? "anim-pop border-primary bg-primary/10 text-foreground shadow-sm" : "border-border bg-card text-foreground/85 hover:border-primary/50 hover:bg-accent",
     );
 
-function Radio({ selected }: Readonly<{ selected: boolean }>) {
+/** Lettered badge in front of a choice (a, b, c ...), filled in the section colour when chosen. */
+function Letter({ selected, children }: Readonly<{ selected: boolean; children: React.ReactNode }>) {
     return (
-        <span aria-hidden className={cn("mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border", selected ? "border-primary" : "border-foreground/30")}>
-            {selected && <span className="size-2 rounded-full bg-primary" />}
+        <span aria-hidden className={cn("flex size-6 shrink-0 items-center justify-center rounded-lg text-xs font-extrabold uppercase transition", selected ? "bg-primary text-primary-foreground" : "bg-foreground/10 text-foreground/60")}>
+            {selected ? <Check className="size-3.5" strokeWidth={3} /> : children}
         </span>
     );
 }
@@ -62,10 +63,21 @@ export default function SimQuestionField({ exercise, question, number, value, fl
     if (type === "TRUE_FALSE_NOT_GIVEN") {
         control = (
             <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label={`Frage ${number}`}>
-                {TFN_OPTIONS.map((o) => (
-                    <button key={o.value} type="button" role="radio" aria-checked={value === o.value} disabled={disabled} onClick={() => select(o.value)} className={choice(value === o.value)}>
-                        <Radio selected={value === o.value} />
-                        {o.label}
+                {TFN_OPTIONS.map(({ value: v, label, icon: Icon, on }) => (
+                    <button
+                        key={v}
+                        type="button"
+                        role="radio"
+                        aria-checked={value === v}
+                        disabled={disabled}
+                        onClick={() => select(v)}
+                        className={cn(
+                            "flex cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 px-4 py-3 text-sm font-bold transition hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default disabled:opacity-60",
+                            value === v ? cn("anim-pop shadow-md", on) : "border-border bg-background text-foreground/75 hover:border-primary/50",
+                        )}
+                    >
+                        <Icon className="size-4" strokeWidth={3} aria-hidden />
+                        {label}
                     </button>
                 ))}
             </div>
@@ -78,7 +90,7 @@ export default function SimQuestionField({ exercise, question, number, value, fl
                 value={value ?? ""}
                 disabled={disabled}
                 onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
-                className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                className={cn("w-full cursor-pointer rounded-2xl border-2 bg-card px-3.5 py-3 text-sm font-medium text-foreground transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50", value ? "border-primary bg-primary/5" : "border-dashed border-primary/40")}
             >
                 <option value="">– bitte wählen –</option>
                 {options.map((o, i) => (
@@ -95,7 +107,7 @@ export default function SimQuestionField({ exercise, question, number, value, fl
                 value={value ?? ""}
                 disabled={disabled}
                 onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
-                className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                className={cn("w-full cursor-pointer rounded-2xl border-2 bg-card px-3.5 py-3 text-sm font-medium text-foreground transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50", value ? "border-primary bg-primary/5" : "border-dashed border-primary/40")}
             >
                 <option value="">– bitte wählen –</option>
                 {exercise.passages.map((p: ExamPassagePublic, i) => (
@@ -111,11 +123,8 @@ export default function SimQuestionField({ exercise, question, number, value, fl
             <div className="grid gap-2" role="radiogroup" aria-label={`Frage ${number}`}>
                 {(question.options ?? []).map((o, i) => (
                     <button key={`${o}-${i}`} type="button" role="radio" aria-checked={value === o} disabled={disabled} onClick={() => select(o)} className={choice(value === o)}>
-                        <Radio selected={value === o} />
-                        <span>
-                            <span className="me-1.5 font-semibold text-foreground/60">{String.fromCodePoint(97 + i)})</span>
-                            {o}
-                        </span>
+                        <Letter selected={value === o}>{String.fromCodePoint(97 + i)}</Letter>
+                        <span className="pt-0.5">{o}</span>
                     </button>
                 ))}
             </div>
@@ -123,13 +132,13 @@ export default function SimQuestionField({ exercise, question, number, value, fl
     }
 
     return (
-        <li id={`q-${question.id}`} className="scroll-mt-28 list-none rounded-2xl border border-border/70 bg-card p-4 shadow-sm">
+        <li id={`q-${question.id}`} className={cn("scroll-mt-28 list-none rounded-3xl bg-card p-4 shadow-card ring-2 transition sm:p-5", flagged ? "ring-amber-500/60" : value ? "ring-primary/30" : "ring-transparent")}>
             <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-start gap-3">
-                    <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums", value ? "bg-primary text-primary-foreground" : "bg-foreground/10 text-foreground/70")}>
+                    <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold tabular-nums transition", value ? "bg-gradient-to-br from-(--lesson-from) to-(--lesson-to) text-white shadow-sm" : "bg-foreground/10 text-foreground/70")}>
                         {number}
                     </span>
-                    <div className="min-w-0 text-sm font-medium text-foreground">
+                    <div className="min-w-0 pt-1 text-sm font-medium leading-snug text-foreground">
                         {question.prompt ? <LessonMarkdown content={question.prompt} className="text-sm text-foreground" /> : question.gapNumber != null ? `Lücke ${question.gapNumber}` : `Frage ${number}`}
                     </div>
                 </div>
@@ -139,13 +148,13 @@ export default function SimQuestionField({ exercise, question, number, value, fl
                     disabled={disabled}
                     aria-pressed={flagged}
                     title={flagged ? "Markierung entfernen" : "Zur Überprüfung markieren"}
-                    className={cn("inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition", flagged ? "border-amber-500 bg-amber-500/15 text-amber-700 dark:text-amber-400" : "border-border text-foreground/60 hover:bg-accent")}
+                    className={cn("inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition disabled:cursor-default", flagged ? "border-amber-500 bg-amber-500/15 text-amber-700 dark:text-amber-400" : "border-border text-foreground/60 hover:bg-accent")}
                 >
-                    <Flag className="size-3.5" aria-hidden />
+                    <Flag className={cn("size-3.5", flagged && "fill-current")} aria-hidden />
                     {flagged ? "Markiert" : "Markieren"}
                 </button>
             </div>
-            <div className="mt-3">{control}</div>
+            <div className="mt-4">{control}</div>
         </li>
     );
 }

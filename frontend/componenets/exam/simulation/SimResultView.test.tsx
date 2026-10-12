@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import SimResultView from "./SimResultView";
 import type { ExamResult, PartResult, ResultResponse } from "@/types/examSimulation";
@@ -116,5 +116,20 @@ describe("SimResultView", () => {
         render(<SimResultView data={response(r, { rubrics: { SCHRIFTLICHER_AUSDRUCK: [{ key: "A", label: "Aufgabenerfüllung", maxPoints: 15 }, { key: "B", label: "Kommunikative Gestaltung", maxPoints: 15 }, { key: "C", label: "Formale Richtigkeit", maxPoints: 15 }] } })} />);
         expect(screen.getByText(/Aufgabenerfüllung: 12,5 \/ 15/)).toBeTruthy();
         expect(screen.getByText("37,5")).toBeTruthy();
+    });
+
+    it("review explorer opens on the first mistake, lets you pick another question and filter to mistakes", () => {
+        const q = (id: string, n: number, correct: boolean, given: string, right: string) => ({ id, questionNumber: n, prompt: `Frage ${n}`, options: null, givenAnswer: given, correctAnswer: right, correct, explanation: null, commonMistake: null });
+        const released = response(result(), {
+            answersReleased: true,
+            review: [{ partKey: "LESEN_1", exercises: [{ ordinal: 0, title: "t", transcriptHtml: null, writtenAnswer: null, modelSolution: null, speaking: null, questions: [q("a", 1, true, "X1", "X1"), q("b", 2, false, "Y2", "Z2")] }] }],
+        });
+        render(<SimResultView data={released} />);
+        expect(screen.getByText("Z2")).toBeTruthy();
+        fireEvent.click(screen.getByRole("button", { name: "Frage 1: richtig" }));
+        expect(screen.queryByText("Z2")).toBeNull();
+        fireEvent.click(screen.getByRole("switch", { name: /Nur Fehler/ }));
+        expect(screen.queryByRole("button", { name: "Frage 1: richtig" })).toBeNull();
+        expect(screen.getByRole("button", { name: "Frage 2: falsch" })).toBeTruthy();
     });
 });

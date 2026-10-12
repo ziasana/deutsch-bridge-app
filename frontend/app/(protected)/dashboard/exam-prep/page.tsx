@@ -240,7 +240,7 @@ function ExamPrepContent() {
                             <ClipboardCheck className="size-5" aria-hidden="true" />
                         </span>
                         <span>
-                            <span className="block text-sm font-bold text-foreground">Prüfungssimulation</span>
+                            <span className="block text-sm font-bold text-foreground">Probeprüfung</span>
                             <span className="block text-xs text-foreground/60">Eine komplette Prüfung mit Zeitlimit und Auswertung – ohne Wiederholung von Aufgaben.</span>
                         </span>
                     </span>
