@@ -2,22 +2,27 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Send } from "lucide-react";
+import { ArrowRight, LogOut, Send } from "lucide-react";
 import Loading from "@/componenets/Loading";
 import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
 import SimExerciseView from "@/componenets/exam/simulation/SimExerciseView";
+import SimExitDialog from "@/componenets/exam/simulation/SimExitDialog";
+import SimPauseScreen from "@/componenets/exam/simulation/SimPauseScreen";
 import SimQuestionNav from "@/componenets/exam/simulation/SimQuestionNav";
 import SimReviewDialog from "@/componenets/exam/simulation/SimReviewDialog";
 import SimTimerBar from "@/componenets/exam/simulation/SimTimerBar";
-import { accentForSection, lessonThemeVars } from "@/componenets/exam/lessonTheme";
+import { accentForSection, lessonThemeVars, type LessonAccent } from "@/componenets/exam/lessonTheme";
 import { useExamAutosave } from "@/hooks/examSimulation/useExamAutosave";
 import { useServerCountdown } from "@/hooks/examSimulation/useServerCountdown";
 import {
     completeSimulationSection,
+    continueSimulationAttempt,
     getSimulationAttempt,
+    pauseSimulationAttempt,
     resumeSimulationAttempt,
     submitSimulationAttempt,
 } from "@/services/examSimulationService";
+import { enterFullscreen, exitFullscreen } from "@/lib/fullscreen";
 import { simulationError, simulationErrorMessage } from "@/lib/examSimulation";
 import { toast } from "@/lib/toast";
 import type { AttemptState, SavedAnswer } from "@/types/examSimulation";
@@ -39,8 +44,11 @@ function ExamRunContent() {
     const [answers, setAnswers] = useState<AnswerMap>({});
     const [loadError, setLoadError] = useState<string | null>(null);
     const [confirmSection, setConfirmSection] = useState(false);
+    const [confirmExit, setConfirmExit] = useState(false);
     const [reviewState, setReviewState] = useState<AttemptState | null>(null);
     const [busy, setBusy] = useState(false);
+    // The tasks (and so the section colour) are not sent while paused; keep the last colour for the pause screen.
+    const [pausedAccent, setPausedAccent] = useState<LessonAccent | null>(null);
     const finishing = useRef(false);
 
     const goToResult = useCallback(() => {
@@ -55,6 +63,7 @@ function ExamRunContent() {
                 goToResult();
                 return;
             }
+            if (next.parts[0]) setPausedAccent(accentForSection(next.parts[0].section));
             setState((prev) => {
                 if (prev && prev.currentStageIndex !== next.currentStageIndex) {
                     toast.info(`Neuer Abschnitt: ${next.stages[next.currentStageIndex]?.label ?? ""}`);
@@ -104,7 +113,8 @@ function ExamRunContent() {
     });
 
     const stage = state ? state.stages[state.currentStageIndex] : null;
-    const { remainingSeconds } = useServerCountdown(stage?.deadlineAtMs ?? null, state?.serverNowMs ?? 0, () => {
+    // A paused exam has no running clock: the server's frozen remaining time is shown instead.
+    const { remainingSeconds } = useServerCountdown(state?.paused ? null : (stage?.deadlineAtMs ?? null), state?.serverNowMs ?? 0, () => {
         // Display only: when the browser countdown ends, ask the server what happens next.
         void autosave.flushNow().then(() => refreshFromServer());
     });
@@ -115,6 +125,9 @@ function ExamRunContent() {
             void submitSimulationAttempt(attemptId).finally(goToResult);
         }
     }, [state?.timeUp, attemptId, goToResult]);
+
+    // Focus mode ends with the exam page: leave the browser's fullscreen again on the way out.
+    useEffect(() => exitFullscreen, []);
 
     useEffect(() => {
         const warn = (e: BeforeUnloadEvent) => {
@@ -145,6 +158,42 @@ function ExamRunContent() {
         }
     };
 
+    const pauseExam = async () => {
+        if (!attemptId) return;
+        setBusy(true);
+        try {
+            await autosave.flushNow();
+            const res = await pauseSimulationAttempt(attemptId);
+            setConfirmExit(false);
+            applyState(res.data);
+            exitFullscreen();
+        } catch (error) {
+            toast.error(simulationErrorMessage(error, "Die Prüfung konnte nicht pausiert werden."));
+            void refreshFromServer();
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const continueExam = async () => {
+        if (!attemptId) return;
+        enterFullscreen();
+        setBusy(true);
+        try {
+            const res = await continueSimulationAttempt(attemptId);
+            applyState(res.data);
+        } catch (error) {
+            toast.error(simulationErrorMessage(error, "Die Prüfung konnte nicht fortgesetzt werden."));
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const finishExam = () => {
+        setConfirmExit(false);
+        void openReview();
+    };
+
     const openReview = async () => {
         if (!attemptId) return;
         setBusy(true);
@@ -173,6 +222,11 @@ function ExamRunContent() {
         }
     };
 
+    const leaveExam = () => {
+        exitFullscreen();
+        router.push("/dashboard/exam-prep/pruefung");
+    };
+
     if (!attemptId) return <p className="p-10 text-center text-foreground/70">Keine Prüfung ausgewählt.</p>;
     if (loadError) {
         return (
@@ -186,28 +240,44 @@ function ExamRunContent() {
     }
     if (!state || !stage) return <Loading />;
 
+    if (state.paused) {
+        return (
+            <div style={lessonThemeVars(pausedAccent ?? "reading")}>
+                <SimPauseScreen stageLabel={stage.label} remainingSeconds={state.remainingSeconds} busy={busy} onContinue={continueExam} onFinish={finishExam} onLeave={leaveExam} />
+                {reviewState && <SimReviewDialog state={reviewState} submitting={busy} onConfirm={submit} onCancel={() => setReviewState(null)} />}
+            </div>
+        );
+    }
+
     const isLastStage = state.currentStageIndex === state.stages.length - 1;
     const accent = state.parts[0] ? accentForSection(state.parts[0].section) : null;
 
+    const finishActions = (
+        <div className="flex flex-wrap items-center gap-3">
+            {!isLastStage && (
+                <button type="button" disabled={busy} onClick={() => setConfirmSection(true)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground transition hover:bg-accent disabled:opacity-50">
+                    Abschnitt beenden <ArrowRight className="size-4" aria-hidden />
+                </button>
+            )}
+            <button type="button" disabled={busy} onClick={openReview} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:opacity-50">
+                <Send className="size-4" aria-hidden /> Prüfung abgeben
+            </button>
+        </div>
+    );
+
     return (
-        <div className="min-h-screen bg-background px-4 pb-24 sm:px-6" style={accent ? lessonThemeVars(accent) : undefined} dir="ltr">
+        <div className="min-h-screen bg-background px-4 pb-16 sm:px-6" style={accent ? lessonThemeVars(accent) : undefined} dir="ltr">
             <SimTimerBar
                 stageLabel={stage.label}
                 stageIndex={state.currentStageIndex}
                 stageCount={state.stages.length}
                 remainingSeconds={remainingSeconds}
+                totalSeconds={stage.minutes * 60}
                 autosave={autosave.status}
                 actions={
-                    <>
-                        {!isLastStage && (
-                            <button type="button" disabled={busy} onClick={() => setConfirmSection(true)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium text-foreground transition hover:bg-accent disabled:opacity-50">
-                                Abschnitt beenden <ArrowRight className="size-4" aria-hidden />
-                            </button>
-                        )}
-                        <button type="button" disabled={busy} onClick={openReview} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50">
-                            <Send className="size-4" aria-hidden /> Prüfung abgeben
-                        </button>
-                    </>
+                    <button type="button" onClick={() => setConfirmExit(true)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium text-foreground transition hover:bg-accent">
+                        <LogOut className="size-4" aria-hidden /> Verlassen
+                    </button>
                 }
             />
 
@@ -216,15 +286,18 @@ function ExamRunContent() {
                     {state.parts.map((part) => (
                         <SimExerciseView key={part.key} attemptId={attemptId} part={part} answers={answers[part.key] ?? {}} disabled={remainingSeconds <= 0} onAnswer={onAnswer(part.key)} />
                     ))}
+                    <div className="rounded-3xl bg-card p-5 shadow-card ring-1 ring-border/60 lg:hidden">{finishActions}</div>
                 </main>
                 <aside className="lg:sticky lg:top-24 lg:self-start">
-                    <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm">
-                        <h2 className="mb-3 text-sm font-bold text-foreground">Übersicht</h2>
+                    <div className="space-y-4 rounded-3xl bg-card p-4 shadow-card ring-1 ring-border/60">
+                        <h2 className="text-sm font-bold text-foreground">Übersicht</h2>
                         <SimQuestionNav parts={state.parts} answers={answers} />
+                        <div className="hidden border-t border-border/60 pt-4 lg:block [&>div]:flex-col [&>div]:items-stretch [&_button]:justify-center">{finishActions}</div>
                     </div>
                 </aside>
             </div>
 
+            {confirmExit && <SimExitDialog busy={busy} onPause={pauseExam} onFinish={finishExam} onCancel={() => setConfirmExit(false)} />}
             <ConfirmDialog
                 isOpen={confirmSection}
                 title="Abschnitt beenden?"

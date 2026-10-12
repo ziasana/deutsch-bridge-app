@@ -190,6 +190,8 @@ export interface ProfileOverview {
     canStart: boolean;
     blockedReason: "ACTIVE_ATTEMPT" | "PROFILE_INVALID" | "INSUFFICIENT_CONTENT" | null;
     activeAttemptId: string | null;
+    /** The running attempt is paused: its clock is stopped. */
+    activeAttemptPaused: boolean;
     best: AttemptSummary | null;
     latest: AttemptSummary | null;
     attemptCount: number;
@@ -270,6 +272,10 @@ export interface AttemptState {
     progress: PartProgress[];
     resumeCount: number;
     maxResumes: number | null;
+    /** Paused: the clock is stopped and the server sends no tasks until the learner continues. */
+    paused: boolean;
+    pausedAtMs: number | null;
+    pauseCount: number;
 }
 
 export interface AnswerItem {

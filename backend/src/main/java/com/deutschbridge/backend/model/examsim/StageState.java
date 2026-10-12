@@ -17,6 +17,11 @@ public record StageState(String timerKey, long startedAtMs, long deadlineAtMs, L
         return endedAtMs == null;
     }
 
+    /** The same stage with its deadline moved later by the time the exam was paused. */
+    public StageState shifted(long deltaMs) {
+        return new StageState(timerKey, startedAtMs, deadlineAtMs + deltaMs, endedAtMs, endReason);
+    }
+
     public StageState ended(long atMs, String reason) {
         return new StageState(timerKey, startedAtMs, deadlineAtMs, atMs, reason);
     }

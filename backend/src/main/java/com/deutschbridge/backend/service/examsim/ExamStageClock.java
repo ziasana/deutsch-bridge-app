@@ -48,6 +48,14 @@ public final class ExamStageClock {
         return result;
     }
 
+    /** Moves the running stage's deadline later by {@code deltaMs} (the exam was paused); ended stages stay as they are. */
+    public static List<StageState> shiftRunning(List<StageState> stages, long deltaMs) {
+        List<StageState> result = new ArrayList<>(stages);
+        StageState current = result.get(result.size() - 1);
+        if (current.isRunning()) result.set(result.size() - 1, current.shifted(deltaMs));
+        return result;
+    }
+
     /** True when all stages have been used up (the last one ended). */
     public static boolean allStagesEnded(List<ExamTimerConfig> timers, List<StageState> stages) {
         return stages.size() >= timers.size() && !stages.get(stages.size() - 1).isRunning();

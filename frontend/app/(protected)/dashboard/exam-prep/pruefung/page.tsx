@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ClipboardCheck, Clock, Headphones, Mic, PenLine, Play, RotateCw, Timer } from "lucide-react";
+import { AlertTriangle, ClipboardCheck, Clock, Headphones, Mic, Pause, PenLine, Play, RotateCw, Timer } from "lucide-react";
 import Loading from "@/componenets/Loading";
 import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
 import LearningPageHero from "@/componenets/learning/LearningPageHero";
@@ -12,6 +12,7 @@ import SimProgressChart from "@/componenets/exam/simulation/SimProgressChart";
 import SimResultBadge from "@/componenets/exam/simulation/SimResultBadge";
 import { cancelSimulationAttempt, getSimulationHistory, getSimulationProfiles, startSimulationAttempt } from "@/services/examSimulationService";
 import { BLOCKED_REASON, formatDateTime, formatDuration, formatPoints, simulationError, simulationErrorMessage } from "@/lib/examSimulation";
+import { enterFullscreen, exitFullscreen } from "@/lib/fullscreen";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import type { AttemptSummary, ProfileOverview } from "@/types/examSimulation";
@@ -28,6 +29,7 @@ function ProfileCard({ profile }: Readonly<{ profile: ProfileOverview }>) {
         onSuccess: (res) => router.push(`/dashboard/exam-prep/pruefung/durchfuehrung?attempt=${encodeURIComponent(res.data.attemptId)}&fresh=1`),
         onError: (error) => {
             const body = simulationError(error);
+            if (body?.code !== "ACTIVE_ATTEMPT_EXISTS") exitFullscreen();
             if (body?.code === "ACTIVE_ATTEMPT_EXISTS" && typeof body.details?.attemptId === "string") {
                 router.push(`/dashboard/exam-prep/pruefung/durchfuehrung?attempt=${encodeURIComponent(body.details.attemptId)}`);
                 return;
@@ -64,15 +66,24 @@ function ProfileCard({ profile }: Readonly<{ profile: ProfileOverview }>) {
                 <div className="flex flex-wrap gap-2">
                     {profile.activeAttemptId ? (
                         <>
-                            <Link href={`/dashboard/exam-prep/pruefung/durchfuehrung?attempt=${encodeURIComponent(profile.activeAttemptId)}`} className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90">
-                                <RotateCw className="size-4" aria-hidden /> Prüfung fortsetzen
+                            {profile.activeAttemptPaused && (
+                                <span className="inline-flex items-center gap-1.5 self-center rounded-full bg-amber-500/15 px-3 py-1 text-xs font-semibold text-amber-700 dark:text-amber-400">
+                                    <Pause className="size-3.5" aria-hidden /> Pausiert – die Zeit steht
+                                </span>
+                            )}
+                            <Link onClick={enterFullscreen} href={`/dashboard/exam-prep/pruefung/durchfuehrung?attempt=${encodeURIComponent(profile.activeAttemptId)}`} className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90">
+                                <RotateCw className="size-4" aria-hidden /> {profile.activeAttemptPaused ? "Pause beenden und fortsetzen" : "Prüfung fortsetzen"}
                             </Link>
                             <button type="button" onClick={() => setConfirmCancel(true)} className="rounded-full border border-border px-5 py-2.5 text-sm font-medium text-foreground/80 transition hover:bg-accent">
                                 Abbrechen
                             </button>
                         </>
                     ) : (
-                        <button type="button" disabled={!profile.canStart || start.isPending} onClick={() => start.mutate()} className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50">
+                        <button type="button" disabled={!profile.canStart || start.isPending} onClick={() => {
+                            // Must happen inside the click: browsers only allow fullscreen after a user gesture.
+                            enterFullscreen();
+                            start.mutate();
+                        }} className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50">
                             <Play className="size-4" aria-hidden /> {start.isPending ? "Wird vorbereitet …" : "Prüfung starten"}
                         </button>
                     )}

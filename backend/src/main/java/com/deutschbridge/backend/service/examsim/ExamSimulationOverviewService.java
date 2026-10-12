@@ -75,9 +75,10 @@ public class ExamSimulationOverviewService {
 
         List<ExamSimulationAttempt> attempts = attemptRepository.findByUserIdAndProfileCodeOrderByStartedAtDesc(userId, p.getCode());
         long graceCutoff = clock.millis() - simulationService.graceMillis();
-        String active = attempts.stream()
+        ExamSimulationAttempt activeAttempt = attempts.stream()
                 .filter(a -> a.getStatus() == SimulationAttemptStatus.IN_PROGRESS && a.getFinalDeadlineAt().toEpochMilli() > graceCutoff)
-                .map(ExamSimulationAttempt::getId).findFirst().orElse(null);
+                .findFirst().orElse(null);
+        String active = activeAttempt != null ? activeAttempt.getId() : null;
         List<ExamSimulationAttempt> finished = attempts.stream()
                 .filter(a -> a.getStatus() == SimulationAttemptStatus.COMPLETED || a.getStatus() == SimulationAttemptStatus.EXPIRED).toList();
         AttemptSummary best = finished.stream().filter(a -> a.getResult() != null && a.getResult().writtenComplete())
@@ -96,6 +97,6 @@ public class ExamSimulationOverviewService {
         return new ProfileOverview(p.getId(), p.getCode(), p.getVersion(), p.getProvider(), p.getExamName(), p.getTitle(), p.getDescription(),
                 p.getLevel().getValue(), p.isOralScoringEnabled(), p.getWrittenMaxPoints(), p.getWrittenPassThreshold(), p.getOralMaxPoints(),
                 p.getOralPassThreshold(), total, p.getAnswerReleasePolicy(), totalMinutes, stages, parts, blocked == null,
-                blocked, active, best, latest, finished.size());
+                blocked, active, activeAttempt != null && activeAttempt.getPausedAt() != null, best, latest, finished.size());
     }
 }

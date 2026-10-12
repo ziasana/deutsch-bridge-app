@@ -63,6 +63,12 @@ public class ExamSimulationAttempt {
     @Column(nullable = false)
     private int resumeCount;
 
+    /** Set while the learner has paused the exam: the section clock is stopped since this moment. */
+    private Instant pausedAt;
+
+    @Column(nullable = false)
+    private int pauseCount;
+
     /** SUBMITTED, TIME_EXPIRED or CANCELLED once finished. */
     private String finishReason;
 

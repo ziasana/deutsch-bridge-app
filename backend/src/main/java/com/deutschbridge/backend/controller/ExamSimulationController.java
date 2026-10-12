@@ -59,6 +59,18 @@ public class ExamSimulationController {
         return ResponseEntity.ok(service.resume(requestContext.getUserId(), attemptId));
     }
 
+    /** Stops the clock of the running section and hides the tasks until the learner continues. */
+    @PostMapping("/attempts/{attemptId}/pause")
+    public ResponseEntity<AttemptState> pause(@PathVariable String attemptId) throws DataNotFoundException {
+        return ResponseEntity.ok(service.pause(requestContext.getUserId(), attemptId));
+    }
+
+    /** Continues a paused exam exactly where it stopped: the time that was left is left again. */
+    @PostMapping("/attempts/{attemptId}/continue")
+    public ResponseEntity<AttemptState> continueAfterPause(@PathVariable String attemptId) throws DataNotFoundException {
+        return ResponseEntity.ok(service.continueAfterPause(requestContext.getUserId(), attemptId));
+    }
+
     /** Idempotent upsert of answers; safe to retry after a network failure. */
     @PutMapping("/attempts/{attemptId}/answers")
     public ResponseEntity<SaveAnswersResponse> saveAnswers(@PathVariable String attemptId, @RequestBody SaveAnswersRequest request) throws DataNotFoundException {

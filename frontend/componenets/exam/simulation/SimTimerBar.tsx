@@ -10,14 +10,17 @@ interface Props {
     stageIndex: number;
     stageCount: number;
     remainingSeconds: number;
+    /** Length of the section; draws the thin progress line under the header. */
+    totalSeconds?: number;
     autosave: AutosaveStatus;
     actions?: React.ReactNode;
 }
 
 /** Sticky exam header: the server-driven countdown of the current section, the autosave indicator and the exam actions. */
-export default function SimTimerBar({ stageLabel, stageIndex, stageCount, remainingSeconds, autosave, actions }: Readonly<Props>) {
+export default function SimTimerBar({ stageLabel, stageIndex, stageCount, remainingSeconds, totalSeconds, autosave, actions }: Readonly<Props>) {
     const urgent = remainingSeconds <= 60;
     const warning = remainingSeconds <= 300;
+    const left = totalSeconds && totalSeconds > 0 ? Math.min(100, Math.max(0, (remainingSeconds / totalSeconds) * 100)) : null;
     return (
         <div className="sticky top-0 z-30 -mx-4 border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6" role="region" aria-label="Zeitanzeige">
             <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2">
@@ -43,6 +46,14 @@ export default function SimTimerBar({ stageLabel, stageIndex, stageCount, remain
                     {actions}
                 </div>
             </div>
+            {left != null && (
+                <div className="absolute inset-x-0 bottom-0 h-1 bg-foreground/10" aria-hidden>
+                    <div
+                        className={cn("h-full transition-[width] duration-1000 ease-linear", urgent ? "bg-red-500" : warning ? "bg-amber-500" : "bg-gradient-to-r from-(--lesson-from) to-(--lesson-to)")}
+                        style={{ width: `${left}%` }}
+                    />
+                </div>
+            )}
         </div>
     );
 }

@@ -58,7 +58,7 @@ public final class ExamSimulationDtos {
                                   String level, boolean oralScoringEnabled, BigDecimal writtenMaxPoints, BigDecimal writtenPassThreshold,
                                   BigDecimal oralMaxPoints, BigDecimal oralPassThreshold, BigDecimal totalMaxPoints,
                                   AnswerReleasePolicy answerReleasePolicy, int totalMinutes, List<StageOverview> stages, List<PartOverview> parts,
-                                  boolean canStart, String blockedReason, String activeAttemptId, AttemptSummary best, AttemptSummary latest,
+                                  boolean canStart, String blockedReason, String activeAttemptId, boolean activeAttemptPaused, AttemptSummary best, AttemptSummary latest,
                                   int attemptCount) {
     }
 
@@ -87,7 +87,8 @@ public final class ExamSimulationDtos {
     public record AttemptState(String attemptId, SimulationAttemptStatus status, String profileTitle, int profileVersion, long serverNowMs,
                                long startedAtMs, long finalDeadlineMs, boolean timeUp, int currentStageIndex, long remainingSeconds,
                                List<StageStatus> stages, List<PartState> parts, Map<String, Map<String, SavedAnswer>> answers,
-                               List<PartProgress> progress, int resumeCount, Integer maxResumes) {
+                               List<PartProgress> progress, int resumeCount, Integer maxResumes,
+                               boolean paused, Long pausedAtMs, int pauseCount) {
     }
 
     /** Result of asking to play a clip: how many plays remain (null = unlimited). */

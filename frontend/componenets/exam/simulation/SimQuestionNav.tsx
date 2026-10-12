@@ -19,7 +19,12 @@ function items(part: PartState): { id: string; label: string; scrollTo: string }
 
 /** Question navigation: every question of the current section with answered / unanswered / flagged state. */
 export default function SimQuestionNav({ parts, answers }: Readonly<Props>) {
-    const jump = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const jump = (id: string) => {
+        const el = document.getElementById(id);
+        if (el) return el.scrollIntoView({ behavior: "smooth", block: "start" });
+        // Not on the page right now (a Hörstation that is not open): let the listening board open it.
+        window.dispatchEvent(new CustomEvent("hoeren:goto", { detail: id.replace(/^q-/, "") }));
+    };
     return (
         <nav aria-label="Fragenübersicht" className="space-y-4">
             {parts.map((part) => (

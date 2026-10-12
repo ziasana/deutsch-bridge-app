@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { CheckCircle2, Mic } from "lucide-react";
+import { CheckCircle2, Headphones, Mic } from "lucide-react";
+import HoerenBoard from "@/componenets/exam/HoerenBoard";
 import LessonMarkdown from "@/componenets/LessonMarkdown";
 import WritingTaskCard from "@/componenets/exam/writing/WritingTaskCard";
 import { SpeakingStimulus } from "@/componenets/exam/speaking/SpeakingContentView";
@@ -68,6 +69,37 @@ function OptionPool({ exercise }: Readonly<{ exercise: ExercisePublic }>) {
                 ))}
             </ul>
         </aside>
+    );
+}
+
+/**
+ * Hörverstehen of the exam looks and answers exactly like the Übung (HoerenBoard): every statement is judged Richtig (+) or
+ * Falsch (-). The exam only swaps in its own audio player, which counts and limits the plays on the server.
+ */
+function ListeningExercise({ part, exercise, answers, disabled, onAnswer, audioCtx, startNumber }: Readonly<{ part: PartState; exercise: ExercisePublic; audioCtx: AudioContext; startNumber: number } & Omit<Props, "part" | "attemptId">>) {
+    const values = useMemo(() => Object.fromEntries(exercise.questions.map((q) => [q.id, answers[q.id]?.answer ?? ""])), [exercise, answers]);
+    const flags = useMemo(() => Object.fromEntries(exercise.questions.map((q) => [q.id, answers[q.id]?.flagged ?? false])), [exercise, answers]);
+    const numbered = useMemo(() => exercise.questions.map((q, i) => ({ ...q, questionNumber: q.questionNumber ?? startNumber + i })), [exercise, startNumber]);
+    return (
+        <HoerenBoard
+            teil={part.teil}
+            passages={exercise.passages}
+            questions={numbered}
+            answerOptions={exercise.answerOptions ?? []}
+            answers={values}
+            flagged={flags}
+            disabled={disabled}
+            showIntro={false}
+            stickyClassName="top-24"
+            anchorPrefix="q-"
+            doneMessage="Alle Aussagen dieses Teils sind beantwortet."
+            onAnswer={(questionId, value) => onAnswer(questionId, value === "" ? null : value, flags[questionId] ?? false)}
+            onToggleFlag={(questionId) => onAnswer(questionId, answers[questionId]?.answer ?? null, !(flags[questionId] ?? false))}
+            renderAudio={(passage, src) => (
+                <SimAudio attemptId={audioCtx.attemptId} partKey={audioCtx.partKey} passageId={passage.id} src={src} maxPlays={audioCtx.maxPlays}
+                    initialPlaysUsed={audioCtx.plays[passage.id] ?? 0} disabled={audioCtx.disabled} />
+            )}
+        />
     );
 }
 
@@ -192,10 +224,14 @@ function OralExercise({ part, exercise, answers, disabled, onAnswer, audioCtx }:
 export default function SimExerciseView({ attemptId, part, answers, disabled, onAnswer }: Readonly<Props>) {
     const locked = disabled || part.previewOnly;
     const audioCtx: AudioContext = { attemptId, partKey: part.key, maxPlays: part.maxAudioPlays, plays: part.audioPlays ?? {}, disabled: locked };
+    const isListening = part.section === "HOERVERSTEHEN" && part.module !== "ORAL";
     return (
         <section id={`part-${part.key}`} className="scroll-mt-28 space-y-4" aria-label={part.label}>
             <header>
-                <h3 className="text-lg font-bold text-foreground">{part.label}</h3>
+                <h3 className="flex items-center gap-2 text-lg font-bold text-foreground">
+                    {isListening && <Headphones className="size-5 text-primary" aria-hidden />}
+                    {part.label}
+                </h3>
                 {part.previewOnly && <p className="mt-1 rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">Vorbereitungszeit: Du siehst die Aufgaben schon jetzt. Antworten werden erst in der Übungszeit gespeichert.</p>}
             </header>
             {part.exercises.map((exercise, index) => {
@@ -205,6 +241,9 @@ export default function SimExerciseView({ attemptId, part, answers, disabled, on
                 }
                 if (part.module === "ORAL") {
                     return <OralExercise key={exercise.ordinal} part={part} exercise={exercise} audioCtx={audioCtx} answers={answers} disabled={locked} onAnswer={onAnswer} />;
+                }
+                if (isListening && (exercise.answerOptions?.length ?? 0) >= 2) {
+                    return <ListeningExercise key={exercise.ordinal} part={part} exercise={exercise} audioCtx={audioCtx} startNumber={start} answers={answers} disabled={locked} onAnswer={onAnswer} />;
                 }
                 return <ObjectiveExercise key={exercise.ordinal} audioCtx={audioCtx} partKey={part.key} startNumber={start} exercise={exercise} answers={answers} disabled={locked} onAnswer={onAnswer} />;
             })}

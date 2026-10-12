@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, Headphones, PartyPopper, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, Check, Flag, Headphones, PartyPopper, X } from "lucide-react";
 import AudioPlayer from "@/componenets/AudioPlayer";
 import LessonMarkdown from "@/componenets/LessonMarkdown";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
@@ -20,6 +20,19 @@ interface Props {
     onAnswer: (questionId: string, value: string) => void;
     /** Teil 3 plays one recording at a time ("Hörstation"); other Teile list the recordings (or sit beside one long recording). */
     teil?: number;
+    /** Replaces the plain audio player (the exam simulation counts and limits plays). */
+    renderAudio?: (passage: ExamPassagePublic, src: string) => React.ReactNode;
+    /** Hide the "So geht es" card (the exam page explains the task itself). Default true. */
+    showIntro?: boolean;
+    /** Tailwind `top-*` class of the sticky progress strip, to sit below a sticky exam header. */
+    stickyClassName?: string;
+    /** Id prefix of each statement, so an outside navigation can scroll to it. */
+    anchorPrefix?: string;
+    /** Exam only: questionIds marked for review, and the toggle. Omit both for the plain exercise. */
+    flagged?: Record<string, boolean>;
+    onToggleFlag?: (questionId: string) => void;
+    /** Text of the banner shown when everything is answered. */
+    doneMessage?: string;
 }
 
 /**
@@ -41,6 +54,9 @@ function StatementItem({
     selected,
     disabled,
     compact = false,
+    anchorPrefix,
+    flagged,
+    onToggleFlag,
     onAnswer,
 }: Readonly<{
     q: ExamQuestionPublic;
@@ -51,11 +67,14 @@ function StatementItem({
     selected: string;
     disabled: boolean;
     compact?: boolean;
+    anchorPrefix: string;
+    flagged?: boolean;
+    onToggleFlag?: () => void;
     onAnswer: (questionId: string, value: string) => void;
 }>) {
     return (
         <li
-            id={`hoeren-q-${q.id}`}
+            id={`${anchorPrefix}${q.id}`}
             className={cn(
                 "scroll-mt-24",
                 compact
@@ -65,7 +84,23 @@ function StatementItem({
         >
             <p className={cn("flex items-start gap-2.5 font-medium leading-snug text-foreground", compact && "min-w-0 flex-1 basis-60")}>
                 <span className={cn("mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg text-xs font-extrabold text-white", color.solid)}>{number}</span>
-                {q.prompt}
+                <span className="min-w-0 flex-1">{q.prompt}</span>
+                {onToggleFlag && (
+                    <button
+                        type="button"
+                        onClick={onToggleFlag}
+                        disabled={disabled}
+                        aria-pressed={flagged}
+                        aria-label={`Aussage ${number}: ${flagged ? "Markierung entfernen" : "zur Überprüfung markieren"}`}
+                        title={flagged ? "Markierung entfernen" : "Zur Überprüfung markieren"}
+                        className={cn(
+                            "inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default",
+                            flagged ? "border-amber-500 bg-amber-500/15 text-amber-600 dark:text-amber-400" : "border-border text-foreground/50 hover:bg-accent",
+                        )}
+                    >
+                        <Flag className={cn("size-3.5", flagged && "fill-current")} aria-hidden="true" />
+                    </button>
+                )}
             </p>
             <div className={cn("grid grid-cols-2 gap-3", compact && "w-full shrink-0 sm:w-72")}>
                 {[
@@ -95,7 +130,22 @@ function StatementItem({
     );
 }
 
-export default function HoerenBoard({ passages, questions, answerOptions, answers, disabled, onAnswer, teil }: Readonly<Props>) {
+export default function HoerenBoard({
+    passages,
+    questions,
+    answerOptions,
+    answers,
+    disabled,
+    onAnswer,
+    teil,
+    renderAudio,
+    showIntro = true,
+    stickyClassName = "top-2",
+    anchorPrefix = "hoeren-q-",
+    flagged,
+    onToggleFlag,
+    doneMessage = "Alle Aussagen sind beantwortet. Du kannst deine Antworten jetzt abgeben.",
+}: Readonly<Props>) {
     const [step, setStep] = useState(0);
     const right = answerOptions[0] ?? "+";
     const wrong = answerOptions[1] ?? "-";
@@ -127,13 +177,27 @@ export default function HoerenBoard({ passages, questions, answerOptions, answer
             return;
         }
         if (single) {
-            document.getElementById(`hoeren-q-${q.id}`)?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+            document.getElementById(`${anchorPrefix}${q.id}`)?.scrollIntoView?.({ block: "center", behavior: "smooth" });
             return;
         }
         const idx = passageIndexOf(q);
         const key = idx >= 0 ? passages[idx].id : "loose";
         cardRefs.current[key]?.scrollIntoView?.({ block: "center", behavior: "smooth" });
     };
+
+    // The exam's side navigation asks for a statement by id; a hidden Hörstation (wizard) has to be opened first.
+    const jumpRef = useRef(jumpTo);
+    useEffect(() => {
+        jumpRef.current = jumpTo;
+    });
+    useEffect(() => {
+        const onJump = (e: Event) => {
+            const q = questions.find((x) => x.id === (e as CustomEvent<string>).detail);
+            if (q) jumpRef.current(q);
+        };
+        window.addEventListener("hoeren:goto", onJump);
+        return () => window.removeEventListener("hoeren:goto", onJump);
+    }, [questions]);
 
     const renderCard = (card: (typeof cards)[number], idx: number) => {
         const c = colorAt(idx);
@@ -152,7 +216,7 @@ export default function HoerenBoard({ passages, questions, answerOptions, answer
 
                 {card.passage && (audioSrc || image || card.passage.content) && (
                     <div className="space-y-3 px-5 pt-4">
-                        {audioSrc && <AudioPlayer key={audioSrc} src={audioSrc} />}
+                        {audioSrc && card.passage && (renderAudio ? renderAudio(card.passage, audioSrc) : <AudioPlayer key={audioSrc} src={audioSrc} />)}
                         {image && <img src={image} alt="" className="max-h-52 w-full rounded-2xl object-cover" />}
                         {card.passage.content && <LessonMarkdown content={card.passage.content} className="text-sm text-foreground/80" />}
                     </div>
@@ -160,7 +224,7 @@ export default function HoerenBoard({ passages, questions, answerOptions, answer
 
                 <ul className="space-y-4 p-5">
                     {card.items.map((q) => (
-                        <StatementItem key={q.id} q={q} number={numberOf(q)} color={c} right={right} wrong={wrong} selected={answers[q.id] ?? ""} disabled={disabled} onAnswer={onAnswer} />
+                        <StatementItem key={q.id} q={q} number={numberOf(q)} color={c} right={right} wrong={wrong} selected={answers[q.id] ?? ""} disabled={disabled} anchorPrefix={anchorPrefix} flagged={flagged?.[q.id]} onToggleFlag={onToggleFlag && (() => onToggleFlag(q.id))} onAnswer={onAnswer} />
                     ))}
                 </ul>
             </article>
@@ -169,7 +233,7 @@ export default function HoerenBoard({ passages, questions, answerOptions, answer
 
     return (
         <div className="space-y-4">
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-(--lesson-from) to-(--lesson-to) p-5 text-white shadow-md sm:p-6">
+            {showIntro && <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-(--lesson-from) to-(--lesson-to) p-5 text-white shadow-md sm:p-6">
                 <span aria-hidden="true" className="absolute -end-8 -top-10 size-40 rounded-full bg-white/10" />
                 <span aria-hidden="true" className="absolute end-5 top-3 text-6xl opacity-20">🎧</span>
                 <p className="relative text-xs font-bold uppercase tracking-wider text-white/80">So geht es</p>
@@ -178,9 +242,9 @@ export default function HoerenBoard({ passages, questions, answerOptions, answer
                     <li>2. Entscheide: Ist die Aussage richtig ({right}) oder falsch ({wrong})?</li>
                     <li>3. Am Ende gibst du alle Antworten ab und siehst dein Ergebnis.</li>
                 </ol>
-            </div>
+            </div>}
 
-            <div className="sticky top-2 z-10 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-card/95 px-4 py-2.5 shadow-card ring-1 ring-border/60 backdrop-blur">
+            <div className={cn("sticky z-10 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-card/95 px-4 py-2.5 shadow-card ring-1 ring-border/60 backdrop-blur", stickyClassName)}>
                 <nav aria-label="Aussagen" className="flex flex-wrap items-center gap-1.5">
                     {questions.map((q) => {
                         const done = Boolean(answers[q.id]);
@@ -210,10 +274,10 @@ export default function HoerenBoard({ passages, questions, answerOptions, answer
 
             {single ? (
                 <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
-                    <RecordingCard passage={passages[0]} answered={answeredCount} total={questions.length} className="lg:sticky lg:top-20" />
+                    <RecordingCard passage={passages[0]} renderAudio={renderAudio} answered={answeredCount} total={questions.length} className="lg:sticky lg:top-20" />
                     <ol aria-label="Aussagen" className="space-y-3">
                         {questions.map((q) => (
-                            <StatementItem key={q.id} q={q} number={numberOf(q)} color={colorAt(questions.indexOf(q))} right={right} wrong={wrong} selected={answers[q.id] ?? ""} disabled={disabled} compact onAnswer={onAnswer} />
+                            <StatementItem key={q.id} q={q} number={numberOf(q)} color={colorAt(questions.indexOf(q))} right={right} wrong={wrong} selected={answers[q.id] ?? ""} disabled={disabled} compact anchorPrefix={anchorPrefix} flagged={flagged?.[q.id]} onToggleFlag={onToggleFlag && (() => onToggleFlag(q.id))} onAnswer={onAnswer} />
                         ))}
                     </ol>
                 </div>
@@ -281,7 +345,7 @@ export default function HoerenBoard({ passages, questions, answerOptions, answer
             {allDone && (
                 <div className="anim-pop flex items-center gap-3 rounded-2xl bg-gradient-to-r from-(--lesson-from) to-(--lesson-to) p-4 text-white shadow-md">
                     <PartyPopper className="size-6 shrink-0" aria-hidden="true" />
-                    <p className="text-sm font-semibold">Alle Aussagen sind beantwortet. Du kannst deine Antworten jetzt abgeben.</p>
+                    <p className="text-sm font-semibold">{doneMessage}</p>
                 </div>
             )}
         </div>
@@ -289,7 +353,7 @@ export default function HoerenBoard({ passages, questions, answerOptions, answer
 }
 
 /** The one long recording: a big player card that stays in view beside the statements. */
-function RecordingCard({ passage, answered, total, className }: Readonly<{ passage: ExamPassagePublic; answered: number; total: number; className?: string }>) {
+function RecordingCard({ passage, answered, total, className, renderAudio }: Readonly<{ passage: ExamPassagePublic; answered: number; total: number; className?: string; renderAudio?: Props["renderAudio"] }>) {
     const audioSrc = resolveUploadUrl(passage.audioUrl);
     const image = resolveUploadUrl(passage.imageUrl);
     return (
@@ -307,7 +371,7 @@ function RecordingCard({ passage, answered, total, className }: Readonly<{ passa
                 </div>
             </header>
             <div className="space-y-3 p-5">
-                {audioSrc && <AudioPlayer key={audioSrc} src={audioSrc} />}
+                {audioSrc && (renderAudio ? renderAudio(passage, audioSrc) : <AudioPlayer key={audioSrc} src={audioSrc} />)}
                 {image && <img src={image} alt="" className="max-h-52 w-full rounded-2xl object-cover" />}
                 {passage.content && <LessonMarkdown content={passage.content} className="text-sm text-foreground/80" />}
                 <p className="text-center text-xs font-semibold tabular-nums text-foreground/60">{answered} von {total} Aussagen beantwortet</p>

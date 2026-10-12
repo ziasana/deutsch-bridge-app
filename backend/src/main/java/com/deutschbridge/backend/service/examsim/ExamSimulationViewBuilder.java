@@ -63,6 +63,7 @@ public class ExamSimulationViewBuilder {
         long now = clock.millis();
         int currentIndex = stages.size() - 1;
         StageState current = stages.get(currentIndex);
+        boolean paused = a.getStatus() == SimulationAttemptStatus.IN_PROGRESS && a.getPausedAt() != null;
         boolean running = a.getStatus() == SimulationAttemptStatus.IN_PROGRESS && current.isRunning();
 
         List<StageStatus> stageStatuses = new ArrayList<>();
@@ -76,7 +77,8 @@ public class ExamSimulationViewBuilder {
 
         List<PartState> partStates = new ArrayList<>();
         Map<String, Map<String, SavedAnswer>> savedAnswers = new LinkedHashMap<>();
-        if (running) {
+        // While paused the tasks are not sent at all, so a pause cannot be used to read ahead.
+        if (running && !paused) {
             ExamTimerConfig timer = timers.get(currentIndex);
             for (ExamPartConfig part : config.partsOrEmpty()) {
                 if (!partKeysShownIn(config, timer).contains(part.key())) continue;
@@ -93,10 +95,12 @@ public class ExamSimulationViewBuilder {
                 savedAnswers.put(part.key(), forPart);
             }
         }
-        long remaining = running ? Math.max(0, (long) Math.ceil((current.deadlineAtMs() - now) / 1000.0)) : 0;
+        long clockMs = paused ? a.getPausedAt().toEpochMilli() : now;
+        long remaining = running ? Math.max(0, (long) Math.ceil((current.deadlineAtMs() - clockMs) / 1000.0)) : 0;
         return new AttemptState(a.getId(), a.getStatus(), profile.title(), profile.version(), now, a.getStartedAt().toEpochMilli(),
                 a.getFinalDeadlineAt().toEpochMilli(), timeUp, currentIndex, remaining, stageStatuses, partStates, savedAnswers,
-                progress(config, parts, answers), a.getResumeCount(), profile.maxResumes());
+                progress(config, parts, answers), a.getResumeCount(), profile.maxResumes(),
+                paused, paused ? a.getPausedAt().toEpochMilli() : null, a.getPauseCount());
     }
 
     /** Parts shown in a stage: its own, or for a preparation stage those of the timer it prepares. */

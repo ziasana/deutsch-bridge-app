@@ -68,6 +68,7 @@ public class ExamSimulationService {
     private final ExamSimulationAuditService audit;
     private final Clock clock;
     private final long graceMs;
+    private final long maxPauseMs;
 
     public ExamSimulationService(ExamProfileRepository profileRepository, ExamSimulationAttemptRepository attemptRepository,
                                  ExamSimulationAttemptPartRepository partRepository, ExamSimulationAnswerRepository answerRepository,
@@ -75,7 +76,8 @@ public class ExamSimulationService {
                                  com.deutschbridge.backend.repository.ExamSimulationAudioPlayRepository audioPlayRepository, ExamExerciseSelectionService selectionService,
                                  ExamProfileValidator validator, ExamResultCalculator calculator, ExamSimulationViewBuilder views,
                                  ExamSimulationAuditService audit, Clock clock,
-                                 @Value("${exam.simulation.save-grace-seconds:5}") long graceSeconds) {
+                                 @Value("${exam.simulation.save-grace-seconds:5}") long graceSeconds,
+                                 @Value("${exam.simulation.max-pause-minutes:1440}") long maxPauseMinutes) {
         this.profileRepository = profileRepository;
         this.attemptRepository = attemptRepository;
         this.partRepository = partRepository;
@@ -89,6 +91,7 @@ public class ExamSimulationService {
         this.audit = audit;
         this.clock = clock;
         this.graceMs = graceSeconds * 1000L;
+        this.maxPauseMs = maxPauseMinutes * 60_000L;
     }
 
     // ================================================================ start / resume / read
@@ -153,7 +156,8 @@ public class ExamSimulationService {
     public AttemptState resume(String userId, String attemptId) throws DataNotFoundException {
         ExamSimulationAttempt attempt = loadLocked(userId, attemptId);
         sync(attempt);
-        if (attempt.getStatus() == SimulationAttemptStatus.IN_PROGRESS) {
+        // Opening a paused exam only shows the pause screen; it does not count as a resume and does not restart the clock.
+        if (attempt.getStatus() == SimulationAttemptStatus.IN_PROGRESS && attempt.getPausedAt() == null) {
             Integer max = attempt.getProfileSnapshot().maxResumes();
             if (max != null && attempt.getResumeCount() >= max) {
                 throw new ExamSimulationException(HttpStatus.FORBIDDEN, "RESUME_NOT_ALLOWED", "This exam cannot be resumed again.");
@@ -172,6 +176,59 @@ public class ExamSimulationService {
         ExamSimulationAttempt attempt = loadLocked(userId, attemptId);
         sync(attempt);
         return state(attempt);
+    }
+
+    // ================================================================ pause
+
+    /**
+     * Pauses the running exam. The section clock stops; the tasks are not sent while paused, and answers, audio plays and
+     * section changes are refused. To keep the attempt from being swept as overdue meanwhile, the final deadline is pushed out
+     * by the longest pause allowed.
+     */
+    @Transactional
+    public AttemptState pause(String userId, String attemptId) throws DataNotFoundException {
+        ExamSimulationAttempt attempt = loadLocked(userId, attemptId);
+        sync(attempt);
+        if (attempt.getStatus() != SimulationAttemptStatus.IN_PROGRESS || attempt.getPausedAt() != null) {
+            if (attempt.getPausedAt() == null) requireInProgress(attempt);
+            return state(attempt);
+        }
+        long now = clock.millis();
+        StageState current = ExamStageClock.current(attempt.getStages());
+        if (!current.isRunning() || now >= current.deadlineAtMs()) {
+            throw ExamSimulationException.conflict("SECTION_LOCKED", "The time of this section is over; the exam cannot be paused.");
+        }
+        attempt.setPausedAt(Instant.ofEpochMilli(now));
+        attempt.setPauseCount(attempt.getPauseCount() + 1);
+        attempt.setFinalDeadlineAt(Instant.ofEpochMilli(ExamStageClock.finalDeadlineMs(attempt.getProfileSnapshot().config().timersOrEmpty(), attempt.getStages()) + maxPauseMs));
+        attempt.setUpdatedAt(Instant.ofEpochMilli(now));
+        attemptRepository.save(attempt);
+        audit.record(ExamSimulationAuditService.ATTEMPT, attemptId, "PAUSED", null, null, userId, Map.of("pauseCount", attempt.getPauseCount()));
+        return state(attempt);
+    }
+
+    /** Ends a pause: the running section gets back exactly the time it had left when it was paused. */
+    @Transactional
+    public AttemptState continueAfterPause(String userId, String attemptId) throws DataNotFoundException {
+        ExamSimulationAttempt attempt = loadLocked(userId, attemptId);
+        sync(attempt);
+        if (attempt.getStatus() == SimulationAttemptStatus.IN_PROGRESS && attempt.getPausedAt() != null) {
+            long pausedMs = clock.millis() - attempt.getPausedAt().toEpochMilli();
+            endPause(attempt, clock.millis());
+            audit.record(ExamSimulationAuditService.ATTEMPT, attemptId, "CONTINUED", null, null, userId, Map.of("pausedSeconds", pausedMs / 1000));
+        } else {
+            requireInProgress(attempt);
+        }
+        return state(attempt);
+    }
+
+    /** Moves the running section's deadline by the length of the pause up to {@code atMs} and clears the pause. */
+    private void endPause(ExamSimulationAttempt attempt, long atMs) {
+        List<ExamTimerConfig> timers = attempt.getProfileSnapshot().config().timersOrEmpty();
+        long delta = Math.max(0, atMs - attempt.getPausedAt().toEpochMilli());
+        attempt.setPausedAt(null);
+        applyStages(attempt, ExamStageClock.shiftRunning(attempt.getStages(), delta), timers);
+        attemptRepository.save(attempt);
     }
 
     // ================================================================ answers
@@ -342,6 +399,7 @@ public class ExamSimulationService {
         StageState last = stages.get(stages.size() - 1);
         if (last.isRunning()) stages.set(stages.size() - 1, last.ended(now.toEpochMilli(), StageState.COMPLETED));
         attempt.setStages(stages);
+        attempt.setPausedAt(null);
         attempt.setStatus(SimulationAttemptStatus.CANCELLED);
         attempt.setFinishReason("CANCELLED");
         attempt.setEndedAt(now);
@@ -409,7 +467,9 @@ public class ExamSimulationService {
 
     private void requireInProgress(ExamSimulationAttempt attempt) {
         switch (attempt.getStatus()) {
-            case IN_PROGRESS -> { }
+            case IN_PROGRESS -> {
+                if (attempt.getPausedAt() != null) throw ExamSimulationException.conflict("ATTEMPT_PAUSED", "The exam is paused. Continue it first.");
+            }
             case EXPIRED -> throw ExamSimulationException.conflict("EXAM_EXPIRED", "The exam time is over.");
             case CANCELLED -> throw ExamSimulationException.conflict("ATTEMPT_CANCELLED", "This exam attempt was cancelled.");
             default -> throw ExamSimulationException.conflict("ATTEMPT_COMPLETED", "This exam attempt is already completed.");
@@ -421,6 +481,12 @@ public class ExamSimulationService {
         if (attempt.getStatus() != SimulationAttemptStatus.IN_PROGRESS) return;
         List<ExamTimerConfig> timers = attempt.getProfileSnapshot().config().timersOrEmpty();
         long now = clock.millis();
+        if (attempt.getPausedAt() != null) {
+            // A pause nobody ended does not stop the clock forever: after the longest allowed pause time runs on again.
+            long limit = attempt.getPausedAt().toEpochMilli() + maxPauseMs;
+            if (now < limit) return;
+            endPause(attempt, limit);
+        }
         List<StageState> advanced = ExamStageClock.advance(timers, attempt.getStages(), now);
         if (!advanced.equals(attempt.getStages())) {
             for (int i = 0; i < advanced.size(); i++) {
@@ -452,6 +518,7 @@ public class ExamSimulationService {
         StageState last = stages.get(stages.size() - 1);
         if (last.isRunning()) stages.set(stages.size() - 1, last.ended(now.toEpochMilli(), StageState.COMPLETED));
         attempt.setStages(stages);
+        attempt.setPausedAt(null);
 
         ensureAssessments(attempt);
         attempt.setResult(computeResult(attempt));

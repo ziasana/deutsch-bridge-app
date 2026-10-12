@@ -25,6 +25,12 @@ export const getSimulationAttempt = (attemptId: string) => api.get<AttemptState>
 /** Re-enters a running attempt after a refresh; the server may limit how often this is allowed. */
 export const resumeSimulationAttempt = (attemptId: string) => api.post<AttemptState>(`${base}/attempts/${attemptId}/resume`);
 
+/** Pauses the exam: the server stops the section clock and stops sending the tasks. */
+export const pauseSimulationAttempt = (attemptId: string) => api.post<AttemptState>(`${base}/attempts/${attemptId}/pause`);
+
+/** Continues a paused exam with exactly the time that was left. */
+export const continueSimulationAttempt = (attemptId: string) => api.post<AttemptState>(`${base}/attempts/${attemptId}/continue`);
+
 /** Idempotent upsert, safe to retry. The server decides whether each answer is still accepted. */
 export const saveSimulationAnswers = (attemptId: string, answers: AnswerItem[]) =>
     api.put<SaveAnswersResponse>(`${base}/attempts/${attemptId}/answers`, { answers });

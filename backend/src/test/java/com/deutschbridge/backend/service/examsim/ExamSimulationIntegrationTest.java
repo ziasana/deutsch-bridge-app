@@ -584,6 +584,68 @@ class ExamSimulationIntegrationTest {
         assertCode("RESUME_NOT_ALLOWED", () -> service.resume(user, state.attemptId()));
     }
 
+    @Test
+    @DisplayName("Pausing stops the clock, hides the tasks and continues with the same time left")
+    void pauseAndContinue() throws Exception {
+        String user = user();
+        AttemptState state = start(user);
+        String lesenQ = parts(state.attemptId()).stream().filter(p -> p.getPartKey().equals("LESEN_1")).findFirst().orElseThrow().getSnapshot().questions().get(0).getId();
+        service.saveAnswers(user, state.attemptId(), new SaveAnswersRequest(List.of(new AnswerItem("LESEN_1", lesenQ, "B", false, 1L))));
+
+        clock.advance(Duration.ofMinutes(30));
+        AttemptState paused = service.pause(user, state.attemptId());
+        assertTrue(paused.paused());
+        assertEquals(60 * 60, paused.remainingSeconds());
+        assertTrue(paused.parts().isEmpty(), "no tasks while paused");
+        assertCode("ATTEMPT_PAUSED", () -> service.saveAnswers(user, state.attemptId(), new SaveAnswersRequest(List.of(correct("LESEN_1", lesenQ)))));
+        assertCode("ATTEMPT_PAUSED", () -> service.completeCurrentStage(user, state.attemptId()));
+
+        // hours later (still inside the allowed pause): the exam is still there, with the time frozen, and opening it is not a resume
+        clock.advance(Duration.ofHours(5));
+        AttemptState reopened = service.resume(user, state.attemptId());
+        assertTrue(reopened.paused());
+        assertEquals(60 * 60, reopened.remainingSeconds());
+        assertEquals(0, reopened.resumeCount());
+        assertEquals(0, expiryJob.run());
+
+        AttemptState continued = service.continueAfterPause(user, state.attemptId());
+        assertFalse(continued.paused());
+        assertEquals(60 * 60, continued.remainingSeconds(), "exactly the time that was left");
+        assertEquals("B", continued.answers().get("LESEN_1").get(lesenQ).answer());
+        assertEquals(1, continued.pauseCount());
+
+        clock.advance(Duration.ofMinutes(10));
+        assertEquals(50 * 60, service.getState(user, state.attemptId()).remainingSeconds());
+        assertEquals(1, service.saveAnswers(user, state.attemptId(), new SaveAnswersRequest(List.of(correct("LESEN_1", lesenQ)))).saved());
+    }
+
+    @Test
+    @DisplayName("A pause nobody ends runs out after the longest allowed pause")
+    void pauseLimitRunsOut() throws Exception {
+        String user = user();
+        AttemptState state = start(user);
+        service.pause(user, state.attemptId());
+        assertEquals(state.attemptId(), overviewService.get(user, profile.getId()).activeAttemptId());
+        assertTrue(overviewService.get(user, profile.getId()).activeAttemptPaused());
+
+        // The pause ran out after 24 h; the clock then ran for the following 60 of the first section's 90 minutes.
+        clock.advance(Duration.ofHours(25));
+        AttemptState after = service.getState(user, state.attemptId());
+        assertFalse(after.paused());
+        assertEquals(30 * 60, after.remainingSeconds());
+    }
+
+    @Test
+    @DisplayName("Submitting a paused exam closes it and gives the result")
+    void submitWhilePaused() throws Exception {
+        String user = user();
+        AttemptState state = start(user);
+        service.pause(user, state.attemptId());
+        ResultResponse result = service.submit(user, state.attemptId());
+        assertEquals(SimulationAttemptStatus.COMPLETED, result.status());
+        assertNull(attemptRepository.findById(state.attemptId()).orElseThrow().getPausedAt());
+    }
+
     // ------------------------------------------------------------------ audit
 
     @Test
