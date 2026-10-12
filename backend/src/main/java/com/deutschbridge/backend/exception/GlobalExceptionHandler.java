@@ -27,6 +27,12 @@ public class GlobalExceptionHandler  {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseException);
     }
 
+    @ExceptionHandler(ExamSimulationException.class)
+    public ResponseEntity<ExamSimulationErrorResponse> handleExamSimulationException(ExamSimulationException e) {
+        return ResponseEntity.status(e.getStatus()).body(new ExamSimulationErrorResponse(
+                java.time.LocalDateTime.now(), e.getMessage(), e.getStatus().value(), e.getCode(), e.getDetails()));
+    }
+
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(UserVerificationException.class)
     public ResponseEntity<ResponseException> handleUserVerificationException(UserVerificationException e) {

@@ -37,6 +37,10 @@ spring:
  #     connect-timeout: 30000 # 30 seconds
  #     socket-timeout: 60000  # 60 seconds
 
+exam:
+  simulation:
+    seed-default-profile: false
+
 ollama:
   api:
     key: test-api-key
