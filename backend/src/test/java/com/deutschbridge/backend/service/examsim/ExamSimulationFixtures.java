@@ -153,4 +153,37 @@ public final class ExamSimulationFixtures {
     public static ExamProfileConfig configWith(ExamProfileConfig base, List<ExamPartConfig> parts) {
         return new ExamProfileConfig(parts, base.timers(), base.scoreScale(), base.roundingMode());
     }
+
+    /** A published exercise of the given level / task type usable in the exam simulation pool. */
+    public static ExamExercise pooledExercise(String title, ExamSection section, int partNumber, ExamTaskType taskType, int questions, LearningLevel level) {
+        ExamExercise e = publishedExercise(null, section, partNumber, questions);
+        e.setId(null);
+        e.setTitle(title);
+        e.setLevel(level);
+        e.setTaskType(taskType);
+        e.getQuestions().forEach(q -> q.setId(null));
+        e.getQuestions().forEach(q -> q.ensureId());
+        e.getPassages().forEach(p -> p.setId(null));
+        e.getPassages().forEach(p -> p.ensureId());
+        if (section == ExamSection.HOERVERSTEHEN) e.getPassages().get(0).setAudioUrl("/uploads/exam-audio/" + title + ".m4a");
+        return e;
+    }
+
+    /** Creates {@code perPart} eligible published exercises for every part of the telc B1 profile structure; returns their ids. */
+    public static List<String> createPool(com.deutschbridge.backend.repository.ExamExerciseRepository repository, LearningLevel level, int perPart) {
+        List<String> ids = new ArrayList<>();
+        for (ExamPartConfig part : TelcB1ProfileFactory.request().config().parts()) {
+            for (int i = 0; i < perPart; i++) {
+                ExamTaskType type = switch (part.section()) {
+                    case SPRACHBAUSTEINE -> part.teil() == 2 ? ExamTaskType.WORD_BANK_CLOZE : ExamTaskType.MULTIPLE_CHOICE;
+                    case SCHRIFTLICHER_AUSDRUCK -> ExamTaskType.WRITING_TASK;
+                    case MUENDLICHER_AUSDRUCK -> ExamTaskType.TOPIC_INTERVIEW;
+                    default -> ExamTaskType.MULTIPLE_CHOICE;
+                };
+                int questions = part.questionCount() != null ? part.questionCount() : 0;
+                ids.add(repository.save(pooledExercise(part.key() + "-" + i, part.section(), part.teil(), type, questions, level)).getId());
+            }
+        }
+        return ids;
+    }
 }
