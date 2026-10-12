@@ -44,11 +44,15 @@ public class ExamSimulationAdminService {
     private final ExamSimulationAnswerRepository answerRepository;
     private final ExamSimulationService simulationService;
     private final ExamSimulationAuditService audit;
+    private final com.deutschbridge.backend.service.OllamaService ollamaService;
+    private final com.deutschbridge.backend.repository.ExamSimulationAttemptPartRepository partRepository;
     private final Clock clock;
 
     public ExamSimulationAdminService(ExamProfileService profileService, ExamPoolService poolService, ExamSimulationAttemptRepository attemptRepository,
                                       ExamSimulationAssessmentRepository assessmentRepository, ExamSimulationAnswerRepository answerRepository,
-                                      ExamSimulationService simulationService, ExamSimulationAuditService audit, Clock clock) {
+                                      ExamSimulationService simulationService, ExamSimulationAuditService audit,
+                                      com.deutschbridge.backend.service.OllamaService ollamaService,
+                                      com.deutschbridge.backend.repository.ExamSimulationAttemptPartRepository partRepository, Clock clock) {
         this.profileService = profileService;
         this.poolService = poolService;
         this.attemptRepository = attemptRepository;
@@ -56,6 +60,8 @@ public class ExamSimulationAdminService {
         this.answerRepository = answerRepository;
         this.simulationService = simulationService;
         this.audit = audit;
+        this.ollamaService = ollamaService;
+        this.partRepository = partRepository;
         this.clock = clock;
     }
 
@@ -89,7 +95,9 @@ public class ExamSimulationAdminService {
             boolean done = answers.stream().anyMatch(a -> a.getPartKey().equals(part.key()) && "true".equals(a.getAnswer()) && ExamSimulationViewBuilder.DONE_ID.equals(a.getQuestionId()));
             items.add(new AssessmentQueueItem(as.getId(), attempt.getId(), attempt.getUserId(), part.key(), part.label(), part.module(),
                     attempt.getEndedAt() != null ? attempt.getEndedAt().toEpochMilli() : attempt.getStartedAt().toEpochMilli(), part.maxPoints(),
-                    part.rubricOrEmpty(), text, done));
+                    part.rubricOrEmpty(), text, done,
+                    assessmentRepository.findByAttemptIdAndPartKeyAndSource(attempt.getId(), part.key(), AssessmentSource.AI_ESTIMATE)
+                            .map(ExamSimulationAssessment::getComment).orElse(null)));
         }
         return items;
     }
@@ -142,6 +150,47 @@ public class ExamSimulationAdminService {
         audit.record(ExamSimulationAuditService.ATTEMPT, attemptId, "ASSESSED", before, AssessmentStatus.ASSESSED.name(), assessorId,
                 Map.of("partKey", partKey, "points", total.toPlainString()));
         return attempt.getResult();
+    }
+
+    /**
+     * Generates an AI feedback text for a written submission to help the assessor. It is stored as an AI_ESTIMATE, carries no
+     * points and is never part of a score or pass/fail decision - only the manual assessment counts.
+     */
+    @Transactional
+    public String estimateWriting(String adminId, String attemptId, String partKey) throws DataNotFoundException {
+        ExamSimulationAttempt attempt = attemptRepository.findByIdForUpdate(attemptId).orElseThrow(() -> new DataNotFoundException("Exam attempt not found!"));
+        if (attempt.getStatus() != SimulationAttemptStatus.COMPLETED && attempt.getStatus() != SimulationAttemptStatus.EXPIRED) {
+            throw ExamSimulationException.conflict("ATTEMPT_NOT_FINISHED", "Only finished attempts can be assessed.");
+        }
+        ExamPartConfig part = attempt.getProfileSnapshot().config().part(partKey);
+        if (part == null || part.section() != com.deutschbridge.backend.model.enums.ExamSection.SCHRIFTLICHER_AUSDRUCK) {
+            throw ExamSimulationException.badRequest("PART_NOT_WRITING", "AI estimates are only available for writing tasks.");
+        }
+        String text = answerRepository.findByAttemptId(attemptId).stream()
+                .filter(a -> a.getPartKey().equals(partKey) && WRITING_TEXT_ID.equals(a.getQuestionId())).map(ExamSimulationAnswer::getAnswer).findFirst().orElse("");
+        if (text == null || text.isBlank()) throw ExamSimulationException.badRequest("NO_SUBMISSION", "There is no text to evaluate.");
+        var exercise = partRepository.findByAttemptIdOrderByPartKeyAscOrdinalAsc(attemptId).stream()
+                .filter(p -> p.getPartKey().equals(partKey)).findFirst().orElseThrow(() -> new DataNotFoundException("Exercise not found!")).getSnapshot();
+        String task = exercise.passagesOrEmpty().stream().map(p -> p.getContent() == null ? "" : p.getContent().replaceAll("<[^>]*>", " ")).reduce("", (x, y) -> x + " " + y).trim();
+        String feedback = ollamaService.evaluateWriting(attempt.getProfileSnapshot().level(), task,
+                exercise.leitpunkte() != null ? exercise.leitpunkte() : List.of(), text);
+
+        ExamSimulationAssessment estimate = assessmentRepository.findByAttemptIdAndPartKeyAndSource(attemptId, partKey, AssessmentSource.AI_ESTIMATE)
+                .orElseGet(() -> {
+                    ExamSimulationAssessment created = new ExamSimulationAssessment();
+                    created.setAttemptId(attemptId);
+                    created.setPartKey(partKey);
+                    created.setSource(AssessmentSource.AI_ESTIMATE);
+                    return created;
+                });
+        estimate.setStatus(AssessmentStatus.ASSESSED);
+        estimate.setPoints(null);
+        estimate.setComment(feedback);
+        estimate.setAssessorId("AI");
+        estimate.setAssessedAt(Instant.now(clock));
+        assessmentRepository.save(estimate);
+        audit.record(ExamSimulationAuditService.ATTEMPT, attemptId, "AI_ESTIMATE_CREATED", null, null, adminId, Map.of("partKey", partKey));
+        return feedback;
     }
 
     @Transactional(readOnly = true)

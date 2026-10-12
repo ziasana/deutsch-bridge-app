@@ -130,6 +130,11 @@ public class ExamProfileValidator {
                 lastTimerIndex = Math.max(lastTimerIndex, idx);
                 usedTimers.add(part.timerKey());
             }
+            if (part.maxAudioPlays() != null && part.maxAudioPlays() < 1) {
+                errors.add(new Issue("PART_AUDIO_PLAYS_INVALID", path + ".maxAudioPlays", "Maximum audio plays must be at least 1 (or empty for unlimited)."));
+            } else if (part.maxAudioPlays() != null && part.section() != com.deutschbridge.backend.model.enums.ExamSection.HOERVERSTEHEN) {
+                warnings.add(new Issue("PART_AUDIO_PLAYS_IGNORED", path + ".maxAudioPlays", part.key() + ": the play limit only applies to listening parts."));
+            }
             validateScoring(p, part, path, errors);
         }
         for (ExamTimerConfig t : config.timersOrEmpty()) {

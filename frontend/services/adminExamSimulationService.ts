@@ -32,3 +32,5 @@ export const adminExamAttemptAudit = (attemptId: string) => api.get<AuditEntry[]
 export const adminAssessmentQueue = () => api.get<AssessmentQueueItem[]>(`${base}/assessments/queue`);
 export const adminAssessPart = (attemptId: string, partKey: string, criteriaScores: Record<string, number>, comment: string) =>
     api.put<ExamResult>(`${base}/attempts/${attemptId}/parts/${partKey}/assessment`, { criteriaScores, comment });
+export const adminAiEstimate = (attemptId: string, partKey: string) =>
+    api.post<{ feedback: string; official: string }>(`${base}/attempts/${attemptId}/parts/${partKey}/ai-estimate`);

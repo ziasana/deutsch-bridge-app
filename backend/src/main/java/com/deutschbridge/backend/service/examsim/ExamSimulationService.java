@@ -60,6 +60,7 @@ public class ExamSimulationService {
     private final ExamSimulationAttemptPartRepository partRepository;
     private final ExamSimulationAnswerRepository answerRepository;
     private final ExamSimulationAssessmentRepository assessmentRepository;
+    private final com.deutschbridge.backend.repository.ExamSimulationAudioPlayRepository audioPlayRepository;
     private final ExamExerciseSelectionService selectionService;
     private final ExamProfileValidator validator;
     private final ExamResultCalculator calculator;
@@ -70,7 +71,8 @@ public class ExamSimulationService {
 
     public ExamSimulationService(ExamProfileRepository profileRepository, ExamSimulationAttemptRepository attemptRepository,
                                  ExamSimulationAttemptPartRepository partRepository, ExamSimulationAnswerRepository answerRepository,
-                                 ExamSimulationAssessmentRepository assessmentRepository, ExamExerciseSelectionService selectionService,
+                                 ExamSimulationAssessmentRepository assessmentRepository,
+                                 com.deutschbridge.backend.repository.ExamSimulationAudioPlayRepository audioPlayRepository, ExamExerciseSelectionService selectionService,
                                  ExamProfileValidator validator, ExamResultCalculator calculator, ExamSimulationViewBuilder views,
                                  ExamSimulationAuditService audit, Clock clock,
                                  @Value("${exam.simulation.save-grace-seconds:5}") long graceSeconds) {
@@ -79,6 +81,7 @@ public class ExamSimulationService {
         this.partRepository = partRepository;
         this.answerRepository = answerRepository;
         this.assessmentRepository = assessmentRepository;
+        this.audioPlayRepository = audioPlayRepository;
         this.selectionService = selectionService;
         this.validator = validator;
         this.calculator = calculator;
@@ -246,6 +249,44 @@ public class ExamSimulationService {
         }
         if (item.answer() != null && item.answer().length() > limit) return "ANSWER_TOO_LONG";
         return null;
+    }
+
+    /**
+     * Asks to play an audio clip. The play is counted before the client starts the audio, so closing the page does not
+     * give a play back. Refused when the part's play limit is used up or the section is not open.
+     */
+    @Transactional
+    public AudioPlayResponse playAudio(String userId, String attemptId, String partKey, String passageId) throws DataNotFoundException {
+        ExamSimulationAttempt attempt = loadLocked(userId, attemptId);
+        sync(attempt);
+        requireInProgress(attempt);
+        ProfileSnapshot profile = attempt.getProfileSnapshot();
+        ExamPartConfig part = profile.config().part(partKey);
+        if (part == null) throw new DataNotFoundException("Exam part not found!");
+        StageState stage = attempt.getStages().stream().filter(st -> st.timerKey().equals(part.timerKey())).findFirst().orElse(null);
+        if (stage == null || !stage.isRunning() || clock.millis() >= stage.deadlineAtMs()) {
+            throw ExamSimulationException.conflict("SECTION_LOCKED", "This section is not open.");
+        }
+        boolean known = partRepository.findByAttemptIdOrderByPartKeyAscOrdinalAsc(attemptId).stream()
+                .filter(p -> p.getPartKey().equals(partKey)).flatMap(p -> p.getSnapshot().passagesOrEmpty().stream())
+                .anyMatch(x -> passageId.equals(x.getId()) && x.getAudioUrl() != null && !x.getAudioUrl().isBlank());
+        if (!known) throw new DataNotFoundException("Audio clip not found!");
+
+        com.deutschbridge.backend.model.entity.ExamSimulationAudioPlay play = audioPlayRepository.findByAttemptIdAndPartKeyAndPassageId(attemptId, partKey, passageId)
+                .orElseGet(() -> {
+                    var created = new com.deutschbridge.backend.model.entity.ExamSimulationAudioPlay();
+                    created.setAttemptId(attemptId);
+                    created.setPartKey(partKey);
+                    created.setPassageId(passageId);
+                    return created;
+                });
+        Integer max = part.maxAudioPlays();
+        if (max != null && play.getPlays() >= max) {
+            throw ExamSimulationException.conflict("AUDIO_LIMIT_REACHED", "This audio clip cannot be played again.", Map.of("playsUsed", play.getPlays()));
+        }
+        play.setPlays(play.getPlays() + 1);
+        audioPlayRepository.save(play);
+        return new AudioPlayResponse(partKey, passageId, play.getPlays(), max != null ? max - play.getPlays() : null);
     }
 
     // ================================================================ sections / submit / cancel
@@ -480,7 +521,7 @@ public class ExamSimulationService {
         List<ExamSimulationAttemptPart> parts = partRepository.findByAttemptIdOrderByPartKeyAscOrdinalAsc(attempt.getId());
         List<ExamSimulationAnswer> answers = answerRepository.findByAttemptId(attempt.getId());
         boolean timeUp = attempt.getStatus() == SimulationAttemptStatus.IN_PROGRESS && !ExamStageClock.current(attempt.getStages()).isRunning();
-        return views.state(attempt, parts, answers, timeUp);
+        return views.state(attempt, parts, answers, timeUp, audioPlayRepository.findByAttemptId(attempt.getId()));
     }
 
     ResultResponse resultOf(ExamSimulationAttempt attempt) {

@@ -13,7 +13,7 @@
 | Persistence | Flyway `V*.sql`, Hibernate `validate`, `JsonType` for JSONB, NanoId ids | **same approach** (`V33`). |
 | Frontend | Next.js app router, axios `services/*`, react-query, `types/*`, German UI in `componenets/exam`, `AudioPlayer`, `LessonMarkdown`, Tailwind tokens | **reused**. Practice boards are coupled to instant feedback, so the simulation gets a feedback-free question renderer built on the same design tokens/types. |
 
-## 2. Database (migration `V33__exam_simulation.sql`)
+## 2. Database (migration `V33__exam_simulation.sql` and `V34__exam_simulation_audio_plays.sql`)
 
 * `exam_profiles` – versioned profile (`UNIQUE(code, version)`), scalar rules as columns, parts/timers/rubrics as JSONB `config`. Only `DRAFT` profiles are editable; publishing freezes the version.
 * `exam_simulation_attempts` – owner, profile id/code/version, **full profile snapshot (JSONB)**, status, stage timeline (JSONB), `final_deadline_at`, result (JSONB). Partial unique index: one `IN_PROGRESS` attempt per user+profile code.
@@ -42,7 +42,7 @@
 
 ## 5. Delivery report
 
-**Migration:** `backend/src/main/resources/db/migration/V33__exam_simulation.sql` (Flyway runs it on start; `ExamSimulationMigrationTest` checks it against the entity mappings).
+**Migration:** `backend/src/main/resources/db/migration/V33__exam_simulation.sql` and `V34__exam_simulation_audio_plays.sql` (Flyway runs it on start; `ExamSimulationMigrationTest` checks it against the entity mappings).
 
 **Configuration:** `exam.simulation.save-grace-seconds` (default 5), `exam.simulation.expiry-sweep-ms` (default 60000), `exam.simulation.seed-default-profile` (default true; set false in tests). Scheduler uses the existing `notifications.scheduler.enabled` switch.
 
@@ -52,8 +52,8 @@
 
 **Known limitations**
 * Oral parts are unscored in V1 (the model supports manual oral scoring when enabled; rubric is a single "Gesamtbewertung" criterion per part).
-* Listening audio can be replayed freely (no play-once rule).
+* Audio play limits exist (`maxAudioPlays` per listening part, counted on the server) but are not set in the seeded profile; the correct telc values per Teil must be configured by an admin.
 * Stage deadlines are chained; time away from an expired stage is not given back.
 * Existing practice content must match the configured question counts exactly (e.g. Lesen Teil 3 = 10 questions) to be eligible; otherwise the part reports a shortage.
-* AI-estimated writing scores are stored as a separate source (`AI_ESTIMATE`) but no generator is wired in.
+* AI feedback on writing (admin button, uses the existing Ollama service) is stored as `AI_ESTIMATE` without points and is never counted; only manual assessments score.
 * Browser E2E was checked manually against a mock API; automated E2E is at HTTP level (`ExamSimulationApiTest`).

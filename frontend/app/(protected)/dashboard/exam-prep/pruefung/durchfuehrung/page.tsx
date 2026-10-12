@@ -214,7 +214,7 @@ function ExamRunContent() {
             <div className="mx-auto mt-6 grid max-w-6xl gap-6 lg:grid-cols-[1fr_16rem]">
                 <main className="min-w-0 space-y-10">
                     {state.parts.map((part) => (
-                        <SimExerciseView key={part.key} part={part} answers={answers[part.key] ?? {}} disabled={remainingSeconds <= 0} onAnswer={onAnswer(part.key)} />
+                        <SimExerciseView key={part.key} attemptId={attemptId} part={part} answers={answers[part.key] ?? {}} disabled={remainingSeconds <= 0} onAnswer={onAnswer(part.key)} />
                     ))}
                 </main>
                 <aside className="lg:sticky lg:top-24 lg:self-start">

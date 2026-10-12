@@ -65,6 +65,12 @@ public class ExamSimulationController {
         return ResponseEntity.ok(service.saveAnswers(requestContext.getUserId(), attemptId, request));
     }
 
+    /** Counts one play of a listening clip; the client may only start the audio after this succeeds. */
+    @PostMapping("/attempts/{attemptId}/parts/{partKey}/audio/{passageId}/play")
+    public ResponseEntity<AudioPlayResponse> playAudio(@PathVariable String attemptId, @PathVariable String partKey, @PathVariable String passageId) throws DataNotFoundException {
+        return ResponseEntity.ok(service.playAudio(requestContext.getUserId(), attemptId, partKey, passageId));
+    }
+
     @PostMapping("/attempts/{attemptId}/sections/current/complete")
     public ResponseEntity<AttemptState> completeSection(@PathVariable String attemptId) throws DataNotFoundException {
         return ResponseEntity.ok(service.completeCurrentStage(requestContext.getUserId(), attemptId));

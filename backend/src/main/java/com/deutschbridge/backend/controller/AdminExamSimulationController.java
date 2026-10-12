@@ -112,6 +112,12 @@ public class AdminExamSimulationController {
         return ResponseEntity.ok(adminService.assessmentBacklog());
     }
 
+    /** AI feedback for the assessor; stored separately and never counted into any score. */
+    @PostMapping("/attempts/{attemptId}/parts/{partKey}/ai-estimate")
+    public ResponseEntity<Map<String, String>> aiEstimate(@PathVariable String attemptId, @PathVariable String partKey) throws DataNotFoundException {
+        return ResponseEntity.ok(Map.of("feedback", adminService.estimateWriting(requestContext.getUserId(), attemptId, partKey), "official", "false"));
+    }
+
     @PutMapping("/attempts/{attemptId}/parts/{partKey}/assessment")
     public ResponseEntity<ExamResult> assess(@PathVariable String attemptId, @PathVariable String partKey, @RequestBody AssessmentRequest request) throws DataNotFoundException {
         return ResponseEntity.ok(adminService.assess(requestContext.getUserId(), attemptId, partKey, request));

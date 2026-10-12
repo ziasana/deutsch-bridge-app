@@ -1,6 +1,7 @@
 import api from "./api";
 import {
     AnswerItem,
+    AudioPlayResponse,
     AttemptState,
     AttemptSummary,
     HistoryResponse,
@@ -36,3 +37,7 @@ export const submitSimulationAttempt = (attemptId: string) => api.post<ResultRes
 export const cancelSimulationAttempt = (attemptId: string) => api.post<AttemptSummary>(`${base}/attempts/${attemptId}/cancel`);
 
 export const getSimulationResult = (attemptId: string) => api.get<ResultResponse>(`${base}/attempts/${attemptId}/result`);
+
+/** Counts one play of a listening clip on the server; the audio may only start after this succeeds. */
+export const playSimulationAudio = (attemptId: string, partKey: string, passageId: string) =>
+    api.post<AudioPlayResponse>(`${base}/attempts/${attemptId}/parts/${partKey}/audio/${passageId}/play`);

@@ -22,6 +22,7 @@ import java.util.List;
  * @param maxPoints       maximum points of the part
  * @param timerKey        the timer (stage) this part belongs to
  * @param rubric          assessment criteria (MANUAL_RUBRIC only)
+ * @param maxAudioPlays   how often each audio clip of the part may be played; null = unlimited (counted on the server)
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ExamPartConfig(
@@ -37,8 +38,16 @@ public record ExamPartConfig(
         BigDecimal maxPoints,
         PartScoringMethod scoringMethod,
         String timerKey,
-        List<RubricCriterion> rubric
+        List<RubricCriterion> rubric,
+        Integer maxAudioPlays
 ) {
+    /** Without a play limit (keeps older call sites and stored profiles valid). */
+    public ExamPartConfig(String key, String label, ExamPartModule module, ExamSection section, int teil, List<ExamTaskType> taskTypes,
+                          int exerciseCount, Integer questionCount, BigDecimal pointsPerQuestion, BigDecimal maxPoints,
+                          PartScoringMethod scoringMethod, String timerKey, List<RubricCriterion> rubric) {
+        this(key, label, module, section, teil, taskTypes, exerciseCount, questionCount, pointsPerQuestion, maxPoints, scoringMethod, timerKey, rubric, null);
+    }
+
     public int effectiveExerciseCount() {
         return exerciseCount > 0 ? exerciseCount : 1;
     }

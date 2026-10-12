@@ -29,6 +29,8 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.mockito.Mockito;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
@@ -63,6 +65,7 @@ class ExamSimulationIntegrationTest {
         }
     }
 
+    @MockitoBean private com.deutschbridge.backend.service.OllamaService ollamaService;
     @Autowired private MutableClock clock;
     @Autowired private ObjectMapper objectMapper;
     @Autowired private ExamProfileService profileService;
@@ -720,5 +723,80 @@ class ExamSimulationIntegrationTest {
         assertNotNull(after.latest());
         assertNotNull(after.best());
         assertEquals(185, after.totalMinutes());
+    }
+
+    // ------------------------------------------------------------------ audio plays / AI estimate
+
+    private String firstPassageId(AttemptState state, String partKey) {
+        return state.parts().stream().filter(p -> p.key().equals(partKey)).findFirst().orElseThrow().exercises().get(0).passages().get(0).id();
+    }
+
+    @Test
+    @DisplayName("Audio play limits are counted on the server, survive a refresh and only apply while the section is open")
+    void audioPlayLimit() throws Exception {
+        List<ExamPartConfig> parts = new ArrayList<>(profile.getConfig().parts());
+        for (int i = 0; i < parts.size(); i++) {
+            ExamPartConfig p = parts.get(i);
+            if (p.key().equals("HOEREN_1")) {
+                parts.set(i, new ExamPartConfig(p.key(), p.label(), p.module(), p.section(), p.teil(), p.taskTypes(), p.exerciseCount(), p.questionCount(),
+                        p.pointsPerQuestion(), p.maxPoints(), p.scoringMethod(), p.timerKey(), p.rubric(), 2));
+            }
+        }
+        profile.setConfig(new ExamProfileConfig(parts, profile.getConfig().timers(), profile.getConfig().scoreScale(), profile.getConfig().roundingMode()));
+        profileRepository.save(profile);
+
+        String user = user();
+        AttemptState state = start(user);
+        String id = state.attemptId();
+        // the Hören section has not started yet
+        String clip = parts(id).stream().filter(p -> p.getPartKey().equals("HOEREN_1")).findFirst().orElseThrow().getSnapshot().passages().get(0).getId();
+        assertCode("SECTION_LOCKED", () -> service.playAudio(user, id, "HOEREN_1", clip));
+
+        AttemptState hoeren = service.completeCurrentStage(user, id);
+        assertEquals(2, hoeren.parts().get(0).maxAudioPlays());
+        assertEquals(clip, firstPassageId(hoeren, "HOEREN_1"));
+        assertEquals(1, service.playAudio(user, id, "HOEREN_1", clip).playsRemaining());
+        assertEquals(0, service.playAudio(user, id, "HOEREN_1", clip).playsRemaining());
+        assertCode("AUDIO_LIMIT_REACHED", () -> service.playAudio(user, id, "HOEREN_1", clip));
+        assertThrows(DataNotFoundException.class, () -> service.playAudio(user, id, "HOEREN_1", "no-such-clip"));
+        assertThrows(DataNotFoundException.class, () -> service.playAudio(user(), id, "HOEREN_1", clip));
+
+        AttemptState resumed = service.resume(user, id);
+        assertEquals(2, resumed.parts().get(0).audioPlays().get(clip));
+    }
+
+    @Test
+    @DisplayName("A part without a play limit never refuses a play")
+    void unlimitedAudio() throws Exception {
+        String user = user();
+        AttemptState state = start(user);
+        String clip = parts(state.attemptId()).stream().filter(p -> p.getPartKey().equals("HOEREN_2")).findFirst().orElseThrow().getSnapshot().passages().get(0).getId();
+        service.completeCurrentStage(user, state.attemptId());
+        for (int i = 0; i < 5; i++) assertNull(service.playAudio(user, state.attemptId(), "HOEREN_2", clip).playsRemaining());
+    }
+
+    @Test
+    @DisplayName("An AI estimate helps the assessor but never changes a score or result")
+    void aiEstimateIsNotOfficial() throws Exception {
+        Mockito.when(ollamaService.evaluateWriting(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn("Gute Struktur, einige Fehler.");
+        String user = user();
+        AttemptState state = start(user);
+        String id = state.attemptId();
+        service.completeCurrentStage(user, id);
+        service.completeCurrentStage(user, id);
+        service.saveAnswers(user, id, new SaveAnswersRequest(List.of(new AnswerItem("SCHRIFTLICHER_AUSDRUCK", "__text", "Liebe Anna, ich komme gern.", false, null))));
+        ExamResult before = service.submit(user, id).result();
+
+        assertEquals("Gute Struktur, einige Fehler.", adminService.estimateWriting("admin-1", id, "SCHRIFTLICHER_AUSDRUCK"));
+        ExamResult after = service.getResult(user, id).result();
+        assertEquals(ExamResultStatus.AWAITING_ASSESSMENT, after.writtenResult());
+        assertEquals(before.writtenScore(), after.writtenScore());
+        assertEquals(List.of("SCHRIFTLICHER_AUSDRUCK"), after.pendingAssessmentParts());
+        assertEquals("Gute Struktur, einige Fehler.", adminService.queue().stream().filter(q -> q.attemptId().equals(id)).findFirst().orElseThrow().aiEstimate());
+        assertCode("PART_NOT_WRITING", () -> adminService.estimateWriting("admin-1", id, "LESEN_1"));
+
+        ExamResult official = adminService.assess("admin-1", id, "SCHRIFTLICHER_AUSDRUCK",
+                new AssessmentRequest(Map.of("AUFGABENERFUELLUNG", BigDecimal.TEN, "KOMMUNIKATIVE_GESTALTUNG", BigDecimal.TEN, "FORMALE_RICHTIGKEIT", BigDecimal.TEN), null));
+        assertEquals(0, new BigDecimal("30").compareTo(official.parts().stream().filter(p -> p.key().equals("SCHRIFTLICHER_AUSDRUCK")).findFirst().orElseThrow().score()));
     }
 }

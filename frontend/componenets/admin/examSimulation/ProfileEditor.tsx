@@ -230,6 +230,7 @@ export default function ProfileEditor({ value, onChange, codeEditable, readOnly 
                             <Field label="Punkte je Frage"><NumberInput label="Punkte je Frage" disabled={p.scoringMethod !== "PER_QUESTION"} value={p.pointsPerQuestion} onChange={(v) => patchPart(i, { pointsPerQuestion: v })} /></Field>
                             <Field label="Max. Punkte"><NumberInput label="Max. Punkte" value={p.maxPoints} onChange={(v) => patchPart(i, { maxPoints: v ?? 0 })} /></Field>
                             <Field label="Aufgaben im Teil"><NumberInput label="Aufgaben im Teil" step="1" value={p.exerciseCount} onChange={(v) => patchPart(i, { exerciseCount: v ?? 1 })} /></Field>
+                            <Field label="Max. Wiedergaben (Hören)"><NumberInput label="Max. Wiedergaben" step="1" disabled={p.section !== "HOERVERSTEHEN"} value={p.maxAudioPlays} onChange={(v) => patchPart(i, { maxAudioPlays: v })} /></Field>
                             <Field label="Zeitabschnitt">
                                 <select className={INPUT} value={p.timerKey} onChange={(e) => patchPart(i, { timerKey: e.target.value })}>
                                     <option value="">–</option>

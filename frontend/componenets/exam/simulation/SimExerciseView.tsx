@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import { CheckCircle2, Mic } from "lucide-react";
-import AudioPlayer from "@/componenets/AudioPlayer";
 import LessonMarkdown from "@/componenets/LessonMarkdown";
 import WritingTaskCard from "@/componenets/exam/writing/WritingTaskCard";
 import { SpeakingStimulus } from "@/componenets/exam/speaking/SpeakingContentView";
@@ -11,6 +10,7 @@ import { cn } from "@/lib/utils";
 import type { ExamPassagePublic } from "@/types/exam";
 import type { ExercisePublic, PartState, SavedAnswer } from "@/types/examSimulation";
 import SimQuestionField, { optionLabel } from "./SimQuestionField";
+import SimAudio from "./SimAudio";
 
 export const WRITING_TEXT_ID = "__text";
 export const DONE_ID = "__done";
@@ -21,19 +21,31 @@ export function countWords(text: string): number {
 }
 
 interface Props {
+    attemptId: string;
     part: PartState;
     answers: Record<string, SavedAnswer>;
     disabled: boolean;
     onAnswer: (questionId: string, answer: string | null, flagged: boolean) => void;
 }
 
-function PassageBlock({ passage, index }: Readonly<{ passage: ExamPassagePublic; index: number }>) {
+interface AudioContext {
+    attemptId: string;
+    partKey: string;
+    maxPlays: number | null;
+    plays: Record<string, number>;
+    disabled: boolean;
+}
+
+function PassageBlock({ passage, index, audioCtx }: Readonly<{ passage: ExamPassagePublic; index: number; audioCtx: AudioContext }>) {
     const audio = resolveUploadUrl(passage.audioUrl);
     const image = resolveUploadUrl(passage.imageUrl);
     return (
         <article className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm" aria-label={passage.label || `Text ${index + 1}`}>
             {passage.label && <h4 className="mb-2 text-sm font-bold text-foreground">{passage.label}</h4>}
-            {audio && <AudioPlayer key={audio} src={audio} />}
+            {audio && (
+                <SimAudio attemptId={audioCtx.attemptId} partKey={audioCtx.partKey} passageId={passage.id} src={audio} maxPlays={audioCtx.maxPlays}
+                    initialPlaysUsed={audioCtx.plays[passage.id] ?? 0} disabled={audioCtx.disabled} />
+            )}
             {image && <img src={image} alt="" className="my-3 max-w-full rounded-xl" />}
             {passage.content && <LessonMarkdown content={passage.content} className="text-sm leading-relaxed text-foreground/85" />}
         </article>
@@ -59,7 +71,7 @@ function OptionPool({ exercise }: Readonly<{ exercise: ExercisePublic }>) {
     );
 }
 
-function ObjectiveExercise({ exercise, answers, disabled, onAnswer, partKey, startNumber }: Readonly<{ exercise: ExercisePublic; partKey: string; startNumber: number } & Omit<Props, "part">>) {
+function ObjectiveExercise({ exercise, answers, disabled, onAnswer, partKey, startNumber, audioCtx }: Readonly<{ exercise: ExercisePublic; partKey: string; startNumber: number; audioCtx: AudioContext } & Omit<Props, "part" | "attemptId">>) {
     // Passages that questions point at are shown right before their first question; the rest (running texts, ads) up front.
     const { upfront, before } = useMemo(() => {
         const referenced = new Set(exercise.questions.map((q) => q.sectionIndex).filter((i): i is number => i != null));
@@ -78,7 +90,7 @@ function ObjectiveExercise({ exercise, answers, disabled, onAnswer, partKey, sta
         <div className="space-y-4">
             {exercise.teilDescription && <LessonMarkdown content={exercise.teilDescription} className="text-sm text-foreground/70" />}
             {upfront.map(({ p, i }) => (
-                <PassageBlock key={p.id} passage={p} index={i} />
+                <PassageBlock key={p.id} passage={p} index={i} audioCtx={audioCtx} />
             ))}
             <OptionPool exercise={exercise} />
             <ol className="space-y-3 p-0">
@@ -87,7 +99,7 @@ function ObjectiveExercise({ exercise, answers, disabled, onAnswer, partKey, sta
                     const saved = answers[q.id];
                     return (
                         <div key={q.id} className="space-y-3">
-                            {passageIndex != null && exercise.passages[passageIndex] && <PassageBlock passage={exercise.passages[passageIndex]} index={passageIndex} />}
+                            {passageIndex != null && exercise.passages[passageIndex] && <PassageBlock passage={exercise.passages[passageIndex]} index={passageIndex} audioCtx={audioCtx} />}
                             <SimQuestionField
                                 exercise={exercise}
                                 question={q}
@@ -107,7 +119,7 @@ function ObjectiveExercise({ exercise, answers, disabled, onAnswer, partKey, sta
     );
 }
 
-function WritingExercise({ exercise, answers, disabled, onAnswer }: Readonly<{ exercise: ExercisePublic } & Omit<Props, "part">>) {
+function WritingExercise({ exercise, answers, disabled, onAnswer }: Readonly<{ exercise: ExercisePublic } & Omit<Props, "part" | "attemptId">>) {
     const text = answers[WRITING_TEXT_ID]?.answer ?? "";
     const words = countWords(text);
     return (
@@ -143,7 +155,7 @@ function WritingExercise({ exercise, answers, disabled, onAnswer }: Readonly<{ e
     );
 }
 
-function OralExercise({ part, exercise, answers, disabled, onAnswer }: Readonly<{ part: PartState; exercise: ExercisePublic } & Omit<Props, "part">>) {
+function OralExercise({ part, exercise, answers, disabled, onAnswer, audioCtx }: Readonly<{ part: PartState; exercise: ExercisePublic; audioCtx: AudioContext } & Omit<Props, "part" | "attemptId">>) {
     const done = answers[DONE_ID]?.answer === "true";
     return (
         <div className="space-y-4">
@@ -157,7 +169,7 @@ function OralExercise({ part, exercise, answers, disabled, onAnswer }: Readonly<
             </div>
             {exercise.teilDescription && <LessonMarkdown content={exercise.teilDescription} className="text-sm text-foreground/70" />}
             {exercise.passages.map((p, i) => (
-                <PassageBlock key={p.id} passage={p} index={i} />
+                <PassageBlock key={p.id} passage={p} index={i} audioCtx={audioCtx} />
             ))}
             {exercise.speaking && <SpeakingStimulus content={exercise.speaking} />}
             {!part.previewOnly && (
@@ -177,8 +189,9 @@ function OralExercise({ part, exercise, answers, disabled, onAnswer }: Readonly<
 }
 
 /** One part of the running exam: every exercise of the part, rendered for its kind. */
-export default function SimExerciseView({ part, answers, disabled, onAnswer }: Readonly<Props>) {
+export default function SimExerciseView({ attemptId, part, answers, disabled, onAnswer }: Readonly<Props>) {
     const locked = disabled || part.previewOnly;
+    const audioCtx: AudioContext = { attemptId, partKey: part.key, maxPlays: part.maxAudioPlays, plays: part.audioPlays ?? {}, disabled: locked };
     return (
         <section id={`part-${part.key}`} className="scroll-mt-28 space-y-4" aria-label={part.label}>
             <header>
@@ -191,9 +204,9 @@ export default function SimExerciseView({ part, answers, disabled, onAnswer }: R
                     return <WritingExercise key={exercise.ordinal} exercise={exercise} answers={answers} disabled={locked} onAnswer={onAnswer} />;
                 }
                 if (part.module === "ORAL") {
-                    return <OralExercise key={exercise.ordinal} part={part} exercise={exercise} answers={answers} disabled={locked} onAnswer={onAnswer} />;
+                    return <OralExercise key={exercise.ordinal} part={part} exercise={exercise} audioCtx={audioCtx} answers={answers} disabled={locked} onAnswer={onAnswer} />;
                 }
-                return <ObjectiveExercise key={exercise.ordinal} partKey={part.key} startNumber={start} exercise={exercise} answers={answers} disabled={locked} onAnswer={onAnswer} />;
+                return <ObjectiveExercise key={exercise.ordinal} audioCtx={audioCtx} partKey={part.key} startNumber={start} exercise={exercise} answers={answers} disabled={locked} onAnswer={onAnswer} />;
             })}
         </section>
     );

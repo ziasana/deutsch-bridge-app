@@ -70,7 +70,8 @@ public final class ExamSimulationDtos {
     }
 
     public record PartState(String key, String label, ExamPartModule module, ExamSection section, int teil, BigDecimal maxPoints,
-                            PartScoringMethod scoringMethod, boolean previewOnly, List<ExercisePublic> exercises) {
+                            PartScoringMethod scoringMethod, boolean previewOnly, Integer maxAudioPlays,
+                            Map<String, Integer> audioPlays, List<ExercisePublic> exercises) {
     }
 
     public record StageStatus(int index, String key, String label, int minutes, ExamTimerKind kind, String status, Long startedAtMs, Long deadlineAtMs,
@@ -87,6 +88,10 @@ public final class ExamSimulationDtos {
                                long startedAtMs, long finalDeadlineMs, boolean timeUp, int currentStageIndex, long remainingSeconds,
                                List<StageStatus> stages, List<PartState> parts, Map<String, Map<String, SavedAnswer>> answers,
                                List<PartProgress> progress, int resumeCount, Integer maxResumes) {
+    }
+
+    /** Result of asking to play a clip: how many plays remain (null = unlimited). */
+    public record AudioPlayResponse(String partKey, String passageId, int playsUsed, Integer playsRemaining) {
     }
 
     public record RejectedAnswer(String partKey, String questionId, String reason) {
@@ -134,6 +139,6 @@ public final class ExamSimulationDtos {
     }
 
     public record AssessmentQueueItem(String assessmentId, String attemptId, String userId, String partKey, String partLabel, ExamPartModule module,
-                                      long submittedAtMs, BigDecimal maxPoints, List<RubricCriterion> rubric, String submittedText, boolean completed) {
+                                      long submittedAtMs, BigDecimal maxPoints, List<RubricCriterion> rubric, String submittedText, boolean completed, String aiEstimate) {
     }
 }

@@ -54,7 +54,8 @@ public class ExamSimulationViewBuilder {
 
     // ---------------------------------------------------------------- active state
 
-    public AttemptState state(ExamSimulationAttempt a, List<ExamSimulationAttemptPart> parts, List<ExamSimulationAnswer> answers, boolean timeUp) {
+    public AttemptState state(ExamSimulationAttempt a, List<ExamSimulationAttemptPart> parts, List<ExamSimulationAnswer> answers, boolean timeUp,
+                              List<com.deutschbridge.backend.model.entity.ExamSimulationAudioPlay> plays) {
         ProfileSnapshot profile = a.getProfileSnapshot();
         ExamProfileConfig config = profile.config();
         List<ExamTimerConfig> timers = config.timersOrEmpty();
@@ -81,7 +82,10 @@ public class ExamSimulationViewBuilder {
                 if (!partKeysShownIn(config, timer).contains(part.key())) continue;
                 boolean preview = timer.isPreparation();
                 partStates.add(new PartState(part.key(), part.label(), part.module(), part.section(), part.teil(), part.maxPoints(),
-                        ExamScoringService.effectiveMethod(profile, part), preview, exercisesPublic(part.key(), parts)));
+                        ExamScoringService.effectiveMethod(profile, part), preview, part.maxAudioPlays(),
+                        plays.stream().filter(x -> x.getPartKey().equals(part.key())).collect(java.util.stream.Collectors.toMap(
+                                com.deutschbridge.backend.model.entity.ExamSimulationAudioPlay::getPassageId, com.deutschbridge.backend.model.entity.ExamSimulationAudioPlay::getPlays)),
+                        exercisesPublic(part.key(), parts)));
                 Map<String, SavedAnswer> forPart = new LinkedHashMap<>();
                 for (ExamSimulationAnswer an : answers) {
                     if (an.getPartKey().equals(part.key())) forPart.put(an.getQuestionId(), new SavedAnswer(an.getAnswer(), an.isFlagged()));

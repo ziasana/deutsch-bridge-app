@@ -169,4 +169,23 @@ class ExamProfileValidatorTest {
         assertTrue(hasError(r, "OVERALL_POLICY_REQUIRED"));
         assertNotEquals(OverallResultPolicy.WRITTEN_ONLY, q.getOverallResultPolicy());
     }
+
+    @Test
+    @DisplayName("Audio play limits must be positive; on non-listening parts they only warn")
+    void audioPlayLimits() {
+        ExamProfile bad = withParts(parts -> {
+            ExamPartConfig h = parts.get(5);
+            parts.set(5, new ExamPartConfig(h.key(), h.label(), h.module(), h.section(), h.teil(), null, 1, h.questionCount(), h.pointsPerQuestion(), h.maxPoints(), h.scoringMethod(), h.timerKey(), null, 0));
+            return parts;
+        });
+        assertTrue(hasError(validator.validate(bad), "PART_AUDIO_PLAYS_INVALID"));
+        ExamProfile ignored = withParts(parts -> {
+            ExamPartConfig l = parts.get(0);
+            parts.set(0, new ExamPartConfig(l.key(), l.label(), l.module(), l.section(), l.teil(), null, 1, l.questionCount(), l.pointsPerQuestion(), l.maxPoints(), l.scoringMethod(), l.timerKey(), null, 2));
+            return parts;
+        });
+        ProfileValidationResult r = validator.validate(ignored);
+        assertTrue(r.isValid());
+        assertTrue(r.warnings().stream().anyMatch(w -> w.code().equals("PART_AUDIO_PLAYS_IGNORED")));
+    }
 }

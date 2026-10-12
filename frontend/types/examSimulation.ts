@@ -41,6 +41,8 @@ export interface ExamPartConfig {
     scoringMethod: PartScoringMethod;
     timerKey: string;
     rubric: RubricCriterion[] | null;
+    /** Plays allowed per audio clip (listening parts); null = unlimited. */
+    maxAudioPlays?: number | null;
 }
 
 export interface ExamProfileConfig {
@@ -212,6 +214,9 @@ export interface PartState {
     maxPoints: number;
     scoringMethod: PartScoringMethod;
     previewOnly: boolean;
+    maxAudioPlays: number | null;
+    /** Plays already used per passage id (counted by the server). */
+    audioPlays: Record<string, number>;
     exercises: ExercisePublic[];
 }
 
@@ -403,6 +408,15 @@ export interface AssessmentQueueItem {
     rubric: RubricCriterion[];
     submittedText: string | null;
     completed: boolean;
+    /** Unofficial AI feedback; never counted into a score. */
+    aiEstimate: string | null;
+}
+
+export interface AudioPlayResponse {
+    partKey: string;
+    passageId: string;
+    playsUsed: number;
+    playsRemaining: number | null;
 }
 
 export interface AuditEntry {

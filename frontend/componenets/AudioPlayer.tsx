@@ -19,7 +19,7 @@ const formatTime = (seconds: number) => {
  * replay, volume and playback speed. Built on the native <audio> element. Colours follow the surrounding theme
  * (`primary`, `--lesson-from` / `--lesson-to`). Render with `key={src}` so switching clips remounts it instead of carrying stale state.
  */
-export default function AudioPlayer({ src }: Readonly<{ src: string }>) {
+export default function AudioPlayer({ src, autoPlay = false, onEnded, allowReplay = true }: Readonly<{ src: string; autoPlay?: boolean; onEnded?: () => void; allowReplay?: boolean }>) {
     const audioRef = useRef<HTMLAudioElement>(null);
     const [playing, setPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
@@ -68,9 +68,13 @@ export default function AudioPlayer({ src }: Readonly<{ src: string }>) {
             <audio
                 ref={audioRef}
                 src={src}
+                autoPlay={autoPlay}
                 onPlay={() => setPlaying(true)}
                 onPause={() => setPlaying(false)}
-                onEnded={() => setPlaying(false)}
+                onEnded={() => {
+                    setPlaying(false);
+                    onEnded?.();
+                }}
                 onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
                 onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
             />
@@ -118,6 +122,7 @@ export default function AudioPlayer({ src }: Readonly<{ src: string }>) {
                     </div>
                 </div>
 
+                {allowReplay && (
                 <button
                     type="button"
                     onClick={replay}
@@ -127,6 +132,7 @@ export default function AudioPlayer({ src }: Readonly<{ src: string }>) {
                 >
                     <RotateCcw className="size-4" aria-hidden="true" />
                 </button>
+                )}
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3">
