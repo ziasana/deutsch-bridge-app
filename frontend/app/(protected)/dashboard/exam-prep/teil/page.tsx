@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Play } from "lucide-react";
 import { getExamExercisesSummary } from "@/services/examService";
-import { ExamSection } from "@/types/exam";
+import { ExamSection, ExamTypeCode } from "@/types/exam";
 import Loading from "@/componenets/Loading";
 import LearningProgressBar from "@/componenets/learning/LearningProgressBar";
 import {
@@ -46,6 +46,7 @@ function TeilContent() {
     const section = searchParams.get("section");
     const level = searchParams.get("level");
     const partKey = searchParams.get("part");
+    const examType: ExamTypeCode = searchParams.get("exam") === "DTZ" ? "DTZ" : "TELC";
 
     const isValid = !!section && !!level && !!partKey && VALID_SECTIONS.has(section);
     const typedSection = section as ExamSection;
@@ -53,8 +54,8 @@ function TeilContent() {
     const lastTimes = useExerciseLastTimes(typedSection, level);
 
     const { data: exercises = [], isLoading } = useQuery({
-        queryKey: ["exam", "exercises", typedSection, level],
-        queryFn: () => getExamExercisesSummary(typedSection, level!).then((res) => res.data),
+        queryKey: ["exam", "exercises", examType, typedSection, level],
+        queryFn: () => getExamExercisesSummary(typedSection, level!, undefined, examType).then((res) => res.data),
         enabled: isValid,
     });
 
@@ -78,7 +79,7 @@ function TeilContent() {
 
     const teil = group.items[0]?.teil ?? null;
 
-    const backHref = `/dashboard/exam-prep?section=${typedSection}&level=${encodeURIComponent(level)}`;
+    const backHref = `/dashboard/exam-prep?section=${typedSection}&level=${encodeURIComponent(level)}&exam=${examType}`;
 
     const sectionTheme = SECTION_THEME[typedSection];
     if (sectionTheme && teil != null) {
@@ -92,6 +93,7 @@ function TeilContent() {
                         emoji={sectionTheme.emoji}
                         items={group.items}
                         level={level}
+                        examType={examType}
                         teil={teil}
                         heading={group.heading}
                         subheading={group.subheading}
@@ -156,7 +158,7 @@ function TeilContent() {
                     </button>
                 </div>
 
-                {teil != null && TIMED_SECTIONS.includes(typedSection) && (
+                {teil != null && examType !== "DTZ" && TIMED_SECTIONS.includes(typedSection) && (
                     <div className="mt-4">
                         <TeilTimeCard section={typedSection} level={level} teil={teil} />
                     </div>

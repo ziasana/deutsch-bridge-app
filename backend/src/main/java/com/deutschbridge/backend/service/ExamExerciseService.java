@@ -82,8 +82,8 @@ public class ExamExerciseService {
     }
 
     /** Navigation/summary shape for lists (section tabs, level selector, Teil listings) - see ExamExerciseSummaryResponse. */
-    public List<ExamExerciseSummaryResponse> findSummary(ExamSection section, LearningLevel level, ExamTaskType taskType) {
-        List<ExamExercise> exercises = contentCacheService.getPublishedExamExercises(section, level, taskType);
+    public List<ExamExerciseSummaryResponse> findSummary(ExamSection section, LearningLevel level, ExamTaskType taskType, ExamType examType) {
+        List<ExamExercise> exercises = contentCacheService.getPublishedExamExercises(section, level, taskType, examType);
 
         Map<String, ExamExerciseCompletion> completionsByExerciseId = examExerciseCompletionRepository.findByUserId(requestContext.getUserId()).stream()
                 .collect(Collectors.toMap(ExamExerciseCompletion::getExerciseId, completion -> completion));
@@ -96,8 +96,10 @@ public class ExamExerciseService {
     }
 
     /** Per-level aggregate progress for the current user, for the level selector - see ExamLevelSummaryResponse. */
-    public List<ExamLevelSummaryResponse> findLevelSummary() {
-        return examProgressCacheService.getLevelSummary(requestContext.getUserId());
+    public List<ExamLevelSummaryResponse> findLevelSummary(ExamType examType) {
+        return examProgressCacheService.getLevelSummary(requestContext.getUserId()).stream()
+                .filter(summary -> examType == null || examType.name().equals(summary.examType()))
+                .toList();
     }
 
     public ExamExercisePublicResponse findByIdPublic(String id) throws DataNotFoundException {
@@ -251,6 +253,7 @@ public class ExamExerciseService {
     })
     public ExamExerciseResponse createManual(ExamExerciseManualRequest request) {
         validateNoDuplicateLevel(request, null);
+        DtzTextQuestionsValidator.validate(request);
         ExamExercise exercise = new ExamExercise();
         applyRequest(exercise, request);
         exercise.setCreatedBy(requestContext.getUserId());
@@ -266,6 +269,7 @@ public class ExamExerciseService {
     public ExamExerciseResponse update(String id, ExamExerciseManualRequest request) throws DataNotFoundException {
         ExamExercise existing = findById(id);
         validateNoDuplicateLevel(request, id);
+        DtzTextQuestionsValidator.validate(request);
         Set<String> previousUploadUrls = collectUploadUrls(existing);
         applyRequest(existing, request);
         existing.setVersion(existing.getVersion() + 1);
@@ -353,6 +357,7 @@ public class ExamExerciseService {
         }
         if (request.requiresPlanning() != null) exercise.setRequiresPlanning(request.requiresPlanning());
         if (request.leitpunkte() != null) exercise.setLeitpunkte(request.leitpunkte());
+        if (request.examType() != null) exercise.setExamType(request.examType());
     }
 
     private List<ExamPassage> preparePassages(List<ExamPassage> passages) {

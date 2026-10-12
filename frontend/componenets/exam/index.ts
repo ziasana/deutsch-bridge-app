@@ -4,7 +4,8 @@ export { default as ExamTypeCard } from "./ExamTypeCard";
 export { default as ExamPartCard } from "./ExamPartCard";
 export { default as ExamExerciseList } from "./ExamExerciseList";
 export { default as ContinueLearningCard } from "./ContinueLearningCard";
-export { EXAM_TYPE_META, EXAM_TYPE_ORDER } from "./examMeta";
+export { EXAM_TYPE_META, EXAM_TYPE_ORDER, EXAM_TYPES, EXAM_TYPE_BY_CODE, displayLevel } from "./examMeta";
+export type { ExamTypeInfo } from "./examMeta";
 export {
     exercisesForSectionAndLevel,
     groupIntoParts,
@@ -16,3 +17,4 @@ export {
     masteredCount,
 } from "./examData";
 export type { ExamPartGroup, PartState, ContinueTarget } from "./examData";
+export { default as ExamTypeSwitch } from "./ExamTypeSwitch";

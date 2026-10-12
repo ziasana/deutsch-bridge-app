@@ -10,6 +10,8 @@ public record ExamLevelSummaryResponse(
         String level,
         long total,
         long mastered,
-        int avgScore
+        int avgScore,
+        /** Exam the aggregate belongs to (TELC, DTZ ...); the endpoint returns one exam type at a time. */
+        String examType
 ) {
 }

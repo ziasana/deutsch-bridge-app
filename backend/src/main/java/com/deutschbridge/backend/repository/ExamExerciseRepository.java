@@ -24,10 +24,12 @@ public interface ExamExerciseRepository extends JpaRepository<ExamExercise, Stri
             WHERE (:section IS NULL OR e.section = :section)
               AND (:level IS NULL OR e.level = :level OR e.level IS NULL)
               AND (:taskType IS NULL OR e.taskType = :taskType)
+              AND (:examType IS NULL OR e.examType = :examType)
             """)
     List<ExamExercise> findFiltered(@Param("section") ExamSection section,
                                      @Param("level") LearningLevel level,
-                                     @Param("taskType") ExamTaskType taskType);
+                                     @Param("taskType") ExamTaskType taskType,
+                                     @Param("examType") ExamType examType);
 
     /** Published exercises of one exam / level / section: the candidate pool of the full exam simulation. */
     @Query("""
@@ -55,13 +57,14 @@ public interface ExamExerciseRepository extends JpaRepository<ExamExercise, Stri
     List<String> findExternalIdsStartingWith(@Param("prefix") String prefix);
 
     /**
-     * Per-level progress for one user, computed entirely in SQL (never loads exercise content)
+     * Per-exam-type and per-level progress for one user, computed entirely in SQL (never loads exercise content)
      * so the level selector's payload stays a handful of rows no matter how large this table
      * grows. Excludes Testformat Information (not practicable/scored) and level-agnostic rows
      * (they don't belong to any one level's aggregate).
      */
     @Query(value = """
-            SELECT e.level AS level,
+            SELECT e.exam_type AS examType,
+                   e.level AS level,
                    COUNT(*) AS total,
                    COUNT(*) FILTER (
                        WHERE COALESCE(c.last_score, CASE WHEN c.id IS NOT NULL THEN 100 ELSE 0 END) = 100
@@ -73,7 +76,7 @@ public interface ExamExerciseRepository extends JpaRepository<ExamExercise, Stri
             WHERE e.published = true
               AND e.section <> 'TESTFORMAT_INFORMATION'
               AND e.level IS NOT NULL
-            GROUP BY e.level
+            GROUP BY e.exam_type, e.level
             ORDER BY e.level
             """, nativeQuery = true)
     List<ExamLevelAggregateProjection> aggregateByLevelForUser(@Param("userId") String userId);

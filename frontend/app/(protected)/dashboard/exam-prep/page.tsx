@@ -7,7 +7,7 @@ import { ClipboardCheck } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { getExamExercisesSummary, getExamLevelSummary } from "@/services/examService";
-import { ExamSection } from "@/types/exam";
+import { ExamSection, ExamTypeCode } from "@/types/exam";
 import Loading from "@/componenets/Loading";
 import {
     CurrentLevelChip,
@@ -21,10 +21,12 @@ import {
 import LearningPageHero from "@/componenets/learning/LearningPageHero";
 import {
     ContinueLearningCard,
+    EXAM_TYPE_BY_CODE,
     EXAM_TYPE_META,
     EXAM_TYPE_ORDER,
     ExamPartCard,
     ExamTypeSelector,
+    ExamTypeSwitch,
     averageScore,
     exercisesForSectionAndLevel,
     findContinueTarget,
@@ -57,19 +59,26 @@ function ExamPrepContent() {
     const searchParams = useSearchParams();
     const { userProfile } = useAuthStore();
 
+    const initialExam = searchParams.get("exam");
+    const [examType, setExamType] = useState<ExamTypeCode>(initialExam === "DTZ" ? "DTZ" : "TELC");
+    const examInfo = EXAM_TYPE_BY_CODE[examType];
+    const isTelc = examType === "TELC";
+
     // Small, ~one row per level, regardless of how many exercises exist - fetched once and reused
     // both for the level selector and to pick a fallback level before the exercises query below
     // even knows which level to scope to.
     const { data: levelSummaries = [], isLoading: levelSummaryLoading, error: levelSummaryError } = useQuery({
-        queryKey: ["exam", "level-summary"],
-        queryFn: () => getExamLevelSummary().then((res) => res.data),
+        queryKey: ["exam", "level-summary", examType],
+        queryFn: () => getExamLevelSummary(examType).then((res) => res.data),
     });
 
     const initialSection = searchParams.get("section");
     const initialLevel = searchParams.get("level");
     const [selectedLevel, setSelectedLevel] = useState<string | null>(initialLevel);
     const [selectedSection, setSelectedSection] = useState<ExamSection>(
-        initialSection && VALID_SECTIONS.has(initialSection) ? (initialSection as ExamSection) : "LESEVERSTEHEN",
+        initialSection && VALID_SECTIONS.has(initialSection) && EXAM_TYPE_BY_CODE[initialExam === "DTZ" ? "DTZ" : "TELC"].sections.includes(initialSection as ExamSection)
+            ? (initialSection as ExamSection)
+            : "LESEVERSTEHEN",
     );
     const [search, setSearch] = useState("");
     const { data: pendingBookmarks = [] } = usePendingExamBookmarks();
@@ -78,10 +87,11 @@ function ExamPrepContent() {
 
     // Keep the picked section/level in the URL (replacing, not adding a history entry), so that
     // "Zurück" from an exercise reopens this same view instead of the default one.
-    const syncUrl = (patch: { section?: ExamSection; level?: string }) => {
+    const syncUrl = (patch: { section?: ExamSection; level?: string; exam?: ExamTypeCode }) => {
         const params = new URLSearchParams(window.location.search);
         if (patch.section) params.set("section", patch.section);
         if (patch.level) params.set("level", patch.level);
+        if (patch.exam) params.set("exam", patch.exam);
         window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
     };
     const chooseSection = (section: ExamSection) => {
@@ -98,6 +108,16 @@ function ExamPrepContent() {
         setSelectedSection(section);
         syncUrl({ section });
     };
+    // Switching the exam restarts at Lesen; DTZ has one fixed level, Telc goes back to the learner's own level choice.
+    const chooseExamType = (next: ExamTypeCode) => {
+        if (next === examType) return;
+        const info = EXAM_TYPE_BY_CODE[next];
+        setExamType(next);
+        setSelectedSection("LESEVERSTEHEN");
+        setSelectedLevel(info.fixedLevel ?? null);
+        setSearch("");
+        syncUrl({ exam: next, section: "LESEVERSTEHEN", level: info.fixedLevel ?? profileLevel ?? "B1" });
+    };
     const chooseLevel = (level: string) => {
         setSelectedLevel(level);
         syncUrl({ level });
@@ -105,15 +125,15 @@ function ExamPrepContent() {
 
     // The backend can send the literal string "null" for an unset profile level.
     const profileLevel = userProfile?.learningLevel && userProfile.learningLevel !== "null" ? userProfile.learningLevel : null;
-    const effectiveLevel = selectedLevel ?? profileLevel ?? levelSummaries[0]?.level ?? "B1";
+    const effectiveLevel = examInfo.fixedLevel ?? selectedLevel ?? profileLevel ?? levelSummaries[0]?.level ?? "B1";
     const speakingLastTimes = useExerciseLastTimes("MUENDLICHER_AUSDRUCK", selectedSection === "MUENDLICHER_AUSDRUCK" ? effectiveLevel : null);
     const writingLastTimes = useExerciseLastTimes("SCHRIFTLICHER_AUSDRUCK", selectedSection === "SCHRIFTLICHER_AUSDRUCK" ? effectiveLevel : null);
 
     // Every section at the current level only - never the whole table. Refetches (and caches,
     // per level) the first time a level is opened; switching section alone needs no new fetch.
     const { data: exercises = [], isLoading: exercisesLoading, error } = useQuery({
-        queryKey: ["exam", "exercises", effectiveLevel],
-        queryFn: () => getExamExercisesSummary(undefined, effectiveLevel).then((res) => res.data),
+        queryKey: ["exam", "exercises", examType, effectiveLevel],
+        queryFn: () => getExamExercisesSummary(undefined, effectiveLevel, undefined, examType).then((res) => res.data),
         enabled: !levelSummaryLoading,
     });
 
@@ -134,7 +154,7 @@ function ExamPrepContent() {
         percentOverride: s.avgScore,
     }));
 
-    const examTypeOptions = EXAM_TYPE_ORDER.map((section) => {
+    const examTypeOptions = examInfo.sections.map((section) => {
         const meta = EXAM_TYPE_META[section];
         if (meta.informational) {
             return { section, partsCount: 0, mastered: 0, total: 0, avgScore: 0 };
@@ -176,7 +196,7 @@ function ExamPrepContent() {
         if (onlyExercise) {
             router.push(`/dashboard/exam-prep/exercise?id=${exerciseId}`);
         } else {
-            router.push(`/dashboard/exam-prep/teil?section=${section}&level=${encodeURIComponent(level)}&part=${encodeURIComponent(partKey)}`);
+            router.push(`/dashboard/exam-prep/teil?section=${section}&level=${encodeURIComponent(level)}&part=${encodeURIComponent(partKey)}&exam=${examType}`);
         }
     };
 
@@ -218,7 +238,15 @@ function ExamPrepContent() {
                             />
                         )
                     }
-                    meta={<CurrentLevelChip onSelect={chooseLevel} title="Dein aktuelles Niveau" />}
+                    meta={
+                        isTelc ? (
+                            <CurrentLevelChip onSelect={chooseLevel} title="Dein aktuelles Niveau" />
+                        ) : (
+                            <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                                {examInfo.label}
+                            </span>
+                        )
+                    }
                 />
 
                 {savedOpen && savedItems.length > 0 && (
@@ -231,6 +259,9 @@ function ExamPrepContent() {
                     />
                 )}
 
+                <ExamTypeSwitch className="mt-6" selected={examType} onSelect={chooseExamType} />
+
+                {isTelc && (
                 <Link
                     href="/dashboard/exam-prep/pruefung"
                     className="mt-6 flex items-center justify-between gap-4 rounded-2xl border border-primary/30 bg-primary/5 px-5 py-4 transition hover:bg-primary/10"
@@ -246,6 +277,7 @@ function ExamPrepContent() {
                     </span>
                     <span className="text-sm font-semibold text-primary">Starten →</span>
                 </Link>
+                )}
 
                 <ExamTypeSelector
                     className="mt-6"
@@ -254,16 +286,20 @@ function ExamPrepContent() {
                     onSelect={chooseSection}
                 />
 
-                <h2 className="mt-8 text-sm font-semibold text-foreground/70">Prüfungsniveau</h2>
-                <LearningLevelSelector
-                    className="mt-3"
-                    levels={levelOptions}
-                    selectedLevel={effectiveLevel}
-                    onLevelChange={chooseLevel}
-                    unitLabel="Aufgaben"
-                    activeLabel="Aktuelles Niveau"
-                    ariaLabel="Prüfungsniveau"
-                />
+                {isTelc && (
+                    <>
+                        <h2 className="mt-8 text-sm font-semibold text-foreground/70">Prüfungsniveau</h2>
+                        <LearningLevelSelector
+                            className="mt-3"
+                            levels={levelOptions}
+                            selectedLevel={effectiveLevel}
+                            onLevelChange={chooseLevel}
+                            unitLabel="Aufgaben"
+                            activeLabel="Aktuelles Niveau"
+                            ariaLabel="Prüfungsniveau"
+                        />
+                    </>
+                )}
 
                 <LearningSearch
                     className="mt-6"
@@ -352,6 +388,7 @@ function ExamPrepContent() {
                                 section={selectedSection}
                                 level={effectiveLevel}
                                 accent={SECTION_THEME[selectedSection]!.accent}
+                                examType={examType}
                                 groups={selectedGroups}
                                 onOpen={(group) => openPart(selectedSection, effectiveLevel, group.key, group.items[0].id, group.items.length === 1)}
                             />

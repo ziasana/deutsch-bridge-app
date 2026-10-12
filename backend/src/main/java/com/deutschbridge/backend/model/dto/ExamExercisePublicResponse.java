@@ -34,6 +34,8 @@ public record ExamExercisePublicResponse(
          * MUENDLICHER_AUSDRUCK only: the structured, German-only speaking content (topics / person + opinion + goals / scenario +
          * planning points, useful phrases, example answers, self-assessment). Null for every other section.
          */
-        Map<String, Object> speaking
+        Map<String, Object> speaking,
+        /** TELC or DTZ ... - which exam this exercise belongs to. */
+        String examType
 ) {
 }

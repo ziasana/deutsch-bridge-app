@@ -7,11 +7,12 @@ import { ArrowLeft, Bookmark, BookmarkCheck, Check, ChevronRight, Clock, Play, R
 import { cn } from "@/lib/utils";
 import { formatClock } from "@/lib/examTime";
 import { scoreTone } from "@/lib/examScore";
-import { ExamExerciseSummaryResponse, ExamSection } from "@/types/exam";
+import { ExamExerciseSummaryResponse, ExamSection, ExamTypeCode } from "@/types/exam";
 import { ExamExerciseLastTime } from "@/types/examTime";
 import { useExamBookmark } from "@/hooks/exam/useExamBookmark";
 import { effectiveScore } from "./examData";
 import ExamTimeTile from "./ExamTimeTile";
+import { displayLevel } from "./examMeta";
 import { LessonAccent, lessonThemeVars } from "./lessonTheme";
 
 type Filter = "ALL" | "OPEN" | "COMPLETED";
@@ -30,6 +31,8 @@ interface ExamTeilOverviewProps {
     emoji: string;
     items: ExamExerciseSummaryResponse[];
     level: string;
+    /** DTZ has no recommended times: its time tile is not shown. */
+    examType?: ExamTypeCode;
     teil: number;
     heading: string;
     subheading?: string;
@@ -58,7 +61,7 @@ function Ring({ done, total }: Readonly<{ done: number; total: number }>) {
  * Teil page of a timed section (used for Lesen): hero with progress ring and one big "continue" button, the Zeit-Check
  * and the Übungen as full-width rows (status, questions, last time against the recommendation, bookmark).
  */
-export default function ExamTeilOverview({ section, accent, sectionLabel, emoji, items, level, teil, heading, subheading, backHref, lastTimes }: Readonly<ExamTeilOverviewProps>) {
+export default function ExamTeilOverview({ section, accent, sectionLabel, emoji, items, level, examType, teil, heading, subheading, backHref, lastTimes }: Readonly<ExamTeilOverviewProps>) {
     const router = useRouter();
     const { toggle: toggleBookmark, pendingId } = useExamBookmark();
     const [filter, setFilter] = useState<Filter>("ALL");
@@ -90,7 +93,7 @@ export default function ExamTeilOverview({ section, accent, sectionLabel, emoji,
                 <span aria-hidden="true" className="absolute end-6 top-4 text-7xl opacity-20 sm:text-8xl">{emoji}</span>
                 <div className="relative flex flex-wrap items-center justify-between gap-5">
                     <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold uppercase tracking-wider text-white/80">{sectionLabel} · {level}</p>
+                        <p className="text-xs font-bold uppercase tracking-wider text-white/80">{sectionLabel} · {displayLevel(level, examType)}</p>
                         <h1 className="mt-1 text-3xl font-extrabold">{heading}</h1>
                         {subheading && <p className="mt-0.5 text-lg font-medium text-white/90">{subheading}</p>}
                         <ul className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
@@ -118,7 +121,7 @@ export default function ExamTeilOverview({ section, accent, sectionLabel, emoji,
                 )}
             </header>
 
-            <ExamTimeTile section={section} level={level} teil={teil} />
+            {examType !== "DTZ" && <ExamTimeTile section={section} level={level} teil={teil} />}
 
             <section aria-label="Übungen">
                 <div className="flex flex-wrap items-center justify-between gap-3">

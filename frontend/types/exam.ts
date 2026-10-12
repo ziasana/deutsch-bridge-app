@@ -8,11 +8,18 @@ export type ExamSection =
     | "MUENDLICHER_AUSDRUCK"
     | "TESTFORMAT_INFORMATION";
 
+/** The exams exercises can prepare for. DTZ exercises are stored with level B1 and shown as "A2–B1". */
+export type ExamTypeCode = "TELC" | "DTZ";
+
 export type ExamTaskType =
     | "MATCHING"
     | "SITUATION_MATCHING"
     | "MULTIPLE_CHOICE"
     | "TRUE_FALSE_NOT_GIVEN"
+    /** DTZ: richtig/falsch only (no "nicht im Text"). Used as the type of a question inside TEXT_QUESTIONS. */
+    | "TRUE_FALSE"
+    /** DTZ Lesen Teil 3: several texts, each with one richtig/falsch and one multiple-choice task. */
+    | "TEXT_QUESTIONS"
     | "WORD_BANK_CLOZE"
     | "WRITING_TASK"
     | "TOPIC_INTERVIEW"
@@ -260,6 +267,7 @@ export interface ExamExercisePublicResponse {
     bookmarked: boolean;
     /** MUENDLICHER_AUSDRUCK only: the structured, German-only speaking content. */
     speaking?: SpeakingContent | null;
+    examType: ExamTypeCode | null;
 }
 
 /**
@@ -282,6 +290,7 @@ export interface ExamExerciseSummaryResponse {
     completed: boolean;
     lastScore: number | null;
     bookmarked: boolean;
+    examType: ExamTypeCode | null;
 }
 
 /** A bookmarked exercise the user hasn't mastered yet (the "saved for later" strip), from any level. */
@@ -299,6 +308,7 @@ export interface ExamLevelSummaryResponse {
     total: number;
     mastered: number;
     avgScore: number;
+    examType?: ExamTypeCode;
 }
 
 export interface ExamExerciseManualRequest {
@@ -319,6 +329,8 @@ export interface ExamExerciseManualRequest {
     requiresPlanning?: boolean;
     leitpunkte?: string[] | null;
     published: boolean;
+    /** Which exam the exercise belongs to; omitted keeps the current value (TELC for new exercises). */
+    examType?: ExamTypeCode;
 }
 
 // ---- Attempts ----

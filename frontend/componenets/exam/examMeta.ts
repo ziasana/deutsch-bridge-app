@@ -1,5 +1,5 @@
 import { BookOpen, Headphones, Info, LucideIcon, Mic, PenLine, Puzzle } from "lucide-react";
-import { ExamSection, ExamTaskType } from "@/types/exam";
+import { ExamSection, ExamTaskType, ExamTypeCode } from "@/types/exam";
 
 export interface ExamTypeMeta {
     label: string;
@@ -64,6 +64,8 @@ export const TASK_TYPE_LABELS: Record<ExamTaskType, string> = {
     SITUATION_MATCHING: "Zuordnung: Situation → Anzeige",
     MULTIPLE_CHOICE: "Multiple-Choice-Aufgaben",
     TRUE_FALSE_NOT_GIVEN: "Aufgaben richtig/falsch/nicht",
+    TRUE_FALSE: "Aufgaben richtig/falsch",
+    TEXT_QUESTIONS: "Texte mit Aufgaben (richtig/falsch und a, b, c)",
     WORD_BANK_CLOZE: "Lückentext (Wortbank)",
     WRITING_TASK: "Schriftlicher Ausdruck",
     TOPIC_INTERVIEW: "Einander kennenlernen",
@@ -75,3 +77,38 @@ export const SPRACHBAUSTEINE_TASK_TYPE_LABELS: Partial<Record<ExamTaskType, stri
     MULTIPLE_CHOICE: "Sprachbausteine Teil 1",
     WORD_BANK_CLOZE: "Sprachbausteine Teil 2",
 };
+
+export interface ExamTypeInfo {
+    code: ExamTypeCode;
+    label: string;
+    description: string;
+    /** The one level the exam is practised at - the level selector is hidden when set (DTZ covers A2 and B1 together). */
+    fixedLevel?: string;
+    /** Label shown instead of the stored level (DTZ exercises are stored as B1). */
+    levelLabel?: string;
+    /** Sections that have exercises for this exam, in display order. */
+    sections: ExamSection[];
+}
+
+export const EXAM_TYPES: ExamTypeInfo[] = [
+    {
+        code: "TELC",
+        label: "Telc B1",
+        description: "Prüfung telc Deutsch B1 mit Leseverstehen, Sprachbausteinen, Hören, Schreiben und Sprechen.",
+        sections: EXAM_TYPE_ORDER,
+    },
+    {
+        code: "DTZ",
+        label: "DTZ A2–B1",
+        description: "Deutsch-Test für Zuwanderer (A2–B1) mit Lesen und Hören.",
+        fixedLevel: "B1",
+        levelLabel: "A2–B1",
+        sections: ["LESEVERSTEHEN", "HOERVERSTEHEN"],
+    },
+];
+
+export const EXAM_TYPE_BY_CODE: Record<ExamTypeCode, ExamTypeInfo> = Object.fromEntries(EXAM_TYPES.map((t) => [t.code, t])) as Record<ExamTypeCode, ExamTypeInfo>;
+
+/** Level text to show a learner: DTZ's stored B1 is presented as "A2–B1". */
+export const displayLevel = (level: string | null | undefined, examType: ExamTypeCode | null | undefined): string =>
+    (examType && EXAM_TYPE_BY_CODE[examType]?.levelLabel) || level || "Alle Niveaus";

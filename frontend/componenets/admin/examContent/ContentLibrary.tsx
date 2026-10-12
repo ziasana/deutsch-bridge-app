@@ -18,7 +18,7 @@ import ExamContentShell from "./ExamContentShell";
 import { cardClass, errorMessage, ExerciseView, fieldClass, htmlToText, labelClass, StatusBadge } from "./shared";
 
 const PAGE_SIZE = 15;
-const EXAM_LABELS: Record<string, string> = { TELC: "Telc", GOETHE: "Goethe", TESTDAF: "TestDaF", DSH: "DSH", OTHER: "Other" };
+const EXAM_LABELS: Record<string, string> = { TELC: "Telc", GOETHE: "Goethe", TESTDAF: "TestDaF", DTZ: "DTZ A2-B1", DSH: "DSH", OTHER: "Other" };
 /** Sections with a manual editor; Mündlicher Ausdruck is import-only and has none. */
 const SECTION_PATHS: Partial<Record<ExamSection, string>> = {
     LESEVERSTEHEN: "leseverstehen",

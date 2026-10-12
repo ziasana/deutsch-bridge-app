@@ -103,7 +103,7 @@ public class ExamPoolService {
     public PartAvailability diagnose(ExamProfile profile, ExamPartConfig part, PartAvailability base) {
         Map<String, Integer> reasons = new java.util.TreeMap<>();
         Map<Integer, Integer> counts = new java.util.TreeMap<>();
-        for (ExamExercise e : exerciseRepository.findFiltered(part.section(), profile.getLevel(), null)) {
+        for (ExamExercise e : exerciseRepository.findFiltered(part.section(), profile.getLevel(), null, profile.getExamType())) {
             if (e.getExamType() != profile.getExamType()) continue;
             String reason = ExamExerciseEligibility.rejection(e, profile.getExamType(), profile.getLevel(), part);
             if (reason == null) continue;

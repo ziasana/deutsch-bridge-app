@@ -7,6 +7,7 @@ import com.deutschbridge.backend.model.dto.ExamLevelSummaryResponse;
 import com.deutschbridge.backend.model.dto.ExamPendingBookmarkResponse;
 import com.deutschbridge.backend.model.enums.ExamSection;
 import com.deutschbridge.backend.model.enums.ExamTaskType;
+import com.deutschbridge.backend.model.enums.ExamType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.service.ExamExerciseService;
 import org.springframework.http.HttpStatus;
@@ -30,15 +31,16 @@ public class ExamController {
     public ResponseEntity<List<ExamExerciseSummaryResponse>> getAll(
             @RequestParam(required = false) ExamSection section,
             @RequestParam(required = false) LearningLevel level,
-            @RequestParam(required = false) ExamTaskType taskType
+            @RequestParam(required = false) ExamTaskType taskType,
+            @RequestParam(defaultValue = "TELC") ExamType examType
     ) {
-        return new ResponseEntity<>(examExerciseService.findSummary(section, level, taskType), HttpStatus.OK);
+        return new ResponseEntity<>(examExerciseService.findSummary(section, level, taskType, examType), HttpStatus.OK);
     }
 
     /** Per-level aggregate progress across every practicable section, for the level selector. */
     @GetMapping("/level-summary")
-    public ResponseEntity<List<ExamLevelSummaryResponse>> getLevelSummary() {
-        return new ResponseEntity<>(examExerciseService.findLevelSummary(), HttpStatus.OK);
+    public ResponseEntity<List<ExamLevelSummaryResponse>> getLevelSummary(@RequestParam(defaultValue = "TELC") ExamType examType) {
+        return new ResponseEntity<>(examExerciseService.findLevelSummary(examType), HttpStatus.OK);
     }
 
     /** Bookmarked exercises the user hasn't mastered yet, across all levels, oldest bookmark first. */

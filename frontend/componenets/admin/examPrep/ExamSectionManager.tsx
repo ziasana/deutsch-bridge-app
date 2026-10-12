@@ -16,7 +16,9 @@ import {
     uploadExamPassageAudio,
     getExamFieldPresets,
 } from "@/services/adminExamService";
-import { ExamExerciseAdminRow, ExamExerciseResponse, ExamFieldPresetType, ExamPassage, ExamQuestion, ExamSection, ExamTaskType } from "@/types/exam";
+import { ExamExerciseAdminRow, ExamExerciseResponse, ExamFieldPresetType, ExamPassage, ExamQuestion, ExamSection, ExamTaskType, ExamTypeCode } from "@/types/exam";
+import DtzTextQuestionsEditor from "@/componenets/admin/examPrep/DtzTextQuestionsEditor";
+import { DEFAULT_FIRST_TASK_NUMBER, buildTextQuestions, removeTextTasks, validateTextQuestions } from "@/componenets/admin/examPrep/dtzTextQuestions";
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
@@ -59,11 +61,31 @@ const TASK_TYPE_LABELS: Record<ExamTaskType, string> = {
     SITUATION_MATCHING: "Zuordnung: Situation → Anzeige",
     MULTIPLE_CHOICE: "Multiple-Choice-Aufgaben",
     TRUE_FALSE_NOT_GIVEN: "Aufgaben richtig/falsch/nicht",
+    TRUE_FALSE: "Aufgaben richtig/falsch",
+    TEXT_QUESTIONS: "Texte mit Aufgaben (richtig/falsch + a, b, c)",
     WORD_BANK_CLOZE: "Lückentext (Wortbank)",
     WRITING_TASK: "Schriftlicher Ausdruck",
     TOPIC_INTERVIEW: "Einander kennenlernen",
     OPINION_DISCUSSION: "Über ein Thema sprechen",
     JOINT_PLANNING: "Gemeinsam etwas planen",
+};
+
+/** The exams an admin can create exercises for. DTZ exercises are stored with level B1 (shown to learners as "A2–B1"). */
+const EXAM_TYPE_OPTIONS: { code: ExamTypeCode; label: string }[] = [
+    { code: "TELC", label: "Telc B1" },
+    { code: "DTZ", label: "DTZ A2–B1" },
+];
+const DTZ_LEVEL = "B1";
+/** Only these sections exist for DTZ on the learner side; every other section is Telc only. */
+const EXAM_CHOICE_SECTIONS: ExamSection[] = ["LESEVERSTEHEN", "HOERVERSTEHEN"];
+
+const taskTypesFor = (section: ExamSection, examType: ExamTypeCode): ExamTaskType[] =>
+    examType === "DTZ" && section === "LESEVERSTEHEN" ? [...TASK_TYPES_BY_SECTION[section], "TEXT_QUESTIONS"] : TASK_TYPES_BY_SECTION[section];
+
+const teilNumbersFor = (section: ExamSection, examType: ExamTypeCode): number[] | undefined => {
+    if (examType === "DTZ" && section === "LESEVERSTEHEN") return [1, 2, 3, 4, 5];
+    if (examType === "DTZ" && section === "HOERVERSTEHEN") return [1, 2, 3, 4];
+    return TEIL_NUMBERS_BY_SECTION[section];
 };
 
 /** Pre-seeded answer options for TRUE_FALSE_NOT_GIVEN - still editable by the admin. */
@@ -142,7 +164,14 @@ const makeEmptyForm = (section: ExamSection) => ({
     requiresPlanning: false,
     leitpunkteText: "",
     published: true,
+    firstTaskNumber: String(DEFAULT_FIRST_TASK_NUMBER),
 });
+
+/** The number of the first task of a saved texts-with-tasks exercise (its lowest question number). */
+const firstTaskNumberOf = (questions: ExamQuestion[]): number => {
+    const numbers = questions.flatMap((q) => (q.questionNumber != null ? [q.questionNumber] : []));
+    return numbers.length > 0 ? Math.min(...numbers) : DEFAULT_FIRST_TASK_NUMBER;
+};
 
 const hasPassageContent = (p: ExamPassage) => {
     const hasText = p.content.replace(/<[^>]*>/g, "").trim().length > 0;
@@ -214,7 +243,11 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
     const { userProfile, hasHydrated } = useAuthStore();
     const queryClient = useQueryClient();
     const meta = SECTION_META[section];
-    const taskTypes = TASK_TYPES_BY_SECTION[section];
+    // Leseverstehen and Hörverstehen can be created for Telc B1 or DTZ A2–B1; the rest of the sections are Telc only.
+    const hasExamChoice = EXAM_CHOICE_SECTIONS.includes(section);
+    const [examType, setExamType] = useState<ExamTypeCode>("TELC");
+    const taskTypes = taskTypesFor(section, examType);
+    const teilNumbers = teilNumbersFor(section, examType);
 
     // Shared across every exam-prep page: the admin endpoint returns all sections in one list.
     const EXERCISES_KEY = ["admin", "exam", "exercises"] as const;
@@ -226,8 +259,8 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
     const [appliedFilters, setAppliedFilters] = useState<ExamExerciseFilters | null>(null);
 
     const { data: exercises = [], isLoading, error: exercisesError } = useQuery({
-        queryKey: [...EXERCISES_KEY, section, appliedFilters],
-        queryFn: () => getExamExercisesForAdmin({ ...appliedFilters, section }).then((res) => res.data),
+        queryKey: [...EXERCISES_KEY, section, hasExamChoice ? examType : null, appliedFilters],
+        queryFn: () => getExamExercisesForAdmin({ ...appliedFilters, section, ...(hasExamChoice ? { examType } : {}) }).then((res) => res.data),
         enabled: hasHydrated && userProfile?.role === "ADMIN" && appliedFilters !== null,
     });
 
@@ -310,6 +343,22 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
         setShowForm(false);
     };
 
+    // Each exam has its own exercises, level and Teile: switching starts from a clean form and an empty result list.
+    const changeExamType = (next: ExamTypeCode) => {
+        if (next === examType) return;
+        setExamType(next);
+        setForm({ ...makeEmptyForm(section), level: next === "DTZ" ? DTZ_LEVEL : "B1", partNumber: defaultTeil(section, taskTypesFor(section, next)[0] ?? null), taskType: taskTypesFor(section, next)[0] ?? null });
+        setPassages([]);
+        setQuestions([]);
+        setAnswerOptions([]);
+        setAnswerOptionLabels([]);
+        setEditingExercise(null);
+        setShowForm(false);
+        setDraftFilters(emptyFilters);
+        setAppliedFilters(null);
+        setExercisesPage(1);
+    };
+
     const openNewForm = () => {
         resetForm();
         setShowForm(true);
@@ -319,9 +368,15 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
         options.length === TFN_DEFAULT_ANSWER_OPTIONS.length && options.every((o, i) => o === TFN_DEFAULT_ANSWER_OPTIONS[i]);
 
     const changeTaskType = (taskType: ExamTaskType) => {
-        // Sprachbausteine's Teil follows its task type, so keep the Teil dropdown in step with it.
-        setForm({ ...form, taskType, partNumber: section === "SPRACHBAUSTEINE" ? defaultTeil(section, taskType) : form.partNumber });
-        setQuestions((prev) => prev.map((q) => ({ ...q, taskType })));
+        const textQuestionsInvolved = taskType === "TEXT_QUESTIONS" || form.taskType === "TEXT_QUESTIONS";
+        // Sprachbausteine's Teil follows its task type, so keep the Teil dropdown in step with it; DTZ's texts-with-tasks is Teil 3.
+        setForm({
+            ...form,
+            taskType,
+            partNumber: section === "SPRACHBAUSTEINE" ? defaultTeil(section, taskType) : taskType === "TEXT_QUESTIONS" ? "3" : form.partNumber,
+        });
+        // Texts-with-tasks questions each carry their own type, so they cannot be converted to or from the other task types.
+        setQuestions((prev) => (textQuestionsInvolved ? [] : prev.map((q) => ({ ...q, taskType }))));
         // Seed "+"/"-"/"o" for richtig/falsch/nicht; drop an untouched seed when leaving that type.
         if (taskType === "TRUE_FALSE_NOT_GIVEN" && answerOptions.length === 0) {
             setAnswerOptions(TFN_DEFAULT_ANSWER_OPTIONS);
@@ -343,7 +398,11 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
             return next;
         });
     };
-    const removePassage = (idx: number) => setPassages((prev) => prev.filter((_, i) => i !== idx));
+    const removePassage = (idx: number) => {
+        setPassages((prev) => prev.filter((_, i) => i !== idx));
+        // The tasks of a removed text go with it, and the later texts' tasks keep pointing at their own text.
+        if (form.taskType === "TEXT_QUESTIONS") setQuestions((prev) => removeTextTasks(prev, idx));
+    };
     const addPassage = () => setPassages((prev) => [...prev, emptyPassage(prev.length, section, form.taskType)]);
 
     const uploadPassageImage = (idx: number, file: File) => {
@@ -439,6 +498,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
         }
         setEditingExercise(exercise);
         setShowForm(true);
+        if (hasExamChoice && (exercise.examType === "TELC" || exercise.examType === "DTZ")) setExamType(exercise.examType);
         // Legacy Leseverstehen richtig/falsch/nicht exercises stored RICHTIG/FALSCH/NICHT_IM_TEXT with
         // no pool; show them in the new +/-/o answer-options format so they can be re-saved.
         const isLegacyTfn = exercise.taskType === "TRUE_FALSE_NOT_GIVEN" && !(exercise.answerOptions?.length);
@@ -456,6 +516,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
             requiresPlanning: exercise.requiresPlanning ?? false,
             leitpunkteText: (exercise.leitpunkte ?? []).join("\n"),
             published: exercise.published,
+            firstTaskNumber: String(firstTaskNumberOf(exercise.questions)),
         });
         setPassages(exercise.passages);
         setQuestions(
@@ -485,6 +546,19 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
             const usedAds = answered.map((q) => q.correctAnswer).filter((a) => a !== NO_AD_ANSWER);
             if (new Set(usedAds).size !== usedAds.length) {
                 toast.error("An ad can only be the correct answer for one situation.");
+                return;
+            }
+        }
+
+        const firstTaskNumber = Number.parseInt(form.firstTaskNumber, 10);
+        if (form.taskType === "TEXT_QUESTIONS") {
+            const problem = validateTextQuestions(passages, questions);
+            if (problem) {
+                toast.error(problem);
+                return;
+            }
+            if (!Number.isFinite(firstTaskNumber) || firstTaskNumber < 1) {
+                toast.error("The number of the first task must be a positive number.");
                 return;
             }
         }
@@ -521,10 +595,13 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
             title: form.title,
             section,
             taskType: form.taskType,
-            level: form.level,
+            level: hasExamChoice && examType === "DTZ" ? DTZ_LEVEL : form.level,
+            examType: hasExamChoice ? examType : undefined,
             partNumber: form.partNumber.trim() ? Number(form.partNumber) : null,
             passages: resolvedPassages,
-            questions: questions
+            questions: form.taskType === "TEXT_QUESTIONS"
+                ? buildTextQuestions(questions, passageIndexRemap, firstTaskNumber)
+                : questions
                 .filter((q) => q.prompt.trim())
                 .map((q) => ({
                     ...q,
@@ -639,6 +716,30 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                 <h1 className="text-4xl font-bold text-gray-900 dark:text-white">{meta.heading}</h1>
                 <p className="text-gray-600 dark:text-gray-300 mt-2">{meta.description}</p>
 
+                {hasExamChoice && (
+                    <div className="mt-6" role="tablist" aria-label="Exam">
+                        <p className="mb-2 text-sm text-gray-700 dark:text-gray-300">Exam</p>
+                        <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-1">
+                            {EXAM_TYPE_OPTIONS.map((option) => (
+                                <button
+                                    key={option.code}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={examType === option.code}
+                                    onClick={() => changeExamType(option.code)}
+                                    className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+                                        examType === option.code
+                                            ? "bg-blue-600 text-white"
+                                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    }`}
+                                >
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {!showForm && <AdminAddNewCard label="Add new exercise" onClick={openNewForm} />}
 
                 {showForm && (
@@ -671,7 +772,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                     </div>
 
                     <div className="flex gap-4 flex-wrap">
-                        {TEIL_NUMBERS_BY_SECTION[section] && (
+                        {teilNumbers && (
                             <div>
                                 <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Section</label>
                                 <select
@@ -679,7 +780,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                     onChange={(e) => changeTeil(e.target.value)}
                                     className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
                                 >
-                                    {TEIL_NUMBERS_BY_SECTION[section]?.map((n) => (
+                                    {teilNumbers?.map((n) => (
                                         <option key={n} value={String(n)}>
                                             Teil {n}
                                         </option>
@@ -705,19 +806,40 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                         )}
                         <div>
                             <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Level</label>
-                            <select
-                                value={form.level}
-                                onChange={(e) => setForm({ ...form, level: e.target.value })}
-                                className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
-                            >
-                                {LEVELS.map((lvl) => (
-                                    <option key={lvl} value={lvl}>
-                                        {lvl}
-                                    </option>
-                                ))}
-                            </select>
+                            {hasExamChoice && examType === "DTZ" ? (
+                                <p className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-700/60 text-gray-900 dark:text-white">
+                                    A2–B1
+                                </p>
+                            ) : (
+                                <select
+                                    value={form.level}
+                                    onChange={(e) => setForm({ ...form, level: e.target.value })}
+                                    className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+                                >
+                                    {LEVELS.map((lvl) => (
+                                        <option key={lvl} value={lvl}>
+                                            {lvl}
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
                         </div>
-                        {!TEIL_NUMBERS_BY_SECTION[section] && (
+                        {form.taskType === "TEXT_QUESTIONS" && (
+                            <div>
+                                <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm" htmlFor="first-task-number">
+                                    Number of the first task
+                                </label>
+                                <Input
+                                    id="first-task-number"
+                                    type="number"
+                                    value={form.firstTaskNumber}
+                                    onChange={(e) => setForm({ ...form, firstTaskNumber: e.target.value })}
+                                    required={false}
+                                    className="w-28"
+                                />
+                            </div>
+                        )}
+                        {!teilNumbers && (
                             <div>
                                 <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">Teil (optional)</label>
                                 <Input
@@ -1053,7 +1175,21 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                         </div>
                     )}
 
-                    {form.taskType !== "WORD_BANK_CLOZE" && form.taskType !== "WRITING_TASK" && (
+                    {form.taskType === "TEXT_QUESTIONS" && (
+                        <div>
+                            <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                                Tasks — each text has one richtig/falsch task and one multiple-choice task
+                            </label>
+                            <DtzTextQuestionsEditor
+                                passages={passages}
+                                questions={questions}
+                                onChange={setQuestions}
+                                firstNumber={Number.parseInt(form.firstTaskNumber, 10) || DEFAULT_FIRST_TASK_NUMBER}
+                            />
+                        </div>
+                    )}
+
+                    {form.taskType !== "WORD_BANK_CLOZE" && form.taskType !== "WRITING_TASK" && form.taskType !== "TEXT_QUESTIONS" && (
                     <div>
                         <div className="flex items-center justify-between mb-2">
                             <label className="text-gray-700 dark:text-gray-300 text-sm">Questions</label>
@@ -1268,7 +1404,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                             ))}
                         </select>
                     </label>
-                    {TEIL_NUMBERS_BY_SECTION[section] && (
+                    {teilNumbers && (
                         <label className="text-sm text-gray-700 dark:text-gray-300">
                             Teil
                             <select
@@ -1277,7 +1413,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                 className={adminFilterFieldClass}
                             >
                                 <option value="">All Teile</option>
-                                {TEIL_NUMBERS_BY_SECTION[section]?.map((n) => (
+                                {teilNumbers?.map((n) => (
                                     <option key={n} value={String(n)}>
                                         Teil {n}
                                     </option>
@@ -1401,7 +1537,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                                 {exercise.taskType ? taskTypeLabel(exercise.taskType) : "—"}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <Badge variant="secondary">{exercise.level ?? "All levels"}</Badge>
+                                                <Badge variant="secondary">{exercise.examType === "DTZ" ? "DTZ A2–B1" : (exercise.level ?? "All levels")}</Badge>
                                             </td>
                                             <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
                                                 {exercise.questionCount}

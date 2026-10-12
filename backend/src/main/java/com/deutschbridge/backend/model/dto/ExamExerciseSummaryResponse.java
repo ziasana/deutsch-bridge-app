@@ -21,6 +21,7 @@ public record ExamExerciseSummaryResponse(
         boolean completed,
         /** Percentage (0-100) from the most recent completed attempt, or null if never attempted. */
         Double lastScore,
-        boolean bookmarked
+        boolean bookmarked,
+        String examType
 ) {
 }

@@ -13,6 +13,7 @@ import com.deutschbridge.backend.model.entity.ExamPassage;
 import com.deutschbridge.backend.model.entity.ExamQuestion;
 import com.deutschbridge.backend.model.enums.ExamSection;
 import com.deutschbridge.backend.model.enums.ExamTaskType;
+import com.deutschbridge.backend.model.enums.ExamType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.ExamAttemptRepository;
 import com.deutschbridge.backend.repository.ExamExerciseBookmarkRepository;
@@ -85,7 +86,7 @@ class ExamExerciseServiceTest {
         ExamPassage passage = new ExamPassage("p1", "Durchsage 1", null, null, audioUrl, "Geheimes Transkript.");
         return new ExamExerciseManualRequest(
                 "Hörverstehen B1 - Teil 1", ExamSection.HOERVERSTEHEN, ExamTaskType.MULTIPLE_CHOICE, LearningLevel.B1,
-                null, List.of(passage), List.of(), List.of(), List.of(), null, null, null, null, true, null, null
+                null, List.of(passage), List.of(), List.of(), List.of(), null, null, null, null, true, null, null, null
         );
     }
 
@@ -130,11 +131,11 @@ class ExamExerciseServiceTest {
     @DisplayName("findSummary -> should filter by section and never leak passages/questions content")
     void findSummary_shouldOmitContentFields() {
         ExamExercise exercise = hoerverstehenExercise();
-        when(contentCacheService.getPublishedExamExercises(ExamSection.HOERVERSTEHEN, null, null)).thenReturn(List.of(exercise));
+        when(contentCacheService.getPublishedExamExercises(ExamSection.HOERVERSTEHEN, null, null, null)).thenReturn(List.of(exercise));
         when(requestContext.getUserId()).thenReturn("u1");
         when(examExerciseCompletionRepository.findByUserId("u1")).thenReturn(List.of());
 
-        List<ExamExerciseSummaryResponse> result = service.findSummary(ExamSection.HOERVERSTEHEN, null, null);
+        List<ExamExerciseSummaryResponse> result = service.findSummary(ExamSection.HOERVERSTEHEN, null, null, null);
 
         assertEquals(1, result.size());
         ExamExerciseSummaryResponse response = result.get(0);
@@ -154,11 +155,11 @@ class ExamExerciseServiceTest {
         completion.setExerciseId("ex1");
         completion.setLastScore(75.0);
 
-        when(contentCacheService.getPublishedExamExercises(ExamSection.HOERVERSTEHEN, null, null)).thenReturn(List.of(exercise));
+        when(contentCacheService.getPublishedExamExercises(ExamSection.HOERVERSTEHEN, null, null, null)).thenReturn(List.of(exercise));
         when(requestContext.getUserId()).thenReturn("u1");
         when(examExerciseCompletionRepository.findByUserId("u1")).thenReturn(List.of(completion));
 
-        List<ExamExerciseSummaryResponse> result = service.findSummary(ExamSection.HOERVERSTEHEN, null, null);
+        List<ExamExerciseSummaryResponse> result = service.findSummary(ExamSection.HOERVERSTEHEN, null, null, null);
 
         assertTrue(result.get(0).completed());
         assertEquals(75.0, result.get(0).lastScore());
@@ -172,12 +173,12 @@ class ExamExerciseServiceTest {
         bookmark.setUserId("u1");
         bookmark.setExerciseId("ex1");
 
-        when(contentCacheService.getPublishedExamExercises(ExamSection.HOERVERSTEHEN, null, null)).thenReturn(List.of(exercise));
+        when(contentCacheService.getPublishedExamExercises(ExamSection.HOERVERSTEHEN, null, null, null)).thenReturn(List.of(exercise));
         when(requestContext.getUserId()).thenReturn("u1");
         when(examExerciseCompletionRepository.findByUserId("u1")).thenReturn(List.of());
         when(examExerciseBookmarkRepository.findByUserId("u1")).thenReturn(List.of(bookmark));
 
-        assertTrue(service.findSummary(ExamSection.HOERVERSTEHEN, null, null).get(0).bookmarked());
+        assertTrue(service.findSummary(ExamSection.HOERVERSTEHEN, null, null, null).get(0).bookmarked());
     }
 
     @Test
@@ -202,11 +203,11 @@ class ExamExerciseServiceTest {
         // Filtering out unpublished exercises is ContentCacheService's job (see
         // ContentCacheService.getPublishedExamExercises) - this just verifies findSummary
         // passes its result straight through without re-adding anything unpublished.
-        when(contentCacheService.getPublishedExamExercises(ExamSection.HOERVERSTEHEN, null, null)).thenReturn(List.of());
+        when(contentCacheService.getPublishedExamExercises(ExamSection.HOERVERSTEHEN, null, null, null)).thenReturn(List.of());
         when(requestContext.getUserId()).thenReturn("u1");
         when(examExerciseCompletionRepository.findByUserId("u1")).thenReturn(List.of());
 
-        List<ExamExerciseSummaryResponse> result = service.findSummary(ExamSection.HOERVERSTEHEN, null, null);
+        List<ExamExerciseSummaryResponse> result = service.findSummary(ExamSection.HOERVERSTEHEN, null, null, null);
 
         assertTrue(result.isEmpty());
     }
@@ -214,11 +215,12 @@ class ExamExerciseServiceTest {
     @Test
     @DisplayName("findLevelSummary -> should delegate to the per-user progress cache for the current user")
     void findLevelSummary_shouldDelegateToProgressCache() {
-        List<ExamLevelSummaryResponse> summaries = List.of(new ExamLevelSummaryResponse("B1", 10, 4, 55));
+        List<ExamLevelSummaryResponse> summaries = List.of(new ExamLevelSummaryResponse("B1", 10, 4, 55, "TELC"));
+        List<ExamLevelSummaryResponse> all = List.of(summaries.get(0), new ExamLevelSummaryResponse("B1", 3, 1, 33, "DTZ"));
         when(requestContext.getUserId()).thenReturn("u1");
-        when(examProgressCacheService.getLevelSummary("u1")).thenReturn(summaries);
+        when(examProgressCacheService.getLevelSummary("u1")).thenReturn(all);
 
-        List<ExamLevelSummaryResponse> result = service.findLevelSummary();
+        List<ExamLevelSummaryResponse> result = service.findLevelSummary(ExamType.TELC);
 
         assertEquals(summaries, result);
     }

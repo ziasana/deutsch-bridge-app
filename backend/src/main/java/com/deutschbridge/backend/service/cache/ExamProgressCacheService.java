@@ -31,6 +31,6 @@ public class ExamProgressCacheService {
 
     private static ExamLevelSummaryResponse toResponse(ExamLevelAggregateProjection row) {
         int avgScore = row.getAvgScore() != null ? (int) Math.round(row.getAvgScore()) : 0;
-        return new ExamLevelSummaryResponse(row.getLevel(), row.getTotal(), row.getMastered(), avgScore);
+        return new ExamLevelSummaryResponse(row.getLevel(), row.getTotal(), row.getMastered(), avgScore, row.getExamType());
     }
 }

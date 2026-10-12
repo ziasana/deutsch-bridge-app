@@ -7,6 +7,7 @@ import com.deutschbridge.backend.model.entity.GrammarLesson;
 import com.deutschbridge.backend.model.entity.ReadingArticle;
 import com.deutschbridge.backend.model.enums.ExamSection;
 import com.deutschbridge.backend.model.enums.ExamTaskType;
+import com.deutschbridge.backend.model.enums.ExamType;
 import com.deutschbridge.backend.model.enums.ExpressionType;
 import com.deutschbridge.backend.model.enums.GrammarLessonStatus;
 import com.deutschbridge.backend.model.enums.LearningLevel;
@@ -151,8 +152,8 @@ public class ContentCacheService {
 
     @Cacheable("examExercises")
     @Transactional
-    public List<ExamExercise> getPublishedExamExercises(ExamSection section, LearningLevel level, ExamTaskType taskType) {
-        List<ExamExercise> exercises = examExerciseRepository.findFiltered(section, level, taskType);
+    public List<ExamExercise> getPublishedExamExercises(ExamSection section, LearningLevel level, ExamTaskType taskType, ExamType examType) {
+        List<ExamExercise> exercises = examExerciseRepository.findFiltered(section, level, taskType, examType);
 
         List<ExamExercise> published = exercises.stream().filter(ExamExercise::isPublished).toList();
         published.forEach(exercise -> {

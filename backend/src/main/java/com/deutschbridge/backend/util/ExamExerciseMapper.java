@@ -83,7 +83,8 @@ public class ExamExerciseMapper {
                 exercise.isRequiresPlanning(),
                 exercise.getLeitpunkte(),
                 bookmarked,
-                speakingOf(exercise)
+                speakingOf(exercise),
+                exercise.getExamType() != null ? exercise.getExamType().name() : null
         );
     }
 
@@ -115,7 +116,8 @@ public class ExamExerciseMapper {
                 questions != null ? questions.size() : 0,
                 completion != null,
                 completion != null ? completion.getLastScore() : null,
-                bookmarked
+                bookmarked,
+                exercise.getExamType() != null ? exercise.getExamType().name() : null
         );
     }
 

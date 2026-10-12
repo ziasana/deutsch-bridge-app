@@ -35,13 +35,14 @@ import SprachbausteineClozeBoard, { hasGapText } from "@/componenets/exam/Sprach
 import HoerenBoard from "@/componenets/exam/HoerenBoard";
 import LesenTextPanel from "@/componenets/exam/LesenTextPanel";
 import LesenTeil1Board from "@/componenets/exam/LesenTeil1Board";
+import LesenTextQuestionsBoard from "@/componenets/exam/LesenTextQuestionsBoard";
 import LesenTeil3Board, { NO_AD_ANSWER as NO_AD_ANSWER_VALUE } from "@/componenets/exam/LesenTeil3Board";
 import TranscriptModal from "@/componenets/exam/TranscriptModal";
 import TranscriptContent from "@/componenets/exam/TranscriptContent";
 import { isEmptyTranscript } from "@/lib/transcriptFormat";
 import { ArrowLeft, ArrowRight, BookOpen, Bookmark, BookmarkCheck, Check, ChevronDown, FileText, Headphones, PenLine, Play, Puzzle, type LucideIcon, RotateCw, X } from "lucide-react";
 import LearningPageHero from "@/componenets/learning/LearningPageHero";
-import { EXAM_TYPE_META } from "@/componenets/exam";
+import { EXAM_TYPE_META, displayLevel } from "@/componenets/exam";
 import { cn } from "@/lib/utils";
 import { useExamBookmark } from "@/hooks/exam/useExamBookmark";
 import ExamExerciseTimer, { useStopExerciseTimer } from "@/componenets/exam/ExamExerciseTimer";
@@ -1094,6 +1095,105 @@ function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse 
     );
 }
 
+interface TextQuestionsQuizState {
+    attemptId: string;
+    passages: ExamPassagePublic[];
+    questions: ExamQuestionPublic[];
+    answers: Record<string, string>;
+    submitting: boolean;
+}
+
+/**
+ * DTZ Lesen Teil 3 (TEXT_QUESTIONS): every text is shown with its richtig/falsch and multiple-choice task; all tasks are
+ * answered on one page and submitted together, then the usual result review follows.
+ */
+function TextQuestionsQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse }>) {
+    const [quiz, setQuiz] = useState<TextQuestionsQuizState | null>(null);
+    const [results, setResults] = useState<ResultsState | null>(null);
+    const [previousScore, setPreviousScore] = useState(exercise.lastScore);
+    const [starting, setStarting] = useState(false);
+    const { completed, marking, markCompleted } = useExerciseCompletion(exercise);
+
+    const beginAttempt = () => {
+        setStarting(true);
+        startExamAttempt(exercise.id)
+            .then((res) => {
+                useExamTimerStore.getState().requestStart();
+                setQuiz({ attemptId: res.data.attemptId, passages: res.data.passages, questions: res.data.questions, answers: {}, submitting: false });
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Übung konnte nicht gestartet werden."))
+            .finally(() => setStarting(false));
+    };
+
+    const practiceAgain = () => {
+        setPreviousScore(results?.score ?? previousScore);
+        setResults(null);
+        setQuiz(null);
+    };
+
+    const submitAll = async () => {
+        if (!quiz) return;
+        setQuiz({ ...quiz, submitting: true });
+        try {
+            const items: ResultItem[] = [];
+            for (const question of quiz.questions) {
+                const answer = quiz.answers[question.id] ?? "";
+                const res = await submitExamAnswer(quiz.attemptId, { questionId: question.id, answer });
+                items.push({ question, feedback: res.data, answer });
+            }
+            const completeRes = await completeExamAttempt(quiz.attemptId);
+            setResults({ score: completeRes.data.score, items, transcripts: completeRes.data.transcripts ?? [] });
+        } catch (err) {
+            toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Übung konnte nicht abgeschlossen werden.");
+            setQuiz((prev) => (prev ? { ...prev, submitting: false } : prev));
+        }
+    };
+
+    if (results) {
+        return (
+            <ResultsView
+                results={results}
+                defaultExplanation={exercise.defaultExplanation}
+                defaultCommonMistake={exercise.defaultCommonMistake}
+                completed={completed}
+                markingCompleted={marking}
+                onPracticeAgain={practiceAgain}
+                previousScore={previousScore}
+                onMarkCompleted={markCompleted}
+                formatAnswer={(value) => (value === "RICHTIG" ? "richtig" : value === "FALSCH" ? "falsch" : value)}
+            />
+        );
+    }
+    if (!quiz) return <StartCard starting={starting} onStart={beginAttempt} lastScore={previousScore} />;
+    if (quiz.questions.length === 0) return <p className="text-sm text-foreground/60">Diese Übung enthält noch keine Aufgaben.</p>;
+
+    const answeredCount = quiz.questions.filter((q) => quiz.answers[q.id]).length;
+    const allAnswered = answeredCount === quiz.questions.length;
+
+    return (
+        <div className="space-y-5">
+            <p className="px-1 text-sm text-foreground/65">
+                Lies jeden Text und löse die beiden Aufgaben dazu. Klicke danach auf &quot;Antworten abgeben&quot;.
+            </p>
+            <LesenTextQuestionsBoard
+                passages={quiz.passages}
+                questions={quiz.questions}
+                answers={quiz.answers}
+                disabled={quiz.submitting}
+                onAnswer={(questionId, value) => setQuiz((prev) => (prev ? { ...prev, answers: { ...prev.answers, [questionId]: value } } : prev))}
+            />
+            <div className="flex items-center justify-end gap-4 pt-2">
+                <span className="text-xs text-foreground/55">
+                    {answeredCount} / {quiz.questions.length} beantwortet
+                </span>
+                <button type="button" className={pillPrimary} disabled={!allAnswered || quiz.submitting} onClick={submitAll}>
+                    {quiz.submitting ? "Wird geprüft..." : "Antworten abgeben"}
+                </button>
+            </div>
+        </div>
+    );
+}
+
 interface HoerenListQuizState {
     attemptId: string;
     passages: ExamPassagePublic[];
@@ -1265,7 +1365,7 @@ function ExamExerciseContent() {
                             router.back();
                         } else {
                             const levelQuery = exercise.level ? `&level=${encodeURIComponent(exercise.level)}` : "";
-                            router.push(`/dashboard/exam-prep?section=${exercise.section}${levelQuery}`);
+                            router.push(`/dashboard/exam-prep?section=${exercise.section}${levelQuery}&exam=${exercise.examType ?? "TELC"}`);
                         }
                     }}
                     className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-foreground/60 transition hover:text-foreground"
@@ -1281,7 +1381,7 @@ function ExamExerciseContent() {
                         icon={SECTION_HEADER[exercise.section]!.icon}
                         kicker={`Teil ${exercise.teil ?? exercise.partNumber ?? 1}`}
                         sectionLabel={SECTION_HEADER[exercise.section]!.label}
-                        showTimer={exercise.section !== "HOERVERSTEHEN"}
+                        showTimer={exercise.section !== "HOERVERSTEHEN" && exercise.examType !== "DTZ"}
                         descriptionAs={exercise.section === "HOERVERSTEHEN" || exercise.section === "LESEVERSTEHEN" || exercise.section === "SPRACHBAUSTEINE" ? "paragraph" : "steps"}
                         title={exercise.title.replace(/^.*?Teil\s+\d\s*[–-]\s*/i, "").trim() || exercise.title}
                         bookmarked={exercise.bookmarked}
@@ -1313,7 +1413,7 @@ function ExamExerciseContent() {
                         icon={sectionMeta?.icon ?? FileText}
                         title={exercise.title}
                         subtitle={sectionMeta?.label ?? "Prüfungsvorbereitung"}
-                        meta={<span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">{exercise.level ?? "Alle Niveaus"}</span>}
+                        meta={<span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">{displayLevel(exercise.level, exercise.examType)}</span>}
                         actions={
                             <button
                                 type="button"
@@ -1353,7 +1453,7 @@ function ExamExerciseContent() {
                             <AnswerOptionsPoolView answerOptions={exercise.answerOptions ?? []} answerOptionLabels={exercise.answerOptionLabels ?? []} taskType={exercise.taskType} />
                         )}
                         {/* Lesen Teil 1 (headings) and Teil 3 (ads) show their texts inside the matching board once the exercise is started. */}
-                        {exercise.taskType !== "SITUATION_MATCHING" && exercise.taskType !== "MATCHING" && !isLesenMultipleChoice(exercise) && !isSprachbausteineGapText(exercise) && (
+                        {exercise.taskType !== "SITUATION_MATCHING" && exercise.taskType !== "MATCHING" && exercise.taskType !== "TEXT_QUESTIONS" && !isLesenMultipleChoice(exercise) && !isSprachbausteineGapText(exercise) && (
                             <PassagesView passages={exercise.passages} taskType={exercise.taskType ?? ""} />
                         )}
                     </>
@@ -1367,6 +1467,8 @@ function ExamExerciseContent() {
                     <MuendlicherAusdruckView exercise={exercise} />
                 ) : exercise.section === "TESTFORMAT_INFORMATION" ? (
                     <TestformatInformationView exercise={exercise} />
+                ) : exercise.taskType === "TEXT_QUESTIONS" ? (
+                    <TextQuestionsQuiz exercise={exercise} />
                 ) : exercise.taskType === "WORD_BANK_CLOZE" || exercise.taskType === "SITUATION_MATCHING" || exercise.taskType === "MATCHING" || isSprachbausteineGapText(exercise) ? (
                     <ClozeGridQuiz exercise={exercise} />
                 ) : (
