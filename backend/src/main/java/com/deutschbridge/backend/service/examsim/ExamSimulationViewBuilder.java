@@ -151,7 +151,7 @@ public class ExamSimulationViewBuilder {
                 if (has) answered++;
                 if (an.isFlagged()) flagged++;
             }
-            result.add(new PartProgress(part.key(), total, Math.min(answered, total), flagged));
+            result.add(new PartProgress(part.key(), part.label(), total, Math.min(answered, total), flagged));
         }
         return result;
     }

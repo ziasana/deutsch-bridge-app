@@ -80,7 +80,7 @@ public final class ExamSimulationDtos {
     public record SavedAnswer(String answer, boolean flagged) {
     }
 
-    public record PartProgress(String partKey, int total, int answered, int flagged) {
+    public record PartProgress(String partKey, String label, int total, int answered, int flagged) {
     }
 
     public record AttemptState(String attemptId, SimulationAttemptStatus status, String profileTitle, int profileVersion, long serverNowMs,

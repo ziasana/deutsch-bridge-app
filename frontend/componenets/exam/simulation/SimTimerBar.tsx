@@ -1,0 +1,74 @@
+"use client";
+
+import { AlertTriangle, Check, CloudOff, Loader2, Timer } from "lucide-react";
+import { formatClock } from "@/lib/examTime";
+import { cn } from "@/lib/utils";
+import type { AutosaveStatus } from "@/hooks/examSimulation/useExamAutosave";
+
+interface Props {
+    stageLabel: string;
+    stageIndex: number;
+    stageCount: number;
+    remainingSeconds: number;
+    autosave: AutosaveStatus;
+    actions?: React.ReactNode;
+}
+
+/** Sticky exam header: the server-driven countdown of the current section, the autosave indicator and the exam actions. */
+export default function SimTimerBar({ stageLabel, stageIndex, stageCount, remainingSeconds, autosave, actions }: Readonly<Props>) {
+    const urgent = remainingSeconds <= 60;
+    const warning = remainingSeconds <= 300;
+    return (
+        <div className="sticky top-0 z-30 -mx-4 border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6" role="region" aria-label="Zeitanzeige">
+            <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2">
+                <div className="min-w-0">
+                    <p className="text-xs font-medium uppercase tracking-wide text-foreground/50">
+                        Abschnitt {stageIndex + 1} von {stageCount}
+                    </p>
+                    <p className="truncate text-sm font-bold text-foreground">{stageLabel}</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                    <span
+                        role="timer"
+                        aria-label={`Verbleibende Zeit ${formatClock(remainingSeconds)}`}
+                        className={cn(
+                            "inline-flex items-center gap-2 rounded-full px-4 py-1.5 font-mono text-lg font-bold tabular-nums",
+                            urgent ? "bg-red-500/15 text-red-600 dark:text-red-400" : warning ? "bg-amber-500/15 text-amber-700 dark:text-amber-400" : "bg-primary/10 text-primary",
+                        )}
+                    >
+                        <Timer className="size-4" aria-hidden />
+                        {formatClock(remainingSeconds)}
+                    </span>
+                    <AutosaveBadge status={autosave} />
+                    {actions}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function AutosaveBadge({ status }: Readonly<{ status: AutosaveStatus }>) {
+    if (status === "saving")
+        return (
+            <span className="inline-flex items-center gap-1.5 text-xs text-foreground/60" aria-live="polite">
+                <Loader2 className="size-3.5 animate-spin" aria-hidden /> Speichert …
+            </span>
+        );
+    if (status === "retrying")
+        return (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400" aria-live="assertive">
+                <CloudOff className="size-3.5" aria-hidden /> Nicht gespeichert – neuer Versuch …
+            </span>
+        );
+    if (status === "saved")
+        return (
+            <span className="inline-flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400" aria-live="polite">
+                <Check className="size-3.5" aria-hidden /> Gespeichert
+            </span>
+        );
+    return (
+        <span className="inline-flex items-center gap-1.5 text-xs text-foreground/50">
+            <AlertTriangle className="size-3.5 opacity-0" aria-hidden /> Automatisch gespeichert
+        </span>
+    );
+}

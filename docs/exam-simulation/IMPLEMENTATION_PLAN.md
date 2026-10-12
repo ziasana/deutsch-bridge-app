@@ -39,3 +39,21 @@
 * A written result is `AWAITING_ASSESSMENT` until every manual written part is assessed; no invented writing score. Overall result follows the profile's `OverallResultPolicy`; with `WRITTEN_AND_ORAL_REQUIRED` and an unscored oral part it is `INCOMPLETE_ORAL_NOT_ASSESSED`.
 * Stage deadlines are chained: a stage that expires hands over to the next at its deadline; finishing early hands over immediately. Last stage expiring finalises the attempt as `EXPIRED` (scored from the saved answers).
 * Answer keys are returned only per the profile's `AnswerReleasePolicy`, after finalisation.
+
+## 5. Delivery report
+
+**Migration:** `backend/src/main/resources/db/migration/V33__exam_simulation.sql` (Flyway runs it on start; `ExamSimulationMigrationTest` checks it against the entity mappings).
+
+**Configuration:** `exam.simulation.save-grace-seconds` (default 5), `exam.simulation.expiry-sweep-ms` (default 60000), `exam.simulation.seed-default-profile` (default true; set false in tests). Scheduler uses the existing `notifications.scheduler.enabled` switch.
+
+**Go-live steps:** 1) deploy; the `TELC_B1_FULL` profile is seeded as DRAFT. 2) Admin → Manage Exam Prep → Prüfungssimulation: verify the values against the official telc B1 documentation, make sure each part has enough published exercises (Availability panel), enter the verification note and publish.
+
+**Verification status of the telc B1 values:** only the 300-point scale and 60 % pass mark could be corroborated from public web sources; the per-part split, question counts and timers were taken from the task description and have NOT been verified against an official document. That is why the profile is not auto-published.
+
+**Known limitations**
+* Oral parts are unscored in V1 (the model supports manual oral scoring when enabled; rubric is a single "Gesamtbewertung" criterion per part).
+* Listening audio can be replayed freely (no play-once rule).
+* Stage deadlines are chained; time away from an expired stage is not given back.
+* Existing practice content must match the configured question counts exactly (e.g. Lesen Teil 3 = 10 questions) to be eligible; otherwise the part reports a shortage.
+* AI-estimated writing scores are stored as a separate source (`AI_ESTIMATE`) but no generator is wired in.
+* Browser E2E was checked manually against a mock API; automated E2E is at HTTP level (`ExamSimulationApiTest`).

@@ -167,4 +167,101 @@ class ExamSimulationApiTest {
         assertEquals("0.0", read(submitted).get("result").get("writtenScore").asText());
         mvc.perform(as(studentA, post(base + "/submit"))).andExpect(status().isOk());
     }
+
+    // ------------------------------------------------------------------ end to end
+
+    private List<JsonNode> allQuestions(JsonNode state) {
+        List<JsonNode> result = new ArrayList<>();
+        for (JsonNode part : state.get("parts")) {
+            for (JsonNode exercise : part.get("exercises")) {
+                for (JsonNode q : exercise.get("questions")) {
+                    result.add(json.createObjectNode().put("partKey", part.get("key").asText()).put("questionId", q.get("id").asText()));
+                }
+            }
+        }
+        return result;
+    }
+
+    private String answersBody(List<JsonNode> questions, String answer) throws Exception {
+        var items = json.createArrayNode();
+        for (JsonNode q : questions) {
+            items.add(json.createObjectNode().put("partKey", q.get("partKey").asText()).put("questionId", q.get("questionId").asText())
+                    .put("answer", answer).put("flagged", false));
+        }
+        return json.writeValueAsString(json.createObjectNode().set("answers", items));
+    }
+
+    private JsonNode postOk(String token, String url) throws Exception {
+        return read(mvc.perform(as(token, post(url))).andExpect(status().isOk()).andReturn());
+    }
+
+    @Test
+    @DisplayName("End to end over HTTP: start, autosave, refresh/resume, sections, submit, manual assessment, repeat without reusing exercises, pool exhaustion")
+    void fullExamFlow() throws Exception {
+        String start = "{\"profileId\":\"" + profile.getId() + "\"}";
+        String api = "/api/exam-simulation/attempts";
+
+        JsonNode state = read(mvc.perform(as(studentA, post(api).content(start))).andExpect(status().isCreated()).andReturn());
+        String id = state.get("attemptId").asText();
+        List<JsonNode> lesen = allQuestions(state);
+        assertEquals(40, lesen.size()); // 5 + 5 + 10 + 10 + 10 questions in the shared Lesen/Sprachbausteine section
+
+        // autosave, then "refresh the browser": the resumed state returns every saved answer
+        mvc.perform(as(studentA, put(api + "/" + id + "/answers").content(answersBody(lesen, "A")))).andExpect(status().isOk());
+        JsonNode resumed = postOk(studentA, api + "/" + id + "/resume");
+        int restored = 0;
+        for (JsonNode partAnswers : resumed.get("answers")) restored += partAnswers.size();
+        assertEquals(40, restored);
+        assertTrue(resumed.get("remainingSeconds").asLong() > 89 * 60);
+
+        // Hören
+        JsonNode hoeren = postOk(studentA, api + "/" + id + "/sections/current/complete");
+        assertEquals(1, hoeren.get("currentStageIndex").asInt());
+        mvc.perform(as(studentA, put(api + "/" + id + "/answers").content(answersBody(allQuestions(hoeren), "A")))).andExpect(status().isOk());
+
+        // Schriftlicher Ausdruck
+        JsonNode writing = postOk(studentA, api + "/" + id + "/sections/current/complete");
+        assertEquals("SCHRIFTLICHER_AUSDRUCK", writing.get("parts").get(0).get("key").asText());
+        mvc.perform(as(studentA, put(api + "/" + id + "/answers").content(
+                "{\"answers\":[{\"partKey\":\"SCHRIFTLICHER_AUSDRUCK\",\"questionId\":\"__text\",\"answer\":\"Liebe Anna, ich komme gern zur Party.\",\"flagged\":false}]}")))
+                .andExpect(status().isOk());
+
+        JsonNode submitted = read(mvc.perform(as(studentA, post(api + "/" + id + "/submit"))).andExpect(status().isOk()).andReturn());
+        assertEquals(180.0, submitted.get("result").get("writtenScore").asDouble());
+        assertEquals("AWAITING_ASSESSMENT", submitted.get("result").get("writtenResult").asText());
+        assertEquals("AWAITING_ASSESSMENT", submitted.get("result").get("overallResult").asText());
+
+        // admin assesses writing from the queue
+        MvcResult queue = mvc.perform(as(admin, get("/api/admin/exam-simulation/assessments/queue"))).andExpect(status().isOk()).andReturn();
+        boolean queued = false;
+        for (JsonNode item : read(queue)) queued |= item.get("attemptId").asText().equals(id) && item.get("partKey").asText().equals("SCHRIFTLICHER_AUSDRUCK");
+        assertTrue(queued);
+        mvc.perform(as(admin, put("/api/admin/exam-simulation/attempts/" + id + "/parts/SCHRIFTLICHER_AUSDRUCK/assessment").content(
+                "{\"criteriaScores\":{\"AUFGABENERFUELLUNG\":12,\"KOMMUNIKATIVE_GESTALTUNG\":11.5,\"FORMALE_RICHTIGKEIT\":10},\"comment\":\"Gut\"}"))).andExpect(status().isOk());
+
+        JsonNode result = read(mvc.perform(as(studentA, get(api + "/" + id + "/result"))).andExpect(status().isOk()).andReturn());
+        assertEquals(213.5, result.get("result").get("writtenScore").asDouble());
+        assertEquals("PASSED", result.get("result").get("writtenResult").asText());
+        assertEquals("NOT_ASSESSED", result.get("result").get("oralResult").asText());
+        assertEquals("INCOMPLETE", result.get("result").get("overallResult").asText());
+        assertTrue(result.get("answersReleased").asBoolean());
+
+        // history shows the attempt; a second exam uses different exercises; a third has no unused content left
+        JsonNode history = read(mvc.perform(as(studentA, get(api))).andExpect(status().isOk()).andReturn());
+        assertEquals(1, history.get("attempts").size());
+        assertEquals(1, history.get("progress").size());
+
+        JsonNode second = read(mvc.perform(as(studentA, post(api).content(start))).andExpect(status().isCreated()).andReturn());
+        assertNotEquals(id, second.get("attemptId").asText());
+        postOk(studentA, api + "/" + second.get("attemptId").asText() + "/submit");
+
+        MvcResult exhausted = mvc.perform(as(studentA, post(api).content(start))).andExpect(status().isConflict()).andReturn();
+        assertEquals("INSUFFICIENT_CONTENT", read(exhausted).get("code").asText());
+        JsonNode overview = read(mvc.perform(as(studentA, get("/api/exam-simulation/profiles/" + profile.getId()))).andExpect(status().isOk()).andReturn());
+        assertFalse(overview.get("canStart").asBoolean());
+        assertEquals("INSUFFICIENT_CONTENT", overview.get("blockedReason").asText());
+
+        // another learner is not affected by studentA's reservations
+        mvc.perform(as(studentB, post(api).content(start))).andExpect(status().isCreated());
+    }
 }

@@ -1,0 +1,38 @@
+import api from "./api";
+import {
+    AnswerItem,
+    AttemptState,
+    AttemptSummary,
+    HistoryResponse,
+    ProfileOverview,
+    ResultResponse,
+    SaveAnswersResponse,
+} from "@/types/examSimulation";
+
+const base = "/exam-simulation";
+
+export const getSimulationProfiles = () => api.get<ProfileOverview[]>(`${base}/profiles`);
+
+export const getSimulationProfile = (profileId: string) => api.get<ProfileOverview>(`${base}/profiles/${profileId}`);
+
+export const startSimulationAttempt = (profileId: string) => api.post<AttemptState>(`${base}/attempts`, { profileId });
+
+export const getSimulationHistory = () => api.get<HistoryResponse>(`${base}/attempts`);
+
+export const getSimulationAttempt = (attemptId: string) => api.get<AttemptState>(`${base}/attempts/${attemptId}`);
+
+/** Re-enters a running attempt after a refresh; the server may limit how often this is allowed. */
+export const resumeSimulationAttempt = (attemptId: string) => api.post<AttemptState>(`${base}/attempts/${attemptId}/resume`);
+
+/** Idempotent upsert, safe to retry. The server decides whether each answer is still accepted. */
+export const saveSimulationAnswers = (attemptId: string, answers: AnswerItem[]) =>
+    api.put<SaveAnswersResponse>(`${base}/attempts/${attemptId}/answers`, { answers });
+
+export const completeSimulationSection = (attemptId: string) =>
+    api.post<AttemptState>(`${base}/attempts/${attemptId}/sections/current/complete`);
+
+export const submitSimulationAttempt = (attemptId: string) => api.post<ResultResponse>(`${base}/attempts/${attemptId}/submit`);
+
+export const cancelSimulationAttempt = (attemptId: string) => api.post<AttemptSummary>(`${base}/attempts/${attemptId}/cancel`);
+
+export const getSimulationResult = (attemptId: string) => api.get<ResultResponse>(`${base}/attempts/${attemptId}/result`);
