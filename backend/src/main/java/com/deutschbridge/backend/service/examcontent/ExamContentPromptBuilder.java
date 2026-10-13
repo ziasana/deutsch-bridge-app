@@ -38,6 +38,13 @@ public class ExamContentPromptBuilder {
     public static final List<String> COMMUNICATION_TYPES = List.of("INFORMAL_EMAIL", "SEMI_FORMAL_EMAIL", "FORMAL_EMAIL");
     public static final List<String> CONTEXT_MODES = List.of("RANDOM", "WITH_ADVERTISEMENT", "WITHOUT_ADVERTISEMENT");
     public static final List<String> DIFFICULTIES = List.of("MIXED", "EASY", "MEDIUM", "HARD");
+    /** DTZ Lesen Teil 1 generator choices (the first entry of each list is the default). */
+    public static final List<String> DIRECTORY_TOPICS = List.of(
+            "RANDOM", "TOWN_HALL", "LIBRARY", "HOSPITAL", "PUBLIC_TRANSPORT", "COURSE_CATALOGUE", "JOB_TRAINING", "HOUSING",
+            "SHOPPING_SERVICES", "SPORTS_LEISURE");
+    public static final List<String> DIRECTORY_SOURCE_TYPES = List.of("RANDOM", "DIRECTORY", "REGISTER", "CATALOGUE", "SERVICE_LIST");
+    public static final List<String> DIRECTORY_LEVELS = List.of("A2_B1", "A2", "B1");
+    public static final List<String> DIRECTORY_VARIATIONS = List.of("RANDOM", "NEW_SCENARIO", "AVOID_KNOWN_TOPICS");
     public static final int MAX_COUNT = 50;
 
     /** Rules shared by the three Mündlicher Ausdruck templates (language, quality, output); included as {{SPEAKING_COMMON}}. */
@@ -52,6 +59,9 @@ public class ExamContentPromptBuilder {
     /** {@code existingSummaries}: one line per task already in the library (writing tasks), so the AI does not repeat them. */
     public PromptResponse build(ExamContentSpec spec, PromptRequest request, int existingCount, int firstNumber,
                                 List<String> existingSummaries) {
+        if (spec.isDirectoryMatching()) {
+            return buildDirectory(spec, request, existingCount, firstNumber, existingSummaries);
+        }
         int count = request.count() == null ? 10 : request.count();
         if (count < 1 || count > MAX_COUNT) {
             throw new IllegalArgumentException("count must be between 1 and " + MAX_COUNT);
@@ -136,6 +146,154 @@ public class ExamContentPromptBuilder {
             prompt = prompt.replace("{{" + e.getKey() + "}}", e.getValue());
         }
         return new PromptResponse(prompt.strip() + "\n", spec.promptVersion(), ExamContentSpecs.SCHEMA_VERSION, example, existingCount, firstId);
+    }
+
+    // ------------------------------------------------------------------ DTZ Lesen Teil 1 (directory matching)
+
+    private static final Map<String, String> DIRECTORY_TOPIC_TEXT = Map.of(
+            "TOWN_HALL", "Rathaus and authorities (town hall departments, citizens' services)",
+            "LIBRARY", "Library (sections, services, opening areas)",
+            "HOSPITAL", "Hospital (departments, practices, services)",
+            "PUBLIC_TRANSPORT", "Public transport information (lines, ticket and customer services)",
+            "COURSE_CATALOGUE", "Course catalogue (adult education, language and leisure courses)",
+            "JOB_TRAINING", "Job and training services (employment agency, counselling, training)",
+            "HOUSING", "Housing services (housing office, tenants' advice, utilities)",
+            "SHOPPING_SERVICES", "Shopping and services (shopping centre, department store, service points)",
+            "SPORTS_LEISURE", "Sports and leisure (sports centre, pool, clubs)");
+
+    private PromptResponse buildDirectory(ExamContentSpec spec, PromptRequest request, int existingCount, int firstNumber,
+                                          List<String> existingSummaries) {
+        String level = directoryToken(request.difficulty(), "A2_B1", DIRECTORY_LEVELS, "difficulty");
+        int count = request.count() == null ? 1 : request.count();
+        if (count < 1 || count > MAX_COUNT) throw new IllegalArgumentException("count must be between 1 and " + MAX_COUNT);
+        List<String> topics = new ArrayList<>();
+        for (String t : request.topics() == null ? List.<String>of() : request.topics()) {
+            String token = directoryToken(t, "RANDOM", DIRECTORY_TOPICS, "topic");
+            if (!token.equals("RANDOM") && !topics.contains(token)) topics.add(token);
+        }
+        String sourceType = directoryToken(request.sourceType(), "RANDOM", DIRECTORY_SOURCE_TYPES, "source type");
+        String variation = directoryToken(request.variation(), "RANDOM", DIRECTORY_VARIATIONS, "variation");
+        boolean includeExample = request.includeExample() == null || request.includeExample();
+
+        String firstId = spec.externalIdPrefix() + String.format("%03d", firstNumber);
+        String example = directoryJsonExample(spec, level, sourceType, includeExample, count);
+
+        Map<String, String> values = new java.util.LinkedHashMap<>();
+        values.put("DIFFICULTY", level);
+        values.put("COUNT_LINE", count == 1 ? "Generate exactly ONE complete exercise" : "Generate exactly " + count + " complete, clearly different exercises");
+        values.put("BATCH_RULE", count == 1 ? ""
+                : "Because there are " + count + " exercises, return ONE JSON object that wraps them: schemaVersion, contentType \"EXAM_EXERCISE_BATCH\", exam, level, section, part and an \"exercises\" array with exactly " + count + " exercise objects. Each exercise must use a different scenario, source and wording.\n");
+        values.put("STRUCTURE_NOTE", count == 1 ? "" : " (the object inside the \"exercises\" array; repeat it " + count + " times)");
+        values.put("TOPIC", topics.isEmpty() ? "any suitable everyday topic (your choice; vary it between exercises)"
+                : count == 1 || topics.size() == 1 ? DIRECTORY_TOPIC_TEXT.get(topics.get(0))
+                : "spread the " + count + " exercises over these topics, each exercise with one topic: "
+                + topics.stream().map(DIRECTORY_TOPIC_TEXT::get).collect(java.util.stream.Collectors.joining("; ")));
+        values.put("SOURCE_TYPE", sourceType.equals("RANDOM") ? "your choice (DIRECTORY, REGISTER, CATALOGUE or SERVICE_LIST - whichever fits the topic best; set informationSource.type accordingly)" : sourceType);
+        values.put("INCLUDE_EXAMPLE", includeExample ? "include one unscored example" : "do not include an example");
+        values.put("VARIATION_BLOCK", switch (variation) {
+            case "NEW_SCENARIO" -> "Variation: invent a new, original scenario; do not fall back on the most typical textbook setting for this topic.\n";
+            case "AVOID_KNOWN_TOPICS" -> existingSummaries.isEmpty()
+                    ? "Variation: avoid the most common textbook scenarios for this topic.\n"
+                    : "Variation: the library already contains these exercises - choose a clearly different scenario, source and wording:\n"
+                    + existingSummaries.stream().map(line -> "- " + line).collect(java.util.stream.Collectors.joining("\n")) + "\n";
+            default -> "";
+        });
+        values.put("LEVEL_RULES", directoryLevelRules(level));
+        values.put("EXAMPLE_RULE", includeExample
+                ? "- Set example.enabled to true and give a complete example with its own situation, three options, correct answer and explanation. The example is not scored and has no number."
+                : "- The example is disabled: use exactly \"example\": {\"enabled\": false}.");
+        values.put("JSON_EXAMPLE", example);
+        values.put("NOTES_BLOCK", request.notes() == null || request.notes().isBlank() ? ""
+                : "\nADDITIONAL INSTRUCTIONS FROM THE EDITOR:\n" + request.notes().strip());
+
+        String prompt = loadTemplate(spec.promptTemplate());
+        for (Map.Entry<String, String> e : values.entrySet()) {
+            prompt = prompt.replace("{{" + e.getKey() + "}}", e.getValue());
+        }
+        return new PromptResponse(prompt.strip() + "\n", spec.promptVersion(), ExamContentSpecs.SCHEMA_VERSION, example, existingCount, firstId);
+    }
+
+    private static String directoryToken(String value, String fallback, List<String> allowed, String label) {
+        if (value == null || value.isBlank()) return fallback;
+        String normalized = value.trim().toUpperCase(Locale.ROOT).replaceAll("[-– ]", "_");
+        if (!allowed.contains(normalized)) throw new IllegalArgumentException("Unknown " + label + ": " + value);
+        return normalized;
+    }
+
+    private static String directoryLevelRules(String level) {
+        return switch (level) {
+            case "A2" -> "For A2: prefer short, direct sentences; use common vocabulary; avoid complicated subordinate clauses; avoid unnecessary nominalizations and specialist vocabulary.";
+            case "B1" -> "For B1: allow somewhat richer wording and paraphrasing; keep the answer unambiguous and explicitly supported by the source.";
+            default -> "For A2–B1: use accessible everyday German; include some paraphrasing; keep situations concise and realistic; do not require advanced inference.";
+        };
+    }
+
+    private String directoryJsonExample(ExamContentSpec spec, String level, String sourceType, boolean includeExample, int count) {
+        ObjectNode ex = MAPPER.createObjectNode();
+        ex.put("exam", "DTZ");
+        ex.put("section", "LESEN");
+        ex.put("part", 1);
+        ex.put("exerciseType", "DIRECTORY_MATCHING");
+        ex.put("skill", "KATALOGE_REGISTER_VERZEICHNISSE");
+        ex.put("level", "A2_B1");
+        ex.put("title", "...");
+        ex.put("topic", "...");
+        ex.put("difficulty", level);
+        ex.putObject("instructions").put("de", spec.defaultInstructions());
+        ObjectNode source = ex.putObject("informationSource");
+        source.put("type", sourceType.equals("RANDOM") ? "DIRECTORY" : sourceType);
+        source.put("title", "...");
+        source.put("introduction", "...");
+        ArrayNode entries = source.putArray("entries");
+        for (int i = 1; i <= 2; i++) {
+            ObjectNode entry = entries.addObject();
+            entry.put("id", "entry_" + i);
+            entry.put("heading", "...");
+            entry.putArray("details").add("...").add("...");
+        }
+        source.put("displayText", "...");
+        if (includeExample) {
+            ObjectNode example = ex.putObject("example");
+            example.put("enabled", true);
+            example.put("situation", "...");
+            putOptions(example.putArray("options"));
+            example.put("correctAnswer", "a");
+            putExplanation(example.putObject("explanation"));
+        } else {
+            ex.putObject("example").put("enabled", false);
+        }
+        ArrayNode questions = ex.putArray("questions");
+        for (int i = 0; i < spec.questionCount(); i++) {
+            ObjectNode q = questions.addObject();
+            q.put("number", spec.firstQuestionNumber() + i);
+            q.put("situation", "...");
+            putOptions(q.putArray("options"));
+            q.put("correctAnswer", "a");
+            q.putArray("sourceEntryIds").add("entry_1");
+            putExplanation(q.putObject("explanation"));
+        }
+        ObjectNode meta = ex.putObject("metadata");
+        meta.put("schemaVersion", 1);
+        meta.put("source", "AI_IMPORTED");
+        meta.putArray("tags");
+        if (count == 1) return write(ex);
+        ObjectNode root = MAPPER.createObjectNode();
+        root.put("schemaVersion", ExamContentSpecs.SCHEMA_VERSION);
+        root.put("contentType", "EXAM_EXERCISE_BATCH");
+        root.put("exam", "DTZ");
+        root.put("level", "A2_B1");
+        root.put("section", "LESEN");
+        root.put("part", "TEIL_1");
+        root.putArray("exercises").add(ex);
+        return write(root);
+    }
+
+    private static void putOptions(ArrayNode options) {
+        for (String key : List.of("a", "b", "c")) options.addObject().put("key", key).put("text", "...");
+    }
+
+    private static void putExplanation(ObjectNode explanation) {
+        explanation.put("de", "...").put("en", "...").put("fa", "...");
     }
 
     private String requestBlock(ExamContentSpec spec, int count, String difficulty, List<String> topics, String firstId, boolean includeVisuals,

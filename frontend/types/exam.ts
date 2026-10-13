@@ -20,6 +20,8 @@ export type ExamTaskType =
     | "TRUE_FALSE"
     /** DTZ Lesen Teil 3: several texts, each with one richtig/falsch and one multiple-choice task. */
     | "TEXT_QUESTIONS"
+    /** DTZ Lesen Teil 1: one information source (Wegweiser, Verzeichnis, Katalog ...) and five a/b/c situations. */
+    | "DIRECTORY_MATCHING"
     | "WORD_BANK_CLOZE"
     | "WRITING_TASK"
     | "TOPIC_INTERVIEW"
@@ -183,6 +185,11 @@ export interface ExamExerciseAdminRow {
     version: number;
     difficulty: string | null;
     updatedAt: string | null;
+    /** Imported content: the exercise's theme. */
+    topic?: string | null;
+    /** DTZ directory exercises: DIRECTORY | REGISTER | CATALOGUE | SERVICE_LIST. */
+    sourceType?: string | null;
+    createdAt?: string | null;
 }
 
 export interface ExamExerciseResponse {

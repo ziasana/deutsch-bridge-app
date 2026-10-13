@@ -17,6 +17,11 @@ public record ExamExerciseAdminRow(
         String externalId,
         int version,
         String difficulty,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        /** Imported content only (metadata.topic): the exercise's theme, e.g. "Behörden und Dienstleistungen". */
+        String topic,
+        /** DTZ directory exercises only (metadata.sourceType): DIRECTORY | REGISTER | CATALOGUE | SERVICE_LIST. */
+        String sourceType,
+        LocalDateTime createdAt
 ) {
 }

@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { SpeakingModel, SpeakingStimulus, hasSpeakingModel } from "@/componenets/exam/speaking";
-import { ExamContentStatus, ExercisePreviewData, PreviewAdvertisement } from "@/types/examContent";
+import { ExamContentStatus, ExercisePreviewData, PreviewAdvertisement, PreviewDirectory } from "@/types/examContent";
 
 export const cardClass =
     "bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)]";
@@ -78,6 +79,7 @@ export function htmlToText(html: string | null | undefined): string {
  * the admin only - the answer key and which headings stay unused.
  */
 export function ExerciseView({ preview, showAnswers = true }: Readonly<{ preview: ExercisePreviewData; showAnswers?: boolean }>) {
+    if (preview.directory) return <DirectoryExerciseView preview={preview} directory={preview.directory} />;
     if (preview.speaking) return <SpeakingTaskView preview={preview} speaking={preview.speaking} />;
     if (preview.writing) return <WritingTaskView preview={preview} writing={preview.writing} />;
     if (preview.advertisements?.length || preview.situations?.length) return <SituationExerciseView preview={preview} showAnswers={showAnswers} />;
@@ -459,5 +461,134 @@ function SpeakingTaskView({ preview, speaking }: Readonly<{ preview: ExercisePre
                 (Exam Prep → Sprechen lernen) and are shown to learners next to this exercise.
             </p>
         </div>
+    );
+}
+
+const SOURCE_TYPE_LABELS: Record<string, string> = {
+    DIRECTORY: "Directory / Wegweiser",
+    REGISTER: "Register / Verzeichnis",
+    CATALOGUE: "Catalogue / Katalog",
+    SERVICE_LIST: "List of services",
+};
+export const sourceTypeLabel = (type: string | null | undefined) => (type ? SOURCE_TYPE_LABELS[type] ?? type : "—");
+
+const LANGUAGES: { key: string; label: string; dir?: "rtl" }[] = [
+    { key: "de", label: "Deutsch" },
+    { key: "en", label: "English" },
+    { key: "fa", label: "فارسی", dir: "rtl" },
+];
+
+/**
+ * DTZ Lesen Teil 1 as the learner sees it: instructions, the shared information source, the optional example and the
+ * situations 21-25 with their options. The answer key (correct option, explanation, supporting entry) is a separate toggle
+ * and is off by default, because the learner view never shows it before submitting.
+ */
+function DirectoryExerciseView({ preview, directory }: Readonly<{ preview: ExercisePreviewData; directory: PreviewDirectory }>) {
+    const [showKey, setShowKey] = useState(false);
+    const questions = preview.questions ?? [];
+    const headingOf = (id: string) => directory.entries.find((e) => e.id === id)?.heading ?? id;
+    return (
+        <div className="space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                {preview.instructions ? <p className="text-sm italic text-gray-600 dark:text-gray-300">{preview.instructions}</p> : <span />}
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
+                    <input type="checkbox" checked={showKey} onChange={(e) => setShowKey(e.target.checked)} />
+                    Show answer key (admin only)
+                </label>
+            </div>
+
+            <div className="flex flex-wrap gap-2 text-xs text-gray-600 dark:text-gray-300">
+                <span className="rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-700">{sourceTypeLabel(directory.sourceType)}</span>
+                {directory.topic && <span className="rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-700">{directory.topic}</span>}
+                {directory.languageLevel && <span className="rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-700">{directory.languageLevel.replace("_", "–")}</span>}
+            </div>
+
+            <section aria-label="Information source" className="rounded-lg border-2 border-double border-gray-300 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-900/40">
+                {directory.sourceTitle && <h4 className="text-base font-bold text-gray-900 dark:text-white">{directory.sourceTitle}</h4>}
+                {directory.introduction && <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">{directory.introduction}</p>}
+                <ul className="mt-3 space-y-2">
+                    {directory.entries.map((entry) => (
+                        <li key={entry.id} className="rounded-md border border-gray-200 bg-white p-2.5 text-sm dark:border-gray-700 dark:bg-gray-800">
+                            <p className="font-semibold text-gray-900 dark:text-white">
+                                {entry.heading}
+                                {showKey && <span className="ml-2 font-mono text-xs font-normal text-gray-400">{entry.id}</span>}
+                            </p>
+                            {entry.details.length > 0 && (
+                                <ul className="mt-0.5 list-disc pl-5 text-gray-700 dark:text-gray-300">
+                                    {entry.details.map((d, i) => <li key={i}>{d}</li>)}
+                                </ul>
+                            )}
+                        </li>
+                    ))}
+                </ul>
+            </section>
+
+            {directory.example && (
+                <section aria-label="Beispiel" className="rounded-lg border border-dashed border-gray-300 p-4 dark:border-gray-600">
+                    <h4 className="mb-1 text-sm font-semibold text-gray-900 dark:text-white">Beispiel <span className="font-normal text-gray-500">(not scored)</span></h4>
+                    <p className="text-sm text-gray-800 dark:text-gray-200">{directory.example.situation}</p>
+                    <OptionList options={directory.example.options} correctId={directory.example.correctOptionId} highlight />
+                    <Explanations explanation={directory.example.explanation} />
+                </section>
+            )}
+
+            <div className="space-y-3">
+                {questions.map((q, i) => {
+                    const detail = directory.questionDetails.find((d) => d.number === q.number) ?? directory.questionDetails[i];
+                    return (
+                        <div key={q.id ?? i} className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                            <h4 className="mb-2 text-sm font-semibold text-gray-900 dark:text-white">{q.number ?? i + 1}. {q.question}</h4>
+                            <OptionList options={q.options} correctId={q.correctOptionId} highlight={showKey} />
+                            {showKey && (
+                                <div className="mt-2 space-y-1 rounded-md bg-gray-50 p-2.5 text-sm dark:bg-gray-900/40">
+                                    <p className="text-gray-700 dark:text-gray-300">
+                                        <span className="font-semibold">Correct: </span>{q.correctOptionId ?? "?"}
+                                        {" · "}
+                                        <span className="font-semibold">Source: </span>
+                                        {detail?.sourceEntryIds.length ? detail.sourceEntryIds.map(headingOf).join("; ") : "— (none given)"}
+                                    </p>
+                                    {detail && <Explanations explanation={detail.explanation} />}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+function OptionList({ options, correctId, highlight }: Readonly<{ options: { id: string; text: string | null }[]; correctId: string | null; highlight: boolean }>) {
+    return (
+        <ul className="mt-2 space-y-1">
+            {options.map((o) => (
+                <li
+                    key={o.id}
+                    className={`rounded-md border px-3 py-1.5 text-sm ${
+                        highlight && o.id === correctId
+                            ? "border-green-400 bg-green-50 text-green-900 dark:border-green-700 dark:bg-green-900/30 dark:text-green-100"
+                            : "border-gray-200 text-gray-900 dark:border-gray-700 dark:text-gray-100"
+                    }`}
+                >
+                    <span className="mr-1.5 font-semibold">{o.id})</span>
+                    {o.text}
+                </li>
+            ))}
+        </ul>
+    );
+}
+
+function Explanations({ explanation }: Readonly<{ explanation: Record<string, string> }>) {
+    const present = LANGUAGES.filter((l) => explanation[l.key]);
+    if (present.length === 0) return null;
+    return (
+        <ul className="mt-1.5 space-y-0.5 text-sm text-gray-700 dark:text-gray-300">
+            {present.map((l) => (
+                <li key={l.key} dir={l.dir}>
+                    <span className="mr-1.5 text-xs font-semibold uppercase text-gray-400">{l.key}</span>
+                    {explanation[l.key]}
+                </li>
+            ))}
+        </ul>
     );
 }

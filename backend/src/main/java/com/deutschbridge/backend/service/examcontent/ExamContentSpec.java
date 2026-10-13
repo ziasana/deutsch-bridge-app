@@ -100,6 +100,11 @@ public record ExamContentSpec(
         return headingCount - textCount;
     }
 
+    /** True for DTZ Lesen Teil 1: one shared information source (directory, register ...) and five multiple-choice situations. */
+    public boolean isDirectoryMatching() {
+        return taskType == ExamTaskType.DIRECTORY_MATCHING;
+    }
+
     /** Short human label, e.g. "TELC B1 · Lesen · Teil 1". */
     public String label() {
         return examType.getValue() + " " + level.getValue() + " · " + ExamContentTokens.sectionLabel(section) + " · Teil " + part;

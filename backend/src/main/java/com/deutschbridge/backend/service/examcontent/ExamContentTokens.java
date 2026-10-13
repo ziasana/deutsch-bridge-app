@@ -20,6 +20,7 @@ public final class ExamContentTokens {
             case "TELC" -> Optional.of(ExamType.TELC);
             case "GOETHE" -> Optional.of(ExamType.GOETHE);
             case "TESTDAF", "DAFTEST" -> Optional.of(ExamType.TESTDAF);
+            case "DTZ" -> Optional.of(ExamType.DTZ);
             case "DSH" -> Optional.of(ExamType.DSH);
             case "OTHER" -> Optional.of(ExamType.OTHER);
             default -> Optional.empty();
@@ -28,8 +29,11 @@ public final class ExamContentTokens {
 
     public static Optional<LearningLevel> parseLevel(String token) {
         if (token == null) return Optional.empty();
+        String normalized = token.trim().toUpperCase(Locale.ROOT);
+        // DTZ covers A2 and B1 together; its exercises are stored with level B1.
+        if (normalized.matches("A2[-_ –]?B1")) return Optional.of(LearningLevel.B1);
         try {
-            return Optional.of(LearningLevel.valueOf(token.trim().toUpperCase(Locale.ROOT)));
+            return Optional.of(LearningLevel.valueOf(normalized));
         } catch (IllegalArgumentException e) {
             return Optional.empty();
         }

@@ -1,5 +1,9 @@
 package com.deutschbridge.backend.service.examcontent;
 
+import com.deutschbridge.backend.model.dto.ExamContentDtos.DirectoryEntryView;
+import com.deutschbridge.backend.model.dto.ExamContentDtos.DirectoryExampleView;
+import com.deutschbridge.backend.model.dto.ExamContentDtos.DirectoryQuestionDetail;
+import com.deutschbridge.backend.model.dto.ExamContentDtos.DirectoryView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.ExercisePreview;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.HeadingView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.AdvertisementView;
@@ -48,6 +52,9 @@ public final class ExamContentMapper {
         }
         if (spec.isWordBank()) {
             return toWordBankEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
+        }
+        if (spec.isDirectoryMatching()) {
+            return toDirectoryEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
         }
         if (spec.isSituationMatching()) {
             return toSituationEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
@@ -159,6 +166,123 @@ public final class ExamContentMapper {
         exercise.setUpdatedBy(userId);
         exercise.applyStatus(ExamContentStatus.DRAFT);
         return exercise;
+    }
+
+    /**
+     * DTZ Lesen Teil 1: the information source is the first passage (rendered from the structured entries), the optional example a
+     * second passage labelled {@link #EXAMPLE_LABEL}, and every situation a MULTIPLE_CHOICE question about passage 0 (options as
+     * plain strings, correctAnswer = the correct option's text, like every hand-authored multiple-choice exercise). The German
+     * explanation is the question's explanation; the structured source, the supporting entries and the English / Persian
+     * explanations are kept in {@code metadata.directory} for the admin preview, the answer key and the JSON export.
+     */
+    private static ExamExercise toDirectoryEntity(ParsedExercise ex, ExamType examType, String schemaVersion,
+                                                   String promptVersion, String hash, String userId) {
+        ExamContentSpec spec = ex.spec();
+        ParsedExercise.Directory d = ex.directory();
+        List<ExamQuestion> questions = new ArrayList<>();
+        List<Map<String, Object>> details = new ArrayList<>();
+        for (int i = 0; i < ex.questions().size(); i++) {
+            ParsedExercise.Question q = ex.questions().get(i);
+            String correct = q.options().stream().filter(o -> o.id().equals(q.correctOptionId())).map(ParsedExercise.Option::text).findFirst().orElse(null);
+            int number = q.number() != null ? q.number() : spec.firstQuestionNumber() + i;
+            Map<String, String> explanation = d.explanationsByQuestion().getOrDefault(q.id(), Map.of());
+            questions.add(new ExamQuestion(null, ExamTaskType.MULTIPLE_CHOICE, q.question(), 0,
+                    q.options().stream().map(ParsedExercise.Option::text).toList(), correct, null, number, explanation.get("de"), null).ensureId());
+            Map<String, Object> detail = new LinkedHashMap<>();
+            detail.put("number", number);
+            detail.put("sourceEntryIds", d.sourceEntryIdsByQuestion().getOrDefault(q.id(), List.of()));
+            detail.put("explanation", new LinkedHashMap<>(explanation));
+            details.add(detail);
+        }
+        questions.sort(java.util.Comparator.comparing(ExamQuestion::getQuestionNumber));
+        details.sort(java.util.Comparator.comparing(m -> (Integer) m.get("number")));
+
+        Map<String, Object> directory = new LinkedHashMap<>();
+        directory.put("sourceType", d.sourceType());
+        directory.put("title", d.sourceTitle());
+        if (d.introduction() != null) directory.put("introduction", d.introduction());
+        List<Map<String, Object>> entries = new ArrayList<>();
+        for (ParsedExercise.Entry entry : d.entries()) {
+            Map<String, Object> e = new LinkedHashMap<>();
+            e.put("id", entry.id());
+            e.put("heading", entry.heading());
+            e.put("details", entry.details());
+            entries.add(e);
+        }
+        directory.put("entries", entries);
+        directory.put("displayText", d.displayText());
+        if (d.example() != null) {
+            Map<String, Object> example = new LinkedHashMap<>();
+            example.put("situation", d.example().situation());
+            example.put("options", d.example().options().stream().map(o -> Map.of("key", o.id(), "text", o.text())).toList());
+            example.put("correctAnswer", d.example().correctOptionId());
+            example.put("explanation", new LinkedHashMap<>(d.example().explanation()));
+            directory.put("example", example);
+        }
+        directory.put("questions", details);
+
+        Map<String, Object> metadata = new LinkedHashMap<>(ex.metadata());
+        metadata.putIfAbsent("source", "AI_IMPORTED");
+        if (d.topic() != null) metadata.put("topic", d.topic());
+        metadata.put("languageLevel", d.languageLevel());
+        metadata.put("sourceType", d.sourceType());
+        metadata.put("directory", directory);
+
+        List<ExamPassage> passages = new ArrayList<>();
+        passages.add(new ExamPassage(null, d.sourceTitle(), toDirectoryHtml(d), null, null, null).ensureId());
+        if (d.example() != null) {
+            passages.add(new ExamPassage(null, EXAMPLE_LABEL, toExampleHtml(d.example()), null, null, null).ensureId());
+        }
+
+        ExamExercise exercise = new ExamExercise();
+        exercise.setTitle(ex.title());
+        exercise.setExamType(examType);
+        exercise.setSection(spec.section());
+        exercise.setTaskType(spec.taskType());
+        exercise.setLevel(spec.level());
+        exercise.setPartNumber(spec.part());
+        exercise.setPassages(passages);
+        exercise.setQuestions(questions);
+        exercise.setTeilDescription(ex.instructions());
+        exercise.setExternalId(ex.externalId());
+        exercise.setSchemaVersion(schemaVersion);
+        exercise.setPromptVersion(promptVersion);
+        exercise.setMetadata(metadata);
+        exercise.setContentHash(hash);
+        exercise.setCreatedBy(userId);
+        exercise.setUpdatedBy(userId);
+        exercise.applyStatus(ExamContentStatus.DRAFT);
+        return exercise;
+    }
+
+    /** Label of the optional second passage of a directory exercise: the unscored example the learner sees before the tasks. */
+    public static final String EXAMPLE_LABEL = "Beispiel";
+
+    /** The source as escaped HTML: title, introduction, then one block per entry (bold heading, one line per detail). */
+    static String toDirectoryHtml(ParsedExercise.Directory d) {
+        StringBuilder html = new StringBuilder();
+        if (d.introduction() != null) html.append("<p>").append(HtmlUtils.htmlEscape(d.introduction())).append("</p>");
+        for (ParsedExercise.Entry entry : d.entries()) {
+            html.append("<p><strong>").append(HtmlUtils.htmlEscape(entry.heading())).append("</strong>");
+            for (String detail : entry.details()) html.append("<br>").append(HtmlUtils.htmlEscape(detail));
+            html.append("</p>");
+        }
+        return html.toString();
+    }
+
+    static String toExampleHtml(ParsedExercise.Example example) {
+        StringBuilder html = new StringBuilder("<p>").append(HtmlUtils.htmlEscape(example.situation())).append("</p><p>");
+        for (int i = 0; i < example.options().size(); i++) {
+            ParsedExercise.Option o = example.options().get(i);
+            if (i > 0) html.append("<br>");
+            boolean correct = o.id().equals(example.correctOptionId());
+            html.append(correct ? "<strong>" : "").append(HtmlUtils.htmlEscape(o.id())).append(") ").append(HtmlUtils.htmlEscape(o.text()))
+                    .append(correct ? "</strong>" : "");
+        }
+        html.append("</p>");
+        String de = example.explanation().get("de");
+        if (de != null) html.append("<p>").append(HtmlUtils.htmlEscape(de)).append("</p>");
+        return html.toString();
     }
 
     /**
@@ -465,6 +589,22 @@ public final class ExamContentMapper {
                     List.of(), List.of(),
                     ex.context() == null ? null : new ContextView(ex.context().type(), ex.context().title(), ex.context().text()));
         }
+        if (ex.directory() != null) {
+            ParsedExercise.Directory d = ex.directory();
+            DirectoryExampleView example = d.example() == null ? null : new DirectoryExampleView(d.example().situation(),
+                    d.example().options().stream().map(o -> new HeadingView(o.id(), o.text())).toList(), d.example().correctOptionId(), d.example().explanation());
+            List<DirectoryQuestionDetail> details = ex.questions().stream()
+                    .map(q -> new DirectoryQuestionDetail(q.number(), d.sourceEntryIdsByQuestion().getOrDefault(q.id(), List.of()),
+                            d.explanationsByQuestion().getOrDefault(q.id(), Map.of())))
+                    .toList();
+            return new ExercisePreview(ex.title(), ex.instructions(), List.of(), List.of(), ex.readingText(),
+                    ex.questions().stream().map(q -> new QuestionView(q.id(), q.number(), q.question(),
+                            q.options().stream().map(o -> new HeadingView(o.id(), o.text())).toList(), q.correctOptionId(), q.type())).toList(),
+                    List.of(), List.of(), null, null, null,
+                    new DirectoryView(d.sourceType(), d.topic(), d.languageLevel(), d.sourceTitle(), d.introduction(),
+                            d.entries().stream().map(e -> new DirectoryEntryView(e.id(), e.heading(), e.details())).toList(),
+                            d.displayText(), example, details));
+        }
         if (ex.spec() != null && ex.spec().isSituationMatching()) {
             return new ExercisePreview(ex.title(), ex.instructions(), List.of(), List.of(), null, List.of(),
                     ex.situations().stream().map(s -> new SituationView(s.id(), s.number(), s.text(), s.correctAdvertisementId(), s.matchingProfile())).toList(),
@@ -494,6 +634,7 @@ public final class ExamContentMapper {
         if (e.getTaskType() == ExamTaskType.WORD_BANK_CLOZE) return toWordBankExportNode(mapper, e);
         if (e.getTaskType() == ExamTaskType.MULTIPLE_CHOICE) return toReadingExportNode(mapper, e);
         if (e.getTaskType() == ExamTaskType.SITUATION_MATCHING) return toSituationExportNode(mapper, e);
+        if (e.getTaskType() == ExamTaskType.DIRECTORY_MATCHING) return toDirectoryExportNode(mapper, e);
         if (e.getTaskType() != ExamTaskType.MATCHING || e.getAnswerOptions() == null || e.getPassages() == null
                 || e.getQuestions() == null || e.getSection() == null || e.getLevel() == null || e.getPartNumber() == null) {
             return null;
@@ -754,6 +895,86 @@ public final class ExamContentMapper {
     }
 
     /** Reading text + multiple-choice questions in the import shape; null when the stored exercise does not fit it. */
+    /**
+     * DTZ directory exercise in the import shape. The structured source, example and explanations come from {@code metadata.directory};
+     * situations, options and answers are read from the stored questions so admin edits are exported. Hand-made exercises without
+     * that metadata cannot be exported.
+     */
+    @SuppressWarnings("unchecked")
+    private static ObjectNode toDirectoryExportNode(ObjectMapper mapper, ExamExercise e) {
+        if (e.getQuestions() == null || e.getQuestions().isEmpty() || e.getMetadata() == null
+                || !(e.getMetadata().get("directory") instanceof Map<?, ?> raw)) {
+            return null;
+        }
+        Map<String, Object> directory = (Map<String, Object>) raw;
+        List<ExamQuestion> ordered = e.getQuestions().stream()
+                .sorted(java.util.Comparator.comparing(q -> q.getQuestionNumber() == null ? Integer.MAX_VALUE : q.getQuestionNumber()))
+                .toList();
+        Map<Integer, Map<String, Object>> detailByNumber = new LinkedHashMap<>();
+        if (directory.get("questions") instanceof List<?> list) {
+            for (Object o : list) {
+                if (o instanceof Map<?, ?> m && m.get("number") instanceof Number n) detailByNumber.put(n.intValue(), (Map<String, Object>) m);
+            }
+        }
+        for (ExamQuestion q : ordered) {
+            if (q.getOptions() == null || q.getOptions().size() != 3 || q.getCorrectAnswer() == null || !q.getOptions().contains(q.getCorrectAnswer())) return null;
+        }
+
+        ObjectNode node = mapper.createObjectNode();
+        if (e.getExternalId() != null) node.put("externalId", e.getExternalId());
+        node.put("exerciseType", "DIRECTORY_MATCHING");
+        node.put("skill", "KATALOGE_REGISTER_VERZEICHNISSE");
+        node.put("title", e.getTitle());
+        Object topic = e.getMetadata().get("topic");
+        if (topic != null) node.put("topic", topic.toString());
+        node.put("difficulty", String.valueOf(e.getMetadata().getOrDefault("languageLevel", "A2_B1")));
+        node.putObject("instructions").put("de", e.getTeilDescription() == null ? "" : e.getTeilDescription());
+
+        ObjectNode source = node.putObject("informationSource");
+        source.put("type", String.valueOf(directory.getOrDefault("sourceType", "DIRECTORY")));
+        source.put("title", String.valueOf(directory.getOrDefault("title", e.getTitle())));
+        if (directory.get("introduction") != null) source.put("introduction", directory.get("introduction").toString());
+        source.set("entries", mapper.valueToTree(directory.getOrDefault("entries", List.of())));
+        source.put("displayText", String.valueOf(directory.getOrDefault("displayText", "")));
+
+        if (directory.get("example") != null) {
+            ObjectNode example = mapper.createObjectNode();
+            example.put("enabled", true);
+            example.setAll((ObjectNode) mapper.valueToTree(directory.get("example")));
+            node.set("example", example);
+        } else {
+            node.putObject("example").put("enabled", false);
+        }
+
+        ArrayNode questions = node.putArray("questions");
+        for (int i = 0; i < ordered.size(); i++) {
+            ExamQuestion q = ordered.get(i);
+            int number = q.getQuestionNumber() != null ? q.getQuestionNumber() : 21 + i;
+            Map<String, Object> detail = detailByNumber.getOrDefault(number, Map.of());
+            ObjectNode out = questions.addObject();
+            out.put("number", number);
+            out.put("situation", q.getPrompt());
+            ArrayNode options = out.putArray("options");
+            String correctKey = "a";
+            for (int j = 0; j < q.getOptions().size(); j++) {
+                String key = String.valueOf((char) ('a' + j));
+                options.addObject().put("key", key).put("text", q.getOptions().get(j));
+                if (q.getOptions().get(j).equals(q.getCorrectAnswer())) correctKey = key;
+            }
+            out.put("correctAnswer", correctKey);
+            out.set("sourceEntryIds", mapper.valueToTree(detail.getOrDefault("sourceEntryIds", List.of())));
+            Object explanation = detail.get("explanation");
+            ObjectNode explanationNode = explanation == null ? mapper.createObjectNode() : mapper.valueToTree(explanation);
+            if (!explanationNode.has("de") && q.getExplanation() != null) explanationNode.put("de", q.getExplanation());
+            out.set("explanation", explanationNode);
+        }
+        ObjectNode metadata = node.putObject("metadata");
+        metadata.put("schemaVersion", 1);
+        metadata.put("source", String.valueOf(e.getMetadata().getOrDefault("source", "AI_IMPORTED")));
+        if (e.getMetadata().get("tags") != null) metadata.set("tags", mapper.valueToTree(e.getMetadata().get("tags")));
+        return node;
+    }
+
     @SuppressWarnings("unchecked")
     private static ObjectNode toReadingExportNode(ObjectMapper mapper, ExamExercise e) {
         if (e.getPassages() == null || e.getPassages().size() != 1 || e.getQuestions() == null || e.getQuestions().isEmpty()

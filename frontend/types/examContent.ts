@@ -18,6 +18,7 @@ export interface ExamContentSpecInfo {
         | "MATCHING"
         | "MULTIPLE_CHOICE"
         | "SITUATION_MATCHING"
+        | "DIRECTORY_MATCHING"
         | "WORD_BANK_CLOZE"
         | "WRITING_TASK"
         | "TOPIC_INTERVIEW"
@@ -42,6 +43,11 @@ export interface ExamContentOptions {
     scenarioTypes?: string[];
     relationships?: string[];
     communicationTypes?: string[];
+    /** DTZ Lesen Teil 1 generator choices (first entry = default). */
+    directoryTopics?: string[];
+    directorySourceTypes?: string[];
+    directoryLevels?: string[];
+    directoryVariations?: string[];
 }
 
 export interface PromptRequest {
@@ -68,6 +74,12 @@ export interface PromptRequest {
     /** Schriftlicher Ausdruck: omitted = chosen by the AI to fit the situation. */
     relationship?: string;
     communicationType?: string;
+    /** DTZ Lesen Teil 1: DIRECTORY | REGISTER | CATALOGUE | SERVICE_LIST | RANDOM. */
+    sourceType?: string;
+    /** DTZ Lesen Teil 1: include the unscored example. */
+    includeExample?: boolean;
+    /** DTZ Lesen Teil 1: RANDOM | NEW_SCENARIO | AVOID_KNOWN_TOPICS. */
+    variation?: string;
 }
 
 export interface PromptResponse {
@@ -172,6 +184,19 @@ export interface PreviewSpeaking {
     content: SpeakingContent;
 }
 
+/** DTZ Lesen Teil 1: the shared information source, the unscored example and (admin only) what supports each answer. */
+export interface PreviewDirectory {
+    sourceType: string | null;
+    topic: string | null;
+    languageLevel: string | null;
+    sourceTitle: string | null;
+    introduction: string | null;
+    entries: { id: string; heading: string; details: string[] }[];
+    displayText: string | null;
+    example: { situation: string | null; options: PreviewHeading[]; correctOptionId: string | null; explanation: Record<string, string> } | null;
+    questionDetails: { number: number | null; sourceEntryIds: string[]; explanation: Record<string, string> }[];
+}
+
 export interface ExercisePreviewData {
     title: string | null;
     instructions: string | null;
@@ -189,6 +214,8 @@ export interface ExercisePreviewData {
     writing?: PreviewWriting | null;
     /** Speaking tasks (Mündlicher Ausdruck). */
     speaking?: PreviewSpeaking | null;
+    /** DTZ Lesen Teil 1 (directory matching): the questions are in `questions`, the source and answer-key details here. */
+    directory?: PreviewDirectory | null;
 }
 
 export interface DuplicateMatch {

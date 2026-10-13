@@ -76,7 +76,8 @@ public class ExamContentValidator {
     ) {
     }
 
-    public FileResult validate(JsonNode root) {
+    public FileResult validate(JsonNode input) {
+        JsonNode root = withEnvelope(input);
         List<Issue> fileIssues = new ArrayList<>();
         Map<Integer, List<Issue>> exerciseIssues = new LinkedHashMap<>();
         List<ParsedExercise> exercises = new ArrayList<>();
@@ -126,6 +127,18 @@ public class ExamContentValidator {
                 text(root, "section"), text(root, "part"), promptVersion, exercises, exerciseIssues, fileIssues);
     }
 
+    /**
+     * A bare DTZ directory exercise (the shape the generation prompt asks the AI for: one object with exerciseType and no
+     * schemaVersion / contentType wrapper) is treated as a single-exercise file. Everything else is validated as written.
+     */
+    private static JsonNode withEnvelope(JsonNode root) {
+        if (root == null || !root.isObject() || root.has("contentType") || !root.has("exerciseType")) return root;
+        com.fasterxml.jackson.databind.node.ObjectNode copy = ((com.fasterxml.jackson.databind.node.ObjectNode) root).deepCopy();
+        copy.put("contentType", "EXAM_EXERCISE");
+        if (!copy.has("schemaVersion")) copy.put("schemaVersion", ExamContentSpecs.SCHEMA_VERSION);
+        return copy;
+    }
+
     private ParsedExercise readExercise(int index, JsonNode root, JsonNode node, String p, List<Issue> issues,
                                          Set<String> seenExternalIds) {
         if (!node.isObject()) {
@@ -162,6 +175,9 @@ public class ExamContentValidator {
             issues.add(error("INSTRUCTIONS_TOO_LONG", p + "instructions", "instructions are too long."));
         }
 
+        if (spec != null && spec.isDirectoryMatching()) {
+            return readDirectoryExercise(index, spec, node, p, externalId, title, instructions, issues);
+        }
         if (spec != null && spec.isSituationMatching()) {
             return readSituationExercise(index, spec, node, p, externalId, title, instructions, issues);
         }
@@ -196,12 +212,14 @@ public class ExamContentValidator {
         String partToken = firstNonNull(text(node, "part"), text(root, "part"));
 
         ExamType exam = ExamContentTokens.parseExam(examToken).orElse(null);
-        LearningLevel level = ExamContentTokens.parseLevel(levelToken).orElse(null);
+        LearningLevel parsedLevel = ExamContentTokens.parseLevel(levelToken).orElse(null);
+        // DTZ is one exam for A2 and B1 together; its exercises are stored with level B1.
+        LearningLevel level = exam == ExamType.DTZ && parsedLevel == LearningLevel.A2 ? LearningLevel.B1 : parsedLevel;
         ExamSection section = ExamContentTokens.parseSection(sectionToken).orElse(null);
         Integer part = ExamContentTokens.parsePart(partToken).orElse(null);
 
-        if (exam == null) issues.add(error("EXAM_INVALID", p + "exam", "exam must be one of TELC, GOETHE, TESTDAF, DSH, OTHER (found: " + examToken + ")."));
-        if (level == null) issues.add(error("LEVEL_INVALID", p + "level", "level must be one of A1, A2, B1, B2, C1, C2 (found: " + levelToken + ")."));
+        if (exam == null) issues.add(error("EXAM_INVALID", p + "exam", "exam must be one of TELC, DTZ, GOETHE, TESTDAF, DSH, OTHER (found: " + examToken + ")."));
+        if (level == null) issues.add(error("LEVEL_INVALID", p + "level", "level must be one of A1, A2, A2_B1, B1, B2, C1, C2 (found: " + levelToken + ")."));
         if (section == null) issues.add(error("SECTION_INVALID", p + "section", "section is missing or unknown (found: " + sectionToken + ")."));
         if (part == null) issues.add(error("PART_INVALID", p + "part", "part must look like TEIL_1 (found: " + partToken + ")."));
         if (exam == null || level == null || section == null || part == null) return null;
@@ -375,6 +393,19 @@ public class ExamContentValidator {
     // ------------------------------------------------------------------ reading text + multiple choice
 
     // ------------------------------------------------------------------ Sprachbausteine Teil 2 (word bank)
+
+    // ------------------------------------------------------------------ DTZ Lesen Teil 1 (directory matching)
+
+    private ParsedExercise readDirectoryExercise(int index, ExamContentSpec spec, JsonNode node, String p, String externalId,
+                                                 String title, String instructions, List<Issue> issues) {
+        ExamDirectoryReader.Result result = new ExamDirectoryReader(p, issues).read(spec, node);
+        warnAnswerPatterns(result.questions(), p, issues);
+        Map<String, Object> metadata = readMetadata(node.get("metadata"), p, issues);
+        if (node.get("metadata") != null && node.get("metadata").isObject()) putStringList(node.get("metadata"), "tags", metadata);
+        String readingText = result.directory() == null ? null : result.directory().plainText();
+        return new ParsedExercise(index, spec, externalId, title, instructions, List.of(), List.of(), metadata, readingText, result.questions(),
+                List.of(), List.of(), List.of(), null, null, null, result.directory());
+    }
 
     // ------------------------------------------------------------------ Mündlicher Ausdruck
 

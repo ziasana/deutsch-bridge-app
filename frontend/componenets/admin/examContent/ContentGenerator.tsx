@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Check, ClipboardCopy, Download, Sparkles } from "lucide-react";
@@ -14,7 +14,30 @@ import { PromptResponse } from "@/types/examContent";
 import ExamContentShell from "./ExamContentShell";
 import { cardClass, copyText, downloadTextFile, errorMessage, fieldClass, labelClass } from "./shared";
 
-const EXAM_LABELS: Record<string, string> = { TELC: "Telc", GOETHE: "Goethe", TESTDAF: "TestDaF", DSH: "DSH", OTHER: "Other" };
+const EXAM_LABELS: Record<string, string> = { TELC: "Telc", DTZ: "DTZ A2–B1", GOETHE: "Goethe", TESTDAF: "TestDaF", DSH: "DSH", OTHER: "Other" };
+
+/** DTZ Lesen Teil 1 (Kataloge, Register, Verzeichnisse): labels of the generator settings; the values come from the backend. */
+const DIRECTORY_TOPIC_LABELS: Record<string, string> = {
+    RANDOM: "Random",
+    TOWN_HALL: "Rathaus and authorities",
+    LIBRARY: "Library",
+    HOSPITAL: "Hospital",
+    PUBLIC_TRANSPORT: "Public transport information",
+    COURSE_CATALOGUE: "Course catalogue",
+    JOB_TRAINING: "Job and training services",
+    HOUSING: "Housing services",
+    SHOPPING_SERVICES: "Shopping and services",
+    SPORTS_LEISURE: "Sports and leisure",
+};
+const DIRECTORY_SOURCE_LABELS: Record<string, string> = {
+    RANDOM: "Random",
+    DIRECTORY: "Directory / Wegweiser",
+    REGISTER: "Register / Verzeichnis",
+    CATALOGUE: "Catalogue / Katalog",
+    SERVICE_LIST: "List of services",
+};
+const DIRECTORY_LEVEL_LABELS: Record<string, string> = { A2: "A2", A2_B1: "A2–B1", B1: "B1" };
+const DIRECTORY_VARIATION_LABELS: Record<string, string> = { RANDOM: "Random", NEW_SCENARIO: "New scenario", AVOID_KNOWN_TOPICS: "Avoid known topics" };
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const DIFFICULTY_LABELS: Record<string, string> = { MIXED: "Mixed (20% easy · 60% medium · 20% hard)", EASY: "Easy", MEDIUM: "Medium", HARD: "Hard" };
 const SCENARIO_CHOICES: { value: string; label: string; hint: string }[] = [
@@ -54,9 +77,23 @@ export default function ContentGenerator() {
     const [communicationType, setCommunicationType] = useState("");
     const [wordCats, setWordCats] = useState<string[] | null>(null); // null = all
     const [grammar, setGrammar] = useState<string[] | null>(null); // null = all categories
+    const [dirTopics, setDirTopics] = useState<string[]>([]); // empty = random
+    const [dirSourceType, setDirSourceType] = useState("RANDOM");
+    const [dirLevel, setDirLevel] = useState("A2_B1");
+    const [dirExample, setDirExample] = useState(true);
+    const [dirVariation, setDirVariation] = useState("RANDOM");
     const [result, setResult] = useState<PromptResponse | null>(null);
     const [generating, setGenerating] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
+
+    // Deep link from the DTZ Lesen Teil 1 page ("?exam=DTZ&section=LESEN&part=TEIL_1"): preselect that exam part on arrival.
+    useEffect(() => {
+        const params = new URL(window.location.href).searchParams;
+        if (params.get("exam")) setExam(params.get("exam")!);
+        if (params.get("exam") === "DTZ") setLevel("B1"); // DTZ exercises are stored with level B1 (shown as A2–B1)
+        if (params.get("section")) setSection(params.get("section")!);
+        if (params.get("part")) setPart(params.get("part")!);
+    }, []);
 
     const sections = useMemo(() => [...new Map((options?.specs ?? []).map((s) => [s.section, s.sectionLabel])).entries()], [options]);
     const parts = useMemo(() => [...new Set((options?.specs ?? []).filter((s) => s.section === section).map((s) => s.part))], [options, section]);
@@ -72,6 +109,7 @@ export default function ContentGenerator() {
     const toggleWordCategory = (category: string) =>
         setWordCats(selectedWordCategories.includes(category) ? selectedWordCategories.filter((c) => c !== category) : [...selectedWordCategories, category]);
 
+    const directorySpec = spec?.taskType === "DIRECTORY_MATCHING";
     const toggleTopic = (topic: string) => setTopics((prev) => (prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]));
 
     const generate = async (e: React.FormEvent) => {
@@ -94,7 +132,13 @@ export default function ContentGenerator() {
         const writingSpec = spec?.taskType === "WRITING_TASK";
         setGenerating(true);
         try {
-            const res = await generateExamContentPrompt({
+            const res = await generateExamContentPrompt(directorySpec
+                ? {
+                    // The settings only shape the content, never the 5 x 3 structure.
+                    exam, level, section, part, count: n, difficulty: dirLevel, topics: dirTopics,
+                    notes: notes.trim() || undefined, sourceType: dirSourceType, includeExample: dirExample, variation: dirVariation,
+                }
+                : {
                 exam, level, section, part, count: n, difficulty, topics, notes: notes.trim() || undefined, includeVisuals,
                 ...(wordBankSpec
                     ? { contextMode, wordCategories: selectedWordCategories.length === allWordCategories.length ? undefined : selectedWordCategories }
@@ -183,6 +227,8 @@ export default function ContentGenerator() {
                                     ? `✓ ${spec.label}: one text with ${spec.questionCount} gaps (31–40), ${spec.optionCount} words (a–o), ${spec.optionCount - spec.questionCount} stay unused.`
                                     : spec.section === "SPRACHBAUSTEINE"
                                     ? `✓ ${spec.label}: one text with ${spec.questionCount} gaps (21–30), ${spec.optionCount} options (a, b, c) each.`
+                                    : spec.taskType === "DIRECTORY_MATCHING"
+                                    ? `✓ ${spec.label}: one information source (Wegweiser, Verzeichnis, Katalog ...) and exactly ${spec.questionCount} situations (21–25) with ${spec.optionCount} options each.`
                                     : spec.taskType === "SITUATION_MATCHING"
                                     ? `✓ ${spec.label}: ${spec.questionCount} situations, ${spec.optionCount} advertisements (a–l), x = no advertisement fits.`
                                     : `✓ ${spec.label}: ${spec.textCount} texts, ${spec.headingCount} headings (${spec.headingCount - spec.textCount} unused).`}
@@ -219,6 +265,68 @@ export default function ContentGenerator() {
                             </label>
                         )}
 
+                        {directorySpec && (
+                            <div className="space-y-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Generation settings</h3>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <label>
+                                        <span className={labelClass}>Number of exercise sets</span>
+                                        <Input type="number" min={1} max={50} value={count} onChange={(e) => setCount(e.target.value)} />
+                                    </label>
+                                    <label>
+                                        <span className={labelClass}>Information-source type</span>
+                                        <select className={fieldClass} value={dirSourceType} onChange={(e) => setDirSourceType(e.target.value)}>
+                                            {(options?.directorySourceTypes ?? ["RANDOM"]).map((x) => <option key={x} value={x}>{DIRECTORY_SOURCE_LABELS[x] ?? x}</option>)}
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span className={labelClass}>Difficulty</span>
+                                        <select className={fieldClass} value={dirLevel} onChange={(e) => setDirLevel(e.target.value)}>
+                                            {(options?.directoryLevels ?? ["A2_B1"]).map((x) => <option key={x} value={x}>{DIRECTORY_LEVEL_LABELS[x] ?? x}</option>)}
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span className={labelClass}>Variation</span>
+                                        <select className={fieldClass} value={dirVariation} onChange={(e) => setDirVariation(e.target.value)}>
+                                            {(options?.directoryVariations ?? ["RANDOM"]).map((x) => <option key={x} value={x}>{DIRECTORY_VARIATION_LABELS[x] ?? x}</option>)}
+                                        </select>
+                                    </label>
+                                </div>
+                                <fieldset>
+                                    <legend className={labelClass}>Topics {dirTopics.length === 0 && <span className="font-normal text-gray-500">(random)</span>}</legend>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(options?.directoryTopics ?? []).filter((x) => x !== "RANDOM").map((topic) => {
+                                            const on = dirTopics.includes(topic);
+                                            return (
+                                                <button
+                                                    key={topic}
+                                                    type="button"
+                                                    aria-pressed={on}
+                                                    onClick={() => setDirTopics((prev) => (prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]))}
+                                                    className={`rounded-full border px-3 py-1 text-sm transition ${
+                                                        on
+                                                            ? "border-primary bg-primary text-primary-foreground"
+                                                            : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                    }`}
+                                                >
+                                                    {DIRECTORY_TOPIC_LABELS[topic] ?? topic}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </fieldset>
+                                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                    <input type="checkbox" checked={dirExample} onChange={(e) => setDirExample(e.target.checked)} />
+                                    Include an unscored example question
+                                </label>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Questions are numbered 21–25 (fixed by the DTZ format). The settings shape the content only; every exercise has five scored
+                                    questions with three options each. With more than one set the AI returns one batch file.
+                                </p>
+                            </div>
+                        )}
+
+                        {!directorySpec && (
                         <div className="grid grid-cols-2 gap-3">
                             <label>
                                 <span className={labelClass}>Number of exercise sets</span>
@@ -231,6 +339,7 @@ export default function ContentGenerator() {
                                 </select>
                             </label>
                         </div>
+                        )}
 
                         {spec?.taskType === "WRITING_TASK" && (
                             <>
@@ -347,6 +456,7 @@ export default function ContentGenerator() {
                             </>
                         )}
 
+                        {!directorySpec && (
                         <fieldset>
                             <legend className={labelClass}>Topics {topics.length === 0 && <span className="font-normal text-gray-500">(automatic)</span>}</legend>
                             <div className="flex flex-wrap gap-2">
@@ -370,6 +480,7 @@ export default function ContentGenerator() {
                                 })}
                             </div>
                         </fieldset>
+                        )}
 
                         <label className="block">
                             <span className={labelClass}>Extra instructions <span className="font-normal text-gray-500">(optional)</span></span>
@@ -419,6 +530,29 @@ export default function ContentGenerator() {
                                         Alle Lerninhalte (Redemittel, Beispielantworten, Dialoge) sind nur auf Deutsch – es gibt keine englischen oder persischen Übersetzungen.
                                         Laden Sie anschließend die erzeugte JSON-Datei hoch. Importierte Aufgaben werden immer als Entwurf (DRAFT) gespeichert.
                                     </p>
+                                )}
+                                {directorySpec && (
+                                    <div className="mt-3 space-y-3">
+                                        <dl className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-md border border-gray-200 p-3 text-sm dark:border-gray-700 sm:grid-cols-3">
+                                            <div><dt className="text-xs text-gray-500">Topic</dt><dd>{dirTopics.length ? dirTopics.map((t) => DIRECTORY_TOPIC_LABELS[t] ?? t).join(", ") : "Random"}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Source type</dt><dd>{DIRECTORY_SOURCE_LABELS[dirSourceType] ?? dirSourceType}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Difficulty</dt><dd>{DIRECTORY_LEVEL_LABELS[dirLevel] ?? dirLevel}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Exercise sets</dt><dd>{count}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Example</dt><dd>{dirExample ? "Included" : "Not included"}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Variation</dt><dd>{DIRECTORY_VARIATION_LABELS[dirVariation] ?? dirVariation}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Questions</dt><dd>21–25, 3 options each</dd></div>
+                                        </dl>
+                                        <p className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
+                                            ℹ️ Hinweis: Kopieren Sie den Prompt und verwenden Sie ihn in ChatGPT, Claude, Gemini oder einem anderen KI-Tool. Speichern Sie die generierte
+                                            JSON-Ausgabe als Datei und importieren Sie sie anschließend hier. Prüfen Sie den Inhalt vor der Veröffentlichung.
+                                        </p>
+                                        <ol className="list-decimal space-y-1 pl-5 text-sm text-gray-600 dark:text-gray-300">
+                                            <li>Copy the prompt and paste it into the AI tool.</li>
+                                            <li>Save the AI&apos;s answer as a <code>.json</code> file (only the JSON object, no Markdown).</li>
+                                            <li>Upload the file on the <Link href="/admin/exam-prep/import" className="underline text-blue-600 dark:text-blue-400">Import JSON</Link> page, check errors, warnings and the preview.</li>
+                                            <li>Import it as a draft, edit if needed, and publish it only after you have solved the five questions yourself.</li>
+                                        </ol>
+                                    </div>
                                 )}
                                 {spec?.taskType === "WRITING_TASK" && (
                                     <p className="mt-3 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">

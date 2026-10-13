@@ -29,8 +29,20 @@ public record ParsedExercise(
         /** Writing tasks (Schriftlicher Ausdruck): the incoming email, the four points and the classification. */
         Writing writing,
         /** Speaking tasks (Mündlicher Ausdruck): the validated, part-specific learner content. */
-        Speaking speaking
+        Speaking speaking,
+        /** DTZ Lesen Teil 1 (directory matching): the shared information source, the optional example and per-situation extras. */
+        Directory directory
 ) {
+    /** Everything except the directory task (all pre-DTZ shapes). */
+    public ParsedExercise(int index, ExamContentSpec spec, String externalId, String title, String instructions,
+                          List<Heading> headings, List<Text> texts, Map<String, Object> metadata,
+                          String readingText, List<Question> questions, List<Situation> situations,
+                          List<Advertisement> advertisements, List<Option> wordBank, Context context, Writing writing,
+                          Speaking speaking) {
+        this(index, spec, externalId, title, instructions, headings, texts, metadata, readingText, questions, situations,
+                advertisements, wordBank, context, writing, speaking, null);
+    }
+
     /** Everything except the speaking task (the writing task and the pre-writing shapes). */
     public ParsedExercise(int index, ExamContentSpec spec, String externalId, String title, String instructions,
                           List<Heading> headings, List<Text> texts, Map<String, Object> metadata,
@@ -72,6 +84,9 @@ public record ParsedExercise(
 
     /** Every text that identifies this exercise's content: the matching texts, or the single reading text. */
     public List<String> textContents() {
+        if (directory != null) {
+            return List.of(directory.plainText());
+        }
         if (speaking != null) {
             // Same text the stored passage yields, so duplicate detection compares like with like.
             return List.of(ExamContentMapper.toPlainText(ExamContentMapper.toSpeakingHtml(speaking, instructions)));
@@ -86,6 +101,35 @@ public record ParsedExercise(
         if (readingText != null) return List.of(readingText);
         if (!advertisements.isEmpty()) return advertisements.stream().map(a -> AdvertisementRenderer.toPlainText(a.content())).toList();
         return texts.stream().map(Text::content).toList();
+    }
+
+    /**
+     * DTZ Lesen Teil 1: {@code sourceType} is DIRECTORY | REGISTER | CATALOGUE | SERVICE_LIST. The five scored situations are
+     * {@link #questions()} of the exercise (options a, b, c, correct option id); this holds what they share and what only
+     * the admin sees: {@code sourceEntryIds} and the de/en/fa explanations per question id, plus the unscored example.
+     */
+    public record Directory(String sourceType, String topic, String languageLevel, String sourceTitle, String introduction,
+                            List<Entry> entries, String displayText, Example example,
+                            Map<String, List<String>> sourceEntryIdsByQuestion, Map<String, Map<String, String>> explanationsByQuestion) {
+
+        /** The source as plain text (entries, not the free-form displayText): what the learner reads and what duplicate detection compares. */
+        public String plainText() {
+            StringBuilder b = new StringBuilder();
+            if (sourceTitle != null) b.append(sourceTitle).append('\n');
+            if (introduction != null) b.append(introduction).append('\n');
+            for (Entry entry : entries) {
+                b.append('\n').append(entry.heading());
+                for (String detail : entry.details()) b.append('\n').append(detail);
+            }
+            return b.toString().strip();
+        }
+    }
+
+    public record Entry(String id, String heading, List<String> details) {
+    }
+
+    /** The unscored example; {@code correctOptionId} is a, b or c. */
+    public record Example(String situation, List<Option> options, String correctOptionId, Map<String, String> explanation) {
     }
 
     /**

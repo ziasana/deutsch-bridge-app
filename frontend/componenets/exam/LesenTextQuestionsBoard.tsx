@@ -20,13 +20,13 @@ interface Props {
     onAnswer: (questionId: string, value: string) => void;
 }
 
-const choiceClass = (selected: boolean) =>
+export const choiceClass = (selected: boolean) =>
     cn(
         "flex w-full cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm text-foreground transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default disabled:opacity-60",
         selected ? "border-primary bg-primary/10" : "border-border/60 bg-background hover:border-primary/50 hover:bg-accent/50",
     );
 
-const badgeClass = (selected: boolean) =>
+export const badgeClass = (selected: boolean) =>
     cn(
         "flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
         selected ? "bg-primary text-primary-foreground" : "bg-accent text-primary",

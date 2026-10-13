@@ -36,8 +36,22 @@ public final class ExamContentDtos {
             /** Schriftlicher Ausdruck: FRIEND, FAMILY ... ; null / empty = chosen by the AI to fit the situation. */
             String relationship,
             /** Schriftlicher Ausdruck: INFORMAL_EMAIL | SEMI_FORMAL_EMAIL | FORMAL_EMAIL; null / empty = fits the relationship. */
-            String communicationType
+            String communicationType,
+            /** DTZ Lesen Teil 1: DIRECTORY | REGISTER | CATALOGUE | SERVICE_LIST | RANDOM (default). */
+            String sourceType,
+            /** DTZ Lesen Teil 1: include an unscored example (default true). */
+            Boolean includeExample,
+            /** DTZ Lesen Teil 1: NEW_SCENARIO | AVOID_KNOWN_TOPICS | RANDOM (default). */
+            String variation
     ) {
+        /** The request shape before the DTZ settings existed. */
+        public PromptRequest(String exam, String level, String section, String part, Integer count, String difficulty,
+                             List<String> topics, String notes, Boolean includeVisuals, String textType, List<String> grammarCategories,
+                             String contextMode, List<String> wordCategories, String scenarioType, String relationship, String communicationType) {
+            this(exam, level, section, part, count, difficulty, topics, notes, includeVisuals, textType, grammarCategories,
+                    contextMode, wordCategories, scenarioType, relationship, communicationType, null, null, null);
+        }
+
         public PromptRequest(String exam, String level, String section, String part, Integer count, String difficulty,
                              List<String> topics, String notes) {
             this(exam, level, section, part, count, difficulty, topics, notes, null, null, null, null, null, null, null, null);
@@ -101,7 +115,12 @@ public final class ExamContentDtos {
             /** Schriftlicher Ausdruck generator choices. */
             List<String> scenarioTypes,
             List<String> relationships,
-            List<String> communicationTypes
+            List<String> communicationTypes,
+            /** DTZ Lesen Teil 1 generator choices (first entry = default). */
+            List<String> directoryTopics,
+            List<String> directorySourceTypes,
+            List<String> directoryLevels,
+            List<String> directoryVariations
     ) {
     }
 
@@ -189,6 +208,36 @@ public final class ExamContentDtos {
     ) {
     }
 
+    /** DTZ Lesen Teil 1: the shared information source as the learner reads it. */
+    public record DirectoryEntryView(String id, String heading, List<String> details) {
+    }
+
+    /** DTZ Lesen Teil 1: the unscored example (options reuse {@link HeadingView}: key + text). */
+    public record DirectoryExampleView(
+            String situation,
+            List<HeadingView> options,
+            String correctOptionId,
+            Map<String, String> explanation
+    ) {
+    }
+
+    /** DTZ Lesen Teil 1, admin only: what supports a question's answer and why (the answer-key view of the preview). */
+    public record DirectoryQuestionDetail(Integer number, List<String> sourceEntryIds, Map<String, String> explanation) {
+    }
+
+    public record DirectoryView(
+            String sourceType,
+            String topic,
+            String languageLevel,
+            String sourceTitle,
+            String introduction,
+            List<DirectoryEntryView> entries,
+            String displayText,
+            DirectoryExampleView example,
+            List<DirectoryQuestionDetail> questionDetails
+    ) {
+    }
+
     public record ExercisePreview(
             String title,
             String instructions,
@@ -205,8 +254,16 @@ public final class ExamContentDtos {
             /** Writing tasks (Schriftlicher Ausdruck) only. */
             WritingView writing,
             /** Speaking tasks (Mündlicher Ausdruck) only. */
-            SpeakingView speaking
+            SpeakingView speaking,
+            /** DTZ Lesen Teil 1 (directory matching) only: the information source, the example and the answer-key details. */
+            DirectoryView directory
     ) {
+        public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
+                               String readingText, List<QuestionView> questions, List<SituationView> situations,
+                               List<AdvertisementView> advertisements, ContextView context, WritingView writing, SpeakingView speaking) {
+            this(title, instructions, headings, texts, readingText, questions, situations, advertisements, context, writing, speaking, null);
+        }
+
         public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
                                String readingText, List<QuestionView> questions, List<SituationView> situations,
                                List<AdvertisementView> advertisements, ContextView context, WritingView writing) {

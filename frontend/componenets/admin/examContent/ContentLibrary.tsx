@@ -56,6 +56,17 @@ interface Filters {
 }
 const emptyFilters: Filters = { examType: "", level: "", section: "", partNumber: "", status: "", search: "" };
 
+/** metadata.directory of an imported DTZ Lesen Teil 1 exercise (see ExamContentMapper.toDirectoryEntity). */
+interface StoredDirectory {
+    sourceType?: string;
+    title?: string;
+    introduction?: string;
+    entries?: { id: string; heading: string; details: string[] }[];
+    displayText?: string;
+    example?: { situation?: string; options?: { key: string; text: string }[]; correctAnswer?: string; explanation?: Record<string, string> };
+    questions?: { number: number; sourceEntryIds?: string[]; explanation?: Record<string, string> }[];
+}
+
 /** Matching exercises as the import format sees them (lettered headings, correct heading per text). */
 function toPreview(exercise: ExamExerciseResponse): ExercisePreviewData | null {
     if (exercise.section === "MUENDLICHER_AUSDRUCK") {
@@ -154,6 +165,52 @@ function toPreview(exercise: ExamExerciseResponse): ExercisePreviewData | null {
                 correctAdvertisementId: q.correctAnswer?.toUpperCase() === "X" ? "x" : (letterByPassage.get(q.correctAnswer) ?? null),
                 matchingProfile: teil3.situations?.find((s) => s.number === (q.questionNumber ?? i + 1))?.matchingProfile ?? null,
             })),
+        };
+    }
+    if (exercise.taskType === "DIRECTORY_MATCHING" && exercise.passages?.length && exercise.questions?.length) {
+        const meta = exercise.metadata ?? {};
+        const stored = (meta.directory ?? null) as StoredDirectory | null;
+        const sourceText = htmlToText(exercise.passages[0].content);
+        const questions = [...exercise.questions].sort((a, b) => (a.questionNumber ?? 0) - (b.questionNumber ?? 0));
+        return {
+            title: exercise.title,
+            instructions: exercise.teilDescription,
+            headings: [],
+            texts: [],
+            questions: questions.map((q, i) => {
+                const options = (q.options ?? []).map((text, j) => ({ id: String.fromCharCode(97 + j), text }));
+                return {
+                    id: q.id,
+                    number: q.questionNumber ?? 21 + i,
+                    question: q.prompt,
+                    options,
+                    correctOptionId: options.find((o) => o.text === q.correctAnswer)?.id ?? null,
+                    questionType: null,
+                };
+            }),
+            directory: {
+                sourceType: stored?.sourceType ?? (typeof meta.sourceType === "string" ? meta.sourceType : null),
+                topic: typeof meta.topic === "string" ? meta.topic : null,
+                languageLevel: typeof meta.languageLevel === "string" ? meta.languageLevel : null,
+                sourceTitle: stored?.title ?? exercise.passages[0].label,
+                introduction: stored?.introduction ?? null,
+                // Hand-made exercises have no structured entries: show the source text as one block.
+                entries: stored?.entries?.length ? stored.entries : [{ id: "source", heading: exercise.passages[0].label || "Quelle", details: sourceText.split("\n").filter(Boolean) }],
+                displayText: stored?.displayText ?? sourceText,
+                example: stored?.example
+                    ? {
+                          situation: stored.example.situation ?? null,
+                          options: (stored.example.options ?? []).map((o) => ({ id: o.key, text: o.text })),
+                          correctOptionId: stored.example.correctAnswer ?? null,
+                          explanation: stored.example.explanation ?? {},
+                      }
+                    : null,
+                questionDetails: questions.map((q, i) => {
+                    const number = q.questionNumber ?? 21 + i;
+                    const detail = stored?.questions?.find((d) => d.number === number);
+                    return { number, sourceEntryIds: detail?.sourceEntryIds ?? [], explanation: detail?.explanation ?? (q.explanation ? { de: q.explanation } : {}) };
+                }),
+            },
         };
     }
     if (exercise.taskType === "MULTIPLE_CHOICE" && exercise.passages?.length === 1 && exercise.questions?.length) {
@@ -388,7 +445,7 @@ export default function ContentLibrary() {
     );
 }
 
-function PreviewDialog({ row, onClose, onMove }: Readonly<{ row: ExamExerciseAdminRow; onClose: () => void; onMove: (s: ExamContentStatus) => void }>) {
+export function PreviewDialog({ row, onClose, onMove }: Readonly<{ row: ExamExerciseAdminRow; onClose: () => void; onMove: (s: ExamContentStatus) => void }>) {
     const { data, isLoading } = useQuery({
         queryKey: ["admin", "exam", "exercises", "detail", row.id],
         queryFn: () => getExamExerciseForAdmin(row.id).then((r) => r.data),
@@ -416,7 +473,7 @@ function PreviewDialog({ row, onClose, onMove }: Readonly<{ row: ExamExerciseAdm
                 </div>
                 <div className="mt-5">
                     {isLoading && <Loading message="Loading..." />}
-                    {data && (preview ? <ExerciseView preview={preview} /> : <p className="text-sm text-gray-600 dark:text-gray-300">A preview is only available for headings-matching, reading-text multiple-choice and situation-matching exercises. Use Edit to review this one.</p>)}
+                    {data && (preview ? <ExerciseView preview={preview} /> : <p className="text-sm text-gray-600 dark:text-gray-300">A preview is only available for headings-matching, reading-text multiple-choice, situation-matching and directory exercises. Use Edit to review this one.</p>)}
                 </div>
                 <div className="mt-6 flex flex-wrap justify-end gap-2">
                     {next.map((n) => <Button key={n.status} onClick={() => onMove(n.status)}>{n.label}</Button>)}

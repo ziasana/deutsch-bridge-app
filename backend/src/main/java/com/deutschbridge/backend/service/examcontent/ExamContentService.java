@@ -125,7 +125,11 @@ public class ExamContentService {
                 ExamContentPromptBuilder.WORD_CATEGORIES,
                 ExamContentPromptBuilder.SCENARIO_TYPES,
                 ExamContentPromptBuilder.RELATIONSHIPS,
-                ExamContentPromptBuilder.COMMUNICATION_TYPES);
+                ExamContentPromptBuilder.COMMUNICATION_TYPES,
+                ExamContentPromptBuilder.DIRECTORY_TOPICS,
+                ExamContentPromptBuilder.DIRECTORY_SOURCE_TYPES,
+                ExamContentPromptBuilder.DIRECTORY_LEVELS,
+                ExamContentPromptBuilder.DIRECTORY_VARIATIONS);
     }
 
     @Transactional(readOnly = true)
@@ -135,7 +139,7 @@ public class ExamContentService {
                 spec.examType(), spec.section(), spec.level(), spec.part());
         int next = ExamContentPromptBuilder.nextNumber(spec.externalIdPrefix(),
                 repository.findExternalIdsStartingWith(spec.externalIdPrefix()));
-        return promptBuilder.build(spec, request, existing, next, spec.isWriting() || spec.isSpeaking() ? existingWritingSummaries(spec) : List.of());
+        return promptBuilder.build(spec, request, existing, next, spec.isWriting() || spec.isSpeaking() || spec.isDirectoryMatching() ? existingWritingSummaries(spec) : List.of());
     }
 
     /** Newest first, capped so the prompt stays a manageable size: "title - topic (scenario)". */
@@ -260,11 +264,12 @@ public class ExamContentService {
         int questions = file.exercises().stream().mapToInt(e -> e.questions().size() + e.situations().size()
                 + (e.writing() == null ? 0 : e.writing().points().size())).sum();
         boolean reading = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isMultipleChoice());
+        boolean directory = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isDirectoryMatching());
         boolean situation = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isSituationMatching());
         boolean wordBank = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isWordBank());
         boolean writing = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isWriting());
         boolean speaking = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isSpeaking());
-        boolean matching = file.exercises().stream().anyMatch(e -> e.spec() != null && !e.spec().isMultipleChoice()
+        boolean matching = file.exercises().stream().anyMatch(e -> e.spec() != null && !e.spec().isMultipleChoice() && !e.spec().isDirectoryMatching()
                 && !e.spec().isSituationMatching() && !e.spec().isWordBank() && !e.spec().isWriting() && !e.spec().isSpeaking());
         int situations = file.exercises().stream().mapToInt(e -> e.situations().size()).sum();
         int advertisements = file.exercises().stream().mapToInt(e -> e.advertisements().size()).sum();
@@ -281,7 +286,7 @@ public class ExamContentService {
         checks.add(new Check("Section: " + orDash(file.section()), noCode(all, "SECTION_INVALID")));
         checks.add(new Check("Part: " + orDash(file.part()), noCode(all, "PART_INVALID", "SPEC_UNSUPPORTED")));
         checks.add(new Check("Exercises: " + reports.size(), !reports.isEmpty() && noCode(all, "EXERCISE_NOT_OBJECT", "EXTERNAL_ID_INVALID", "EXTERNAL_ID_DUPLICATE_IN_FILE")));
-        if (matching || (!reading && !situation && !wordBank && !writing && !speaking)) {
+        if (matching || (!reading && !directory && !situation && !wordBank && !writing && !speaking)) {
             checks.add(new Check("Headings: " + headings, !reports.isEmpty() && noCode(all, STRUCTURE_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Texts: " + texts, !reports.isEmpty() && noCode(all, TEXT_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Answer assignments valid", !reports.isEmpty() && noCode(all, ANSWER_ERROR_CODES.toArray(String[]::new))));
@@ -308,6 +313,12 @@ public class ExamContentService {
             checks.add(new Check("Text with gaps 31–40", !reports.isEmpty() && noCode(all, READING_TEXT_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Word bank: 15 words a–o", !reports.isEmpty() && noCode(all, WORD_BANK_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Gaps and answers: 10 gaps, each word used once", !reports.isEmpty() && noCode(all, WORD_ANSWER_ERROR_CODES.toArray(String[]::new))));
+        }
+        if (directory) {
+            checks.add(new Check("Information source with entries", !reports.isEmpty() && noCode(all, ExamDirectoryReader.SOURCE_CODES.toArray(String[]::new))));
+            checks.add(new Check("Exactly 5 scored questions numbered 21–25", !reports.isEmpty() && noCode(all, ExamDirectoryReader.QUESTION_CODES.toArray(String[]::new))));
+            checks.add(new Check("Three options a, b, c and one correct answer per question", !reports.isEmpty() && noCode(all, ExamDirectoryReader.OPTION_CODES.toArray(String[]::new))));
+            checks.add(new Check("Example valid (when enabled)", !reports.isEmpty() && noCode(all, ExamDirectoryReader.EXAMPLE_CODES.toArray(String[]::new))));
         }
         if (reading) {
             checks.add(new Check("Reading texts: " + file.exercises().stream().filter(e -> e.readingText() != null).count(),
@@ -469,7 +480,11 @@ public class ExamContentService {
                 if (!used.add(answer)) return "An advertisement is the correct answer for more than one situation.";
             }
         }
-        if (e.getTaskType() == ExamTaskType.MULTIPLE_CHOICE) {
+        if (e.getTaskType() == ExamTaskType.DIRECTORY_MATCHING) {
+            if (e.getQuestions().size() != 5) return "A directory exercise needs exactly 5 questions (found " + e.getQuestions().size() + ").";
+            if (e.getQuestions().stream().anyMatch(q -> q.getOptions() == null || q.getOptions().size() != 3)) return "Every question needs exactly 3 options.";
+        }
+        if (e.getTaskType() == ExamTaskType.MULTIPLE_CHOICE || e.getTaskType() == ExamTaskType.DIRECTORY_MATCHING) {
             for (var q : e.getQuestions()) {
                 String label = "Question " + (q.getQuestionNumber() != null ? q.getQuestionNumber() : "?");
                 if (q.getOptions() == null || q.getOptions().size() < 2) return label + " has fewer than two options.";

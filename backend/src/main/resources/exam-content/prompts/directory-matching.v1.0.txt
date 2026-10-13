@@ -1,0 +1,100 @@
+You are an expert author of realistic German DTZ A2–B1 exam-preparation exercises.
+
+{{COUNT_LINE}} for:
+Exam: DTZ
+Section: Lesen
+Part: 1
+Skill: Kataloge, Register, Verzeichnisse verstehen
+Exercise type: DIRECTORY_MATCHING
+Difficulty: {{DIFFICULTY}}
+Topic: {{TOPIC}}
+Information-source type: {{SOURCE_TYPE}}
+Example question: {{INCLUDE_EXAMPLE}}
+{{VARIATION_BLOCK}}
+Every exercise must follow the structure specified below and be suitable for learners preparing for the German DTZ A2–B1 examination. It is original practice material for an independent learning application.
+
+1. Exercise structure
+Create:
+- One short German instruction.
+- One shared information source.
+- Exactly FIVE scored questions.
+- Exactly THREE answer options for each scored question.
+- Exactly ONE correct answer for each scored question.
+- Optionally, one unscored example if requested in the configuration.
+
+The five scored questions use the numbers 21, 22, 23, 24 and 25.
+If an example is included, it is NOT one of the five scored questions and has no number.
+
+2. Task mechanics
+The learner reads five short practical situations and consults the shared information source.
+For every situation, the learner selects the correct answer based on the source.
+The source can be a directory, catalogue, register, guide, list of services or a comparable practical information document.
+Use realistic everyday contexts such as finding a public office, service, department, course, facility or contact point.
+Do not turn the exercise into a general reading-comprehension task, a grammar test or a vocabulary quiz.
+The learner must need to match the specific information need to the correct source entry.
+
+3. Information source
+Create one coherent, useful source document. Depending on the selected topic this might be a town hall directory, a library guide, a hospital department directory, a course catalogue, a public service directory, a list of local services or a register of facilities.
+The source must contain enough information to answer all five scored questions.
+Use clear headings and concise entries.
+The source must contain some relevant but unused information (at least two entries that no question needs), so the task is not simply a one-to-one list.
+Every correct answer must be directly supported by the source.
+Do not introduce facts that are not present in the source.
+Do not contradict information elsewhere in the source.
+Write the source as plain text only - no HTML, no Markdown.
+
+4. Questions
+Create exactly five short situations. Each situation describes a practical need or goal.
+Examples of appropriate question styles: you need a document renewed; you are looking for support for an older family member; you want information about a particular service; you need to find a suitable department; you want to register for a course. Do not copy these examples verbatim.
+Questions must be understandable at the selected level.
+The wording of a question must not simply repeat the exact wording of the corresponding entry. Use natural paraphrases where appropriate, while preserving clarity.
+
+5. Answer options
+Every scored question has exactly three options with the keys "a", "b", "c".
+Options are mutually exclusive. Exactly one option is correct.
+Use options appropriate to the information-source type. For a floor directory the options may be floors (or another-floor options); for other source types they may be departments, service locations, catalogue entries or other appropriate destinations. Do not force "anderes Stockwerk" into an exercise that is not about floors.
+Avoid absurd or obviously impossible distractors. Distractors are plausible, ideally based on other entries in the same source.
+Do not create two options that could reasonably be considered correct.
+Spread the correct answers over the keys a, b and c; never use the same key for all five questions.
+
+6. Answer verification
+Before returning the JSON, independently solve all five questions using only the information source. For every question verify:
+1. The correct answer is explicitly supported by the source.
+2. The two distractors are not also correct.
+3. No important information is missing.
+4. No question depends on outside knowledge.
+5. No ambiguity arises from overlapping entries.
+6. The correctAnswer key matches the intended option.
+7. The explanation accurately identifies the relevant source entry.
+If a question has multiple plausible correct answers, rewrite the question or the source. If a question has no supported answer, revise it.
+
+7. Language and difficulty
+Use natural, everyday German.
+{{LEVEL_RULES}}
+Do not label the exercise as an official exam question or claim that it was taken from an official test.
+
+8. Originality
+Create original content. Do not reproduce official examination material or published model tests; use the structure only.
+
+9. JSON output
+Return ONLY one valid JSON object.
+{{BATCH_RULE}}
+Do not include Markdown. Do not include code fences. Do not include explanations outside the JSON. Do not include comments. Do not use trailing commas.
+Use exactly this structure{{STRUCTURE_NOTE}}:
+
+{{JSON_EXAMPLE}}
+
+The JSON above illustrates the required schema. In your actual output:
+- Replace every "..." with real content; do not return placeholder values and do not omit any required field.
+{{EXAMPLE_RULE}}
+- In every exercise include exactly five scored question objects numbered 21–25, with exactly three options each.
+- Use unique ids for all source entries (entry_1, entry_2 ...).
+- Every sourceEntryIds value must reference an existing entry id.
+- informationSource.displayText must contain the same information as informationSource.entries (title, introduction, every entry heading and its details).
+- Give a German, an English and a Persian (Farsi) explanation for every scored question.
+- Set "difficulty" to "{{DIFFICULTY}}" and keep "level" as "A2_B1".
+
+10. Final internal checklist
+Before returning the JSON verify: valid JSON; exam DTZ, section LESEN, part 1; exactly five scored questions numbered 21–25; exactly three options per question; exactly one correct answer per question; correct answers supported by the source; entries and displayText agree; all sourceEntryIds exist; no ambiguous questions; suitable language level; original content; correct example configuration; German, English and Persian explanations present for every scored question.
+{{NOTES_BLOCK}}
+Return only the final JSON object.

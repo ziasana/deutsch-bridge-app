@@ -44,6 +44,13 @@ public final class ExamContentSpecs {
                     "1.0",
                     10, 12, 11),
             new ExamContentSpec(
+                    ExamType.DTZ, LearningLevel.B1, ExamSection.LESEVERSTEHEN, 1, ExamTaskType.DIRECTORY_MATCHING,
+                    0, 0, 0, 0,
+                    "Sie lesen die Aufgaben 21–25 und den Wegweiser. Wählen Sie bei jeder Aufgabe die passende Lösung (a, b oder c).",
+                    "exam-content/prompts/directory-matching.v1.0.txt",
+                    "1.0",
+                    5, 3, 21),
+            new ExamContentSpec(
                     ExamType.TELC, LearningLevel.B1, ExamSection.SPRACHBAUSTEINE, 1, ExamTaskType.MULTIPLE_CHOICE,
                     0, 0, 120, 220,
                     "Lesen Sie den Text und schließen Sie die Lücken 21–30. Welche Lösung (a, b oder c) ist jeweils richtig? "

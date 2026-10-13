@@ -66,6 +66,7 @@ export function getAdminNavItems(t: Dictionary): NavItem[] {
             icon: GraduationCap,
             children: [
                 { href: "/admin/exam-prep/leseverstehen", label: "Leseverstehen", icon: BookOpenText },
+                { href: "/admin/exam-prep/dtz-lesen-teil1", label: "DTZ A2–B1 · Lesen Teil 1", icon: BookOpenText },
                 { href: "/admin/exam-prep/sprachbausteine", label: "Sprachbausteine", icon: Blocks },
                 { href: "/admin/exam-prep/hoerverstehen", label: "Hörverstehen", icon: Headphones },
                 { href: "/admin/exam-prep/schriftlicher-ausdruck", label: "Schriftlicher Ausdruck", icon: PenLine },

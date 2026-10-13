@@ -230,9 +230,17 @@ public class ExamExerciseService {
                         e.getExternalId(),
                         e.getVersion(),
                         e.getMetadata() != null && e.getMetadata().get("difficulty") != null
-                                ? String.valueOf(e.getMetadata().get("difficulty")) : null,
-                        e.getUpdatedAt()))
+                                ? String.valueOf(e.getMetadata().get("difficulty")) : metadataText(e, "languageLevel"),
+                        e.getUpdatedAt(),
+                        metadataText(e, "topic"),
+                        metadataText(e, "sourceType"),
+                        e.getCreatedAt()))
                 .toList();
+    }
+
+    private static String metadataText(ExamExercise e, String key) {
+        Object value = e.getMetadata() == null ? null : e.getMetadata().get(key);
+        return value instanceof String text && !text.isBlank() ? text : null;
     }
 
     private static Integer effectivePartNumber(ExamExercise e) {
@@ -254,6 +262,7 @@ public class ExamExerciseService {
     public ExamExerciseResponse createManual(ExamExerciseManualRequest request) {
         validateNoDuplicateLevel(request, null);
         DtzTextQuestionsValidator.validate(request);
+        DtzDirectoryValidator.validate(request);
         ExamExercise exercise = new ExamExercise();
         applyRequest(exercise, request);
         exercise.setCreatedBy(requestContext.getUserId());
@@ -270,6 +279,7 @@ public class ExamExerciseService {
         ExamExercise existing = findById(id);
         validateNoDuplicateLevel(request, id);
         DtzTextQuestionsValidator.validate(request);
+        DtzDirectoryValidator.validate(request);
         Set<String> previousUploadUrls = collectUploadUrls(existing);
         applyRequest(existing, request);
         existing.setVersion(existing.getVersion() + 1);

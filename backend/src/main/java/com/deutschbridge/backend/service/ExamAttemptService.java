@@ -116,10 +116,27 @@ public class ExamAttemptService {
             case "EN" -> "en";
             default -> "";
         };
-        if (key.isEmpty() || exercise.getMetadata() == null || question.getGapNumber() == null) return german;
+        if (key.isEmpty() || exercise.getMetadata() == null) return german;
+        if (question.getGapNumber() == null) return directoryExplanation(exercise, question, key, german);
         if (!(exercise.getMetadata().get("gapQuestions") instanceof List<?> gaps)) return german;
         for (Object gap : gaps) {
             if (gap instanceof java.util.Map<?, ?> info && info.get("number") instanceof Number n && n.intValue() == question.getGapNumber()
+                    && info.get("explanation") instanceof java.util.Map<?, ?> translations
+                    && translations.get(key) instanceof String text && !text.isBlank()) {
+                return text;
+            }
+        }
+        return german;
+    }
+
+    /** DTZ directory exercises keep the English / Persian explanations of their questions in {@code metadata.directory.questions}, by question number. */
+    private static String directoryExplanation(ExamExercise exercise, ExamQuestion question, String key, String german) {
+        if (question.getQuestionNumber() == null || !(exercise.getMetadata().get("directory") instanceof java.util.Map<?, ?> directory)
+                || !(directory.get("questions") instanceof List<?> details)) {
+            return german;
+        }
+        for (Object detail : details) {
+            if (detail instanceof java.util.Map<?, ?> info && info.get("number") instanceof Number n && n.intValue() == question.getQuestionNumber()
                     && info.get("explanation") instanceof java.util.Map<?, ?> translations
                     && translations.get(key) instanceof String text && !text.isBlank()) {
                 return text;

@@ -36,6 +36,7 @@ import HoerenBoard from "@/componenets/exam/HoerenBoard";
 import LesenTextPanel from "@/componenets/exam/LesenTextPanel";
 import LesenTeil1Board from "@/componenets/exam/LesenTeil1Board";
 import LesenTextQuestionsBoard from "@/componenets/exam/LesenTextQuestionsBoard";
+import LesenDirectoryBoard from "@/componenets/exam/LesenDirectoryBoard";
 import LesenTeil3Board, { NO_AD_ANSWER as NO_AD_ANSWER_VALUE } from "@/componenets/exam/LesenTeil3Board";
 import TranscriptModal from "@/componenets/exam/TranscriptModal";
 import TranscriptContent from "@/componenets/exam/TranscriptContent";
@@ -1105,7 +1106,8 @@ interface TextQuestionsQuizState {
 
 /**
  * DTZ Lesen Teil 3 (TEXT_QUESTIONS): every text is shown with its richtig/falsch and multiple-choice task; all tasks are
- * answered on one page and submitted together, then the usual result review follows.
+ * answered on one page and submitted together, then the usual result review follows. DTZ Lesen Teil 1 (DIRECTORY_MATCHING)
+ * uses the same flow with the information source next to its five situations.
  */
 function TextQuestionsQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse }>) {
     const [quiz, setQuiz] = useState<TextQuestionsQuizState | null>(null);
@@ -1169,13 +1171,17 @@ function TextQuestionsQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublic
 
     const answeredCount = quiz.questions.filter((q) => quiz.answers[q.id]).length;
     const allAnswered = answeredCount === quiz.questions.length;
+    const isDirectory = exercise.taskType === "DIRECTORY_MATCHING";
+    const Board = isDirectory ? LesenDirectoryBoard : LesenTextQuestionsBoard;
 
     return (
         <div className="space-y-5">
             <p className="px-1 text-sm text-foreground/65">
-                Lies jeden Text und löse die beiden Aufgaben dazu. Klicke danach auf &quot;Antworten abgeben&quot;.
+                {isDirectory
+                    ? "Lies die Aufgaben und den Wegweiser. Wähle bei jeder Aufgabe die passende Lösung. Klicke danach auf \"Antworten abgeben\"."
+                    : "Lies jeden Text und löse die beiden Aufgaben dazu. Klicke danach auf \"Antworten abgeben\"."}
             </p>
-            <LesenTextQuestionsBoard
+            <Board
                 passages={quiz.passages}
                 questions={quiz.questions}
                 answers={quiz.answers}
@@ -1453,7 +1459,7 @@ function ExamExerciseContent() {
                             <AnswerOptionsPoolView answerOptions={exercise.answerOptions ?? []} answerOptionLabels={exercise.answerOptionLabels ?? []} taskType={exercise.taskType} />
                         )}
                         {/* Lesen Teil 1 (headings) and Teil 3 (ads) show their texts inside the matching board once the exercise is started. */}
-                        {exercise.taskType !== "SITUATION_MATCHING" && exercise.taskType !== "MATCHING" && exercise.taskType !== "TEXT_QUESTIONS" && !isLesenMultipleChoice(exercise) && !isSprachbausteineGapText(exercise) && (
+                        {exercise.taskType !== "SITUATION_MATCHING" && exercise.taskType !== "MATCHING" && exercise.taskType !== "TEXT_QUESTIONS" && exercise.taskType !== "DIRECTORY_MATCHING" && !isLesenMultipleChoice(exercise) && !isSprachbausteineGapText(exercise) && (
                             <PassagesView passages={exercise.passages} taskType={exercise.taskType ?? ""} />
                         )}
                     </>
@@ -1467,7 +1473,7 @@ function ExamExerciseContent() {
                     <MuendlicherAusdruckView exercise={exercise} />
                 ) : exercise.section === "TESTFORMAT_INFORMATION" ? (
                     <TestformatInformationView exercise={exercise} />
-                ) : exercise.taskType === "TEXT_QUESTIONS" ? (
+                ) : exercise.taskType === "TEXT_QUESTIONS" || exercise.taskType === "DIRECTORY_MATCHING" ? (
                     <TextQuestionsQuiz exercise={exercise} />
                 ) : exercise.taskType === "WORD_BANK_CLOZE" || exercise.taskType === "SITUATION_MATCHING" || exercise.taskType === "MATCHING" || isSprachbausteineGapText(exercise) ? (
                     <ClozeGridQuiz exercise={exercise} />
