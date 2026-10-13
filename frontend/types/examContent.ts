@@ -20,6 +20,7 @@ export interface ExamContentSpecInfo {
         | "SITUATION_MATCHING"
         | "DIRECTORY_MATCHING"
         | "TEXT_QUESTIONS"
+        | "TEXT_TRUE_FALSE"
         | "WORD_BANK_CLOZE"
         | "WRITING_TASK"
         | "TOPIC_INTERVIEW"

@@ -18,6 +18,8 @@ import {
 } from "@/services/adminExamService";
 import { ExamExerciseAdminRow, ExamExerciseResponse, ExamFieldPresetType, ExamPassage, ExamQuestion, ExamSection, ExamTaskType, ExamTypeCode } from "@/types/exam";
 import DtzTextQuestionsEditor from "@/componenets/admin/examPrep/DtzTextQuestionsEditor";
+import DtzTrueFalseTextEditor from "@/componenets/admin/examPrep/DtzTrueFalseTextEditor";
+import { buildTrueFalseQuestions, normalizeStatements, validateTrueFalseText } from "@/componenets/admin/examPrep/dtzTrueFalseText";
 import { DEFAULT_FIRST_TASK_NUMBER, buildTextQuestions, removeTextTasks, validateTextQuestions } from "@/componenets/admin/examPrep/dtzTextQuestions";
 import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
@@ -65,6 +67,7 @@ const TASK_TYPE_LABELS: Record<ExamTaskType, string> = {
     TRUE_FALSE_NOT_GIVEN: "Aufgaben richtig/falsch/nicht",
     TRUE_FALSE: "Aufgaben richtig/falsch",
     TEXT_QUESTIONS: "Texte mit Aufgaben (richtig/falsch + a, b, c)",
+    TEXT_TRUE_FALSE: "Informationstext mit Aussagen (richtig/falsch)",
     DIRECTORY_MATCHING: "Verzeichnis/Wegweiser mit Situationen (a, b, c)",
     WORD_BANK_CLOZE: "Lückentext (Wortbank)",
     WRITING_TASK: "Schriftlicher Ausdruck",
@@ -83,7 +86,7 @@ const DTZ_LEVEL = "B1";
 const EXAM_CHOICE_SECTIONS: ExamSection[] = ["LESEVERSTEHEN", "HOERVERSTEHEN"];
 
 const taskTypesFor = (section: ExamSection, examType: ExamTypeCode): ExamTaskType[] =>
-    examType === "DTZ" && section === "LESEVERSTEHEN" ? [...TASK_TYPES_BY_SECTION[section], "TEXT_QUESTIONS", "DIRECTORY_MATCHING"] : TASK_TYPES_BY_SECTION[section];
+    examType === "DTZ" && section === "LESEVERSTEHEN" ? [...TASK_TYPES_BY_SECTION[section], "TEXT_QUESTIONS", "TEXT_TRUE_FALSE", "DIRECTORY_MATCHING"] : TASK_TYPES_BY_SECTION[section];
 
 const teilNumbersFor = (section: ExamSection, examType: ExamTypeCode): number[] | undefined => {
     if (examType === "DTZ" && section === "LESEVERSTEHEN") return [1, 2, 3, 4, 5];
@@ -352,6 +355,17 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
             window.history.replaceState(null, "", url.pathname + url.search);
             return;
         }
+        // Deep link from the DTZ Lesen Teil 4 page ("?new=dtz-true-false"): start a blank exercise with one text and the statements 37-39.
+        if (section === "LESEVERSTEHEN" && url.searchParams.get("new") === "dtz-true-false") {
+            setExamType("DTZ");
+            setForm({ ...makeEmptyForm(section), level: DTZ_LEVEL, taskType: "TEXT_TRUE_FALSE", partNumber: "4" });
+            setPassages([{ ...emptyPassage(0, section, "TEXT_TRUE_FALSE"), label: "" }]);
+            setQuestions(normalizeStatements([]));
+            setShowForm(true);
+            url.searchParams.delete("new");
+            window.history.replaceState(null, "", url.pathname + url.search);
+            return;
+        }
         const editId = url.searchParams.get("edit");
         if (!editId) return;
         void startEdit({ id: editId } as ExamExerciseAdminRow).then(() => {
@@ -408,15 +422,16 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
     const changeTaskType = (taskType: ExamTaskType) => {
         const textQuestionsInvolved = taskType === "TEXT_QUESTIONS" || form.taskType === "TEXT_QUESTIONS";
         const directoryInvolved = taskType === "DIRECTORY_MATCHING" || form.taskType === "DIRECTORY_MATCHING";
+        const trueFalseInvolved = taskType === "TEXT_TRUE_FALSE" || form.taskType === "TEXT_TRUE_FALSE";
         // Sprachbausteine's Teil follows its task type, so keep the Teil dropdown in step with it; DTZ's texts-with-tasks is Teil 3.
         setForm({
             ...form,
             taskType,
-            partNumber: section === "SPRACHBAUSTEINE" ? defaultTeil(section, taskType) : taskType === "TEXT_QUESTIONS" ? "3" : taskType === "DIRECTORY_MATCHING" ? "1" : form.partNumber,
+            partNumber: section === "SPRACHBAUSTEINE" ? defaultTeil(section, taskType) : taskType === "TEXT_QUESTIONS" ? "3" : taskType === "TEXT_TRUE_FALSE" ? "4" : taskType === "DIRECTORY_MATCHING" ? "1" : form.partNumber,
         });
         // Texts-with-tasks and directory questions each have a fixed shape, so they cannot be converted to or from the other task types.
         setQuestions((prev) =>
-            taskType === "DIRECTORY_MATCHING" ? normalizeDirectoryQuestions([]) : textQuestionsInvolved || directoryInvolved ? [] : prev.map((q) => ({ ...q, taskType })),
+            taskType === "DIRECTORY_MATCHING" ? normalizeDirectoryQuestions([]) : taskType === "TEXT_TRUE_FALSE" ? normalizeStatements([]) : textQuestionsInvolved || directoryInvolved || trueFalseInvolved ? [] : prev.map((q) => ({ ...q, taskType })),
         );
         // Seed "+"/"-"/"o" for richtig/falsch/nicht; drop an untouched seed when leaving that type.
         if (taskType === "TRUE_FALSE_NOT_GIVEN" && answerOptions.length === 0) {
@@ -565,6 +580,8 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                 ? exercise.questions.map((q) => ({ ...q, correctAnswer: legacyTfnAnswers[q.correctAnswer] ?? q.correctAnswer }))
                 : exercise.taskType === "DIRECTORY_MATCHING"
                 ? normalizeDirectoryQuestions(exercise.questions)
+                : exercise.taskType === "TEXT_TRUE_FALSE"
+                ? normalizeStatements(exercise.questions)
                 : exercise.questions
         );
         setAnswerOptions(isLegacyTfn ? TFN_DEFAULT_ANSWER_OPTIONS : exercise.answerOptions ?? []);
@@ -602,6 +619,14 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
             }
             if (!Number.isFinite(firstTaskNumber) || firstTaskNumber < 1) {
                 toast.error("The number of the first task must be a positive number.");
+                return;
+            }
+        }
+
+        if (form.taskType === "TEXT_TRUE_FALSE") {
+            const problem = validateTrueFalseText(passages, questions);
+            if (problem) {
+                toast.error(problem);
                 return;
             }
         }
@@ -652,6 +677,8 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
             passages: resolvedPassages,
             questions: form.taskType === "TEXT_QUESTIONS"
                 ? buildTextQuestions(questions, passageIndexRemap, firstTaskNumber)
+                : form.taskType === "TEXT_TRUE_FALSE"
+                ? buildTrueFalseQuestions(questions)
                 : form.taskType === "DIRECTORY_MATCHING"
                 ? buildDirectoryQuestions(questions)
                 : questions
@@ -1118,9 +1145,11 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                     )}
                                 </div>
                             ))}
-                            <Button type="button" variant="secondary" className="text-xs px-3 py-1" onClick={addPassage}>
-                                + Add passage
-                            </Button>
+                            {(form.taskType !== "TEXT_TRUE_FALSE" || passages.length === 0) && (
+                                <Button type="button" variant="secondary" className="text-xs px-3 py-1" onClick={addPassage}>
+                                    + Add passage
+                                </Button>
+                            )}
                         </div>
                     </div>
 
@@ -1242,6 +1271,15 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                         </div>
                     )}
 
+                    {form.taskType === "TEXT_TRUE_FALSE" && (
+                        <div>
+                            <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                                Statements 37–39 — decide for each statement whether the text above makes it richtig or falsch
+                            </label>
+                            <DtzTrueFalseTextEditor questions={questions} onChange={setQuestions} />
+                        </div>
+                    )}
+
                     {form.taskType === "DIRECTORY_MATCHING" && (
                         <div>
                             <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
@@ -1251,7 +1289,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                         </div>
                     )}
 
-                    {form.taskType !== "WORD_BANK_CLOZE" && form.taskType !== "WRITING_TASK" && form.taskType !== "TEXT_QUESTIONS" && form.taskType !== "DIRECTORY_MATCHING" && (
+                    {form.taskType !== "WORD_BANK_CLOZE" && form.taskType !== "WRITING_TASK" && form.taskType !== "TEXT_QUESTIONS" && form.taskType !== "TEXT_TRUE_FALSE" && form.taskType !== "DIRECTORY_MATCHING" && (
                     <div>
                         <div className="flex items-center justify-between mb-2">
                             <label className="text-gray-700 dark:text-gray-300 text-sm">Questions</label>

@@ -91,6 +91,11 @@ public record ExamContentSpec(
         return taskType == ExamTaskType.TEXT_QUESTIONS;
     }
 
+    /** True for DTZ Lesen Teil 4: one information text followed by three richtig/falsch statements numbered 37-39, read with {@link ExamTrueFalseReader}. */
+    public boolean isTrueFalseText() {
+        return taskType == ExamTaskType.TEXT_TRUE_FALSE;
+    }
+
     /** Situation spec: {@code questionCount} situations numbered from {@code firstQuestionNumber}, {@code optionCount} ads a, b, c ... */
     public int situationCount() {
         return questionCount;

@@ -20,6 +20,8 @@ export type ExamTaskType =
     | "TRUE_FALSE"
     /** DTZ Lesen Teil 3: several texts, each with one richtig/falsch and one multiple-choice task. */
     | "TEXT_QUESTIONS"
+    /** DTZ Lesen Teil 4: one information text and three richtig/falsch statements (37–39). */
+    | "TEXT_TRUE_FALSE"
     /** DTZ Lesen Teil 1: one information source (Wegweiser, Verzeichnis, Katalog ...) and five a/b/c situations. */
     | "DIRECTORY_MATCHING"
     | "WORD_BANK_CLOZE"
@@ -192,6 +194,8 @@ export interface ExamExerciseAdminRow {
     createdAt?: string | null;
     /** Number of texts / passages of the exercise. */
     passageCount?: number;
+    /** Words in all passages together (the text length of a DTZ Lesen Teil 4 exercise). */
+    wordCount?: number;
 }
 
 export interface ExamExerciseResponse {

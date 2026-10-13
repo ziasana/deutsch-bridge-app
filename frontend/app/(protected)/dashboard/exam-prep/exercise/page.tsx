@@ -1106,8 +1106,8 @@ interface TextQuestionsQuizState {
 
 /**
  * DTZ Lesen Teil 3 (TEXT_QUESTIONS): every text is shown with its richtig/falsch and multiple-choice task; all tasks are
- * answered on one page and submitted together, then the usual result review follows. DTZ Lesen Teil 1 (DIRECTORY_MATCHING)
- * uses the same flow with the information source next to its five situations.
+ * answered on one page and submitted together, then the usual result review follows. DTZ Lesen Teil 4 (TEXT_TRUE_FALSE: one text,
+ * three richtig/falsch statements) and Teil 1 (DIRECTORY_MATCHING) use the same flow with the information source next to its five situations.
  */
 function TextQuestionsQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse }>) {
     const [quiz, setQuiz] = useState<TextQuestionsQuizState | null>(null);
@@ -1459,7 +1459,7 @@ function ExamExerciseContent() {
                             <AnswerOptionsPoolView answerOptions={exercise.answerOptions ?? []} answerOptionLabels={exercise.answerOptionLabels ?? []} taskType={exercise.taskType} />
                         )}
                         {/* Lesen Teil 1 (headings) and Teil 3 (ads) show their texts inside the matching board once the exercise is started. */}
-                        {exercise.taskType !== "SITUATION_MATCHING" && exercise.taskType !== "MATCHING" && exercise.taskType !== "TEXT_QUESTIONS" && exercise.taskType !== "DIRECTORY_MATCHING" && !isLesenMultipleChoice(exercise) && !isSprachbausteineGapText(exercise) && (
+                        {exercise.taskType !== "SITUATION_MATCHING" && exercise.taskType !== "MATCHING" && exercise.taskType !== "TEXT_QUESTIONS" && exercise.taskType !== "TEXT_TRUE_FALSE" && exercise.taskType !== "DIRECTORY_MATCHING" && !isLesenMultipleChoice(exercise) && !isSprachbausteineGapText(exercise) && (
                             <PassagesView passages={exercise.passages} taskType={exercise.taskType ?? ""} />
                         )}
                     </>
@@ -1473,7 +1473,7 @@ function ExamExerciseContent() {
                     <MuendlicherAusdruckView exercise={exercise} />
                 ) : exercise.section === "TESTFORMAT_INFORMATION" ? (
                     <TestformatInformationView exercise={exercise} />
-                ) : exercise.taskType === "TEXT_QUESTIONS" || exercise.taskType === "DIRECTORY_MATCHING" ? (
+                ) : exercise.taskType === "TEXT_QUESTIONS" || exercise.taskType === "TEXT_TRUE_FALSE" || exercise.taskType === "DIRECTORY_MATCHING" ? (
                     <TextQuestionsQuiz exercise={exercise} />
                 ) : exercise.taskType === "WORD_BANK_CLOZE" || exercise.taskType === "SITUATION_MATCHING" || exercise.taskType === "MATCHING" || isSprachbausteineGapText(exercise) ? (
                     <ClozeGridQuiz exercise={exercise} />

@@ -235,7 +235,8 @@ public class ExamExerciseService {
                         metadataText(e, "topic"),
                         metadataText(e, "sourceType"),
                         e.getCreatedAt(),
-                        e.getPassages() != null ? e.getPassages().size() : 0))
+                        e.getPassages() != null ? e.getPassages().size() : 0,
+                        wordCount(e)))
                 .toList();
     }
 
@@ -263,6 +264,7 @@ public class ExamExerciseService {
     public ExamExerciseResponse createManual(ExamExerciseManualRequest request) {
         validateNoDuplicateLevel(request, null);
         DtzTextQuestionsValidator.validate(request);
+        DtzTrueFalseTextValidator.validate(request);
         DtzDirectoryValidator.validate(request);
         DtzAdMatchingValidator.validate(request);
         ExamExercise exercise = new ExamExercise();
@@ -281,6 +283,7 @@ public class ExamExerciseService {
         ExamExercise existing = findById(id);
         validateNoDuplicateLevel(request, id);
         DtzTextQuestionsValidator.validate(request);
+        DtzTrueFalseTextValidator.validate(request);
         DtzDirectoryValidator.validate(request);
         DtzAdMatchingValidator.validate(request);
         Set<String> previousUploadUrls = collectUploadUrls(existing);
@@ -394,5 +397,18 @@ public class ExamExerciseService {
             }
         }
         return questions;
+    }
+
+    /** Words of all passages together with the markup removed. */
+    private static int wordCount(ExamExercise e) {
+        if (e.getPassages() == null) return 0;
+        return e.getPassages().stream()
+                .map(ExamPassage::getContent)
+                .filter(java.util.Objects::nonNull)
+                .mapToInt(html -> {
+                    String plain = html.replaceAll("<[^>]*>", " ").strip();
+                    return plain.isEmpty() ? 0 : plain.split("\\s+").length;
+                })
+                .sum();
     }
 }

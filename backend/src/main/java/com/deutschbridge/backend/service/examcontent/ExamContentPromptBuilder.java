@@ -56,6 +56,11 @@ public class ExamContentPromptBuilder {
     public static final List<String> LESEN_TEXT_MIXES = List.of("RANDOM_MIX", "PRESS_EMAIL_NOTICE", "THREE_PRESS", "THREE_EMAILS", "THREE_NOTICES", "CUSTOM");
     public static final List<String> LESEN_TEXT_TYPES = List.of("PRESS_TEXT", "EMAIL", "FORMAL_NOTICE", "PUBLIC_ANNOUNCEMENT", "INFORMATION_TEXT");
     public static final List<String> LESEN_TEXT_LENGTHS = List.of("MEDIUM", "SHORT", "LONG");
+    /** DTZ Lesen Teil 4 generator choices (the first entry of each list is the default). */
+    public static final List<String> TRUE_FALSE_TOPICS = List.of("RANDOM", "SCHOOL_CHILDCARE", "PUBLIC_SERVICES", "HOUSING", "EDUCATION_COURSES",
+            "WORK_EMPLOYMENT", "HEALTH_APPOINTMENTS", "LEISURE_COMMUNITY", "PUBLIC_TRANSPORT", "EVERYDAY_RULES");
+    public static final List<String> TRUE_FALSE_STYLES = List.of("RANDOM", "INFORMATION_SHEET", "FORMAL_NOTICE", "INSTITUTIONAL_ANNOUNCEMENT",
+            "RULES_AND_CONDITIONS", "PUBLIC_INFORMATION_TEXT");
     public static final int MAX_COUNT = 50;
 
     /** Rules shared by the three Mündlicher Ausdruck templates (language, quality, output); included as {{SPEAKING_COMMON}}. */
@@ -72,6 +77,9 @@ public class ExamContentPromptBuilder {
                                 List<String> existingSummaries) {
         if (spec.isDirectoryMatching()) {
             return buildDirectory(spec, request, existingCount, firstNumber, existingSummaries);
+        }
+        if (spec.isTrueFalseText()) {
+            return buildTrueFalseText(spec, request, existingCount, firstNumber, existingSummaries);
         }
         if (spec.isTextQuestions()) {
             return buildTextQuestions(spec, request, existingCount, firstNumber, existingSummaries);
@@ -453,6 +461,135 @@ public class ExamContentPromptBuilder {
             prompt = prompt.replace("{{" + e.getKey() + "}}", e.getValue());
         }
         return new PromptResponse(prompt.strip() + "\n", spec.promptVersion(), ExamContentSpecs.SCHEMA_VERSION, example, existingCount, firstId);
+    }
+
+    // ------------------------------------------------------------------ DTZ Lesen Teil 4 (one text + three richtig/falsch statements)
+
+    private static final Map<String, String> TRUE_FALSE_TOPIC_TEXT = Map.of(
+            "SCHOOL_CHILDCARE", "School and childcare",
+            "PUBLIC_SERVICES", "Public services",
+            "HOUSING", "Housing and tenants",
+            "EDUCATION_COURSES", "Education and courses",
+            "WORK_EMPLOYMENT", "Work and employment",
+            "HEALTH_APPOINTMENTS", "Health services and appointments",
+            "LEISURE_COMMUNITY", "Leisure, community centres and memberships",
+            "PUBLIC_TRANSPORT", "Public transport rules",
+            "EVERYDAY_RULES", "Everyday rules and services (registration, fees, opening hours)");
+
+    private static final Map<String, String> TRUE_FALSE_STYLE_TEXT = Map.of(
+            "INFORMATION_SHEET", "information sheet",
+            "FORMAL_NOTICE", "formal notice",
+            "INSTITUTIONAL_ANNOUNCEMENT", "institutional announcement",
+            "RULES_AND_CONDITIONS", "rules and conditions",
+            "PUBLIC_INFORMATION_TEXT", "public information text");
+
+    private static final Map<String, String> TRUE_FALSE_LENGTH_TEXT = Map.of(
+            "SHORT", "short (about 180–210 words)",
+            "MEDIUM", "medium (about 210–260 words)",
+            "LONG", "longer (about 260–300 words)");
+
+    /** One or several exercises per prompt (several come back as one batch file); {@code request.textType()} carries the text style. */
+    private PromptResponse buildTrueFalseText(ExamContentSpec spec, PromptRequest request, int existingCount, int firstNumber,
+                                              List<String> existingSummaries) {
+        String level = directoryToken(request.difficulty(), "A2_B1", DIRECTORY_LEVELS, "difficulty");
+        int count = request.count() == null ? 1 : request.count();
+        if (count < 1 || count > MAX_COUNT) throw new IllegalArgumentException("count must be between 1 and " + MAX_COUNT);
+        List<String> topics = new ArrayList<>();
+        for (String t : request.topics() == null ? List.<String>of() : request.topics()) {
+            String token = directoryToken(t, "RANDOM", TRUE_FALSE_TOPICS, "topic");
+            if (!token.equals("RANDOM") && !topics.contains(token)) topics.add(token);
+        }
+        String style = directoryToken(request.textType(), "RANDOM", TRUE_FALSE_STYLES, "text style");
+        String length = directoryToken(request.textLength(), "MEDIUM", LESEN_TEXT_LENGTHS, "text length");
+        String variation = directoryToken(request.variation(), "RANDOM", DIRECTORY_VARIATIONS, "variation");
+        List<String> tags = new ArrayList<>();
+        for (String tag : request.tags() == null ? List.<String>of() : request.tags()) {
+            String clean = tag == null ? "" : tag.strip().replaceAll("[\\r\\n\"]", " ");
+            if (!clean.isEmpty() && clean.length() <= 40 && !tags.contains(clean) && tags.size() < 10) tags.add(clean);
+        }
+        String styleValue = style.equals("RANDOM") ? "INFORMATION_SHEET | FORMAL_NOTICE | INSTITUTIONAL_ANNOUNCEMENT | RULES_AND_CONDITIONS | PUBLIC_INFORMATION_TEXT" : style;
+        String example = trueFalseJsonExample(spec, level, style.equals("RANDOM") ? "INFORMATION_SHEET" : style, tags, count);
+
+        Map<String, String> values = new java.util.LinkedHashMap<>();
+        values.put("DIFFICULTY", level);
+        values.put("COUNT_LINE", count == 1 ? "Generate exactly ONE complete exercise" : "Generate exactly " + count + " complete, clearly different exercises");
+        values.put("BATCH_RULE", count == 1 ? ""
+                : "Because there are " + count + " exercises, return ONE JSON object that wraps them: schemaVersion, contentType \"EXAM_EXERCISE_BATCH\", exam, level, section, part and an \"exercises\" array with exactly " + count + " exercise objects. Each exercise must use a different scenario, text and wording.\n\n");
+        values.put("STRUCTURE_NOTE", count == 1 ? "" : " (the object inside the \"exercises\" array; repeat it " + count + " times)");
+        values.put("TOPIC", topics.isEmpty() ? "any suitable everyday topic (your choice)"
+                : topics.stream().map(TRUE_FALSE_TOPIC_TEXT::get).collect(java.util.stream.Collectors.joining("; ")));
+        values.put("TEXT_LENGTH", TRUE_FALSE_LENGTH_TEXT.get(length));
+        values.put("TEXT_STYLE", style.equals("RANDOM")
+                ? "your choice of INFORMATION_SHEET, FORMAL_NOTICE, INSTITUTIONAL_ANNOUNCEMENT, RULES_AND_CONDITIONS or PUBLIC_INFORMATION_TEXT (use the chosen token as text.type)"
+                : TRUE_FALSE_STYLE_TEXT.get(style) + " (text.type " + styleValue + ")");
+        values.put("INSTRUCTIONS", spec.defaultInstructions());
+        values.put("VARIATION_BLOCK", switch (variation) {
+            case "NEW_SCENARIO" -> "Variation: invent a new, original scenario; do not fall back on the most typical textbook setting for this topic.\n";
+            case "AVOID_KNOWN_TOPICS" -> existingSummaries.isEmpty()
+                    ? "Variation: avoid the most common textbook scenarios for this topic.\n"
+                    : "Variation: the library already contains these exercises - choose a clearly different scenario, text and wording:\n"
+                    + existingSummaries.stream().map(line -> "- " + line).collect(java.util.stream.Collectors.joining("\n")) + "\n";
+            default -> "";
+        });
+        values.put("LEVEL_RULES", switch (level) {
+            case "A2" -> "For A2: use common everyday vocabulary; prefer short sentences; use direct explanations; avoid complicated subordinate clauses.";
+            case "B1" -> "For B1: allow more detailed information; use some paraphrasing in the statements; test understanding of rules, conditions and relationships; avoid specialist language that is not needed for the topic.";
+            default -> "For A2–B1: use accessible everyday German; include several useful facts and conditions; allow moderate variation in sentence structure; keep the text easy to navigate.";
+        });
+        values.put("DATES_RULE", "");
+        values.put("TAGS_RULE", tags.isEmpty() ? "" : "Put these tags into metadata.tags: " + String.join(", ", tags) + ".\n");
+        values.put("JSON_EXAMPLE", example);
+        values.put("NOTES_BLOCK", request.notes() == null || request.notes().isBlank() ? ""
+                : "\nADDITIONAL INSTRUCTIONS FROM THE EDITOR:\n" + request.notes().strip() + "\n");
+
+        String prompt = loadTemplate(spec.promptTemplate());
+        for (Map.Entry<String, String> e : values.entrySet()) {
+            prompt = prompt.replace("{{" + e.getKey() + "}}", e.getValue());
+        }
+        String firstId = spec.externalIdPrefix() + String.format("%03d", firstNumber);
+        return new PromptResponse(prompt.strip() + "\n", spec.promptVersion(), ExamContentSpecs.SCHEMA_VERSION, example, existingCount, firstId);
+    }
+
+    private String trueFalseJsonExample(ExamContentSpec spec, String level, String textType, List<String> tags, int count) {
+        ObjectNode ex = MAPPER.createObjectNode();
+        ex.put("exam", "DTZ");
+        ex.put("section", "LESEN");
+        ex.put("part", 4);
+        ex.put("exerciseType", ExamTrueFalseReader.EXERCISE_TYPE);
+        ex.put("level", "A2_B1");
+        ex.put("title", "...");
+        ex.put("topic", "...");
+        ex.put("difficulty", level);
+        ex.putObject("instructions").put("de", spec.defaultInstructions());
+        ObjectNode text = ex.putObject("text");
+        text.put("type", textType);
+        text.put("title", "...");
+        text.put("body", "...");
+        ArrayNode questions = ex.putArray("questions");
+        String[] answers = {"RICHTIG", "FALSCH", "RICHTIG"};
+        for (int i = 0; i < spec.questionCount(); i++) {
+            ObjectNode q = questions.addObject();
+            q.put("number", spec.firstQuestionNumber() + i);
+            q.put("type", "TRUE_FALSE");
+            q.put("statement", "...");
+            q.put("correctAnswer", answers[i]);
+            q.putObject("explanation").put("de", "...").put("en", "...").put("fa", "...");
+        }
+        ObjectNode meta = ex.putObject("metadata");
+        meta.put("schemaVersion", 1);
+        meta.put("source", "AI_IMPORTED");
+        ArrayNode tagArray = meta.putArray("tags");
+        tags.forEach(tagArray::add);
+        if (count == 1) return write(ex);
+        ObjectNode root = MAPPER.createObjectNode();
+        root.put("schemaVersion", ExamContentSpecs.SCHEMA_VERSION);
+        root.put("contentType", "EXAM_EXERCISE_BATCH");
+        root.put("exam", "DTZ");
+        root.put("level", "A2_B1");
+        root.put("section", "LESEN");
+        root.put("part", "TEIL_4");
+        root.putArray("exercises").add(ex);
+        return write(root);
     }
 
     private String textQuestionsJsonExample(ExamContentSpec spec, String level, int count, String mix, List<String> custom, List<String> tags) {

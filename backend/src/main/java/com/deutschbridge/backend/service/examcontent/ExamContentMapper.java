@@ -56,7 +56,7 @@ public final class ExamContentMapper {
         if (spec.isWordBank()) {
             return toWordBankEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
         }
-        if (spec.isTextQuestions()) {
+        if (spec.isTextQuestions() || spec.isTrueFalseText()) {
             return toTextQuestionsEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
         }
         if (spec.isDirectoryMatching()) {
@@ -755,6 +755,7 @@ public final class ExamContentMapper {
         if (e.getTaskType() == ExamTaskType.SITUATION_MATCHING) return toSituationExportNode(mapper, e);
         if (e.getTaskType() == ExamTaskType.DIRECTORY_MATCHING) return toDirectoryExportNode(mapper, e);
         if (e.getTaskType() == ExamTaskType.TEXT_QUESTIONS) return toTextQuestionsExportNode(mapper, e);
+        if (e.getTaskType() == ExamTaskType.TEXT_TRUE_FALSE) return toTrueFalseExportNode(mapper, e);
         if (e.getTaskType() != ExamTaskType.MATCHING || e.getAnswerOptions() == null || e.getPassages() == null
                 || e.getQuestions() == null || e.getSection() == null || e.getLevel() == null || e.getPartNumber() == null) {
             return null;
@@ -1272,6 +1273,71 @@ public final class ExamContentMapper {
         metadata.put("schemaVersion", 1);
         metadata.put("source", String.valueOf(e.getMetadata().getOrDefault("source", "AI_IMPORTED")));
         if (e.getMetadata().get("tags") != null) metadata.set("tags", mapper.valueToTree(e.getMetadata().get("tags")));
+        return node;
+    }
+
+    /**
+     * DTZ Lesen Teil 4 in the import shape: one {@code text} and three TRUE_FALSE questions 37-39. The text type and the English /
+     * Persian explanations come from {@code metadata.textQuestions}; title, body, statements and answers are read from the stored
+     * passage and questions so admin edits are exported. Exercises that do not have exactly this shape cannot be exported.
+     */
+    @SuppressWarnings("unchecked")
+    private static ObjectNode toTrueFalseExportNode(ObjectMapper mapper, ExamExercise e) {
+        if (e.getPassages() == null || e.getPassages().size() != 1 || e.getQuestions() == null || e.getQuestions().size() != 3
+                || e.getMetadata() == null) {
+            return null;
+        }
+        Map<String, Object> raw = e.getMetadata().get("textQuestions") instanceof Map<?, ?> m ? (Map<String, Object>) m : Map.of();
+        Map<Integer, Map<String, Object>> detailByNumber = new LinkedHashMap<>();
+        if (raw.get("questions") instanceof List<?> list) {
+            for (Object o : list) {
+                if (o instanceof Map<?, ?> m && m.get("number") instanceof Number n) detailByNumber.put(n.intValue(), (Map<String, Object>) m);
+            }
+        }
+        List<ExamQuestion> ordered = e.getQuestions().stream()
+                .sorted(java.util.Comparator.comparing(q -> q.getQuestionNumber() == null ? Integer.MAX_VALUE : q.getQuestionNumber()))
+                .toList();
+        for (ExamQuestion q : ordered) {
+            if (q.getTaskType() != ExamTaskType.TRUE_FALSE || (!"RICHTIG".equals(q.getCorrectAnswer()) && !"FALSCH".equals(q.getCorrectAnswer()))) return null;
+        }
+        Map<String, Object> storedText = raw.get("texts") instanceof List<?> l && !l.isEmpty() && l.get(0) instanceof Map<?, ?> m ? (Map<String, Object>) m : Map.of();
+        ExamPassage passage = e.getPassages().get(0);
+
+        ObjectNode node = mapper.createObjectNode();
+        if (e.getExternalId() != null) node.put("externalId", e.getExternalId());
+        node.put("exam", "DTZ");
+        node.put("section", "LESEN");
+        node.put("part", 4);
+        node.put("exerciseType", ExamTrueFalseReader.EXERCISE_TYPE);
+        node.put("level", "A2_B1");
+        node.put("title", e.getTitle());
+        Object topic = e.getMetadata().get("topic");
+        if (topic != null) node.put("topic", topic.toString());
+        String difficulty = String.valueOf(e.getMetadata().getOrDefault("languageLevel", "A2_B1"));
+        node.put("difficulty", difficulty);
+        node.putObject("instructions").put("de", e.getTeilDescription() == null ? "" : e.getTeilDescription());
+        ObjectNode text = node.putObject("text");
+        text.put("type", String.valueOf(storedText.getOrDefault("type", ExamTrueFalseReader.DEFAULT_TEXT_TYPE)));
+        text.put("title", passage.getLabel());
+        text.put("body", textBodyOf(passage.getContent(), false));
+        ArrayNode questions = node.putArray("questions");
+        for (int i = 0; i < ordered.size(); i++) {
+            ExamQuestion q = ordered.get(i);
+            int number = q.getQuestionNumber() != null ? q.getQuestionNumber() : 37 + i;
+            ObjectNode out = questions.addObject();
+            out.put("number", number);
+            out.put("type", ExamTrueFalseReader.TRUE_FALSE);
+            out.put("statement", q.getPrompt());
+            out.put("correctAnswer", q.getCorrectAnswer());
+            Object explanation = detailByNumber.getOrDefault(number, Map.of()).get("explanation");
+            ObjectNode explanationNode = explanation == null ? mapper.createObjectNode() : mapper.valueToTree(explanation);
+            if (!explanationNode.has("de") && q.getExplanation() != null) explanationNode.put("de", q.getExplanation());
+            out.set("explanation", explanationNode);
+        }
+        ObjectNode metadata = node.putObject("metadata");
+        metadata.put("schemaVersion", 1);
+        metadata.put("source", String.valueOf(e.getMetadata().getOrDefault("source", "AI_IMPORTED")));
+        metadata.set("tags", e.getMetadata().get("tags") != null ? mapper.valueToTree(e.getMetadata().get("tags")) : mapper.createArrayNode());
         return node;
     }
 

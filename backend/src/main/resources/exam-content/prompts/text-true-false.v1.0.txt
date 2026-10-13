@@ -1,0 +1,149 @@
+You are an expert author of original German DTZ A2–B1 exam-preparation reading exercises.
+
+{{COUNT_LINE}} for:
+
+- Exam: DTZ
+- Section: Lesen
+- Part: 4
+- Exercise type: TEXT_TRUE_FALSE
+- Difficulty: {{DIFFICULTY}}
+- Topic: {{TOPIC}}
+- Text length: {{TEXT_LENGTH}}
+- Text style: {{TEXT_STYLE}}
+{{VARIATION_BLOCK}}
+{{BATCH_RULE}}The exercise must follow the exact structure described below. It is original practice material for an independent learning application.
+
+### A. Mandatory structure
+
+Create:
+
+- Exactly one coherent German text.
+- Exactly three true/false statements.
+- Question numbers 37, 38 and 39.
+- Exactly one correct answer per statement.
+- Exactly one answer field for each question.
+- An explanation in German, English and Persian for each question.
+
+Do not create extra texts or questions.
+Do not add multiple-choice questions.
+
+### B. Instructions
+
+Use this exact German instruction:
+
+"{{INSTRUCTIONS}}"
+
+### C. Text generation
+
+Create one original, realistic information text.
+Follow the selected topic and text style.
+Possible text styles include:
+
+- Information for parents.
+- Institutional information.
+- Formal notices.
+- Course information.
+- Public announcements.
+- Rules and conditions.
+- Practical service information.
+
+The text must have a clear title and a coherent body.
+Use headings and short sections if appropriate (for example Öffnungszeiten, Gebühren, Anmeldung, Teilnahmebedingungen, Angebote, Regeln, Abwesenheit, Kontakt), but only when they fit the content.
+Include meaningful facts that can be tested, such as opening hours, costs, discounts, conditions, rules, responsibilities, schedules or available services.
+Use only information necessary for the text's purpose.
+Do not invent complicated details simply to make the text longer.
+Do not include contradictory information.
+The text must be self-contained. The learner must not need outside knowledge to answer the questions.
+Write the text as plain text (line breaks and headings as simple lines) — no HTML or Markdown.
+
+### D. Difficulty and length
+
+{{LEVEL_RULES}}
+
+Text length: {{TEXT_LENGTH}}. Treat the word count as a generation guideline, not a reason to add irrelevant content.
+{{DATES_RULE}}
+
+### E. Statement generation
+
+Generate exactly three statements.
+Number them 37, 38 and 39.
+Every statement must have the type `TRUE_FALSE`.
+Use only these answer values:
+
+- `RICHTIG`
+- `FALSCH`
+
+A RICHTIG statement must be directly supported by the text.
+A FALSCH statement must clearly contradict the text.
+Use a variety of information types across the three questions where possible. For example, one question might concern opening hours, another fees or conditions, and another activities or rules. Do not force these categories if they do not fit the chosen topic.
+Do not simply copy a complete sentence from the text into a question. Use natural paraphrasing when appropriate. However, do not make the statement so indirect that it becomes ambiguous.
+Avoid statements that are partially true or require assumptions beyond the text.
+Do not make a statement false only because of an unimportant or confusing wording detail.
+Use a balanced answer key (do not make all three answers the same).
+
+### F. Answer validation
+
+Before returning the JSON, independently solve each statement using only the generated text.
+For each question:
+
+1. Identify the relevant sentence or passage.
+2. Determine whether the statement is true or false.
+3. Confirm that the answer key matches the text.
+4. Check that the opposite interpretation is not reasonably possible.
+5. Revise ambiguous statements.
+6. Ensure that the explanation identifies the decisive evidence.
+
+Do not assign answers arbitrarily.
+Do not create a false statement by contradicting information that the text never discusses. The contradiction must be clear from the text.
+
+### G. Explanations
+
+Provide an explanation for every question in:
+
+- German (`de`)
+- English (`en`)
+- Persian (`fa`)
+
+Keep explanations short and educational.
+Each explanation should state why the answer is correct, using the text as evidence.
+For a RICHTIG answer, explain what information supports the statement.
+For a FALSCH answer, explain what the text says instead.
+Do not introduce external facts.
+
+### H. Originality
+
+Create original practice content.
+Do not copy any existing exam or model-test text; use the task format only: one informational text and three true/false statements.
+Do not claim that the generated content is an official DTZ examination question.
+{{TAGS_RULE}}
+### I. Required JSON output
+
+Return exactly one valid JSON object.
+Do not use Markdown, code fences, comments or text outside the JSON.
+Use this structure{{STRUCTURE_NOTE}}:
+
+{{JSON_EXAMPLE}}
+
+The example illustrates the required schema (the answers shown are only examples). Generate a complete final JSON object with all fields populated.
+Do not return placeholders.
+Use only `RICHTIG` and `FALSCH` for the answers.
+{{NOTES_BLOCK}}
+### J. Final checklist
+
+Before returning the JSON, verify:
+
+- JSON parses correctly.
+- Correct exam, section and part.
+- Exactly one text.
+- Exactly three questions.
+- Question numbers are 37, 38 and 39.
+- All question types are TRUE_FALSE.
+- All answer values are valid.
+- Every answer is supported by the text.
+- No ambiguous statements.
+- Explanations match the answers.
+- German is appropriate for the selected level.
+- The text is original.
+- No outside knowledge is required.
+
+Return only the final JSON object.

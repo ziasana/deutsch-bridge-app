@@ -68,6 +68,14 @@ public final class ExamContentSpecs {
                     "1.0",
                     6, 3, 31),
             new ExamContentSpec(
+                    ExamType.DTZ, LearningLevel.B1, ExamSection.LESEVERSTEHEN, 4, ExamTaskType.TEXT_TRUE_FALSE,
+                    0, 1, 180, 300,
+                    "Lesen Sie den Text. Entscheiden Sie, ob die Aussagen 37–39 richtig oder falsch sind. "
+                            + "Markieren Sie Ihre Lösungen für die Aufgaben 37–39 auf dem Antwortbogen.",
+                    "exam-content/prompts/text-true-false.v1.0.txt",
+                    "1.0",
+                    3, 0, 37),
+            new ExamContentSpec(
                     ExamType.TELC, LearningLevel.B1, ExamSection.SPRACHBAUSTEINE, 1, ExamTaskType.MULTIPLE_CHOICE,
                     0, 0, 120, 220,
                     "Lesen Sie den Text und schließen Sie die Lücken 21–30. Welche Lösung (a, b oder c) ist jeweils richtig? "

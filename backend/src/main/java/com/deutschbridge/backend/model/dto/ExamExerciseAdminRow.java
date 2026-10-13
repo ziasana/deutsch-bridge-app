@@ -24,6 +24,8 @@ public record ExamExerciseAdminRow(
         String sourceType,
         LocalDateTime createdAt,
         /** Number of texts / passages of the exercise (DTZ Lesen Teil 3 shows it as "Texts"). */
-        int passageCount
+        int passageCount,
+        /** Words in all passages together, markup excluded (DTZ Lesen Teil 4 shows it as "Text length"). */
+        int wordCount
 ) {
 }

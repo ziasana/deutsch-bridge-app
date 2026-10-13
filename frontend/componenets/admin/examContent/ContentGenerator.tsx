@@ -95,6 +95,30 @@ const LESEN_TYPE_LABELS: Record<string, string> = {
     INFORMATION_TEXT: "Information text",
 };
 const LESEN_LENGTH_LABELS: Record<string, string> = { SHORT: "Short (≈ 80–130 words)", MEDIUM: "Medium (≈ 100–160 words)", LONG: "Long (≈ 120–180 words)" };
+/** DTZ Lesen Teil 4 (Informationstext mit richtig/falsch-Aussagen): generator settings; the values are validated by the backend. */
+const TF_TOPICS: [string, string][] = [
+    ["RANDOM", "Random"],
+    ["SCHOOL_CHILDCARE", "School and childcare"],
+    ["PUBLIC_SERVICES", "Public services"],
+    ["HOUSING", "Housing"],
+    ["EDUCATION_COURSES", "Education and courses"],
+    ["WORK_EMPLOYMENT", "Work and employment"],
+    ["HEALTH_APPOINTMENTS", "Health and appointments"],
+    ["LEISURE_COMMUNITY", "Leisure and community"],
+    ["PUBLIC_TRANSPORT", "Public transport"],
+    ["EVERYDAY_RULES", "Everyday rules and services"],
+];
+const TF_STYLES: [string, string][] = [
+    ["RANDOM", "Random"],
+    ["INFORMATION_SHEET", "Information sheet"],
+    ["FORMAL_NOTICE", "Formal notice"],
+    ["INSTITUTIONAL_ANNOUNCEMENT", "Institutional announcement"],
+    ["RULES_AND_CONDITIONS", "Rules and conditions"],
+    ["PUBLIC_INFORMATION_TEXT", "Public information text"],
+];
+const TF_LENGTHS: [string, string][] = [["SHORT", "Short (≈ 180–210 words)"], ["MEDIUM", "Medium (≈ 210–260 words)"], ["LONG", "Long (≈ 260–300 words)"]];
+const TF_LEVELS: [string, string][] = [["A2", "A2"], ["A2_B1", "A2–B1"], ["B1", "B1"]];
+const labelOf = (list: [string, string][], value: string) => list.find(([v]) => v === value)?.[1] ?? value;
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const DIFFICULTY_LABELS: Record<string, string> = { MIXED: "Mixed (20% easy · 60% medium · 20% hard)", EASY: "Easy", MEDIUM: "Medium", HARD: "Hard" };
 const SCENARIO_CHOICES: { value: string; label: string; hint: string }[] = [
@@ -169,6 +193,10 @@ export default function ContentGenerator() {
     const [txDates, setTxDates] = useState(true);
     const [txVariation, setTxVariation] = useState("RANDOM");
     const [txTags, setTxTags] = useState("");
+    const [tfTopics, setTfTopics] = useState<string[]>([]); // DTZ Lesen Teil 4; empty = random
+    const [tfLevel, setTfLevel] = useState("A2_B1");
+    const [tfLength, setTfLength] = useState("MEDIUM");
+    const [tfStyle, setTfStyle] = useState("RANDOM");
     const [result, setResult] = useState<PromptResponse | null>(null);
     const [generating, setGenerating] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
@@ -199,6 +227,31 @@ export default function ContentGenerator() {
     const directorySpec = spec?.taskType === "DIRECTORY_MATCHING";
     const adSpec = spec?.taskType === "SITUATION_MATCHING" && spec.exam === "DTZ";
     const textSpec = spec?.taskType === "TEXT_QUESTIONS";
+    const tfSpec = spec?.taskType === "TEXT_TRUE_FALSE";
+    // The shared set count starts at 10 for the other parts; one exercise is the natural start for Teil 4.
+    useEffect(() => {
+        if (tfSpec) setCount("1");
+    }, [tfSpec]);
+    // The text style travels in the generic textType field of the prompt request.
+    const tfRequest = useMemo(
+        () => ({
+            exam, level, section, part, count: Math.min(50, Math.max(1, Number.parseInt(count, 10) || 1)), difficulty: tfLevel, topics: tfTopics, notes: notes.trim() || undefined,
+            textType: tfStyle === "RANDOM" ? undefined : tfStyle, textLength: tfLength,
+        }),
+        [exam, level, section, part, count, tfLevel, tfTopics, notes, tfStyle, tfLength],
+    );
+
+    // The DTZ Teil 4 prompt follows its settings: every change asks the backend for the updated prompt.
+    useEffect(() => {
+        if (!tfSpec) return;
+        let cancelled = false;
+        const timer = setTimeout(() => {
+            generateExamContentPrompt(tfRequest)
+                .then((res) => { if (!cancelled) setResult(res.data); })
+                .catch((err) => { if (!cancelled) toast.error(errorMessage(err, "Failed to generate the prompt.")); });
+        }, 300);
+        return () => { cancelled = true; clearTimeout(timer); };
+    }, [tfSpec, tfRequest]);
     const txRequest = useMemo(
         () => ({
             exam, level, section, part, count: Math.min(50, Math.max(1, Number.parseInt(count, 10) || 1)), difficulty: txLevel, topics: txTopics, notes: notes.trim() || undefined,
@@ -261,7 +314,9 @@ export default function ContentGenerator() {
         const writingSpec = spec?.taskType === "WRITING_TASK";
         setGenerating(true);
         try {
-            const res = await generateExamContentPrompt(textSpec
+            const res = await generateExamContentPrompt(tfSpec
+                ? tfRequest
+                : textSpec
                 ? txRequest
                 : adSpec
                 ? adRequest
@@ -362,6 +417,8 @@ export default function ContentGenerator() {
                                     ? `✓ ${spec.label}: one text with ${spec.questionCount} gaps (21–30), ${spec.optionCount} options (a, b, c) each.`
                                     : spec.taskType === "DIRECTORY_MATCHING"
                                     ? `✓ ${spec.label}: one information source (Wegweiser, Verzeichnis, Katalog ...) and exactly ${spec.questionCount} situations (21–25) with ${spec.optionCount} options each.`
+                                    : tfSpec
+                                    ? `✓ ${spec.label}: one information text and exactly ${spec.questionCount} richtig/falsch statements (37–39).`
                                     : textSpec
                                     ? `✓ ${spec.label}: ${spec.textCount} texts, each with a richtig/falsch task and a multiple-choice task (a, b, c) — questions 31–36.`
                                     : adSpec
@@ -400,6 +457,49 @@ export default function ContentGenerator() {
                                 <input type="checkbox" checked={includeVisuals} onChange={(e) => setIncludeVisuals(e.target.checked)} />
                                 Include visual briefs (image type, image prompt, alt text) for the advertisements
                             </label>
+                        )}
+
+                        {tfSpec && (
+                            <div className="space-y-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Generation settings</h3>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <label>
+                                        <span className={labelClass}>Number of exercise sets</span>
+                                        <Input type="number" min={1} max={50} value={count} onChange={(e) => setCount(e.target.value)} />
+                                    </label>
+                                    <label>
+                                        <span className={labelClass}>Difficulty</span>
+                                        <select className={fieldClass} value={tfLevel} onChange={(e) => setTfLevel(e.target.value)}>
+                                            {TF_LEVELS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span className={labelClass}>Text length</span>
+                                        <select className={fieldClass} value={tfLength} onChange={(e) => setTfLength(e.target.value)}>
+                                            {TF_LENGTHS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span className={labelClass}>Text style</span>
+                                        <select className={fieldClass} value={tfStyle} onChange={(e) => setTfStyle(e.target.value)}>
+                                            {TF_STYLES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                                        </select>
+                                    </label>
+                                </div>
+                                <fieldset>
+                                    <legend className={labelClass}>Topic {tfTopics.length === 0 && <span className="font-normal text-gray-500">(random)</span>}</legend>
+                                    <div className="flex flex-wrap gap-2">
+                                        {TF_TOPICS.filter(([value]) => value !== "RANDOM").map(([value, label]) => (
+                                            <ChipButton key={value} on={tfTopics.includes(value)} label={label}
+                                                onClick={() => setTfTopics((prev) => (prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value]))} />
+                                        ))}
+                                    </div>
+                                </fieldset>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Fixed by the DTZ format: one text and three richtig/falsch statements, numbered 37–39. The settings only shape the content.
+                                    Explanations are requested in German, English and Persian. With more than one set the AI returns one batch file. Imported content is always saved as a draft.
+                                </p>
+                            </div>
                         )}
 
                         {textSpec && (
@@ -581,7 +681,7 @@ export default function ContentGenerator() {
                             </div>
                         )}
 
-                        {!directorySpec && !adSpec && !textSpec && (
+                        {!directorySpec && !adSpec && !textSpec && !tfSpec && (
                         <div className="grid grid-cols-2 gap-3">
                             <label>
                                 <span className={labelClass}>Number of exercise sets</span>
@@ -711,7 +811,7 @@ export default function ContentGenerator() {
                             </>
                         )}
 
-                        {!directorySpec && !adSpec && !textSpec && (
+                        {!directorySpec && !adSpec && !textSpec && !tfSpec && (
                         <fieldset>
                             <legend className={labelClass}>Topics {topics.length === 0 && <span className="font-normal text-gray-500">(automatic)</span>}</legend>
                             <div className="flex flex-wrap gap-2">
@@ -785,6 +885,29 @@ export default function ContentGenerator() {
                                         Alle Lerninhalte (Redemittel, Beispielantworten, Dialoge) sind nur auf Deutsch – es gibt keine englischen oder persischen Übersetzungen.
                                         Laden Sie anschließend die erzeugte JSON-Datei hoch. Importierte Aufgaben werden immer als Entwurf (DRAFT) gespeichert.
                                     </p>
+                                )}
+                                {tfSpec && (
+                                    <div className="mt-3 space-y-3">
+                                        <dl className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-md border border-gray-200 p-3 text-sm dark:border-gray-700 sm:grid-cols-3">
+                                            <div><dt className="text-xs text-gray-500">Topic</dt><dd>{tfTopics.length ? tfTopics.map((t) => labelOf(TF_TOPICS, t)).join(", ") : "Random"}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Text style</dt><dd>{labelOf(TF_STYLES, tfStyle)}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Difficulty</dt><dd>{labelOf(TF_LEVELS, tfLevel)}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Text length</dt><dd>{labelOf(TF_LENGTHS, tfLength)}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Exercise sets</dt><dd>{count}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Questions</dt><dd>37–39, richtig / falsch</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Import status</dt><dd>Draft</dd></div>
+                                        </dl>
+                                        <p className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
+                                            ℹ️ Hinweis: Kopieren Sie den Prompt und verwenden Sie ihn in ChatGPT, Claude, Gemini oder einem anderen KI-Tool. Speichern Sie die generierte
+                                            JSON-Ausgabe als Datei und laden Sie sie anschließend hier hoch. Prüfen Sie den Text und alle drei Aussagen vor der Veröffentlichung.
+                                        </p>
+                                        <ol className="list-decimal space-y-1 pl-5 text-sm text-gray-600 dark:text-gray-300">
+                                            <li>Copy the prompt and paste it into an external AI tool.</li>
+                                            <li>Save the AI&apos;s answer as a <code>.json</code> file (only the JSON object, no Markdown).</li>
+                                            <li>Upload the file on the <Link href="/admin/exam-prep/import" className="underline text-blue-600 dark:text-blue-400">Import JSON</Link> page, check errors, warnings and the preview.</li>
+                                            <li>Import it as a draft, edit if needed, and publish it only after you have solved all three statements from the text yourself.</li>
+                                        </ol>
+                                    </div>
                                 )}
                                 {textSpec && (
                                     <div className="mt-3 space-y-3">

@@ -160,6 +160,33 @@ class ExamAttemptServiceTest {
     }
 
     @Test
+    @DisplayName("submitAnswer -> DTZ Lesen Teil 4 scores each of the three statements on RICHTIG/FALSCH")
+    void submitAnswer_shouldScoreTrueFalseTextStatements() throws DataNotFoundException {
+        List<ExamQuestion> statements = List.of(
+                new ExamQuestion("q37", ExamTaskType.TRUE_FALSE, "Aussage 1", 0, null, "RICHTIG", null, 37, "Erklärung", null),
+                new ExamQuestion("q38", ExamTaskType.TRUE_FALSE, "Aussage 2", 0, null, "FALSCH", null, 38, "Erklärung", null),
+                new ExamQuestion("q39", ExamTaskType.TRUE_FALSE, "Aussage 3", 0, null, "RICHTIG", null, 39, "Erklärung", null));
+        ExamExercise exercise = new ExamExercise();
+        exercise.setId("ex4");
+        exercise.setSection(ExamSection.LESEVERSTEHEN);
+        exercise.setTaskType(ExamTaskType.TEXT_TRUE_FALSE);
+        exercise.setLevel(LearningLevel.B1);
+        exercise.setPassages(List.of(new ExamPassage("t1", "Text", "<p>Inhalt</p>", null, null, null)));
+        exercise.setQuestions(statements);
+        ExamAttempt attempt = new ExamAttempt();
+        attempt.setId("attempt4");
+        attempt.setExercise(exercise);
+        attempt.setAnswers(new ArrayList<>());
+        when(attemptRepository.findById("attempt4")).thenReturn(Optional.of(attempt));
+
+        assertTrue(service.submitAnswer("attempt4", new SubmitExamAnswerRequest("q37", "RICHTIG")).correct());
+        assertFalse(service.submitAnswer("attempt4", new SubmitExamAnswerRequest("q37", "FALSCH")).correct());
+        assertTrue(service.submitAnswer("attempt4", new SubmitExamAnswerRequest("q38", "FALSCH")).correct());
+        assertFalse(service.submitAnswer("attempt4", new SubmitExamAnswerRequest("q39", "FALSCH")).correct());
+        assertFalse(service.submitAnswer("attempt4", new SubmitExamAnswerRequest("q39", null)).correct());
+    }
+
+    @Test
     @DisplayName("submitAnswer -> DTZ texts exercise is scored on RICHTIG/FALSCH and on the chosen option text")
     void submitAnswer_shouldScoreTextQuestionsTasks() throws DataNotFoundException {
         ExamQuestion trueFalse = new ExamQuestion("q31", ExamTaskType.TRUE_FALSE, "Die Bibliothek ist montags offen.", 0, null, "FALSCH", null, 31,

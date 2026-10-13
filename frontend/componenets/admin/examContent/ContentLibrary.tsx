@@ -67,7 +67,7 @@ interface StoredDirectory {
     questions?: { number: number; sourceEntryIds?: string[]; explanation?: Record<string, string> }[];
 }
 
-/** metadata.textQuestions of an imported DTZ Lesen Teil 3 exercise (see ExamContentMapper.toTextQuestionsEntity). */
+/** metadata.textQuestions of an imported DTZ Lesen Teil 3 / Teil 4 exercise (see ExamContentMapper.toTextQuestionsEntity). */
 interface StoredTextQuestions {
     texts?: { id?: string; number?: number; type?: string; sender?: string; date?: string }[];
     questions?: { number: number; explanation?: Record<string, string> }[];
@@ -177,7 +177,7 @@ function toPreview(exercise: ExamExerciseResponse): ExercisePreviewData | null {
             })),
         };
     }
-    if (exercise.taskType === "TEXT_QUESTIONS" && exercise.passages?.length && exercise.questions?.length) {
+    if ((exercise.taskType === "TEXT_QUESTIONS" || exercise.taskType === "TEXT_TRUE_FALSE") && exercise.passages?.length && exercise.questions?.length) {
         const meta = exercise.metadata ?? {};
         const stored = (meta.textQuestions ?? null) as StoredTextQuestions | null;
         const questions = [...exercise.questions].sort((a, b) => (a.questionNumber ?? 0) - (b.questionNumber ?? 0));
@@ -203,7 +203,7 @@ function toPreview(exercise: ExamExerciseResponse): ExercisePreviewData | null {
                             .filter((q) => q.sectionIndex === index)
                             .map((q, i) => {
                                 const options = (q.options ?? []).map((text, j) => ({ id: String.fromCharCode(97 + j), text }));
-                                const number = q.questionNumber ?? 31 + index * 2 + i;
+                                const number = q.questionNumber ?? (exercise.taskType === "TEXT_TRUE_FALSE" ? 37 + i : 31 + index * 2 + i);
                                 const detail = stored?.questions?.find((d) => d.number === number);
                                 return {
                                     number,

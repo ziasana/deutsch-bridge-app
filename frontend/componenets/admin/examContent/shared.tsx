@@ -486,6 +486,10 @@ const TEXT_TYPE_LABELS: Record<string, string> = {
     FORMAL_NOTICE: "Formal notice",
     PUBLIC_ANNOUNCEMENT: "Public announcement",
     INFORMATION_TEXT: "Information text",
+    INFORMATION_SHEET: "Information sheet",
+    INSTITUTIONAL_ANNOUNCEMENT: "Institutional announcement",
+    RULES_AND_CONDITIONS: "Rules and conditions",
+    PUBLIC_INFORMATION_TEXT: "Public information text",
 };
 export const textTypeLabel = (type: string | null | undefined) => (type ? TEXT_TYPE_LABELS[type] ?? type : "—");
 
@@ -611,7 +615,7 @@ function Explanations({ explanation }: Readonly<{ explanation: Record<string, st
 }
 
 /**
- * DTZ Lesen Teil 3 as the learner sees it: instructions, then every text followed immediately by its two tasks (richtig/falsch,
+ * DTZ Lesen Teil 3 (three texts with two tasks each) and Teil 4 (one text with three richtig/falsch statements) as the learner sees it: instructions, then every text followed immediately by its two tasks (richtig/falsch,
  * then a, b, c). The answer key and the explanations in German, English and Persian are a separate toggle, off by default,
  * because the learner view never shows them before submitting.
  */
@@ -633,9 +637,9 @@ function TextQuestionsExerciseView({ preview, set }: Readonly<{ preview: Exercis
             </div>
 
             {set.texts.map((text, index) => (
-                <section key={text.id ?? index} aria-label={`Text ${text.number ?? index + 1}`} className="rounded-lg border border-gray-200 dark:border-gray-700">
+                <section key={text.id ?? index} aria-label={set.texts.length === 1 ? "Text" : `Text ${text.number ?? index + 1}`} className="rounded-lg border border-gray-200 dark:border-gray-700">
                     <header className="flex flex-wrap items-center gap-2 border-b border-gray-200 bg-gray-50 px-4 py-2.5 dark:border-gray-700 dark:bg-gray-900/40">
-                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Text {text.number ?? index + 1}</h4>
+                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{set.texts.length === 1 ? "Text" : `Text ${text.number ?? index + 1}`}</h4>
                         <span className="rounded bg-gray-200 px-2 py-0.5 text-xs text-gray-700 dark:bg-gray-700 dark:text-gray-200">{textTypeLabel(text.type)}</span>
                     </header>
                     <div className="space-y-4 p-4">
