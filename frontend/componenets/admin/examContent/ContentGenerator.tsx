@@ -38,6 +38,32 @@ const DIRECTORY_SOURCE_LABELS: Record<string, string> = {
 };
 const DIRECTORY_LEVEL_LABELS: Record<string, string> = { A2: "A2", A2_B1: "A2–B1", B1: "B1" };
 const DIRECTORY_VARIATION_LABELS: Record<string, string> = { RANDOM: "Random", NEW_SCENARIO: "New scenario", AVOID_KNOWN_TOPICS: "Avoid known topics" };
+/** DTZ Lesen Teil 2 (Anzeigen zuordnen): labels of the generator settings; the values come from the backend. */
+const AD_TOPIC_LABELS: Record<string, string> = {
+    RANDOM: "Random",
+    WORK: "Work",
+    EDUCATION: "Education",
+    COURSES: "Courses",
+    FAMILY: "Family",
+    LEISURE: "Leisure",
+    SERVICES: "Services",
+};
+const AD_CATEGORY_LABELS: Record<string, string> = {
+    JOBS: "Jobs and part-time work",
+    TRAINING: "Training and vocational education",
+    COURSES: "Language courses",
+    EDUCATION: "Educational qualifications",
+    DRIVING_SCHOOL: "Driving schools",
+    CHILDCARE: "Childcare and babysitting",
+    HOUSING: "Housing and accommodation",
+    LEISURE: "Leisure activities",
+    PUBLIC_SERVICES: "Public services",
+    FINANCIAL_SUPPORT: "Financial support",
+    COUNSELLING: "Advice and counselling",
+    SPORTS_COMMUNITY: "Sports and community activities",
+    CONTINUING_EDUCATION: "Continuing education",
+    SERVICES: "Local services",
+};
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const DIFFICULTY_LABELS: Record<string, string> = { MIXED: "Mixed (20% easy · 60% medium · 20% hard)", EASY: "Easy", MEDIUM: "Medium", HARD: "Hard" };
 const SCENARIO_CHOICES: { value: string; label: string; hint: string }[] = [
@@ -53,6 +79,23 @@ const SPEAKING_DESCRIPTIONS: Record<string, string> = {
 const topicLabel = (topic: string) => topic.charAt(0) + topic.slice(1).toLowerCase().replaceAll("_", " ");
 
 /** Builds the copy-paste prompt for any external AI; the backend never calls an AI itself. */
+function ChipButton({ on, label, onClick }: Readonly<{ on: boolean; label: string; onClick: () => void }>) {
+    return (
+        <button
+            type="button"
+            aria-pressed={on}
+            onClick={onClick}
+            className={`rounded-full border px-3 py-1 text-sm transition ${
+                on
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+            }`}
+        >
+            {label}
+        </button>
+    );
+}
+
 export default function ContentGenerator() {
     const { userProfile, hasHydrated } = useAuthStore();
     const { data: options, isLoading } = useQuery({
@@ -82,6 +125,11 @@ export default function ContentGenerator() {
     const [dirLevel, setDirLevel] = useState("A2_B1");
     const [dirExample, setDirExample] = useState(true);
     const [dirVariation, setDirVariation] = useState("RANDOM");
+    const [adTopicSel, setAdTopicSel] = useState<string[]>([]); // DTZ Lesen Teil 2; empty = random
+    const [adCats, setAdCats] = useState<string[]>([]); // empty = chosen by the AI
+    const [adLevel, setAdLevel] = useState("A2_B1");
+    const [adExample, setAdExample] = useState(false);
+    const [adVariation, setAdVariation] = useState("RANDOM");
     const [result, setResult] = useState<PromptResponse | null>(null);
     const [generating, setGenerating] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
@@ -110,6 +158,26 @@ export default function ContentGenerator() {
         setWordCats(selectedWordCategories.includes(category) ? selectedWordCategories.filter((c) => c !== category) : [...selectedWordCategories, category]);
 
     const directorySpec = spec?.taskType === "DIRECTORY_MATCHING";
+    const adSpec = spec?.taskType === "SITUATION_MATCHING" && spec.exam === "DTZ";
+    const adRequest = useMemo(
+        () => ({
+            exam, level, section, part, count: Math.min(50, Math.max(1, Number.parseInt(count, 10) || 1)), difficulty: adLevel, topics: adTopicSel, notes: notes.trim() || undefined,
+            includeExample: adExample, variation: adVariation, adCategories: adCats,
+        }),
+        [exam, level, section, part, count, adLevel, adTopicSel, notes, adExample, adVariation, adCats],
+    );
+
+    // The DTZ Teil 2 prompt follows its settings: every change asks the backend for the updated prompt.
+    useEffect(() => {
+        if (!adSpec) return;
+        let cancelled = false;
+        const timer = setTimeout(() => {
+            generateExamContentPrompt(adRequest)
+                .then((res) => { if (!cancelled) setResult(res.data); })
+                .catch((err) => { if (!cancelled) toast.error(errorMessage(err, "Failed to generate the prompt.")); });
+        }, 300);
+        return () => { cancelled = true; clearTimeout(timer); };
+    }, [adSpec, adRequest]);
     const toggleTopic = (topic: string) => setTopics((prev) => (prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]));
 
     const generate = async (e: React.FormEvent) => {
@@ -132,7 +200,9 @@ export default function ContentGenerator() {
         const writingSpec = spec?.taskType === "WRITING_TASK";
         setGenerating(true);
         try {
-            const res = await generateExamContentPrompt(directorySpec
+            const res = await generateExamContentPrompt(adSpec
+                ? adRequest
+                : directorySpec
                 ? {
                     // The settings only shape the content, never the 5 x 3 structure.
                     exam, level, section, part, count: n, difficulty: dirLevel, topics: dirTopics,
@@ -229,6 +299,8 @@ export default function ContentGenerator() {
                                     ? `✓ ${spec.label}: one text with ${spec.questionCount} gaps (21–30), ${spec.optionCount} options (a, b, c) each.`
                                     : spec.taskType === "DIRECTORY_MATCHING"
                                     ? `✓ ${spec.label}: one information source (Wegweiser, Verzeichnis, Katalog ...) and exactly ${spec.questionCount} situations (21–25) with ${spec.optionCount} options each.`
+                                    : adSpec
+                                    ? `✓ ${spec.label}: ${spec.questionCount} situations (26–30), ${spec.optionCount} advertisements (a–h); four situations match one advertisement each, exactly one has the answer X.`
                                     : spec.taskType === "SITUATION_MATCHING"
                                     ? `✓ ${spec.label}: ${spec.questionCount} situations, ${spec.optionCount} advertisements (a–l), x = no advertisement fits.`
                                     : `✓ ${spec.label}: ${spec.textCount} texts, ${spec.headingCount} headings (${spec.headingCount - spec.textCount} unused).`}
@@ -258,11 +330,60 @@ export default function ContentGenerator() {
                             </Button>
                         )}
 
-                        {spec?.taskType === "SITUATION_MATCHING" && (
+                        {spec?.taskType === "SITUATION_MATCHING" && !adSpec && (
                             <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                                 <input type="checkbox" checked={includeVisuals} onChange={(e) => setIncludeVisuals(e.target.checked)} />
                                 Include visual briefs (image type, image prompt, alt text) for the advertisements
                             </label>
+                        )}
+
+                        {adSpec && (
+                            <div className="space-y-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Generation settings</h3>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <label>
+                                        <span className={labelClass}>Number of exercise sets</span>
+                                        <Input type="number" min={1} max={50} value={count} onChange={(e) => setCount(e.target.value)} />
+                                    </label>
+                                    <label>
+                                        <span className={labelClass}>Difficulty</span>
+                                        <select className={fieldClass} value={adLevel} onChange={(e) => setAdLevel(e.target.value)}>
+                                            {(options?.directoryLevels ?? ["A2_B1"]).map((x) => <option key={x} value={x}>{DIRECTORY_LEVEL_LABELS[x] ?? x}</option>)}
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span className={labelClass}>Scenario variety</span>
+                                        <select className={fieldClass} value={adVariation} onChange={(e) => setAdVariation(e.target.value)}>
+                                            {(options?.directoryVariations ?? ["RANDOM"]).map((x) => <option key={x} value={x}>{DIRECTORY_VARIATION_LABELS[x] ?? x}</option>)}
+                                        </select>
+                                    </label>
+                                </div>
+                                <fieldset>
+                                    <legend className={labelClass}>Main topic {adTopicSel.length === 0 && <span className="font-normal text-gray-500">(random)</span>}</legend>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(options?.adTopics ?? []).filter((x) => x !== "RANDOM").map((topic) => (
+                                            <ChipButton key={topic} on={adTopicSel.includes(topic)} label={AD_TOPIC_LABELS[topic] ?? topic}
+                                                onClick={() => setAdTopicSel((prev) => (prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]))} />
+                                        ))}
+                                    </div>
+                                </fieldset>
+                                <fieldset>
+                                    <legend className={labelClass}>Advertisement categories {adCats.length === 0 && <span className="font-normal text-gray-500">(chosen by the AI)</span>}</legend>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(options?.adCategories ?? []).map((category) => (
+                                            <ChipButton key={category} on={adCats.includes(category)} label={AD_CATEGORY_LABELS[category] ?? category}
+                                                onClick={() => setAdCats((prev) => (prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]))} />
+                                        ))}
+                                    </div>
+                                </fieldset>
+                                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                    <input type="checkbox" checked={adExample} onChange={(e) => setAdExample(e.target.checked)} />
+                                    Include an unscored example question
+                                </label>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Fixed by the DTZ format: situations 26–30, advertisements a–h, one X. Explanations are in German only. With more than one set the AI returns one batch file. Imported content is always saved as a draft.
+                                </p>
+                            </div>
                         )}
 
                         {directorySpec && (
@@ -326,7 +447,7 @@ export default function ContentGenerator() {
                             </div>
                         )}
 
-                        {!directorySpec && (
+                        {!directorySpec && !adSpec && (
                         <div className="grid grid-cols-2 gap-3">
                             <label>
                                 <span className={labelClass}>Number of exercise sets</span>
@@ -456,7 +577,7 @@ export default function ContentGenerator() {
                             </>
                         )}
 
-                        {!directorySpec && (
+                        {!directorySpec && !adSpec && (
                         <fieldset>
                             <legend className={labelClass}>Topics {topics.length === 0 && <span className="font-normal text-gray-500">(automatic)</span>}</legend>
                             <div className="flex flex-wrap gap-2">
@@ -530,6 +651,30 @@ export default function ContentGenerator() {
                                         Alle Lerninhalte (Redemittel, Beispielantworten, Dialoge) sind nur auf Deutsch – es gibt keine englischen oder persischen Übersetzungen.
                                         Laden Sie anschließend die erzeugte JSON-Datei hoch. Importierte Aufgaben werden immer als Entwurf (DRAFT) gespeichert.
                                     </p>
+                                )}
+                                {adSpec && (
+                                    <div className="mt-3 space-y-3">
+                                        <dl className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-md border border-gray-200 p-3 text-sm dark:border-gray-700 sm:grid-cols-3">
+                                            <div><dt className="text-xs text-gray-500">Main topic</dt><dd>{adTopicSel.length ? adTopicSel.map((t) => AD_TOPIC_LABELS[t] ?? t).join(", ") : "Random"}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Categories</dt><dd>{adCats.length ? adCats.map((c) => AD_CATEGORY_LABELS[c] ?? c).join(", ") : "AI choice"}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Difficulty</dt><dd>{DIRECTORY_LEVEL_LABELS[adLevel] ?? adLevel}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Exercise sets</dt><dd>{count}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Example</dt><dd>{adExample ? "Included" : "Not included"}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Scenario variety</dt><dd>{DIRECTORY_VARIATION_LABELS[adVariation] ?? adVariation}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Import status</dt><dd>Draft</dd></div>
+                                        </dl>
+                                        <p className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
+                                            ℹ️ Hinweis: Kopieren Sie den Prompt und verwenden Sie ihn in ChatGPT, Claude, Gemini oder einem anderen KI-Tool. Speichern Sie die generierte
+                                            JSON-Ausgabe als Datei und importieren Sie sie anschließend hier. Die Erklärungen sind nur auf Deutsch. Prüfen Sie vor der Veröffentlichung, dass jede
+                                            Situation genau eine passende Anzeige hat und die X-Situation keine.
+                                        </p>
+                                        <ol className="list-decimal space-y-1 pl-5 text-sm text-gray-600 dark:text-gray-300">
+                                            <li>Copy the prompt and paste it into the AI tool.</li>
+                                            <li>Save the AI&apos;s answer as a <code>.json</code> file (only the JSON object, no Markdown).</li>
+                                            <li>Upload the file on the <Link href="/admin/exam-prep/import" className="underline text-blue-600 dark:text-blue-400">Import JSON</Link> page, check errors, warnings and the preview.</li>
+                                            <li>Import it as a draft, edit if needed, and publish it only after you have solved the five situations yourself.</li>
+                                        </ol>
+                                    </div>
                                 )}
                                 {directorySpec && (
                                     <div className="mt-3 space-y-3">

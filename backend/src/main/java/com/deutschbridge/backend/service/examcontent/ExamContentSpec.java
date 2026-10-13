@@ -78,6 +78,11 @@ public record ExamContentSpec(
         return taskType == ExamTaskType.SITUATION_MATCHING;
     }
 
+    /** True for DTZ Lesen Teil 2: five situations (26-30) matched to eight advertisements a-h or X, read with {@link ExamAdMatchingReader}. */
+    public boolean isAdMatching() {
+        return isSituationMatching() && examType == ExamType.DTZ;
+    }
+
     /** Situation spec: {@code questionCount} situations numbered from {@code firstQuestionNumber}, {@code optionCount} ads a, b, c ... */
     public int situationCount() {
         return questionCount;

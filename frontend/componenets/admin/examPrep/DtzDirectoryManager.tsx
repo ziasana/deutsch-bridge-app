@@ -18,7 +18,32 @@ import { PreviewDialog } from "@/componenets/admin/examContent/ContentLibrary";
 import { cardClass, errorMessage, fieldClass, labelClass, sourceTypeLabel, StatusBadge } from "@/componenets/admin/examContent/shared";
 
 const PAGE_SIZE = 15;
-const LIST_KEY = ["admin", "exam", "exercises", "dtz-directory"] as const;
+
+/** The two DTZ Lesen parts that share this list: Teil 1 (directory, three options) and Teil 2 (advertisements a-h, one X). */
+const VARIANTS = {
+    directory: {
+        part: "1",
+        listKey: ["admin", "exam", "exercises", "dtz-directory"],
+        title: "DTZ A2–B1 · Lesen · Teil 1",
+        description:
+            "Kataloge, Register, Verzeichnisse verstehen: one shared information source and five situations with three options each. Generate content with any external AI, import the JSON, review it and publish it. Imported content is never published automatically.",
+        generatorPart: "TEIL_1",
+        newParam: "dtz-directory",
+        showSourceType: true,
+    },
+    ads: {
+        part: "2",
+        listKey: ["admin", "exam", "exercises", "dtz-ads"],
+        title: "DTZ A2–B1 · Lesen · Teil 2",
+        description:
+            "Anzeigen zuordnen: five situations (26–30) and eight advertisements (a–h); four situations match one advertisement each, one has the answer X. Generate content with any external AI, import the JSON, review it and publish it. Imported content is never published automatically.",
+        generatorPart: "TEIL_2",
+        newParam: "dtz-ads",
+        showSourceType: false,
+    },
+} as const;
+
+export type DtzLesenVariant = keyof typeof VARIANTS;
 
 /** Directory exercises carry their level (A2, A2_B1, B1); other content a scale (EASY, MEDIUM, HARD). */
 const difficultyLabel = (difficulty: string | null) =>
@@ -27,11 +52,12 @@ const difficultyLabel = (difficulty: string | null) =>
 const formatDate = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleDateString("de-DE") : "—");
 
 /**
- * Admin → Prüfungsvorbereitung → DTZ A2–B1 → Lesen → Teil 1 ("Kataloge, Register, Verzeichnisse verstehen"): the list of
- * the directory exercises with every step of the content workflow - generate a prompt for an external AI, import its JSON,
+ * Admin → Prüfungsvorbereitung → DTZ A2–B1 → Lesen → Teil 1 ("Kataloge, Register, Verzeichnisse verstehen") or Teil 2
+ * ("Anzeigen zuordnen"): the list of the exercises with every step of the content workflow - generate a prompt for an external AI, import its JSON,
  * create by hand, preview with the answer key, edit, publish and archive.
  */
-export default function DtzDirectoryManager() {
+export default function DtzDirectoryManager({ variant = "directory" }: Readonly<{ variant?: DtzLesenVariant }>) {
+    const config = VARIANTS[variant];
     const queryClient = useQueryClient();
     const { userProfile, hasHydrated } = useAuthStore();
     const [status, setStatus] = useState("");
@@ -41,12 +67,12 @@ export default function DtzDirectoryManager() {
     const [previewRow, setPreviewRow] = useState<ExamExerciseAdminRow | null>(null);
 
     const { data: rows = [], isLoading } = useQuery({
-        queryKey: [...LIST_KEY, status, search],
+        queryKey: [...config.listKey, status, search],
         queryFn: () =>
             getExamExercisesForAdmin({
                 examType: "DTZ",
                 section: "LESEVERSTEHEN",
-                partNumber: "1",
+                partNumber: config.part,
                 status: status || undefined,
                 search: search || undefined,
             }).then((r) => r.data),
@@ -84,12 +110,12 @@ export default function DtzDirectoryManager() {
 
     return (
         <ExamContentShell
-            title="DTZ A2–B1 · Lesen · Teil 1"
-            description="Kataloge, Register, Verzeichnisse verstehen: one shared information source and five situations with three options each. Generate content with any external AI, import the JSON, review it and publish it. Imported content is never published automatically."
+            title={config.title}
+            description={config.description}
         >
             <div className={`${cardClass} flex flex-wrap items-center gap-3 p-6`}>
                 <Link
-                    href="/admin/exam-prep/content-generator?exam=DTZ&section=LESEN&part=TEIL_1"
+                    href={`/admin/exam-prep/content-generator?exam=DTZ&section=LESEN&part=${config.generatorPart}`}
                     className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
                 >
                     <Sparkles className="size-4" /> Generate with external AI
@@ -101,7 +127,7 @@ export default function DtzDirectoryManager() {
                     <FileUp className="size-4" /> Import JSON
                 </Link>
                 <Link
-                    href="/admin/exam-prep/leseverstehen?new=dtz-directory"
+                    href={`/admin/exam-prep/leseverstehen?new=${config.newParam}`}
                     className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold hover:bg-accent"
                 >
                     <PenLine className="size-4" /> Create manually
@@ -136,7 +162,7 @@ export default function DtzDirectoryManager() {
                                 <tr>
                                     <th className="px-3 py-3">Title</th>
                                     <th className="px-3 py-3">Topic</th>
-                                    <th className="px-3 py-3">Source type</th>
+                                    {config.showSourceType && <th className="px-3 py-3">Source type</th>}
                                     <th className="px-3 py-3">Questions</th>
                                     <th className="px-3 py-3">Difficulty</th>
                                     <th className="px-3 py-3">Status</th>
@@ -149,7 +175,7 @@ export default function DtzDirectoryManager() {
                                     <tr key={r.id} className="text-gray-800 dark:text-gray-200">
                                         <td className="max-w-xs truncate px-3 py-3" title={r.title}>{r.title}</td>
                                         <td className="px-3 py-3">{r.topic ?? "—"}</td>
-                                        <td className="px-3 py-3 whitespace-nowrap">{sourceTypeLabel(r.sourceType)}</td>
+                                        {config.showSourceType && <td className="px-3 py-3 whitespace-nowrap">{sourceTypeLabel(r.sourceType)}</td>}
                                         <td className="px-3 py-3">{r.questionCount}</td>
                                         <td className="px-3 py-3 whitespace-nowrap">{difficultyLabel(r.difficulty)}</td>
                                         <td className="px-3 py-3"><StatusBadge status={r.status} /></td>
@@ -187,7 +213,7 @@ export default function DtzDirectoryManager() {
                                     </tr>
                                 ))}
                                 {rows.length === 0 && (
-                                    <tr><td colSpan={8} className="px-3 py-10 text-center text-gray-500 dark:text-gray-400">No exercises yet. Generate a prompt for an external AI, then import its JSON.</td></tr>
+                                    <tr><td colSpan={config.showSourceType ? 8 : 7} className="px-3 py-10 text-center text-gray-500 dark:text-gray-400">No exercises yet. Generate a prompt for an external AI, then import its JSON.</td></tr>
                                 )}
                             </tbody>
                         </table>

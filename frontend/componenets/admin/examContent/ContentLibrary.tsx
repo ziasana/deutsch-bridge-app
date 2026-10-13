@@ -164,6 +164,7 @@ function toPreview(exercise: ExamExerciseResponse): ExercisePreviewData | null {
                 text: q.prompt,
                 correctAdvertisementId: q.correctAnswer?.toUpperCase() === "X" ? "x" : (letterByPassage.get(q.correctAnswer) ?? null),
                 matchingProfile: teil3.situations?.find((s) => s.number === (q.questionNumber ?? i + 1))?.matchingProfile ?? null,
+                explanation: q.explanation ? { de: q.explanation } : null,
             })),
         };
     }

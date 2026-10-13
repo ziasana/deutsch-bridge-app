@@ -319,7 +319,7 @@ public final class ExamContentMapper {
             String correct = ExamContentValidator.NO_ADVERTISEMENT.equals(s.correctAdvertisementId())
                     ? "X" : passageIdByAd.get(s.correctAdvertisementId());
             questions.add(new ExamQuestion(null, ExamTaskType.SITUATION_MATCHING, s.text(), null, null, correct, null,
-                    s.number(), null, null).ensureId());
+                    s.number(), s.explanation().get("de"), null).ensureId());
             if (!s.matchingProfile().isEmpty()) {
                 Map<String, Object> profile = new LinkedHashMap<>();
                 profile.put("number", s.number());
@@ -329,6 +329,7 @@ public final class ExamContentMapper {
         }
 
         Map<String, Object> metadata = new LinkedHashMap<>(ex.metadata());
+        if (spec.isAdMatching()) metadata.putIfAbsent("source", "AI_IMPORTED");
         Map<String, Object> teil3 = new LinkedHashMap<>();
         teil3.put("advertisements", storedAds);
         if (!storedSituations.isEmpty()) teil3.put("situations", storedSituations);
@@ -607,7 +608,7 @@ public final class ExamContentMapper {
         }
         if (ex.spec() != null && ex.spec().isSituationMatching()) {
             return new ExercisePreview(ex.title(), ex.instructions(), List.of(), List.of(), null, List.of(),
-                    ex.situations().stream().map(s -> new SituationView(s.id(), s.number(), s.text(), s.correctAdvertisementId(), s.matchingProfile())).toList(),
+                    ex.situations().stream().map(s -> new SituationView(s.id(), s.number(), s.text(), s.correctAdvertisementId(), s.matchingProfile(), s.explanation())).toList(),
                     ex.advertisements().stream().map(a -> new AdvertisementView(a.id(), a.type(), a.layout(), a.content(), a.visual(), a.matchingProfile())).toList());
         }
         if (ex.readingText() != null || (ex.spec() != null && ex.spec().isMultipleChoice())) {
@@ -820,6 +821,7 @@ public final class ExamContentMapper {
     /** Situations + advertisements in the import shape; null when a stored answer cannot be mapped back to an ad letter. */
     @SuppressWarnings("unchecked")
     private static ObjectNode toSituationExportNode(ObjectMapper mapper, ExamExercise e) {
+        if (e.getExamType() == ExamType.DTZ) return toAdMatchingExportNode(mapper, e);
         if (e.getPassages() == null || e.getPassages().isEmpty() || e.getQuestions() == null || e.getQuestions().isEmpty()
                 || e.getSection() == null || e.getLevel() == null || e.getPartNumber() == null) {
             return null;
@@ -891,6 +893,98 @@ public final class ExamContentMapper {
             metadata.remove("teil3");
             if (!metadata.isEmpty()) node.set("metadata", mapper.valueToTree(metadata));
         }
+        return node;
+    }
+
+    /**
+     * DTZ Lesen Teil 2 in the import shape (situations, advertisements a-h, answerKey). Titles and bodies come from the stored
+     * advertisement while its passage is unchanged, otherwise from the edited passage text; answers and explanations are read from
+     * the stored questions so admin edits are exported. Null when the stored exercise does not fit the shape.
+     */
+    @SuppressWarnings("unchecked")
+    private static ObjectNode toAdMatchingExportNode(ObjectMapper mapper, ExamExercise e) {
+        if (e.getPassages() == null || e.getPassages().isEmpty() || e.getQuestions() == null || e.getQuestions().isEmpty()
+                || e.getMetadata() == null || !(e.getMetadata().get("teil3") instanceof Map<?, ?> raw)) {
+            return null;
+        }
+        Map<String, Object> teil3 = (Map<String, Object>) raw;
+        Map<String, Map<String, Object>> storedAds = new LinkedHashMap<>();
+        if (teil3.get("advertisements") instanceof List<?> list) {
+            for (Object o : list) {
+                if (o instanceof Map<?, ?> m && m.get("id") != null) storedAds.put(m.get("id").toString(), (Map<String, Object>) m);
+            }
+        }
+        Map<String, String> letterByPassageId = new LinkedHashMap<>();
+        for (int i = 0; i < e.getPassages().size(); i++) {
+            ExamPassage p = e.getPassages().get(i);
+            letterByPassageId.put(p.getId(), p.getLabel() != null && !p.getLabel().isBlank()
+                    ? p.getLabel().trim().toLowerCase(java.util.Locale.ROOT) : String.valueOf((char) ('a' + i)));
+        }
+        List<ExamQuestion> ordered = e.getQuestions().stream()
+                .sorted(java.util.Comparator.comparing(q -> q.getQuestionNumber() == null ? Integer.MAX_VALUE : q.getQuestionNumber())).toList();
+
+        ObjectNode node = mapper.createObjectNode();
+        if (e.getExternalId() != null) node.put("externalId", e.getExternalId());
+        node.put("exam", "DTZ");
+        node.put("section", "LESEN");
+        node.put("part", 2);
+        node.put("exerciseType", "ADVERTISEMENT_MATCHING");
+        node.put("skill", "ANZEIGEN_ZUORDNEN");
+        node.put("level", "A2_B1");
+        node.put("title", e.getTitle());
+        Object topic = e.getMetadata().get("topic");
+        if (topic != null) node.put("topic", topic.toString());
+        node.put("difficulty", String.valueOf(e.getMetadata().getOrDefault("difficulty", "A2_B1")));
+        node.putObject("instructions").put("de", e.getTeilDescription() == null ? "" : e.getTeilDescription());
+
+        ArrayNode situations = node.putArray("situations");
+        ArrayNode answerKey = node.putArray("answerKey");
+        for (int i = 0; i < ordered.size(); i++) {
+            ExamQuestion q = ordered.get(i);
+            int number = q.getQuestionNumber() != null ? q.getQuestionNumber() : 26 + i;
+            String answer = "X".equalsIgnoreCase(q.getCorrectAnswer()) ? "X" : letterByPassageId.get(q.getCorrectAnswer());
+            if (answer == null) return null;
+            situations.addObject().put("number", number).put("text", q.getPrompt());
+            ObjectNode key = answerKey.addObject();
+            key.put("questionNumber", number);
+            key.put("correctAnswer", answer);
+            key.putObject("explanation").put("de", q.getExplanation() == null ? "" : q.getExplanation());
+        }
+
+        ArrayNode ads = node.putArray("advertisements");
+        for (ExamPassage p : e.getPassages()) {
+            String letter = letterByPassageId.get(p.getId());
+            Map<String, Object> stored = storedAds.get(letter);
+            ObjectNode an = ads.addObject();
+            an.put("label", letter);
+            boolean intact = stored != null && stored.get("content") instanceof Map<?, ?> c
+                    && AdvertisementRenderer.toHtml((Map<String, Object>) c).equals(p.getContent());
+            if (intact) {
+                Map<String, Object> content = (Map<String, Object>) stored.get("content");
+                an.put("title", String.valueOf(content.getOrDefault("headline", "")));
+                an.put("body", String.valueOf(content.getOrDefault("body", content.getOrDefault("description", ""))));
+                if (stored.get("type") != null) an.put("category", stored.get("type").toString());
+            } else {
+                String plain = toPlainText(p.getContent());
+                int newline = plain.indexOf('\n');
+                an.put("title", newline > 0 ? plain.substring(0, newline).strip() : plain);
+                an.put("body", newline > 0 ? plain.substring(newline + 1).strip() : plain);
+            }
+        }
+
+        Object example = e.getMetadata().get("example");
+        if (example instanceof Map<?, ?> exampleMap) {
+            ObjectNode out = mapper.createObjectNode();
+            out.put("enabled", true);
+            out.setAll((ObjectNode) mapper.valueToTree(exampleMap));
+            node.set("example", out);
+        } else {
+            node.putObject("example").put("enabled", false);
+        }
+        ObjectNode metadata = node.putObject("metadata");
+        metadata.put("schemaVersion", 1);
+        metadata.put("source", String.valueOf(e.getMetadata().getOrDefault("source", "AI_IMPORTED")));
+        if (e.getMetadata().get("tags") != null) metadata.set("tags", mapper.valueToTree(e.getMetadata().get("tags")));
         return node;
     }
 

@@ -188,10 +188,10 @@ export default function LesenTeil3Board({ passages, questions, answers, disabled
                                             : "border-dashed border-border bg-background text-foreground/70 hover:border-primary/50",
                                     )}
                                 >
-                                    x
+                                    X
                                 </button>
                             </div>
-                            <p className="text-xs text-foreground/55">Jede Anzeige nur einmal. Passt keine Anzeige, wähle x.</p>
+                            <p className="text-xs text-foreground/55">Jede Anzeige nur einmal. Passt keine Anzeige, wähle X.</p>
 
                             <div className="flex justify-between gap-2">
                                 <button type="button" className={navButton} disabled={activeIndex <= 0} onClick={() => setActiveId(questions[activeIndex - 1].id)}>

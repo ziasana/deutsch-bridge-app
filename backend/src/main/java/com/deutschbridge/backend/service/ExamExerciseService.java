@@ -263,6 +263,7 @@ public class ExamExerciseService {
         validateNoDuplicateLevel(request, null);
         DtzTextQuestionsValidator.validate(request);
         DtzDirectoryValidator.validate(request);
+        DtzAdMatchingValidator.validate(request);
         ExamExercise exercise = new ExamExercise();
         applyRequest(exercise, request);
         exercise.setCreatedBy(requestContext.getUserId());
@@ -280,6 +281,7 @@ public class ExamExerciseService {
         validateNoDuplicateLevel(request, id);
         DtzTextQuestionsValidator.validate(request);
         DtzDirectoryValidator.validate(request);
+        DtzAdMatchingValidator.validate(request);
         Set<String> previousUploadUrls = collectUploadUrls(existing);
         applyRequest(existing, request);
         existing.setVersion(existing.getVersion() + 1);

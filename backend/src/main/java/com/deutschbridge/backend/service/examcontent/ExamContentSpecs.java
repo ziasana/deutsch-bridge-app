@@ -51,6 +51,15 @@ public final class ExamContentSpecs {
                     "1.0",
                     5, 3, 21),
             new ExamContentSpec(
+                    ExamType.DTZ, LearningLevel.B1, ExamSection.LESEVERSTEHEN, 2, ExamTaskType.SITUATION_MATCHING,
+                    0, 0, 0, 0,
+                    "Lesen Sie die Situationen 26–30 und die Anzeigen a–h. Finden Sie für jede Situation die passende Anzeige. "
+                            + "Markieren Sie Ihre Lösungen für die Aufgaben 26–30 auf dem Antwortbogen. "
+                            + "Für eine Aufgabe gibt es keine Lösung. Markieren Sie in diesem Fall ein X.",
+                    "exam-content/prompts/ad-matching.v1.0.txt",
+                    "1.0",
+                    5, 8, 26),
+            new ExamContentSpec(
                     ExamType.TELC, LearningLevel.B1, ExamSection.SPRACHBAUSTEINE, 1, ExamTaskType.MULTIPLE_CHOICE,
                     0, 0, 120, 220,
                     "Lesen Sie den Text und schließen Sie die Lücken 21–30. Welche Lösung (a, b oder c) ist jeweils richtig? "

@@ -42,14 +42,25 @@ public final class ExamContentDtos {
             /** DTZ Lesen Teil 1: include an unscored example (default true). */
             Boolean includeExample,
             /** DTZ Lesen Teil 1: NEW_SCENARIO | AVOID_KNOWN_TOPICS | RANDOM (default). */
-            String variation
+            String variation,
+            /** DTZ Lesen Teil 2: advertisement categories (see ExamContentPromptBuilder.AD_CATEGORIES); empty = the AI chooses. */
+            List<String> adCategories
     ) {
+        /** The request shape before the Teil 2 advertisement categories existed. */
+        public PromptRequest(String exam, String level, String section, String part, Integer count, String difficulty,
+                             List<String> topics, String notes, Boolean includeVisuals, String textType, List<String> grammarCategories,
+                             String contextMode, List<String> wordCategories, String scenarioType, String relationship,
+                             String communicationType, String sourceType, Boolean includeExample, String variation) {
+            this(exam, level, section, part, count, difficulty, topics, notes, includeVisuals, textType, grammarCategories,
+                    contextMode, wordCategories, scenarioType, relationship, communicationType, sourceType, includeExample, variation, null);
+        }
+
         /** The request shape before the DTZ settings existed. */
         public PromptRequest(String exam, String level, String section, String part, Integer count, String difficulty,
                              List<String> topics, String notes, Boolean includeVisuals, String textType, List<String> grammarCategories,
                              String contextMode, List<String> wordCategories, String scenarioType, String relationship, String communicationType) {
             this(exam, level, section, part, count, difficulty, topics, notes, includeVisuals, textType, grammarCategories,
-                    contextMode, wordCategories, scenarioType, relationship, communicationType, null, null, null);
+                    contextMode, wordCategories, scenarioType, relationship, communicationType, null, null, null, null);
         }
 
         public PromptRequest(String exam, String level, String section, String part, Integer count, String difficulty,
@@ -120,7 +131,10 @@ public final class ExamContentDtos {
             List<String> directoryTopics,
             List<String> directorySourceTypes,
             List<String> directoryLevels,
-            List<String> directoryVariations
+            List<String> directoryVariations,
+            /** DTZ Lesen Teil 2 generator choices (first entry = default). */
+            List<String> adTopics,
+            List<String> adCategories
     ) {
     }
 
@@ -163,8 +177,13 @@ public final class ExamContentDtos {
             Integer number,
             String text,
             String correctAdvertisementId,
-            Map<String, Object> matchingProfile
+            Map<String, Object> matchingProfile,
+            /** DTZ Lesen Teil 2 (admin only): the German explanation of the answer; empty for other content. */
+            Map<String, String> explanation
     ) {
+        public SituationView(String id, Integer number, String text, String correctAdvertisementId, Map<String, Object> matchingProfile) {
+            this(id, number, text, correctAdvertisementId, matchingProfile, Map.of());
+        }
     }
 
     /** Lesen Teil 3: one structured advertisement; content / visual / matchingProfile keep the import JSON shape. */

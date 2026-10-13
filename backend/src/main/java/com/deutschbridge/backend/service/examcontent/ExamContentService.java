@@ -129,7 +129,9 @@ public class ExamContentService {
                 ExamContentPromptBuilder.DIRECTORY_TOPICS,
                 ExamContentPromptBuilder.DIRECTORY_SOURCE_TYPES,
                 ExamContentPromptBuilder.DIRECTORY_LEVELS,
-                ExamContentPromptBuilder.DIRECTORY_VARIATIONS);
+                ExamContentPromptBuilder.DIRECTORY_VARIATIONS,
+                ExamContentPromptBuilder.AD_TOPICS,
+                ExamContentPromptBuilder.AD_CATEGORIES);
     }
 
     @Transactional(readOnly = true)
@@ -139,7 +141,7 @@ public class ExamContentService {
                 spec.examType(), spec.section(), spec.level(), spec.part());
         int next = ExamContentPromptBuilder.nextNumber(spec.externalIdPrefix(),
                 repository.findExternalIdsStartingWith(spec.externalIdPrefix()));
-        return promptBuilder.build(spec, request, existing, next, spec.isWriting() || spec.isSpeaking() || spec.isDirectoryMatching() ? existingWritingSummaries(spec) : List.of());
+        return promptBuilder.build(spec, request, existing, next, spec.isWriting() || spec.isSpeaking() || spec.isDirectoryMatching() || spec.isAdMatching() ? existingWritingSummaries(spec) : List.of());
     }
 
     /** Newest first, capped so the prompt stays a manageable size: "title - topic (scenario)". */
@@ -265,7 +267,8 @@ public class ExamContentService {
                 + (e.writing() == null ? 0 : e.writing().points().size())).sum();
         boolean reading = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isMultipleChoice());
         boolean directory = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isDirectoryMatching());
-        boolean situation = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isSituationMatching());
+        boolean situation = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isSituationMatching() && !e.spec().isAdMatching());
+        boolean adMatching = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isAdMatching());
         boolean wordBank = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isWordBank());
         boolean writing = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isWriting());
         boolean speaking = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isSpeaking());
@@ -286,7 +289,7 @@ public class ExamContentService {
         checks.add(new Check("Section: " + orDash(file.section()), noCode(all, "SECTION_INVALID")));
         checks.add(new Check("Part: " + orDash(file.part()), noCode(all, "PART_INVALID", "SPEC_UNSUPPORTED")));
         checks.add(new Check("Exercises: " + reports.size(), !reports.isEmpty() && noCode(all, "EXERCISE_NOT_OBJECT", "EXTERNAL_ID_INVALID", "EXTERNAL_ID_DUPLICATE_IN_FILE")));
-        if (matching || (!reading && !directory && !situation && !wordBank && !writing && !speaking)) {
+        if (matching || (!reading && !directory && !situation && !adMatching && !wordBank && !writing && !speaking)) {
             checks.add(new Check("Headings: " + headings, !reports.isEmpty() && noCode(all, STRUCTURE_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Texts: " + texts, !reports.isEmpty() && noCode(all, TEXT_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Answer assignments valid", !reports.isEmpty() && noCode(all, ANSWER_ERROR_CODES.toArray(String[]::new))));
@@ -308,6 +311,13 @@ public class ExamContentService {
             checks.add(new Check("Situations: " + situations, !reports.isEmpty() && noCode(all, SITUATION_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Advertisements: " + advertisements, !reports.isEmpty() && noCode(all, AD_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Matching valid (each advertisement used once)", !reports.isEmpty() && noCode(all, SITUATION_ANSWER_CODES.toArray(String[]::new))));
+        }
+        if (adMatching) {
+            checks.add(new Check("Exactly 5 situations numbered 26–30", !reports.isEmpty() && noCode(all, ExamAdMatchingReader.SITUATION_CODES.toArray(String[]::new))));
+            checks.add(new Check("Exactly 8 advertisements a–h with title and body", !reports.isEmpty() && noCode(all, ExamAdMatchingReader.AD_CODES.toArray(String[]::new))));
+            checks.add(new Check("Answer key: 4 distinct advertisements and exactly one X", !reports.isEmpty() && noCode(all, ExamAdMatchingReader.ANSWER_CODES.toArray(String[]::new))));
+            checks.add(new Check("German explanation for every answer", !reports.isEmpty() && noCode(all, ExamAdMatchingReader.EXPLANATION_CODES.toArray(String[]::new))));
+            checks.add(new Check("Example valid (when enabled)", !reports.isEmpty() && noCode(all, ExamAdMatchingReader.EXAMPLE_CODES.toArray(String[]::new))));
         }
         if (wordBank) {
             checks.add(new Check("Text with gaps 31–40", !reports.isEmpty() && noCode(all, READING_TEXT_ERROR_CODES.toArray(String[]::new))));
@@ -478,6 +488,12 @@ public class ExamContentService {
                 if ("X".equalsIgnoreCase(answer)) continue;
                 if (e.getPassages().stream().noneMatch(p -> answer.equals(p.getId()))) return label + " refers to an advertisement that does not exist.";
                 if (!used.add(answer)) return "An advertisement is the correct answer for more than one situation.";
+            }
+            if (e.getExamType() == ExamType.DTZ) {
+                if (e.getQuestions().size() != 5) return "A DTZ advertisement exercise needs exactly 5 situations (found " + e.getQuestions().size() + ").";
+                if (e.getPassages().size() != 8) return "A DTZ advertisement exercise needs exactly 8 advertisements (found " + e.getPassages().size() + ").";
+                long none = e.getQuestions().stream().filter(q -> "X".equalsIgnoreCase(q.getCorrectAnswer())).count();
+                if (none != 1) return "Exactly one situation must have the answer X (found " + none + ").";
             }
         }
         if (e.getTaskType() == ExamTaskType.DIRECTORY_MATCHING) {

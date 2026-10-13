@@ -330,6 +330,17 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
             window.history.replaceState(null, "", url.pathname + url.search);
             return;
         }
+        // Deep link from the DTZ Lesen Teil 2 page ("?new=dtz-ads"): start a blank advertisement exercise (situations 26-30, ads a-h).
+        if (section === "LESEVERSTEHEN" && url.searchParams.get("new") === "dtz-ads") {
+            setExamType("DTZ");
+            setForm({ ...makeEmptyForm(section), level: DTZ_LEVEL, taskType: "SITUATION_MATCHING", partNumber: "2" });
+            setPassages(Array.from({ length: 8 }, (_, i) => emptyPassage(i, section, "SITUATION_MATCHING")));
+            setQuestions(Array.from({ length: 5 }, (_, i) => ({ ...emptyQuestion("SITUATION_MATCHING"), questionNumber: 26 + i })));
+            setShowForm(true);
+            url.searchParams.delete("new");
+            window.history.replaceState(null, "", url.pathname + url.search);
+            return;
+        }
         const editId = url.searchParams.get("edit");
         if (!editId) return;
         void startEdit({ id: editId } as ExamExerciseAdminRow).then(() => {

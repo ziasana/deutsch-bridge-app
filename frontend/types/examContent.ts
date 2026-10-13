@@ -48,6 +48,9 @@ export interface ExamContentOptions {
     directorySourceTypes?: string[];
     directoryLevels?: string[];
     directoryVariations?: string[];
+    /** DTZ Lesen Teil 2 generator choices (first entry = default). */
+    adTopics?: string[];
+    adCategories?: string[];
 }
 
 export interface PromptRequest {
@@ -80,6 +83,8 @@ export interface PromptRequest {
     includeExample?: boolean;
     /** DTZ Lesen Teil 1: RANDOM | NEW_SCENARIO | AVOID_KNOWN_TOPICS. */
     variation?: string;
+    /** DTZ Lesen Teil 2: advertisement categories; omitted = chosen by the AI. */
+    adCategories?: string[];
 }
 
 export interface PromptResponse {
@@ -130,6 +135,8 @@ export interface PreviewSituation {
     /** a–l, or x when no advertisement fits. */
     correctAdvertisementId: string | null;
     matchingProfile?: { primaryNeed?: string; requirements?: string[] } | null;
+    /** DTZ Lesen Teil 2 (admin only): the German explanation of the answer, by language ("de"). */
+    explanation?: Record<string, string> | null;
 }
 
 export interface AdvertisementContent {

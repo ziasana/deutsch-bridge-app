@@ -45,6 +45,11 @@ public class ExamContentPromptBuilder {
     public static final List<String> DIRECTORY_SOURCE_TYPES = List.of("RANDOM", "DIRECTORY", "REGISTER", "CATALOGUE", "SERVICE_LIST");
     public static final List<String> DIRECTORY_LEVELS = List.of("A2_B1", "A2", "B1");
     public static final List<String> DIRECTORY_VARIATIONS = List.of("RANDOM", "NEW_SCENARIO", "AVOID_KNOWN_TOPICS");
+    /** DTZ Lesen Teil 2 generator choices (the first entry of each list is the default). */
+    public static final List<String> AD_TOPICS = List.of("RANDOM", "WORK", "EDUCATION", "COURSES", "FAMILY", "LEISURE", "SERVICES");
+    public static final List<String> AD_CATEGORIES = List.of(
+            "JOBS", "TRAINING", "COURSES", "EDUCATION", "DRIVING_SCHOOL", "CHILDCARE", "HOUSING", "LEISURE", "PUBLIC_SERVICES",
+            "FINANCIAL_SUPPORT", "COUNSELLING", "SPORTS_COMMUNITY", "CONTINUING_EDUCATION", "SERVICES");
     public static final int MAX_COUNT = 50;
 
     /** Rules shared by the three Mündlicher Ausdruck templates (language, quality, output); included as {{SPEAKING_COMMON}}. */
@@ -61,6 +66,9 @@ public class ExamContentPromptBuilder {
                                 List<String> existingSummaries) {
         if (spec.isDirectoryMatching()) {
             return buildDirectory(spec, request, existingCount, firstNumber, existingSummaries);
+        }
+        if (spec.isAdMatching()) {
+            return buildAdMatching(spec, request, existingCount, firstNumber, existingSummaries);
         }
         int count = request.count() == null ? 10 : request.count();
         if (count < 1 || count > MAX_COUNT) {
@@ -211,6 +219,134 @@ public class ExamContentPromptBuilder {
             prompt = prompt.replace("{{" + e.getKey() + "}}", e.getValue());
         }
         return new PromptResponse(prompt.strip() + "\n", spec.promptVersion(), ExamContentSpecs.SCHEMA_VERSION, example, existingCount, firstId);
+    }
+
+    // ------------------------------------------------------------------ DTZ Lesen Teil 2 (advertisement matching)
+
+    private static final Map<String, String> AD_TOPIC_TEXT = Map.of(
+            "WORK", "Work (jobs, part-time work, applications)",
+            "EDUCATION", "Education and qualifications (school leaving certificates, training, studies)",
+            "COURSES", "Courses (language, computer and leisure courses)",
+            "FAMILY", "Family (childcare, children, family services)",
+            "LEISURE", "Leisure (sports, clubs, culture)",
+            "SERVICES", "Services (local services, public offices, advice)");
+
+    /** One or several exercises per prompt; several are returned as one batch file. */
+    private PromptResponse buildAdMatching(ExamContentSpec spec, PromptRequest request, int existingCount, int firstNumber,
+                                           List<String> existingSummaries) {
+        String level = directoryToken(request.difficulty(), "A2_B1", DIRECTORY_LEVELS, "difficulty");
+        int count = request.count() == null ? 1 : request.count();
+        if (count < 1 || count > MAX_COUNT) throw new IllegalArgumentException("count must be between 1 and " + MAX_COUNT);
+        List<String> topics = new ArrayList<>();
+        for (String t : request.topics() == null ? List.<String>of() : request.topics()) {
+            String token = directoryToken(t, "RANDOM", AD_TOPICS, "topic");
+            if (!token.equals("RANDOM") && !topics.contains(token)) topics.add(token);
+        }
+        List<String> categories = new ArrayList<>();
+        for (String c : request.adCategories() == null ? List.<String>of() : request.adCategories()) {
+            String token = directoryToken(c, "", AD_CATEGORIES, "advertisement category");
+            if (!token.isEmpty() && !categories.contains(token)) categories.add(token);
+        }
+        String variation = directoryToken(request.variation(), "RANDOM", DIRECTORY_VARIATIONS, "variation");
+        boolean includeExample = request.includeExample() != null && request.includeExample();
+
+        String firstId = spec.externalIdPrefix() + String.format("%03d", firstNumber);
+        String example = adMatchingJsonExample(spec, level, includeExample, count);
+
+        Map<String, String> values = new java.util.LinkedHashMap<>();
+        values.put("DIFFICULTY", level);
+        values.put("COUNT_LINE", count == 1 ? "Generate exactly ONE complete exercise" : "Generate exactly " + count + " complete, clearly different exercises");
+        values.put("BATCH_RULE", count == 1 ? ""
+                : "Because there are " + count + " exercises, return ONE JSON object that wraps them: schemaVersion, contentType \"EXAM_EXERCISE_BATCH\", exam, level, section, part and an \"exercises\" array with exactly " + count + " exercise objects. Each exercise must use a different scenario, set of advertisements and wording.\n\n");
+        values.put("STRUCTURE_NOTE", count == 1 ? "" : " (the object inside the \"exercises\" array; repeat it " + count + " times)");
+        values.put("TOPIC", topics.isEmpty() ? "any suitable everyday topic (your choice)"
+                : topics.stream().map(AD_TOPIC_TEXT::get).collect(java.util.stream.Collectors.joining("; ")));
+        values.put("ADVERTISEMENT_CATEGORIES", categories.isEmpty() ? "your choice (varied, fitting the topic)" : String.join(", ", categories));
+        values.put("INCLUDE_EXAMPLE", includeExample ? "true (include one unscored example)" : "false (do not include an example)");
+        values.put("INSTRUCTIONS", spec.defaultInstructions());
+        values.put("VARIATION_BLOCK", switch (variation) {
+            case "NEW_SCENARIO" -> "Variation: invent new, original scenarios; do not fall back on the most typical textbook setting for this topic.\n";
+            case "AVOID_KNOWN_TOPICS" -> existingSummaries.isEmpty()
+                    ? "Variation: avoid the most common textbook scenarios for this topic.\n"
+                    : "Variation: the library already contains these exercises - choose clearly different scenarios, advertisements and wording:\n"
+                    + existingSummaries.stream().map(line -> "- " + line).collect(java.util.stream.Collectors.joining("\n")) + "\n";
+            default -> "";
+        });
+        values.put("LEVEL_RULES", switch (level) {
+            case "A2" -> "For A2: use short, direct sentences; prefer familiar vocabulary; keep conditions easy to understand; avoid advanced grammar and specialist language.";
+            case "B1" -> "For B1: allow more varied vocabulary and phrasing; keep all matches supported by explicit information; do not require advanced background knowledge.";
+            default -> "For A2–B1: use accessible everyday German; include simple paraphrases; use realistic practical details; avoid unnecessary ambiguity.";
+        });
+        values.put("EXAMPLE_RULE", includeExample
+                ? "Generate one separate unscored example with a short situation, a correct advertisement label or `X`, and a brief German explanation. "
+                + "Use `\"example\": {\"enabled\": true, \"situation\": \"...\", \"correctAnswer\": \"...\", \"explanation\": {\"de\": \"...\"}}`. "
+                + "The example is not one of the questions 26–30 and must not break the matching rules of the five scored questions."
+                : "The example is disabled: return exactly `\"example\": {\"enabled\": false}`.");
+        values.put("JSON_EXAMPLE", example);
+        values.put("NOTES_BLOCK", request.notes() == null || request.notes().isBlank() ? ""
+                : "\nADDITIONAL INSTRUCTIONS FROM THE EDITOR:\n" + request.notes().strip() + "\n");
+
+        String prompt = loadTemplate(spec.promptTemplate());
+        for (Map.Entry<String, String> e : values.entrySet()) {
+            prompt = prompt.replace("{{" + e.getKey() + "}}", e.getValue());
+        }
+        return new PromptResponse(prompt.strip() + "\n", spec.promptVersion(), ExamContentSpecs.SCHEMA_VERSION, example, existingCount, firstId);
+    }
+
+    private String adMatchingJsonExample(ExamContentSpec spec, String level, boolean includeExample, int count) {
+        ObjectNode ex = MAPPER.createObjectNode();
+        ex.put("exam", "DTZ");
+        ex.put("section", "LESEN");
+        ex.put("part", 2);
+        ex.put("exerciseType", "ADVERTISEMENT_MATCHING");
+        ex.put("skill", "ANZEIGEN_ZUORDNEN");
+        ex.put("level", "A2_B1");
+        ex.put("title", "...");
+        ex.put("topic", "...");
+        ex.put("difficulty", level);
+        ex.putObject("instructions").put("de", spec.defaultInstructions());
+        ArrayNode situations = ex.putArray("situations");
+        for (int i = 0; i < spec.situationCount(); i++) {
+            situations.addObject().put("number", spec.firstQuestionNumber() + i).put("text", "...");
+        }
+        ArrayNode ads = ex.putArray("advertisements");
+        for (String label : spec.optionIds()) {
+            ObjectNode ad = ads.addObject();
+            ad.put("label", label);
+            ad.put("title", "...");
+            ad.put("body", "...");
+            ad.put("category", "...");
+        }
+        if (includeExample) {
+            ObjectNode example = ex.putObject("example");
+            example.put("enabled", true);
+            example.put("situation", "...");
+            example.put("correctAnswer", "...");
+            example.putObject("explanation").put("de", "...");
+        } else {
+            ex.putObject("example").put("enabled", false);
+        }
+        ArrayNode key = ex.putArray("answerKey");
+        for (int i = 0; i < spec.situationCount(); i++) {
+            ObjectNode entry = key.addObject();
+            entry.put("questionNumber", spec.firstQuestionNumber() + i);
+            entry.put("correctAnswer", "...");
+            entry.putObject("explanation").put("de", "...");
+        }
+        ObjectNode meta = ex.putObject("metadata");
+        meta.put("schemaVersion", 1);
+        meta.put("source", "AI_IMPORTED");
+        meta.putArray("tags");
+        if (count == 1) return write(ex);
+        ObjectNode root = MAPPER.createObjectNode();
+        root.put("schemaVersion", ExamContentSpecs.SCHEMA_VERSION);
+        root.put("contentType", "EXAM_EXERCISE_BATCH");
+        root.put("exam", "DTZ");
+        root.put("level", "A2_B1");
+        root.put("section", "LESEN");
+        root.put("part", "TEIL_2");
+        root.putArray("exercises").add(ex);
+        return write(root);
     }
 
     private static String directoryToken(String value, String fallback, List<String> allowed, String label) {

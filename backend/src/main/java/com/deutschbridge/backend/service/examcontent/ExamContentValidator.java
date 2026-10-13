@@ -1074,6 +1074,14 @@ public class ExamContentValidator {
 
     private ParsedExercise readSituationExercise(int index, ExamContentSpec spec, JsonNode node, String p, String externalId,
                                                  String title, String instructions, List<Issue> issues) {
+        if (spec.isAdMatching()) {
+            ExamAdMatchingReader.Result result = new ExamAdMatchingReader(p, issues).read(spec, node);
+            Map<String, Object> adMetadata = readMetadata(node.get("metadata"), p, issues);
+            if (node.get("metadata") != null && node.get("metadata").isObject()) putStringList(node.get("metadata"), "tags", adMetadata);
+            adMetadata.putAll(result.metadata());
+            return new ParsedExercise(index, spec, externalId, title, instructions, List.of(), List.of(), adMetadata,
+                    null, List.of(), result.situations(), result.advertisements());
+        }
         List<ParsedExercise.Advertisement> ads = readAdvertisements(node, p, spec, issues);
         List<ParsedExercise.Situation> situations = readSituations(node, p, spec, issues);
         checkSituationAnswers(situations, ads, p, spec, issues);

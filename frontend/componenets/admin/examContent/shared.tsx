@@ -327,19 +327,26 @@ function SituationExerciseView({ preview, showAnswers }: Readonly<{ preview: Exe
                 <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Situationen</h4>
                 {situations.map((s, i) => (
                     <div key={s.id ?? i} className="flex items-start justify-between gap-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-                        <p className="text-sm text-gray-800 dark:text-gray-200">
-                            <span className="mr-1.5 font-semibold">{s.number ?? i + 1}.</span>
-                            {s.text}
-                            {showAnswers && s.matchingProfile?.primaryNeed && (
-                                <span className="ml-2 text-xs text-gray-500">
-                                    [{s.matchingProfile.primaryNeed}
-                                    {!!s.matchingProfile.requirements?.length && ` · ${s.matchingProfile.requirements.join(", ")}`}]
-                                </span>
+                        <div className="text-sm text-gray-800 dark:text-gray-200">
+                            <p>
+                                <span className="mr-1.5 font-semibold">{s.number ?? i + 1}.</span>
+                                {s.text}
+                                {showAnswers && s.matchingProfile?.primaryNeed && (
+                                    <span className="ml-2 text-xs text-gray-500">
+                                        [{s.matchingProfile.primaryNeed}
+                                        {!!s.matchingProfile.requirements?.length && ` · ${s.matchingProfile.requirements.join(", ")}`}]
+                                    </span>
+                                )}
+                            </p>
+                            {showAnswers && s.explanation?.de && (
+                                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                                    <span className="font-semibold">Erklärung:</span> {s.explanation.de}
+                                </p>
                             )}
-                        </p>
+                        </div>
                         {showAnswers && (
                             <span className="shrink-0 rounded bg-green-100 px-2 py-0.5 text-xs text-green-800 dark:bg-green-900/40 dark:text-green-200">
-                                → {s.correctAdvertisementId || "?"}
+                                → {s.correctAdvertisementId === "x" ? "X" : (s.correctAdvertisementId || "?")}
                             </span>
                         )}
                     </div>
@@ -358,7 +365,7 @@ function SituationExerciseView({ preview, showAnswers }: Readonly<{ preview: Exe
             {showAnswers && (
                 <div className="rounded-lg bg-gray-50 p-3 text-sm text-gray-700 dark:bg-gray-900/40 dark:text-gray-300">
                     <span className="font-semibold">Correct answers (admin only): </span>
-                    {situations.map((s, i) => `${s.number ?? i + 1} → ${s.correctAdvertisementId || "?"}`).join("  ·  ")}
+                    {situations.map((s, i) => `${s.number ?? i + 1} → ${s.correctAdvertisementId === "x" ? "X" : (s.correctAdvertisementId || "?")}`).join("  ·  ")}
                     {unused.length > 0 && <span className="block mt-1">Unused advertisements: {unused.join(", ")}</span>}
                 </div>
             )}

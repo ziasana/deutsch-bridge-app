@@ -150,7 +150,11 @@ public record ParsedExercise(
     }
 
     /** {@code answer} is a..l or x; the profile maps are the optional admin-only matching metadata. */
-    public record Situation(String id, Integer number, String text, String correctAdvertisementId, Map<String, Object> matchingProfile) {
+    public record Situation(String id, Integer number, String text, String correctAdvertisementId, Map<String, Object> matchingProfile,
+                            Map<String, String> explanation) {
+        public Situation(String id, Integer number, String text, String correctAdvertisementId, Map<String, Object> matchingProfile) {
+            this(id, number, text, correctAdvertisementId, matchingProfile, Map.of());
+        }
     }
 
     /** Structured advertisement; content / visual / matchingProfile keep the import JSON shape. */
