@@ -27,6 +27,8 @@ public enum ExamTaskType {
     TEXT_QUESTIONS,
     /** DTZ Leseverstehen Teil 4: one information text and three richtig/falsch statements (tasks 37-39). Every question is a TRUE_FALSE pointing at the text. */
     TEXT_TRUE_FALSE,
+    /** DTZ Leseverstehen Teil 5: one letter or email with six gaps (40-45), each closed with one of three options (a, b, c). Every question is a MULTIPLE_CHOICE. */
+    LETTER_GAP_FILL,
     /**
      * DTZ Leseverstehen Teil 1 (Kataloge, Register, Verzeichnisse verstehen): one shared information source (directory, register,
      * catalogue ...) as the only passage and five multiple-choice situations (a, b, c) that are solved with it.

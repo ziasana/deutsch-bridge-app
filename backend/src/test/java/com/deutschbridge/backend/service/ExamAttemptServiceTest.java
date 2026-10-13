@@ -187,6 +187,43 @@ class ExamAttemptServiceTest {
     }
 
     @Test
+    @DisplayName("DTZ Lesen Teil 5 -> six gaps are scored on the chosen option text; the example gap is not a question and not scored")
+    void letterGapFill_shouldScoreSixGapsAndIgnoreTheExample() throws DataNotFoundException {
+        List<ExamQuestion> gaps = new ArrayList<>();
+        String[] correct = {"meinem", "denn", "mit", "war", "zurück", "auf"};
+        for (int i = 0; i < 6; i++) {
+            gaps.add(new ExamQuestion("g" + (40 + i), ExamTaskType.MULTIPLE_CHOICE, "Lücke " + (40 + i), 1,
+                    List.of(correct[i], "x" + i, "y" + i), correct[i], 40 + i, 40 + i, "Erklärung " + (40 + i), null));
+        }
+        ExamExercise exercise = new ExamExercise();
+        exercise.setId("ex5");
+        exercise.setSection(ExamSection.LESEVERSTEHEN);
+        exercise.setTaskType(ExamTaskType.LETTER_GAP_FILL);
+        exercise.setLevel(LearningLevel.B1);
+        exercise.setPassages(List.of(
+                new ExamPassage("example", "Beispiel", "<p>Sehr geehrte Damen und Herren</p>", null, null, null),
+                new ExamPassage("letter", "Beschwerde", "<p>Text</p>", null, null, null)));
+        exercise.setQuestions(gaps);
+        ExamAttempt attempt = new ExamAttempt();
+        attempt.setId("attempt5");
+        attempt.setUser(createUser());
+        attempt.setExercise(exercise);
+        attempt.setAnswers(new ArrayList<>());
+        when(attemptRepository.findById("attempt5")).thenReturn(Optional.of(attempt));
+
+        for (int i = 0; i < 4; i++) {
+            assertTrue(service.submitAnswer("attempt5", new SubmitExamAnswerRequest("g" + (40 + i), correct[i])).correct());
+        }
+        assertFalse(service.submitAnswer("attempt5", new SubmitExamAnswerRequest("g44", "x4")).correct());
+        // g45 stays unanswered
+
+        ExamAttemptResultResponse result = service.complete("attempt5", new CompleteExamAttemptRequest());
+        assertEquals(100.0 * 4 / 6, result.score(), 0.0001, "score out of six");
+        assertEquals(5, result.answerBreakdown().size());
+        verify(examExerciseService).saveLastScore("ex5", result.score());
+    }
+
+    @Test
     @DisplayName("submitAnswer -> DTZ texts exercise is scored on RICHTIG/FALSCH and on the chosen option text")
     void submitAnswer_shouldScoreTextQuestionsTasks() throws DataNotFoundException {
         ExamQuestion trueFalse = new ExamQuestion("q31", ExamTaskType.TRUE_FALSE, "Die Bibliothek ist montags offen.", 0, null, "FALSCH", null, 31,

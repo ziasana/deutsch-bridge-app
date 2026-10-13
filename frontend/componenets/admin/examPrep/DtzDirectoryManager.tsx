@@ -19,7 +19,7 @@ import { cardClass, errorMessage, fieldClass, labelClass, sourceTypeLabel, Statu
 
 const PAGE_SIZE = 15;
 
-/** The DTZ Lesen parts that share this list: Teil 1 (directory), Teil 2 (advertisements a-h, one X), Teil 3 (three texts with two tasks each) and Teil 4 (one text with three richtig/falsch statements). */
+/** The DTZ Lesen parts that share this list: Teil 1 (directory), Teil 2 (advertisements a-h, one X), Teil 3 (three texts with two tasks each), Teil 4 (one text with three richtig/falsch statements) and Teil 5 (one letter with six gaps). */
 const VARIANTS = {
     directory: {
         part: "1",
@@ -32,6 +32,8 @@ const VARIANTS = {
         showSourceType: true,
         showTextTypes: false,
         showTextLength: false,
+        showLetterType: false,
+        questionsLabel: "Questions",
     },
     ads: {
         part: "2",
@@ -44,6 +46,8 @@ const VARIANTS = {
         showSourceType: false,
         showTextTypes: false,
         showTextLength: false,
+        showLetterType: false,
+        questionsLabel: "Questions",
     },
     texts: {
         part: "3",
@@ -56,6 +60,8 @@ const VARIANTS = {
         showSourceType: false,
         showTextTypes: true,
         showTextLength: false,
+        showLetterType: false,
+        questionsLabel: "Questions",
     },
     trueFalse: {
         part: "4",
@@ -68,6 +74,22 @@ const VARIANTS = {
         showSourceType: false,
         showTextTypes: false,
         showTextLength: true,
+        showLetterType: false,
+        questionsLabel: "Questions",
+    },
+    letter: {
+        part: "5",
+        listKey: ["admin", "exam", "exercises", "dtz-letter"],
+        title: "DTZ A2–B1 · Lesen · Teil 5",
+        description:
+            "Brief oder E-Mail mit Lücken: one coherent letter or email with six gaps (40–45) and three options (a, b, c) per gap. Generate content with any external AI, import the JSON, review it and publish it. Imported content is never published automatically.",
+        generatorPart: "TEIL_5",
+        newParam: "dtz-letter",
+        showSourceType: false,
+        showTextTypes: false,
+        showTextLength: false,
+        showLetterType: true,
+        questionsLabel: "Gaps",
     },
 } as const;
 
@@ -194,7 +216,8 @@ export default function DtzDirectoryManager({ variant = "directory" }: Readonly<
                                     {config.showTextTypes && <th className="px-3 py-3">Text types</th>}
                                     {config.showTextTypes && <th className="px-3 py-3">Texts</th>}
                                     {config.showTextLength && <th className="px-3 py-3">Text length</th>}
-                                    <th className="px-3 py-3">Questions</th>
+                                    {config.showLetterType && <th className="px-3 py-3">Text type</th>}
+                                    <th className="px-3 py-3">{config.questionsLabel}</th>
                                     <th className="px-3 py-3">Difficulty</th>
                                     <th className="px-3 py-3">Status</th>
                                     <th className="px-3 py-3">Created</th>
@@ -212,6 +235,7 @@ export default function DtzDirectoryManager({ variant = "directory" }: Readonly<
                                         )}
                                         {config.showTextTypes && <td className="px-3 py-3">{r.passageCount ?? "—"}</td>}
                                         {config.showTextLength && <td className="px-3 py-3 whitespace-nowrap">{r.wordCount != null ? `${r.wordCount} words` : "—"}</td>}
+                                        {config.showLetterType && <td className="px-3 py-3 whitespace-nowrap">{textTypeLabel(r.sourceType)}</td>}
                                         <td className="px-3 py-3">{r.questionCount}</td>
                                         <td className="px-3 py-3 whitespace-nowrap">{difficultyLabel(r.difficulty)}</td>
                                         <td className="px-3 py-3"><StatusBadge status={r.status} /></td>
@@ -249,7 +273,7 @@ export default function DtzDirectoryManager({ variant = "directory" }: Readonly<
                                     </tr>
                                 ))}
                                 {rows.length === 0 && (
-                                    <tr><td colSpan={7 + (config.showSourceType ? 1 : 0) + (config.showTextTypes ? 2 : 0) + (config.showTextLength ? 1 : 0)} className="px-3 py-10 text-center text-gray-500 dark:text-gray-400">No exercises yet. Generate a prompt for an external AI, then import its JSON.</td></tr>
+                                    <tr><td colSpan={7 + (config.showSourceType ? 1 : 0) + (config.showTextTypes ? 2 : 0) + (config.showTextLength ? 1 : 0) + (config.showLetterType ? 1 : 0)} className="px-3 py-10 text-center text-gray-500 dark:text-gray-400">No exercises yet. Generate a prompt for an external AI, then import its JSON.</td></tr>
                                 )}
                             </tbody>
                         </table>

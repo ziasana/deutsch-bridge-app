@@ -418,8 +418,8 @@ class ExamContentTrueFalseTextTest {
     @Test
     void unknownPromptSettingsAreRejected() {
         var builder = new ExamContentPromptBuilder();
-        assertThrows(IllegalArgumentException.class, () -> builder.build(spec, new PromptRequest("DTZ", "B1", "LESEN", "TEIL_4", 1, null,
-                List.of("SPACE"), null, null, null, null, null, null, null, null, null, null, null, null), 0, 1));
+        assertTrue(builder.build(spec, new PromptRequest("DTZ", "B1", "LESEN", "TEIL_4", 1, null,
+                List.of("Schwimmbad"), null, null, null, null, null, null, null, null, null, null, null, null), 0, 1).prompt().contains("Topic: Schwimmbad"), "custom topic");
         assertThrows(IllegalArgumentException.class, () -> builder.build(spec, new PromptRequest("DTZ", "B1", "LESEN", "TEIL_4", 1, null,
                 null, null, null, "POEM", null, null, null, null, null, null, null, null, null), 0, 1));
     }

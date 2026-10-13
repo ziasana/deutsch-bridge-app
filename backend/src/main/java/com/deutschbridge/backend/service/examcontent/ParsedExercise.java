@@ -33,8 +33,20 @@ public record ParsedExercise(
         /** DTZ Lesen Teil 1 (directory matching): the shared information source, the optional example and per-situation extras. */
         Directory directory,
         /** DTZ Lesen Teil 3 (texts with richtig/falsch + multiple choice): the three texts with their two tasks each. */
-        TextSet textSet
+        TextSet textSet,
+        /** DTZ Lesen Teil 5 (letter with six gaps): the letter, its metadata and the optional unscored example gap. */
+        Letter letter
 ) {
+    /** Everything except the letter (all shapes before DTZ Lesen Teil 5). */
+    public ParsedExercise(int index, ExamContentSpec spec, String externalId, String title, String instructions,
+                          List<Heading> headings, List<Text> texts, Map<String, Object> metadata,
+                          String readingText, List<Question> questions, List<Situation> situations,
+                          List<Advertisement> advertisements, List<Option> wordBank, Context context, Writing writing,
+                          Speaking speaking, Directory directory, TextSet textSet) {
+        this(index, spec, externalId, title, instructions, headings, texts, metadata, readingText, questions, situations,
+                advertisements, wordBank, context, writing, speaking, directory, textSet, null);
+    }
+
     /** Everything except the text set (all shapes before DTZ Lesen Teil 3). */
     public ParsedExercise(int index, ExamContentSpec spec, String externalId, String title, String instructions,
                           List<Heading> headings, List<Text> texts, Map<String, Object> metadata,
@@ -42,7 +54,7 @@ public record ParsedExercise(
                           List<Advertisement> advertisements, List<Option> wordBank, Context context, Writing writing,
                           Speaking speaking, Directory directory) {
         this(index, spec, externalId, title, instructions, headings, texts, metadata, readingText, questions, situations,
-                advertisements, wordBank, context, writing, speaking, directory, null);
+                advertisements, wordBank, context, writing, speaking, directory, null, null);
     }
 
     /** Everything except the directory task (all pre-DTZ shapes). */
@@ -98,6 +110,9 @@ public record ParsedExercise(
     public List<String> textContents() {
         if (textSet != null) {
             return textSet.texts().stream().map(TextItem::body).toList();
+        }
+        if (letter != null && readingText != null) {
+            return List.of(readingText);
         }
         if (directory != null) {
             return List.of(directory.plainText());
@@ -157,6 +172,18 @@ public record ParsedExercise(
 
     /** {@code kind} is TRUE_FALSE or MULTIPLE_CHOICE; {@code options} is empty for TRUE_FALSE; {@code correctAnswer} RICHTIG / FALSCH or a, b, c. */
     public record TextTask(Integer number, String kind, String prompt, List<Option> options, String correctAnswer, Map<String, String> explanation) {
+    }
+
+    /**
+     * DTZ Lesen Teil 5: one letter or email. {@code body} keeps the {{40}}..{{45}} markers; the six scored gaps are {@link #questions()} of the
+     * exercise (options a, b, c, correct option id, grammar category / focus, de/en/fa explanations). {@code type} is e.g. FORMAL_EMAIL, COMPLAINT.
+     */
+    public record Letter(String type, String topic, String languageLevel, String sender, String recipient, String date, String subject,
+                         String body, GapExample example) {
+    }
+
+    /** The unscored example gap (number 0): the sentence around the gap, three options, the correct one and the explanation. */
+    public record GapExample(String textBeforeGap, String textAfterGap, List<Option> options, String correctOptionId, Map<String, String> explanation) {
     }
 
     public record Entry(String id, String heading, List<String> details) {

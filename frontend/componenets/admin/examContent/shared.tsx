@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { SpeakingModel, SpeakingStimulus, hasSpeakingModel } from "@/componenets/exam/speaking";
-import { ExamContentStatus, ExercisePreviewData, PreviewAdvertisement, PreviewDirectory, PreviewTextQuestions } from "@/types/examContent";
+import { ExamContentStatus, ExercisePreviewData, PreviewAdvertisement, PreviewDirectory, PreviewLetter, PreviewTextQuestions } from "@/types/examContent";
 
 export const cardClass =
     "bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)]";
@@ -79,6 +79,7 @@ export function htmlToText(html: string | null | undefined): string {
  * the admin only - the answer key and which headings stay unused.
  */
 export function ExerciseView({ preview, showAnswers = true }: Readonly<{ preview: ExercisePreviewData; showAnswers?: boolean }>) {
+    if (preview.letter) return <LetterExerciseView preview={preview} letter={preview.letter} />;
     if (preview.textQuestions) return <TextQuestionsExerciseView preview={preview} set={preview.textQuestions} />;
     if (preview.directory) return <DirectoryExerciseView preview={preview} directory={preview.directory} />;
     if (preview.speaking) return <SpeakingTaskView preview={preview} speaking={preview.speaking} />;
@@ -490,6 +491,18 @@ const TEXT_TYPE_LABELS: Record<string, string> = {
     INSTITUTIONAL_ANNOUNCEMENT: "Institutional announcement",
     RULES_AND_CONDITIONS: "Rules and conditions",
     PUBLIC_INFORMATION_TEXT: "Public information text",
+    FORMAL_LETTER: "Formal letter",
+    FORMAL_EMAIL: "Formal email",
+    INFORMAL_EMAIL: "Informal email",
+    INFORMAL_LETTER: "Informal letter",
+    COMPLAINT: "Complaint",
+    REQUEST_FOR_INFORMATION: "Request for information",
+    INVITATION: "Invitation",
+    INVITATION_REPLY: "Reply to an invitation",
+    APPLICATION: "Application",
+    APPOINTMENT: "Appointment",
+    CANCELLATION: "Cancellation or change of plans",
+    EVERYDAY_MESSAGE: "Everyday message",
 };
 export const textTypeLabel = (type: string | null | undefined) => (type ? TEXT_TYPE_LABELS[type] ?? type : "—");
 
@@ -611,6 +624,84 @@ function Explanations({ explanation }: Readonly<{ explanation: Record<string, st
                 </li>
             ))}
         </ul>
+    );
+}
+
+/**
+ * DTZ Lesen Teil 5 as the learner sees it: instructions, the letter / email as a document (header lines, body with its numbered
+ * blanks), the optional example and the options of every gap underneath. The answer key (correct option, grammar category and focus,
+ * explanations in German, English and Persian) is a separate toggle, off by default.
+ */
+function LetterExerciseView({ preview, letter }: Readonly<{ preview: ExercisePreviewData; letter: PreviewLetter }>) {
+    const [showKey, setShowKey] = useState(false);
+    const questions = preview.questions ?? [];
+    const header: [string, string | null][] = [["Absender", letter.sender], ["An", letter.recipient], ["Datum", letter.date]];
+    return (
+        <div className="space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                {preview.instructions ? <p className="text-sm italic text-gray-600 dark:text-gray-300">{preview.instructions}</p> : <span />}
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
+                    <input type="checkbox" checked={showKey} onChange={(e) => setShowKey(e.target.checked)} />
+                    Show answer key (admin only)
+                </label>
+            </div>
+
+            <div className="flex flex-wrap gap-2 text-xs text-gray-600 dark:text-gray-300">
+                <span className="rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-700">{textTypeLabel(letter.type)}</span>
+                {letter.topic && <span className="rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-700">{letter.topic}</span>}
+                {letter.languageLevel && <span className="rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-700">{letter.languageLevel.replace("_", "–")}</span>}
+            </div>
+
+            {letter.example && (
+                <section aria-label="Example" className="rounded-lg border border-dashed border-gray-300 p-4 dark:border-gray-600">
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Beispiel (0) — not scored</h4>
+                    <p className="mt-1 text-sm text-gray-800 dark:text-gray-200">
+                        {letter.example.textBeforeGap}
+                        <span className="exam-gap-marker">0</span>
+                        {letter.example.textAfterGap}
+                    </p>
+                    <OptionList options={letter.example.options} correctId={letter.example.correctOptionId} highlight />
+                    {showKey && <Explanations explanation={letter.example.explanation} />}
+                </section>
+            )}
+
+            <section aria-label="Letter" className="rounded-lg border border-gray-300 bg-white p-5 shadow-sm dark:border-gray-600 dark:bg-gray-900/40">
+                <div className="space-y-0.5 border-b border-gray-200 pb-3 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300">
+                    {header.filter(([, value]) => value).map(([label, value]) => (
+                        <p key={label}><span className="font-semibold">{label}:</span> {value}</p>
+                    ))}
+                    {letter.subject && <p className="font-semibold text-gray-900 dark:text-white">Betreff: {letter.subject}</p>}
+                </div>
+                <p className="mt-3 whitespace-pre-line text-sm leading-8 text-gray-800 dark:text-gray-200">
+                    {(letter.body ?? "").split(/(\{\{\s*\d{1,3}\s*}})/).map((part, i) => {
+                        const gap = /^\{\{\s*(\d{1,3})\s*}}$/.exec(part);
+                        return gap ? <span key={i} className="exam-gap-marker">{gap[1]}</span> : part;
+                    })}
+                </p>
+            </section>
+
+            <div className="space-y-3">
+                {questions.map((q, i) => {
+                    const detail = letter.gaps.find((g) => g.number === q.number);
+                    return (
+                        <div key={q.id ?? i} className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{q.number ?? i + 1}</h4>
+                            <OptionList options={q.options} correctId={q.correctOptionId} highlight={showKey} />
+                            {showKey && detail && (
+                                <div className="mt-2 rounded-md bg-gray-50 p-2.5 text-sm dark:bg-gray-900/40">
+                                    <p className="text-gray-700 dark:text-gray-300">
+                                        <span className="font-semibold">Correct: </span>{q.correctOptionId ?? "?"}
+                                        {detail.grammarCategory && <span className="ml-2 rounded bg-gray-200 px-1.5 py-0.5 text-xs dark:bg-gray-700">{detail.grammarCategory.replaceAll("_", " ").toLowerCase()}</span>}
+                                        {detail.grammarFocus && <span className="ml-2 text-xs text-gray-500">{detail.grammarFocus}</span>}
+                                    </p>
+                                    <Explanations explanation={detail.explanation} />
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
     );
 }
 

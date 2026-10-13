@@ -22,6 +22,8 @@ export type ExamTaskType =
     | "TEXT_QUESTIONS"
     /** DTZ Lesen Teil 4: one information text and three richtig/falsch statements (37–39). */
     | "TEXT_TRUE_FALSE"
+    /** DTZ Lesen Teil 5: one letter / email with six gaps (40–45), each closed with one of three options (a, b, c). */
+    | "LETTER_GAP_FILL"
     /** DTZ Lesen Teil 1: one information source (Wegweiser, Verzeichnis, Katalog ...) and five a/b/c situations. */
     | "DIRECTORY_MATCHING"
     | "WORD_BANK_CLOZE"

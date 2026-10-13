@@ -407,7 +407,7 @@ class ExamContentAdMatchingTest {
 
     @Test
     void unknownPromptSettingsAreRejected() {
-        PromptRequest bad = new PromptRequest("DTZ", "B1", "LESEN", "TEIL_2", 1, "A2", List.of("NOPE"), null);
+        PromptRequest bad = new PromptRequest("DTZ", "B1", "LESEN", "TEIL_2", 1, "C2", List.of("NOPE"), null);
         assertThrows(IllegalArgumentException.class, () -> new ExamContentPromptBuilder().build(spec, bad, 0, 1));
         PromptRequest badCategory = new PromptRequest("DTZ", "B1", "LESEN", "TEIL_2", 1, "A2", null, null, null, null, null, null, null,
                 null, null, null, null, null, null, List.of("NOPE"));

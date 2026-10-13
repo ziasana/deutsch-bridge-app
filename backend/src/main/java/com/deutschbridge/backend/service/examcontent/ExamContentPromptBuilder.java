@@ -61,6 +61,14 @@ public class ExamContentPromptBuilder {
             "WORK_EMPLOYMENT", "HEALTH_APPOINTMENTS", "LEISURE_COMMUNITY", "PUBLIC_TRANSPORT", "EVERYDAY_RULES");
     public static final List<String> TRUE_FALSE_STYLES = List.of("RANDOM", "INFORMATION_SHEET", "FORMAL_NOTICE", "INSTITUTIONAL_ANNOUNCEMENT",
             "RULES_AND_CONDITIONS", "PUBLIC_INFORMATION_TEXT");
+    /** DTZ Lesen Teil 5 generator choices (the first entry of each list is the default). */
+    public static final List<String> LETTER_TOPICS = List.of("RANDOM", "TRAVEL_ACCOMMODATION", "WORK_APPLICATIONS", "SCHOOL_EDUCATION", "FAMILY_FRIENDS",
+            "HEALTH_APPOINTMENTS", "HOUSING", "COURSES_LEISURE", "PUBLIC_SERVICES", "SHOPPING_COMPLAINTS", "EVERYDAY_COMMUNICATION");
+    public static final List<String> LETTER_TEXT_TYPES = List.of("RANDOM", "FORMAL_LETTER", "FORMAL_EMAIL", "INFORMAL_EMAIL", "COMPLAINT",
+            "REQUEST_FOR_INFORMATION", "INVITATION");
+    public static final List<String> LETTER_GRAMMAR_FOCUS = List.of("MIXED", "CONNECTORS", "PRONOUNS", "ARTICLES_ENDINGS", "PREPOSITIONS", "VERB_FORMS",
+            "WORD_ORDER", "EVERYDAY_EXPRESSIONS", "RANDOM_MIX");
+    public static final List<String> LETTER_REGISTERS = List.of("AUTO", "FORMAL", "INFORMAL");
     public static final int MAX_COUNT = 50;
 
     /** Rules shared by the three Mündlicher Ausdruck templates (language, quality, output); included as {{SPEAKING_COMMON}}. */
@@ -77,6 +85,9 @@ public class ExamContentPromptBuilder {
                                 List<String> existingSummaries) {
         if (spec.isDirectoryMatching()) {
             return buildDirectory(spec, request, existingCount, firstNumber, existingSummaries);
+        }
+        if (spec.isLetterGap()) {
+            return buildLetterGap(spec, request, existingCount, firstNumber, existingSummaries);
         }
         if (spec.isTrueFalseText()) {
             return buildTrueFalseText(spec, request, existingCount, firstNumber, existingSummaries);
@@ -193,7 +204,7 @@ public class ExamContentPromptBuilder {
         if (count < 1 || count > MAX_COUNT) throw new IllegalArgumentException("count must be between 1 and " + MAX_COUNT);
         List<String> topics = new ArrayList<>();
         for (String t : request.topics() == null ? List.<String>of() : request.topics()) {
-            String token = directoryToken(t, "RANDOM", DIRECTORY_TOPICS, "topic");
+            String token = topicToken(t, DIRECTORY_TOPICS);
             if (!token.equals("RANDOM") && !topics.contains(token)) topics.add(token);
         }
         String sourceType = directoryToken(request.sourceType(), "RANDOM", DIRECTORY_SOURCE_TYPES, "source type");
@@ -210,9 +221,9 @@ public class ExamContentPromptBuilder {
                 : "Because there are " + count + " exercises, return ONE JSON object that wraps them: schemaVersion, contentType \"EXAM_EXERCISE_BATCH\", exam, level, section, part and an \"exercises\" array with exactly " + count + " exercise objects. Each exercise must use a different scenario, source and wording.\n");
         values.put("STRUCTURE_NOTE", count == 1 ? "" : " (the object inside the \"exercises\" array; repeat it " + count + " times)");
         values.put("TOPIC", topics.isEmpty() ? "any suitable everyday topic (your choice; vary it between exercises)"
-                : count == 1 || topics.size() == 1 ? DIRECTORY_TOPIC_TEXT.get(topics.get(0))
+                : count == 1 || topics.size() == 1 ? topicText(DIRECTORY_TOPIC_TEXT, topics.get(0))
                 : "spread the " + count + " exercises over these topics, each exercise with one topic: "
-                + topics.stream().map(DIRECTORY_TOPIC_TEXT::get).collect(java.util.stream.Collectors.joining("; ")));
+                + topics.stream().map(t -> topicText(DIRECTORY_TOPIC_TEXT, t)).collect(java.util.stream.Collectors.joining("; ")));
         values.put("SOURCE_TYPE", sourceType.equals("RANDOM") ? "your choice (DIRECTORY, REGISTER, CATALOGUE or SERVICE_LIST - whichever fits the topic best; set informationSource.type accordingly)" : sourceType);
         values.put("INCLUDE_EXAMPLE", includeExample ? "include one unscored example" : "do not include an example");
         values.put("VARIATION_BLOCK", switch (variation) {
@@ -256,7 +267,7 @@ public class ExamContentPromptBuilder {
         if (count < 1 || count > MAX_COUNT) throw new IllegalArgumentException("count must be between 1 and " + MAX_COUNT);
         List<String> topics = new ArrayList<>();
         for (String t : request.topics() == null ? List.<String>of() : request.topics()) {
-            String token = directoryToken(t, "RANDOM", AD_TOPICS, "topic");
+            String token = topicToken(t, AD_TOPICS);
             if (!token.equals("RANDOM") && !topics.contains(token)) topics.add(token);
         }
         List<String> categories = new ArrayList<>();
@@ -277,7 +288,7 @@ public class ExamContentPromptBuilder {
                 : "Because there are " + count + " exercises, return ONE JSON object that wraps them: schemaVersion, contentType \"EXAM_EXERCISE_BATCH\", exam, level, section, part and an \"exercises\" array with exactly " + count + " exercise objects. Each exercise must use a different scenario, set of advertisements and wording.\n\n");
         values.put("STRUCTURE_NOTE", count == 1 ? "" : " (the object inside the \"exercises\" array; repeat it " + count + " times)");
         values.put("TOPIC", topics.isEmpty() ? "any suitable everyday topic (your choice)"
-                : topics.stream().map(AD_TOPIC_TEXT::get).collect(java.util.stream.Collectors.joining("; ")));
+                : topics.stream().map(t -> topicText(AD_TOPIC_TEXT, t)).collect(java.util.stream.Collectors.joining("; ")));
         values.put("ADVERTISEMENT_CATEGORIES", categories.isEmpty() ? "your choice (varied, fitting the topic)" : String.join(", ", categories));
         values.put("INCLUDE_EXAMPLE", includeExample ? "true (include one unscored example)" : "false (do not include an example)");
         values.put("INSTRUCTIONS", spec.defaultInstructions());
@@ -394,7 +405,7 @@ public class ExamContentPromptBuilder {
         if (count < 1 || count > MAX_COUNT) throw new IllegalArgumentException("count must be between 1 and " + MAX_COUNT);
         List<String> topics = new ArrayList<>();
         for (String t : request.topics() == null ? List.<String>of() : request.topics()) {
-            String token = directoryToken(t, "RANDOM", LESEN_TEXT_TOPICS, "topic");
+            String token = topicToken(t, LESEN_TEXT_TOPICS);
             if (!token.equals("RANDOM") && !topics.contains(token)) topics.add(token);
         }
         String mix = directoryToken(request.textMix(), "RANDOM_MIX", LESEN_TEXT_MIXES, "text mix");
@@ -424,7 +435,7 @@ public class ExamContentPromptBuilder {
                 : "Because there are " + count + " exercises, return ONE JSON object that wraps them: schemaVersion, contentType \"EXAM_EXERCISE_BATCH\", exam, level, section, part and an \"exercises\" array with exactly " + count + " exercise objects. Each exercise must use a different scenario, set of texts and wording.\n\n");
         values.put("STRUCTURE_NOTE", count == 1 ? "" : " (the object inside the \"exercises\" array; repeat it " + count + " times)");
         values.put("TOPIC", topics.isEmpty() ? "any suitable everyday topic (your choice)"
-                : topics.stream().map(LESEN_TEXT_TOPIC_TEXT::get).collect(java.util.stream.Collectors.joining("; ")));
+                : topics.stream().map(t -> topicText(LESEN_TEXT_TOPIC_TEXT, t)).collect(java.util.stream.Collectors.joining("; ")));
         values.put("TEXT_TYPES", switch (mix) {
             case "PRESS_EMAIL_NOTICE" -> "Text 1 PRESS_TEXT, Text 2 EMAIL, Text 3 FORMAL_NOTICE";
             case "THREE_PRESS" -> "three press texts (type PRESS_TEXT for all three; vary topic, structure and style)";
@@ -463,6 +474,198 @@ public class ExamContentPromptBuilder {
         return new PromptResponse(prompt.strip() + "\n", spec.promptVersion(), ExamContentSpecs.SCHEMA_VERSION, example, existingCount, firstId);
     }
 
+    // ------------------------------------------------------------------ DTZ Lesen Teil 5 (one letter with six gaps)
+
+    private static final Map<String, String> LETTER_TOPIC_TEXT = Map.ofEntries(
+            Map.entry("TRAVEL_ACCOMMODATION", "Travel and accommodation"),
+            Map.entry("WORK_APPLICATIONS", "Work and applications"),
+            Map.entry("SCHOOL_EDUCATION", "School and education"),
+            Map.entry("FAMILY_FRIENDS", "Family and friends"),
+            Map.entry("HEALTH_APPOINTMENTS", "Health and appointments"),
+            Map.entry("HOUSING", "Housing"),
+            Map.entry("COURSES_LEISURE", "Courses and leisure"),
+            Map.entry("PUBLIC_SERVICES", "Public services"),
+            Map.entry("SHOPPING_COMPLAINTS", "Shopping and complaints"),
+            Map.entry("EVERYDAY_COMMUNICATION", "Everyday communication"));
+
+    private static final Map<String, String> LETTER_TEXT_TYPE_TEXT = Map.of(
+            "FORMAL_LETTER", "a formal letter",
+            "FORMAL_EMAIL", "a formal email",
+            "INFORMAL_EMAIL", "an informal email to a friend or acquaintance",
+            "COMPLAINT", "a complaint",
+            "REQUEST_FOR_INFORMATION", "a request for information",
+            "INVITATION", "an invitation or the reply to an invitation");
+
+    private static final Map<String, String> LETTER_GRAMMAR_TEXT = Map.of(
+            "MIXED", "mixed grammar and vocabulary (a balanced mixture)",
+            "CONNECTORS", "connectors and conjunctions (weil, obwohl, deshalb, trotzdem, dass, wenn, sondern ...)",
+            "PRONOUNS", "personal, possessive and relative pronouns",
+            "ARTICLES_ENDINGS", "articles and adjective endings",
+            "PREPOSITIONS", "prepositions and verb-preposition combinations",
+            "VERB_FORMS", "verb forms, tenses and modal verbs",
+            "WORD_ORDER", "word order and subordinate-clause structures",
+            "EVERYDAY_EXPRESSIONS", "common vocabulary, fixed expressions and collocations",
+            "RANDOM_MIX", "a random mix of the language points below (your choice)");
+
+    /** Category name -> what it covers; the order is the order shown in the prompt. */
+    private static final Map<String, String> LETTER_CATEGORY_TEXT = new java.util.LinkedHashMap<>();
+    static {
+        LETTER_CATEGORY_TEXT.put("ARTIKEL", "articles");
+        LETTER_CATEGORY_TEXT.put("ADJEKTIVENDUNG", "adjective endings");
+        LETTER_CATEGORY_TEXT.put("PERSONALPRONOMEN", "personal pronouns");
+        LETTER_CATEGORY_TEXT.put("POSSESSIVARTIKEL", "possessive articles / pronouns");
+        LETTER_CATEGORY_TEXT.put("RELATIVPRONOMEN", "relative pronouns");
+        LETTER_CATEGORY_TEXT.put("VERBFORM", "verb forms and tenses");
+        LETTER_CATEGORY_TEXT.put("MODALVERB", "modal verbs");
+        LETTER_CATEGORY_TEXT.put("KONJUNKTION", "conjunctions");
+        LETTER_CATEGORY_TEXT.put("ADVERBIEN_KONNEKTOREN", "connecting adverbs (deshalb, trotzdem, außerdem ...)");
+        LETTER_CATEGORY_TEXT.put("PRAEPOSITION", "prepositions");
+        LETTER_CATEGORY_TEXT.put("VERB_PRAEPOSITION", "verb-preposition combinations");
+        LETTER_CATEGORY_TEXT.put("NEGATION", "negation");
+        LETTER_CATEGORY_TEXT.put("SATZSTRUKTUR", "word order and subordinate clauses");
+        LETTER_CATEGORY_TEXT.put("INFINITIV", "infinitive structures (zu + Infinitiv)");
+        LETTER_CATEGORY_TEXT.put("WORTSCHATZ", "common vocabulary");
+        LETTER_CATEGORY_TEXT.put("FESTE_WENDUNG", "fixed expressions and collocations");
+    }
+
+    /** One or several exercises per prompt (several come back as one batch file); the settings only shape the content, never the six-gap structure. */
+    private PromptResponse buildLetterGap(ExamContentSpec spec, PromptRequest request, int existingCount, int firstNumber,
+                                          List<String> existingSummaries) {
+        String level = directoryToken(request.difficulty(), "A2_B1", DIRECTORY_LEVELS, "difficulty");
+        int count = request.count() == null ? 1 : request.count();
+        if (count < 1 || count > MAX_COUNT) throw new IllegalArgumentException("count must be between 1 and " + MAX_COUNT);
+        List<String> topics = new ArrayList<>();
+        for (String t : request.topics() == null ? List.<String>of() : request.topics()) {
+            String token = topicToken(t, LETTER_TOPICS);
+            if (!token.equals("RANDOM") && !topics.contains(token)) topics.add(token);
+        }
+        String textType = directoryToken(request.textType(), "RANDOM", LETTER_TEXT_TYPES, "text type");
+        String focus = "MIXED";
+        for (String g : request.grammarCategories() == null ? List.<String>of() : request.grammarCategories()) {
+            focus = directoryToken(g, "MIXED", LETTER_GRAMMAR_FOCUS, "grammar focus");
+            break;
+        }
+        String register = directoryToken(request.communicationType(), "AUTO", LETTER_REGISTERS, "register");
+        boolean example = request.includeExample() == null || request.includeExample();
+        String variation = directoryToken(request.variation(), "RANDOM", DIRECTORY_VARIATIONS, "variation");
+
+        String textTypeValue = textType.equals("RANDOM")
+                ? "your choice of " + String.join(" | ", LETTER_TEXT_TYPES.subList(1, LETTER_TEXT_TYPES.size())) + " (use the chosen token as text.type)"
+                : textType + " (" + LETTER_TEXT_TYPE_TEXT.get(textType) + ")";
+        String jsonExample = letterJsonExample(spec, level, textType, example, count);
+
+        Map<String, String> values = new java.util.LinkedHashMap<>();
+        values.put("DIFFICULTY", level);
+        values.put("COUNT_LINE", count == 1 ? "Generate exactly ONE complete exercise" : "Generate exactly " + count + " complete, clearly different exercises");
+        values.put("TOPIC", topics.isEmpty() ? "any suitable everyday topic (your choice)"
+                : topics.stream().map(t -> topicText(LETTER_TOPIC_TEXT, t)).collect(java.util.stream.Collectors.joining("; ")));
+        values.put("TEXT_TYPE", textTypeValue);
+        values.put("GRAMMAR_FOCUS", LETTER_GRAMMAR_TEXT.get(focus));
+        values.put("INCLUDE_EXAMPLE", example ? "true" : "false");
+        values.put("REGISTER_LINE", switch (register) {
+            case "FORMAL" -> "- Register: formal (Sie, Sehr geehrte Damen und Herren / Mit freundlichen Grüßen)\n";
+            case "INFORMAL" -> "- Register: informal (du, Liebe/Lieber ..., Liebe Grüße)\n";
+            default -> "";
+        });
+        values.put("VARIATION_BLOCK", switch (variation) {
+            case "NEW_SCENARIO" -> "\nVariation: invent a new, original scenario; do not fall back on the most typical textbook setting for this topic.\n";
+            case "AVOID_KNOWN_TOPICS" -> existingSummaries.isEmpty()
+                    ? "\nVariation: avoid the most common textbook scenarios for this topic.\n"
+                    : "\nVariation: the library already contains these exercises - choose a clearly different scenario, text and wording:\n"
+                    + existingSummaries.stream().map(line -> "- " + line).collect(java.util.stream.Collectors.joining("\n")) + "\n";
+            default -> "";
+        });
+        values.put("INSTRUCTIONS", spec.defaultInstructions());
+        values.put("WORD_RANGE", level.equals("A2") ? "110–160" : level.equals("B1") ? "140–200" : "120–200");
+        values.put("LEVEL_RULES", switch (level) {
+            case "A2" -> "For A2: use common everyday vocabulary, short sentences and few subordinate clauses; the gaps test basic, frequent structures.";
+            case "B1" -> "For B1: allow more complex sentences and connectors; the gaps may test subordinate clauses, relative pronouns and verb-preposition combinations; no specialist language.";
+            default -> "For A2–B1: accessible everyday German with a few subordinate clauses; the gaps test frequent structures and common expressions.";
+        });
+        values.put("EXAMPLE_RULES", example
+                ? "Include one instructional example gap numbered 0. It demonstrates the task (typically the greeting or the first sentence) without duplicating one of the scored questions. Give the sentence around the gap as \"textBeforeGap\" and \"textAfterGap\" (keep the spaces next to the gap), exactly three options a, b, c, the correctAnswer and a short explanation in de, en and fa. Keep the example separate from the six scored questions and do NOT put it into the body."
+                : "The example is disabled: omit it completely and use \"example\": null.");
+        values.put("EXAMPLE_JSON_RULE", example ? "The example object follows the structure shown." : "\"example\" must be null.");
+        values.put("CATEGORY_LIST", LETTER_CATEGORY_TEXT.entrySet().stream().map(e -> "- " + e.getValue()).collect(java.util.stream.Collectors.joining("\n")));
+        values.put("CATEGORY_NAMES", String.join(", ", LETTER_CATEGORY_TEXT.keySet()));
+        values.put("TEXT_TYPE_NAMES", String.join(", ", new java.util.TreeSet<>(ExamLetterReader.TEXT_TYPES)));
+        values.put("BATCH_RULE", count == 1 ? ""
+                : "Because there are " + count + " exercises, return ONE JSON object that wraps them: schemaVersion, contentType \"EXAM_EXERCISE_BATCH\", exam, level, section, part and an \"exercises\" array with exactly " + count + " exercise objects (each with the structure below). Each exercise must use a different scenario, text and wording"
+                + (topics.size() > 1 ? ", and the exercises should be spread over the listed topics" : "") + ".\n\n");
+        values.put("TAGS_RULE", "");
+        values.put("JSON_EXAMPLE", jsonExample);
+        values.put("NOTES_BLOCK", request.notes() == null || request.notes().isBlank() ? ""
+                : "\nADDITIONAL INSTRUCTIONS FROM THE EDITOR:\n" + request.notes().strip() + "\n");
+
+        String prompt = loadTemplate(spec.promptTemplate());
+        for (Map.Entry<String, String> e : values.entrySet()) {
+            prompt = prompt.replace("{{" + e.getKey() + "}}", e.getValue());
+        }
+        String firstId = spec.externalIdPrefix() + String.format("%03d", firstNumber);
+        return new PromptResponse(prompt.strip() + "\n", spec.promptVersion(), ExamContentSpecs.SCHEMA_VERSION, jsonExample, existingCount, firstId);
+    }
+
+    private String letterJsonExample(ExamContentSpec spec, String level, String textType, boolean withExample, int count) {
+        ObjectNode ex = MAPPER.createObjectNode();
+        ex.put("exam", "DTZ");
+        ex.put("section", "LESEN");
+        ex.put("part", 5);
+        ex.put("exerciseType", ExamLetterReader.EXERCISE_TYPE);
+        ex.put("level", level);
+        ex.put("title", "...");
+        ex.put("topic", "...");
+        ex.put("difficulty", level);
+        ex.putObject("instructions").put("de", spec.defaultInstructions());
+        if (withExample) {
+            ObjectNode example = ex.putObject("example");
+            example.put("number", 0);
+            example.put("textBeforeGap", "... ");
+            example.put("textAfterGap", " ...");
+            ArrayNode options = example.putArray("options");
+            for (String key : List.of("a", "b", "c")) options.addObject().put("key", key).put("text", "...");
+            example.put("correctAnswer", "a");
+            example.putObject("explanation").put("de", "...").put("en", "...").put("fa", "...");
+        } else {
+            ex.putNull("example");
+        }
+        ObjectNode text = ex.putObject("text");
+        text.put("type", textType.equals("RANDOM") ? "FORMAL_EMAIL" : textType);
+        text.putNull("sender");
+        text.putNull("recipient");
+        text.putNull("date");
+        text.put("subject", "...");
+        StringBuilder body = new StringBuilder("... ");
+        for (int n = spec.firstQuestionNumber(); n <= spec.lastQuestionNumber(); n++) body.append("{{").append(n).append("}} ... ");
+        text.put("body", body.toString().strip());
+        ArrayNode questions = ex.putArray("questions");
+        String[] answers = {"b", "a", "c", "b", "c", "a"};
+        for (int i = 0; i < spec.questionCount(); i++) {
+            ObjectNode q = questions.addObject();
+            q.put("number", spec.firstQuestionNumber() + i);
+            q.put("type", ExamLetterReader.QUESTION_TYPE);
+            ArrayNode options = q.putArray("options");
+            for (String key : List.of("a", "b", "c")) options.addObject().put("key", key).put("text", "...");
+            q.put("correctAnswer", answers[i]);
+            q.put("grammarCategory", "...");
+            q.put("grammarFocus", "...");
+            q.putObject("explanation").put("de", "...").put("en", "...").put("fa", "...");
+        }
+        ObjectNode meta = ex.putObject("metadata");
+        meta.put("schemaVersion", 1);
+        meta.put("source", "AI_IMPORTED");
+        meta.putArray("tags");
+        if (count == 1) return write(ex);
+        ObjectNode root = MAPPER.createObjectNode();
+        root.put("schemaVersion", ExamContentSpecs.SCHEMA_VERSION);
+        root.put("contentType", "EXAM_EXERCISE_BATCH");
+        root.put("exam", "DTZ");
+        root.put("level", "A2_B1");
+        root.put("section", "LESEN");
+        root.put("part", "TEIL_5");
+        root.putArray("exercises").add(ex);
+        return write(root);
+    }
+
     // ------------------------------------------------------------------ DTZ Lesen Teil 4 (one text + three richtig/falsch statements)
 
     private static final Map<String, String> TRUE_FALSE_TOPIC_TEXT = Map.of(
@@ -496,7 +699,7 @@ public class ExamContentPromptBuilder {
         if (count < 1 || count > MAX_COUNT) throw new IllegalArgumentException("count must be between 1 and " + MAX_COUNT);
         List<String> topics = new ArrayList<>();
         for (String t : request.topics() == null ? List.<String>of() : request.topics()) {
-            String token = directoryToken(t, "RANDOM", TRUE_FALSE_TOPICS, "topic");
+            String token = topicToken(t, TRUE_FALSE_TOPICS);
             if (!token.equals("RANDOM") && !topics.contains(token)) topics.add(token);
         }
         String style = directoryToken(request.textType(), "RANDOM", TRUE_FALSE_STYLES, "text style");
@@ -517,7 +720,7 @@ public class ExamContentPromptBuilder {
                 : "Because there are " + count + " exercises, return ONE JSON object that wraps them: schemaVersion, contentType \"EXAM_EXERCISE_BATCH\", exam, level, section, part and an \"exercises\" array with exactly " + count + " exercise objects. Each exercise must use a different scenario, text and wording.\n\n");
         values.put("STRUCTURE_NOTE", count == 1 ? "" : " (the object inside the \"exercises\" array; repeat it " + count + " times)");
         values.put("TOPIC", topics.isEmpty() ? "any suitable everyday topic (your choice)"
-                : topics.stream().map(TRUE_FALSE_TOPIC_TEXT::get).collect(java.util.stream.Collectors.joining("; ")));
+                : topics.stream().map(t -> topicText(TRUE_FALSE_TOPIC_TEXT, t)).collect(java.util.stream.Collectors.joining("; ")));
         values.put("TEXT_LENGTH", TRUE_FALSE_LENGTH_TEXT.get(length));
         values.put("TEXT_STYLE", style.equals("RANDOM")
                 ? "your choice of INFORMATION_SHEET, FORMAL_NOTICE, INSTITUTIONAL_ANNOUNCEMENT, RULES_AND_CONDITIONS or PUBLIC_INFORMATION_TEXT (use the chosen token as text.type)"
@@ -653,6 +856,33 @@ public class ExamContentPromptBuilder {
         root.put("part", "TEIL_3");
         root.putArray("exercises").add(ex);
         return write(root);
+    }
+
+    /**
+     * A topic chip of the generator: one of the offered tokens, or free text typed by the admin (kept as written, without quotes, braces
+     * and line breaks, at most {@value #MAX_CUSTOM_TOPIC} characters). Blank means RANDOM.
+     */
+    static final int MAX_CUSTOM_TOPIC = 60;
+
+    /** A typed-in topic as it is stored and sent: one line without quotes, braces and backslashes; null when blank. */
+    static String cleanTopic(String value) {
+        if (value == null) return null;
+        String clean = value.strip().replaceAll("[\\r\\n\"{}\\\\]", " ").replaceAll("\\s+", " ").strip();
+        if (clean.isEmpty()) return null;
+        if (clean.length() > MAX_CUSTOM_TOPIC) throw new IllegalArgumentException("A topic may have at most " + MAX_CUSTOM_TOPIC + " characters.");
+        return clean;
+    }
+
+    private static String topicToken(String value, List<String> allowed) {
+        if (value == null || value.isBlank()) return "RANDOM";
+        String upper = value.trim().toUpperCase(Locale.ROOT);
+        if (allowed.contains(upper)) return upper;
+        String clean = cleanTopic(value);
+        return clean == null ? "RANDOM" : clean;
+    }
+
+    private static String topicText(Map<String, String> known, String token) {
+        return known.getOrDefault(token, token);
     }
 
     private static String directoryToken(String value, String fallback, List<String> allowed, String label) {

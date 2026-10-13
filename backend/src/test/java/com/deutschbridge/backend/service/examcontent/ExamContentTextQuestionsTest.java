@@ -489,7 +489,7 @@ class ExamContentTextQuestionsTest {
 
     @Test
     void unknownPromptSettingsAreRejected() {
-        PromptRequest bad = new PromptRequest("DTZ", "B1", "LESEN", "TEIL_3", 1, "A2", List.of("NOPE"), null);
+        PromptRequest bad = new PromptRequest("DTZ", "B1", "LESEN", "TEIL_3", 1, "C2", List.of("NOPE"), null);
         assertThrows(IllegalArgumentException.class, () -> new ExamContentPromptBuilder().build(spec, bad, 0, 1));
         PromptRequest badLength = new PromptRequest("DTZ", "B1", "LESEN", "TEIL_3", 1, null, null, null, null, null, null, null, null, null, null, null, null, null,
                 null, null, null, null, "ENORMOUS", null, null);

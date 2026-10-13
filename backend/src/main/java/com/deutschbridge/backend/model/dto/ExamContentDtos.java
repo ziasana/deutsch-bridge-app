@@ -292,6 +292,19 @@ public final class ExamContentDtos {
     public record TextQuestionsView(String topic, String languageLevel, List<TextItemView> texts) {
     }
 
+    /** DTZ Lesen Teil 5: the unscored example gap (number 0) with its options and explanation. */
+    public record GapExampleView(String textBeforeGap, String textAfterGap, List<HeadingView> options, String correctOptionId, Map<String, String> explanation) {
+    }
+
+    /** DTZ Lesen Teil 5, admin only: what a gap tests and why its answer is right (the answer-key view of the preview). */
+    public record LetterGapDetail(Integer number, String grammarCategory, String grammarFocus, Map<String, String> explanation) {
+    }
+
+    /** DTZ Lesen Teil 5: the letter / email with its {{40}}..{{45}} markers, the optional example and the answer-key details of the six gaps. */
+    public record LetterView(String type, String topic, String languageLevel, String sender, String recipient, String date, String subject,
+                             String body, GapExampleView example, List<LetterGapDetail> gaps) {
+    }
+
     public record ExercisePreview(
             String title,
             String instructions,
@@ -312,8 +325,18 @@ public final class ExamContentDtos {
             /** DTZ Lesen Teil 1 (directory matching) only: the information source, the example and the answer-key details. */
             DirectoryView directory,
             /** DTZ Lesen Teil 3 (texts with richtig/falsch + multiple choice) only: the three texts with their tasks and the answer key. */
-            TextQuestionsView textQuestions
+            TextQuestionsView textQuestions,
+            /** DTZ Lesen Teil 5 (letter with six gaps) only: the letter, the example gap and the answer-key details. */
+            LetterView letter
     ) {
+        public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
+                               String readingText, List<QuestionView> questions, List<SituationView> situations,
+                               List<AdvertisementView> advertisements, ContextView context, WritingView writing, SpeakingView speaking,
+                               DirectoryView directory, TextQuestionsView textQuestions) {
+            this(title, instructions, headings, texts, readingText, questions, situations, advertisements, context, writing, speaking, directory,
+                    textQuestions, null);
+        }
+
         public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
                                String readingText, List<QuestionView> questions, List<SituationView> situations,
                                List<AdvertisementView> advertisements, ContextView context, WritingView writing, SpeakingView speaking,

@@ -21,6 +21,7 @@ export interface ExamContentSpecInfo {
         | "DIRECTORY_MATCHING"
         | "TEXT_QUESTIONS"
         | "TEXT_TRUE_FALSE"
+        | "LETTER_GAP_FILL"
         | "WORD_BANK_CLOZE"
         | "WRITING_TASK"
         | "TOPIC_INTERVIEW"
@@ -249,6 +250,26 @@ export interface PreviewTextQuestions {
     texts: PreviewTextItem[];
 }
 
+/** DTZ Lesen Teil 5: the letter / email with its {{40}}..{{45}} markers, the unscored example gap and (admin only) what each gap tests. */
+export interface PreviewLetter {
+    type: string | null;
+    topic: string | null;
+    languageLevel: string | null;
+    sender: string | null;
+    recipient: string | null;
+    date: string | null;
+    subject: string | null;
+    body: string | null;
+    example: {
+        textBeforeGap: string | null;
+        textAfterGap: string | null;
+        options: PreviewHeading[];
+        correctOptionId: string | null;
+        explanation: Record<string, string>;
+    } | null;
+    gaps: { number: number | null; grammarCategory: string | null; grammarFocus: string | null; explanation: Record<string, string> }[];
+}
+
 export interface ExercisePreviewData {
     title: string | null;
     instructions: string | null;
@@ -270,6 +291,8 @@ export interface ExercisePreviewData {
     directory?: PreviewDirectory | null;
     /** DTZ Lesen Teil 3 (texts with richtig/falsch + multiple choice): texts, tasks and answer key. */
     textQuestions?: PreviewTextQuestions | null;
+    /** DTZ Lesen Teil 5 (letter with six gaps): the letter, the example and the answer key; the six gap questions are in `questions`. */
+    letter?: PreviewLetter | null;
 }
 
 export interface DuplicateMatch {

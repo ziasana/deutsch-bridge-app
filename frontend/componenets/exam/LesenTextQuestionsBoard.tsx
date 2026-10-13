@@ -2,6 +2,7 @@
 
 import LessonMarkdown from "@/componenets/LessonMarkdown";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
+import { formatTextHeadings } from "@/lib/textHeadings";
 import { cn } from "@/lib/utils";
 import { ExamPassagePublic, ExamQuestionPublic } from "@/types/exam";
 import { readingColorAt } from "./readingColors";
@@ -38,6 +39,8 @@ export const badgeClass = (selected: boolean) =>
  */
 export default function LesenTextQuestionsBoard({ passages, questions, answers, disabled, onAnswer }: Readonly<Props>) {
     // Tasks that could not be tied to a text still have to be answerable, so they get a card of their own at the end.
+    // One information text with only richtig/falsch statements (Teil 4): its subtitles are shown as headings, like in a document.
+    const formatHeadings = passages.length === 1 && questions.length > 0 && questions.every((q) => q.taskType === "TRUE_FALSE");
     const orphans = questions.filter((q) => q.sectionIndex == null || !passages[q.sectionIndex]);
 
     const renderTask = (question: ExamQuestionPublic, position: number) => {
@@ -101,7 +104,10 @@ export default function LesenTextQuestionsBoard({ passages, questions, answers, 
                         </header>
                         <div className="space-y-5 p-5 sm:p-6">
                             {imageSrc && <img src={imageSrc} alt="" className="max-w-full rounded-lg" />}
-                            {passage.content && <LessonMarkdown content={passage.content} className="text-sm text-foreground/85" />}
+                            {passage.content && <LessonMarkdown
+                                    content={formatHeadings ? formatTextHeadings(passage.content) : passage.content}
+                                    className={cn("text-sm text-foreground/85", formatHeadings && "[&_h3]:mb-1 [&_h3]:mt-5 [&_h3]:text-base [&_h3]:font-bold [&_h3]:text-foreground [&_p]:my-0 [&_p]:leading-7 [&_h3:first-child]:mt-0")}
+                                />}
                             <div className="space-y-6 border-t border-border/60 pt-5">{tasksOf(index).map((q) => renderTask(q, questions.indexOf(q)))}</div>
                         </div>
                     </section>

@@ -265,6 +265,7 @@ public class ExamExerciseService {
         validateNoDuplicateLevel(request, null);
         DtzTextQuestionsValidator.validate(request);
         DtzTrueFalseTextValidator.validate(request);
+        DtzLetterGapValidator.validate(request);
         DtzDirectoryValidator.validate(request);
         DtzAdMatchingValidator.validate(request);
         ExamExercise exercise = new ExamExercise();
@@ -284,6 +285,7 @@ public class ExamExerciseService {
         validateNoDuplicateLevel(request, id);
         DtzTextQuestionsValidator.validate(request);
         DtzTrueFalseTextValidator.validate(request);
+        DtzLetterGapValidator.validate(request);
         DtzDirectoryValidator.validate(request);
         DtzAdMatchingValidator.validate(request);
         Set<String> previousUploadUrls = collectUploadUrls(existing);

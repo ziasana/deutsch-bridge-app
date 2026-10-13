@@ -3,9 +3,11 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ContentGenerator from "./ContentGenerator";
+import { resetTopicApi } from "./topicsTestApi";
 
 const generate = vi.fn();
-vi.mock("@/services/adminExamContentService", () => ({
+vi.mock("@/services/adminExamContentService", async () => ({
+    ...(await import("./topicsTestApi")).topicApiMock,
     getExamContentOptions: () =>
         Promise.resolve({
             data: {
@@ -45,6 +47,7 @@ function renderGenerator() {
 }
 
 beforeEach(() => {
+    resetTopicApi();
     generate.mockReset();
     generate.mockImplementation((request: { textMix?: string; textLength?: string }) =>
         Promise.resolve({

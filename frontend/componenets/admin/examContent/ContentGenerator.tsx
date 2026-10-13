@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { Check, ClipboardCopy, Download, Sparkles } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -9,7 +9,10 @@ import Button from "@/componenets/Button";
 import Input from "@/componenets/Input";
 import Loading from "@/componenets/Loading";
 import useAuthStore from "@/store/useAuthStore";
-import { generateExamContentPrompt, getExamContentOptions, getSpeakingStarter } from "@/services/adminExamContentService";
+import {
+    addGeneratorTopic, generateExamContentPrompt, getExamContentOptions, getGeneratorTopics, getSpeakingStarter, removeGeneratorTopic,
+    restoreGeneratorTopics, setGeneratorTopicHidden, GeneratorTopics,
+} from "@/services/adminExamContentService";
 import { PromptResponse } from "@/types/examContent";
 import ExamContentShell from "./ExamContentShell";
 import { cardClass, copyText, downloadTextFile, errorMessage, fieldClass, labelClass } from "./shared";
@@ -118,6 +121,41 @@ const TF_STYLES: [string, string][] = [
 ];
 const TF_LENGTHS: [string, string][] = [["SHORT", "Short (≈ 180–210 words)"], ["MEDIUM", "Medium (≈ 210–260 words)"], ["LONG", "Long (≈ 260–300 words)"]];
 const TF_LEVELS: [string, string][] = [["A2", "A2"], ["A2_B1", "A2–B1"], ["B1", "B1"]];
+/** DTZ Lesen Teil 5 (Brief oder E-Mail mit Lücken): generator settings; the values are validated by the backend. */
+const LT_TOPICS: [string, string][] = [
+    ["RANDOM", "Random"],
+    ["TRAVEL_ACCOMMODATION", "Travel and accommodation"],
+    ["WORK_APPLICATIONS", "Work and applications"],
+    ["SCHOOL_EDUCATION", "School and education"],
+    ["FAMILY_FRIENDS", "Family and friends"],
+    ["HEALTH_APPOINTMENTS", "Health and appointments"],
+    ["HOUSING", "Housing"],
+    ["COURSES_LEISURE", "Courses and leisure"],
+    ["PUBLIC_SERVICES", "Public services"],
+    ["SHOPPING_COMPLAINTS", "Shopping and complaints"],
+    ["EVERYDAY_COMMUNICATION", "Everyday communication"],
+];
+const LT_TEXT_TYPES: [string, string][] = [
+    ["RANDOM", "Random"],
+    ["FORMAL_LETTER", "Formal letter"],
+    ["FORMAL_EMAIL", "Formal email"],
+    ["INFORMAL_EMAIL", "Informal email"],
+    ["COMPLAINT", "Complaint"],
+    ["REQUEST_FOR_INFORMATION", "Request for information"],
+    ["INVITATION", "Invitation or reply"],
+];
+const LT_GRAMMAR: [string, string][] = [
+    ["MIXED", "Mixed grammar and vocabulary"],
+    ["CONNECTORS", "Connectors"],
+    ["PRONOUNS", "Pronouns"],
+    ["ARTICLES_ENDINGS", "Articles and endings"],
+    ["PREPOSITIONS", "Prepositions"],
+    ["VERB_FORMS", "Verb forms"],
+    ["WORD_ORDER", "Word order"],
+    ["EVERYDAY_EXPRESSIONS", "Everyday expressions"],
+    ["RANDOM_MIX", "Random mix"],
+];
+const LT_REGISTERS: [string, string][] = [["AUTO", "Fits the text type"], ["FORMAL", "Formal (Sie)"], ["INFORMAL", "Informal (du)"]];
 const labelOf = (list: [string, string][], value: string) => list.find(([v]) => v === value)?.[1] ?? value;
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const DIFFICULTY_LABELS: Record<string, string> = { MIXED: "Mixed (20% easy · 60% medium · 20% hard)", EASY: "Easy", MEDIUM: "Medium", HARD: "Hard" };
@@ -132,6 +170,93 @@ const SPEAKING_DESCRIPTIONS: Record<string, string> = {
     JOINT_PLANNING: "a planning scenario with planning points, phrases per function and an optional dialogue",
 };
 const topicLabel = (topic: string) => topic.charAt(0) + topic.slice(1).toLowerCase().replaceAll("_", " ");
+
+/**
+ * The topic list of one generator: the built-in topics (minus the ones the admin removed) and the admin's own topics. Adding, removing
+ * and restoring topics is saved on the server, so the list is the same after a reload and for every admin. Clicking a chip selects it
+ * for the prompt; the × removes it from the list.
+ */
+function TopicChips({ partKey, builtIn, selected, onChange }: Readonly<{ partKey: string; builtIn: [string, string][]; selected: string[]; onChange: (topics: string[]) => void }>) {
+    const queryClient = useQueryClient();
+    const queryKey = ["admin", "exam-content", "topics", partKey];
+    const { data } = useQuery({ queryKey, queryFn: () => getGeneratorTopics(partKey).then((r) => r.data) });
+    const [draft, setDraft] = useState("");
+    const [saving, setSaving] = useState(false);
+    const hidden = data?.hidden ?? [];
+    const custom = data?.custom ?? [];
+    const visible = builtIn.filter(([value]) => value !== "RANDOM" && !hidden.includes(value));
+
+    const save = async (request: Promise<{ data: GeneratorTopics }>, fallback: string) => {
+        setSaving(true);
+        try {
+            queryClient.setQueryData(queryKey, (await request).data);
+            return true;
+        } catch (err) {
+            toast.error(errorMessage(err, fallback));
+            return false;
+        } finally {
+            setSaving(false);
+        }
+    };
+    const toggle = (value: string) => onChange(selected.includes(value) ? selected.filter((t) => t !== value) : [...selected, value]);
+    const add = async () => {
+        const topic = draft.replace(/\s+/g, " ").trim().slice(0, 60);
+        if (!topic) return;
+        if (await save(addGeneratorTopic(partKey, topic), "Could not save the topic.")) {
+            setDraft("");
+            const saved = custom.find((t) => t.toLowerCase() === topic.toLowerCase()) ?? topic;
+            if (!selected.some((t) => t.toLowerCase() === saved.toLowerCase())) onChange([...selected, saved]);
+        }
+    };
+    const removeBuiltIn = async (value: string) => {
+        if (await save(setGeneratorTopicHidden(partKey, value, true), "Could not remove the topic.")) onChange(selected.filter((t) => t !== value));
+    };
+    const removeCustom = async (topic: string) => {
+        if (await save(removeGeneratorTopic(partKey, topic), "Could not remove the topic.")) onChange(selected.filter((t) => t !== topic));
+    };
+    const chip = (value: string, label: string, onRemove: () => void) => {
+        const on = selected.includes(value);
+        return (
+            <span key={value} className={`inline-flex items-center rounded-full border text-sm transition ${on ? "border-primary bg-primary text-primary-foreground" : "border-gray-300 text-gray-700 dark:border-gray-600 dark:text-gray-200"}`}>
+                <button type="button" aria-pressed={on} onClick={() => toggle(value)} className="rounded-full py-1 pl-3 pr-1.5">{label}</button>
+                <button type="button" aria-label={`Remove topic ${label}`} disabled={saving} onClick={onRemove} className="rounded-full py-1 pl-0.5 pr-2.5 leading-none opacity-70 hover:opacity-100">×</button>
+            </span>
+        );
+    };
+
+    return (
+        <div className="space-y-2">
+            <div className="flex flex-wrap gap-2">
+                {visible.map(([value, label]) => chip(value, label, () => void removeBuiltIn(value)))}
+                {custom.map((topic) => chip(topic, topic, () => void removeCustom(topic)))}
+            </div>
+            {hidden.length > 0 && (
+                <button type="button" disabled={saving} onClick={() => void save(restoreGeneratorTopics(partKey), "Could not restore the topics.")} className="text-xs text-blue-600 underline dark:text-blue-400">
+                    Restore removed topics ({hidden.length})
+                </button>
+            )}
+            <div className="flex gap-2">
+                <input
+                    aria-label="Add your own topic"
+                    value={draft}
+                    maxLength={60}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                            e.preventDefault();
+                            void add();
+                        }
+                    }}
+                    placeholder="Add your own topic, e.g. Umzug in eine neue Stadt"
+                    className="min-w-0 flex-1 rounded-lg border border-gray-300 bg-gray-50 px-3 py-1.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                />
+                <button type="button" onClick={() => void add()} disabled={!draft.trim() || saving} className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-semibold hover:bg-accent disabled:opacity-50">
+                    Add topic
+                </button>
+            </div>
+        </div>
+    );
+}
 
 /** Builds the copy-paste prompt for any external AI; the backend never calls an AI itself. */
 function ChipButton({ on, label, onClick }: Readonly<{ on: boolean; label: string; onClick: () => void }>) {
@@ -197,6 +322,14 @@ export default function ContentGenerator() {
     const [tfLevel, setTfLevel] = useState("A2_B1");
     const [tfLength, setTfLength] = useState("MEDIUM");
     const [tfStyle, setTfStyle] = useState("RANDOM");
+    const [ltTopics, setLtTopics] = useState<string[]>([]); // DTZ Lesen Teil 5; empty = random
+    const [ltLevel, setLtLevel] = useState("A2_B1");
+    const [ltTextType, setLtTextType] = useState("RANDOM");
+    const [ltGrammar, setLtGrammar] = useState("MIXED");
+    const [ltRegister, setLtRegister] = useState("AUTO");
+    const [ltExample, setLtExample] = useState(true);
+    const [ltAvoidRecent, setLtAvoidRecent] = useState(false);
+    const [ltNewScenario, setLtNewScenario] = useState(true);
     const [result, setResult] = useState<PromptResponse | null>(null);
     const [generating, setGenerating] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
@@ -228,6 +361,34 @@ export default function ContentGenerator() {
     const adSpec = spec?.taskType === "SITUATION_MATCHING" && spec.exam === "DTZ";
     const textSpec = spec?.taskType === "TEXT_QUESTIONS";
     const tfSpec = spec?.taskType === "TEXT_TRUE_FALSE";
+    const letterSpec = spec?.taskType === "LETTER_GAP_FILL";
+    // The settings travel in the generic prompt-request fields: topic -> topics, text type -> textType, grammar focus -> grammarCategories,
+    // register -> communicationType. With more than one set the AI returns one batch file.
+    // The shared set count starts at 10 for the other parts; one exercise is the natural start for Teil 5.
+    useEffect(() => {
+        if (letterSpec) setCount("1");
+    }, [letterSpec]);
+    const ltRequest = useMemo(
+        () => ({
+            exam, level, section, part, count: Math.min(50, Math.max(1, Number.parseInt(count, 10) || 1)), difficulty: ltLevel, topics: ltTopics, notes: notes.trim() || undefined,
+            textType: ltTextType === "RANDOM" ? undefined : ltTextType, grammarCategories: [ltGrammar],
+            communicationType: ltRegister === "AUTO" ? undefined : ltRegister, includeExample: ltExample,
+            variation: ltAvoidRecent ? "AVOID_KNOWN_TOPICS" : ltNewScenario ? "NEW_SCENARIO" : "RANDOM",
+        }),
+        [exam, level, section, part, count, ltLevel, ltTopics, notes, ltTextType, ltGrammar, ltRegister, ltExample, ltAvoidRecent, ltNewScenario],
+    );
+
+    // The DTZ Teil 5 prompt follows its settings: every change asks the backend for the updated prompt.
+    useEffect(() => {
+        if (!letterSpec) return;
+        let cancelled = false;
+        const timer = setTimeout(() => {
+            generateExamContentPrompt(ltRequest)
+                .then((res) => { if (!cancelled) setResult(res.data); })
+                .catch((err) => { if (!cancelled) toast.error(errorMessage(err, "Failed to generate the prompt.")); });
+        }, 300);
+        return () => { cancelled = true; clearTimeout(timer); };
+    }, [letterSpec, ltRequest]);
     // The shared set count starts at 10 for the other parts; one exercise is the natural start for Teil 4.
     useEffect(() => {
         if (tfSpec) setCount("1");
@@ -314,7 +475,9 @@ export default function ContentGenerator() {
         const writingSpec = spec?.taskType === "WRITING_TASK";
         setGenerating(true);
         try {
-            const res = await generateExamContentPrompt(tfSpec
+            const res = await generateExamContentPrompt(letterSpec
+                ? ltRequest
+                : tfSpec
                 ? tfRequest
                 : textSpec
                 ? txRequest
@@ -417,6 +580,8 @@ export default function ContentGenerator() {
                                     ? `✓ ${spec.label}: one text with ${spec.questionCount} gaps (21–30), ${spec.optionCount} options (a, b, c) each.`
                                     : spec.taskType === "DIRECTORY_MATCHING"
                                     ? `✓ ${spec.label}: one information source (Wegweiser, Verzeichnis, Katalog ...) and exactly ${spec.questionCount} situations (21–25) with ${spec.optionCount} options each.`
+                                    : letterSpec
+                                    ? `✓ ${spec.label}: one letter or email with exactly ${spec.questionCount} gaps (40–45), ${spec.optionCount} options (a, b, c) each; an optional example gap (0) is not scored.`
                                     : tfSpec
                                     ? `✓ ${spec.label}: one information text and exactly ${spec.questionCount} richtig/falsch statements (37–39).`
                                     : textSpec
@@ -459,6 +624,64 @@ export default function ContentGenerator() {
                             </label>
                         )}
 
+                        {letterSpec && (
+                            <div className="space-y-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Generation settings</h3>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <label>
+                                        <span className={labelClass}>Number of exercise sets</span>
+                                        <Input type="number" min={1} max={50} value={count} onChange={(e) => setCount(e.target.value)} />
+                                    </label>
+                                    <label>
+                                        <span className={labelClass}>Text type</span>
+                                        <select className={fieldClass} value={ltTextType} onChange={(e) => setLtTextType(e.target.value)}>
+                                            {LT_TEXT_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span className={labelClass}>Difficulty</span>
+                                        <select className={fieldClass} value={ltLevel} onChange={(e) => setLtLevel(e.target.value)}>
+                                            {TF_LEVELS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span className={labelClass}>Grammar focus</span>
+                                        <select className={fieldClass} value={ltGrammar} onChange={(e) => setLtGrammar(e.target.value)}>
+                                            {LT_GRAMMAR.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                                        </select>
+                                    </label>
+                                    <label className="col-span-2">
+                                        <span className={labelClass}>Register</span>
+                                        <select className={fieldClass} value={ltRegister} onChange={(e) => setLtRegister(e.target.value)}>
+                                            {LT_REGISTERS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                                        </select>
+                                    </label>
+                                </div>
+                                <fieldset>
+                                    <legend className={labelClass}>Topic {ltTopics.length === 0 && <span className="font-normal text-gray-500">(random)</span>}</legend>
+                                    <TopicChips partKey={`${exam}_${part}`} builtIn={LT_TOPICS} selected={ltTopics} onChange={setLtTopics} />
+                                </fieldset>
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                        <input type="checkbox" checked={ltExample} onChange={(e) => setLtExample(e.target.checked)} />
+                                        Include example gap (0)
+                                    </label>
+                                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                        <input type="checkbox" checked={ltAvoidRecent} onChange={(e) => setLtAvoidRecent(e.target.checked)} />
+                                        Avoid recently used topics
+                                    </label>
+                                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                        <input type="checkbox" checked={ltNewScenario} onChange={(e) => setLtNewScenario(e.target.checked)} />
+                                        Generate a different scenario from existing exercises
+                                    </label>
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Fixed by the DTZ format: one letter or email, six gaps numbered 40–45, three options (a, b, c) per gap. The settings only shape the content.
+                                    Explanations are requested in German, English and Persian. With more than one set the AI returns one batch file. Imported content is always saved as a draft.
+                                </p>
+                            </div>
+                        )}
+
                         {tfSpec && (
                             <div className="space-y-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
                                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Generation settings</h3>
@@ -488,12 +711,7 @@ export default function ContentGenerator() {
                                 </div>
                                 <fieldset>
                                     <legend className={labelClass}>Topic {tfTopics.length === 0 && <span className="font-normal text-gray-500">(random)</span>}</legend>
-                                    <div className="flex flex-wrap gap-2">
-                                        {TF_TOPICS.filter(([value]) => value !== "RANDOM").map(([value, label]) => (
-                                            <ChipButton key={value} on={tfTopics.includes(value)} label={label}
-                                                onClick={() => setTfTopics((prev) => (prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value]))} />
-                                        ))}
-                                    </div>
+                                    <TopicChips partKey={`${exam}_${part}`} builtIn={TF_TOPICS} selected={tfTopics} onChange={setTfTopics} />
                                 </fieldset>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">
                                     Fixed by the DTZ format: one text and three richtig/falsch statements, numbered 37–39. The settings only shape the content.
@@ -549,12 +767,7 @@ export default function ContentGenerator() {
                                 )}
                                 <fieldset>
                                     <legend className={labelClass}>Topic {txTopics.length === 0 && <span className="font-normal text-gray-500">(random)</span>}</legend>
-                                    <div className="flex flex-wrap gap-2">
-                                        {(options?.lesenTextTopics ?? []).filter((x) => x !== "RANDOM").map((topic) => (
-                                            <ChipButton key={topic} on={txTopics.includes(topic)} label={LESEN_TOPIC_LABELS[topic] ?? topic}
-                                                onClick={() => setTxTopics((prev) => (prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]))} />
-                                        ))}
-                                    </div>
+                                    <TopicChips partKey={`${exam}_${part}`} builtIn={(options?.lesenTextTopics ?? []).map((v): [string, string] => [v, LESEN_TOPIC_LABELS[v] ?? v])} selected={txTopics} onChange={setTxTopics} />
                                 </fieldset>
                                 <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                                     <input type="checkbox" checked={txDates} onChange={(e) => setTxDates(e.target.checked)} />
@@ -594,12 +807,7 @@ export default function ContentGenerator() {
                                 </div>
                                 <fieldset>
                                     <legend className={labelClass}>Main topic {adTopicSel.length === 0 && <span className="font-normal text-gray-500">(random)</span>}</legend>
-                                    <div className="flex flex-wrap gap-2">
-                                        {(options?.adTopics ?? []).filter((x) => x !== "RANDOM").map((topic) => (
-                                            <ChipButton key={topic} on={adTopicSel.includes(topic)} label={AD_TOPIC_LABELS[topic] ?? topic}
-                                                onClick={() => setAdTopicSel((prev) => (prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]))} />
-                                        ))}
-                                    </div>
+                                    <TopicChips partKey={`${exam}_${part}`} builtIn={(options?.adTopics ?? []).map((v): [string, string] => [v, AD_TOPIC_LABELS[v] ?? v])} selected={adTopicSel} onChange={setAdTopicSel} />
                                 </fieldset>
                                 <fieldset>
                                     <legend className={labelClass}>Advertisement categories {adCats.length === 0 && <span className="font-normal text-gray-500">(chosen by the AI)</span>}</legend>
@@ -649,26 +857,7 @@ export default function ContentGenerator() {
                                 </div>
                                 <fieldset>
                                     <legend className={labelClass}>Topics {dirTopics.length === 0 && <span className="font-normal text-gray-500">(random)</span>}</legend>
-                                    <div className="flex flex-wrap gap-2">
-                                        {(options?.directoryTopics ?? []).filter((x) => x !== "RANDOM").map((topic) => {
-                                            const on = dirTopics.includes(topic);
-                                            return (
-                                                <button
-                                                    key={topic}
-                                                    type="button"
-                                                    aria-pressed={on}
-                                                    onClick={() => setDirTopics((prev) => (prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]))}
-                                                    className={`rounded-full border px-3 py-1 text-sm transition ${
-                                                        on
-                                                            ? "border-primary bg-primary text-primary-foreground"
-                                                            : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                                    }`}
-                                                >
-                                                    {DIRECTORY_TOPIC_LABELS[topic] ?? topic}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
+                                    <TopicChips partKey={`${exam}_${part}`} builtIn={(options?.directoryTopics ?? []).map((v): [string, string] => [v, DIRECTORY_TOPIC_LABELS[v] ?? v])} selected={dirTopics} onChange={setDirTopics} />
                                 </fieldset>
                                 <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                                     <input type="checkbox" checked={dirExample} onChange={(e) => setDirExample(e.target.checked)} />
@@ -681,7 +870,7 @@ export default function ContentGenerator() {
                             </div>
                         )}
 
-                        {!directorySpec && !adSpec && !textSpec && !tfSpec && (
+                        {!directorySpec && !adSpec && !textSpec && !tfSpec && !letterSpec && (
                         <div className="grid grid-cols-2 gap-3">
                             <label>
                                 <span className={labelClass}>Number of exercise sets</span>
@@ -811,7 +1000,7 @@ export default function ContentGenerator() {
                             </>
                         )}
 
-                        {!directorySpec && !adSpec && !textSpec && !tfSpec && (
+                        {!directorySpec && !adSpec && !textSpec && !tfSpec && !letterSpec && (
                         <fieldset>
                             <legend className={labelClass}>Topics {topics.length === 0 && <span className="font-normal text-gray-500">(automatic)</span>}</legend>
                             <div className="flex flex-wrap gap-2">
@@ -885,6 +1074,30 @@ export default function ContentGenerator() {
                                         Alle Lerninhalte (Redemittel, Beispielantworten, Dialoge) sind nur auf Deutsch – es gibt keine englischen oder persischen Übersetzungen.
                                         Laden Sie anschließend die erzeugte JSON-Datei hoch. Importierte Aufgaben werden immer als Entwurf (DRAFT) gespeichert.
                                     </p>
+                                )}
+                                {letterSpec && (
+                                    <div className="mt-3 space-y-3">
+                                        <dl className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-md border border-gray-200 p-3 text-sm dark:border-gray-700 sm:grid-cols-3">
+                                            <div><dt className="text-xs text-gray-500">Topic</dt><dd>{ltTopics.length ? ltTopics.map((t) => labelOf(LT_TOPICS, t)).join(", ") : "Random"}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Text type</dt><dd>{labelOf(LT_TEXT_TYPES, ltTextType)}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Difficulty</dt><dd>{labelOf(TF_LEVELS, ltLevel)}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Grammar focus</dt><dd>{labelOf(LT_GRAMMAR, ltGrammar)}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Example gap (0)</dt><dd>{ltExample ? "Included" : "Not included"}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Exercise sets</dt><dd>{count}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Gaps</dt><dd>40–45, options a, b, c</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Import status</dt><dd>Draft</dd></div>
+                                        </dl>
+                                        <p className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
+                                            ℹ️ Hinweis: Kopieren Sie den Prompt und verwenden Sie ihn in ChatGPT, Claude, Gemini oder einem anderen KI-Tool. Lassen Sie die Übung als JSON erstellen,
+                                            speichern Sie die Ausgabe als Datei und laden Sie sie hier hoch. Prüfen Sie vor der Veröffentlichung alle sechs Lösungen und die grammatische Eindeutigkeit.
+                                        </p>
+                                        <ol className="list-decimal space-y-1 pl-5 text-sm text-gray-600 dark:text-gray-300">
+                                            <li>Copy the prompt and paste it into an external AI tool.</li>
+                                            <li>Save the AI&apos;s answer as a <code>.json</code> file (only the JSON object, no Markdown).</li>
+                                            <li>Upload the file on the <Link href="/admin/exam-prep/import" className="underline text-blue-600 dark:text-blue-400">Import JSON</Link> page, check errors, warnings and the preview.</li>
+                                            <li>Import it as a draft, edit if needed, and publish it only after you have solved all six gaps from the letter yourself.</li>
+                                        </ol>
+                                    </div>
                                 )}
                                 {tfSpec && (
                                     <div className="mt-3 space-y-3">

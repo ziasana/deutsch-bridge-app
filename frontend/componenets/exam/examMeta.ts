@@ -67,6 +67,7 @@ export const TASK_TYPE_LABELS: Record<ExamTaskType, string> = {
     TRUE_FALSE: "Aufgaben richtig/falsch",
     TEXT_QUESTIONS: "Texte mit Aufgaben (richtig/falsch und a, b, c)",
     TEXT_TRUE_FALSE: "Informationstext mit Aussagen (richtig/falsch)",
+    LETTER_GAP_FILL: "Brief oder E-Mail mit Lücken (a, b, c)",
     DIRECTORY_MATCHING: "Kataloge, Register, Verzeichnisse verstehen",
     WORD_BANK_CLOZE: "Lückentext (Wortbank)",
     WRITING_TASK: "Schriftlicher Ausdruck",

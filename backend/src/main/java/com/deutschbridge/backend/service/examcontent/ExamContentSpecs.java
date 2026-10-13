@@ -21,6 +21,10 @@ public final class ExamContentSpecs {
     public static final String WRITING_GUIDANCE = "Überlegen Sie sich vor dem Schreiben eine passende Reihenfolge der Punkte, "
             + "einen passenden Betreff, eine passende Anrede, Einleitung und einen passenden Schluss.";
 
+    /** The exact instruction of DTZ Lesen Teil 5. */
+    public static final String LETTER_INSTRUCTIONS = "Lesen Sie den Text und schließen Sie die Lücken 40–45. Welche Lösung (a, b oder c) passt am besten? "
+            + "Markieren Sie Ihre Lösungen für die Aufgaben 40–45 auf dem Antwortbogen.";
+
     private static final List<ExamContentSpec> SPECS = List.of(
             new ExamContentSpec(
                     ExamType.TELC, LearningLevel.B1, ExamSection.LESEVERSTEHEN, 1, ExamTaskType.MATCHING,
@@ -75,6 +79,13 @@ public final class ExamContentSpecs {
                     "exam-content/prompts/text-true-false.v1.0.txt",
                     "1.0",
                     3, 0, 37),
+            new ExamContentSpec(
+                    ExamType.DTZ, LearningLevel.B1, ExamSection.LESEVERSTEHEN, 5, ExamTaskType.LETTER_GAP_FILL,
+                    0, 1, 100, 230,
+                    LETTER_INSTRUCTIONS,
+                    "exam-content/prompts/letter-gap-fill.v1.0.txt",
+                    "1.0",
+                    6, 3, 40),
             new ExamContentSpec(
                     ExamType.TELC, LearningLevel.B1, ExamSection.SPRACHBAUSTEINE, 1, ExamTaskType.MULTIPLE_CHOICE,
                     0, 0, 120, 220,

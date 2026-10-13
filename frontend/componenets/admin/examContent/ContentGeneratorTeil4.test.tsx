@@ -3,9 +3,11 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ContentGenerator from "./ContentGenerator";
+import { resetTopicApi } from "./topicsTestApi";
 
 const generate = vi.fn();
-vi.mock("@/services/adminExamContentService", () => ({
+vi.mock("@/services/adminExamContentService", async () => ({
+    ...(await import("./topicsTestApi")).topicApiMock,
     getExamContentOptions: () =>
         Promise.resolve({
             data: {
@@ -43,6 +45,7 @@ function renderGenerator() {
 }
 
 beforeEach(() => {
+    resetTopicApi();
     generate.mockReset();
     generate.mockImplementation((r: { topics?: string[]; count?: number; difficulty?: string; textLength?: string; textType?: string }) =>
         Promise.resolve({
@@ -92,5 +95,41 @@ describe("DTZ Lesen Teil 4 content generator", () => {
         expect(screen.getByText(/Prüfen Sie den Text und alle drei Aussagen vor der Veröffentlichung/)).toBeTruthy();
         fireEvent.click(screen.getByRole("button", { name: /Copy prompt/ }));
         await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalledWith("PROMPT topic=RANDOM sets=1 level=A2_B1 length=MEDIUM style=RANDOM"));
+    });
+
+    it("saves topics the admin adds or removes: the list is the same after a reload", async () => {
+        const first = renderGenerator();
+        const input = await screen.findByLabelText("Add your own topic");
+        fireEvent.click(screen.getByRole("button", { name: "Housing" }));
+        fireEvent.change(input, { target: { value: "  Schwimmbad   und Sport " } });
+        fireEvent.keyDown(input, { key: "Enter" });
+        // added topics are selected right away and listed with the others
+        await waitFor(() => expect(lastRequest().topics).toEqual(["HOUSING", "Schwimmbad und Sport"]));
+        expect((input as HTMLInputElement).value).toBe("");
+        fireEvent.change(input, { target: { value: "schwimmbad und sport" } });
+        fireEvent.click(screen.getByRole("button", { name: "Add topic" }));
+        await waitFor(() => expect(screen.getAllByRole("button", { name: "Schwimmbad und Sport" })).toHaveLength(1));
+
+        // an offered topic can be removed as well
+        fireEvent.click(screen.getByLabelText("Remove topic Public transport"));
+        await waitFor(() => expect(screen.queryByRole("button", { name: "Public transport" })).toBeNull());
+        expect(screen.getByRole("button", { name: /Restore removed topics \(1\)/ })).toBeTruthy();
+
+        // "reload": a fresh page shows the saved list
+        first.unmount();
+        cleanup();
+        renderGenerator();
+        expect(await screen.findByRole("button", { name: "Schwimmbad und Sport" })).toBeTruthy();
+        expect(screen.queryByRole("button", { name: "Public transport" })).toBeNull();
+
+        // removing a topic removes it from the list and from the selection
+        fireEvent.click(screen.getByRole("button", { name: "Schwimmbad und Sport" }));
+        await waitFor(() => expect(lastRequest().topics).toEqual(["Schwimmbad und Sport"]));
+        fireEvent.click(screen.getByLabelText("Remove topic Schwimmbad und Sport"));
+        await waitFor(() => expect(screen.queryByRole("button", { name: "Schwimmbad und Sport" })).toBeNull());
+        await waitFor(() => expect(lastRequest().topics).toEqual([]));
+
+        fireEvent.click(screen.getByRole("button", { name: /Restore removed topics/ }));
+        expect(await screen.findByRole("button", { name: "Public transport" })).toBeTruthy();
     });
 });

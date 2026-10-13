@@ -33,6 +33,7 @@ import { hasGapMarkers } from "@/lib/examGap";
 import WritingTaskCard from "@/componenets/exam/writing/WritingTaskCard";
 import SprachbausteineClozeBoard, { hasGapText } from "@/componenets/exam/SprachbausteineClozeBoard";
 import HoerenBoard from "@/componenets/exam/HoerenBoard";
+import HighlightArea from "@/componenets/exam/HighlightArea";
 import LesenTextPanel from "@/componenets/exam/LesenTextPanel";
 import LesenTeil1Board from "@/componenets/exam/LesenTeil1Board";
 import LesenTextQuestionsBoard from "@/componenets/exam/LesenTextQuestionsBoard";
@@ -585,10 +586,13 @@ function QuestionSelect({
 const isLesenMultipleChoice = (exercise: ExamExercisePublicResponse) =>
     exercise.section === "LESEVERSTEHEN" && exercise.taskType === "MULTIPLE_CHOICE";
 
-/** Sprachbausteine Teil 1 (multiple choice per gap) and Teil 2 (shared word bank): a text with numbered gap badges. */
+/**
+ * Sprachbausteine Teil 1 (multiple choice per gap) and Teil 2 (shared word bank), and DTZ Lesen Teil 5 (a letter with six gaps,
+ * three options each): a text with numbered gap badges.
+ */
 const isSprachbausteineGapText = (exercise: ExamExercisePublicResponse) =>
-    exercise.section === "SPRACHBAUSTEINE" &&
-    (exercise.taskType === "MULTIPLE_CHOICE" || exercise.taskType === "WORD_BANK_CLOZE") &&
+    ((exercise.section === "SPRACHBAUSTEINE" && (exercise.taskType === "MULTIPLE_CHOICE" || exercise.taskType === "WORD_BANK_CLOZE")) ||
+        exercise.taskType === "LETTER_GAP_FILL") &&
     exercise.passages.some((p) => hasGapMarkers(p.content));
 
 /** Shared "mark as completed" state/handler for both quiz flows. */
@@ -743,6 +747,7 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
 
             {isGapText ? (
                 <SprachbausteineClozeBoard
+                highlight={exercise.taskType === "LETTER_GAP_FILL"}
                     passages={quiz.passages}
                     questions={quiz.questions}
                     answers={quiz.answers}
@@ -751,7 +756,8 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
                     wordBank={exercise.taskType === "WORD_BANK_CLOZE" ? { options: quiz.answerOptions, labels: quiz.answerOptionLabels } : undefined}
                 />
             ) : isHeadingMatching ? (
-                <LesenTeil1Board
+                <HighlightArea>
+                    <LesenTeil1Board
                     passages={quiz.passages}
                     questions={quiz.questions}
                     answerOptions={quiz.answerOptions}
@@ -760,14 +766,17 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
                     disabled={quiz.submitting}
                     onAnswer={setAnswer}
                 />
+                </HighlightArea>
             ) : isSituationMatching ? (
-                <LesenTeil3Board
+                <HighlightArea>
+                    <LesenTeil3Board
                     passages={quiz.passages}
                     questions={quiz.questions}
                     answers={quiz.answers}
                     disabled={quiz.submitting}
                     onAnswer={setAnswer}
                 />
+                </HighlightArea>
             ) : (
             <div className={`grid gap-3 sm:grid-cols-2 ${isSituationMatching ? "" : "lg:grid-cols-3 xl:grid-cols-4"}`}>
                 {quiz.questions.map((question, idx) => {
@@ -1179,15 +1188,19 @@ function TextQuestionsQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublic
             <p className="px-1 text-sm text-foreground/65">
                 {isDirectory
                     ? "Lies die Aufgaben und den Wegweiser. Wähle bei jeder Aufgabe die passende Lösung. Klicke danach auf \"Antworten abgeben\"."
+                    : exercise.taskType === "TEXT_TRUE_FALSE"
+                    ? "Lies den Text und entscheide bei jeder Aussage, ob sie richtig oder falsch ist. Klicke danach auf \"Antworten abgeben\"."
                     : "Lies jeden Text und löse die beiden Aufgaben dazu. Klicke danach auf \"Antworten abgeben\"."}
             </p>
-            <Board
+            <HighlightArea>
+                            <Board
                 passages={quiz.passages}
                 questions={quiz.questions}
                 answers={quiz.answers}
                 disabled={quiz.submitting}
                 onAnswer={(questionId, value) => setQuiz((prev) => (prev ? { ...prev, answers: { ...prev.answers, [questionId]: value } } : prev))}
             />
+            </HighlightArea>
             <div className="flex items-center justify-end gap-4 pt-2">
                 <span className="text-xs text-foreground/55">
                     {answeredCount} / {quiz.questions.length} beantwortet

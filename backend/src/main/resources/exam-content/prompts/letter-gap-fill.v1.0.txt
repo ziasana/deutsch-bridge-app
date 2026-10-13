@@ -1,0 +1,142 @@
+You are an expert author of original German DTZ A2–B1 exam-preparation reading exercises.
+
+{{COUNT_LINE}} for:
+
+- Exam: DTZ
+- Section: Lesen
+- Part: 5
+- Exercise type: LETTER_GAP_FILL
+- Difficulty: {{DIFFICULTY}}
+- Topic: {{TOPIC}}
+- Text type: {{TEXT_TYPE}}
+- Grammar focus: {{GRAMMAR_FOCUS}}
+- Include example gap: {{INCLUDE_EXAMPLE}}
+{{REGISTER_LINE}}
+{{VARIATION_BLOCK}}
+Create original content following all requirements below.
+
+==================================================
+A. MANDATORY EXERCISE STRUCTURE
+
+Create:
+- exactly ONE coherent German letter or email
+- exactly six scored gaps
+- gap/question numbers 40, 41, 42, 43, 44 and 45
+- exactly three options per gap, labelled a, b and c
+- exactly one correct option per scored gap
+- one answer explanation per question in German, English and Persian
+- an optional instructional example gap numbered 0
+
+The example gap is not scored and must not count as one of the six questions. Do not generate additional scored questions.
+
+==================================================
+B. INSTRUCTIONS
+
+Use this exact German instruction:
+"{{INSTRUCTIONS}}"
+
+==================================================
+C. LETTER OR EMAIL
+
+Create one realistic communication scenario. Follow the selected topic and text type.
+Possible scenarios: complaining about a hotel, product or service; requesting information from an institution; writing to a friend about a recent event; replying to an invitation; asking about a course; applying for a job; changing an appointment; explaining a problem or making a request; describing travel or accommodation experiences.
+
+Use the appropriate greeting, subject, body and closing when relevant. The register must be consistent: a formal complaint must not suddenly switch to informal language, and an informal email must not use an inappropriate formal closing.
+The text must have a clear beginning, middle and ending.
+Use approximately {{WORD_RANGE}} words as a starting guideline for the complete letter or email.
+{{LEVEL_RULES}}
+
+==================================================
+D. GAP PLACEMENT
+
+Insert exactly six scored gaps in the body, using these markers: {{40}}  {{41}}  {{42}}  {{43}}  {{44}}  {{45}}
+- Each marker must appear exactly once and in this ascending order.
+- Every gap replaces a word or short expression that is necessary to complete the sentence naturally.
+- Do not remove necessary punctuation; the punctuation stays outside the marker.
+- The complete letter must read naturally when the correct answers are inserted.
+- Do not place every gap at the beginning of a sentence. Vary the grammatical positions.
+- Do not put two gaps directly next to each other.
+- Do NOT put a marker for the example gap into the body: the example (gap 0) is a separate sentence of its own.
+
+==================================================
+E. EXAMPLE GAP
+
+{{EXAMPLE_RULES}}
+
+==================================================
+F. QUESTION AND OPTION REQUIREMENTS
+
+For every scored gap:
+- Create exactly three options, labelled a, b and c.
+- Use normal German capitalization (nouns capitalized, other words as grammar requires). Do not write options in capitals.
+- Provide exactly one correct answer.
+- Ensure that the correct answer fits grammatically and semantically in the complete sentence.
+- Ensure that the two distractors are plausible but clearly incorrect in this sentence.
+- Options may be one word or a short expression; do not add the sentence punctuation to an option.
+- Do not use options that are all obviously unrelated or nonsense.
+- Do not allow two options to complete the sentence naturally with the same meaning.
+- Do not rely on punctuation tricks or on information outside the text.
+- Spread the correct answers over a, b and c (do not always use the same key).
+
+==================================================
+G. LANGUAGE AND GRAMMAR
+
+Use German appropriate for the selected A2–B1 difficulty. Possible language points:
+{{CATEGORY_LIST}}
+
+Follow the configured grammar focus ({{GRAMMAR_FOCUS}}), but keep the letter natural. Across the six questions vary the tested language points; do not use the same grammatical category for more than two gaps. Do not force an unnatural construction merely to include a specific category.
+Use exactly these names in "grammarCategory": {{CATEGORY_NAMES}}.
+"grammarFocus" is a short English phrase describing the tested point (for example "possessive article in the dative").
+
+==================================================
+H. ANSWER KEY AND SEMANTIC VALIDATION
+
+Before returning the JSON, solve every question using the complete letter. For each gap:
+1. Insert option a and assess the sentence.
+2. Insert option b and assess the sentence.
+3. Insert option c and assess the sentence.
+4. Check grammar, meaning and register.
+5. Confirm that exactly one option is acceptable.
+6. Confirm that the answer key identifies that option.
+7. Rewrite ambiguous options before returning the JSON.
+
+Check the complete letter with all correct answers inserted. Ensure that the text is coherent and that no gap changes the intended meaning unexpectedly.
+
+==================================================
+I. EXPLANATIONS
+
+Provide explanations in German ("de"), English ("en") and Persian ("fa"). Keep each explanation short and educational. Explain the decisive grammar rule, vocabulary meaning or contextual relationship. The explanation must match the actual sentence and the correct answer. Do not introduce rules that do not apply to the sentence.
+
+==================================================
+J. ORIGINALITY
+
+Create original practice content. Do not reproduce official DTZ exam texts and do not claim that the exercise is an official examination question.
+
+==================================================
+K. REQUIRED JSON OUTPUT
+
+{{BATCH_RULE}}Return exactly one valid JSON object. Do not include Markdown, code fences, comments or text outside the JSON.
+The output must be directly importable by a JSON parser (UTF-8, no trailing commas). Use this structure; every "..." must be replaced, and the final JSON must contain all six questions numbered 40–45 with three options and all three explanations each:
+{{JSON_EXAMPLE}}
+
+Allowed values for text.type: {{TEXT_TYPE_NAMES}}.
+"sender", "recipient" and "date" may be null when the text does not need them. {{EXAMPLE_JSON_RULE}}
+Do not leave placeholders in the final JSON.
+{{TAGS_RULE}}
+==================================================
+L. FINAL CHECKLIST
+
+Before returning the JSON, verify:
+- JSON is valid and the metadata is correct
+- there is exactly one letter or email
+- there are exactly six scored questions, numbered 40–45
+- each question has exactly three options with the keys a, b and c
+- each question has exactly one correct answer and the correct-answer keys match the option keys
+- all six gap markers appear exactly once, in ascending order, and correspond to the question numbers
+- the complete letter is coherent with the correct answers inserted and the register is consistent
+- explanations (de, en, fa) match the answers
+- the example gap, if present, is not scored and is not in the body
+- the German is appropriate for the selected level
+- the content is original and no ambiguity remains
+{{NOTES_BLOCK}}
+Return only the final JSON object.

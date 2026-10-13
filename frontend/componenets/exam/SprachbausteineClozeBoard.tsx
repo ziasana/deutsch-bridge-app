@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Check, PartyPopper, Puzzle } from "lucide-react"
 import LessonMarkdown from "@/componenets/LessonMarkdown";
 import { cn } from "@/lib/utils";
 import { hasGapMarkers, withGapMarkers } from "@/lib/examGap";
+import HighlightArea from "./HighlightArea";
 import { ExamPassagePublic, ExamQuestionPublic } from "@/types/exam";
 
 interface Props {
@@ -19,6 +20,8 @@ interface Props {
     /** Tailwind `top-*` / `bottom-*` classes of the sticky strip and the choice dock, to make room for an exam header and bottom bar. */
     stickyClassName?: string;
     dockClassName?: string;
+    /** Adds the marker toolbar under the card header, so the learner can mark passages of the text (DTZ Lesen Teil 5). */
+    highlight?: boolean;
 }
 
 /** Whether an exercise can use the board: a text with numbered gap badges and a question for every gap (own options, or a word bank). */
@@ -39,7 +42,7 @@ const navButton =
  * the gap inside the sentence, so the learner reads the finished sentence, and the board moves on to the next open gap.
  * A sticky strip shows progress and jumps to any gap.
  */
-export default function SprachbausteineClozeBoard({ passages, questions, answers, disabled, onAnswer, wordBank, stickyClassName = "top-2", dockClassName = "bottom-3" }: Readonly<Props>) {
+export default function SprachbausteineClozeBoard({ passages, questions, answers, disabled, onAnswer, wordBank, stickyClassName = "top-2", dockClassName = "bottom-3", highlight = false }: Readonly<Props>) {
     const gapOf = (q: ExamQuestionPublic) => q.gapNumber ?? q.questionNumber ?? questions.indexOf(q) + 1;
     const byGap = new Map(questions.map((q) => [gapOf(q), q]));
     const [activeId, setActiveId] = useState<string | null>(questions[0]?.id ?? null);
@@ -161,11 +164,16 @@ export default function SprachbausteineClozeBoard({ passages, questions, answers
                         </div>
                     </div>
                 </header>
-                <div ref={textRef} className="space-y-4 px-5 py-5 sm:px-6">
-                    {passages.map((p) => (
-                        <LessonMarkdown key={p.id} content={withGapMarkers(p.content)} renderGap={renderGap} className="text-base leading-[2.4] text-foreground/90" />
-                    ))}
-                </div>
+                {(() => {
+                    const text = (
+                    <div ref={textRef} className="space-y-4 px-5 py-5 sm:px-6">
+                        {passages.map((p) => (
+                            <LessonMarkdown key={p.id} content={withGapMarkers(p.content)} renderGap={renderGap} className="text-base leading-[2.4] text-foreground/90" />
+                        ))}
+                    </div>
+                    );
+                    return highlight ? <HighlightArea variant="panel">{text}</HighlightArea> : text;
+                })()}
             </article>
 
             {allDone && (

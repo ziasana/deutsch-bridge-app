@@ -175,6 +175,9 @@ public class ExamContentValidator {
             issues.add(error("INSTRUCTIONS_TOO_LONG", p + "instructions", "instructions are too long."));
         }
 
+        if (spec != null && spec.isLetterGap()) {
+            return readLetterExercise(index, spec, node, p, externalId, title, instructions, issues);
+        }
         if (spec != null && spec.isTrueFalseText()) {
             return readTrueFalseTextExercise(index, spec, node, p, externalId, title, instructions, issues);
         }
@@ -436,6 +439,23 @@ public class ExamContentValidator {
         if (node.get("metadata") != null && node.get("metadata").isObject()) putStringList(node.get("metadata"), "tags", metadata);
         return new ParsedExercise(index, spec, externalId, title, instructions, List.of(), List.of(), metadata, null, result.questions(),
                 List.of(), List.of(), List.of(), null, null, null, null, result.textSet());
+    }
+
+    // ------------------------------------------------------------------ DTZ Lesen Teil 5 (one letter with six gaps)
+
+    private ParsedExercise readLetterExercise(int index, ExamContentSpec spec, JsonNode node, String p, String externalId,
+                                              String title, String instructions, List<Issue> issues) {
+        ExamLetterReader.Result result = new ExamLetterReader(p, issues).read(spec, node);
+        if (instructions != null && !instructions.replaceAll("\\s+", " ").equals(spec.defaultInstructions().replaceAll("\\s+", " "))) {
+            issues.add(warning("INSTRUCTIONS_DIFFER", p + "instructions", "The instruction differs from the standard DTZ wording: \"" + spec.defaultInstructions() + "\""));
+        }
+        if (node.get("metadata") == null || !node.get("metadata").isObject()) {
+            issues.add(error("METADATA_REQUIRED", p + "metadata", "metadata (schemaVersion, source, tags) is required."));
+        }
+        Map<String, Object> metadata = readMetadata(node.get("metadata"), p, issues);
+        if (node.get("metadata") != null && node.get("metadata").isObject()) putStringList(node.get("metadata"), "tags", metadata);
+        return new ParsedExercise(index, spec, externalId, title, instructions, List.of(), List.of(), metadata, result.readingText(), result.questions(),
+                List.of(), List.of(), List.of(), null, null, null, null, null, result.letter());
     }
 
     // ------------------------------------------------------------------ Mündlicher Ausdruck

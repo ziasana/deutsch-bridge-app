@@ -50,7 +50,12 @@ public record ExamContentSpec(
 
     /** True for Sprachbausteine Teil 1: one text with numbered gaps ([21] ...) and a three-option choice per gap. */
     public boolean isGapText() {
-        return isMultipleChoice() && section == ExamSection.SPRACHBAUSTEINE;
+        return (isMultipleChoice() && section == ExamSection.SPRACHBAUSTEINE) || isLetterGap();
+    }
+
+    /** True for DTZ Lesen Teil 5: one letter / email with six gaps {{40}}..{{45}}, each closed with one of three options (read with {@link ExamLetterReader}). */
+    public boolean isLetterGap() {
+        return taskType == ExamTaskType.LETTER_GAP_FILL;
     }
 
     /** True for Sprachbausteine Teil 2: one text with gaps [31]..[40] filled from a shared word bank a..o (each word once). */

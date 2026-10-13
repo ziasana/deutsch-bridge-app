@@ -11,6 +11,28 @@ import {
 
 export const getExamContentOptions = async () => api.get<ExamContentOptions>("/admin/exam-content/options");
 
+/** The saved topic list changes of one generator, e.g. partKey DTZ_TEIL_5: topics the admin added and built-in topics the admin removed. */
+export interface GeneratorTopics {
+    custom: string[];
+    hidden: string[];
+}
+
+export const getGeneratorTopics = async (partKey: string) =>
+    api.get<GeneratorTopics>("/admin/exam-content/topics", { params: { partKey } });
+
+export const addGeneratorTopic = async (partKey: string, topic: string) =>
+    api.post<GeneratorTopics>("/admin/exam-content/topics", { partKey, topic });
+
+export const removeGeneratorTopic = async (partKey: string, topic: string) =>
+    api.post<GeneratorTopics>("/admin/exam-content/topics/remove", { partKey, topic });
+
+/** Removes (hidden = true) or brings back one built-in topic, given by its token. */
+export const setGeneratorTopicHidden = async (partKey: string, topic: string, hidden: boolean) =>
+    api.post<GeneratorTopics>("/admin/exam-content/topics/hidden", { partKey, topic, hidden });
+
+export const restoreGeneratorTopics = async (partKey: string) =>
+    api.post<GeneratorTopics>("/admin/exam-content/topics/restore", null, { params: { partKey } });
+
 export const generateExamContentPrompt = async (request: PromptRequest) =>
     api.post<PromptResponse>("/admin/exam-content/prompt", request);
 

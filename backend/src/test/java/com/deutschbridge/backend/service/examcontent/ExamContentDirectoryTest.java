@@ -383,7 +383,9 @@ class ExamContentDirectoryTest {
 
     @Test
     void unknownPromptSettingsAreRejected() {
-        PromptRequest bad = new PromptRequest("DTZ", "B1", "LESEN", "TEIL_1", 1, "A2", List.of("MOON"), null);
+        PromptRequest custom = new PromptRequest("DTZ", "B1", "LESEN", "TEIL_1", 1, "A2", List.of("Bürgeramt"), null);
+        assertTrue(new ExamContentPromptBuilder().build(spec, custom, 0, 1).prompt().contains("Bürgeramt"), "a topic that is not offered is a custom topic");
+        PromptRequest bad = new PromptRequest("DTZ", "B1", "LESEN", "TEIL_1", 1, "C2", null, null);
         assertThrows(IllegalArgumentException.class, () -> new ExamContentPromptBuilder().build(spec, bad, 0, 1));
     }
 }

@@ -73,6 +73,17 @@ interface StoredTextQuestions {
     questions?: { number: number; explanation?: Record<string, string> }[];
 }
 
+/** metadata.letter of an imported DTZ Lesen Teil 5 exercise (see ExamContentMapper.toLetterEntity). */
+interface StoredLetter {
+    type?: string;
+    sender?: string;
+    recipient?: string;
+    date?: string;
+    subject?: string;
+    body?: string;
+    example?: { textBeforeGap?: string; textAfterGap?: string; options?: { key: string; text: string }[]; correctAnswer?: string; explanation?: Record<string, string> };
+}
+
 /** Drops the "Von / Absender · Datum" line that the importer puts in front of a text's body. */
 const withoutMetaLine = (text: string) => text.replace(/^(Von|Absender|Datum): [^\n]*\n*/, "");
 
@@ -214,6 +225,61 @@ function toPreview(exercise: ExamExerciseResponse): ExercisePreviewData | null {
                                     explanation: detail?.explanation ?? (q.explanation ? { de: q.explanation } : {}),
                                 };
                             }),
+                    };
+                }),
+            },
+        };
+    }
+    if (exercise.taskType === "LETTER_GAP_FILL" && exercise.passages?.length && exercise.questions?.length) {
+        const meta = exercise.metadata ?? {};
+        const stored = (meta.letter ?? null) as StoredLetter | null;
+        const gapInfo = (meta.gapQuestions ?? []) as { number: number; category?: string; grammarFocus?: string; explanation?: Record<string, string> }[];
+        const letterPassage = exercise.passages.find((p) => p.content.includes("data-exam-gap")) ?? exercise.passages[0];
+        // The letter header (Absender / An / Datum / Betreff) is its own first paragraph; the body keeps the blanks as {{40}}.
+        const body = htmlToText(letterPassage.content.replace(/^<p class="letter-head">.*?<\/p>/, "")).replace(/\[(\d{1,3})]/g, "{{$1}}");
+        const questions = [...exercise.questions].sort((a, b) => (a.questionNumber ?? 0) - (b.questionNumber ?? 0));
+        return {
+            title: exercise.title,
+            instructions: exercise.teilDescription,
+            headings: [],
+            texts: [],
+            questions: questions.map((q, i) => {
+                const options = (q.options ?? []).map((text, j) => ({ id: String.fromCharCode(97 + j), text }));
+                return {
+                    id: q.id,
+                    number: q.questionNumber ?? 40 + i,
+                    question: q.prompt,
+                    options,
+                    correctOptionId: options.find((o) => o.text === q.correctAnswer)?.id ?? null,
+                    questionType: null,
+                };
+            }),
+            letter: {
+                type: stored?.type ?? (typeof meta.sourceType === "string" ? meta.sourceType : null),
+                topic: typeof meta.topic === "string" ? meta.topic : null,
+                languageLevel: typeof meta.languageLevel === "string" ? meta.languageLevel : null,
+                sender: stored?.sender ?? null,
+                recipient: stored?.recipient ?? null,
+                date: stored?.date ?? null,
+                subject: stored?.subject ?? null,
+                body,
+                example: stored?.example
+                    ? {
+                          textBeforeGap: stored.example.textBeforeGap ?? null,
+                          textAfterGap: stored.example.textAfterGap ?? null,
+                          options: (stored.example.options ?? []).map((o) => ({ id: o.key, text: o.text })),
+                          correctOptionId: stored.example.correctAnswer ?? null,
+                          explanation: stored.example.explanation ?? {},
+                      }
+                    : null,
+                gaps: questions.map((q, i) => {
+                    const number = q.questionNumber ?? 40 + i;
+                    const info = gapInfo.find((g) => g.number === number);
+                    return {
+                        number,
+                        grammarCategory: info?.category ?? null,
+                        grammarFocus: info?.grammarFocus ?? null,
+                        explanation: { ...(q.explanation ? { de: q.explanation } : {}), ...(info?.explanation ?? {}) },
                     };
                 }),
             },

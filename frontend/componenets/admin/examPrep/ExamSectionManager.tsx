@@ -18,6 +18,8 @@ import {
 } from "@/services/adminExamService";
 import { ExamExerciseAdminRow, ExamExerciseResponse, ExamFieldPresetType, ExamPassage, ExamQuestion, ExamSection, ExamTaskType, ExamTypeCode } from "@/types/exam";
 import DtzTextQuestionsEditor from "@/componenets/admin/examPrep/DtzTextQuestionsEditor";
+import DtzLetterGapEditor from "@/componenets/admin/examPrep/DtzLetterGapEditor";
+import { buildLetterQuestions, normalizeGaps, validateLetterGap } from "@/componenets/admin/examPrep/dtzLetterGap";
 import DtzTrueFalseTextEditor from "@/componenets/admin/examPrep/DtzTrueFalseTextEditor";
 import { buildTrueFalseQuestions, normalizeStatements, validateTrueFalseText } from "@/componenets/admin/examPrep/dtzTrueFalseText";
 import { DEFAULT_FIRST_TASK_NUMBER, buildTextQuestions, removeTextTasks, validateTextQuestions } from "@/componenets/admin/examPrep/dtzTextQuestions";
@@ -68,6 +70,7 @@ const TASK_TYPE_LABELS: Record<ExamTaskType, string> = {
     TRUE_FALSE: "Aufgaben richtig/falsch",
     TEXT_QUESTIONS: "Texte mit Aufgaben (richtig/falsch + a, b, c)",
     TEXT_TRUE_FALSE: "Informationstext mit Aussagen (richtig/falsch)",
+    LETTER_GAP_FILL: "Brief oder E-Mail mit Lücken (a, b, c)",
     DIRECTORY_MATCHING: "Verzeichnis/Wegweiser mit Situationen (a, b, c)",
     WORD_BANK_CLOZE: "Lückentext (Wortbank)",
     WRITING_TASK: "Schriftlicher Ausdruck",
@@ -86,7 +89,7 @@ const DTZ_LEVEL = "B1";
 const EXAM_CHOICE_SECTIONS: ExamSection[] = ["LESEVERSTEHEN", "HOERVERSTEHEN"];
 
 const taskTypesFor = (section: ExamSection, examType: ExamTypeCode): ExamTaskType[] =>
-    examType === "DTZ" && section === "LESEVERSTEHEN" ? [...TASK_TYPES_BY_SECTION[section], "TEXT_QUESTIONS", "TEXT_TRUE_FALSE", "DIRECTORY_MATCHING"] : TASK_TYPES_BY_SECTION[section];
+    examType === "DTZ" && section === "LESEVERSTEHEN" ? [...TASK_TYPES_BY_SECTION[section], "TEXT_QUESTIONS", "TEXT_TRUE_FALSE", "LETTER_GAP_FILL", "DIRECTORY_MATCHING"] : TASK_TYPES_BY_SECTION[section];
 
 const teilNumbersFor = (section: ExamSection, examType: ExamTypeCode): number[] | undefined => {
     if (examType === "DTZ" && section === "LESEVERSTEHEN") return [1, 2, 3, 4, 5];
@@ -192,6 +195,8 @@ const passageLabelDefault = (index: number, section: ExamSection, taskType?: Exa
     if (taskType === "SITUATION_MATCHING") return String.fromCharCode(97 + index);
     // DTZ Lesen Teil 1: the first text is the shared information source, an optional second one the unscored example.
     if (taskType === "DIRECTORY_MATCHING") return index === 0 ? "Wegweiser" : "Beispiel";
+    // DTZ Lesen Teil 5: the letter (with the blanks 40-45), then an optional unscored example.
+    if (taskType === "LETTER_GAP_FILL") return index === 0 ? "Brief" : "Beispiel";
     return section === "HOERVERSTEHEN" ? `Audiodatei ${index + 1}` : `Text ${index + 1}`;
 };
 
@@ -366,6 +371,17 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
             window.history.replaceState(null, "", url.pathname + url.search);
             return;
         }
+        // Deep link from the DTZ Lesen Teil 5 page ("?new=dtz-letter"): start a blank letter with an optional example and the gaps 40-45.
+        if (section === "LESEVERSTEHEN" && url.searchParams.get("new") === "dtz-letter") {
+            setExamType("DTZ");
+            setForm({ ...makeEmptyForm(section), level: DTZ_LEVEL, taskType: "LETTER_GAP_FILL", partNumber: "5" });
+            setPassages([{ ...emptyPassage(0, section, "LETTER_GAP_FILL"), label: "" }]);
+            setQuestions(normalizeGaps([]));
+            setShowForm(true);
+            url.searchParams.delete("new");
+            window.history.replaceState(null, "", url.pathname + url.search);
+            return;
+        }
         const editId = url.searchParams.get("edit");
         if (!editId) return;
         void startEdit({ id: editId } as ExamExerciseAdminRow).then(() => {
@@ -422,16 +438,16 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
     const changeTaskType = (taskType: ExamTaskType) => {
         const textQuestionsInvolved = taskType === "TEXT_QUESTIONS" || form.taskType === "TEXT_QUESTIONS";
         const directoryInvolved = taskType === "DIRECTORY_MATCHING" || form.taskType === "DIRECTORY_MATCHING";
-        const trueFalseInvolved = taskType === "TEXT_TRUE_FALSE" || form.taskType === "TEXT_TRUE_FALSE";
+        const trueFalseInvolved = taskType === "TEXT_TRUE_FALSE" || form.taskType === "TEXT_TRUE_FALSE" || taskType === "LETTER_GAP_FILL" || form.taskType === "LETTER_GAP_FILL";
         // Sprachbausteine's Teil follows its task type, so keep the Teil dropdown in step with it; DTZ's texts-with-tasks is Teil 3.
         setForm({
             ...form,
             taskType,
-            partNumber: section === "SPRACHBAUSTEINE" ? defaultTeil(section, taskType) : taskType === "TEXT_QUESTIONS" ? "3" : taskType === "TEXT_TRUE_FALSE" ? "4" : taskType === "DIRECTORY_MATCHING" ? "1" : form.partNumber,
+            partNumber: section === "SPRACHBAUSTEINE" ? defaultTeil(section, taskType) : taskType === "TEXT_QUESTIONS" ? "3" : taskType === "TEXT_TRUE_FALSE" ? "4" : taskType === "LETTER_GAP_FILL" ? "5" : taskType === "DIRECTORY_MATCHING" ? "1" : form.partNumber,
         });
         // Texts-with-tasks and directory questions each have a fixed shape, so they cannot be converted to or from the other task types.
         setQuestions((prev) =>
-            taskType === "DIRECTORY_MATCHING" ? normalizeDirectoryQuestions([]) : taskType === "TEXT_TRUE_FALSE" ? normalizeStatements([]) : textQuestionsInvolved || directoryInvolved || trueFalseInvolved ? [] : prev.map((q) => ({ ...q, taskType })),
+            taskType === "DIRECTORY_MATCHING" ? normalizeDirectoryQuestions([]) : taskType === "TEXT_TRUE_FALSE" ? normalizeStatements([]) : taskType === "LETTER_GAP_FILL" ? normalizeGaps([]) : textQuestionsInvolved || directoryInvolved || trueFalseInvolved ? [] : prev.map((q) => ({ ...q, taskType })),
         );
         // Seed "+"/"-"/"o" for richtig/falsch/nicht; drop an untouched seed when leaving that type.
         if (taskType === "TRUE_FALSE_NOT_GIVEN" && answerOptions.length === 0) {
@@ -582,6 +598,8 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                 ? normalizeDirectoryQuestions(exercise.questions)
                 : exercise.taskType === "TEXT_TRUE_FALSE"
                 ? normalizeStatements(exercise.questions)
+                : exercise.taskType === "LETTER_GAP_FILL"
+                ? normalizeGaps(exercise.questions)
                 : exercise.questions
         );
         setAnswerOptions(isLegacyTfn ? TFN_DEFAULT_ANSWER_OPTIONS : exercise.answerOptions ?? []);
@@ -625,6 +643,14 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
 
         if (form.taskType === "TEXT_TRUE_FALSE") {
             const problem = validateTrueFalseText(passages, questions);
+            if (problem) {
+                toast.error(problem);
+                return;
+            }
+        }
+
+        if (form.taskType === "LETTER_GAP_FILL") {
+            const problem = validateLetterGap(passages, questions);
             if (problem) {
                 toast.error(problem);
                 return;
@@ -679,6 +705,8 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                 ? buildTextQuestions(questions, passageIndexRemap, firstTaskNumber)
                 : form.taskType === "TEXT_TRUE_FALSE"
                 ? buildTrueFalseQuestions(questions)
+                : form.taskType === "LETTER_GAP_FILL"
+                ? buildLetterQuestions(questions, passageIndexRemap, passages)
                 : form.taskType === "DIRECTORY_MATCHING"
                 ? buildDirectoryQuestions(questions)
                 : questions
@@ -1061,7 +1089,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                         value={p.content}
                                         onChange={(html) => updatePassage(idx, "content", html)}
                                         placeholder="Passage text"
-                                        allowGapInsertion={form.taskType === "WORD_BANK_CLOZE"}
+                                        allowGapInsertion={form.taskType === "WORD_BANK_CLOZE" || form.taskType === "LETTER_GAP_FILL"}
                                     />
 
                                     <div className="flex items-center gap-4 pt-1">
@@ -1145,7 +1173,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                                     )}
                                 </div>
                             ))}
-                            {(form.taskType !== "TEXT_TRUE_FALSE" || passages.length === 0) && (
+                            {((form.taskType !== "TEXT_TRUE_FALSE" && form.taskType !== "LETTER_GAP_FILL") || passages.length === 0 || (form.taskType === "LETTER_GAP_FILL" && passages.length < 2)) && (
                                 <Button type="button" variant="secondary" className="text-xs px-3 py-1" onClick={addPassage}>
                                     + Add passage
                                 </Button>
@@ -1280,6 +1308,15 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                         </div>
                     )}
 
+                    {form.taskType === "LETTER_GAP_FILL" && (
+                        <div>
+                            <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                                Gaps 40–45 — insert the blanks 40–45 into the letter above (in ascending order); the optional example is a second text labelled &quot;Beispiel&quot; without blanks
+                            </label>
+                            <DtzLetterGapEditor questions={questions} onChange={setQuestions} />
+                        </div>
+                    )}
+
                     {form.taskType === "DIRECTORY_MATCHING" && (
                         <div>
                             <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
@@ -1289,7 +1326,7 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
                         </div>
                     )}
 
-                    {form.taskType !== "WORD_BANK_CLOZE" && form.taskType !== "WRITING_TASK" && form.taskType !== "TEXT_QUESTIONS" && form.taskType !== "TEXT_TRUE_FALSE" && form.taskType !== "DIRECTORY_MATCHING" && (
+                    {form.taskType !== "WORD_BANK_CLOZE" && form.taskType !== "WRITING_TASK" && form.taskType !== "TEXT_QUESTIONS" && form.taskType !== "TEXT_TRUE_FALSE" && form.taskType !== "LETTER_GAP_FILL" && form.taskType !== "DIRECTORY_MATCHING" && (
                     <div>
                         <div className="flex items-center justify-between mb-2">
                             <label className="text-gray-700 dark:text-gray-300 text-sm">Questions</label>

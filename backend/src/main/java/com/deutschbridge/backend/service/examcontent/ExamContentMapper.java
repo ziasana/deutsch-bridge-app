@@ -5,7 +5,10 @@ import com.deutschbridge.backend.model.dto.ExamContentDtos.DirectoryExampleView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.DirectoryQuestionDetail;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.DirectoryView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.ExercisePreview;
+import com.deutschbridge.backend.model.dto.ExamContentDtos.GapExampleView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.HeadingView;
+import com.deutschbridge.backend.model.dto.ExamContentDtos.LetterGapDetail;
+import com.deutschbridge.backend.model.dto.ExamContentDtos.LetterView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.AdvertisementView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.ContextView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.QuestionView;
@@ -55,6 +58,9 @@ public final class ExamContentMapper {
         }
         if (spec.isWordBank()) {
             return toWordBankEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
+        }
+        if (spec.isLetterGap()) {
+            return toLetterEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
         }
         if (spec.isTextQuestions() || spec.isTrueFalseText()) {
             return toTextQuestionsEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
@@ -333,6 +339,213 @@ public final class ExamContentMapper {
         exercise.setUpdatedBy(userId);
         exercise.applyStatus(ExamContentStatus.DRAFT);
         return exercise;
+    }
+
+
+    // ------------------------------------------------------------------ DTZ Lesen Teil 5 (one letter with six gaps)
+
+    /** Class of the first paragraph of a letter passage (Absender / An / Datum / Betreff); the export leaves it out of the body. */
+    static final String LETTER_HEAD_CLASS = "letter-head";
+
+    /**
+     * DTZ Lesen Teil 5: the unscored example (if any) is the first passage labelled {@link #EXAMPLE_LABEL}, the letter the next one
+     * (header lines, then the body with the gap badges). Every gap is a MULTIPLE_CHOICE question stored like a Sprachbausteine gap
+     * (options as plain strings, correctAnswer = the correct option's text, gapNumber = questionNumber), so the learner flow, the
+     * scoring and the English / Persian explanation lookup ({@code metadata.gapQuestions}) are shared. The letter's structure, the
+     * example and the grammar details are kept in {@code metadata.letter} for the admin preview, the answer key and the export.
+     */
+    private static ExamExercise toLetterEntity(ParsedExercise ex, ExamType examType, String schemaVersion,
+                                               String promptVersion, String hash, String userId) {
+        ExamContentSpec spec = ex.spec();
+        ParsedExercise.Letter letter = ex.letter();
+        List<ExamPassage> passages = new ArrayList<>();
+        if (letter.example() != null) {
+            passages.add(new ExamPassage(null, EXAMPLE_LABEL, toLetterExampleHtml(letter.example()), null, null, null).ensureId());
+        }
+        int letterIndex = passages.size();
+        passages.add(new ExamPassage(null, letter.subject() != null ? letter.subject() : ex.title(), toLetterHtml(letter, ex.readingText()), null, null, null).ensureId());
+
+        List<ExamQuestion> questions = new ArrayList<>();
+        List<Map<String, Object>> gapInfo = new ArrayList<>();
+        for (int i = 0; i < ex.questions().size(); i++) {
+            ParsedExercise.Question q = ex.questions().get(i);
+            int number = q.number() != null ? q.number() : spec.firstQuestionNumber() + i;
+            String correct = q.options().stream().filter(o -> o.id().equals(q.correctOptionId())).map(ParsedExercise.Option::text).findFirst().orElse(null);
+            questions.add(new ExamQuestion(null, ExamTaskType.MULTIPLE_CHOICE, "Lücke " + number, letterIndex,
+                    q.options().stream().map(ParsedExercise.Option::text).toList(), correct, number, number,
+                    q.explanations().get("de"), null).ensureId());
+            Map<String, Object> info = new LinkedHashMap<>();
+            info.put("number", number);
+            if (q.type() != null) info.put("category", q.type());
+            if (q.grammarFocus() != null) info.put("grammarFocus", q.grammarFocus());
+            Map<String, String> other = new LinkedHashMap<>(q.explanations());
+            other.remove("de");
+            if (!other.isEmpty()) info.put("explanation", other);
+            gapInfo.add(info);
+        }
+        questions.sort(java.util.Comparator.comparing(ExamQuestion::getQuestionNumber));
+        gapInfo.sort(java.util.Comparator.comparing(m -> (Integer) m.get("number")));
+
+        Map<String, Object> stored = new LinkedHashMap<>();
+        stored.put("type", letter.type());
+        if (letter.sender() != null) stored.put("sender", letter.sender());
+        if (letter.recipient() != null) stored.put("recipient", letter.recipient());
+        if (letter.date() != null) stored.put("date", letter.date());
+        if (letter.subject() != null) stored.put("subject", letter.subject());
+        stored.put("body", letter.body());
+        if (letter.example() != null) {
+            ParsedExercise.GapExample example = letter.example();
+            Map<String, Object> e = new LinkedHashMap<>();
+            e.put("number", 0);
+            e.put("textBeforeGap", example.textBeforeGap());
+            e.put("textAfterGap", example.textAfterGap());
+            e.put("options", example.options().stream().map(o -> Map.of("key", o.id(), "text", o.text())).toList());
+            e.put("correctAnswer", example.correctOptionId());
+            e.put("explanation", new LinkedHashMap<>(example.explanation()));
+            stored.put("example", e);
+        }
+
+        Map<String, Object> metadata = new LinkedHashMap<>(ex.metadata());
+        metadata.putIfAbsent("source", "AI_IMPORTED");
+        if (letter.topic() != null) metadata.put("topic", letter.topic());
+        metadata.put("languageLevel", letter.languageLevel());
+        // Shown in the admin list as "Text type".
+        metadata.put("sourceType", letter.type());
+        metadata.put("gapQuestions", gapInfo);
+        metadata.put("letter", stored);
+
+        ExamExercise exercise = new ExamExercise();
+        exercise.setTitle(ex.title());
+        exercise.setExamType(examType);
+        exercise.setSection(spec.section());
+        exercise.setTaskType(spec.taskType());
+        exercise.setLevel(spec.level());
+        exercise.setPartNumber(spec.part());
+        exercise.setPassages(passages);
+        exercise.setQuestions(questions);
+        exercise.setTeilDescription(ex.instructions());
+        exercise.setExternalId(ex.externalId());
+        exercise.setSchemaVersion(schemaVersion);
+        exercise.setPromptVersion(promptVersion);
+        exercise.setMetadata(metadata);
+        exercise.setContentHash(hash);
+        exercise.setCreatedBy(userId);
+        exercise.setUpdatedBy(userId);
+        exercise.applyStatus(ExamContentStatus.DRAFT);
+        return exercise;
+    }
+
+    /** Header lines (Absender, An, Datum, Betreff) as one paragraph, then the body with its gap badges. */
+    static String toLetterHtml(ParsedExercise.Letter letter, String readingText) {
+        StringBuilder head = new StringBuilder();
+        appendLine(head, "Absender: ", letter.sender(), false);
+        appendLine(head, "An: ", letter.recipient(), false);
+        appendLine(head, "Datum: ", letter.date(), false);
+        appendLine(head, "Betreff: ", letter.subject(), true);
+        String html = head.isEmpty() ? "" : "<p class=\"" + LETTER_HEAD_CLASS + "\">" + head + "</p>";
+        return html + toGapHtml(readingText);
+    }
+
+    private static void appendLine(StringBuilder head, String label, String value, boolean strong) {
+        if (value == null) return;
+        if (!head.isEmpty()) head.append("<br>");
+        head.append(label).append(strong ? "<strong>" : "").append(HtmlUtils.htmlEscape(value)).append(strong ? "</strong>" : "");
+    }
+
+    /** The example as the learner sees it: the sentence with the correct word marked, the three options and the German explanation. */
+    static String toLetterExampleHtml(ParsedExercise.GapExample example) {
+        String correct = example.options().stream().filter(o -> o.id().equals(example.correctOptionId())).map(ParsedExercise.Option::text).findFirst().orElse("");
+        StringBuilder html = new StringBuilder("<p>").append(HtmlUtils.htmlEscape(example.textBeforeGap()))
+                .append("<strong><u>").append(HtmlUtils.htmlEscape(correct)).append("</u></strong>")
+                .append(HtmlUtils.htmlEscape(example.textAfterGap())).append("</p><p>");
+        for (int i = 0; i < example.options().size(); i++) {
+            ParsedExercise.Option o = example.options().get(i);
+            if (i > 0) html.append("<br>");
+            boolean isCorrect = o.id().equals(example.correctOptionId());
+            html.append(isCorrect ? "<strong>" : "").append(HtmlUtils.htmlEscape(o.id())).append(") ").append(HtmlUtils.htmlEscape(o.text()))
+                    .append(isCorrect ? "</strong>" : "");
+        }
+        html.append("</p>");
+        String de = example.explanation().get("de");
+        if (de != null) html.append("<p>").append(HtmlUtils.htmlEscape(de)).append("</p>");
+        return html.toString();
+    }
+
+    /** Back to the import shape, from {@code metadata.letter} and the stored questions. Null when the structure is not there (hand-made exercises). */
+    @SuppressWarnings("unchecked")
+    private static ObjectNode toLetterExportNode(ObjectMapper mapper, ExamExercise e) {
+        if (e.getQuestions() == null || e.getQuestions().size() != 6 || e.getPassages() == null || e.getPassages().isEmpty()
+                || e.getMetadata() == null || !(e.getMetadata().get("letter") instanceof Map<?, ?> rawLetter)) {
+            return null;
+        }
+        Map<String, Object> letter = (Map<String, Object>) rawLetter;
+        Map<Integer, Map<String, Object>> gapInfo = new LinkedHashMap<>();
+        if (e.getMetadata().get("gapQuestions") instanceof List<?> list) {
+            for (Object o : list) {
+                if (o instanceof Map<?, ?> m && m.get("number") instanceof Number n) gapInfo.put(n.intValue(), (Map<String, Object>) m);
+            }
+        }
+        List<ExamQuestion> ordered = e.getQuestions().stream()
+                .sorted(java.util.Comparator.comparing(q -> q.getQuestionNumber() == null ? Integer.MAX_VALUE : q.getQuestionNumber()))
+                .toList();
+        for (ExamQuestion q : ordered) {
+            if (q.getOptions() == null || q.getOptions().size() != 3 || q.getCorrectAnswer() == null || !q.getOptions().contains(q.getCorrectAnswer())) return null;
+        }
+        // The body is read from the letter passage (so edits made in the manual editor are exported); the header paragraph is not part of it.
+        String body = String.valueOf(letter.getOrDefault("body", ""));
+        ExamPassage letterPassage = e.getPassages().stream().filter(p -> p.getContent() != null && p.getContent().contains("data-exam-gap")).findFirst().orElse(null);
+        if (letterPassage != null) {
+            String html = letterPassage.getContent().replaceFirst("^<p class=\"" + LETTER_HEAD_CLASS + "\">.*?</p>", "");
+            String plain = toPlainText(html);
+            if (!plain.isBlank()) body = plain.replaceAll("\\[(\\d{1,3})]", "{{$1}}");
+        }
+
+        ObjectNode node = mapper.createObjectNode();
+        if (e.getExternalId() != null) node.put("externalId", e.getExternalId());
+        node.put("exam", "DTZ");
+        node.put("section", "LESEN");
+        node.put("part", 5);
+        node.put("exerciseType", ExamLetterReader.EXERCISE_TYPE);
+        node.put("level", "A2_B1");
+        node.put("title", e.getTitle());
+        Object topic = e.getMetadata().get("topic");
+        if (topic != null) node.put("topic", topic.toString());
+        node.put("difficulty", String.valueOf(e.getMetadata().getOrDefault("languageLevel", "A2_B1")));
+        node.putObject("instructions").put("de", e.getTeilDescription() == null ? "" : e.getTeilDescription());
+        if (letter.get("example") instanceof Map<?, ?> example) node.set("example", mapper.valueToTree(example));
+        else node.putNull("example");
+        ObjectNode text = node.putObject("text");
+        text.put("type", String.valueOf(letter.getOrDefault("type", ExamLetterReader.DEFAULT_TEXT_TYPE)));
+        for (String field : List.of("sender", "recipient", "date", "subject")) {
+            if (letter.get(field) != null) text.put(field, letter.get(field).toString());
+            else text.putNull(field);
+        }
+        text.put("body", body);
+        ArrayNode questions = node.putArray("questions");
+        for (int i = 0; i < ordered.size(); i++) {
+            ExamQuestion q = ordered.get(i);
+            int number = q.getQuestionNumber() != null ? q.getQuestionNumber() : 40 + i;
+            ObjectNode out = questions.addObject();
+            out.put("number", number);
+            out.put("type", ExamLetterReader.QUESTION_TYPE);
+            ArrayNode options = out.putArray("options");
+            for (int j = 0; j < q.getOptions().size(); j++) {
+                options.addObject().put("key", String.valueOf((char) ('a' + j))).put("text", q.getOptions().get(j));
+            }
+            out.put("correctAnswer", String.valueOf((char) ('a' + q.getOptions().indexOf(q.getCorrectAnswer()))));
+            Map<String, Object> info = gapInfo.getOrDefault(number, Map.of());
+            if (info.get("category") != null) out.put("grammarCategory", info.get("category").toString());
+            if (info.get("grammarFocus") != null) out.put("grammarFocus", info.get("grammarFocus").toString());
+            ObjectNode explanation = mapper.createObjectNode();
+            if (q.getExplanation() != null && !q.getExplanation().isBlank()) explanation.put("de", q.getExplanation());
+            if (info.get("explanation") instanceof Map<?, ?> other) other.forEach((k, v) -> explanation.put(k.toString(), String.valueOf(v)));
+            out.set("explanation", explanation);
+        }
+        ObjectNode metadata = node.putObject("metadata");
+        metadata.put("schemaVersion", 1);
+        metadata.put("source", String.valueOf(e.getMetadata().getOrDefault("source", "AI_IMPORTED")));
+        metadata.set("tags", e.getMetadata().get("tags") != null ? mapper.valueToTree(e.getMetadata().get("tags")) : mapper.createArrayNode());
+        return node;
     }
 
     /** Opening line of an e-mail text. */
@@ -695,6 +908,17 @@ public final class ExamContentMapper {
                     List.of(), List.of(),
                     ex.context() == null ? null : new ContextView(ex.context().type(), ex.context().title(), ex.context().text()));
         }
+        if (ex.letter() != null) {
+            ParsedExercise.Letter l = ex.letter();
+            GapExampleView example = l.example() == null ? null : new GapExampleView(l.example().textBeforeGap(), l.example().textAfterGap(),
+                    l.example().options().stream().map(o -> new HeadingView(o.id(), o.text())).toList(), l.example().correctOptionId(), l.example().explanation());
+            return new ExercisePreview(ex.title(), ex.instructions(), List.of(), List.of(), ex.readingText(),
+                    ex.questions().stream().map(q -> new QuestionView(q.id(), q.number(), q.number() != null ? "Lücke " + q.number() : null,
+                            q.options().stream().map(o -> new HeadingView(o.id(), o.text())).toList(), q.correctOptionId(), q.type())).toList(),
+                    List.of(), List.of(), null, null, null, null, null,
+                    new LetterView(l.type(), l.topic(), l.languageLevel(), l.sender(), l.recipient(), l.date(), l.subject(), l.body(), example,
+                            ex.questions().stream().map(q -> new LetterGapDetail(q.number(), q.type(), q.grammarFocus(), q.explanations())).toList()));
+        }
         if (ex.textSet() != null) {
             ParsedExercise.TextSet set = ex.textSet();
             return new ExercisePreview(ex.title(), ex.instructions(), List.of(), List.of(), null,
@@ -756,6 +980,7 @@ public final class ExamContentMapper {
         if (e.getTaskType() == ExamTaskType.DIRECTORY_MATCHING) return toDirectoryExportNode(mapper, e);
         if (e.getTaskType() == ExamTaskType.TEXT_QUESTIONS) return toTextQuestionsExportNode(mapper, e);
         if (e.getTaskType() == ExamTaskType.TEXT_TRUE_FALSE) return toTrueFalseExportNode(mapper, e);
+        if (e.getTaskType() == ExamTaskType.LETTER_GAP_FILL) return toLetterExportNode(mapper, e);
         if (e.getTaskType() != ExamTaskType.MATCHING || e.getAnswerOptions() == null || e.getPassages() == null
                 || e.getQuestions() == null || e.getSection() == null || e.getLevel() == null || e.getPartNumber() == null) {
             return null;

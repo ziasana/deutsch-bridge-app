@@ -145,7 +145,7 @@ public class ExamContentService {
                 spec.examType(), spec.section(), spec.level(), spec.part());
         int next = ExamContentPromptBuilder.nextNumber(spec.externalIdPrefix(),
                 repository.findExternalIdsStartingWith(spec.externalIdPrefix()));
-        return promptBuilder.build(spec, request, existing, next, spec.isWriting() || spec.isSpeaking() || spec.isDirectoryMatching() || spec.isAdMatching() || spec.isTextQuestions() || spec.isTrueFalseText() ? existingWritingSummaries(spec) : List.of());
+        return promptBuilder.build(spec, request, existing, next, spec.isWriting() || spec.isSpeaking() || spec.isDirectoryMatching() || spec.isAdMatching() || spec.isTextQuestions() || spec.isTrueFalseText() || spec.isLetterGap() ? existingWritingSummaries(spec) : List.of());
     }
 
     /** Newest first, capped so the prompt stays a manageable size: "title - topic (scenario)". */
@@ -274,13 +274,14 @@ public class ExamContentService {
         boolean situation = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isSituationMatching() && !e.spec().isAdMatching());
         boolean adMatching = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isAdMatching());
         boolean textQuestions = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isTextQuestions());
+        boolean letterGap = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isLetterGap());
         boolean trueFalseText = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isTrueFalseText());
         boolean wordBank = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isWordBank());
         boolean writing = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isWriting());
         boolean speaking = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isSpeaking());
         boolean matching = file.exercises().stream().anyMatch(e -> e.spec() != null && !e.spec().isMultipleChoice() && !e.spec().isDirectoryMatching()
                 && !e.spec().isSituationMatching() && !e.spec().isWordBank() && !e.spec().isWriting() && !e.spec().isSpeaking()
-                && !e.spec().isTextQuestions() && !e.spec().isTrueFalseText());
+                && !e.spec().isTextQuestions() && !e.spec().isTrueFalseText() && !e.spec().isLetterGap());
         int situations = file.exercises().stream().mapToInt(e -> e.situations().size()).sum();
         int advertisements = file.exercises().stream().mapToInt(e -> e.advertisements().size()).sum();
 
@@ -296,7 +297,7 @@ public class ExamContentService {
         checks.add(new Check("Section: " + orDash(file.section()), noCode(all, "SECTION_INVALID")));
         checks.add(new Check("Part: " + orDash(file.part()), noCode(all, "PART_INVALID", "SPEC_UNSUPPORTED")));
         checks.add(new Check("Exercises: " + reports.size(), !reports.isEmpty() && noCode(all, "EXERCISE_NOT_OBJECT", "EXTERNAL_ID_INVALID", "EXTERNAL_ID_DUPLICATE_IN_FILE")));
-        if (matching || (!reading && !directory && !situation && !adMatching && !textQuestions && !trueFalseText && !wordBank && !writing && !speaking)) {
+        if (matching || (!reading && !directory && !situation && !adMatching && !textQuestions && !trueFalseText && !letterGap && !wordBank && !writing && !speaking)) {
             checks.add(new Check("Headings: " + headings, !reports.isEmpty() && noCode(all, STRUCTURE_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Texts: " + texts, !reports.isEmpty() && noCode(all, TEXT_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Answer assignments valid", !reports.isEmpty() && noCode(all, ANSWER_ERROR_CODES.toArray(String[]::new))));
@@ -331,6 +332,16 @@ public class ExamContentService {
             checks.add(new Check("Exactly 3 true/false statements, numbered 37–39", !reports.isEmpty() && noCode(all, ExamTrueFalseReader.QUESTION_CODES.toArray(String[]::new))));
             checks.add(new Check("One valid answer per statement (RICHTIG / FALSCH)", !reports.isEmpty() && noCode(all, ExamTrueFalseReader.ANSWER_CODES.toArray(String[]::new))));
             checks.add(new Check("Explanation (de, en, fa) for every statement", !reports.isEmpty() && noCode(all, ExamTrueFalseReader.EXPLANATION_CODES.toArray(String[]::new))));
+            checks.add(new Check("Metadata present", !reports.isEmpty() && noCode(all, "METADATA_REQUIRED", "METADATA_INVALID")));
+        }
+        if (letterGap) {
+            checks.add(new Check("Exactly one letter or email with a body", !reports.isEmpty() && noCode(all, ExamLetterReader.TEXT_CODES.toArray(String[]::new))));
+            checks.add(new Check("Gap markers {{40}}–{{45}}: each exactly once, in ascending order", !reports.isEmpty() && noCode(all, ExamLetterReader.GAP_CODES.toArray(String[]::new))));
+            checks.add(new Check("Exactly 6 MULTIPLE_CHOICE questions, numbered 40–45", !reports.isEmpty() && noCode(all, ExamLetterReader.QUESTION_CODES.toArray(String[]::new))));
+            checks.add(new Check("Exactly 3 options a, b, c per question", !reports.isEmpty() && noCode(all, ExamLetterReader.OPTION_CODES.toArray(String[]::new))));
+            checks.add(new Check("One correct answer per question (key matches an option)", !reports.isEmpty() && noCode(all, ExamLetterReader.ANSWER_CODES.toArray(String[]::new))));
+            checks.add(new Check("Explanation (de, en, fa) for every question", !reports.isEmpty() && noCode(all, ExamLetterReader.EXPLANATION_CODES.toArray(String[]::new))));
+            checks.add(new Check("Example gap valid (when present)", !reports.isEmpty() && noCode(all, ExamLetterReader.EXAMPLE_CODES.toArray(String[]::new))));
             checks.add(new Check("Metadata present", !reports.isEmpty() && noCode(all, "METADATA_REQUIRED", "METADATA_INVALID")));
         }
         if (adMatching) {
@@ -539,6 +550,10 @@ public class ExamContentService {
         }
         if (e.getTaskType() == ExamTaskType.TEXT_TRUE_FALSE) {
             String problem = com.deutschbridge.backend.service.DtzTrueFalseTextValidator.check(e.getPassages(), e.getQuestions());
+            if (problem != null) return problem;
+        }
+        if (e.getTaskType() == ExamTaskType.LETTER_GAP_FILL) {
+            String problem = com.deutschbridge.backend.service.DtzLetterGapValidator.check(e.getPassages(), e.getQuestions());
             if (problem != null) return problem;
         }
         if (e.getTaskType() == ExamTaskType.DIRECTORY_MATCHING) {
