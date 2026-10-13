@@ -15,6 +15,9 @@ import {
 } from "@/services/adminExamContentService";
 import { PromptResponse } from "@/types/examContent";
 import ExamContentShell from "./ExamContentShell";
+import {
+    DEFAULT_WRITING_CHOICE_SETTINGS, WC_TOPICS, WritingChoicePromptNotes, WritingChoiceSettings, WritingChoiceSettingsForm, writingChoiceRequest,
+} from "./WritingChoiceGenerator";
 import { cardClass, copyText, downloadTextFile, errorMessage, fieldClass, labelClass } from "./shared";
 
 const EXAM_LABELS: Record<string, string> = { TELC: "Telc", DTZ: "DTZ A2–B1", GOETHE: "Goethe", TESTDAF: "TestDaF", DSH: "DSH", OTHER: "Other" };
@@ -330,6 +333,7 @@ export default function ContentGenerator() {
     const [ltExample, setLtExample] = useState(true);
     const [ltAvoidRecent, setLtAvoidRecent] = useState(false);
     const [ltNewScenario, setLtNewScenario] = useState(true);
+    const [wcSettings, setWcSettings] = useState<WritingChoiceSettings>(DEFAULT_WRITING_CHOICE_SETTINGS); // DTZ Schreiben
     const [result, setResult] = useState<PromptResponse | null>(null);
     const [generating, setGenerating] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
@@ -362,6 +366,22 @@ export default function ContentGenerator() {
     const textSpec = spec?.taskType === "TEXT_QUESTIONS";
     const tfSpec = spec?.taskType === "TEXT_TRUE_FALSE";
     const letterSpec = spec?.taskType === "LETTER_GAP_FILL";
+    const wcSpec = spec?.taskType === "WRITING_TASK_CHOICE";
+    const wcRequest = useMemo(
+        () => writingChoiceRequest({ exam, level, section, part }, wcSettings, notes),
+        [exam, level, section, part, wcSettings, notes],
+    );
+    // The DTZ Schreiben prompt follows its settings: every change asks the backend for the updated prompt.
+    useEffect(() => {
+        if (!wcSpec) return;
+        let cancelled = false;
+        const timer = setTimeout(() => {
+            generateExamContentPrompt(wcRequest)
+                .then((res) => { if (!cancelled) setResult(res.data); })
+                .catch((err) => { if (!cancelled) toast.error(errorMessage(err, "Failed to generate the prompt.")); });
+        }, 300);
+        return () => { cancelled = true; clearTimeout(timer); };
+    }, [wcSpec, wcRequest]);
     // The settings travel in the generic prompt-request fields: topic -> topics, text type -> textType, grammar focus -> grammarCategories,
     // register -> communicationType. With more than one set the AI returns one batch file.
     // The shared set count starts at 10 for the other parts; one exercise is the natural start for Teil 5.
@@ -475,7 +495,9 @@ export default function ContentGenerator() {
         const writingSpec = spec?.taskType === "WRITING_TASK";
         setGenerating(true);
         try {
-            const res = await generateExamContentPrompt(letterSpec
+            const res = await generateExamContentPrompt(wcSpec
+                ? wcRequest
+                : letterSpec
                 ? ltRequest
                 : tfSpec
                 ? tfRequest
@@ -580,6 +602,8 @@ export default function ContentGenerator() {
                                     ? `✓ ${spec.label}: one text with ${spec.questionCount} gaps (21–30), ${spec.optionCount} options (a, b, c) each.`
                                     : spec.taskType === "DIRECTORY_MATCHING"
                                     ? `✓ ${spec.label}: one information source (Wegweiser, Verzeichnis, Katalog ...) and exactly ${spec.questionCount} situations (21–25) with ${spec.optionCount} options each.`
+                                    : wcSpec
+                                    ? `✓ ${spec.label}: two alternative tasks (Aufgabe A and Aufgabe B) with exactly ${spec.questionCount / 2} content points each; the learner chooses one. Writing time: 30 minutes.`
                                     : letterSpec
                                     ? `✓ ${spec.label}: one letter or email with exactly ${spec.questionCount} gaps (40–45), ${spec.optionCount} options (a, b, c) each; an optional example gap (0) is not scored.`
                                     : tfSpec
@@ -622,6 +646,16 @@ export default function ContentGenerator() {
                                 <input type="checkbox" checked={includeVisuals} onChange={(e) => setIncludeVisuals(e.target.checked)} />
                                 Include visual briefs (image type, image prompt, alt text) for the advertisements
                             </label>
+                        )}
+
+                        {wcSpec && (
+                            <WritingChoiceSettingsForm
+                                value={wcSettings}
+                                onChange={setWcSettings}
+                                renderTopics={(selected, onChange) => (
+                                    <TopicChips partKey={`${exam}_${part}`} builtIn={WC_TOPICS} selected={selected} onChange={onChange} />
+                                )}
+                            />
                         )}
 
                         {letterSpec && (
@@ -870,7 +904,7 @@ export default function ContentGenerator() {
                             </div>
                         )}
 
-                        {!directorySpec && !adSpec && !textSpec && !tfSpec && !letterSpec && (
+                        {!directorySpec && !adSpec && !textSpec && !tfSpec && !letterSpec && !wcSpec && (
                         <div className="grid grid-cols-2 gap-3">
                             <label>
                                 <span className={labelClass}>Number of exercise sets</span>
@@ -1000,7 +1034,7 @@ export default function ContentGenerator() {
                             </>
                         )}
 
-                        {!directorySpec && !adSpec && !textSpec && !tfSpec && !letterSpec && (
+                        {!directorySpec && !adSpec && !textSpec && !tfSpec && !letterSpec && !wcSpec && (
                         <fieldset>
                             <legend className={labelClass}>Topics {topics.length === 0 && <span className="font-normal text-gray-500">(automatic)</span>}</legend>
                             <div className="flex flex-wrap gap-2">
@@ -1031,10 +1065,12 @@ export default function ContentGenerator() {
                             <textarea className={`${fieldClass} min-h-[70px]`} value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={1000} placeholder="e.g. Focus on texts set in Germany's public services." />
                         </label>
 
-                        <Button type="submit" disabled={!spec || generating} className="w-full flex items-center justify-center gap-2">
-                            <Sparkles className="size-4" />
-                            {generating ? "Generating..." : "Generate prompt"}
-                        </Button>
+                        {!wcSpec && (
+                            <Button type="submit" disabled={!spec || generating} className="w-full flex items-center justify-center gap-2">
+                                <Sparkles className="size-4" />
+                                {generating ? "Generating..." : "Generate prompt"}
+                            </Button>
+                        )}
                     </form>
 
                     <div className={`${cardClass} p-6 min-w-0`}>
@@ -1075,6 +1111,7 @@ export default function ContentGenerator() {
                                         Laden Sie anschließend die erzeugte JSON-Datei hoch. Importierte Aufgaben werden immer als Entwurf (DRAFT) gespeichert.
                                     </p>
                                 )}
+                                {wcSpec && <WritingChoicePromptNotes settings={wcSettings} />}
                                 {letterSpec && (
                                     <div className="mt-3 space-y-3">
                                         <dl className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-md border border-gray-200 p-3 text-sm dark:border-gray-700 sm:grid-cols-3">

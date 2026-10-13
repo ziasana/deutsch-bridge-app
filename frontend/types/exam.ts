@@ -28,6 +28,8 @@ export type ExamTaskType =
     | "DIRECTORY_MATCHING"
     | "WORD_BANK_CLOZE"
     | "WRITING_TASK"
+    /** DTZ Schreiben: two alternative letter / email tasks (Aufgabe A and B) with four content points each; the learner writes one. */
+    | "WRITING_TASK_CHOICE"
     | "TOPIC_INTERVIEW"
     | "OPINION_DISCUSSION"
     | "JOINT_PLANNING";
@@ -253,6 +255,24 @@ export interface ExamQuestionPublic {
     questionNumber: number | null;
 }
 
+/** One alternative of DTZ Schreiben, as the learner sees it. */
+export interface WritingChoiceTask {
+    taskLabel: "A" | "B";
+    title: string;
+    topic: string | null;
+    communicationType: string | null;
+    situation: string;
+    recipient: { name: string | null; role: string | null } | null;
+    writingInstruction: string;
+    points: { number: number; text: string }[];
+}
+
+export interface WritingChoiceContent {
+    durationMinutes: number;
+    languageLevel?: string | null;
+    tasks: WritingChoiceTask[];
+}
+
 export interface ExamExercisePublicResponse {
     id: string;
     title: string;
@@ -283,6 +303,8 @@ export interface ExamExercisePublicResponse {
     /** MUENDLICHER_AUSDRUCK only: the structured, German-only speaking content. */
     speaking?: SpeakingContent | null;
     examType: ExamTypeCode | null;
+    /** DTZ Schreiben only: the two alternative tasks and the writing time. */
+    writingChoice?: WritingChoiceContent | null;
 }
 
 /**

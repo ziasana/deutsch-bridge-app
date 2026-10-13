@@ -1,5 +1,6 @@
 package com.deutschbridge.backend.service.examcontent;
 
+import com.deutschbridge.backend.model.dto.ExamContentDtos;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.DirectoryEntryView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.DirectoryExampleView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.DirectoryQuestionDetail;
@@ -52,6 +53,9 @@ public final class ExamContentMapper {
         ExamContentSpec spec = ex.spec();
         if (spec.isSpeaking()) {
             return toSpeakingEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
+        }
+        if (spec.isWritingChoice()) {
+            return toWritingChoiceEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
         }
         if (spec.isWriting()) {
             return toWritingEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
@@ -800,6 +804,169 @@ public final class ExamContentMapper {
         return html.toString();
     }
 
+    /**
+     * DTZ Schreiben in the existing exercise model: one passage per alternative (Aufgabe A, Aufgabe B) with the readable task, and the
+     * structured tasks in {@code metadata.writingChoice} (import shape), which the learner screen renders. The two tasks' points differ,
+     * so the exercise-level Leitpunkte stay empty; the points of the task a learner chose are read from the metadata.
+     */
+    private static ExamExercise toWritingChoiceEntity(ParsedExercise ex, ExamType examType, String schemaVersion,
+                                                      String promptVersion, String hash, String userId) {
+        ExamContentSpec spec = ex.spec();
+        ParsedExercise.WritingChoice wc = ex.writingChoice();
+
+        Map<String, Object> metadata = new LinkedHashMap<>(ex.metadata());
+        metadata.putIfAbsent("source", "AI_IMPORTED");
+        putWritingChoiceMetadata(metadata, wc);
+
+        ExamExercise exercise = new ExamExercise();
+        exercise.setTitle(ex.title());
+        exercise.setExamType(examType);
+        exercise.setSection(spec.section());
+        exercise.setTaskType(spec.taskType());
+        exercise.setLevel(spec.level());
+        exercise.setPartNumber(spec.part());
+        exercise.setPassages(toWritingChoicePassages(wc));
+        exercise.setQuestions(List.of());
+        exercise.setRequiresPlanning(true);
+        exercise.setTeilDescription(ex.instructions());
+        exercise.setExternalId(ex.externalId());
+        exercise.setSchemaVersion(schemaVersion);
+        exercise.setPromptVersion(promptVersion);
+        exercise.setMetadata(metadata);
+        exercise.setContentHash(hash);
+        exercise.setCreatedBy(userId);
+        exercise.setUpdatedBy(userId);
+        exercise.applyStatus(ExamContentStatus.DRAFT);
+        return exercise;
+    }
+
+    static List<ExamPassage> toWritingChoicePassages(ParsedExercise.WritingChoice wc) {
+        List<ExamPassage> passages = new ArrayList<>();
+        for (ParsedExercise.WritingChoiceTask task : wc.tasks()) {
+            passages.add(new ExamPassage(null, "Aufgabe " + task.label(), toWritingTaskHtml(task), null, null, null).ensureId());
+        }
+        return passages;
+    }
+
+    /** Writes the structured tasks and the fields the admin list shows (topic, text types, level) into the exercise metadata. */
+    static void putWritingChoiceMetadata(Map<String, Object> metadata, ParsedExercise.WritingChoice wc) {
+        metadata.put("writingChoice", toWritingChoiceTree(wc));
+        metadata.put("languageLevel", wc.languageLevel());
+        metadata.put("topic", wc.tasks().stream().map(ParsedExercise.WritingChoiceTask::topic).filter(java.util.Objects::nonNull)
+                .distinct().collect(java.util.stream.Collectors.joining(" / ")));
+        metadata.put("sourceType", wc.tasks().stream().map(ParsedExercise.WritingChoiceTask::communicationType).filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.joining(", ")));
+    }
+
+    /** The tasks in the import shape: exactly what the learner screen and the editor read, and what export writes back. */
+    static Map<String, Object> toWritingChoiceTree(ParsedExercise.WritingChoice wc) {
+        Map<String, Object> tree = new LinkedHashMap<>();
+        tree.put("durationMinutes", wc.durationMinutes());
+        tree.put("languageLevel", wc.languageLevel());
+        List<Map<String, Object>> tasks = new ArrayList<>();
+        for (ParsedExercise.WritingChoiceTask t : wc.tasks()) {
+            Map<String, Object> task = new LinkedHashMap<>();
+            task.put("taskLabel", t.label());
+            task.put("title", t.title());
+            task.put("topic", t.topic());
+            task.put("communicationType", t.communicationType());
+            task.put("situation", t.situation());
+            if (t.recipientName() != null || t.recipientRole() != null) {
+                Map<String, Object> recipient = new LinkedHashMap<>();
+                recipient.put("name", t.recipientName());
+                recipient.put("role", t.recipientRole());
+                task.put("recipient", recipient);
+            } else {
+                task.put("recipient", null);
+            }
+            task.put("writingInstruction", t.writingInstruction());
+            List<Map<String, Object>> points = new ArrayList<>();
+            for (int i = 0; i < t.points().size(); i++) {
+                Map<String, Object> point = new LinkedHashMap<>();
+                point.put("number", i + 1);
+                point.put("text", t.points().get(i));
+                points.add(point);
+            }
+            task.put("points", points);
+            tasks.add(task);
+        }
+        tree.put("tasks", tasks);
+        return tree;
+    }
+
+    /** One alternative as stored HTML (plain text is escaped): title, situation, recipient, instruction and the four points. */
+    static String toWritingTaskHtml(ParsedExercise.WritingChoiceTask task) {
+        StringBuilder html = new StringBuilder();
+        if (task.title() != null) html.append("<p><strong>").append(HtmlUtils.htmlEscape(task.title())).append("</strong></p>");
+        if (task.situation() != null) html.append("<p>").append(HtmlUtils.htmlEscape(task.situation())).append("</p>");
+        if (task.recipientName() != null || task.recipientRole() != null) {
+            String who = (task.recipientName() == null ? "" : task.recipientName()) + (task.recipientName() != null && task.recipientRole() != null ? ", " : "")
+                    + (task.recipientRole() == null ? "" : task.recipientRole());
+            html.append("<p><em>Empfänger: ").append(HtmlUtils.htmlEscape(who)).append("</em></p>");
+        }
+        if (task.writingInstruction() != null) html.append("<p>").append(HtmlUtils.htmlEscape(task.writingInstruction())).append("</p>");
+        if (!task.points().isEmpty()) {
+            html.append("<ul>");
+            task.points().forEach(point -> html.append("<li>").append(HtmlUtils.htmlEscape(point)).append("</li>"));
+            html.append("</ul>");
+        }
+        return html.toString();
+    }
+
+    /** Reads the stored tasks back from the metadata; null when the exercise does not carry them. */
+    @SuppressWarnings("unchecked")
+    public static ParsedExercise.WritingChoice writingChoiceOf(ExamExercise e) {
+        if (e.getMetadata() == null || !(e.getMetadata().get("writingChoice") instanceof Map<?, ?> raw)) return null;
+        Map<String, Object> tree = (Map<String, Object>) raw;
+        if (!(tree.get("tasks") instanceof List<?> list)) return null;
+        List<ParsedExercise.WritingChoiceTask> tasks = new ArrayList<>();
+        for (Object o : list) {
+            if (!(o instanceof Map<?, ?> t)) return null;
+            String recipientName = null;
+            String recipientRole = null;
+            if (t.get("recipient") instanceof Map<?, ?> r) {
+                recipientName = r.get("name") == null ? null : r.get("name").toString();
+                recipientRole = r.get("role") == null ? null : r.get("role").toString();
+            }
+            List<String> points = new ArrayList<>();
+            if (t.get("points") instanceof List<?> pts) {
+                for (Object pt : pts) {
+                    if (pt instanceof Map<?, ?> m) points.add(m.get("text") == null ? "" : m.get("text").toString());
+                    else if (pt != null) points.add(pt.toString());
+                }
+            }
+            tasks.add(new ParsedExercise.WritingChoiceTask(str(t.get("taskLabel")), str(t.get("title")), str(t.get("topic")),
+                    str(t.get("communicationType")), str(t.get("situation")), recipientName, recipientRole, str(t.get("writingInstruction")), points));
+        }
+        int minutes = tree.get("durationMinutes") instanceof Number n ? n.intValue() : ExamContentSpecs.WRITING_CHOICE_MINUTES;
+        return new ParsedExercise.WritingChoice(minutes, str(tree.get("languageLevel")), tasks);
+    }
+
+    private static String str(Object value) {
+        return value == null ? null : value.toString();
+    }
+
+    /** Back to the import shape from {@code metadata.writingChoice}; null for an exercise without the structure. */
+    private static ObjectNode toWritingChoiceExportNode(ObjectMapper mapper, ExamExercise e) {
+        ParsedExercise.WritingChoice wc = writingChoiceOf(e);
+        if (wc == null || wc.tasks().size() != 2) return null;
+        ObjectNode node = mapper.createObjectNode();
+        if (e.getExternalId() != null) node.put("externalId", e.getExternalId());
+        node.put("exam", "DTZ");
+        node.put("section", "SCHREIBEN");
+        node.put("part", 1);
+        node.put("exerciseType", ExamWritingChoiceReader.EXERCISE_TYPE);
+        node.put("level", "A2_B1");
+        node.put("title", e.getTitle());
+        node.put("durationMinutes", wc.durationMinutes());
+        node.putObject("instructions").put("de", e.getTeilDescription() == null ? "" : e.getTeilDescription());
+        node.set("tasks", mapper.valueToTree(toWritingChoiceTree(wc).get("tasks")));
+        Map<String, Object> rest = new LinkedHashMap<>(e.getMetadata());
+        for (String key : List.of("writingChoice", "languageLevel", "topic", "sourceType")) rest.remove(key);
+        if (!rest.isEmpty()) node.set("metadata", mapper.valueToTree(rest));
+        return node;
+    }
+
     /** The learner-facing task text, in the same HTML shape as the hand-authored task (plain text is escaped). */
     static String toWritingHtml(ParsedExercise.Writing w, String instructions) {
         StringBuilder html = new StringBuilder();
@@ -889,6 +1056,13 @@ public final class ExamContentMapper {
     }
 
     public static ExercisePreview toPreview(ParsedExercise ex) {
+        if (ex.writingChoice() != null) {
+            ParsedExercise.WritingChoice wc = ex.writingChoice();
+            return new ExercisePreview(ex.title(), ex.instructions(), List.of(), List.of(), null, List.of(), List.of(), List.of(), null, null, null, null, null, null,
+                    new ExamContentDtos.WritingChoiceView(wc.durationMinutes(), wc.languageLevel(), wc.tasks().stream()
+                            .map(t -> new ExamContentDtos.WritingChoiceTaskView(t.label(), t.title(), t.topic(), t.communicationType(), t.situation(),
+                                    t.recipientName(), t.recipientRole(), t.writingInstruction(), t.points())).toList()));
+        }
         if (ex.speaking() != null) {
             ParsedExercise.Speaking s = ex.speaking();
             return new ExercisePreview(ex.title(), ex.instructions(), List.of(), List.of(), null, List.of(), List.of(), List.of(), null, null,
@@ -973,6 +1147,7 @@ public final class ExamContentMapper {
      */
     public static ObjectNode toExportNode(ObjectMapper mapper, ExamExercise e) {
         if (e.getSection() == ExamSection.MUENDLICHER_AUSDRUCK) return toSpeakingExportNode(mapper, e);
+        if (e.getTaskType() == ExamTaskType.WRITING_TASK_CHOICE) return toWritingChoiceExportNode(mapper, e);
         if (e.getTaskType() == ExamTaskType.WRITING_TASK) return toWritingExportNode(mapper, e);
         if (e.getTaskType() == ExamTaskType.WORD_BANK_CLOZE) return toWordBankExportNode(mapper, e);
         if (e.getTaskType() == ExamTaskType.MULTIPLE_CHOICE) return toReadingExportNode(mapper, e);

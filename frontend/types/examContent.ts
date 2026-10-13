@@ -24,6 +24,7 @@ export interface ExamContentSpecInfo {
         | "LETTER_GAP_FILL"
         | "WORD_BANK_CLOZE"
         | "WRITING_TASK"
+        | "WRITING_TASK_CHOICE"
         | "TOPIC_INTERVIEW"
         | "OPINION_DISCUSSION"
         | "JOINT_PLANNING";
@@ -103,6 +104,8 @@ export interface PromptRequest {
     includeDatesTimes?: boolean;
     /** DTZ Lesen Teil 3: optional metadata tags. */
     tags?: string[];
+    /** DTZ Schreiben: DIFFERENT_TOPICS | DIFFERENT_PURPOSES | FORMAL_AND_INFORMAL | RANDOM_BALANCED. */
+    pairPreference?: string;
 }
 
 export interface PromptResponse {
@@ -270,6 +273,30 @@ export interface PreviewLetter {
     gaps: { number: number | null; grammarCategory: string | null; grammarFocus: string | null; explanation: Record<string, string> }[];
 }
 
+/** DTZ Schreiben: one alternative in the import-file shape; the same shape is sent to the editor endpoints. */
+export interface PreviewWritingChoiceTask {
+    label: string;
+    title: string | null;
+    topic: string | null;
+    communicationType: string | null;
+    situation: string | null;
+    recipientName: string | null;
+    recipientRole: string | null;
+    writingInstruction: string | null;
+    points: string[];
+}
+
+export interface PreviewWritingChoice {
+    durationMinutes: number;
+    languageLevel: string | null;
+    tasks: PreviewWritingChoiceTask[];
+}
+
+export interface WritingChoiceSaveResult {
+    id: string;
+    warnings: ContentIssue[];
+}
+
 export interface ExercisePreviewData {
     title: string | null;
     instructions: string | null;
@@ -293,6 +320,8 @@ export interface ExercisePreviewData {
     textQuestions?: PreviewTextQuestions | null;
     /** DTZ Lesen Teil 5 (letter with six gaps): the letter, the example and the answer key; the six gap questions are in `questions`. */
     letter?: PreviewLetter | null;
+    /** DTZ Schreiben: Aufgabe A and Aufgabe B with four content points each. */
+    writingChoice?: PreviewWritingChoice | null;
 }
 
 export interface DuplicateMatch {

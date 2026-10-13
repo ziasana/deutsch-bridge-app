@@ -14,6 +14,9 @@ import com.deutschbridge.backend.util.WritingAiFeedbackParser;
 import com.deutschbridge.backend.model.entity.WritingAttempt;
 import com.deutschbridge.backend.model.entity.WritingPhrase;
 import com.deutschbridge.backend.model.enums.ExamSection;
+import com.deutschbridge.backend.model.enums.ExamTaskType;
+import com.deutschbridge.backend.service.examcontent.ExamContentMapper;
+import com.deutschbridge.backend.service.examcontent.ParsedExercise;
 import com.deutschbridge.backend.model.enums.WritingMode;
 import com.deutschbridge.backend.repository.ExamExerciseRepository;
 import com.deutschbridge.backend.repository.WritingAttemptRepository;
@@ -63,6 +66,7 @@ public class WritingAttemptService {
         if (exercise.getSection() != ExamSection.SCHRIFTLICHER_AUSDRUCK) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not a writing exercise.");
         }
+        String selectedTask = resolveSelectedTask(exercise, request.selectedTask());
         String text = request.text() == null ? "" : request.text().strip();
         if (text.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Text must not be empty.");
@@ -77,6 +81,7 @@ public class WritingAttemptService {
         attempt.setExerciseId(exercise.getId());
         attempt.setLevel(exercise.getLevel() != null ? exercise.getLevel().getValue() : null);
         attempt.setMode(request.mode() != null ? request.mode() : WritingMode.PRACTICE);
+        attempt.setSelectedTask(selectedTask);
         attempt.setText(text);
         attempt.setWordCount(countWords(text));
         attempt.setAttemptNumber(attemptRepository.countByUserIdAndExerciseId(userId, exercise.getId()) + 1);
@@ -88,15 +93,46 @@ public class WritingAttemptService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid plan notes.");
             }
         }
-        attempt.setFeedback(buildFeedback(exercise, text));
+        attempt.setFeedback(buildFeedback(exercise, text, selectedTask));
         return toResponse(attemptRepository.save(attempt));
     }
 
-    private String buildFeedback(ExamExercise exercise, String text) {
+    /**
+     * DTZ Schreiben (two alternatives): a learner answers exactly one, so the label is required, must be one of the exercise's tasks and the
+     * exercise must be published. Every other exercise has a single task and never carries a label.
+     */
+    private String resolveSelectedTask(ExamExercise exercise, String requested) throws DataNotFoundException {
+        if (exercise.getTaskType() != ExamTaskType.WRITING_TASK_CHOICE) return null;
+        if (!exercise.isPublished()) throw new DataNotFoundException("Exercise not found!");
+        String label = requested == null ? "" : requested.strip().toUpperCase(java.util.Locale.ROOT);
+        if (label.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Choose Aufgabe A or Aufgabe B before submitting.");
+        }
+        if (taskOf(exercise, label) == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown task: " + requested + ". Choose Aufgabe A or Aufgabe B.");
+        }
+        return label;
+    }
+
+    private static ParsedExercise.WritingChoiceTask taskOf(ExamExercise exercise, String label) {
+        ParsedExercise.WritingChoice choice = ExamContentMapper.writingChoiceOf(exercise);
+        return choice == null ? null : choice.tasks().stream().filter(t -> label.equals(t.label())).findFirst().orElse(null);
+    }
+
+    /** The content points the text is checked against: the chosen task's four points, or the exercise's own Leitpunkte. */
+    private static List<String> pointsFor(ExamExercise exercise, String selectedTask) {
+        if (selectedTask != null) {
+            ParsedExercise.WritingChoiceTask task = taskOf(exercise, selectedTask);
+            if (task != null) return task.points();
+        }
+        return exercise.getLeitpunkte() != null ? exercise.getLeitpunkte() : List.of();
+    }
+
+    private String buildFeedback(ExamExercise exercise, String text, String selectedTask) {
         List<String> phrases = exercise.getLevel() == null ? List.of()
                 : phraseRepository.findByLevelAndActiveTrueOrderByCategorySortOrderAscSortOrderAsc(exercise.getLevel()).stream()
                 .map(WritingPhrase::getPhrase).toList();
-        List<String> leitpunkte = exercise.getLeitpunkte() != null ? exercise.getLeitpunkte() : List.of();
+        List<String> leitpunkte = pointsFor(exercise, selectedTask);
         try {
             return objectMapper.writeValueAsString(analyzer.analyze(text, exercise.getLevel(), leitpunkte, phrases));
         } catch (Exception e) {
@@ -120,10 +156,12 @@ public class WritingAttemptService {
         ExamExercise exercise = exerciseRepository.findById(attempt.getExerciseId())
                 .orElseThrow(() -> new DataNotFoundException("Exercise not found!"));
 
+        String selectedTask = attempt.getSelectedTask();
         String taskText = exercise.getPassages() == null ? "" : exercise.getPassages().stream()
+                .filter(p -> selectedTask == null || ("Aufgabe " + selectedTask).equals(p.getLabel()))
                 .map(p -> p.getContent() == null ? "" : p.getContent().replaceAll("<[^>]*>", " ").replaceAll("\\s+", " ").strip())
                 .filter(t -> !t.isEmpty()).collect(java.util.stream.Collectors.joining("\n"));
-        List<String> leitpunkte = exercise.getLeitpunkte() != null ? exercise.getLeitpunkte() : List.of();
+        List<String> leitpunkte = pointsFor(exercise, selectedTask);
         LearningLevel level = exercise.getLevel() != null ? exercise.getLevel() : LearningLevel.B1;
 
         WritingAiFeedback parsed = WritingAiFeedbackParser.parse(
@@ -209,6 +247,6 @@ public class WritingAttemptService {
             }
         }
         return new WritingAttemptResponse(a.getId(), a.getExerciseId(), a.getMode().name(), a.getText(), notes,
-                a.getWordCount(), a.getAttemptNumber(), a.getParentAttemptId(), a.getSubmittedAt(), feedback, aiFeedback);
+                a.getWordCount(), a.getAttemptNumber(), a.getParentAttemptId(), a.getSubmittedAt(), feedback, aiFeedback, a.getSelectedTask());
     }
 }

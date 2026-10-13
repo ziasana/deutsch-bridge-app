@@ -69,6 +69,13 @@ public class ExamContentPromptBuilder {
     public static final List<String> LETTER_GRAMMAR_FOCUS = List.of("MIXED", "CONNECTORS", "PRONOUNS", "ARTICLES_ENDINGS", "PREPOSITIONS", "VERB_FORMS",
             "WORD_ORDER", "EVERYDAY_EXPRESSIONS", "RANDOM_MIX");
     public static final List<String> LETTER_REGISTERS = List.of("AUTO", "FORMAL", "INFORMAL");
+    /** DTZ Schreiben generator choices (the first entry of each list is the default). */
+    public static final List<String> WRITING_TOPICS = List.of("RANDOM", "HOUSING_NEIGHBOURS", "COURSES_EDUCATION", "WORK_EMPLOYMENT", "FAMILY_EVERYDAY",
+            "APPOINTMENTS", "HEALTH_SERVICES", "PUBLIC_SERVICES", "SHOPPING_COMPLAINTS", "INVITATIONS_EVENTS", "TRAVEL_ACCOMMODATION");
+    public static final List<String> WRITING_PURPOSES = List.of("MIXED", "ENQUIRY_REQUEST", "COMPLAINT", "INVITATION_REPLY", "APPOINTMENT_CHANGE",
+            "APPLICATION", "PROBLEM_EXPLANATION", "REQUEST_FOR_ASSISTANCE");
+    public static final List<String> WRITING_FORMATS = List.of("MIXED", "FORMAL", "INFORMAL_EMAIL", "SEMI_FORMAL");
+    public static final List<String> WRITING_PAIRS = List.of("RANDOM_BALANCED", "DIFFERENT_TOPICS", "DIFFERENT_PURPOSES", "FORMAL_AND_INFORMAL");
     public static final int MAX_COUNT = 50;
 
     /** Rules shared by the three Mündlicher Ausdruck templates (language, quality, output); included as {{SPEAKING_COMMON}}. */
@@ -85,6 +92,9 @@ public class ExamContentPromptBuilder {
                                 List<String> existingSummaries) {
         if (spec.isDirectoryMatching()) {
             return buildDirectory(spec, request, existingCount, firstNumber, existingSummaries);
+        }
+        if (spec.isWritingChoice()) {
+            return buildWritingChoice(spec, request, existingCount, firstNumber, existingSummaries);
         }
         if (spec.isLetterGap()) {
             return buildLetterGap(spec, request, existingCount, firstNumber, existingSummaries);
@@ -526,6 +536,141 @@ public class ExamContentPromptBuilder {
         LETTER_CATEGORY_TEXT.put("INFINITIV", "infinitive structures (zu + Infinitiv)");
         LETTER_CATEGORY_TEXT.put("WORTSCHATZ", "common vocabulary");
         LETTER_CATEGORY_TEXT.put("FESTE_WENDUNG", "fixed expressions and collocations");
+    }
+
+    // ------------------------------------------------------------------ DTZ Schreiben (Aufgabe A / Aufgabe B)
+
+    private static final Map<String, String> WRITING_TOPIC_TEXT = Map.ofEntries(
+            Map.entry("HOUSING_NEIGHBOURS", "Housing and neighbours"),
+            Map.entry("COURSES_EDUCATION", "Courses and education"),
+            Map.entry("WORK_EMPLOYMENT", "Work and employment"),
+            Map.entry("FAMILY_EVERYDAY", "Family and everyday life"),
+            Map.entry("APPOINTMENTS", "Appointments"),
+            Map.entry("HEALTH_SERVICES", "Health services"),
+            Map.entry("PUBLIC_SERVICES", "Public services"),
+            Map.entry("SHOPPING_COMPLAINTS", "Shopping and complaints"),
+            Map.entry("INVITATIONS_EVENTS", "Invitations and events"),
+            Map.entry("TRAVEL_ACCOMMODATION", "Travel and accommodation"));
+
+    private static final Map<String, String> WRITING_PURPOSE_TEXT = Map.of(
+            "MIXED", "mixed (use a different purpose for each task)",
+            "ENQUIRY_REQUEST", "enquiry or request",
+            "COMPLAINT", "complaint",
+            "INVITATION_REPLY", "invitation or reply to an invitation",
+            "APPOINTMENT_CHANGE", "appointment change",
+            "APPLICATION", "application",
+            "PROBLEM_EXPLANATION", "explanation of a problem",
+            "REQUEST_FOR_ASSISTANCE", "request for assistance");
+
+    private static final Map<String, String> WRITING_FORMAT_TEXT = Map.of(
+            "MIXED", "mixed (your choice; combine formal and informal or semi-formal where it fits)",
+            "FORMAL", "formal email or letter (FORMAL_EMAIL or FORMAL_LETTER)",
+            "INFORMAL_EMAIL", "informal email (INFORMAL_EMAIL)",
+            "SEMI_FORMAL", "semi-formal email or letter (SEMI_FORMAL_EMAIL or SEMI_FORMAL_LETTER)");
+
+    private static final Map<String, String> WRITING_PAIR_TEXT = Map.of(
+            "RANDOM_BALANCED", "random balanced pair (two comparable tasks that are different from each other)",
+            "DIFFERENT_TOPICS", "two different topics",
+            "DIFFERENT_PURPOSES", "two different communication purposes",
+            "FORMAL_AND_INFORMAL", "one formal task and one informal or semi-formal task");
+
+    /**
+     * One exercise per prompt: a complete A/B pair. The settings only guide the content; they never change the two-task structure,
+     * and the prompt itself tells the AI to prefer the structure when settings contradict each other.
+     */
+    private PromptResponse buildWritingChoice(ExamContentSpec spec, PromptRequest request, int existingCount, int firstNumber,
+                                              List<String> existingSummaries) {
+        String level = directoryToken(request.difficulty(), "A2_B1", DIRECTORY_LEVELS, "difficulty");
+        List<String> topics = new ArrayList<>();
+        for (String t : request.topics() == null ? List.<String>of() : request.topics()) {
+            String token = topicToken(t, WRITING_TOPICS);
+            if (!token.equals("RANDOM") && !topics.contains(token)) topics.add(token);
+        }
+        String purpose = directoryToken(request.textType(), "MIXED", WRITING_PURPOSES, "communication purpose");
+        String format = directoryToken(request.communicationType(), "MIXED", WRITING_FORMATS, "communication format");
+        String pair = directoryToken(request.pairPreference(), "RANDOM_BALANCED", WRITING_PAIRS, "pair preference");
+        String variation = directoryToken(request.variation(), "RANDOM", DIRECTORY_VARIATIONS, "variation");
+        int count = request.count() == null ? 1 : request.count();
+        if (count < 1 || count > MAX_COUNT) throw new IllegalArgumentException("count must be between 1 and " + MAX_COUNT);
+
+        Map<String, String> values = new java.util.LinkedHashMap<>();
+        values.put("COUNT_LINE", count == 1 ? "Create exactly ONE complete writing exercise" : "Create exactly " + count + " complete, clearly different writing exercises");
+        values.put("BATCH_RULE", count == 1 ? ""
+                : "Because there are " + count + " exercises, return ONE JSON object that wraps them: schemaVersion, contentType \"EXAM_EXERCISE_BATCH\", exam, level, section, part and an \"exercises\" array with exactly "
+                + count + " exercise objects (each with the structure below). Each exercise must use different scenarios and wording.\n\n");
+        values.put("DIFFICULTY", level);
+        values.put("TOPIC", topics.isEmpty() ? "random (your choice of everyday topics)"
+                : topics.size() == 1 ? topicText(WRITING_TOPIC_TEXT, topics.get(0))
+                : "choose from these topics, spread over the exercises and the two tasks: "
+                + topics.stream().map(t -> topicText(WRITING_TOPIC_TEXT, t)).collect(java.util.stream.Collectors.joining("; ")));
+        values.put("COMMUNICATION_PURPOSE", WRITING_PURPOSE_TEXT.get(purpose));
+        values.put("COMMUNICATION_FORMAT", WRITING_FORMAT_TEXT.get(format));
+        values.put("PAIR_PREFERENCE", WRITING_PAIR_TEXT.get(pair));
+        values.put("VARIATION_BLOCK", switch (variation) {
+            case "NEW_SCENARIO" -> "\nVariation: invent new, original scenarios; do not fall back on the most typical textbook setting for the topic.\n";
+            case "AVOID_KNOWN_TOPICS" -> existingSummaries.isEmpty()
+                    ? "\nVariation: avoid the most common textbook scenarios.\n"
+                    : "\nVariation: the library already contains these exercises - choose clearly different scenarios and wording:\n"
+                    + existingSummaries.stream().map(line -> "- " + line).collect(java.util.stream.Collectors.joining("\n")) + "\n";
+            default -> "";
+        });
+        values.put("INSTRUCTIONS", spec.defaultInstructions());
+        values.put("COMMUNICATION_TYPE_NAMES", String.join(", ", new java.util.TreeSet<>(ExamWritingChoiceReader.COMMUNICATION_TYPES)));
+        values.put("LEVEL_RULES", switch (level) {
+            case "A2" -> "For A2: use familiar everyday vocabulary and direct instructions; avoid complex or abstract situations.";
+            case "B1" -> "For B1: allow somewhat more detailed situations that encourage clear explanations and connected sentences; avoid specialist or academic language.";
+            default -> "For A2–B1: allow common everyday problems with several related details; use natural, accessible wording; include practical requests, explanations and questions.";
+        });
+        String jsonExample = writingChoiceJsonExample(spec, level, count);
+        values.put("JSON_EXAMPLE", jsonExample);
+        values.put("NOTES_BLOCK", request.notes() == null || request.notes().isBlank() ? ""
+                : "\nADDITIONAL INSTRUCTIONS FROM THE EDITOR:\n" + request.notes().strip() + "\n");
+
+        String prompt = loadTemplate(spec.promptTemplate());
+        for (Map.Entry<String, String> e : values.entrySet()) {
+            prompt = prompt.replace("{{" + e.getKey() + "}}", e.getValue());
+        }
+        String firstId = spec.externalIdPrefix() + String.format("%03d", firstNumber);
+        return new PromptResponse(prompt.strip() + "\n", spec.promptVersion(), ExamContentSpecs.SCHEMA_VERSION, jsonExample, existingCount, firstId);
+    }
+
+    private String writingChoiceJsonExample(ExamContentSpec spec, String level, int count) {
+        ObjectNode ex = MAPPER.createObjectNode();
+        ex.put("exam", "DTZ");
+        ex.put("section", "SCHREIBEN");
+        ex.put("part", 1);
+        ex.put("level", level);
+        ex.put("exerciseType", ExamWritingChoiceReader.EXERCISE_TYPE);
+        ex.put("title", "...");
+        ex.put("durationMinutes", ExamContentSpecs.WRITING_CHOICE_MINUTES);
+        ex.putObject("instructions").put("de", spec.defaultInstructions());
+        ArrayNode tasks = ex.putArray("tasks");
+        for (String label : ExamWritingChoiceReader.LABELS) {
+            ObjectNode task = tasks.addObject();
+            task.put("taskLabel", label);
+            task.put("title", "...");
+            task.put("topic", "...");
+            task.put("communicationType", "...");
+            task.put("situation", "...");
+            task.putObject("recipient").put("name", "...").put("role", "...");
+            task.put("writingInstruction", "...");
+            ArrayNode points = task.putArray("points");
+            for (int n = 1; n <= ExamWritingChoiceReader.POINT_COUNT; n++) points.addObject().put("number", n).put("text", "...");
+        }
+        ObjectNode meta = ex.putObject("metadata");
+        meta.put("schemaVersion", 1);
+        meta.put("source", "AI_IMPORTED");
+        meta.putArray("tags");
+        if (count == 1) return write(ex);
+        ObjectNode root = MAPPER.createObjectNode();
+        root.put("schemaVersion", ExamContentSpecs.SCHEMA_VERSION);
+        root.put("contentType", "EXAM_EXERCISE_BATCH");
+        root.put("exam", "DTZ");
+        root.put("level", "A2_B1");
+        root.put("section", "SCHREIBEN");
+        root.put("part", "TEIL_1");
+        root.putArray("exercises").add(ex);
+        return write(root);
     }
 
     /** One or several exercises per prompt (several come back as one batch file); the settings only shape the content, never the six-gap structure. */

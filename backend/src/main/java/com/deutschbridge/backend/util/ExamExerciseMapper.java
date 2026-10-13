@@ -10,6 +10,7 @@ import com.deutschbridge.backend.model.entity.ExamExerciseCompletion;
 import com.deutschbridge.backend.model.entity.ExamPassage;
 import com.deutschbridge.backend.model.entity.ExamQuestion;
 import com.deutschbridge.backend.model.enums.ExamSection;
+import com.deutschbridge.backend.model.enums.ExamTaskType;
 
 import java.util.Comparator;
 import java.util.List;
@@ -84,8 +85,16 @@ public class ExamExerciseMapper {
                 exercise.getLeitpunkte(),
                 bookmarked,
                 speakingOf(exercise),
-                exercise.getExamType() != null ? exercise.getExamType().name() : null
+                exercise.getExamType() != null ? exercise.getExamType().name() : null,
+                writingChoiceOf(exercise)
         );
+    }
+
+    /** The two tasks of a DTZ Schreiben exercise as the learner sees them; null for everything else. */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> writingChoiceOf(ExamExercise exercise) {
+        if (exercise.getTaskType() != ExamTaskType.WRITING_TASK_CHOICE || exercise.getMetadata() == null) return null;
+        return exercise.getMetadata().get("writingChoice") instanceof Map<?, ?> choice ? (Map<String, Object>) choice : null;
     }
 
     /** The stored speaking content of an imported Mündlicher Ausdruck exercise; null for everything else. */

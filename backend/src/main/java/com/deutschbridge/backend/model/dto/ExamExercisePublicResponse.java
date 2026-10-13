@@ -36,6 +36,11 @@ public record ExamExercisePublicResponse(
          */
         Map<String, Object> speaking,
         /** TELC or DTZ ... - which exam this exercise belongs to. */
-        String examType
+        String examType,
+        /**
+         * DTZ Schreiben only: the two alternative tasks A and B (situation, recipient, writing instruction, four numbered points) and the writing time.
+         * Null for every other exercise. Carries no admin-only metadata.
+         */
+        Map<String, Object> writingChoice
 ) {
 }

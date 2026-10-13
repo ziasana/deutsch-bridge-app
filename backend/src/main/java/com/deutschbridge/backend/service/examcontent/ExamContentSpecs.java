@@ -25,6 +25,12 @@ public final class ExamContentSpecs {
     public static final String LETTER_INSTRUCTIONS = "Lesen Sie den Text und schließen Sie die Lücken 40–45. Welche Lösung (a, b oder c) passt am besten? "
             + "Markieren Sie Ihre Lösungen für die Aufgaben 40–45 auf dem Antwortbogen.";
 
+    /** The exact instruction of DTZ Schreiben. */
+    public static final String WRITING_CHOICE_INSTRUCTIONS = "Wählen Sie Aufgabe A oder Aufgabe B. Zeigen Sie, was Sie können. Schreiben Sie möglichst viel. "
+            + "Vergessen Sie nicht die Anrede und den Gruß. Schreiben Sie Ihren Text auf den Antwortbogen. "
+            + "Kreuzen Sie auf dem Antwortbogen an, welche Aufgabe Sie gewählt haben.";
+    public static final int WRITING_CHOICE_MINUTES = 30;
+
     private static final List<ExamContentSpec> SPECS = List.of(
             new ExamContentSpec(
                     ExamType.TELC, LearningLevel.B1, ExamSection.LESEVERSTEHEN, 1, ExamTaskType.MATCHING,
@@ -86,6 +92,13 @@ public final class ExamContentSpecs {
                     "exam-content/prompts/letter-gap-fill.v1.0.txt",
                     "1.0",
                     6, 3, 40),
+            new ExamContentSpec(
+                    ExamType.DTZ, LearningLevel.B1, ExamSection.SCHRIFTLICHER_AUSDRUCK, 1, ExamTaskType.WRITING_TASK_CHOICE,
+                    0, 0, 0, 0,
+                    WRITING_CHOICE_INSTRUCTIONS,
+                    "exam-content/prompts/writing-task-choice.v1.0.txt",
+                    "1.0",
+                    8, 0, 1),
             new ExamContentSpec(
                     ExamType.TELC, LearningLevel.B1, ExamSection.SPRACHBAUSTEINE, 1, ExamTaskType.MULTIPLE_CHOICE,
                     0, 0, 120, 220,

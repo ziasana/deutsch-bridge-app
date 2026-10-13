@@ -100,6 +100,34 @@ function toPreview(exercise: ExamExerciseResponse): ExercisePreviewData | null {
             speaking: { taskType: stored.taskType, topic: stored.topic ?? null, content: stored },
         };
     }
+    if (exercise.taskType === "WRITING_TASK_CHOICE") {
+        const stored = exercise.metadata?.writingChoice as
+            | { durationMinutes?: number; languageLevel?: string; tasks?: { taskLabel: string; title?: string; topic?: string | null; communicationType?: string | null;
+                  situation?: string; recipient?: { name?: string | null; role?: string | null } | null; writingInstruction?: string; points?: { number: number; text: string }[] }[] }
+            | undefined;
+        if (!stored?.tasks?.length) return null;
+        return {
+            title: exercise.title,
+            instructions: exercise.teilDescription,
+            headings: [],
+            texts: [],
+            writingChoice: {
+                durationMinutes: stored.durationMinutes ?? 30,
+                languageLevel: stored.languageLevel ?? null,
+                tasks: stored.tasks.map((t) => ({
+                    label: t.taskLabel,
+                    title: t.title ?? null,
+                    topic: t.topic ?? null,
+                    communicationType: t.communicationType ?? null,
+                    situation: t.situation ?? null,
+                    recipientName: t.recipient?.name ?? null,
+                    recipientRole: t.recipient?.role ?? null,
+                    writingInstruction: t.writingInstruction ?? null,
+                    points: [...(t.points ?? [])].sort((a, b) => a.number - b.number).map((p) => p.text),
+                })),
+            },
+        };
+    }
     if (exercise.taskType === "WRITING_TASK") {
         const meta = exercise.metadata ?? {};
         const stored = meta.writing as
@@ -532,7 +560,7 @@ export default function ContentLibrary() {
                                         <td className="px-3 py-3 whitespace-nowrap space-x-1.5">
                                             <Button variant="secondary" className="px-2.5 py-1 text-xs inline-flex items-center gap-1" onClick={() => setPreviewRow(r)}><Eye className="size-3.5" />Preview</Button>
                                             {SECTION_PATHS[r.section] && (
-                                                <Link href={`/admin/exam-prep/${SECTION_PATHS[r.section]}?edit=${r.id}`} className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent"><Pencil className="size-3.5" />Edit</Link>
+                                                <Link href={r.taskType === "WRITING_TASK_CHOICE" ? `/admin/exam-prep/dtz-schreiben?edit=${r.id}` : `/admin/exam-prep/${SECTION_PATHS[r.section]}?edit=${r.id}`} className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent"><Pencil className="size-3.5" />Edit</Link>
                                             )}
                                         </td>
                                     </tr>

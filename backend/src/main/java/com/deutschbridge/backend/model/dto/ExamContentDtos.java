@@ -54,8 +54,21 @@ public final class ExamContentDtos {
             /** DTZ Lesen Teil 3: include dates and times where appropriate (default true). */
             Boolean includeDatesTimes,
             /** DTZ Lesen Teil 3: optional metadata tags the AI should put into metadata.tags. */
-            List<String> tags
+            List<String> tags,
+            /** DTZ Schreiben: DIFFERENT_TOPICS | DIFFERENT_PURPOSES | FORMAL_AND_INFORMAL | RANDOM_BALANCED (default). */
+            String pairPreference
     ) {
+        /** The request shape before the DTZ Schreiben pair preference existed. */
+        public PromptRequest(String exam, String level, String section, String part, Integer count, String difficulty,
+                             List<String> topics, String notes, Boolean includeVisuals, String textType, List<String> grammarCategories,
+                             String contextMode, List<String> wordCategories, String scenarioType, String relationship,
+                             String communicationType, String sourceType, Boolean includeExample, String variation, List<String> adCategories,
+                             String textMix, List<String> customTextTypes, String textLength, Boolean includeDatesTimes, List<String> tags) {
+            this(exam, level, section, part, count, difficulty, topics, notes, includeVisuals, textType, grammarCategories,
+                    contextMode, wordCategories, scenarioType, relationship, communicationType, sourceType, includeExample, variation,
+                    adCategories, textMix, customTextTypes, textLength, includeDatesTimes, tags, null);
+        }
+
         /** The request shape before the Teil 3 text settings existed. */
         public PromptRequest(String exam, String level, String section, String part, Integer count, String difficulty,
                              List<String> topics, String notes, Boolean includeVisuals, String textType, List<String> grammarCategories,
@@ -63,7 +76,7 @@ public final class ExamContentDtos {
                              String communicationType, String sourceType, Boolean includeExample, String variation, List<String> adCategories) {
             this(exam, level, section, part, count, difficulty, topics, notes, includeVisuals, textType, grammarCategories,
                     contextMode, wordCategories, scenarioType, relationship, communicationType, sourceType, includeExample, variation,
-                    adCategories, null, null, null, null, null);
+                    adCategories, null, null, null, null, null, null);
         }
 
         /** The request shape before the Teil 2 advertisement categories existed. */
@@ -305,6 +318,18 @@ public final class ExamContentDtos {
                              String body, GapExampleView example, List<LetterGapDetail> gaps) {
     }
 
+    /** DTZ Schreiben: one of the two alternatives as the learner sees it. */
+    public record WritingChoiceTaskView(String label, String title, String topic, String communicationType, String situation,
+                                        String recipientName, String recipientRole, String writingInstruction, List<String> points) {
+    }
+
+    public record WritingChoiceView(int durationMinutes, String languageLevel, List<WritingChoiceTaskView> tasks) {
+    }
+
+    /** Admin editor / manual creation of a DTZ Schreiben exercise: the tasks in the import shape (taskLabel, title, topic, communicationType, situation, recipient, writingInstruction, points). */
+    public record WritingChoiceSaveResult(String id, List<Issue> warnings) {
+    }
+
     public record ExercisePreview(
             String title,
             String instructions,
@@ -327,8 +352,18 @@ public final class ExamContentDtos {
             /** DTZ Lesen Teil 3 (texts with richtig/falsch + multiple choice) only: the three texts with their tasks and the answer key. */
             TextQuestionsView textQuestions,
             /** DTZ Lesen Teil 5 (letter with six gaps) only: the letter, the example gap and the answer-key details. */
-            LetterView letter
+            LetterView letter,
+            /** DTZ Schreiben only: the two alternative tasks A and B with four content points each. */
+            WritingChoiceView writingChoice
     ) {
+        public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
+                               String readingText, List<QuestionView> questions, List<SituationView> situations,
+                               List<AdvertisementView> advertisements, ContextView context, WritingView writing, SpeakingView speaking,
+                               DirectoryView directory, TextQuestionsView textQuestions, LetterView letter) {
+            this(title, instructions, headings, texts, readingText, questions, situations, advertisements, context, writing, speaking, directory,
+                    textQuestions, letter, null);
+        }
+
         public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
                                String readingText, List<QuestionView> questions, List<SituationView> situations,
                                List<AdvertisementView> advertisements, ContextView context, WritingView writing, SpeakingView speaking,

@@ -31,6 +31,7 @@ import { resolveUploadUrl } from "@/lib/backendOrigin";
 import { scoreTone } from "@/lib/examScore";
 import { hasGapMarkers } from "@/lib/examGap";
 import WritingTaskCard from "@/componenets/exam/writing/WritingTaskCard";
+import WritingChoiceExercise from "@/componenets/exam/writing/WritingChoiceExercise";
 import SprachbausteineClozeBoard, { hasGapText } from "@/componenets/exam/SprachbausteineClozeBoard";
 import HoerenBoard from "@/componenets/exam/HoerenBoard";
 import HighlightArea from "@/componenets/exam/HighlightArea";
@@ -435,6 +436,18 @@ function ResultsView({
 function SchriftlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse }>) {
     const { completed, markCompleted } = useExerciseCompletion(exercise);
     const stopExerciseTimer = useStopExerciseTimer();
+
+    if (exercise.taskType === "WRITING_TASK_CHOICE") {
+        return (
+            <WritingChoiceExercise
+                exercise={exercise}
+                onSubmitted={() => {
+                    if (!completed) markCompleted();
+                    stopExerciseTimer().then((result) => result && showZeitCheckToast(result));
+                }}
+            />
+        );
+    }
 
     return (
         <div className="space-y-4">

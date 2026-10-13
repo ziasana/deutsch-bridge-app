@@ -35,8 +35,20 @@ public record ParsedExercise(
         /** DTZ Lesen Teil 3 (texts with richtig/falsch + multiple choice): the three texts with their two tasks each. */
         TextSet textSet,
         /** DTZ Lesen Teil 5 (letter with six gaps): the letter, its metadata and the optional unscored example gap. */
-        Letter letter
+        Letter letter,
+        /** DTZ Schreiben: the two alternative tasks A and B with four content points each. */
+        WritingChoice writingChoice
 ) {
+    /** Everything except the writing choice (all shapes before DTZ Schreiben). */
+    public ParsedExercise(int index, ExamContentSpec spec, String externalId, String title, String instructions,
+                          List<Heading> headings, List<Text> texts, Map<String, Object> metadata,
+                          String readingText, List<Question> questions, List<Situation> situations,
+                          List<Advertisement> advertisements, List<Option> wordBank, Context context, Writing writing,
+                          Speaking speaking, Directory directory, TextSet textSet, Letter letter) {
+        this(index, spec, externalId, title, instructions, headings, texts, metadata, readingText, questions, situations,
+                advertisements, wordBank, context, writing, speaking, directory, textSet, letter, null);
+    }
+
     /** Everything except the letter (all shapes before DTZ Lesen Teil 5). */
     public ParsedExercise(int index, ExamContentSpec spec, String externalId, String title, String instructions,
                           List<Heading> headings, List<Text> texts, Map<String, Object> metadata,
@@ -111,6 +123,10 @@ public record ParsedExercise(
         if (textSet != null) {
             return textSet.texts().stream().map(TextItem::body).toList();
         }
+        if (writingChoice != null) {
+            // Same text the stored passages yield, so duplicate detection compares like with like.
+            return writingChoice.tasks().stream().map(t -> ExamContentMapper.toPlainText(ExamContentMapper.toWritingTaskHtml(t))).toList();
+        }
         if (letter != null && readingText != null) {
             return List.of(readingText);
         }
@@ -172,6 +188,17 @@ public record ParsedExercise(
 
     /** {@code kind} is TRUE_FALSE or MULTIPLE_CHOICE; {@code options} is empty for TRUE_FALSE; {@code correctAnswer} RICHTIG / FALSCH or a, b, c. */
     public record TextTask(Integer number, String kind, String prompt, List<Option> options, String correctAnswer, Map<String, String> explanation) {
+    }
+
+    /**
+     * DTZ Schreiben: both alternatives in the order A, B. {@code communicationType} is FORMAL_EMAIL | FORMAL_LETTER | INFORMAL_EMAIL | SEMI_FORMAL_EMAIL
+     * (or SEMI_FORMAL_LETTER); {@code recipient} may be null; {@code points} are the four content points in number order.
+     */
+    public record WritingChoice(int durationMinutes, String languageLevel, List<WritingChoiceTask> tasks) {
+    }
+
+    public record WritingChoiceTask(String label, String title, String topic, String communicationType, String situation,
+                                    String recipientName, String recipientRole, String writingInstruction, List<String> points) {
     }
 
     /**

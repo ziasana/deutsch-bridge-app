@@ -92,6 +92,18 @@ public class AdminExamContentController {
         return ResponseEntity.ok(service.importContent(request));
     }
 
+    /** DTZ Schreiben: create an exercise by hand (tasks A and B in the import shape); it starts as DRAFT. */
+    @PostMapping("/writing-choice")
+    public ResponseEntity<WritingChoiceSaveResult> createWritingChoice(@RequestBody com.fasterxml.jackson.databind.JsonNode body) throws DataNotFoundException {
+        return ResponseEntity.ok(service.saveWritingChoice(null, body));
+    }
+
+    /** DTZ Schreiben: edit the title, situations, recipients, instructions and the eight points of an existing exercise. */
+    @PutMapping("/writing-choice/{id}")
+    public ResponseEntity<WritingChoiceSaveResult> updateWritingChoice(@PathVariable String id, @RequestBody com.fasterxml.jackson.databind.JsonNode body) throws DataNotFoundException {
+        return ResponseEntity.ok(service.saveWritingChoice(id, body));
+    }
+
     @PostMapping("/status")
     public ResponseEntity<StatusChangeResult> changeStatus(@RequestBody StatusChangeRequest request) {
         return ResponseEntity.ok(service.changeStatus(request));

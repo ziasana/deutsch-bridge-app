@@ -1,0 +1,120 @@
+You are an expert author of original German DTZ A2–B1 writing exercises.
+
+{{COUNT_LINE}}. Each exercise contains two alternative tasks: Aufgabe A and Aufgabe B.
+The learner must choose and answer only one task per exercise.
+
+Generation settings:
+- Difficulty: {{DIFFICULTY}}
+- Preferred topic: {{TOPIC}}
+- Preferred communication purpose: {{COMMUNICATION_PURPOSE}}
+- Preferred communication format: {{COMMUNICATION_FORMAT}}
+- Pair-generation preference: {{PAIR_PREFERENCE}}
+{{VARIATION_BLOCK}}
+These settings guide the content but never change the mandatory structure below. If they cannot reasonably be satisfied together, give priority to the mandatory structure and to clear, realistic B1-appropriate communication.
+
+==================================================
+A. MANDATORY STRUCTURE
+
+Generate exactly (for each exercise):
+- one DTZ Schreiben exercise
+- two alternative tasks: Aufgabe A and Aufgabe B
+- exactly four content points for Aufgabe A
+- exactly four content points for Aufgabe B
+- the standard German instructions
+- a duration of 30 minutes
+
+Do not generate additional tasks. Do not create a task with fewer or more than four content points. Do not combine the points of A and B into one task.
+
+==================================================
+B. STANDARD INSTRUCTIONS
+
+Use this exact German instruction:
+"{{INSTRUCTIONS}}"
+
+==================================================
+C. DESIGN AUFGABE A AND AUFGABE B
+
+Each alternative must describe a realistic everyday communication situation for adults learning German at A2–B1 level.
+Possible topics:
+- Housing and neighbours
+- Courses and education
+- Work and employment
+- Family and daily life
+- Appointments
+- Health services
+- Public services
+- Shopping and complaints
+- Invitations and events
+- Travel and accommodation
+
+Follow the generation settings. Where possible make the two alternatives different in topic or communication purpose while keeping them comparable in difficulty and expected writing effort (for example, one enquiry and one complaint).
+Do not make one task substantially more difficult than the other. Do not make either task depend on specialist knowledge.
+
+==================================================
+D. SITUATION AND WRITING INSTRUCTION
+
+For each task provide:
+- a short title
+- a realistic situation
+- a clear description of the problem, request or purpose
+- the recipient where appropriate (name and role)
+- a direct writing instruction ("Schreiben Sie ...")
+- exactly four content points
+
+The learner must understand who they write to and why. If the task has a named recipient, use the correct form of address (Herr/Frau + surname for formal tasks) and an appropriate style. Do not leave out information the learner needs to start the letter or email.
+
+==================================================
+E. FOUR CONTENT POINTS
+
+Each task has exactly four numbered points (1–4). The points must:
+- be short and clear
+- be directly connected to the situation
+- be answerable in ordinary A2–B1 German
+- cover different aspects of the communication
+- avoid unnecessary repetition
+- allow the learner to write several sentences per point where appropriate
+
+Do not create four unrelated questions. Do not make one point so broad that it contains several unrelated tasks. The points guide the learner without writing the answer for them.
+
+==================================================
+F. COMMUNICATION STYLE
+
+Use one of these values for "communicationType": {{COMMUNICATION_TYPE_NAMES}}.
+The writing instruction and the recipient must match the style: a message to a landlord or an institution is formal, a message to a friend is informal. Use the selected communication format where possible.
+Do NOT add a model answer.
+
+==================================================
+G. LANGUAGE LEVEL
+
+{{LEVEL_RULES}}
+
+==================================================
+H. BALANCE AND ORIGINALITY
+
+Both tasks must be suitable alternatives within the same 30-minute writing section. Neither task may need substantially more specialist knowledge or writing effort.
+Create original scenarios and content points. Do not reproduce official DTZ examination tasks and do not claim that the generated tasks are official examination questions.
+
+==================================================
+I. REQUIRED JSON OUTPUT
+
+{{BATCH_RULE}}Return exactly one valid JSON object. Do not include Markdown, code fences, comments or text outside the JSON. The output must be directly importable by a JSON parser (UTF-8, no trailing commas). Use this structure; every "..." must be replaced:
+{{JSON_EXAMPLE}}
+
+"recipient" may be null when the task has no specific recipient. Do not leave placeholders in the final JSON.
+==================================================
+J. FINAL CHECKLIST
+
+Before returning the JSON, verify:
+- the JSON is valid
+- exam, section and exerciseType are correct
+- durationMinutes is 30
+- there are exactly two tasks, with the labels exactly A and B
+- each task contains exactly four points, numbered 1–4
+- both tasks have a clear communication purpose
+- both tasks are appropriate for the selected level and reasonably balanced
+- the communication styles are consistent with the recipients
+- the standard instructions are included
+- no model answer is included
+- the scenarios are original and no placeholders remain
+{{NOTES_BLOCK}}
+Return only the final JSON object.

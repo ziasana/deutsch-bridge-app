@@ -71,6 +71,7 @@ export const TASK_TYPE_LABELS: Record<ExamTaskType, string> = {
     DIRECTORY_MATCHING: "Kataloge, Register, Verzeichnisse verstehen",
     WORD_BANK_CLOZE: "Lückentext (Wortbank)",
     WRITING_TASK: "Schriftlicher Ausdruck",
+    WRITING_TASK_CHOICE: "Schreiben: Aufgabe A oder B",
     TOPIC_INTERVIEW: "Einander kennenlernen",
     OPINION_DISCUSSION: "Über ein Thema sprechen",
     JOINT_PLANNING: "Gemeinsam etwas planen",
@@ -103,10 +104,10 @@ export const EXAM_TYPES: ExamTypeInfo[] = [
     {
         code: "DTZ",
         label: "DTZ A2–B1",
-        description: "Deutsch-Test für Zuwanderer (A2–B1) mit Lesen und Hören.",
+        description: "Deutsch-Test für Zuwanderer (A2–B1) mit Lesen, Hören und Schreiben.",
         fixedLevel: "B1",
         levelLabel: "A2–B1",
-        sections: ["LESEVERSTEHEN", "HOERVERSTEHEN"],
+        sections: ["LESEVERSTEHEN", "HOERVERSTEHEN", "SCHRIFTLICHER_AUSDRUCK"],
     },
 ];
 

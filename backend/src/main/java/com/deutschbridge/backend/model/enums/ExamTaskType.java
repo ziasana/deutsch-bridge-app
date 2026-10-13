@@ -38,6 +38,12 @@ public enum ExamTaskType {
     WORD_BANK_CLOZE,
     /** Schriftlicher Ausdruck: a writing prompt with no grading, just a revealable model solution. */
     WRITING_TASK,
+    /**
+     * DTZ Schreiben: two alternative letter / email tasks (Aufgabe A and B) of which the learner answers exactly one. Each task has a situation,
+     * an optional recipient, a writing instruction and exactly four content points. Stored in one exercise: one passage per task plus the
+     * structured tasks in {@code metadata.writingChoice}.
+     */
+    WRITING_TASK_CHOICE,
     /** Mündlicher Ausdruck Teil 1: introduce yourself and ask / answer questions on set topics. Not graded. */
     TOPIC_INTERVIEW,
     /** Mündlicher Ausdruck Teil 2: report another person's opinion, give your own, share experiences, react. Not graded. */

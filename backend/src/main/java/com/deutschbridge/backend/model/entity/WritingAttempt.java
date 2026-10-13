@@ -41,6 +41,9 @@ public class WritingAttempt {
     @Column(columnDefinition = "TEXT")
     private String aiFeedback;
 
+    /** DTZ Schreiben: the alternative the learner chose ("A" or "B"); null for single-task exercises. */
+    private String selectedTask;
+
     private int wordCount;
     private int attemptNumber;
     private String parentAttemptId;

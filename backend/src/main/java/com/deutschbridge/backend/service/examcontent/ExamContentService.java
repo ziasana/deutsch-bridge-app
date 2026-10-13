@@ -145,7 +145,7 @@ public class ExamContentService {
                 spec.examType(), spec.section(), spec.level(), spec.part());
         int next = ExamContentPromptBuilder.nextNumber(spec.externalIdPrefix(),
                 repository.findExternalIdsStartingWith(spec.externalIdPrefix()));
-        return promptBuilder.build(spec, request, existing, next, spec.isWriting() || spec.isSpeaking() || spec.isDirectoryMatching() || spec.isAdMatching() || spec.isTextQuestions() || spec.isTrueFalseText() || spec.isLetterGap() ? existingWritingSummaries(spec) : List.of());
+        return promptBuilder.build(spec, request, existing, next, spec.isWriting() || spec.isWritingChoice() || spec.isSpeaking() || spec.isDirectoryMatching() || spec.isAdMatching() || spec.isTextQuestions() || spec.isTrueFalseText() || spec.isLetterGap() ? existingWritingSummaries(spec) : List.of());
     }
 
     /** Newest first, capped so the prompt stays a manageable size: "title - topic (scenario)". */
@@ -268,7 +268,8 @@ public class ExamContentService {
         int headings = file.exercises().stream().mapToInt(e -> e.headings().size()).sum();
         int texts = file.exercises().stream().mapToInt(e -> e.texts().size() + (e.textSet() == null ? 0 : e.textSet().texts().size())).sum();
         int questions = file.exercises().stream().mapToInt(e -> e.questions().size() + e.situations().size()
-                + (e.writing() == null ? 0 : e.writing().points().size())).sum();
+                + (e.writing() == null ? 0 : e.writing().points().size())
+                + (e.writingChoice() == null ? 0 : e.writingChoice().tasks().stream().mapToInt(t -> t.points().size()).sum())).sum();
         boolean reading = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isMultipleChoice());
         boolean directory = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isDirectoryMatching());
         boolean situation = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isSituationMatching() && !e.spec().isAdMatching());
@@ -278,9 +279,10 @@ public class ExamContentService {
         boolean trueFalseText = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isTrueFalseText());
         boolean wordBank = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isWordBank());
         boolean writing = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isWriting());
+        boolean writingChoice = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isWritingChoice());
         boolean speaking = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isSpeaking());
         boolean matching = file.exercises().stream().anyMatch(e -> e.spec() != null && !e.spec().isMultipleChoice() && !e.spec().isDirectoryMatching()
-                && !e.spec().isSituationMatching() && !e.spec().isWordBank() && !e.spec().isWriting() && !e.spec().isSpeaking()
+                && !e.spec().isSituationMatching() && !e.spec().isWordBank() && !e.spec().isWriting() && !e.spec().isWritingChoice() && !e.spec().isSpeaking()
                 && !e.spec().isTextQuestions() && !e.spec().isTrueFalseText() && !e.spec().isLetterGap());
         int situations = file.exercises().stream().mapToInt(e -> e.situations().size()).sum();
         int advertisements = file.exercises().stream().mapToInt(e -> e.advertisements().size()).sum();
@@ -297,7 +299,7 @@ public class ExamContentService {
         checks.add(new Check("Section: " + orDash(file.section()), noCode(all, "SECTION_INVALID")));
         checks.add(new Check("Part: " + orDash(file.part()), noCode(all, "PART_INVALID", "SPEC_UNSUPPORTED")));
         checks.add(new Check("Exercises: " + reports.size(), !reports.isEmpty() && noCode(all, "EXERCISE_NOT_OBJECT", "EXTERNAL_ID_INVALID", "EXTERNAL_ID_DUPLICATE_IN_FILE")));
-        if (matching || (!reading && !directory && !situation && !adMatching && !textQuestions && !trueFalseText && !letterGap && !wordBank && !writing && !speaking)) {
+        if (matching || (!reading && !directory && !situation && !adMatching && !textQuestions && !trueFalseText && !letterGap && !wordBank && !writing && !writingChoice && !speaking)) {
             checks.add(new Check("Headings: " + headings, !reports.isEmpty() && noCode(all, STRUCTURE_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Texts: " + texts, !reports.isEmpty() && noCode(all, TEXT_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Answer assignments valid", !reports.isEmpty() && noCode(all, ANSWER_ERROR_CODES.toArray(String[]::new))));
@@ -314,6 +316,13 @@ public class ExamContentService {
             checks.add(new Check("Incoming email found (greeting, body, closing, sender)", !reports.isEmpty() && noCode(all, WRITING_EMAIL_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Exactly 4 content points (numbered 1–4)", !reports.isEmpty() && noCode(all, WRITING_POINT_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Communication style matches the relationship", !reports.isEmpty() && noCode(all, "STYLE_MISMATCH")));
+        }
+        if (writingChoice) {
+            checks.add(new Check("Exam type, section, exercise type and a duration of 30 minutes", !reports.isEmpty() && noCode(all, ExamWritingChoiceReader.HEADER_CODES.toArray(String[]::new))));
+            checks.add(new Check("Exactly two tasks, labelled A and B", !reports.isEmpty() && noCode(all, ExamWritingChoiceReader.TASK_CODES.toArray(String[]::new))));
+            checks.add(new Check("Situation, writing instruction, recipient and communication style present and valid", !reports.isEmpty() && noCode(all, ExamWritingChoiceReader.FIELD_CODES.toArray(String[]::new))));
+            checks.add(new Check("Exactly 4 content points per task (numbered 1–4)", !reports.isEmpty() && noCode(all, ExamWritingChoiceReader.POINT_CODES.toArray(String[]::new))));
+            checks.add(new Check("Metadata present", !reports.isEmpty() && noCode(all, "METADATA_REQUIRED", "METADATA_INVALID")));
         }
         if (situation) {
             checks.add(new Check("Situations: " + situations, !reports.isEmpty() && noCode(all, SITUATION_ERROR_CODES.toArray(String[]::new))));
@@ -493,6 +502,10 @@ public class ExamContentService {
             boolean structured = e.getMetadata() != null && e.getMetadata().get("speaking") instanceof Map<?, ?>;
             return structured ? null : "A speaking task needs its structured content (metadata.speaking).";
         }
+        if (e.getTaskType() == ExamTaskType.WRITING_TASK_CHOICE) {
+            // Two alternatives, four points each; a hand edit must not break that (the learner chooses one of exactly two tasks).
+            return writingChoiceProblem(e);
+        }
         if (e.getTaskType() == ExamTaskType.WRITING_TASK) {
             // A writing task has no questions. Imported tasks (they carry their structure in the metadata) must keep exactly four points.
             boolean imported = e.getMetadata() != null && e.getMetadata().get("writing") != null;
@@ -576,6 +589,88 @@ public class ExamContentService {
             }
         }
         return null;
+    }
+
+    /** DTZ Schreiben: exactly the tasks A and B with situation, instruction and four non-blank points each. Null when fine. */
+    static String writingChoiceProblem(ExamExercise e) {
+        ParsedExercise.WritingChoice wc = ExamContentMapper.writingChoiceOf(e);
+        if (wc == null) return "A writing task with alternatives needs its structured tasks (metadata.writingChoice).";
+        if (wc.tasks().size() != 2 || !"A".equals(wc.tasks().get(0).label()) || !"B".equals(wc.tasks().get(1).label())) {
+            return "A writing exercise needs exactly two tasks, Aufgabe A and Aufgabe B.";
+        }
+        for (ParsedExercise.WritingChoiceTask t : wc.tasks()) {
+            String name = "Aufgabe " + t.label();
+            if (t.situation() == null || t.situation().isBlank()) return name + " has no situation.";
+            if (t.writingInstruction() == null || t.writingInstruction().isBlank()) return name + " has no writing instruction.";
+            if (t.points().size() != ExamWritingChoiceReader.POINT_COUNT || t.points().stream().anyMatch(pt -> pt == null || pt.isBlank())) {
+                return name + " needs exactly four content points.";
+            }
+        }
+        return null;
+    }
+
+    // ------------------------------------------------------------------ create / edit (DTZ Schreiben)
+
+    /**
+     * Creates a DTZ Schreiben exercise by hand, or replaces the title and the two tasks of an existing one. The body has the import shape
+     * ({@code title}, {@code tasks[]} with taskLabel, title, topic, communicationType, situation, recipient, writingInstruction, points[]) and
+     * goes through the same deterministic checks as an import; errors reject the save, warnings come back for review.
+     */
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "examExercises", allEntries = true),
+            @CacheEvict(cacheNames = "examAdminList", allEntries = true),
+            @CacheEvict(cacheNames = "examLevelSummary", allEntries = true)
+    })
+    public WritingChoiceSaveResult saveWritingChoice(String id, com.fasterxml.jackson.databind.JsonNode body) throws DataNotFoundException {
+        ExamContentSpec spec = ExamContentSpecs.find(ExamType.DTZ, LearningLevel.B1, ExamSection.SCHRIFTLICHER_AUSDRUCK, 1).orElseThrow();
+        ExamExercise existing = null;
+        if (id != null) {
+            existing = repository.findById(id).orElseThrow(() -> new DataNotFoundException("Exercise not found."));
+            if (existing.getTaskType() != ExamTaskType.WRITING_TASK_CHOICE) {
+                throw new IllegalArgumentException("This exercise is not a DTZ Schreiben exercise.");
+            }
+        }
+        if (body == null || !body.isObject()) throw new IllegalArgumentException("The body must be a JSON object.");
+        ObjectNode node = ((ObjectNode) body).deepCopy();
+        node.put("durationMinutes", ExamContentSpecs.WRITING_CHOICE_MINUTES);
+        String title = node.hasNonNull("title") ? node.get("title").asText().trim() : "";
+        if (title.isEmpty()) throw new IllegalArgumentException("title must not be empty.");
+        if (title.length() > 200) throw new IllegalArgumentException("title may be at most 200 characters.");
+
+        List<Issue> issues = new ArrayList<>();
+        ParsedExercise.WritingChoice choice = new ExamWritingChoiceReader("", issues).read(spec, node).writingChoice();
+        List<Issue> errors = issues.stream().filter(i -> ExamContentValidator.ERROR.equals(i.severity())).toList();
+        if (!errors.isEmpty()) {
+            throw new IllegalArgumentException(errors.stream().limit(5).map(i -> i.path() + ": " + i.message()).collect(java.util.stream.Collectors.joining(" ")));
+        }
+        List<Issue> warnings = issues.stream().filter(i -> ExamContentValidator.WARNING.equals(i.severity())).toList();
+
+        String userId = requestContext.getUserId();
+        if (existing == null) {
+            Map<String, Object> metadata = new LinkedHashMap<>();
+            metadata.put("schemaVersion", 1);
+            metadata.put("source", "MANUAL");
+            metadata.put("tags", List.of());
+            ParsedExercise parsed = new ParsedExercise(0, spec, null, title, spec.defaultInstructions(), List.of(), List.of(), metadata, null, List.of(),
+                    List.of(), List.of(), List.of(), null, null, null, null, null, null, choice);
+            String hash = ExamContentFingerprint.hashTexts(parsed.textContents());
+            ExamExercise saved = repository.save(ExamContentMapper.toEntity(parsed, ExamType.DTZ, ExamContentSpecs.SCHEMA_VERSION, spec.promptVersion(), hash, userId));
+            return new WritingChoiceSaveResult(saved.getId(), warnings);
+        }
+        ParsedExercise parsed = new ParsedExercise(0, spec, existing.getExternalId(), title, existing.getTeilDescription(), List.of(), List.of(),
+                Map.of(), null, List.of(), List.of(), List.of(), List.of(), null, null, null, null, null, null, choice);
+        Map<String, Object> metadata = new LinkedHashMap<>(existing.getMetadata() == null ? Map.of() : existing.getMetadata());
+        ExamContentMapper.putWritingChoiceMetadata(metadata, choice);
+        existing.setTitle(title);
+        existing.setPassages(ExamContentMapper.toWritingChoicePassages(choice));
+        existing.setMetadata(metadata);
+        existing.setContentHash(ExamContentFingerprint.hashTexts(parsed.textContents()));
+        existing.setVersion(existing.getVersion() + 1);
+        existing.setUpdatedBy(userId);
+        existing.setUpdatedAt(java.time.LocalDateTime.now());
+        repository.save(existing);
+        return new WritingChoiceSaveResult(existing.getId(), warnings);
     }
 
     // ------------------------------------------------------------------ export

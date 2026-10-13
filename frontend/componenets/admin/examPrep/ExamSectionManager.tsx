@@ -74,6 +74,7 @@ const TASK_TYPE_LABELS: Record<ExamTaskType, string> = {
     DIRECTORY_MATCHING: "Verzeichnis/Wegweiser mit Situationen (a, b, c)",
     WORD_BANK_CLOZE: "Lückentext (Wortbank)",
     WRITING_TASK: "Schriftlicher Ausdruck",
+    WRITING_TASK_CHOICE: "Schreiben: Aufgabe A oder B",
     TOPIC_INTERVIEW: "Einander kennenlernen",
     OPINION_DISCUSSION: "Über ein Thema sprechen",
     JOINT_PLANNING: "Gemeinsam etwas planen",
@@ -273,7 +274,8 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
 
     const { data: exercises = [], isLoading, error: exercisesError } = useQuery({
         queryKey: [...EXERCISES_KEY, section, hasExamChoice ? examType : null, appliedFilters],
-        queryFn: () => getExamExercisesForAdmin({ ...appliedFilters, section, ...(hasExamChoice ? { examType } : {}) }).then((res) => res.data),
+        // This page manages the Telc writing tasks; DTZ Schreiben (Aufgabe A oder B) has its own page.
+        queryFn: () => getExamExercisesForAdmin({ ...appliedFilters, section, ...(hasExamChoice ? { examType } : section === "SCHRIFTLICHER_AUSDRUCK" ? { examType: "TELC" } : {}) }).then((res) => res.data),
         enabled: hasHydrated && userProfile?.role === "ADMIN" && appliedFilters !== null,
     });
 

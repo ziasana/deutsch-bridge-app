@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { SpeakingModel, SpeakingStimulus, hasSpeakingModel } from "@/componenets/exam/speaking";
+import WritingChoicePreview from "./WritingChoicePreview";
 import { ExamContentStatus, ExercisePreviewData, PreviewAdvertisement, PreviewDirectory, PreviewLetter, PreviewTextQuestions } from "@/types/examContent";
 
 export const cardClass =
@@ -79,6 +80,7 @@ export function htmlToText(html: string | null | undefined): string {
  * the admin only - the answer key and which headings stay unused.
  */
 export function ExerciseView({ preview, showAnswers = true }: Readonly<{ preview: ExercisePreviewData; showAnswers?: boolean }>) {
+    if (preview.writingChoice) return <WritingChoicePreview preview={preview} choice={preview.writingChoice} />;
     if (preview.letter) return <LetterExerciseView preview={preview} letter={preview.letter} />;
     if (preview.textQuestions) return <TextQuestionsExerciseView preview={preview} set={preview.textQuestions} />;
     if (preview.directory) return <DirectoryExerciseView preview={preview} directory={preview.directory} />;
@@ -503,6 +505,8 @@ const TEXT_TYPE_LABELS: Record<string, string> = {
     APPOINTMENT: "Appointment",
     CANCELLATION: "Cancellation or change of plans",
     EVERYDAY_MESSAGE: "Everyday message",
+    SEMI_FORMAL_EMAIL: "Semi-formal email",
+    SEMI_FORMAL_LETTER: "Semi-formal letter",
 };
 export const textTypeLabel = (type: string | null | undefined) => (type ? TEXT_TYPE_LABELS[type] ?? type : "—");
 

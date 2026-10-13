@@ -95,8 +95,8 @@ function ExamPrepContent() {
         window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
     };
     const chooseSection = (section: ExamSection) => {
-        // Schreiben has its own landing: learn first, then practise.
-        if (section === "SCHRIFTLICHER_AUSDRUCK" && selectedSection !== section) {
+        // Telc Schreiben has its own landing: learn first, then practise. DTZ Schreiben (Aufgabe A oder B) lists its exercises right here.
+        if (section === "SCHRIFTLICHER_AUSDRUCK" && selectedSection !== section && examType !== "DTZ") {
             router.push(`/dashboard/exam-prep/schreiben?level=${encodeURIComponent(effectiveLevel)}`);
             return;
         }

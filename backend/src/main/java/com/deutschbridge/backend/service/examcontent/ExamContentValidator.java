@@ -175,6 +175,9 @@ public class ExamContentValidator {
             issues.add(error("INSTRUCTIONS_TOO_LONG", p + "instructions", "instructions are too long."));
         }
 
+        if (spec != null && spec.isWritingChoice()) {
+            return readWritingChoiceExercise(index, spec, node, p, externalId, title, instructions, issues);
+        }
         if (spec != null && spec.isLetterGap()) {
             return readLetterExercise(index, spec, node, p, externalId, title, instructions, issues);
         }
@@ -225,7 +228,9 @@ public class ExamContentValidator {
         // DTZ is one exam for A2 and B1 together; its exercises are stored with level B1.
         LearningLevel level = exam == ExamType.DTZ && parsedLevel == LearningLevel.A2 ? LearningLevel.B1 : parsedLevel;
         ExamSection section = ExamContentTokens.parseSection(sectionToken).orElse(null);
-        Integer part = ExamContentTokens.parsePart(partToken).orElse(null);
+        // DTZ Schreiben is one task per exam (no Teile), so a file without "part" means Teil 1.
+        Integer part = partToken == null && exam == ExamType.DTZ && section == ExamSection.SCHRIFTLICHER_AUSDRUCK
+                ? Integer.valueOf(1) : ExamContentTokens.parsePart(partToken).orElse(null);
 
         if (exam == null) issues.add(error("EXAM_INVALID", p + "exam", "exam must be one of TELC, DTZ, GOETHE, TESTDAF, DSH, OTHER (found: " + examToken + ")."));
         if (level == null) issues.add(error("LEVEL_INVALID", p + "level", "level must be one of A1, A2, A2_B1, B1, B2, C1, C2 (found: " + levelToken + ")."));
@@ -456,6 +461,23 @@ public class ExamContentValidator {
         if (node.get("metadata") != null && node.get("metadata").isObject()) putStringList(node.get("metadata"), "tags", metadata);
         return new ParsedExercise(index, spec, externalId, title, instructions, List.of(), List.of(), metadata, result.readingText(), result.questions(),
                 List.of(), List.of(), List.of(), null, null, null, null, null, result.letter());
+    }
+
+    // ------------------------------------------------------------------ DTZ Schreiben (two alternative tasks, four points each)
+
+    private ParsedExercise readWritingChoiceExercise(int index, ExamContentSpec spec, JsonNode node, String p, String externalId,
+                                                     String title, String instructions, List<Issue> issues) {
+        ExamWritingChoiceReader.Result result = new ExamWritingChoiceReader(p, issues).read(spec, node);
+        if (instructions != null && !instructions.replaceAll("\\s+", " ").equals(spec.defaultInstructions().replaceAll("\\s+", " "))) {
+            issues.add(warning("INSTRUCTIONS_DIFFER", p + "instructions", "The instruction differs from the standard DTZ wording: \"" + spec.defaultInstructions() + "\""));
+        }
+        if (node.get("metadata") == null || !node.get("metadata").isObject()) {
+            issues.add(error("METADATA_REQUIRED", p + "metadata", "metadata (schemaVersion, source, tags) is required."));
+        }
+        Map<String, Object> metadata = readMetadata(node.get("metadata"), p, issues);
+        if (node.get("metadata") != null && node.get("metadata").isObject()) putStringList(node.get("metadata"), "tags", metadata);
+        return new ParsedExercise(index, spec, externalId, title, instructions, List.of(), List.of(), metadata, null, List.of(),
+                List.of(), List.of(), List.of(), null, null, null, null, null, null, result.writingChoice());
     }
 
     // ------------------------------------------------------------------ Mündlicher Ausdruck

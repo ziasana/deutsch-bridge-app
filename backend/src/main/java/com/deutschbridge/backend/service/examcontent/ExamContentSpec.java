@@ -68,6 +68,11 @@ public record ExamContentSpec(
         return taskType == ExamTaskType.WRITING_TASK;
     }
 
+    /** True for DTZ Schreiben: two alternative tasks (A and B) with four content points each, of which the learner writes one (read with {@link ExamWritingChoiceReader}). */
+    public boolean isWritingChoice() {
+        return taskType == ExamTaskType.WRITING_TASK_CHOICE;
+    }
+
     /** True for Mündlicher Ausdruck (Teil 1-3): a speaking task with a part-specific structure, no gradable answers. */
     public boolean isSpeaking() {
         return section == ExamSection.MUENDLICHER_AUSDRUCK;
