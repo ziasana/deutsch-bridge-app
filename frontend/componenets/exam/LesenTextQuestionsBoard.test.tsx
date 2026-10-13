@@ -50,9 +50,9 @@ describe("LesenTextQuestionsBoard", () => {
         expect(screen.getByText("Das Bürgerbüro öffnet.")).toBeTruthy();
         expect(screen.getByText("31")).toBeTruthy();
         expect(screen.getByText("34")).toBeTruthy();
-        expect(screen.getAllByRole("button", { name: "richtig" })).toHaveLength(2);
-        expect(screen.getAllByRole("button", { name: "falsch" })).toHaveLength(2);
-        expect(screen.getByRole("button", { name: /Einen Führerschein beantragen/ })).toBeTruthy();
+        expect(screen.getAllByRole("radio", { name: "richtig" })).toHaveLength(2);
+        expect(screen.getAllByRole("radio", { name: "falsch" })).toHaveLength(2);
+        expect(screen.getByRole("radio", { name: /Einen Führerschein beantragen/ })).toBeTruthy();
     });
 
     it("never offers 'nicht im Text' for the richtig/falsch task", () => {
@@ -63,16 +63,26 @@ describe("LesenTextQuestionsBoard", () => {
     it("reports a richtig/falsch pick as RICHTIG/FALSCH and a multiple-choice pick as the option text", () => {
         const onChange = vi.fn();
         render(<Harness onChange={onChange} />);
-        fireEvent.click(screen.getAllByRole("button", { name: "falsch" })[0]);
-        fireEvent.click(screen.getByRole("button", { name: /Sich beraten lassen/ }));
+        fireEvent.click(screen.getAllByRole("radio", { name: "falsch" })[0]);
+        fireEvent.click(screen.getByRole("radio", { name: /Sich beraten lassen/ }));
         expect(onChange).toHaveBeenLastCalledWith({ q31: "FALSCH", q32: "Sich beraten lassen." });
     });
 
-    it("marks the chosen answer as pressed", () => {
+    it("marks the chosen answer as checked, one per task", () => {
         render(<Harness />);
-        const [first] = screen.getAllByRole("button", { name: "richtig" });
-        expect(first.getAttribute("aria-pressed")).toBe("false");
+        const [first] = screen.getAllByRole("radio", { name: "richtig" });
+        expect(first.getAttribute("aria-checked")).toBe("false");
         fireEvent.click(first);
-        expect(first.getAttribute("aria-pressed")).toBe("true");
+        expect(first.getAttribute("aria-checked")).toBe("true");
+        fireEvent.click(screen.getAllByRole("radio", { name: "falsch" })[0]);
+        expect(first.getAttribute("aria-checked")).toBe("false");
+    });
+
+    it("groups each task's choices in a radio group, richtig/falsch and a, b, c", () => {
+        render(<Harness />);
+        expect(screen.getAllByRole("radiogroup")).toHaveLength(4);
+        const mc = screen.getByRole("radiogroup", { name: "Aufgabe 32" });
+        expect(mc.querySelectorAll('[role="radio"]')).toHaveLength(3);
+        expect(Array.from(mc.querySelectorAll('[role="radio"] > span:first-child')).map((e) => e.textContent)).toEqual(["a", "b", "c"]);
     });
 });

@@ -7,6 +7,9 @@ export const TEXT_TASK_KINDS: readonly TextTaskKind[] = ["TRUE_FALSE", "MULTIPLE
 /** Number of answer options (a, b, c) of the multiple-choice task. */
 export const CHOICE_COUNT = 3;
 
+/** The DTZ paper has exactly three texts. */
+export const TEXT_COUNT = 3;
+
 /** Default number of the first task (the DTZ paper numbers Teil 3 as 31-36). */
 export const DEFAULT_FIRST_TASK_NUMBER = 31;
 
@@ -59,12 +62,12 @@ export const taskNumber = (firstNumber: number, textIndex: number, kind: TextTas
 const hasContent = (p: ExamPassage) => p.content.replace(/<[^>]*>/g, "").trim().length > 0 || /<img[\s>]/i.test(p.content) || Boolean(p.imageUrl);
 
 /**
- * Checks the tasks of every text that has content and returns the first problem (in English, like the rest of the admin
+ * Checks that there are exactly three texts with content and the tasks of each, and returns the first problem (in English, like the rest of the admin
  * UI), or null when the exercise can be saved.
  */
 export function validateTextQuestions(passages: ExamPassage[], questions: ExamQuestion[]): string | null {
     const texts = passages.map((p, index) => ({ p, index })).filter(({ p }) => hasContent(p));
-    if (texts.length === 0) return "Add at least one text.";
+    if (texts.length !== TEXT_COUNT) return `Exactly ${TEXT_COUNT} texts are required (found ${texts.length}).`;
     for (const { p, index } of texts) {
         const name = p.label.trim() || `Text ${index + 1}`;
         const trueFalse = findTextTask(questions, index, "TRUE_FALSE");
@@ -74,7 +77,7 @@ export function validateTextQuestions(passages: ExamPassage[], questions: ExamQu
         const choice = findTextTask(questions, index, "MULTIPLE_CHOICE");
         if (!choice?.prompt.trim()) return `${name}: the multiple-choice question is missing.`;
         const options = (choice.options ?? []).map((o) => o.trim());
-        if (options.filter(Boolean).length < 2) return `${name}: the multiple-choice question needs at least two options.`;
+        if (options.length !== CHOICE_COUNT || options.some((o) => !o)) return `${name}: the multiple-choice question needs exactly ${CHOICE_COUNT} options (a, b, c).`;
         if (!choice.correctAnswer.trim() || !options.includes(choice.correctAnswer.trim())) return `${name}: choose which option (a, b or c) is correct.`;
     }
     return null;

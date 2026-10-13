@@ -131,7 +131,11 @@ public class ExamContentService {
                 ExamContentPromptBuilder.DIRECTORY_LEVELS,
                 ExamContentPromptBuilder.DIRECTORY_VARIATIONS,
                 ExamContentPromptBuilder.AD_TOPICS,
-                ExamContentPromptBuilder.AD_CATEGORIES);
+                ExamContentPromptBuilder.AD_CATEGORIES,
+                ExamContentPromptBuilder.LESEN_TEXT_TOPICS,
+                ExamContentPromptBuilder.LESEN_TEXT_MIXES,
+                ExamContentPromptBuilder.LESEN_TEXT_TYPES,
+                ExamContentPromptBuilder.LESEN_TEXT_LENGTHS);
     }
 
     @Transactional(readOnly = true)
@@ -141,7 +145,7 @@ public class ExamContentService {
                 spec.examType(), spec.section(), spec.level(), spec.part());
         int next = ExamContentPromptBuilder.nextNumber(spec.externalIdPrefix(),
                 repository.findExternalIdsStartingWith(spec.externalIdPrefix()));
-        return promptBuilder.build(spec, request, existing, next, spec.isWriting() || spec.isSpeaking() || spec.isDirectoryMatching() || spec.isAdMatching() ? existingWritingSummaries(spec) : List.of());
+        return promptBuilder.build(spec, request, existing, next, spec.isWriting() || spec.isSpeaking() || spec.isDirectoryMatching() || spec.isAdMatching() || spec.isTextQuestions() ? existingWritingSummaries(spec) : List.of());
     }
 
     /** Newest first, capped so the prompt stays a manageable size: "title - topic (scenario)". */
@@ -262,18 +266,20 @@ public class ExamContentService {
         boolean anyError = fileIssues.stream().anyMatch(i -> ExamContentValidator.ERROR.equals(i.severity()))
                 || reports.stream().anyMatch(r -> !r.valid());
         int headings = file.exercises().stream().mapToInt(e -> e.headings().size()).sum();
-        int texts = file.exercises().stream().mapToInt(e -> e.texts().size()).sum();
+        int texts = file.exercises().stream().mapToInt(e -> e.texts().size() + (e.textSet() == null ? 0 : e.textSet().texts().size())).sum();
         int questions = file.exercises().stream().mapToInt(e -> e.questions().size() + e.situations().size()
                 + (e.writing() == null ? 0 : e.writing().points().size())).sum();
         boolean reading = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isMultipleChoice());
         boolean directory = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isDirectoryMatching());
         boolean situation = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isSituationMatching() && !e.spec().isAdMatching());
         boolean adMatching = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isAdMatching());
+        boolean textQuestions = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isTextQuestions());
         boolean wordBank = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isWordBank());
         boolean writing = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isWriting());
         boolean speaking = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isSpeaking());
         boolean matching = file.exercises().stream().anyMatch(e -> e.spec() != null && !e.spec().isMultipleChoice() && !e.spec().isDirectoryMatching()
-                && !e.spec().isSituationMatching() && !e.spec().isWordBank() && !e.spec().isWriting() && !e.spec().isSpeaking());
+                && !e.spec().isSituationMatching() && !e.spec().isWordBank() && !e.spec().isWriting() && !e.spec().isSpeaking()
+                && !e.spec().isTextQuestions());
         int situations = file.exercises().stream().mapToInt(e -> e.situations().size()).sum();
         int advertisements = file.exercises().stream().mapToInt(e -> e.advertisements().size()).sum();
 
@@ -289,7 +295,7 @@ public class ExamContentService {
         checks.add(new Check("Section: " + orDash(file.section()), noCode(all, "SECTION_INVALID")));
         checks.add(new Check("Part: " + orDash(file.part()), noCode(all, "PART_INVALID", "SPEC_UNSUPPORTED")));
         checks.add(new Check("Exercises: " + reports.size(), !reports.isEmpty() && noCode(all, "EXERCISE_NOT_OBJECT", "EXTERNAL_ID_INVALID", "EXTERNAL_ID_DUPLICATE_IN_FILE")));
-        if (matching || (!reading && !directory && !situation && !adMatching && !wordBank && !writing && !speaking)) {
+        if (matching || (!reading && !directory && !situation && !adMatching && !textQuestions && !wordBank && !writing && !speaking)) {
             checks.add(new Check("Headings: " + headings, !reports.isEmpty() && noCode(all, STRUCTURE_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Texts: " + texts, !reports.isEmpty() && noCode(all, TEXT_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Answer assignments valid", !reports.isEmpty() && noCode(all, ANSWER_ERROR_CODES.toArray(String[]::new))));
@@ -311,6 +317,13 @@ public class ExamContentService {
             checks.add(new Check("Situations: " + situations, !reports.isEmpty() && noCode(all, SITUATION_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Advertisements: " + advertisements, !reports.isEmpty() && noCode(all, AD_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Matching valid (each advertisement used once)", !reports.isEmpty() && noCode(all, SITUATION_ANSWER_CODES.toArray(String[]::new))));
+        }
+        if (textQuestions) {
+            checks.add(new Check("Exactly 3 texts (with id, number, type, title and body)", !reports.isEmpty() && noCode(all, ExamTextQuestionsReader.TEXT_CODES.toArray(String[]::new))));
+            checks.add(new Check("Exactly 2 questions per text, numbered 31–36 (richtig/falsch, then multiple choice)", !reports.isEmpty() && noCode(all, ExamTextQuestionsReader.QUESTION_CODES.toArray(String[]::new))));
+            checks.add(new Check("Three options a, b, c per multiple-choice question", !reports.isEmpty() && noCode(all, ExamTextQuestionsReader.OPTION_CODES.toArray(String[]::new))));
+            checks.add(new Check("One valid answer per question (RICHTIG / FALSCH, a / b / c)", !reports.isEmpty() && noCode(all, ExamTextQuestionsReader.ANSWER_CODES.toArray(String[]::new))));
+            checks.add(new Check("Explanation for every answer", !reports.isEmpty() && noCode(all, ExamTextQuestionsReader.EXPLANATION_CODES.toArray(String[]::new))));
         }
         if (adMatching) {
             checks.add(new Check("Exactly 5 situations numbered 26–30", !reports.isEmpty() && noCode(all, ExamAdMatchingReader.SITUATION_CODES.toArray(String[]::new))));
@@ -494,6 +507,26 @@ public class ExamContentService {
                 if (e.getPassages().size() != 8) return "A DTZ advertisement exercise needs exactly 8 advertisements (found " + e.getPassages().size() + ").";
                 long none = e.getQuestions().stream().filter(q -> "X".equalsIgnoreCase(q.getCorrectAnswer())).count();
                 if (none != 1) return "Exactly one situation must have the answer X (found " + none + ").";
+            }
+        }
+        if (e.getTaskType() == ExamTaskType.TEXT_QUESTIONS) {
+            if (e.getPassages().size() != 3) return "A DTZ texts exercise needs exactly 3 texts (found " + e.getPassages().size() + ").";
+            if (e.getQuestions().size() != 6) return "A DTZ texts exercise needs exactly 6 questions (found " + e.getQuestions().size() + ").";
+            for (int i = 0; i < 3; i++) {
+                final int textIndex = i;
+                long trueFalse = e.getQuestions().stream().filter(q -> q.getSectionIndex() != null && q.getSectionIndex() == textIndex && q.getTaskType() == ExamTaskType.TRUE_FALSE).count();
+                long choice = e.getQuestions().stream().filter(q -> q.getSectionIndex() != null && q.getSectionIndex() == textIndex && q.getTaskType() == ExamTaskType.MULTIPLE_CHOICE).count();
+                if (trueFalse != 1 || choice != 1) return "Text " + (i + 1) + " needs exactly one richtig/falsch and one multiple-choice question.";
+            }
+            for (var q : e.getQuestions()) {
+                String label = "Question " + (q.getQuestionNumber() != null ? q.getQuestionNumber() : "?");
+                if (q.getPrompt() == null || q.getPrompt().isBlank()) return label + " has no statement or question.";
+                if (q.getTaskType() == ExamTaskType.TRUE_FALSE) {
+                    if (!"RICHTIG".equals(q.getCorrectAnswer()) && !"FALSCH".equals(q.getCorrectAnswer())) return label + " must have RICHTIG or FALSCH as its correct answer.";
+                } else {
+                    if (q.getOptions() == null || q.getOptions().size() != 3 || q.getOptions().stream().anyMatch(o -> o == null || o.isBlank())) return label + " needs exactly 3 options.";
+                    if (q.getCorrectAnswer() == null || !q.getOptions().contains(q.getCorrectAnswer())) return label + " has no valid correct option.";
+                }
             }
         }
         if (e.getTaskType() == ExamTaskType.DIRECTORY_MATCHING) {

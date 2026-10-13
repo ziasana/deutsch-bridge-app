@@ -187,9 +187,11 @@ export interface ExamExerciseAdminRow {
     updatedAt: string | null;
     /** Imported content: the exercise's theme. */
     topic?: string | null;
-    /** DTZ directory exercises: DIRECTORY | REGISTER | CATALOGUE | SERVICE_LIST. */
+    /** DTZ directory exercises: DIRECTORY | REGISTER | CATALOGUE | SERVICE_LIST; DTZ texts exercises: the text types, comma-separated. */
     sourceType?: string | null;
     createdAt?: string | null;
+    /** Number of texts / passages of the exercise. */
+    passageCount?: number;
 }
 
 export interface ExamExerciseResponse {

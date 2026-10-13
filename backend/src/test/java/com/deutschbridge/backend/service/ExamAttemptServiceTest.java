@@ -160,6 +160,33 @@ class ExamAttemptServiceTest {
     }
 
     @Test
+    @DisplayName("submitAnswer -> DTZ texts exercise is scored on RICHTIG/FALSCH and on the chosen option text")
+    void submitAnswer_shouldScoreTextQuestionsTasks() throws DataNotFoundException {
+        ExamQuestion trueFalse = new ExamQuestion("q31", ExamTaskType.TRUE_FALSE, "Die Bibliothek ist montags offen.", 0, null, "FALSCH", null, 31,
+                "Erklärung", null);
+        ExamQuestion choice = new ExamQuestion("q32", ExamTaskType.MULTIPLE_CHOICE, "Was kostet es?", 0, List.of("Nichts.", "Zehn Euro.", "Zwanzig Euro."),
+                "Zehn Euro.", null, 32, "Erklärung", null);
+        ExamExercise exercise = new ExamExercise();
+        exercise.setId("ex3");
+        exercise.setSection(ExamSection.LESEVERSTEHEN);
+        exercise.setTaskType(ExamTaskType.TEXT_QUESTIONS);
+        exercise.setLevel(LearningLevel.B1);
+        exercise.setPassages(List.of(new ExamPassage("t1", "Text 1", "<p>Inhalt</p>", null, null, null)));
+        exercise.setQuestions(List.of(trueFalse, choice));
+        ExamAttempt attempt = new ExamAttempt();
+        attempt.setId("attempt3");
+        attempt.setExercise(exercise);
+        attempt.setAnswers(new ArrayList<>());
+        when(attemptRepository.findById("attempt3")).thenReturn(Optional.of(attempt));
+
+        assertTrue(service.submitAnswer("attempt3", new SubmitExamAnswerRequest("q31", "FALSCH")).correct());
+        assertFalse(service.submitAnswer("attempt3", new SubmitExamAnswerRequest("q31", "RICHTIG")).correct());
+        assertTrue(service.submitAnswer("attempt3", new SubmitExamAnswerRequest("q32", "Zehn Euro.")).correct());
+        assertFalse(service.submitAnswer("attempt3", new SubmitExamAnswerRequest("q32", "Nichts.")).correct());
+        assertFalse(service.submitAnswer("attempt3", new SubmitExamAnswerRequest("q32", null)).correct());
+    }
+
+    @Test
     @DisplayName("submitAnswer -> question without a referenced passage should not return a transcript")
     void submitAnswer_shouldReturnNullTranscriptWhenNoSectionIndex() throws DataNotFoundException {
         ExamPassage passage = audioPassage("Nicht relevant.");

@@ -35,11 +35,20 @@ class DtzTextQuestionsValidatorTest {
                 passages, questions, null, null, null, null, null, null, true, null, null, ExamType.DTZ);
     }
 
+    private static List<ExamPassage> threeTexts() {
+        return List.of(passage("a"), passage("b"), passage("c"));
+    }
+
+    /** A complete, valid set of tasks for three texts; tests replace single entries to break exactly one rule. */
+    private static List<ExamQuestion> validTasks() {
+        return new ArrayList<>(List.of(trueFalse(0, "RICHTIG"), choice(0, "B"), trueFalse(1, "FALSCH"), choice(1, "C"),
+                trueFalse(2, "RICHTIG"), choice(2, "A")));
+    }
+
     @Test
-    @DisplayName("validate -> accepts texts that each have one richtig/falsch and one multiple-choice task")
+    @DisplayName("validate -> accepts three texts that each have one richtig/falsch and one multiple-choice task of three options")
     void accepts_wellFormedExercise() {
-        var req = request(ExamTaskType.TEXT_QUESTIONS, List.of(passage("a"), passage("b")),
-                List.of(trueFalse(0, "RICHTIG"), choice(0, "B"), trueFalse(1, "FALSCH"), choice(1, "C")));
+        var req = request(ExamTaskType.TEXT_QUESTIONS, threeTexts(), validTasks());
         assertDoesNotThrow(() -> DtzTextQuestionsValidator.validate(req));
     }
 
@@ -50,32 +59,52 @@ class DtzTextQuestionsValidatorTest {
     }
 
     @Test
+    @DisplayName("validate -> rejects fewer or more than three texts")
+    void rejects_wrongTextCount() {
+        var two = request(ExamTaskType.TEXT_QUESTIONS, List.of(passage("a"), passage("b")), validTasks().subList(0, 4));
+        assertThrows(IllegalArgumentException.class, () -> DtzTextQuestionsValidator.validate(two));
+        var four = request(ExamTaskType.TEXT_QUESTIONS, List.of(passage("a"), passage("b"), passage("c"), passage("d")), validTasks());
+        assertThrows(IllegalArgumentException.class, () -> DtzTextQuestionsValidator.validate(four));
+    }
+
+    @Test
     @DisplayName("validate -> rejects a text with a missing task")
     void rejects_missingTask() {
-        var req = request(ExamTaskType.TEXT_QUESTIONS, List.of(passage("a")), List.of(trueFalse(0, "RICHTIG")));
+        var questions = validTasks();
+        questions.remove(5);
+        var req = request(ExamTaskType.TEXT_QUESTIONS, threeTexts(), questions);
         assertThrows(IllegalArgumentException.class, () -> DtzTextQuestionsValidator.validate(req));
     }
 
     @Test
     @DisplayName("validate -> rejects NICHT_IM_TEXT, which DTZ does not have")
     void rejects_nichtImText() {
-        var req = request(ExamTaskType.TEXT_QUESTIONS, List.of(passage("a")), List.of(trueFalse(0, "NICHT_IM_TEXT"), choice(0, "A")));
-        assertThrows(IllegalArgumentException.class, () -> DtzTextQuestionsValidator.validate(req));
+        var questions = validTasks();
+        questions.set(0, trueFalse(0, "NICHT_IM_TEXT"));
+        assertThrows(IllegalArgumentException.class, () -> DtzTextQuestionsValidator.validate(request(ExamTaskType.TEXT_QUESTIONS, threeTexts(), questions)));
     }
 
     @Test
     @DisplayName("validate -> rejects a multiple-choice answer that is not one of the options")
     void rejects_answerNotInOptions() {
-        var req = request(ExamTaskType.TEXT_QUESTIONS, List.of(passage("a")), List.of(trueFalse(0, "FALSCH"), choice(0, "Z")));
-        assertThrows(IllegalArgumentException.class, () -> DtzTextQuestionsValidator.validate(req));
+        var questions = validTasks();
+        questions.set(1, choice(0, "Z"));
+        assertThrows(IllegalArgumentException.class, () -> DtzTextQuestionsValidator.validate(request(ExamTaskType.TEXT_QUESTIONS, threeTexts(), questions)));
+    }
+
+    @Test
+    @DisplayName("validate -> rejects a multiple-choice task without exactly three options")
+    void rejects_wrongOptionCount() {
+        var questions = validTasks();
+        questions.set(1, new ExamQuestion(null, ExamTaskType.MULTIPLE_CHOICE, "Frage?", 0, List.of("A", "B"), "A", null, null, "", ""));
+        assertThrows(IllegalArgumentException.class, () -> DtzTextQuestionsValidator.validate(request(ExamTaskType.TEXT_QUESTIONS, threeTexts(), questions)));
     }
 
     @Test
     @DisplayName("validate -> rejects a task pointing at a text that does not exist")
     void rejects_badTextIndex() {
-        var questions = new ArrayList<>(List.of(trueFalse(0, "RICHTIG"), choice(0, "A")));
+        var questions = validTasks();
         questions.add(trueFalse(5, "RICHTIG"));
-        var req = request(ExamTaskType.TEXT_QUESTIONS, List.of(passage("a")), questions);
-        assertThrows(IllegalArgumentException.class, () -> DtzTextQuestionsValidator.validate(req));
+        assertThrows(IllegalArgumentException.class, () -> DtzTextQuestionsValidator.validate(request(ExamTaskType.TEXT_QUESTIONS, threeTexts(), questions)));
     }
 }

@@ -341,6 +341,17 @@ export default function ExamSectionManager({ section }: Readonly<ExamSectionMana
             window.history.replaceState(null, "", url.pathname + url.search);
             return;
         }
+        // Deep link from the DTZ Lesen Teil 3 page ("?new=dtz-texts"): start a blank texts-with-tasks exercise (three texts, tasks 31-36).
+        if (section === "LESEVERSTEHEN" && url.searchParams.get("new") === "dtz-texts") {
+            setExamType("DTZ");
+            setForm({ ...makeEmptyForm(section), level: DTZ_LEVEL, taskType: "TEXT_QUESTIONS", partNumber: "3" });
+            setPassages(Array.from({ length: 3 }, (_, i) => emptyPassage(i, section, "TEXT_QUESTIONS")));
+            setQuestions([]);
+            setShowForm(true);
+            url.searchParams.delete("new");
+            window.history.replaceState(null, "", url.pathname + url.search);
+            return;
+        }
         const editId = url.searchParams.get("edit");
         if (!editId) return;
         void startEdit({ id: editId } as ExamExerciseAdminRow).then(() => {

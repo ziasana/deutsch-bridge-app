@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { SpeakingModel, SpeakingStimulus, hasSpeakingModel } from "@/componenets/exam/speaking";
-import { ExamContentStatus, ExercisePreviewData, PreviewAdvertisement, PreviewDirectory } from "@/types/examContent";
+import { ExamContentStatus, ExercisePreviewData, PreviewAdvertisement, PreviewDirectory, PreviewTextQuestions } from "@/types/examContent";
 
 export const cardClass =
     "bg-white dark:bg-gray-800 rounded-[10px] shadow-[0_5px_5px_0_rgba(82,63,105,0.05)] dark:shadow-[0_5px_5px_0_rgba(0,0,0,0.25)]";
@@ -79,6 +79,7 @@ export function htmlToText(html: string | null | undefined): string {
  * the admin only - the answer key and which headings stay unused.
  */
 export function ExerciseView({ preview, showAnswers = true }: Readonly<{ preview: ExercisePreviewData; showAnswers?: boolean }>) {
+    if (preview.textQuestions) return <TextQuestionsExerciseView preview={preview} set={preview.textQuestions} />;
     if (preview.directory) return <DirectoryExerciseView preview={preview} directory={preview.directory} />;
     if (preview.speaking) return <SpeakingTaskView preview={preview} speaking={preview.speaking} />;
     if (preview.writing) return <WritingTaskView preview={preview} writing={preview.writing} />;
@@ -479,6 +480,15 @@ const SOURCE_TYPE_LABELS: Record<string, string> = {
 };
 export const sourceTypeLabel = (type: string | null | undefined) => (type ? SOURCE_TYPE_LABELS[type] ?? type : "—");
 
+const TEXT_TYPE_LABELS: Record<string, string> = {
+    PRESS_TEXT: "Press text",
+    EMAIL: "Email",
+    FORMAL_NOTICE: "Formal notice",
+    PUBLIC_ANNOUNCEMENT: "Public announcement",
+    INFORMATION_TEXT: "Information text",
+};
+export const textTypeLabel = (type: string | null | undefined) => (type ? TEXT_TYPE_LABELS[type] ?? type : "—");
+
 const LANGUAGES: { key: string; label: string; dir?: "rtl" }[] = [
     { key: "de", label: "Deutsch" },
     { key: "en", label: "English" },
@@ -597,5 +607,79 @@ function Explanations({ explanation }: Readonly<{ explanation: Record<string, st
                 </li>
             ))}
         </ul>
+    );
+}
+
+/**
+ * DTZ Lesen Teil 3 as the learner sees it: instructions, then every text followed immediately by its two tasks (richtig/falsch,
+ * then a, b, c). The answer key and the explanations in German, English and Persian are a separate toggle, off by default,
+ * because the learner view never shows them before submitting.
+ */
+function TextQuestionsExerciseView({ preview, set }: Readonly<{ preview: ExercisePreviewData; set: PreviewTextQuestions }>) {
+    const [showKey, setShowKey] = useState(false);
+    return (
+        <div className="space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                {preview.instructions ? <p className="text-sm italic text-gray-600 dark:text-gray-300">{preview.instructions}</p> : <span />}
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
+                    <input type="checkbox" checked={showKey} onChange={(e) => setShowKey(e.target.checked)} />
+                    Show answer key (admin only)
+                </label>
+            </div>
+
+            <div className="flex flex-wrap gap-2 text-xs text-gray-600 dark:text-gray-300">
+                {set.topic && <span className="rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-700">{set.topic}</span>}
+                {set.languageLevel && <span className="rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-700">{set.languageLevel.replace("_", "–")}</span>}
+            </div>
+
+            {set.texts.map((text, index) => (
+                <section key={text.id ?? index} aria-label={`Text ${text.number ?? index + 1}`} className="rounded-lg border border-gray-200 dark:border-gray-700">
+                    <header className="flex flex-wrap items-center gap-2 border-b border-gray-200 bg-gray-50 px-4 py-2.5 dark:border-gray-700 dark:bg-gray-900/40">
+                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Text {text.number ?? index + 1}</h4>
+                        <span className="rounded bg-gray-200 px-2 py-0.5 text-xs text-gray-700 dark:bg-gray-700 dark:text-gray-200">{textTypeLabel(text.type)}</span>
+                    </header>
+                    <div className="space-y-4 p-4">
+                        <div>
+                            {text.title && <h5 className="text-base font-bold text-gray-900 dark:text-white">{text.title}</h5>}
+                            {(text.sender || text.date) && (
+                                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{[text.sender, text.date].filter(Boolean).join(" · ")}</p>
+                            )}
+                            <p className="mt-2 whitespace-pre-line text-sm text-gray-800 dark:text-gray-200">{text.body}</p>
+                        </div>
+                        <div className="space-y-3 border-t border-gray-200 pt-4 dark:border-gray-700">
+                            {text.tasks.map((task, i) => (
+                                <div key={task.number ?? i}>
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{task.number ?? i + 1}. {task.prompt}</p>
+                                    {task.type === "TRUE_FALSE" ? (
+                                        <ul className="mt-2 flex gap-2">
+                                            {["RICHTIG", "FALSCH"].map((value) => (
+                                                <li
+                                                    key={value}
+                                                    className={`rounded-md border px-3 py-1.5 text-sm ${
+                                                        showKey && task.correctAnswer === value
+                                                            ? "border-green-400 bg-green-50 text-green-900 dark:border-green-700 dark:bg-green-900/30 dark:text-green-100"
+                                                            : "border-gray-200 text-gray-900 dark:border-gray-700 dark:text-gray-100"
+                                                    }`}
+                                                >
+                                                    {value === "RICHTIG" ? "Richtig" : "Falsch"}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <OptionList options={task.options} correctId={task.correctAnswer} highlight={showKey} />
+                                    )}
+                                    {showKey && (
+                                        <div className="mt-2 rounded-md bg-gray-50 p-2.5 text-sm dark:bg-gray-900/40">
+                                            <p className="text-gray-700 dark:text-gray-300"><span className="font-semibold">Correct: </span>{task.correctAnswer ?? "?"}</p>
+                                            <Explanations explanation={task.explanation} />
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            ))}
+        </div>
     );
 }

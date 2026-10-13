@@ -13,6 +13,10 @@ import java.util.List;
  */
 final class DtzTextQuestionsValidator {
 
+    /** The DTZ paper has three texts, each with a richtig/falsch task and a multiple-choice task of three options (tasks 31-36). */
+    static final int TEXT_COUNT = 3;
+    static final int OPTION_COUNT = 3;
+
     private DtzTextQuestionsValidator() {
     }
 
@@ -21,7 +25,7 @@ final class DtzTextQuestionsValidator {
 
         List<ExamPassage> passages = request.passages() != null ? request.passages() : List.of();
         List<ExamQuestion> questions = request.questions() != null ? request.questions() : List.of();
-        if (passages.isEmpty()) throw new IllegalArgumentException("At least one text is required.");
+        if (passages.size() != TEXT_COUNT) throw new IllegalArgumentException("Exactly " + TEXT_COUNT + " texts are required (found " + passages.size() + ").");
 
         int[] trueFalse = new int[passages.size()];
         int[] multipleChoice = new int[passages.size()];
@@ -40,8 +44,8 @@ final class DtzTextQuestionsValidator {
                 trueFalse[index]++;
             } else if (q.getTaskType() == ExamTaskType.MULTIPLE_CHOICE) {
                 List<String> options = q.getOptions() != null ? q.getOptions() : List.of();
-                if (options.size() < 2 || options.stream().anyMatch(o -> o == null || o.isBlank())) {
-                    throw new IllegalArgumentException("A multiple-choice task needs at least two non-empty options.");
+                if (options.size() != OPTION_COUNT || options.stream().anyMatch(o -> o == null || o.isBlank())) {
+                    throw new IllegalArgumentException("A multiple-choice task needs exactly " + OPTION_COUNT + " non-empty options.");
                 }
                 if (!options.contains(q.getCorrectAnswer())) {
                     throw new IllegalArgumentException("The correct answer of a multiple-choice task must be one of its options.");

@@ -20,8 +20,10 @@ public record ExamExerciseAdminRow(
         LocalDateTime updatedAt,
         /** Imported content only (metadata.topic): the exercise's theme, e.g. "Behörden und Dienstleistungen". */
         String topic,
-        /** DTZ directory exercises only (metadata.sourceType): DIRECTORY | REGISTER | CATALOGUE | SERVICE_LIST. */
+        /** DTZ directory exercises: DIRECTORY | REGISTER | CATALOGUE | SERVICE_LIST; DTZ texts exercises: the text types, comma-separated. */
         String sourceType,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        /** Number of texts / passages of the exercise (DTZ Lesen Teil 3 shows it as "Texts"). */
+        int passageCount
 ) {
 }

@@ -67,6 +67,15 @@ interface StoredDirectory {
     questions?: { number: number; sourceEntryIds?: string[]; explanation?: Record<string, string> }[];
 }
 
+/** metadata.textQuestions of an imported DTZ Lesen Teil 3 exercise (see ExamContentMapper.toTextQuestionsEntity). */
+interface StoredTextQuestions {
+    texts?: { id?: string; number?: number; type?: string; sender?: string; date?: string }[];
+    questions?: { number: number; explanation?: Record<string, string> }[];
+}
+
+/** Drops the "Von / Absender · Datum" line that the importer puts in front of a text's body. */
+const withoutMetaLine = (text: string) => text.replace(/^(Von|Absender|Datum): [^\n]*\n*/, "");
+
 /** Matching exercises as the import format sees them (lettered headings, correct heading per text). */
 function toPreview(exercise: ExamExerciseResponse): ExercisePreviewData | null {
     if (exercise.section === "MUENDLICHER_AUSDRUCK") {
@@ -166,6 +175,48 @@ function toPreview(exercise: ExamExerciseResponse): ExercisePreviewData | null {
                 matchingProfile: teil3.situations?.find((s) => s.number === (q.questionNumber ?? i + 1))?.matchingProfile ?? null,
                 explanation: q.explanation ? { de: q.explanation } : null,
             })),
+        };
+    }
+    if (exercise.taskType === "TEXT_QUESTIONS" && exercise.passages?.length && exercise.questions?.length) {
+        const meta = exercise.metadata ?? {};
+        const stored = (meta.textQuestions ?? null) as StoredTextQuestions | null;
+        const questions = [...exercise.questions].sort((a, b) => (a.questionNumber ?? 0) - (b.questionNumber ?? 0));
+        return {
+            title: exercise.title,
+            instructions: exercise.teilDescription,
+            headings: [],
+            texts: [],
+            textQuestions: {
+                topic: typeof meta.topic === "string" ? meta.topic : null,
+                languageLevel: typeof meta.languageLevel === "string" ? meta.languageLevel : null,
+                texts: exercise.passages.map((p, index) => {
+                    const info = stored?.texts?.[index];
+                    return {
+                        id: info?.id ?? p.id,
+                        number: index + 1,
+                        type: info?.type ?? null,
+                        title: p.label,
+                        sender: info?.sender ?? null,
+                        date: info?.date ?? null,
+                        body: info?.sender || info?.date ? withoutMetaLine(htmlToText(p.content)) : htmlToText(p.content),
+                        tasks: questions
+                            .filter((q) => q.sectionIndex === index)
+                            .map((q, i) => {
+                                const options = (q.options ?? []).map((text, j) => ({ id: String.fromCharCode(97 + j), text }));
+                                const number = q.questionNumber ?? 31 + index * 2 + i;
+                                const detail = stored?.questions?.find((d) => d.number === number);
+                                return {
+                                    number,
+                                    type: q.taskType,
+                                    prompt: q.prompt,
+                                    options,
+                                    correctAnswer: q.taskType === "TRUE_FALSE" ? q.correctAnswer : (options.find((o) => o.text === q.correctAnswer)?.id ?? null),
+                                    explanation: detail?.explanation ?? (q.explanation ? { de: q.explanation } : {}),
+                                };
+                            }),
+                    };
+                }),
+            },
         };
     }
     if (exercise.taskType === "DIRECTORY_MATCHING" && exercise.passages?.length && exercise.questions?.length) {
@@ -474,7 +525,7 @@ export function PreviewDialog({ row, onClose, onMove }: Readonly<{ row: ExamExer
                 </div>
                 <div className="mt-5">
                     {isLoading && <Loading message="Loading..." />}
-                    {data && (preview ? <ExerciseView preview={preview} /> : <p className="text-sm text-gray-600 dark:text-gray-300">A preview is only available for headings-matching, reading-text multiple-choice, situation-matching and directory exercises. Use Edit to review this one.</p>)}
+                    {data && (preview ? <ExerciseView preview={preview} /> : <p className="text-sm text-gray-600 dark:text-gray-300">A preview is only available for headings-matching, reading-text multiple-choice, situation-matching, directory and texts-with-questions exercises. Use Edit to review this one.</p>)}
                 </div>
                 <div className="mt-6 flex flex-wrap justify-end gap-2">
                     {next.map((n) => <Button key={n.status} onClick={() => onMove(n.status)}>{n.label}</Button>)}

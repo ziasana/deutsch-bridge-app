@@ -50,6 +50,12 @@ public class ExamContentPromptBuilder {
     public static final List<String> AD_CATEGORIES = List.of(
             "JOBS", "TRAINING", "COURSES", "EDUCATION", "DRIVING_SCHOOL", "CHILDCARE", "HOUSING", "LEISURE", "PUBLIC_SERVICES",
             "FINANCIAL_SUPPORT", "COUNSELLING", "SPORTS_COMMUNITY", "CONTINUING_EDUCATION", "SERVICES");
+    /** DTZ Lesen Teil 3 generator choices (the first entry of each list is the default). */
+    public static final List<String> LESEN_TEXT_TOPICS = List.of("RANDOM", "TRANSPORT", "WORK", "EDUCATION", "FAMILY", "HEALTH", "HOUSING",
+            "LEISURE", "PUBLIC_SERVICES", "SHOPPING", "ENVIRONMENT", "COMMUNITY");
+    public static final List<String> LESEN_TEXT_MIXES = List.of("RANDOM_MIX", "PRESS_EMAIL_NOTICE", "THREE_PRESS", "THREE_EMAILS", "THREE_NOTICES", "CUSTOM");
+    public static final List<String> LESEN_TEXT_TYPES = List.of("PRESS_TEXT", "EMAIL", "FORMAL_NOTICE", "PUBLIC_ANNOUNCEMENT", "INFORMATION_TEXT");
+    public static final List<String> LESEN_TEXT_LENGTHS = List.of("MEDIUM", "SHORT", "LONG");
     public static final int MAX_COUNT = 50;
 
     /** Rules shared by the three Mündlicher Ausdruck templates (language, quality, output); included as {{SPEAKING_COMMON}}. */
@@ -66,6 +72,9 @@ public class ExamContentPromptBuilder {
                                 List<String> existingSummaries) {
         if (spec.isDirectoryMatching()) {
             return buildDirectory(spec, request, existingCount, firstNumber, existingSummaries);
+        }
+        if (spec.isTextQuestions()) {
+            return buildTextQuestions(spec, request, existingCount, firstNumber, existingSummaries);
         }
         if (spec.isAdMatching()) {
             return buildAdMatching(spec, request, existingCount, firstNumber, existingSummaries);
@@ -345,6 +354,166 @@ public class ExamContentPromptBuilder {
         root.put("level", "A2_B1");
         root.put("section", "LESEN");
         root.put("part", "TEIL_2");
+        root.putArray("exercises").add(ex);
+        return write(root);
+    }
+
+    // ------------------------------------------------------------------ DTZ Lesen Teil 3 (texts with richtig/falsch + multiple choice)
+
+    private static final Map<String, String> LESEN_TEXT_TOPIC_TEXT = Map.ofEntries(
+            Map.entry("TRANSPORT", "Public transport and mobility"),
+            Map.entry("WORK", "Work and employment"),
+            Map.entry("EDUCATION", "Education and courses"),
+            Map.entry("FAMILY", "Family and childcare"),
+            Map.entry("HEALTH", "Health and appointments"),
+            Map.entry("HOUSING", "Housing and neighbourhood"),
+            Map.entry("LEISURE", "Leisure and events"),
+            Map.entry("PUBLIC_SERVICES", "Public services"),
+            Map.entry("SHOPPING", "Shopping and everyday life"),
+            Map.entry("ENVIRONMENT", "Environment"),
+            Map.entry("COMMUNITY", "Community projects"));
+
+    private static final Map<String, String> LESEN_TEXT_LENGTH_TEXT = Map.of(
+            "SHORT", "short (about 80–130 words per text)",
+            "MEDIUM", "medium (about 100–160 words per text)",
+            "LONG", "longer (about 120–180 words per text)");
+
+    /** One or several exercises per prompt; several are returned as one batch file. */
+    private PromptResponse buildTextQuestions(ExamContentSpec spec, PromptRequest request, int existingCount, int firstNumber,
+                                              List<String> existingSummaries) {
+        String level = directoryToken(request.difficulty(), "A2_B1", DIRECTORY_LEVELS, "difficulty");
+        int count = request.count() == null ? 1 : request.count();
+        if (count < 1 || count > MAX_COUNT) throw new IllegalArgumentException("count must be between 1 and " + MAX_COUNT);
+        List<String> topics = new ArrayList<>();
+        for (String t : request.topics() == null ? List.<String>of() : request.topics()) {
+            String token = directoryToken(t, "RANDOM", LESEN_TEXT_TOPICS, "topic");
+            if (!token.equals("RANDOM") && !topics.contains(token)) topics.add(token);
+        }
+        String mix = directoryToken(request.textMix(), "RANDOM_MIX", LESEN_TEXT_MIXES, "text mix");
+        String length = directoryToken(request.textLength(), "MEDIUM", LESEN_TEXT_LENGTHS, "text length");
+        String variation = directoryToken(request.variation(), "RANDOM", DIRECTORY_VARIATIONS, "variation");
+        boolean dates = request.includeDatesTimes() == null || request.includeDatesTimes();
+        List<String> custom = new ArrayList<>();
+        if (mix.equals("CUSTOM")) {
+            List<String> given = request.customTextTypes() == null ? List.of() : request.customTextTypes();
+            if (given.size() != 3) throw new IllegalArgumentException("A custom text mix needs exactly three text types.");
+            for (String t : given) custom.add(directoryToken(t, "", LESEN_TEXT_TYPES, "text type"));
+            if (custom.contains("")) throw new IllegalArgumentException("A custom text mix needs exactly three text types.");
+        }
+        List<String> tags = new ArrayList<>();
+        for (String tag : request.tags() == null ? List.<String>of() : request.tags()) {
+            String clean = tag == null ? "" : tag.strip().replaceAll("[\\r\\n\"]", " ");
+            if (!clean.isEmpty() && clean.length() <= 40 && !tags.contains(clean) && tags.size() < 10) tags.add(clean);
+        }
+
+        String firstId = spec.externalIdPrefix() + String.format("%03d", firstNumber);
+        String example = textQuestionsJsonExample(spec, level, count, mix, custom, tags);
+
+        Map<String, String> values = new java.util.LinkedHashMap<>();
+        values.put("DIFFICULTY", level);
+        values.put("COUNT_LINE", count == 1 ? "Generate exactly ONE complete exercise" : "Generate exactly " + count + " complete, clearly different exercises");
+        values.put("BATCH_RULE", count == 1 ? ""
+                : "Because there are " + count + " exercises, return ONE JSON object that wraps them: schemaVersion, contentType \"EXAM_EXERCISE_BATCH\", exam, level, section, part and an \"exercises\" array with exactly " + count + " exercise objects. Each exercise must use a different scenario, set of texts and wording.\n\n");
+        values.put("STRUCTURE_NOTE", count == 1 ? "" : " (the object inside the \"exercises\" array; repeat it " + count + " times)");
+        values.put("TOPIC", topics.isEmpty() ? "any suitable everyday topic (your choice)"
+                : topics.stream().map(LESEN_TEXT_TOPIC_TEXT::get).collect(java.util.stream.Collectors.joining("; ")));
+        values.put("TEXT_TYPES", switch (mix) {
+            case "PRESS_EMAIL_NOTICE" -> "Text 1 PRESS_TEXT, Text 2 EMAIL, Text 3 FORMAL_NOTICE";
+            case "THREE_PRESS" -> "three press texts (type PRESS_TEXT for all three; vary topic, structure and style)";
+            case "THREE_EMAILS" -> "three emails or messages (type EMAIL for all three; vary sender, purpose and style)";
+            case "THREE_NOTICES" -> "three formal notices (type FORMAL_NOTICE for all three; vary sender and purpose)";
+            case "CUSTOM" -> "Text 1 " + custom.get(0) + ", Text 2 " + custom.get(1) + ", Text 3 " + custom.get(2);
+            default -> "a varied mix of different text types (at least two different types) chosen from " + String.join(", ", LESEN_TEXT_TYPES);
+        });
+        values.put("TEXT_LENGTH", LESEN_TEXT_LENGTH_TEXT.get(length));
+        values.put("DATES_RULE", dates
+                ? "Include concrete dates, times, places or numbers where they fit the text type (they make good question targets)."
+                : "Do not use specific dates or times unless the content cannot work without them.");
+        values.put("INSTRUCTIONS", spec.defaultInstructions());
+        values.put("VARIATION_BLOCK", switch (variation) {
+            case "NEW_SCENARIO" -> "Variation: invent new, original scenarios; do not fall back on the most typical textbook setting for this topic.\n";
+            case "AVOID_KNOWN_TOPICS" -> existingSummaries.isEmpty()
+                    ? "Variation: avoid the most common textbook scenarios for this topic.\n"
+                    : "Variation: the library already contains these exercises - choose clearly different scenarios, texts and wording:\n"
+                    + existingSummaries.stream().map(line -> "- " + line).collect(java.util.stream.Collectors.joining("\n")) + "\n";
+            default -> "";
+        });
+        values.put("LEVEL_RULES", switch (level) {
+            case "A2" -> "For A2: use common vocabulary; prefer short, clear sentences; keep the message direct; avoid complex sentence structures.";
+            case "B1" -> "For B1: allow richer vocabulary and more detailed information; test the main message, important details and simple reasoning; avoid unnecessary specialist vocabulary.";
+            default -> "For A2–B1: use accessible everyday German; include realistic information and simple paraphrases; allow some variety in sentence structure; keep the meaning clear.";
+        });
+        values.put("TAGS_RULE", tags.isEmpty() ? "" : "Put these tags into metadata.tags: " + String.join(", ", tags) + ".\n");
+        values.put("JSON_EXAMPLE", example);
+        values.put("NOTES_BLOCK", request.notes() == null || request.notes().isBlank() ? ""
+                : "\nADDITIONAL INSTRUCTIONS FROM THE EDITOR:\n" + request.notes().strip() + "\n");
+
+        String prompt = loadTemplate(spec.promptTemplate());
+        for (Map.Entry<String, String> e : values.entrySet()) {
+            prompt = prompt.replace("{{" + e.getKey() + "}}", e.getValue());
+        }
+        return new PromptResponse(prompt.strip() + "\n", spec.promptVersion(), ExamContentSpecs.SCHEMA_VERSION, example, existingCount, firstId);
+    }
+
+    private String textQuestionsJsonExample(ExamContentSpec spec, String level, int count, String mix, List<String> custom, List<String> tags) {
+        List<String> types = switch (mix) {
+            case "THREE_PRESS" -> List.of("PRESS_TEXT", "PRESS_TEXT", "PRESS_TEXT");
+            case "THREE_EMAILS" -> List.of("EMAIL", "EMAIL", "EMAIL");
+            case "THREE_NOTICES" -> List.of("FORMAL_NOTICE", "FORMAL_NOTICE", "FORMAL_NOTICE");
+            case "CUSTOM" -> custom;
+            default -> List.of("PRESS_TEXT", "EMAIL", "FORMAL_NOTICE");
+        };
+        ObjectNode ex = MAPPER.createObjectNode();
+        ex.put("exam", "DTZ");
+        ex.put("section", "LESEN");
+        ex.put("part", 3);
+        ex.put("exerciseType", "TEXT_COMPREHENSION_MIXED");
+        ex.put("skill", "PRESS_TEXTS_AND_FORMAL_NOTICES");
+        ex.put("level", "A2_B1");
+        ex.put("title", "...");
+        ex.put("topic", "...");
+        ex.put("difficulty", level);
+        ex.putObject("instructions").put("de", spec.defaultInstructions());
+        ArrayNode texts = ex.putArray("texts");
+        for (int i = 0; i < spec.textCount(); i++) {
+            ObjectNode text = texts.addObject();
+            text.put("id", "text_" + (i + 1));
+            text.put("number", i + 1);
+            text.put("type", types.get(i));
+            text.put("title", "...");
+            text.putNull("sender");
+            text.putNull("date");
+            text.put("body", "...");
+            ArrayNode questions = text.putArray("questions");
+            int base = spec.firstQuestionNumber() + i * 2;
+            ObjectNode tf = questions.addObject();
+            tf.put("number", base);
+            tf.put("type", "TRUE_FALSE");
+            tf.put("statement", "...");
+            tf.put("correctAnswer", "RICHTIG");
+            tf.putObject("explanation").put("de", "...").put("en", "...").put("fa", "...");
+            ObjectNode mc = questions.addObject();
+            mc.put("number", base + 1);
+            mc.put("type", "MULTIPLE_CHOICE");
+            mc.put("question", "...");
+            ArrayNode options = mc.putArray("options");
+            for (String key : spec.optionIds()) options.addObject().put("key", key).put("text", "...");
+            mc.put("correctAnswer", "b");
+            mc.putObject("explanation").put("de", "...").put("en", "...").put("fa", "...");
+        }
+        ObjectNode meta = ex.putObject("metadata");
+        meta.put("schemaVersion", 1);
+        meta.put("source", "AI_IMPORTED");
+        ArrayNode tagArray = meta.putArray("tags");
+        tags.forEach(tagArray::add);
+        if (count == 1) return write(ex);
+        ObjectNode root = MAPPER.createObjectNode();
+        root.put("schemaVersion", ExamContentSpecs.SCHEMA_VERSION);
+        root.put("contentType", "EXAM_EXERCISE_BATCH");
+        root.put("exam", "DTZ");
+        root.put("level", "A2_B1");
+        root.put("section", "LESEN");
+        root.put("part", "TEIL_3");
         root.putArray("exercises").add(ex);
         return write(root);
     }

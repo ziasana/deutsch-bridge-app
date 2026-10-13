@@ -19,6 +19,7 @@ export interface ExamContentSpecInfo {
         | "MULTIPLE_CHOICE"
         | "SITUATION_MATCHING"
         | "DIRECTORY_MATCHING"
+        | "TEXT_QUESTIONS"
         | "WORD_BANK_CLOZE"
         | "WRITING_TASK"
         | "TOPIC_INTERVIEW"
@@ -51,6 +52,11 @@ export interface ExamContentOptions {
     /** DTZ Lesen Teil 2 generator choices (first entry = default). */
     adTopics?: string[];
     adCategories?: string[];
+    /** DTZ Lesen Teil 3 generator choices (first entry = default). */
+    lesenTextTopics?: string[];
+    lesenTextMixes?: string[];
+    lesenTextTypes?: string[];
+    lesenTextLengths?: string[];
 }
 
 export interface PromptRequest {
@@ -85,6 +91,16 @@ export interface PromptRequest {
     variation?: string;
     /** DTZ Lesen Teil 2: advertisement categories; omitted = chosen by the AI. */
     adCategories?: string[];
+    /** DTZ Lesen Teil 3: RANDOM_MIX | PRESS_EMAIL_NOTICE | THREE_PRESS | THREE_EMAILS | THREE_NOTICES | CUSTOM. */
+    textMix?: string;
+    /** DTZ Lesen Teil 3, textMix CUSTOM: the type of text 1, 2 and 3. */
+    customTextTypes?: string[];
+    /** DTZ Lesen Teil 3: SHORT | MEDIUM | LONG. */
+    textLength?: string;
+    /** DTZ Lesen Teil 3: include dates and times where appropriate. */
+    includeDatesTimes?: boolean;
+    /** DTZ Lesen Teil 3: optional metadata tags. */
+    tags?: string[];
 }
 
 export interface PromptResponse {
@@ -204,6 +220,34 @@ export interface PreviewDirectory {
     questionDetails: { number: number | null; sourceEntryIds: string[]; explanation: Record<string, string> }[];
 }
 
+/** DTZ Lesen Teil 3: one task of a text. `options` is empty for TRUE_FALSE; `correctAnswer` is RICHTIG / FALSCH or a, b, c. */
+export interface PreviewTextTask {
+    number: number | null;
+    type: "TRUE_FALSE" | "MULTIPLE_CHOICE" | string;
+    prompt: string | null;
+    options: PreviewHeading[];
+    correctAnswer: string | null;
+    explanation: Record<string, string>;
+}
+
+export interface PreviewTextItem {
+    id: string | null;
+    number: number | null;
+    type: string | null;
+    title: string | null;
+    sender: string | null;
+    date: string | null;
+    body: string | null;
+    tasks: PreviewTextTask[];
+}
+
+/** DTZ Lesen Teil 3: the three texts with their two tasks each and the answer key (admin only). */
+export interface PreviewTextQuestions {
+    topic: string | null;
+    languageLevel: string | null;
+    texts: PreviewTextItem[];
+}
+
 export interface ExercisePreviewData {
     title: string | null;
     instructions: string | null;
@@ -223,6 +267,8 @@ export interface ExercisePreviewData {
     speaking?: PreviewSpeaking | null;
     /** DTZ Lesen Teil 1 (directory matching): the questions are in `questions`, the source and answer-key details here. */
     directory?: PreviewDirectory | null;
+    /** DTZ Lesen Teil 3 (texts with richtig/falsch + multiple choice): texts, tasks and answer key. */
+    textQuestions?: PreviewTextQuestions | null;
 }
 
 export interface DuplicateMatch {

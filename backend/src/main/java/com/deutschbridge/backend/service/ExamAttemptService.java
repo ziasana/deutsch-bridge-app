@@ -129,10 +129,14 @@ public class ExamAttemptService {
         return german;
     }
 
-    /** DTZ directory exercises keep the English / Persian explanations of their questions in {@code metadata.directory.questions}, by question number. */
+    /**
+     * DTZ directory and texts-with-questions exercises keep the English / Persian explanations of their questions in
+     * {@code metadata.directory.questions} / {@code metadata.textQuestions.questions}, by question number.
+     */
     private static String directoryExplanation(ExamExercise exercise, ExamQuestion question, String key, String german) {
-        if (question.getQuestionNumber() == null || !(exercise.getMetadata().get("directory") instanceof java.util.Map<?, ?> directory)
-                || !(directory.get("questions") instanceof List<?> details)) {
+        if (question.getQuestionNumber() == null) return german;
+        Object stored = exercise.getMetadata().get("directory") != null ? exercise.getMetadata().get("directory") : exercise.getMetadata().get("textQuestions");
+        if (!(stored instanceof java.util.Map<?, ?> directory) || !(directory.get("questions") instanceof List<?> details)) {
             return german;
         }
         for (Object detail : details) {

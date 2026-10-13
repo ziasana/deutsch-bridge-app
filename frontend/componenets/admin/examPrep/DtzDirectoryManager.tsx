@@ -15,11 +15,11 @@ import { ExamExerciseAdminRow } from "@/types/exam";
 import { ExamContentStatus, EXAM_CONTENT_STATUSES } from "@/types/examContent";
 import ExamContentShell from "@/componenets/admin/examContent/ExamContentShell";
 import { PreviewDialog } from "@/componenets/admin/examContent/ContentLibrary";
-import { cardClass, errorMessage, fieldClass, labelClass, sourceTypeLabel, StatusBadge } from "@/componenets/admin/examContent/shared";
+import { cardClass, errorMessage, fieldClass, labelClass, sourceTypeLabel, StatusBadge, textTypeLabel } from "@/componenets/admin/examContent/shared";
 
 const PAGE_SIZE = 15;
 
-/** The two DTZ Lesen parts that share this list: Teil 1 (directory, three options) and Teil 2 (advertisements a-h, one X). */
+/** The three DTZ Lesen parts that share this list: Teil 1 (directory), Teil 2 (advertisements a-h, one X) and Teil 3 (three texts with two tasks each). */
 const VARIANTS = {
     directory: {
         part: "1",
@@ -30,6 +30,7 @@ const VARIANTS = {
         generatorPart: "TEIL_1",
         newParam: "dtz-directory",
         showSourceType: true,
+        showTextTypes: false,
     },
     ads: {
         part: "2",
@@ -40,6 +41,18 @@ const VARIANTS = {
         generatorPart: "TEIL_2",
         newParam: "dtz-ads",
         showSourceType: false,
+        showTextTypes: false,
+    },
+    texts: {
+        part: "3",
+        listKey: ["admin", "exam", "exercises", "dtz-texts"],
+        title: "DTZ A2–B1 · Lesen · Teil 3",
+        description:
+            "Pressetexte und formelle Mitteilungen verstehen: three independent texts (press text, email, notice ...), each with a richtig/falsch task and a multiple-choice task (a, b, c) — questions 31–36. Generate content with any external AI, import the JSON, review it and publish it. Imported content is never published automatically.",
+        generatorPart: "TEIL_3",
+        newParam: "dtz-texts",
+        showSourceType: false,
+        showTextTypes: true,
     },
 } as const;
 
@@ -52,8 +65,8 @@ const difficultyLabel = (difficulty: string | null) =>
 const formatDate = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleDateString("de-DE") : "—");
 
 /**
- * Admin → Prüfungsvorbereitung → DTZ A2–B1 → Lesen → Teil 1 ("Kataloge, Register, Verzeichnisse verstehen") or Teil 2
- * ("Anzeigen zuordnen"): the list of the exercises with every step of the content workflow - generate a prompt for an external AI, import its JSON,
+ * Admin → Prüfungsvorbereitung → DTZ A2–B1 → Lesen → Teil 1 ("Kataloge, Register, Verzeichnisse verstehen"), Teil 2
+ * ("Anzeigen zuordnen") or Teil 3 ("Pressetexte und formelle Mitteilungen verstehen"): the list of the exercises with every step of the content workflow - generate a prompt for an external AI, import its JSON,
  * create by hand, preview with the answer key, edit, publish and archive.
  */
 export default function DtzDirectoryManager({ variant = "directory" }: Readonly<{ variant?: DtzLesenVariant }>) {
@@ -163,6 +176,8 @@ export default function DtzDirectoryManager({ variant = "directory" }: Readonly<
                                     <th className="px-3 py-3">Title</th>
                                     <th className="px-3 py-3">Topic</th>
                                     {config.showSourceType && <th className="px-3 py-3">Source type</th>}
+                                    {config.showTextTypes && <th className="px-3 py-3">Text types</th>}
+                                    {config.showTextTypes && <th className="px-3 py-3">Texts</th>}
                                     <th className="px-3 py-3">Questions</th>
                                     <th className="px-3 py-3">Difficulty</th>
                                     <th className="px-3 py-3">Status</th>
@@ -176,6 +191,10 @@ export default function DtzDirectoryManager({ variant = "directory" }: Readonly<
                                         <td className="max-w-xs truncate px-3 py-3" title={r.title}>{r.title}</td>
                                         <td className="px-3 py-3">{r.topic ?? "—"}</td>
                                         {config.showSourceType && <td className="px-3 py-3 whitespace-nowrap">{sourceTypeLabel(r.sourceType)}</td>}
+                                        {config.showTextTypes && (
+                                            <td className="px-3 py-3">{r.sourceType ? r.sourceType.split(", ").map(textTypeLabel).join(" · ") : "—"}</td>
+                                        )}
+                                        {config.showTextTypes && <td className="px-3 py-3">{r.passageCount ?? "—"}</td>}
                                         <td className="px-3 py-3">{r.questionCount}</td>
                                         <td className="px-3 py-3 whitespace-nowrap">{difficultyLabel(r.difficulty)}</td>
                                         <td className="px-3 py-3"><StatusBadge status={r.status} /></td>
@@ -213,7 +232,7 @@ export default function DtzDirectoryManager({ variant = "directory" }: Readonly<
                                     </tr>
                                 ))}
                                 {rows.length === 0 && (
-                                    <tr><td colSpan={config.showSourceType ? 8 : 7} className="px-3 py-10 text-center text-gray-500 dark:text-gray-400">No exercises yet. Generate a prompt for an external AI, then import its JSON.</td></tr>
+                                    <tr><td colSpan={7 + (config.showSourceType ? 1 : 0) + (config.showTextTypes ? 2 : 0)} className="px-3 py-10 text-center text-gray-500 dark:text-gray-400">No exercises yet. Generate a prompt for an external AI, then import its JSON.</td></tr>
                                 )}
                             </tbody>
                         </table>

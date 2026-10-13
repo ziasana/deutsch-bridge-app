@@ -45,7 +45,7 @@ export default function LesenTextQuestionsBoard({ passages, questions, answers, 
         const selected = answers[question.id];
         const isTrueFalse = question.taskType === "TRUE_FALSE";
         return (
-            <fieldset key={question.id} disabled={disabled} className="space-y-2.5">
+            <fieldset key={question.id} disabled={disabled} role="radiogroup" aria-label={`Aufgabe ${number}`} className="space-y-2.5">
                 <legend className="mb-2 flex gap-3 text-base font-semibold leading-snug text-foreground">
                     <span className="shrink-0 text-primary">{number}</span>
                     <span className="min-w-0 break-words">{question.prompt}</span>
@@ -56,7 +56,8 @@ export default function LesenTextQuestionsBoard({ passages, questions, answers, 
                             <button
                                 key={choice.value}
                                 type="button"
-                                aria-pressed={selected === choice.value}
+                                role="radio"
+                                aria-checked={selected === choice.value}
                                 onClick={() => onAnswer(question.id, choice.value)}
                                 className={cn(choiceClass(selected === choice.value), "justify-center font-semibold")}
                             >
@@ -69,7 +70,8 @@ export default function LesenTextQuestionsBoard({ passages, questions, answers, 
                         <button
                             key={option}
                             type="button"
-                            aria-pressed={selected === option}
+                            role="radio"
+                            aria-checked={selected === option}
                             onClick={() => onAnswer(question.id, option)}
                             className={choiceClass(selected === option)}
                         >

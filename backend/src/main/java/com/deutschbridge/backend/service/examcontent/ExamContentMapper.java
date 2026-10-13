@@ -11,6 +11,9 @@ import com.deutschbridge.backend.model.dto.ExamContentDtos.ContextView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.QuestionView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.SituationView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.TextView;
+import com.deutschbridge.backend.model.dto.ExamContentDtos.TextItemView;
+import com.deutschbridge.backend.model.dto.ExamContentDtos.TextQuestionsView;
+import com.deutschbridge.backend.model.dto.ExamContentDtos.TextTaskView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.SpeakingView;
 import com.deutschbridge.backend.model.dto.ExamContentDtos.WritingView;
 import com.deutschbridge.backend.model.entity.ExamExercise;
@@ -52,6 +55,9 @@ public final class ExamContentMapper {
         }
         if (spec.isWordBank()) {
             return toWordBankEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
+        }
+        if (spec.isTextQuestions()) {
+            return toTextQuestionsEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
         }
         if (spec.isDirectoryMatching()) {
             return toDirectoryEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
@@ -253,6 +259,105 @@ public final class ExamContentMapper {
         exercise.setUpdatedBy(userId);
         exercise.applyStatus(ExamContentStatus.DRAFT);
         return exercise;
+    }
+
+    /**
+     * DTZ Lesen Teil 3: every text is a passage (label = title, content = optional sender / date line + body) and its two tasks are
+     * questions pointing at it through sectionIndex - a TRUE_FALSE (correctAnswer RICHTIG / FALSCH) and a MULTIPLE_CHOICE (options as
+     * plain strings, correctAnswer = the correct option's text), exactly like a hand-authored DTZ texts-with-tasks exercise, so the
+     * learner flow, scoring and answer-hiding are unchanged. The German explanation is the question's explanation; the text structure
+     * and the English / Persian explanations are kept in {@code metadata.textQuestions} for the admin preview and the JSON export.
+     */
+    private static ExamExercise toTextQuestionsEntity(ParsedExercise ex, ExamType examType, String schemaVersion,
+                                                      String promptVersion, String hash, String userId) {
+        ExamContentSpec spec = ex.spec();
+        ParsedExercise.TextSet set = ex.textSet();
+        List<ExamPassage> passages = new ArrayList<>();
+        List<ExamQuestion> questions = new ArrayList<>();
+        List<Map<String, Object>> storedTexts = new ArrayList<>();
+        List<Map<String, Object>> storedQuestions = new ArrayList<>();
+        for (int i = 0; i < set.texts().size(); i++) {
+            ParsedExercise.TextItem t = set.texts().get(i);
+            passages.add(new ExamPassage(null, t.title(), toTextHtml(t), null, null, null).ensureId());
+            Map<String, Object> stored = new LinkedHashMap<>();
+            stored.put("id", t.id());
+            stored.put("number", t.number());
+            if (t.type() != null) stored.put("type", t.type());
+            if (t.sender() != null) stored.put("sender", t.sender());
+            if (t.date() != null) stored.put("date", t.date());
+            storedTexts.add(stored);
+            for (ParsedExercise.TextTask task : t.tasks()) {
+                boolean trueFalse = ExamTextQuestionsReader.TRUE_FALSE.equals(task.kind());
+                String correct = trueFalse ? task.correctAnswer()
+                        : task.options().stream().filter(o -> o.id().equals(task.correctAnswer())).map(ParsedExercise.Option::text).findFirst().orElse(null);
+                questions.add(new ExamQuestion(null, trueFalse ? ExamTaskType.TRUE_FALSE : ExamTaskType.MULTIPLE_CHOICE, task.prompt(), i,
+                        trueFalse ? null : task.options().stream().map(ParsedExercise.Option::text).toList(), correct, null,
+                        task.number(), task.explanation().get("de"), null).ensureId());
+                Map<String, Object> detail = new LinkedHashMap<>();
+                detail.put("number", task.number());
+                detail.put("explanation", new LinkedHashMap<>(task.explanation()));
+                storedQuestions.add(detail);
+            }
+        }
+        questions.sort(java.util.Comparator.comparing(ExamQuestion::getQuestionNumber));
+        storedQuestions.sort(java.util.Comparator.comparing(m -> (Integer) m.get("number")));
+
+        Map<String, Object> textQuestions = new LinkedHashMap<>();
+        textQuestions.put("texts", storedTexts);
+        textQuestions.put("questions", storedQuestions);
+
+        Map<String, Object> metadata = new LinkedHashMap<>(ex.metadata());
+        metadata.putIfAbsent("source", "AI_IMPORTED");
+        if (set.topic() != null) metadata.put("topic", set.topic());
+        metadata.put("languageLevel", set.languageLevel());
+        // Shown in the admin list as "Text types".
+        metadata.put("sourceType", String.join(", ", set.textTypes()));
+        metadata.put("textQuestions", textQuestions);
+
+        ExamExercise exercise = new ExamExercise();
+        exercise.setTitle(ex.title());
+        exercise.setExamType(examType);
+        exercise.setSection(spec.section());
+        exercise.setTaskType(spec.taskType());
+        exercise.setLevel(spec.level());
+        exercise.setPartNumber(spec.part());
+        exercise.setPassages(passages);
+        exercise.setQuestions(questions);
+        exercise.setTeilDescription(ex.instructions());
+        exercise.setExternalId(ex.externalId());
+        exercise.setSchemaVersion(schemaVersion);
+        exercise.setPromptVersion(promptVersion);
+        exercise.setMetadata(metadata);
+        exercise.setContentHash(hash);
+        exercise.setCreatedBy(userId);
+        exercise.setUpdatedBy(userId);
+        exercise.applyStatus(ExamContentStatus.DRAFT);
+        return exercise;
+    }
+
+    /** Opening line of an e-mail text. */
+    private static final String FROM_LABEL = "Von: ";
+    private static final String SENDER_LABEL = "Absender: ";
+    private static final String DATE_LABEL = "Datum: ";
+
+    /** The text as escaped HTML: an optional italic "Von / Absender · Datum" line, then the body paragraphs. */
+    static String toTextHtml(ParsedExercise.TextItem t) {
+        StringBuilder html = new StringBuilder();
+        List<String> meta = new ArrayList<>();
+        if (t.sender() != null) meta.add((("EMAIL".equals(t.type())) ? FROM_LABEL : SENDER_LABEL) + t.sender());
+        if (t.date() != null) meta.add(DATE_LABEL + t.date());
+        if (!meta.isEmpty()) html.append("<p><em>").append(HtmlUtils.htmlEscape(String.join(" · ", meta))).append("</em></p>");
+        return html.append(toHtml(t.body())).toString();
+    }
+
+    /** The body of a stored text passage: the HTML without the sender / date line {@link #toTextHtml} put in front of it. */
+    static String textBodyOf(String html, boolean hasMeta) {
+        if (html == null) return "";
+        if (hasMeta && html.startsWith("<p><em>")) {
+            int end = html.indexOf("</em></p>");
+            if (end >= 0) html = html.substring(end + "</em></p>".length());
+        }
+        return toPlainText(html);
     }
 
     /** Label of the optional second passage of a directory exercise: the unscored example the learner sees before the tasks. */
@@ -590,6 +695,19 @@ public final class ExamContentMapper {
                     List.of(), List.of(),
                     ex.context() == null ? null : new ContextView(ex.context().type(), ex.context().title(), ex.context().text()));
         }
+        if (ex.textSet() != null) {
+            ParsedExercise.TextSet set = ex.textSet();
+            return new ExercisePreview(ex.title(), ex.instructions(), List.of(), List.of(), null,
+                    ex.questions().stream().map(q -> new QuestionView(q.id(), q.number(), q.question(),
+                            q.options().stream().map(o -> new HeadingView(o.id(), o.text())).toList(), q.correctOptionId(), q.type())).toList(),
+                    List.of(), List.of(), null, null, null, null,
+                    new TextQuestionsView(set.topic(), set.languageLevel(), set.texts().stream()
+                            .map(t -> new TextItemView(t.id(), t.number(), t.type(), t.title(), t.sender(), t.date(), t.body(),
+                                    t.tasks().stream().map(task -> new TextTaskView(task.number(), task.kind(), task.prompt(),
+                                            task.options().stream().map(o -> new HeadingView(o.id(), o.text())).toList(),
+                                            task.correctAnswer(), task.explanation())).toList()))
+                            .toList()));
+        }
         if (ex.directory() != null) {
             ParsedExercise.Directory d = ex.directory();
             DirectoryExampleView example = d.example() == null ? null : new DirectoryExampleView(d.example().situation(),
@@ -636,6 +754,7 @@ public final class ExamContentMapper {
         if (e.getTaskType() == ExamTaskType.MULTIPLE_CHOICE) return toReadingExportNode(mapper, e);
         if (e.getTaskType() == ExamTaskType.SITUATION_MATCHING) return toSituationExportNode(mapper, e);
         if (e.getTaskType() == ExamTaskType.DIRECTORY_MATCHING) return toDirectoryExportNode(mapper, e);
+        if (e.getTaskType() == ExamTaskType.TEXT_QUESTIONS) return toTextQuestionsExportNode(mapper, e);
         if (e.getTaskType() != ExamTaskType.MATCHING || e.getAnswerOptions() == null || e.getPassages() == null
                 || e.getQuestions() == null || e.getSection() == null || e.getLevel() == null || e.getPartNumber() == null) {
             return null;
@@ -1061,6 +1180,93 @@ public final class ExamContentMapper {
             ObjectNode explanationNode = explanation == null ? mapper.createObjectNode() : mapper.valueToTree(explanation);
             if (!explanationNode.has("de") && q.getExplanation() != null) explanationNode.put("de", q.getExplanation());
             out.set("explanation", explanationNode);
+        }
+        ObjectNode metadata = node.putObject("metadata");
+        metadata.put("schemaVersion", 1);
+        metadata.put("source", String.valueOf(e.getMetadata().getOrDefault("source", "AI_IMPORTED")));
+        if (e.getMetadata().get("tags") != null) metadata.set("tags", mapper.valueToTree(e.getMetadata().get("tags")));
+        return node;
+    }
+
+    /**
+     * DTZ texts-with-tasks exercise in the import shape. The text structure and the English / Persian explanations come from
+     * {@code metadata.textQuestions}; titles, bodies, statements, options and answers are read from the stored passages and
+     * questions so admin edits are exported. Exercises without that metadata (hand-made ones) cannot be exported.
+     */
+    @SuppressWarnings("unchecked")
+    private static ObjectNode toTextQuestionsExportNode(ObjectMapper mapper, ExamExercise e) {
+        if (e.getPassages() == null || e.getPassages().size() != 3 || e.getQuestions() == null || e.getQuestions().size() != 6
+                || e.getMetadata() == null || !(e.getMetadata().get("textQuestions") instanceof Map<?, ?> raw)
+                || !(raw.get("texts") instanceof List<?> storedTexts) || storedTexts.size() != 3) {
+            return null;
+        }
+        Map<Integer, Map<String, Object>> detailByNumber = new LinkedHashMap<>();
+        if (raw.get("questions") instanceof List<?> list) {
+            for (Object o : list) {
+                if (o instanceof Map<?, ?> m && m.get("number") instanceof Number n) detailByNumber.put(n.intValue(), (Map<String, Object>) m);
+            }
+        }
+        List<ExamQuestion> ordered = e.getQuestions().stream()
+                .sorted(java.util.Comparator.comparing(q -> q.getQuestionNumber() == null ? Integer.MAX_VALUE : q.getQuestionNumber()))
+                .toList();
+        for (ExamQuestion q : ordered) {
+            if (q.getSectionIndex() == null || q.getSectionIndex() < 0 || q.getSectionIndex() > 2) return null;
+            if (q.getTaskType() == ExamTaskType.MULTIPLE_CHOICE
+                    && (q.getOptions() == null || q.getOptions().size() != 3 || !q.getOptions().contains(q.getCorrectAnswer()))) return null;
+            if (q.getTaskType() == ExamTaskType.TRUE_FALSE && !"RICHTIG".equals(q.getCorrectAnswer()) && !"FALSCH".equals(q.getCorrectAnswer())) return null;
+        }
+
+        ObjectNode node = mapper.createObjectNode();
+        if (e.getExternalId() != null) node.put("externalId", e.getExternalId());
+        node.put("exerciseType", ExamTextQuestionsReader.EXERCISE_TYPE);
+        node.put("skill", ExamTextQuestionsReader.SKILL);
+        node.put("title", e.getTitle());
+        Object topic = e.getMetadata().get("topic");
+        if (topic != null) node.put("topic", topic.toString());
+        node.put("difficulty", String.valueOf(e.getMetadata().getOrDefault("languageLevel", "A2_B1")));
+        node.putObject("instructions").put("de", e.getTeilDescription() == null ? "" : e.getTeilDescription());
+
+        ArrayNode texts = node.putArray("texts");
+        for (int i = 0; i < 3; i++) {
+            Map<String, Object> stored = storedTexts.get(i) instanceof Map<?, ?> m ? (Map<String, Object>) m : Map.of();
+            ExamPassage passage = e.getPassages().get(i);
+            boolean hasMeta = stored.get("sender") != null || stored.get("date") != null;
+            ObjectNode t = texts.addObject();
+            t.put("id", String.valueOf(stored.getOrDefault("id", "text_" + (i + 1))));
+            t.put("number", i + 1);
+            t.put("type", String.valueOf(stored.getOrDefault("type", "INFORMATION_TEXT")));
+            t.put("title", passage.getLabel());
+            if (stored.get("sender") != null) t.put("sender", stored.get("sender").toString()); else t.putNull("sender");
+            if (stored.get("date") != null) t.put("date", stored.get("date").toString()); else t.putNull("date");
+            t.put("body", textBodyOf(passage.getContent(), hasMeta));
+            ArrayNode questions = t.putArray("questions");
+            for (ExamQuestion q : ordered) {
+                if (q.getSectionIndex() != i) continue;
+                int number = q.getQuestionNumber() != null ? q.getQuestionNumber() : 31 + questions.size() + i * 2;
+                ObjectNode out = questions.addObject();
+                out.put("number", number);
+                Map<String, Object> detail = detailByNumber.getOrDefault(number, Map.of());
+                if (q.getTaskType() == ExamTaskType.TRUE_FALSE) {
+                    out.put("type", ExamTextQuestionsReader.TRUE_FALSE);
+                    out.put("statement", q.getPrompt());
+                    out.put("correctAnswer", q.getCorrectAnswer());
+                } else {
+                    out.put("type", ExamTextQuestionsReader.MULTIPLE_CHOICE);
+                    out.put("question", q.getPrompt());
+                    ArrayNode options = out.putArray("options");
+                    String correctKey = "a";
+                    for (int j = 0; j < q.getOptions().size(); j++) {
+                        String key = String.valueOf((char) ('a' + j));
+                        options.addObject().put("key", key).put("text", q.getOptions().get(j));
+                        if (q.getOptions().get(j).equals(q.getCorrectAnswer())) correctKey = key;
+                    }
+                    out.put("correctAnswer", correctKey);
+                }
+                Object explanation = detail.get("explanation");
+                ObjectNode explanationNode = explanation == null ? mapper.createObjectNode() : mapper.valueToTree(explanation);
+                if (!explanationNode.has("de") && q.getExplanation() != null) explanationNode.put("de", q.getExplanation());
+                out.set("explanation", explanationNode);
+            }
         }
         ObjectNode metadata = node.putObject("metadata");
         metadata.put("schemaVersion", 1);

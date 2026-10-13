@@ -83,6 +83,14 @@ public record ExamContentSpec(
         return isSituationMatching() && examType == ExamType.DTZ;
     }
 
+    /**
+     * True for DTZ Lesen Teil 3: three independent texts, each followed by one richtig/falsch and one multiple-choice (a, b, c) task,
+     * numbered 31-36 ({@code textCount} texts, {@code questionCount} tasks in total, {@code optionCount} options per multiple-choice task).
+     */
+    public boolean isTextQuestions() {
+        return taskType == ExamTaskType.TEXT_QUESTIONS;
+    }
+
     /** Situation spec: {@code questionCount} situations numbered from {@code firstQuestionNumber}, {@code optionCount} ads a, b, c ... */
     public int situationCount() {
         return questionCount;

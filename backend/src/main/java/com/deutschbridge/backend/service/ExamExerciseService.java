@@ -234,7 +234,8 @@ public class ExamExerciseService {
                         e.getUpdatedAt(),
                         metadataText(e, "topic"),
                         metadataText(e, "sourceType"),
-                        e.getCreatedAt()))
+                        e.getCreatedAt(),
+                        e.getPassages() != null ? e.getPassages().size() : 0))
                 .toList();
     }
 

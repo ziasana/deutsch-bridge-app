@@ -62,4 +62,17 @@ class ExamAttemptExplanationLanguageTest {
         q.setQuestionNumber(22);
         assertEquals("Das Sozialamt hilft.", ExamAttemptService.localizedExplanation(e, q, "PR"));
     }
+
+    @Test
+    void textQuestionsAreLocalisedByQuestionNumber() {
+        ExamExercise e = new ExamExercise();
+        e.setMetadata(Map.of("textQuestions", Map.of("questions", List.of(
+                Map.of("number", 33, "explanation", Map.of("en", "The course starts earlier.", "fa", "کلاس زودتر شروع می‌شود."))))));
+        ExamQuestion q = new ExamQuestion();
+        q.setQuestionNumber(33);
+        q.setExplanation("Der Kurs beginnt früher.");
+        assertEquals("کلاس زودتر شروع می‌شود.", ExamAttemptService.localizedExplanation(e, q, "PR"));
+        assertEquals("The course starts earlier.", ExamAttemptService.localizedExplanation(e, q, "EN"));
+        assertEquals("Der Kurs beginnt früher.", ExamAttemptService.localizedExplanation(e, q, "DE"));
+    }
 }

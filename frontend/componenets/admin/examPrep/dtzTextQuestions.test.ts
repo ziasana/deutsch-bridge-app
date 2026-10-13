@@ -55,18 +55,23 @@ describe("dtzTextQuestions", () => {
     });
 
     it("validates complete texts and reports the first problem otherwise", () => {
-        const texts = [passage("Text 1"), passage("Text 2")];
-        expect(validateTextQuestions(texts, [...complete(0), ...complete(1)])).toBeNull();
-        expect(validateTextQuestions(texts, complete(0))).toMatch(/Text 2: the richtig\/falsch statement is missing/);
-        expect(validateTextQuestions([], [])).toMatch(/at least one text/);
-        const noAnswer = updateTextTask(complete(0), 0, "TRUE_FALSE", { correctAnswer: "" });
-        expect(validateTextQuestions([passage("Text 1")], noAnswer)).toMatch(/richtig or falsch/);
-        const noCorrect = updateTextTask(complete(0), 0, "MULTIPLE_CHOICE", { correctAnswer: "" });
-        expect(validateTextQuestions([passage("Text 1")], noCorrect)).toMatch(/which option/);
+        const texts = [passage("Text 1"), passage("Text 2"), passage("Text 3")];
+        const all = [...complete(0), ...complete(1), ...complete(2)];
+        expect(validateTextQuestions(texts, all)).toBeNull();
+        expect(validateTextQuestions(texts, [...complete(0), ...complete(1)])).toMatch(/Text 3: the richtig\/falsch statement is missing/);
+        expect(validateTextQuestions([], [])).toMatch(/Exactly 3 texts/);
+        const noAnswer = updateTextTask(all, 0, "TRUE_FALSE", { correctAnswer: "" });
+        expect(validateTextQuestions(texts, noAnswer)).toMatch(/richtig or falsch/);
+        const noCorrect = updateTextTask(all, 0, "MULTIPLE_CHOICE", { correctAnswer: "" });
+        expect(validateTextQuestions(texts, noCorrect)).toMatch(/which option/);
+        const twoOptions = updateChoiceOption(all, 1, 2, "");
+        expect(validateTextQuestions(texts, twoOptions)).toMatch(/exactly 3 options/);
     });
 
-    it("ignores texts without content", () => {
-        expect(validateTextQuestions([passage("Text 1"), passage("Text 2", "<p></p>")], complete(0))).toBeNull();
+    it("requires exactly three texts with content", () => {
+        const all = [...complete(0), ...complete(1), ...complete(2)];
+        expect(validateTextQuestions([passage("Text 1"), passage("Text 2"), passage("Text 3", "<p></p>")], all)).toMatch(/Exactly 3 texts are required \(found 2\)/);
+        expect(validateTextQuestions([passage("Text 1"), passage("Text 2"), passage("Text 3"), passage("Text 4")], all)).toMatch(/Exactly 3 texts are required \(found 4\)/);
     });
 
     it("builds ordered, numbered questions for the kept texts only", () => {

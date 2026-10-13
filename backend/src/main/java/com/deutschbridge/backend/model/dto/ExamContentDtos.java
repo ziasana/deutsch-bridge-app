@@ -44,8 +44,28 @@ public final class ExamContentDtos {
             /** DTZ Lesen Teil 1: NEW_SCENARIO | AVOID_KNOWN_TOPICS | RANDOM (default). */
             String variation,
             /** DTZ Lesen Teil 2: advertisement categories (see ExamContentPromptBuilder.AD_CATEGORIES); empty = the AI chooses. */
-            List<String> adCategories
+            List<String> adCategories,
+            /** DTZ Lesen Teil 3: RANDOM_MIX (default) | PRESS_EMAIL_NOTICE | THREE_PRESS | THREE_EMAILS | THREE_NOTICES | CUSTOM. */
+            String textMix,
+            /** DTZ Lesen Teil 3, textMix CUSTOM: the type of text 1, 2 and 3 (see ExamContentPromptBuilder.LESEN_TEXT_TYPES). */
+            List<String> customTextTypes,
+            /** DTZ Lesen Teil 3: SHORT | MEDIUM | LONG (default MEDIUM). */
+            String textLength,
+            /** DTZ Lesen Teil 3: include dates and times where appropriate (default true). */
+            Boolean includeDatesTimes,
+            /** DTZ Lesen Teil 3: optional metadata tags the AI should put into metadata.tags. */
+            List<String> tags
     ) {
+        /** The request shape before the Teil 3 text settings existed. */
+        public PromptRequest(String exam, String level, String section, String part, Integer count, String difficulty,
+                             List<String> topics, String notes, Boolean includeVisuals, String textType, List<String> grammarCategories,
+                             String contextMode, List<String> wordCategories, String scenarioType, String relationship,
+                             String communicationType, String sourceType, Boolean includeExample, String variation, List<String> adCategories) {
+            this(exam, level, section, part, count, difficulty, topics, notes, includeVisuals, textType, grammarCategories,
+                    contextMode, wordCategories, scenarioType, relationship, communicationType, sourceType, includeExample, variation,
+                    adCategories, null, null, null, null, null);
+        }
+
         /** The request shape before the Teil 2 advertisement categories existed. */
         public PromptRequest(String exam, String level, String section, String part, Integer count, String difficulty,
                              List<String> topics, String notes, Boolean includeVisuals, String textType, List<String> grammarCategories,
@@ -134,7 +154,12 @@ public final class ExamContentDtos {
             List<String> directoryVariations,
             /** DTZ Lesen Teil 2 generator choices (first entry = default). */
             List<String> adTopics,
-            List<String> adCategories
+            List<String> adCategories,
+            /** DTZ Lesen Teil 3 generator choices (first entry = default). */
+            List<String> lesenTextTopics,
+            List<String> lesenTextMixes,
+            List<String> lesenTextTypes,
+            List<String> lesenTextLengths
     ) {
     }
 
@@ -257,6 +282,16 @@ public final class ExamContentDtos {
     ) {
     }
 
+    /** DTZ Lesen Teil 3: one task of a text; options are empty for TRUE_FALSE, correctAnswer is RICHTIG / FALSCH or a, b, c (admin preview only). */
+    public record TextTaskView(Integer number, String type, String prompt, List<HeadingView> options, String correctAnswer, Map<String, String> explanation) {
+    }
+
+    public record TextItemView(String id, Integer number, String type, String title, String sender, String date, String body, List<TextTaskView> tasks) {
+    }
+
+    public record TextQuestionsView(String topic, String languageLevel, List<TextItemView> texts) {
+    }
+
     public record ExercisePreview(
             String title,
             String instructions,
@@ -275,8 +310,17 @@ public final class ExamContentDtos {
             /** Speaking tasks (Mündlicher Ausdruck) only. */
             SpeakingView speaking,
             /** DTZ Lesen Teil 1 (directory matching) only: the information source, the example and the answer-key details. */
-            DirectoryView directory
+            DirectoryView directory,
+            /** DTZ Lesen Teil 3 (texts with richtig/falsch + multiple choice) only: the three texts with their tasks and the answer key. */
+            TextQuestionsView textQuestions
     ) {
+        public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
+                               String readingText, List<QuestionView> questions, List<SituationView> situations,
+                               List<AdvertisementView> advertisements, ContextView context, WritingView writing, SpeakingView speaking,
+                               DirectoryView directory) {
+            this(title, instructions, headings, texts, readingText, questions, situations, advertisements, context, writing, speaking, directory, null);
+        }
+
         public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
                                String readingText, List<QuestionView> questions, List<SituationView> situations,
                                List<AdvertisementView> advertisements, ContextView context, WritingView writing, SpeakingView speaking) {

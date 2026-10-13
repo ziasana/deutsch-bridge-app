@@ -64,6 +64,37 @@ const AD_CATEGORY_LABELS: Record<string, string> = {
     CONTINUING_EDUCATION: "Continuing education",
     SERVICES: "Local services",
 };
+/** DTZ Lesen Teil 3 (Pressetexte und formelle Mitteilungen): labels of the generator settings; the values come from the backend. */
+const LESEN_TOPIC_LABELS: Record<string, string> = {
+    RANDOM: "Random",
+    TRANSPORT: "Public transport and mobility",
+    WORK: "Work and employment",
+    EDUCATION: "Education and courses",
+    FAMILY: "Family and childcare",
+    HEALTH: "Health and appointments",
+    HOUSING: "Housing and neighbourhood",
+    LEISURE: "Leisure and events",
+    PUBLIC_SERVICES: "Public services",
+    SHOPPING: "Shopping and everyday life",
+    ENVIRONMENT: "Environment",
+    COMMUNITY: "Community projects",
+};
+const LESEN_MIX_LABELS: Record<string, string> = {
+    RANDOM_MIX: "Random mix",
+    PRESS_EMAIL_NOTICE: "Press text + email + formal notice",
+    THREE_PRESS: "Three press texts",
+    THREE_EMAILS: "Three emails or messages",
+    THREE_NOTICES: "Three formal notices",
+    CUSTOM: "Custom mix",
+};
+const LESEN_TYPE_LABELS: Record<string, string> = {
+    PRESS_TEXT: "Press text",
+    EMAIL: "Email",
+    FORMAL_NOTICE: "Formal notice",
+    PUBLIC_ANNOUNCEMENT: "Public announcement",
+    INFORMATION_TEXT: "Information text",
+};
+const LESEN_LENGTH_LABELS: Record<string, string> = { SHORT: "Short (≈ 80–130 words)", MEDIUM: "Medium (≈ 100–160 words)", LONG: "Long (≈ 120–180 words)" };
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const DIFFICULTY_LABELS: Record<string, string> = { MIXED: "Mixed (20% easy · 60% medium · 20% hard)", EASY: "Easy", MEDIUM: "Medium", HARD: "Hard" };
 const SCENARIO_CHOICES: { value: string; label: string; hint: string }[] = [
@@ -130,6 +161,14 @@ export default function ContentGenerator() {
     const [adLevel, setAdLevel] = useState("A2_B1");
     const [adExample, setAdExample] = useState(false);
     const [adVariation, setAdVariation] = useState("RANDOM");
+    const [txTopics, setTxTopics] = useState<string[]>([]); // DTZ Lesen Teil 3; empty = random
+    const [txMix, setTxMix] = useState("RANDOM_MIX");
+    const [txCustom, setTxCustom] = useState<string[]>(["PRESS_TEXT", "EMAIL", "FORMAL_NOTICE"]);
+    const [txLevel, setTxLevel] = useState("A2_B1");
+    const [txLength, setTxLength] = useState("MEDIUM");
+    const [txDates, setTxDates] = useState(true);
+    const [txVariation, setTxVariation] = useState("RANDOM");
+    const [txTags, setTxTags] = useState("");
     const [result, setResult] = useState<PromptResponse | null>(null);
     const [generating, setGenerating] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
@@ -159,6 +198,28 @@ export default function ContentGenerator() {
 
     const directorySpec = spec?.taskType === "DIRECTORY_MATCHING";
     const adSpec = spec?.taskType === "SITUATION_MATCHING" && spec.exam === "DTZ";
+    const textSpec = spec?.taskType === "TEXT_QUESTIONS";
+    const txRequest = useMemo(
+        () => ({
+            exam, level, section, part, count: Math.min(50, Math.max(1, Number.parseInt(count, 10) || 1)), difficulty: txLevel, topics: txTopics, notes: notes.trim() || undefined,
+            variation: txVariation, textMix: txMix, customTextTypes: txMix === "CUSTOM" ? txCustom : undefined, textLength: txLength, includeDatesTimes: txDates,
+            tags: txTags.split(",").map((t) => t.trim()).filter(Boolean),
+        }),
+        [exam, level, section, part, count, txLevel, txTopics, notes, txVariation, txMix, txCustom, txLength, txDates, txTags],
+    );
+
+    // The DTZ Teil 3 prompt follows its settings as well: every change asks the backend for the updated prompt.
+    useEffect(() => {
+        if (!textSpec) return;
+        let cancelled = false;
+        const timer = setTimeout(() => {
+            generateExamContentPrompt(txRequest)
+                .then((res) => { if (!cancelled) setResult(res.data); })
+                .catch((err) => { if (!cancelled) toast.error(errorMessage(err, "Failed to generate the prompt.")); });
+        }, 300);
+        return () => { cancelled = true; clearTimeout(timer); };
+    }, [textSpec, txRequest]);
+
     const adRequest = useMemo(
         () => ({
             exam, level, section, part, count: Math.min(50, Math.max(1, Number.parseInt(count, 10) || 1)), difficulty: adLevel, topics: adTopicSel, notes: notes.trim() || undefined,
@@ -200,7 +261,9 @@ export default function ContentGenerator() {
         const writingSpec = spec?.taskType === "WRITING_TASK";
         setGenerating(true);
         try {
-            const res = await generateExamContentPrompt(adSpec
+            const res = await generateExamContentPrompt(textSpec
+                ? txRequest
+                : adSpec
                 ? adRequest
                 : directorySpec
                 ? {
@@ -299,6 +362,8 @@ export default function ContentGenerator() {
                                     ? `✓ ${spec.label}: one text with ${spec.questionCount} gaps (21–30), ${spec.optionCount} options (a, b, c) each.`
                                     : spec.taskType === "DIRECTORY_MATCHING"
                                     ? `✓ ${spec.label}: one information source (Wegweiser, Verzeichnis, Katalog ...) and exactly ${spec.questionCount} situations (21–25) with ${spec.optionCount} options each.`
+                                    : textSpec
+                                    ? `✓ ${spec.label}: ${spec.textCount} texts, each with a richtig/falsch task and a multiple-choice task (a, b, c) — questions 31–36.`
                                     : adSpec
                                     ? `✓ ${spec.label}: ${spec.questionCount} situations (26–30), ${spec.optionCount} advertisements (a–h); four situations match one advertisement each, exactly one has the answer X.`
                                     : spec.taskType === "SITUATION_MATCHING"
@@ -335,6 +400,75 @@ export default function ContentGenerator() {
                                 <input type="checkbox" checked={includeVisuals} onChange={(e) => setIncludeVisuals(e.target.checked)} />
                                 Include visual briefs (image type, image prompt, alt text) for the advertisements
                             </label>
+                        )}
+
+                        {textSpec && (
+                            <div className="space-y-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Generation settings</h3>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <label>
+                                        <span className={labelClass}>Number of exercise sets</span>
+                                        <Input type="number" min={1} max={50} value={count} onChange={(e) => setCount(e.target.value)} />
+                                    </label>
+                                    <label>
+                                        <span className={labelClass}>Difficulty</span>
+                                        <select className={fieldClass} value={txLevel} onChange={(e) => setTxLevel(e.target.value)}>
+                                            {(options?.directoryLevels ?? ["A2_B1"]).map((x) => <option key={x} value={x}>{DIRECTORY_LEVEL_LABELS[x] ?? x}</option>)}
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span className={labelClass}>Text types</span>
+                                        <select className={fieldClass} value={txMix} onChange={(e) => setTxMix(e.target.value)}>
+                                            {(options?.lesenTextMixes ?? ["RANDOM_MIX"]).map((x) => <option key={x} value={x}>{LESEN_MIX_LABELS[x] ?? x}</option>)}
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span className={labelClass}>Text length</span>
+                                        <select className={fieldClass} value={txLength} onChange={(e) => setTxLength(e.target.value)}>
+                                            {(options?.lesenTextLengths ?? ["MEDIUM"]).map((x) => <option key={x} value={x}>{LESEN_LENGTH_LABELS[x] ?? x}</option>)}
+                                        </select>
+                                    </label>
+                                    <label className="col-span-2">
+                                        <span className={labelClass}>Scenario variety</span>
+                                        <select className={fieldClass} value={txVariation} onChange={(e) => setTxVariation(e.target.value)}>
+                                            {(options?.directoryVariations ?? ["RANDOM"]).map((x) => <option key={x} value={x}>{x === "RANDOM" ? "Random" : x === "NEW_SCENARIO" ? "Generate a new set of scenarios" : "Avoid recently used topics"}</option>)}
+                                        </select>
+                                    </label>
+                                </div>
+                                {txMix === "CUSTOM" && (
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {[0, 1, 2].map((i) => (
+                                            <label key={i}>
+                                                <span className={labelClass}>Text {i + 1}</span>
+                                                <select className={fieldClass} value={txCustom[i]} onChange={(e) => setTxCustom((prev) => prev.map((v, j) => (j === i ? e.target.value : v)))}>
+                                                    {(options?.lesenTextTypes ?? []).map((x) => <option key={x} value={x}>{LESEN_TYPE_LABELS[x] ?? x}</option>)}
+                                                </select>
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
+                                <fieldset>
+                                    <legend className={labelClass}>Topic {txTopics.length === 0 && <span className="font-normal text-gray-500">(random)</span>}</legend>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(options?.lesenTextTopics ?? []).filter((x) => x !== "RANDOM").map((topic) => (
+                                            <ChipButton key={topic} on={txTopics.includes(topic)} label={LESEN_TOPIC_LABELS[topic] ?? topic}
+                                                onClick={() => setTxTopics((prev) => (prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]))} />
+                                        ))}
+                                    </div>
+                                </fieldset>
+                                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                    <input type="checkbox" checked={txDates} onChange={(e) => setTxDates(e.target.checked)} />
+                                    Include dates and times where appropriate
+                                </label>
+                                <label className="block">
+                                    <span className={labelClass}>Metadata tags <span className="font-normal text-gray-500">(optional, comma-separated)</span></span>
+                                    <Input value={txTags} onChange={(e) => setTxTags(e.target.value)} placeholder="e.g. verkehr, alltag" />
+                                </label>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Fixed by the DTZ format: three texts, two questions each (richtig/falsch, then a/b/c), numbered 31–36. The settings only shape the content.
+                                    Explanations are requested in German, English and Persian. With more than one set the AI returns one batch file. Imported content is always saved as a draft.
+                                </p>
+                            </div>
                         )}
 
                         {adSpec && (
@@ -447,7 +581,7 @@ export default function ContentGenerator() {
                             </div>
                         )}
 
-                        {!directorySpec && !adSpec && (
+                        {!directorySpec && !adSpec && !textSpec && (
                         <div className="grid grid-cols-2 gap-3">
                             <label>
                                 <span className={labelClass}>Number of exercise sets</span>
@@ -577,7 +711,7 @@ export default function ContentGenerator() {
                             </>
                         )}
 
-                        {!directorySpec && !adSpec && (
+                        {!directorySpec && !adSpec && !textSpec && (
                         <fieldset>
                             <legend className={labelClass}>Topics {topics.length === 0 && <span className="font-normal text-gray-500">(automatic)</span>}</legend>
                             <div className="flex flex-wrap gap-2">
@@ -616,7 +750,7 @@ export default function ContentGenerator() {
 
                     <div className={`${cardClass} p-6 min-w-0`}>
                         <div className="flex flex-wrap items-center justify-between gap-3">
-                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">AI generation prompt</h2>
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">AI Content Generation Prompt</h2>
                             {result && (
                                 <div className="flex flex-wrap gap-2">
                                     <Button variant="secondary" className="px-3 py-1.5 text-sm flex items-center gap-1.5" onClick={() => copy("prompt", result.prompt)}>
@@ -651,6 +785,28 @@ export default function ContentGenerator() {
                                         Alle Lerninhalte (Redemittel, Beispielantworten, Dialoge) sind nur auf Deutsch – es gibt keine englischen oder persischen Übersetzungen.
                                         Laden Sie anschließend die erzeugte JSON-Datei hoch. Importierte Aufgaben werden immer als Entwurf (DRAFT) gespeichert.
                                     </p>
+                                )}
+                                {textSpec && (
+                                    <div className="mt-3 space-y-3">
+                                        <dl className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-md border border-gray-200 p-3 text-sm dark:border-gray-700 sm:grid-cols-3">
+                                            <div><dt className="text-xs text-gray-500">Topic</dt><dd>{txTopics.length ? txTopics.map((t) => LESEN_TOPIC_LABELS[t] ?? t).join(", ") : "Random"}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Text types</dt><dd>{txMix === "CUSTOM" ? txCustom.map((t) => LESEN_TYPE_LABELS[t] ?? t).join(" · ") : (LESEN_MIX_LABELS[txMix] ?? txMix)}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Difficulty</dt><dd>{DIRECTORY_LEVEL_LABELS[txLevel] ?? txLevel}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Text length</dt><dd>{LESEN_LENGTH_LABELS[txLength] ?? txLength}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Exercise sets</dt><dd>{count}</dd></div>
+                                            <div><dt className="text-xs text-gray-500">Import status</dt><dd>Draft</dd></div>
+                                        </dl>
+                                        <p className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
+                                            ℹ️ Hinweis: Kopieren Sie den Prompt und verwenden Sie ihn in ChatGPT, Claude, Gemini oder einem anderen KI-Tool. Speichern Sie die generierte
+                                            JSON-Ausgabe als Datei und laden Sie diese anschließend hier hoch. Prüfen Sie Texte, Antworten und Erklärungen vor der Veröffentlichung.
+                                        </p>
+                                        <ol className="list-decimal space-y-1 pl-5 text-sm text-gray-600 dark:text-gray-300">
+                                            <li>Copy the prompt and paste it into an external AI tool.</li>
+                                            <li>Save the AI&apos;s answer as a <code>.json</code> file (only the JSON object, no Markdown).</li>
+                                            <li>Upload the file on the <Link href="/admin/exam-prep/import" className="underline text-blue-600 dark:text-blue-400">Import JSON</Link> page, check errors, warnings and the preview.</li>
+                                            <li>Import it as a draft, edit if needed, and publish it only after you have solved all six questions from the texts yourself.</li>
+                                        </ol>
+                                    </div>
                                 )}
                                 {adSpec && (
                                     <div className="mt-3 space-y-3">

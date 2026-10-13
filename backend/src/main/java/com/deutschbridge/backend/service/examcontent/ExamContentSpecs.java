@@ -60,6 +60,14 @@ public final class ExamContentSpecs {
                     "1.0",
                     5, 8, 26),
             new ExamContentSpec(
+                    ExamType.DTZ, LearningLevel.B1, ExamSection.LESEVERSTEHEN, 3, ExamTaskType.TEXT_QUESTIONS,
+                    0, 3, 0, 0,
+                    "Lesen Sie die drei Texte. Zu jedem Text gibt es zwei Aufgaben. Entscheiden Sie bei jedem Text, ob die Aussage richtig oder falsch ist "
+                            + "und welche Antwort (a, b oder c) am besten passt. Markieren Sie Ihre Lösungen für die Aufgaben 31–36 auf dem Antwortbogen.",
+                    "exam-content/prompts/text-questions.v1.0.txt",
+                    "1.0",
+                    6, 3, 31),
+            new ExamContentSpec(
                     ExamType.TELC, LearningLevel.B1, ExamSection.SPRACHBAUSTEINE, 1, ExamTaskType.MULTIPLE_CHOICE,
                     0, 0, 120, 220,
                     "Lesen Sie den Text und schließen Sie die Lücken 21–30. Welche Lösung (a, b oder c) ist jeweils richtig? "

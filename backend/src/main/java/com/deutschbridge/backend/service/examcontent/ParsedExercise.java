@@ -31,8 +31,20 @@ public record ParsedExercise(
         /** Speaking tasks (Mündlicher Ausdruck): the validated, part-specific learner content. */
         Speaking speaking,
         /** DTZ Lesen Teil 1 (directory matching): the shared information source, the optional example and per-situation extras. */
-        Directory directory
+        Directory directory,
+        /** DTZ Lesen Teil 3 (texts with richtig/falsch + multiple choice): the three texts with their two tasks each. */
+        TextSet textSet
 ) {
+    /** Everything except the text set (all shapes before DTZ Lesen Teil 3). */
+    public ParsedExercise(int index, ExamContentSpec spec, String externalId, String title, String instructions,
+                          List<Heading> headings, List<Text> texts, Map<String, Object> metadata,
+                          String readingText, List<Question> questions, List<Situation> situations,
+                          List<Advertisement> advertisements, List<Option> wordBank, Context context, Writing writing,
+                          Speaking speaking, Directory directory) {
+        this(index, spec, externalId, title, instructions, headings, texts, metadata, readingText, questions, situations,
+                advertisements, wordBank, context, writing, speaking, directory, null);
+    }
+
     /** Everything except the directory task (all pre-DTZ shapes). */
     public ParsedExercise(int index, ExamContentSpec spec, String externalId, String title, String instructions,
                           List<Heading> headings, List<Text> texts, Map<String, Object> metadata,
@@ -84,6 +96,9 @@ public record ParsedExercise(
 
     /** Every text that identifies this exercise's content: the matching texts, or the single reading text. */
     public List<String> textContents() {
+        if (textSet != null) {
+            return textSet.texts().stream().map(TextItem::body).toList();
+        }
         if (directory != null) {
             return List.of(directory.plainText());
         }
@@ -123,6 +138,25 @@ public record ParsedExercise(
             }
             return b.toString().strip();
         }
+    }
+
+    /**
+     * DTZ Lesen Teil 3: {@code texts} are the three texts in order. The six scored tasks are also {@link #questions()} of the
+     * exercise (TRUE_FALSE: correctOptionId RICHTIG / FALSCH, no options; MULTIPLE_CHOICE: options a, b, c); this holds the
+     * text structure and the de/en/fa explanations that only the admin sees.
+     */
+    public record TextSet(String topic, String languageLevel, List<TextItem> texts) {
+        /** The distinct text types in order of appearance, e.g. PRESS_TEXT, EMAIL, FORMAL_NOTICE. */
+        public List<String> textTypes() {
+            return texts.stream().map(TextItem::type).filter(java.util.Objects::nonNull).distinct().toList();
+        }
+    }
+
+    public record TextItem(String id, int number, String type, String title, String sender, String date, String body, List<TextTask> tasks) {
+    }
+
+    /** {@code kind} is TRUE_FALSE or MULTIPLE_CHOICE; {@code options} is empty for TRUE_FALSE; {@code correctAnswer} RICHTIG / FALSCH or a, b, c. */
+    public record TextTask(Integer number, String kind, String prompt, List<Option> options, String correctAnswer, Map<String, String> explanation) {
     }
 
     public record Entry(String id, String heading, List<String> details) {
