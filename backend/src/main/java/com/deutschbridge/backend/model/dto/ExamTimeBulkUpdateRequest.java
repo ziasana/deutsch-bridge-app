@@ -1,6 +1,7 @@
 package com.deutschbridge.backend.model.dto;
 
 import com.deutschbridge.backend.model.enums.ExamSection;
+import com.deutschbridge.backend.model.enums.ExamType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 
 import java.math.BigDecimal;
@@ -11,6 +12,8 @@ import java.util.List;
  * instead of being silently truncated by Jackson's float-to-int coercion.
  */
 public record ExamTimeBulkUpdateRequest(
+        /** Null means TELC. */
+        ExamType examType,
         LearningLevel level,
         /** Null leaves the level's total duration unchanged. */
         BigDecimal totalDurationMinutes,

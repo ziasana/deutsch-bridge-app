@@ -17,6 +17,7 @@ import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.enums.ExamPracticeScope;
 import com.deutschbridge.backend.model.enums.ExamSection;
 import com.deutschbridge.backend.model.enums.ExamTimeMode;
+import com.deutschbridge.backend.model.enums.ExamType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.ExamAttemptRepository;
 import com.deutschbridge.backend.repository.ExamPracticeSessionRepository;
@@ -87,7 +88,7 @@ public class ExamPracticeSessionService {
 
         // Every exercise is measured against its Teil's recommended time (a training target, not an exam rule).
         if (request.mode() == ExamTimeMode.TIME_TRAINING && session.getLevel() != null && session.getTeil() != null) {
-            timeConfigurationService.targetSeconds(session.getLevel(), session.getSection(), session.getTeil())
+            timeConfigurationService.targetSeconds(session.getExamType(), session.getLevel(), session.getSection(), session.getTeil())
                     .ifPresent(session::setTargetSeconds);
         }
 
@@ -132,10 +133,16 @@ public class ExamPracticeSessionService {
      * learner has actually practised appear, in the usual exam order.
      */
     public List<ExamTimeManagementRowResponse> timeManagement(LearningLevel level) {
-        List<ExamPracticeSession> finished = sessionRepository
-                .findByUserIdAndLevelAndCompletedAtIsNotNull(requestContext.getUserId(), level);
+        return timeManagement(ExamType.TELC, level);
+    }
 
-        return ExamTimeDefaults.SUPPORTED_PARTS.stream()
+    public List<ExamTimeManagementRowResponse> timeManagement(ExamType examType, LearningLevel level) {
+        List<ExamPracticeSession> finished = sessionRepository
+                .findByUserIdAndLevelAndCompletedAtIsNotNull(requestContext.getUserId(), level).stream()
+                .filter(s -> s.getExamType() == examType)
+                .toList();
+
+        return ExamTimeDefaults.supportedParts(examType).stream()
                 .map(part -> {
                     List<Integer> times = finished.stream()
                             .filter(s -> s.getSection() == part.section() && Objects.equals(s.getTeil(), part.teil()))
@@ -144,7 +151,7 @@ public class ExamPracticeSessionService {
                             .toList();
                     if (times.isEmpty()) return null;
                     int average = (int) Math.round(times.stream().mapToInt(Integer::intValue).average().orElse(0));
-                    Integer target = timeConfigurationService.targetSeconds(level, part.section(), part.teil()).orElse(null);
+                    Integer target = timeConfigurationService.targetSeconds(examType, level, part.section(), part.teil()).orElse(null);
                     return new ExamTimeManagementRowResponse(part.section().name(), part.teil(), times.size(), average,
                             target, target != null ? average - target : null);
                 })
@@ -172,6 +179,7 @@ public class ExamPracticeSessionService {
         }
         ExamExercise exercise = examExerciseService.findById(request.exerciseId());
         session.setExerciseId(exercise.getId());
+        session.setExamType(exercise.getExamType() != null ? exercise.getExamType() : ExamType.TELC);
         session.setSection(exercise.getSection());
         session.setLevel(exercise.getLevel());
         session.setTeil(ExamTeilResolver.teilOf(exercise));
@@ -181,6 +189,7 @@ public class ExamPracticeSessionService {
         if (request.section() == null || request.level() == null || request.teil() == null) {
             throw new IllegalArgumentException("Section, level and Teil are required");
         }
+        if (request.examType() != null) session.setExamType(request.examType());
         session.setSection(request.section());
         session.setLevel(request.level());
         session.setTeil(request.teil());

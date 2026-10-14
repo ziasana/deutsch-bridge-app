@@ -27,13 +27,12 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Admin management and learner lookup of the exam timing configuration. Only TELC is configurable
- * today, so every query is scoped to ExamType.TELC.
+ * Admin management and learner lookup of the exam timing configuration. Telc and DTZ are configurable; every query is scoped to one
+ * exam type. The methods without an exam type are the Telc ones.
  */
 @Service
 public class ExamTimeConfigurationService {
 
-    static final ExamType EXAM_TYPE = ExamType.TELC;
     static final int MIN_MINUTES = 1;
 
     private static final String NOT_FOUND_MSG = "Time configuration not found!";
@@ -57,7 +56,11 @@ public class ExamTimeConfigurationService {
 
     /** Enabled Teil targets for a level. Empty when nothing is configured - callers must treat that as "no timing". */
     public List<ExamTimeConfigurationResponse> findEnabledForLevel(LearningLevel level) {
-        return timeRepository.findByExamTypeAndLevel(EXAM_TYPE, level).stream()
+        return findEnabledForLevel(ExamType.TELC, level);
+    }
+
+    public List<ExamTimeConfigurationResponse> findEnabledForLevel(ExamType examType, LearningLevel level) {
+        return timeRepository.findByExamTypeAndLevel(requireTimed(examType), level).stream()
                 .filter(ExamTimeConfiguration::isEnabled)
                 .map(ExamTimeConfigurationService::toLearnerResponse)
                 .toList();
@@ -65,30 +68,45 @@ public class ExamTimeConfigurationService {
 
     public ExamTimeConfigurationResponse findEnabled(LearningLevel level, ExamSection section, int teil)
             throws DataNotFoundException {
-        return findEnabledEntity(level, section, teil)
+        return findEnabled(ExamType.TELC, level, section, teil);
+    }
+
+    public ExamTimeConfigurationResponse findEnabled(ExamType examType, LearningLevel level, ExamSection section, int teil)
+            throws DataNotFoundException {
+        return findEnabledEntity(examType, level, section, teil)
                 .map(ExamTimeConfigurationService::toLearnerResponse)
                 .orElseThrow(() -> new DataNotFoundException(NOT_FOUND_MSG));
     }
 
     /** The Teil's target in seconds, or empty if it is missing or disabled. */
     public Optional<Integer> targetSeconds(LearningLevel level, ExamSection section, int teil) {
-        return findEnabledEntity(level, section, teil).map(c -> c.getRecommendedMinutes() * 60);
+        return targetSeconds(ExamType.TELC, level, section, teil);
     }
 
-    private Optional<ExamTimeConfiguration> findEnabledEntity(LearningLevel level, ExamSection section, int teil) {
-        return timeRepository.findByExamTypeAndLevelAndSectionAndTeil(EXAM_TYPE, level, section, teil)
+    public Optional<Integer> targetSeconds(ExamType examType, LearningLevel level, ExamSection section, int teil) {
+        return findEnabledEntity(examType, level, section, teil).map(c -> c.getRecommendedMinutes() * 60);
+    }
+
+    private Optional<ExamTimeConfiguration> findEnabledEntity(ExamType examType, LearningLevel level, ExamSection section, int teil) {
+        if (!ExamTimeDefaults.TIMED_EXAMS.contains(examType)) return Optional.empty();
+        return timeRepository.findByExamTypeAndLevelAndSectionAndTeil(examType, level, section, teil)
                 .filter(ExamTimeConfiguration::isEnabled);
     }
 
     // ---- admin ----
 
     public ExamTimeSettingsResponse getSettings(LearningLevel level) {
-        List<ExamTimeConfiguration> rows = timeRepository.findByExamTypeAndLevel(EXAM_TYPE, level);
-        Integer total = examConfigurationRepository.findByExamTypeAndLevel(EXAM_TYPE, level)
+        return getSettings(ExamType.TELC, level);
+    }
+
+    public ExamTimeSettingsResponse getSettings(ExamType examType, LearningLevel level) {
+        requireTimed(examType);
+        List<ExamTimeConfiguration> rows = timeRepository.findByExamTypeAndLevel(examType, level);
+        Integer total = examConfigurationRepository.findByExamTypeAndLevel(examType, level)
                 .filter(ExamConfiguration::isEnabled)
                 .map(ExamConfiguration::getTotalDurationMinutes)
                 .orElse(null);
-        return buildSettings(level, rows, total);
+        return buildSettings(examType, level, rows, total);
     }
 
     @Transactional
@@ -98,8 +116,9 @@ public class ExamTimeConfigurationService {
         }
         List<ExamTimeBulkUpdateRequest.Entry> entries = request.configurations() != null ? request.configurations() : List.of();
         LearningLevel level = request.level();
+        ExamType examType = requireTimed(request.examType() != null ? request.examType() : ExamType.TELC);
 
-        Map<Part, ExamTimeConfiguration> existing = existingByPart(level);
+        Map<Part, ExamTimeConfiguration> existing = existingByPart(examType, level);
         Integer newTotal = request.totalDurationMinutes() != null
                 ? validateTotal(request.totalDurationMinutes())
                 : null;
@@ -109,7 +128,7 @@ public class ExamTimeConfigurationService {
         Map<Part, Boolean> enabled = new LinkedHashMap<>();
         Set<Part> seen = new HashSet<>();
         for (ExamTimeBulkUpdateRequest.Entry entry : entries) {
-            Part part = requirePart(entry.section(), entry.teil());
+            Part part = requirePart(examType, entry.section(), entry.teil());
             if (!seen.add(part)) {
                 throw new IllegalArgumentException("Duplicate configuration for " + describe(part) + ".");
             }
@@ -118,19 +137,19 @@ public class ExamTimeConfigurationService {
         }
 
         Map<Part, Integer> effective = effectiveEnabledMinutes(existing, minutes, enabled);
-        Integer effectiveTotal = newTotal != null ? newTotal : currentTotal(level).orElse(null);
+        Integer effectiveTotal = newTotal != null ? newTotal : currentTotal(examType, level).orElse(null);
         requireWithinTotal(effective, effectiveTotal);
 
         minutes.forEach((part, value) -> {
-            ExamTimeConfiguration row = existing.getOrDefault(part, newRow(level, part));
+            ExamTimeConfiguration row = existing.getOrDefault(part, newRow(examType, level, part));
             row.setRecommendedMinutes(value);
             row.setEnabled(enabled.get(part));
             timeRepository.save(row);
         });
         if (newTotal != null) {
-            upsertTotal(level, newTotal);
+            upsertTotal(examType, level, newTotal);
         }
-        return getSettings(level);
+        return getSettings(examType, level);
     }
 
     @Transactional
@@ -144,47 +163,58 @@ public class ExamTimeConfigurationService {
                 : row.getRecommendedMinutes();
         boolean newEnabled = request.enabled() != null ? request.enabled() : row.isEnabled();
 
-        Map<Part, ExamTimeConfiguration> existing = existingByPart(row.getLevel());
+        Map<Part, ExamTimeConfiguration> existing = existingByPart(row.getExamType(), row.getLevel());
         Map<Part, Integer> effective = effectiveEnabledMinutes(existing, Map.of(part, newMinutes), Map.of(part, newEnabled));
-        requireWithinTotal(effective, currentTotal(row.getLevel()).orElse(null));
+        requireWithinTotal(effective, currentTotal(row.getExamType(), row.getLevel()).orElse(null));
 
         row.setRecommendedMinutes(newMinutes);
         row.setEnabled(newEnabled);
         timeRepository.save(row);
-        return getSettings(row.getLevel());
+        return getSettings(row.getExamType(), row.getLevel());
     }
 
     /** Restores a level to the built-in training defaults; levels without defaults are cleared. */
     @Transactional
     public ExamTimeSettingsResponse resetToDefaults(LearningLevel level) {
-        timeRepository.deleteByExamTypeAndLevel(EXAM_TYPE, level);
+        return resetToDefaults(ExamType.TELC, level);
+    }
+
+    @Transactional
+    public ExamTimeSettingsResponse resetToDefaults(ExamType examType, LearningLevel level) {
+        requireTimed(examType);
+        timeRepository.deleteByExamTypeAndLevel(examType, level);
         timeRepository.flush();
-        examConfigurationRepository.findByExamTypeAndLevel(EXAM_TYPE, level).ifPresent(examConfigurationRepository::delete);
+        examConfigurationRepository.findByExamTypeAndLevel(examType, level).ifPresent(examConfigurationRepository::delete);
         examConfigurationRepository.flush();
-        insertMissingDefaults(level);
-        return getSettings(level);
+        insertMissingDefaults(examType, level);
+        return getSettings(examType, level);
     }
 
     /** Inserts the built-in defaults for any level that has none yet. Never overwrites admin edits. */
     @Transactional
     public void seedDefaults() {
-        ExamTimeDefaults.DEFAULT_MINUTES.keySet().forEach(this::insertMissingDefaults);
+        List.of(ExamType.TELC, ExamType.DTZ).forEach(this::seedDefaults);
     }
 
-    private void insertMissingDefaults(LearningLevel level) {
-        Map<Part, Integer> defaults = ExamTimeDefaults.DEFAULT_MINUTES.get(level);
+    @Transactional
+    public void seedDefaults(ExamType examType) {
+        ExamTimeDefaults.defaultMinutes(examType).keySet().forEach(level -> insertMissingDefaults(examType, level));
+    }
+
+    private void insertMissingDefaults(ExamType examType, LearningLevel level) {
+        Map<Part, Integer> defaults = ExamTimeDefaults.defaultMinutes(examType).get(level);
         if (defaults == null) return;
-        Map<Part, ExamTimeConfiguration> existing = existingByPart(level);
-        ExamTimeDefaults.SUPPORTED_PARTS.stream()
+        Map<Part, ExamTimeConfiguration> existing = existingByPart(examType, level);
+        ExamTimeDefaults.supportedParts(examType).stream()
                 .filter(part -> defaults.containsKey(part) && !existing.containsKey(part))
                 .forEach(part -> {
-                    ExamTimeConfiguration row = newRow(level, part);
+                    ExamTimeConfiguration row = newRow(examType, level, part);
                     row.setRecommendedMinutes(defaults.get(part));
                     timeRepository.save(row);
                 });
-        Integer total = ExamTimeDefaults.DEFAULT_TOTAL_MINUTES.get(level);
-        if (total != null && currentTotal(level).isEmpty()) {
-            upsertTotal(level, total);
+        Integer total = ExamTimeDefaults.defaultTotalMinutes(examType).get(level);
+        if (total != null && currentTotal(examType, level).isEmpty()) {
+            upsertTotal(examType, level, total);
         }
     }
 
@@ -207,8 +237,15 @@ public class ExamTimeConfigurationService {
         return value.intValueExact();
     }
 
-    private static Part requirePart(ExamSection section, Integer teil) {
-        if (section == null || teil == null || !ExamTimeDefaults.isSupported(section, teil)) {
+    private static ExamType requireTimed(ExamType examType) {
+        if (!ExamTimeDefaults.TIMED_EXAMS.contains(examType)) {
+            throw new IllegalArgumentException("Exam times are not available for " + examType + ".");
+        }
+        return examType;
+    }
+
+    private static Part requirePart(ExamType examType, ExamSection section, Integer teil) {
+        if (section == null || teil == null || !ExamTimeDefaults.isSupported(examType, section, teil)) {
             throw new IllegalArgumentException("Unsupported exam part: " + section + " Teil " + teil + ".");
         }
         return new Part(section, teil);
@@ -225,9 +262,9 @@ public class ExamTimeConfigurationService {
 
     // ---- helpers ----
 
-    private Map<Part, ExamTimeConfiguration> existingByPart(LearningLevel level) {
+    private Map<Part, ExamTimeConfiguration> existingByPart(ExamType examType, LearningLevel level) {
         Map<Part, ExamTimeConfiguration> byPart = new LinkedHashMap<>();
-        timeRepository.findByExamTypeAndLevel(EXAM_TYPE, level)
+        timeRepository.findByExamTypeAndLevel(examType, level)
                 .forEach(row -> byPart.put(new Part(row.getSection(), row.getTeil()), row));
         return byPart;
     }
@@ -254,17 +291,17 @@ public class ExamTimeConfigurationService {
                 .sum();
     }
 
-    private Optional<Integer> currentTotal(LearningLevel level) {
-        return examConfigurationRepository.findByExamTypeAndLevel(EXAM_TYPE, level)
+    private Optional<Integer> currentTotal(ExamType examType, LearningLevel level) {
+        return examConfigurationRepository.findByExamTypeAndLevel(examType, level)
                 .filter(ExamConfiguration::isEnabled)
                 .map(ExamConfiguration::getTotalDurationMinutes);
     }
 
-    private void upsertTotal(LearningLevel level, int total) {
-        ExamConfiguration config = examConfigurationRepository.findByExamTypeAndLevel(EXAM_TYPE, level)
+    private void upsertTotal(ExamType examType, LearningLevel level, int total) {
+        ExamConfiguration config = examConfigurationRepository.findByExamTypeAndLevel(examType, level)
                 .orElseGet(() -> {
                     ExamConfiguration created = new ExamConfiguration();
-                    created.setExamType(EXAM_TYPE);
+                    created.setExamType(examType);
                     created.setLevel(level);
                     return created;
                 });
@@ -273,20 +310,20 @@ public class ExamTimeConfigurationService {
         examConfigurationRepository.save(config);
     }
 
-    private static ExamTimeConfiguration newRow(LearningLevel level, Part part) {
+    private static ExamTimeConfiguration newRow(ExamType examType, LearningLevel level, Part part) {
         ExamTimeConfiguration row = new ExamTimeConfiguration();
-        row.setExamType(EXAM_TYPE);
+        row.setExamType(examType);
         row.setLevel(level);
         row.setSection(part.section());
         row.setTeil(part.teil());
         return row;
     }
 
-    private ExamTimeSettingsResponse buildSettings(LearningLevel level, List<ExamTimeConfiguration> rows, Integer total) {
+    private ExamTimeSettingsResponse buildSettings(ExamType examType, LearningLevel level, List<ExamTimeConfiguration> rows, Integer total) {
         Map<Part, ExamTimeConfiguration> byPart = new LinkedHashMap<>();
         rows.forEach(row -> byPart.put(new Part(row.getSection(), row.getTeil()), row));
 
-        List<ExamTimeEntryResponse> entries = ExamTimeDefaults.SUPPORTED_PARTS.stream()
+        List<ExamTimeEntryResponse> entries = ExamTimeDefaults.supportedParts(examType).stream()
                 .map(part -> {
                     ExamTimeConfiguration row = byPart.get(part);
                     return row == null
@@ -302,7 +339,7 @@ public class ExamTimeConfigurationService {
         });
         int configured = sumTowardsTotal(enabledMinutes);
 
-        return new ExamTimeSettingsResponse(EXAM_TYPE.name(), level.getValue(), total, configured,
+        return new ExamTimeSettingsResponse(examType.name(), level.getValue(), total, configured,
                 total != null ? total - configured : null, MIN_MINUTES, maxMinutes, maxTotalMinutes, entries);
     }
 

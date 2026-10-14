@@ -22,10 +22,11 @@ public class ExamTimeConfigurationController {
         this.service = service;
     }
 
-    /** Enabled targets for a level; an empty list means timing is not available for it. */
+    /** Enabled targets for a level of an exam (Telc by default); an empty list means timing is not available for it. */
     @GetMapping
-    public ResponseEntity<List<ExamTimeConfigurationResponse>> getForLevel(@RequestParam LearningLevel level) {
-        return ResponseEntity.ok(service.findEnabledForLevel(level));
+    public ResponseEntity<List<ExamTimeConfigurationResponse>> getForLevel(@RequestParam LearningLevel level,
+                                                                          @RequestParam(defaultValue = "TELC") ExamType examType) {
+        return ResponseEntity.ok(service.findEnabledForLevel(examType, level));
     }
 
     @GetMapping("/{examType}/{level}/{section}/{teil}")
@@ -33,9 +34,6 @@ public class ExamTimeConfigurationController {
                                                                 @PathVariable LearningLevel level,
                                                                 @PathVariable ExamSection section,
                                                                 @PathVariable int teil) throws DataNotFoundException {
-        if (examType != ExamType.TELC) {
-            throw new DataNotFoundException("Time configuration not found!");
-        }
-        return ResponseEntity.ok(service.findEnabled(level, section, teil));
+        return ResponseEntity.ok(service.findEnabled(examType, level, section, teil));
     }
 }

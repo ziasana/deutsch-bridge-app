@@ -51,10 +51,11 @@ class ExamTimeConfigurationServiceTest {
     @BeforeEach
     void setUp() {
         service = new ExamTimeConfigurationService(timeRepository, examConfigurationRepository, 180, 300);
-        lenient().when(timeRepository.findByExamTypeAndLevel(ExamType.TELC, B1)).thenAnswer(i -> List.copyOf(stored));
-        lenient().when(timeRepository.findByExamTypeAndLevelAndSectionAndTeil(eq(ExamType.TELC), eq(B1), any(), anyInt()))
+        lenient().when(timeRepository.findByExamTypeAndLevel(any(), eq(B1)))
+                .thenAnswer(i -> stored.stream().filter(r -> r.getExamType() == i.getArgument(0)).toList());
+        lenient().when(timeRepository.findByExamTypeAndLevelAndSectionAndTeil(any(), eq(B1), any(), anyInt()))
                 .thenAnswer(i -> stored.stream()
-                        .filter(r -> r.getSection() == i.getArgument(2) && r.getTeil() == (int) i.getArgument(3))
+                        .filter(r -> r.getExamType() == i.getArgument(0) && r.getSection() == i.getArgument(2) && r.getTeil() == (int) i.getArgument(3))
                         .findFirst());
         lenient().when(timeRepository.save(any(ExamTimeConfiguration.class))).thenAnswer(i -> {
             ExamTimeConfiguration row = i.getArgument(0);
@@ -64,8 +65,8 @@ class ExamTimeConfigurationServiceTest {
             }
             return row;
         });
-        lenient().when(examConfigurationRepository.findByExamTypeAndLevel(ExamType.TELC, B1))
-                .thenAnswer(i -> Optional.ofNullable(storedTotal));
+        lenient().when(examConfigurationRepository.findByExamTypeAndLevel(any(), eq(B1)))
+                .thenAnswer(i -> Optional.ofNullable(storedTotal).filter(t -> t.getExamType() == i.getArgument(0)));
         lenient().when(examConfigurationRepository.save(any(ExamConfiguration.class))).thenAnswer(i -> {
             storedTotal = i.getArgument(0);
             return storedTotal;
@@ -77,7 +78,7 @@ class ExamTimeConfigurationServiceTest {
     }
 
     private static ExamTimeBulkUpdateRequest bulk(String total, Entry... entries) {
-        return new ExamTimeBulkUpdateRequest(B1, total != null ? new BigDecimal(total) : null, List.of(entries));
+        return new ExamTimeBulkUpdateRequest(null, B1, total != null ? new BigDecimal(total) : null, List.of(entries));
     }
 
     private ExamTimeConfiguration storedRow(ExamSection section, int teil, int minutes, boolean enabled) {
@@ -207,7 +208,7 @@ class ExamTimeConfigurationServiceTest {
     void totalIgnoresDisabledAndWriting() {
         storedRow(ExamSection.LESEVERSTEHEN, 1, 80, false);
 
-        ExamTimeSettingsResponse result = service.saveSettings(new ExamTimeBulkUpdateRequest(B1, new BigDecimal("90"), List.of(
+        ExamTimeSettingsResponse result = service.saveSettings(new ExamTimeBulkUpdateRequest(null, B1, new BigDecimal("90"), List.of(
                 entry(ExamSection.LESEVERSTEHEN, 2, "60"),
                 entry(ExamSection.SCHRIFTLICHER_AUSDRUCK, 1, "30"))));
 
@@ -261,7 +262,7 @@ class ExamTimeConfigurationServiceTest {
     void seedsDefaultsWithoutOverwriting() {
         storedRow(ExamSection.LESEVERSTEHEN, 2, 25, true);
 
-        service.seedDefaults();
+        service.seedDefaults(ExamType.TELC);
 
         assertEquals(ExamTimeDefaults.DEFAULT_MINUTES.get(B1).size(), stored.size());
         assertEquals(25, stored.stream().filter(r -> r.getSection() == ExamSection.LESEVERSTEHEN && r.getTeil() == 2)
@@ -272,9 +273,41 @@ class ExamTimeConfigurationServiceTest {
     }
 
     @Test
+    @DisplayName("DTZ has its own parts and defaults: Lesen 1-5 add up to the 60 minute block, Schreiben and Mündlich are separate slots")
+    void dtzDefaultsAreSeparateFromTelc() {
+        service.seedDefaults(ExamType.TELC);
+        service.seedDefaults(ExamType.DTZ);
+
+        ExamTimeSettingsResponse dtz = service.getSettings(ExamType.DTZ, B1);
+        assertEquals("DTZ", dtz.examType());
+        assertEquals(ExamTimeDefaults.DTZ_SUPPORTED_PARTS.size(), dtz.entries().size());
+        assertEquals(60, dtz.totalDurationMinutes());
+        assertEquals(60, dtz.configuredMinutes());
+        assertEquals(0, dtz.reviewMinutes());
+        assertEquals(Optional.of(120), service.targetSeconds(ExamType.DTZ, B1, ExamSection.MUENDLICHER_AUSDRUCK, 1));
+        assertEquals(Optional.of(240), service.targetSeconds(ExamType.DTZ, B1, ExamSection.MUENDLICHER_AUSDRUCK, 3));
+        // Telc keeps its own numbers
+        assertEquals(Optional.of(180), service.targetSeconds(B1, ExamSection.MUENDLICHER_AUSDRUCK, 1));
+        assertEquals(Optional.empty(), service.targetSeconds(ExamType.DTZ, B1, ExamSection.SPRACHBAUSTEINE, 1));
+    }
+
+    @Test
+    @DisplayName("DTZ rejects Telc-only parts, and other exams have no timing")
+    void dtzValidatesItsParts() {
+        assertThrows(IllegalArgumentException.class, () -> service.saveSettings(
+                new ExamTimeBulkUpdateRequest(ExamType.DTZ, B1, null, List.of(entry(ExamSection.SPRACHBAUSTEINE, 1, "10")))));
+        assertThrows(IllegalArgumentException.class, () -> service.getSettings(ExamType.GOETHE, B1));
+        ExamTimeSettingsResponse saved = service.saveSettings(
+                new ExamTimeBulkUpdateRequest(ExamType.DTZ, B1, null, List.of(entry(ExamSection.LESEVERSTEHEN, 5, "11"))));
+        assertEquals("DTZ", saved.examType());
+        assertEquals(Optional.of(660), service.targetSeconds(ExamType.DTZ, B1, ExamSection.LESEVERSTEHEN, 5));
+        assertEquals(Optional.empty(), service.targetSeconds(B1, ExamSection.LESEVERSTEHEN, 5));
+    }
+
+    @Test
     @DisplayName("B1 defaults fit inside the default total with 5 review minutes")
     void defaultsLeaveFiveReviewMinutes() {
-        service.seedDefaults();
+        service.seedDefaults(ExamType.TELC);
 
         ExamTimeSettingsResponse result = service.getSettings(B1);
         assertEquals(85, result.configuredMinutes());
