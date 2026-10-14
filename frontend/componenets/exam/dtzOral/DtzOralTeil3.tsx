@@ -16,7 +16,8 @@ export default function DtzOralTeil3View({ content, hideHelp = false, hideSoluti
     const done = ids.filter((id) => covered.includes(id)).length;
     return (
         <div className="space-y-5">
-            <section className={shell} aria-label="Situation">
+            <div className={shell}>
+            <section aria-label="Situation">
                 <div className="grid md:grid-cols-5">
                     <div className="aspect-[4/3] md:col-span-2 md:aspect-auto">
                         <SceneImage src={null} alt={content.topic ?? ""} topic={content.topic} />
@@ -29,7 +30,7 @@ export default function DtzOralTeil3View({ content, hideHelp = false, hideSoluti
                 </div>
             </section>
 
-            <section className={`${shell} p-5 sm:p-6`} aria-label="Notizen zur Planung">
+            <section className="border-t border-border/60 p-5 sm:p-6" aria-label="Notizen zur Planung">
                 <p className="text-xs text-foreground/60">Machen Sie Vorschläge, reagieren Sie auf Ihren Partner und einigen Sie sich. Tippen Sie jeden Punkt an, den Sie geklärt haben.</p>
                 <div className="mt-3">
                     <ProgressBar done={done} total={ids.length} label="Geklärte Planungspunkte" />
@@ -43,6 +44,7 @@ export default function DtzOralTeil3View({ content, hideHelp = false, hideSoluti
                 </ol>
                 {ids.length > 0 && done === ids.length && <AllDone>Alles geplant – jetzt noch auf eine gemeinsame Lösung einigen!</AllDone>}
             </section>
+            </div>
 
             {!hideHelp && !hideSolution && hasDtzSolution(content) && (
                 <PossibleSolution>
