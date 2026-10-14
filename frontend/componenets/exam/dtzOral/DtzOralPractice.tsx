@@ -4,13 +4,21 @@ import { useState } from "react";
 import { ChevronRight, LifeBuoy } from "lucide-react";
 import { zeitCheckMessage } from "@/lib/examTime";
 import { SpeakingGuideContent } from "@/types/exam";
-import { DTZ_ORAL_PARTS, DtzOralContent } from "@/types/dtzOral";
+import { DTZ_ORAL_PARTS, DtzOralContent, PracticeMode } from "@/types/dtzOral";
 import { ExamPracticeSessionResult } from "@/types/examTime";
 import SpeakingHelpDrawer, { SpeakingHelpTab } from "../speaking/SpeakingHelpDrawer";
 import { FinishCard, SpeakingMode, SpeakingPracticeHeader, SpeakingReviewCard } from "../speaking/SpeakingPracticeParts";
 import { DTZ_LEVEL, DTZ_SPEAKING_PARTS } from "../speaking/speakingMeta";
 import { useSpeakingNotes } from "../speaking/useSpeakingNotes";
 import DtzOralExercise from "./DtzOralExercise";
+import { questionsFor } from "./DtzOralTeil2";
+
+/** The cards of the task the learner can tap off as "besprochen" in the current practice mode (ids as used by the Teil views). */
+function taskIds(content: DtzOralContent, mode: PracticeMode): string[] {
+    if (content.part === 1) return content.topics.map((t) => `topic-${t.number}`);
+    if (content.part === 2) return [...content.participantA.questions.map((_, i) => `a-${i}`), ...questionsFor(content, mode).map((q) => `b-${q.level}-${q.text}`)];
+    return content.planningNotes.map((n) => `note-${n.number}`);
+}
 
 interface Props {
     exerciseId: string;
@@ -38,6 +46,9 @@ export default function DtzOralPractice({ exerciseId, title, content, guide, gui
     const [mode, setMode] = useState<SpeakingMode>("LEARN");
     const [phase, setPhase] = useState<"PRACTICE" | "REVIEW">("PRACTICE");
     const [helpOpen, setHelpOpen] = useState(false);
+    // Cards (topics / questions / planning notes) the learner has talked about in this attempt - a live aid, not stored.
+    const [covered, setCovered] = useState<string[]>([]);
+    const [practiceMode, setPracticeMode] = useState<PracticeMode>("A2");
     const notes = useSpeakingNotes(exerciseId);
 
     const inReview = phase === "REVIEW";
@@ -59,9 +70,14 @@ export default function DtzOralPractice({ exerciseId, title, content, guide, gui
     const repeat = () => {
         setPhase("PRACTICE");
         onRepeat?.();
+        setCovered([]);
         if (mode === "EXAM") setHelpOpen(false);
         notes.update({ checked: [], confidence: null });
     };
+
+    const toggleCovered = (id: string) => setCovered((current) => (current.includes(id) ? current.filter((c) => c !== id) : [...current, id]));
+    const ids = taskIds(content, practiceMode);
+    const coveredCount = ids.filter((id) => covered.includes(id)).length;
 
     return (
         <div className="space-y-4">
@@ -94,7 +110,16 @@ export default function DtzOralPractice({ exerciseId, title, content, guide, gui
                 </button>
             )}
 
-            <DtzOralExercise title={title} showHeader={false} content={content} hideHelp={!helpVisible} />
+            <DtzOralExercise
+                title={title}
+                showHeader={false}
+                content={content}
+                hideHelp={!helpVisible}
+                practiceMode={practiceMode}
+                onPracticeModeChange={setPracticeMode}
+                covered={covered}
+                onToggle={toggleCovered}
+            />
 
             {!helpVisible && (
                 <p className="rounded-2xl border border-dashed border-border p-4 text-sm text-foreground/60">
@@ -103,7 +128,7 @@ export default function DtzOralPractice({ exerciseId, title, content, guide, gui
             )}
 
             {!inReview ? (
-                <FinishCard covered={0} total={0} onFinish={finish} />
+                <FinishCard covered={coveredCount} total={ids.length} onFinish={finish} />
             ) : (
                 <SpeakingReviewCard
                     checklist={checklist}

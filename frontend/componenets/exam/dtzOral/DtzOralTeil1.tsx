@@ -1,6 +1,8 @@
 "use client";
 
 import { DtzOralTeil1 } from "@/types/dtzOral";
+import { AllDone, CoverCard, ProgressBar, shell, TaskBadge, emojiFor } from "../speaking/SpeakingStage";
+import { CoverageProps, useCoverage } from "./useCoverage";
 
 const LANGUAGES: [keyof NonNullable<DtzOralTeil1["explanation"]>, string, "ltr" | "rtl"][] = [["de", "Deutsch", "ltr"], ["en", "English", "ltr"], ["fa", "فارسی", "rtl"]];
 
@@ -23,22 +25,29 @@ function Explanation({ explanation }: Readonly<{ explanation?: NonNullable<DtzOr
  * Teil 1 - Über sich sprechen: the six fixed topics. Practice support (a simple question, a sentence starter, useful vocabulary) is optional,
  * opens per topic and is kept visibly apart from the examination topics: it is help for practising, never a required answer.
  */
-export default function DtzOralTeil1View({ content, hideHelp = false }: Readonly<{ content: DtzOralTeil1; /** Prüfung mode: practice support stays hidden until the attempt is over. */ hideHelp?: boolean }>) {
+export default function DtzOralTeil1View({ content, hideHelp = false, covered: coveredProp, onToggle }: Readonly<{ content: DtzOralTeil1; /** Prüfung mode: practice support stays hidden until the attempt is over. */ hideHelp?: boolean } & CoverageProps>) {
+    const { covered, toggle } = useCoverage(coveredProp, onToggle);
+    const done = content.topics.filter((t) => covered.includes(`topic-${t.number}`)).length;
     const support = new Map(content.practiceSupport.map((entry) => [entry.topicNumber, entry]));
     return (
         <div className="space-y-5">
-            <section className="rounded-[10px] bg-card p-6 shadow-card sm:p-8" aria-label="Prüfungsaufgabe">
-                <p className="text-base font-semibold text-foreground">{content.instructions}</p>
-                <ol className="mt-4 grid gap-3 sm:grid-cols-2">
-                    {content.topics.map((topic) => (
-                        <li key={topic.number} className="flex items-center gap-3 rounded-2xl bg-primary/[0.07] p-4 ring-1 ring-primary/15">
-                            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-extrabold text-primary-foreground">{topic.number}</span>
-                            <span className="text-base font-semibold text-foreground">{topic.label}</span>
+            <section className={`${shell} p-5 sm:p-6`} aria-label="Prüfungsaufgabe">
+                <TaskBadge>Teil 1 · Über sich sprechen</TaskBadge>
+                <p className="mt-2 text-base font-semibold text-foreground">{content.instructions}</p>
+                <p className="mt-1 text-xs text-foreground/60">Tippen Sie ein Thema an, wenn Sie es besprochen haben.</p>
+                <div className="mt-3">
+                    <ProgressBar done={done} total={content.topics.length} label="Besprochene Themen" />
+                </div>
+                <ol className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {content.topics.map((topic, index) => (
+                        <li key={topic.number}>
+                            <CoverCard id={`topic-${topic.number}`} index={index} emoji={emojiFor(topic.label)} title={topic.label} covered={covered.includes(`topic-${topic.number}`)} onToggle={toggle} />
                         </li>
                     ))}
                 </ol>
                 {content.guidance && <p className="mt-4 text-sm text-foreground/70">{content.guidance}</p>}
                 <Explanation explanation={content.explanation} />
+                {content.topics.length > 0 && done === content.topics.length && <AllDone>Alle Themen besprochen – stark!</AllDone>}
             </section>
 
             {!hideHelp && content.practiceSupport.length > 0 && (

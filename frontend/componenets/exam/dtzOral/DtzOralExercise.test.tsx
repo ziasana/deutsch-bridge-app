@@ -46,8 +46,27 @@ const teil3: DtzOralTeil3 = {
 describe("Teil 1 learner view", () => {
     it("shows the six topics in order", () => {
         render(<DtzOralExercise title="Über sich sprechen" content={teil1} />);
-        const items = within(screen.getByRole("region", { name: "Prüfungsaufgabe" })).getAllByRole("listitem").map((li) => li.textContent);
-        expect(items).toEqual(["1Name", "2Geburtsort", "3Wohnort", "4Arbeit/Beruf", "5Familie", "6Sprachen"]);
+        const items = within(screen.getByRole("region", { name: "Prüfungsaufgabe" })).getAllByRole("listitem").map((li) => li.textContent ?? "");
+        ["Name", "Geburtsort", "Wohnort", "Arbeit/Beruf", "Familie", "Sprachen"].forEach((label, i) => expect(items[i]).toContain(label));
+        expect(items).toHaveLength(6);
+    });
+
+    it("lets the learner tap a topic as talked about and counts the progress", () => {
+        render(<DtzOralExercise title="Über sich sprechen" content={teil1} />);
+        const task = screen.getByRole("region", { name: "Prüfungsaufgabe" });
+        expect(within(task).getByRole("progressbar").getAttribute("aria-valuenow")).toBe("0");
+        fireEvent.click(within(task).getByRole("button", { name: /Wohnort/ }));
+        expect(within(task).getByRole("button", { name: /Wohnort/ }).getAttribute("aria-pressed")).toBe("true");
+        expect(within(task).getByRole("progressbar").getAttribute("aria-valuenow")).toBe("1");
+    });
+
+    it("uses the ticks of the practice page when it owns them", () => {
+        const onToggle = vi.fn();
+        render(<DtzOralExercise title="Über sich sprechen" content={teil1} covered={["topic-1"]} onToggle={onToggle} />);
+        const task = screen.getByRole("region", { name: "Prüfungsaufgabe" });
+        expect(within(task).getByRole("button", { name: /Name/ }).getAttribute("aria-pressed")).toBe("true");
+        fireEvent.click(within(task).getByRole("button", { name: /Familie/ }));
+        expect(onToggle).toHaveBeenCalledWith("topic-5");
     });
 
     it("keeps practice support separate, optional and marked as not mandatory", () => {
@@ -70,19 +89,21 @@ describe("Teil 2 learner view", () => {
         const a = screen.getByRole("region", { name: "Teilnehmer A" });
         expect(within(a).getByText(/Sie haben in einer Zeitschrift ein Foto gefunden/)).toBeTruthy();
         expect(within(a).getAllByRole("listitem")).toHaveLength(2);
+        expect(within(a).getByRole("button", { name: /Was sehen Sie auf dem Foto\?/ })).toBeTruthy();
         expect(within(screen.getByRole("region", { name: "Teilnehmer B" })).getByText("Erzählen Sie bitte: Welche Erfahrungen haben Sie damit?")).toBeTruthy();
     });
 
     it("switches between A2, B1 and mixed practice with the same photo", () => {
         render(<DtzOralExercise title="Einkaufen" content={teil2} />);
         const b = screen.getByRole("region", { name: "Teilnehmer B" });
-        expect(within(b).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["1A2 eins?", "2A2 zwei?", "3A2 drei?", "4A2 vier?"]);
+        const texts = () => within(b).getAllByRole("listitem").map((li) => li.textContent ?? "");
+        expect(texts()).toHaveLength(4);
+        ["A2 eins?", "A2 zwei?", "A2 drei?", "A2 vier?"].forEach((q, i) => expect(texts()[i]).toContain(q));
         fireEvent.click(screen.getByRole("radio", { name: "B1" }));
-        expect(within(b).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["1B1 eins?", "2B1 zwei?", "3B1 drei?", "4B1 vier?"]);
+        ["B1 eins?", "B1 zwei?", "B1 drei?", "B1 vier?"].forEach((q, i) => expect(texts()[i]).toContain(q));
         fireEvent.click(screen.getByRole("radio", { name: "Gemischt" }));
-        const mixed = within(b).getAllByRole("listitem").map((li) => li.textContent);
-        expect(mixed).toHaveLength(8);
-        expect(mixed.slice(0, 4)).toEqual(["1A2 eins?A2", "2B1 eins?B1", "3A2 zwei?A2", "4B1 zwei?B1"]);
+        expect(texts()).toHaveLength(8);
+        ["A2 eins?", "B1 eins?", "A2 zwei?", "B1 zwei?"].forEach((q, i) => expect(texts()[i]).toContain(q));
         expect(screen.getByAltText("Eine Frau kauft online ein.")).toBeTruthy();
     });
 
@@ -128,8 +149,9 @@ describe("Teil 3 learner view", () => {
     it("shows the situation, the instruction and the planning notes without any decision", () => {
         render(<DtzOralExercise title="Klassenfest" content={teil3} />);
         expect(screen.getByText("Planen Sie gemeinsam, was Sie tun wollen.")).toBeTruthy();
-        const notes = within(screen.getByRole("region", { name: "Notizen zur Planung" })).getAllByRole("listitem").map((li) => li.textContent);
-        expect(notes).toEqual(["1Wann?", "2Wo feiern?", "3Essen und Trinken?", "4Musik?"]);
+        const notes = within(screen.getByRole("region", { name: "Notizen zur Planung" })).getAllByRole("listitem").map((li) => li.textContent ?? "");
+        ["Wann?", "Wo feiern?", "Essen und Trinken?", "Musik?"].forEach((label, i) => expect(notes[i]).toContain(label));
+        expect(notes).toHaveLength(4);
         expect(screen.getByText("Redemittel (optional)")).toBeTruthy();
     });
 });

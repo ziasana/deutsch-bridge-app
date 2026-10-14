@@ -55,6 +55,16 @@ describe("DtzOralPractice", () => {
         expect(screen.getByRole("button", { name: /Redemittel & Tipps/ })).toBeTruthy();
     });
 
+    it("counts the tapped planning points on the finish card and resets them when the exercise is repeated", () => {
+        render(<DtzOralPractice {...props} />);
+        expect(screen.getByText(/0 von 4 besprochen/)).toBeTruthy();
+        fireEvent.click(screen.getByRole("button", { name: /Wann\?/ }));
+        expect(screen.getByText(/1 von 4 besprochen/)).toBeTruthy();
+        fireEvent.click(screen.getByRole("button", { name: /Übung beenden/ }));
+        fireEvent.click(screen.getByRole("button", { name: /Übung wiederholen/ }));
+        expect(screen.getByText(/0 von 4 besprochen/)).toBeTruthy();
+    });
+
     it("ends with the guide's self-assessment and marks the exercise as done", () => {
         const onFinish = vi.fn();
         const onMarkCompleted = vi.fn();

@@ -21,7 +21,7 @@ interface SpeakingStageProps {
 }
 
 const heading = "text-sm font-semibold text-foreground";
-const shell = "overflow-hidden rounded-2xl bg-card shadow-card";
+export const shell = "overflow-hidden rounded-2xl bg-card shadow-card";
 
 /** Soft accent per card, cycled so neighbouring cards look different. */
 const ACCENTS = [
@@ -73,7 +73,7 @@ export function stageTotal(content: SpeakingContent, guide?: SpeakingGuideConten
     return content.planningPoints?.length ?? 0;
 }
 
-function ProgressBar({ done, total, label }: Readonly<{ done: number; total: number; label: string }>) {
+export function ProgressBar({ done, total, label }: Readonly<{ done: number; total: number; label: string }>) {
     const percent = total === 0 ? 0 : Math.round((done / total) * 100);
     return (
         <div className="flex items-center gap-3" role="group" aria-label={label}>
@@ -88,7 +88,7 @@ function ProgressBar({ done, total, label }: Readonly<{ done: number; total: num
 }
 
 /** A tappable card: marks one topic / task / point as "talked about". */
-function CoverCard({
+export function CoverCard({
     id,
     index,
     emoji,
@@ -131,7 +131,7 @@ function CoverCard({
 }
 
 /** Teil 3 scene picture: fills its frame, opens enlarged on click, and falls back to an illustration when the exercise has none. */
-function SceneImage({ src, alt, topic }: Readonly<{ src: string | null; alt: string; topic: string | null | undefined }>) {
+export function SceneImage({ src, alt, topic }: Readonly<{ src: string | null; alt: string; topic: string | null | undefined }>) {
     const [open, setOpen] = useState(false);
     const [failed, setFailed] = useState(false);
     const closeRef = useRef<HTMLButtonElement>(null);
@@ -189,11 +189,11 @@ function SceneImage({ src, alt, topic }: Readonly<{ src: string | null; alt: str
     );
 }
 
-function TaskBadge({ children }: Readonly<{ children: React.ReactNode }>) {
+export function TaskBadge({ children }: Readonly<{ children: React.ReactNode }>) {
     return <span className="inline-flex rounded-full bg-pink-500/15 px-2.5 py-0.5 text-xs font-bold text-pink-700 dark:text-pink-300">{children}</span>;
 }
 
-function AllDone({ children }: Readonly<{ children: React.ReactNode }>) {
+export function AllDone({ children }: Readonly<{ children: React.ReactNode }>) {
     return (
         <p role="status" className="anim-pop mt-3 rounded-xl bg-emerald-500/15 px-3 py-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
             🎉 {children}

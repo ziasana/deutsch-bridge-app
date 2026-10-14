@@ -5,6 +5,9 @@ import { ImageOff } from "lucide-react";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
 import { cn } from "@/lib/utils";
 import { DtzOralTeil2, PracticeMode } from "@/types/dtzOral";
+import { AllDone, CoverCard, ProgressBar, SceneImage, shell, TaskBadge } from "../speaking/SpeakingStage";
+import PossibleSolution from "./PossibleSolution";
+import { CoverageProps, useCoverage } from "./useCoverage";
 
 export const PRACTICE_MODES: { value: PracticeMode; label: string; hint: string }[] = [
     { value: "A2", label: "A2", hint: "Konkrete Fragen zu Ihrem Alltag" },
@@ -27,14 +30,31 @@ export function questionsFor(content: DtzOralTeil2, mode: PracticeMode): { text:
 }
 
 /**
- * Teil 2 - Über Erfahrungen sprechen. The photo stays beside the prompts where the screen is wide enough. Participant A describes the photo,
- * participant B tells about their own experiences; the learner picks A2, B1 or mixed follow-up questions for the same photo.
- * There is no model answer: the task is to speak from the photo and from one's own life.
+ * Teil 2 - Über Erfahrungen sprechen. The photo stays beside the prompts where the screen is wide enough (tap it to enlarge). Participant A
+ * describes the photo, participant B tells about their own experiences; the learner picks A2, B1 or mixed follow-up questions for the same
+ * photo and taps every question once it has been talked about. The task itself has no model answer; the possible solution is optional help.
  */
-export default function DtzOralTeil2View({ content, adminImagePrompt, hideHelp = false }: Readonly<{ content: DtzOralTeil2; adminImagePrompt?: string | null; hideHelp?: boolean }>) {
-    const [mode, setMode] = useState<PracticeMode>("A2");
+interface Props extends CoverageProps {
+    content: DtzOralTeil2;
+    adminImagePrompt?: string | null;
+    /** Prüfung mode: the possible solution stays hidden. */
+    hideHelp?: boolean;
+    /** The A2 / B1 / Gemischt choice; controlled by the practice page so it can count the questions, otherwise kept here. */
+    practiceMode?: PracticeMode;
+    onPracticeModeChange?: (mode: PracticeMode) => void;
+}
+
+export default function DtzOralTeil2View({ content, adminImagePrompt, hideHelp = false, practiceMode, onPracticeModeChange, covered: coveredProp, onToggle }: Readonly<Props>) {
+    const [localMode, setLocalMode] = useState<PracticeMode>("A2");
+    const mode = practiceMode ?? localMode;
+    const setMode = onPracticeModeChange ?? setLocalMode;
+    const { covered, toggle } = useCoverage(coveredProp, onToggle);
     const src = resolveUploadUrl(content.image.imageUrl);
     const questions = questionsFor(content, mode);
+    const aIds = content.participantA.questions.map((_, i) => `a-${i}`);
+    const bIds = questions.map((q) => `b-${q.level}-${q.text}`);
+    const doneA = aIds.filter((id) => covered.includes(id)).length;
+    const doneB = bIds.filter((id) => covered.includes(id)).length;
     const solution = content.possibleSolution;
     const solutionItems = [
         { key: "description", label: "Teilnehmer/in A · Bildbeschreibung", text: solution?.description },
@@ -43,38 +63,45 @@ export default function DtzOralTeil2View({ content, adminImagePrompt, hideHelp =
     ].filter((item) => item.text);
     return (
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <figure className="rounded-[10px] bg-card p-3 shadow-card lg:sticky lg:top-4 lg:self-start">
+            <figure className={`${shell} lg:sticky lg:top-4 lg:self-start`}>
                 {src ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={src} alt={content.image.altText || "Foto zur Aufgabe"} className="w-full rounded-lg object-cover" />
+                    <div className="aspect-[4/3]">
+                        <SceneImage src={src} alt={content.image.altText || "Foto zur Aufgabe"} topic={content.topic} />
+                    </div>
                 ) : (
-                    <div role="img" aria-label="Kein Foto" className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-foreground/20 text-sm text-foreground/50">
+                    <div role="img" aria-label="Kein Foto" className="m-3 flex aspect-[4/3] flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-foreground/20 text-sm text-foreground/50">
                         <ImageOff className="size-8" aria-hidden="true" />
                         Noch kein Foto
                     </div>
                 )}
                 {adminImagePrompt && (
-                    <figcaption className="mt-3 rounded-lg bg-foreground/[0.04] p-3 text-xs text-foreground/70">
+                    <figcaption className="m-3 rounded-lg bg-foreground/[0.04] p-3 text-xs text-foreground/70">
                         <span className="font-semibold">Image prompt (admin only): </span>{adminImagePrompt}
                     </figcaption>
                 )}
             </figure>
 
             <div className="space-y-5">
-                <section className="rounded-[10px] bg-card p-6 shadow-card" aria-label="Teilnehmer A">
-                    <p className="text-xs font-bold uppercase tracking-wide text-primary">Teilnehmer/in A · {content.participantA.title}</p>
+                <section className={`${shell} p-5 sm:p-6`} aria-label="Teilnehmer A">
+                    <TaskBadge>Teilnehmer/in A · {content.participantA.title}</TaskBadge>
                     <p className="mt-2 text-base font-semibold text-foreground">{content.participantA.instructions}</p>
-                    <ul className="mt-3 space-y-2">
-                        {content.participantA.questions.map((q) => (
-                            <li key={q} className="rounded-2xl bg-primary/[0.07] p-3 text-sm text-foreground ring-1 ring-primary/15">{q}</li>
+                    <div className="mt-3">
+                        <ProgressBar done={doneA} total={aIds.length} label="Besprochene Fragen zum Foto" />
+                    </div>
+                    <ul className="mt-3 grid gap-3">
+                        {content.participantA.questions.map((q, i) => (
+                            <li key={q}>
+                                <CoverCard id={aIds[i]} index={i} emoji="📷" title={q} covered={covered.includes(aIds[i])} onToggle={toggle} />
+                            </li>
                         ))}
                     </ul>
+                    {aIds.length > 0 && doneA === aIds.length && <AllDone>Foto beschrieben – prima!</AllDone>}
                 </section>
 
-                <section className="rounded-[10px] bg-card p-6 shadow-card" aria-label="Teilnehmer B">
-                    <p className="text-xs font-bold uppercase tracking-wide text-primary">Teilnehmer/in B · {content.participantB.title}</p>
+                <section className={`${shell} p-5 sm:p-6`} aria-label="Teilnehmer B">
+                    <TaskBadge>Teilnehmer/in B · {content.participantB.title}</TaskBadge>
                     <p className="mt-2 text-base font-semibold text-foreground">{content.participantB.instructions}</p>
-                    <div role="radiogroup" aria-label="Übungsniveau" className="mt-4 inline-flex rounded-lg bg-foreground/[0.06] p-1 text-sm">
+                    <div role="radiogroup" aria-label="Übungsniveau" className="mt-4 flex flex-wrap gap-2">
                         {PRACTICE_MODES.map((m) => (
                             <button
                                 key={m.value}
@@ -83,40 +110,38 @@ export default function DtzOralTeil2View({ content, adminImagePrompt, hideHelp =
                                 aria-checked={mode === m.value}
                                 title={m.hint}
                                 onClick={() => setMode(m.value)}
-                                className={cn("rounded-md px-4 py-1.5 font-semibold transition", mode === m.value ? "bg-primary text-primary-foreground shadow" : "text-foreground/70 hover:text-foreground")}
+                                className={cn(
+                                    "cursor-pointer rounded-full border px-4 py-1.5 text-sm font-semibold transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500/50",
+                                    mode === m.value ? "border-transparent bg-gradient-to-r from-pink-500 to-orange-400 text-white shadow-sm" : "border-border bg-card text-foreground/70 hover:border-pink-500/40 hover:bg-pink-500/5",
+                                )}
                             >
                                 {m.label}
                             </button>
                         ))}
                     </div>
-                    <ol className="mt-3 space-y-2" aria-label={`Fragen ${mode === "MIXED" ? "gemischt" : mode}`}>
+                    <div className="mt-3">
+                        <ProgressBar done={doneB} total={bIds.length} label="Besprochene Erfahrungsfragen" />
+                    </div>
+                    <ol className="mt-3 grid gap-3" aria-label={`Fragen ${mode === "MIXED" ? "gemischt" : mode}`}>
                         {questions.map((q, i) => (
-                            <li key={`${q.level}-${q.text}`} className="flex items-start gap-3 rounded-2xl bg-primary/[0.07] p-3 ring-1 ring-primary/15">
-                                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-extrabold text-primary-foreground">{i + 1}</span>
-                                <span className="min-w-0 flex-1 text-sm text-foreground">{q.text}</span>
-                                {mode === "MIXED" && <span className="rounded bg-foreground/10 px-1.5 py-0.5 text-[10px] font-bold text-foreground/70">{q.level}</span>}
+                            <li key={bIds[i]}>
+                                <CoverCard id={bIds[i]} index={i} emoji={`${i + 1}`} title={q.text} hint={mode === "MIXED" ? q.level : null} covered={covered.includes(bIds[i])} onToggle={toggle} />
                             </li>
                         ))}
                     </ol>
+                    {bIds.length > 0 && doneB === bIds.length && <AllDone>Alle Fragen besprochen – stark!</AllDone>}
                 </section>
 
                 {!hideHelp && solutionItems.length > 0 && (
-                    <details className="group rounded-[10px] bg-card shadow-card ring-1 ring-foreground/10 open:ring-primary/30" aria-label="Mögliche Lösung">
-                        <summary className="flex cursor-pointer list-none items-center gap-2 px-6 py-4 text-sm font-semibold text-foreground">
-                            Mögliche Lösung
-                            <span className="ms-auto text-xs font-medium text-primary group-open:hidden">anzeigen</span>
-                            <span className="ms-auto hidden text-xs font-medium text-primary group-open:inline">ausblenden</span>
-                        </summary>
-                        <div className="space-y-4 px-6 pb-6">
-                            <p className="text-xs text-foreground/60">Das ist nur eine mögliche Antwort. Sie können auch ganz anders antworten — sprechen Sie über das, was Sie auf dem Foto sehen und erlebt haben.</p>
-                            {solutionItems.map((item) => (
-                                <div key={item.key}>
-                                    <p className="text-xs font-bold uppercase tracking-wide text-primary">{item.label}</p>
-                                    <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-foreground/85">{item.text}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </details>
+                    <PossibleSolution>
+                        <p className="text-xs text-foreground/60">Das ist nur eine mögliche Antwort. Sie können auch ganz anders antworten — sprechen Sie über das, was Sie auf dem Foto sehen und erlebt haben.</p>
+                        {solutionItems.map((item) => (
+                            <div key={item.key}>
+                                <p className="text-xs font-bold uppercase tracking-wide text-primary">{item.label}</p>
+                                <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-foreground/85">{item.text}</p>
+                            </div>
+                        ))}
+                    </PossibleSolution>
                 )}
             </div>
         </div>
