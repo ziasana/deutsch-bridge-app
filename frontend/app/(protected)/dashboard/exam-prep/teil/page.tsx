@@ -110,13 +110,14 @@ function TeilContent() {
             <div className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10" dir="ltr">
                 <div className="mx-auto max-w-4xl">
                     <SpeakingTeilOverview
+                        exam={examType === "DTZ" ? "DTZ" : "TELC"}
                         items={group.items}
                         level={level}
                         teil={teil}
                         heading={group.heading}
                         subheading={group.subheading}
                         backHref={backHref}
-                        backLabel={meta.label}
+                        backLabel={examType === "DTZ" ? "Mündliche Prüfung" : meta.label}
                         lastTimes={lastTimes}
                     />
                 </div>

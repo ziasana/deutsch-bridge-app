@@ -37,11 +37,9 @@ export const speakingPartsOf = (exam: SpeakingExam = "TELC"): SpeakingPartMeta[]
 /** "Mündlicher Ausdruck" (Telc) / "Mündliche Prüfung" (DTZ). */
 export const speakingTitleOf = (exam: SpeakingExam = "TELC") => (exam === "DTZ" ? "Mündliche Prüfung" : "Mündlicher Ausdruck");
 
-/** The Übungen of a Teil: Telc has a Teil page, the DTZ Übungen are listed on the exam-prep page (filtered to the Teil). */
+/** The Übungen page of a Teil (same page for Telc and DTZ). */
 export const speakingExercisesHref = (level: string, part: number, exam: SpeakingExam = "TELC") =>
-    exam === "DTZ"
-        ? `/dashboard/exam-prep?exam=DTZ&section=MUENDLICHER_AUSDRUCK&level=${encodeURIComponent(level)}&part=${part}`
-        : `/dashboard/exam-prep/teil?section=MUENDLICHER_AUSDRUCK&level=${encodeURIComponent(level)}&part=${part}`;
+    `/dashboard/exam-prep/teil?section=MUENDLICHER_AUSDRUCK&level=${encodeURIComponent(level)}&part=${part}${exam === "DTZ" ? "&exam=DTZ" : ""}`;
 
 /** The hub of the learning area. */
 export const speakingHubHref = (level: string, exam: SpeakingExam = "TELC") =>

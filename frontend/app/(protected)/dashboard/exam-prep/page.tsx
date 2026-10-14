@@ -384,7 +384,7 @@ function ExamPrepContent() {
                                 lastTimes={writingLastTimes}
                             />
                         ) : selectedSection === "MUENDLICHER_AUSDRUCK" && examType === "DTZ" ? (
-                            <DtzOralList key={`${selectedSection}-${effectiveLevel}-${searchTerm}-${searchParams.get("part")}`} groups={selectedGroups} onlyPart={searchParams.get("part")} />
+                            <DtzOralList key={`${selectedSection}-${effectiveLevel}-${searchTerm}`} groups={selectedGroups} />
                         ) : selectedSection === "MUENDLICHER_AUSDRUCK" ? (
                             <SpeakingExamList key={`${selectedSection}-${effectiveLevel}-${searchTerm}`} groups={selectedGroups} level={effectiveLevel} lastTimes={speakingLastTimes} />
                         ) : SECTION_THEME[selectedSection] ? (

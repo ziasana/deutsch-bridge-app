@@ -6,9 +6,8 @@ import { DTZ_ORAL_PARTS } from "@/types/dtzOral";
 import { ExamPartGroup } from "../examData";
 
 /** The DTZ Mündliche Prüfung Übungen of the learner, one section per Teil (Teil 1 fixed template, Teil 2 photo, Teil 3 planning). */
-export default function DtzOralList({ groups: allGroups, onlyPart }: Readonly<{ groups: ExamPartGroup[]; /** Show just this Teil (arriving from the learning area). */ onlyPart?: string | null }>) {
+export default function DtzOralList({ groups }: Readonly<{ groups: ExamPartGroup[] }>) {
     const router = useRouter();
-    const groups = onlyPart ? allGroups.filter((g) => g.key === onlyPart) : allGroups;
     return (
         <div className="space-y-8">
             {groups.map((group) => {
