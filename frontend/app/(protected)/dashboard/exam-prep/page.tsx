@@ -381,6 +381,7 @@ function ExamPrepContent() {
                                 key={`${selectedSection}-${effectiveLevel}-${searchTerm}`}
                                 items={flatItems}
                                 level={effectiveLevel}
+                                examType={examType}
                                 lastTimes={writingLastTimes}
                             />
                         ) : selectedSection === "MUENDLICHER_AUSDRUCK" && examType === "DTZ" ? (

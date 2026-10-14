@@ -159,9 +159,9 @@ function TeilContent() {
                     </button>
                 </div>
 
-                {teil != null && examType !== "DTZ" && TIMED_SECTIONS.includes(typedSection) && (
+                {teil != null && TIMED_SECTIONS.includes(typedSection) && (
                     <div className="mt-4">
-                        <TeilTimeCard section={typedSection} level={level} teil={teil} />
+                        <TeilTimeCard section={typedSection} level={level} teil={teil} examType={examType} />
                     </div>
                 )}
 

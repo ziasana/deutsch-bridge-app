@@ -6,6 +6,12 @@ import { DraftRow, OUTSIDE_TOTAL_SECTIONS, rowError, sumEnabled } from "@/lib/ex
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/componenets/ui/table";
 import Toggle from "@/componenets/admin/Toggle";
 
+const DTZ_SECTION_LABELS: Partial<Record<ExamSection, string>> = {
+    LESEVERSTEHEN: "Lesen",
+    SCHRIFTLICHER_AUSDRUCK: "Schreiben (Aufgabe A oder B)",
+    MUENDLICHER_AUSDRUCK: "Mündliche Prüfung",
+};
+
 const SECTION_LABELS: Partial<Record<ExamSection, string>> = {
     LESEVERSTEHEN: "Leseverstehen",
     SPRACHBAUSTEINE: "Sprachbausteine",
@@ -20,13 +26,16 @@ export default function ExamTimeConfigurationForm({
     min,
     max,
     disabled,
+    examType = "TELC",
 }: Readonly<{
     rows: DraftRow[];
     onChange: (index: number, patch: Partial<Pick<DraftRow, "minutes" | "enabled">>) => void;
     min: number;
     max: number;
     disabled?: boolean;
+    examType?: "TELC" | "DTZ";
 }>) {
+    const labels = examType === "DTZ" ? DTZ_SECTION_LABELS : SECTION_LABELS;
     const sections = Array.from(new Set(rows.map((r) => r.entry.section)));
 
     return (
@@ -54,7 +63,7 @@ export default function ExamTimeConfigurationForm({
                                         <TableCell className="font-medium text-foreground">
                                             {position === 0 && (
                                                 <>
-                                                    {SECTION_LABELS[section] ?? section}
+                                                    {labels[section] ?? section}
                                                     {separate && (
                                                         <span className="block text-xs font-normal text-foreground/50">
                                                             Separate time slot, not part of the exam duration

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { BookOpen, Bookmark, BookmarkCheck, Check, ChevronRight, Clock, RotateCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatClock } from "@/lib/examTime";
-import { ExamExerciseSummaryResponse } from "@/types/exam";
+import { ExamExerciseSummaryResponse, ExamTypeCode } from "@/types/exam";
 import { ExamExerciseLastTime } from "@/types/examTime";
 import { useExamBookmark } from "@/hooks/exam/useExamBookmark";
 import { effectiveScore } from "../examData";
@@ -27,11 +27,12 @@ const shortTitle = (title: string) => title.replace(/^.*?Schriftlicher Ausdruck\
 interface WritingTaskListProps {
     items: ExamExerciseSummaryResponse[];
     level: string;
+    examType?: ExamTypeCode;
     lastTimes?: Record<string, ExamExerciseLastTime>;
 }
 
 /** The Schreibaufgaben of a level: a "learn first" tile next to the Zeit-Check, then the tasks as cards with status, last time and bookmark. */
-export default function WritingTaskList({ items, level, lastTimes }: Readonly<WritingTaskListProps>) {
+export default function WritingTaskList({ items, level, examType = "TELC", lastTimes }: Readonly<WritingTaskListProps>) {
     const router = useRouter();
     const { toggle: toggleBookmark, pendingId } = useExamBookmark();
     const [filter, setFilter] = useState<Filter>("ALL");
@@ -45,7 +46,7 @@ export default function WritingTaskList({ items, level, lastTimes }: Readonly<Wr
     return (
         <div className="space-y-5" style={lessonThemeVars("writing")}>
             <div className="grid gap-4 md:grid-cols-2 md:[&>*:only-child]:col-span-2">
-                <ExamTimeTile section="SCHRIFTLICHER_AUSDRUCK" level={level} teil={1} showLastResult={false} />
+                <ExamTimeTile section="SCHRIFTLICHER_AUSDRUCK" level={level} teil={1} showLastResult={false} examType={examType} />
                 <Link
                     href={`/dashboard/exam-prep/schreiben/lernen?level=${encodeURIComponent(level)}`}
                     className="group relative flex items-center gap-4 overflow-hidden rounded-2xl bg-gradient-to-br from-(--lesson-from)/10 via-card to-(--lesson-to)/10 p-4 shadow-card ring-1 ring-primary/20 transition hover:-translate-y-0.5 hover:shadow-md hover:ring-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 sm:p-5"

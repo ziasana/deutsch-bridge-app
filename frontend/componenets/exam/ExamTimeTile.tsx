@@ -3,7 +3,7 @@
 import { Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatClock, formatDifference } from "@/lib/examTime";
-import { ExamSection } from "@/types/exam";
+import { ExamSection, ExamTypeCode } from "@/types/exam";
 import { useExamTimeConfiguration } from "@/hooks/exam/useExamTimeConfiguration";
 import useExamTimerStore from "@/store/useExamTimerStore";
 
@@ -11,11 +11,11 @@ import useExamTimerStore from "@/store/useExamTimerStore";
  * "Zeit-Check" tile: the recommended time per Übung as a ring, and (when asked for) the result of the latest finished Übung.
  * Colours follow the surrounding theme (`--lesson-from` / `--lesson-to`).
  */
-export default function ExamTimeTile({ section, level, teil, showLastResult = true }: Readonly<{ section: ExamSection; level: string; teil: number; showLastResult?: boolean }>) {
-    const { minutes } = useExamTimeConfiguration(level, section, teil);
+export default function ExamTimeTile({ section, level, teil, showLastResult = true, examType = "TELC" }: Readonly<{ section: ExamSection; level: string; teil: number; showLastResult?: boolean; examType?: ExamTypeCode }>) {
+    const { minutes } = useExamTimeConfiguration(level, section, teil, examType === "DTZ" ? "DTZ" : "TELC");
     const lastResult = useExamTimerStore((s) => s.lastResult);
     const hydrated = useExamTimerStore((s) => s.hasHydrated);
-    const result = showLastResult && hydrated && lastResult?.section === section && lastResult.level === level && lastResult.teil === teil ? lastResult : null;
+    const result = showLastResult && hydrated && lastResult?.section === section && lastResult.level === level && lastResult.teil === teil && (lastResult.examType ?? "TELC") === examType ? lastResult : null;
     if (minutes == null && !result) return null;
 
     const difference = result?.differenceSeconds ?? null;

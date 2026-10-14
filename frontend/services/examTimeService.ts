@@ -12,25 +12,27 @@ import {
     ExamTimeSettings,
 } from "@/types/examTime";
 
+export type ExamTimeExam = "TELC" | "DTZ";
+
 // ---- admin ----
 
-export const getExamTimeSettings = async (level: string) => {
-    return await api.get<ExamTimeSettings>("/admin/exam-time-configurations", { params: { level } });
+export const getExamTimeSettings = async (level: string, examType: ExamTimeExam = "TELC") => {
+    return await api.get<ExamTimeSettings>("/admin/exam-time-configurations", { params: { level, examType } });
 };
 
 export const saveExamTimeSettings = async (request: ExamTimeBulkUpdateRequest) => {
     return await api.put<ExamTimeSettings>("/admin/exam-time-configurations", request);
 };
 
-export const resetExamTimeSettings = async (level: string) => {
-    return await api.post<ExamTimeSettings>("/admin/exam-time-configurations/reset", null, { params: { level } });
+export const resetExamTimeSettings = async (level: string, examType: ExamTimeExam = "TELC") => {
+    return await api.post<ExamTimeSettings>("/admin/exam-time-configurations/reset", null, { params: { level, examType } });
 };
 
 // ---- learner ----
 
 /** Enabled Teil targets for a level. An empty list means timing is not available for it. */
-export const getExamTimeConfigurations = async (level: string) => {
-    return await api.get<ExamTimeConfiguration[]>("/exam-time-configurations", { params: { level } });
+export const getExamTimeConfigurations = async (level: string, examType: ExamTimeExam = "TELC") => {
+    return await api.get<ExamTimeConfiguration[]>("/exam-time-configurations", { params: { level, examType } });
 };
 
 export const startExamPracticeSession = async (request: ExamPracticeSessionStartRequest) => {

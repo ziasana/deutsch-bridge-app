@@ -56,11 +56,11 @@ function ProgressRing({ done, total }: Readonly<{ done: number; total: number }>
 }
 
 /** Recommended time per Übung and, once one was finished, the Zeit-Check of the latest Übung of this Teil. */
-function TimeStrip({ level, teil }: Readonly<{ level: string; teil: number }>) {
-    const { minutes } = useExamTimeConfiguration(level, "MUENDLICHER_AUSDRUCK", teil);
+function TimeStrip({ level, teil, exam }: Readonly<{ level: string; teil: number; exam: SpeakingExam }>) {
+    const { minutes } = useExamTimeConfiguration(level, "MUENDLICHER_AUSDRUCK", teil, exam);
     const lastResult = useExamTimerStore((s) => s.lastResult);
     const hydrated = useExamTimerStore((s) => s.hasHydrated);
-    const result = hydrated && lastResult?.section === "MUENDLICHER_AUSDRUCK" && lastResult.level === level && lastResult.teil === teil ? lastResult : null;
+    const result = hydrated && lastResult?.section === "MUENDLICHER_AUSDRUCK" && lastResult.level === level && lastResult.teil === teil && (lastResult.examType ?? "TELC") === exam ? lastResult : null;
     if (minutes == null && !result) return null;
 
     const difference = result?.differenceSeconds ?? null;
@@ -178,7 +178,7 @@ export default function SpeakingTeilOverview({ exam = "TELC", items, level, teil
             </header>
 
             <div className="grid gap-4 md:grid-cols-2 md:[&>*:only-child]:col-span-2">
-                {exam === "TELC" && <TimeStrip level={level} teil={teil} />}
+                <TimeStrip level={level} teil={teil} exam={exam} />
 
                 <Link
                     href={learnHref(level, teil, undefined, exam)}

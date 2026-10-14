@@ -121,7 +121,7 @@ export default function ExamTeilOverview({ section, accent, sectionLabel, emoji,
                 )}
             </header>
 
-            {examType !== "DTZ" && <ExamTimeTile section={section} level={level} teil={teil} />}
+            <ExamTimeTile section={section} level={level} teil={teil} examType={examType} />
 
             <section aria-label="Übungen">
                 <div className="flex flex-wrap items-center justify-between gap-3">

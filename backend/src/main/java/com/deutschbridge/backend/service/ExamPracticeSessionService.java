@@ -249,6 +249,6 @@ public class ExamPracticeSessionService {
                 s.getQuestionsTotal() != null ? s.getQuestionsTotal() : 0,
                 s.getQuestionsAnswered() != null ? s.getQuestionsAnswered() : 0,
                 s.getCorrectAnswers() != null ? s.getCorrectAnswers() : 0,
-                s.getScore());
+                s.getScore(), s.getExamType().name());
     }
 }

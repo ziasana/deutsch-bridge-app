@@ -41,8 +41,8 @@ export default function ExamExerciseTimer({ exercise, variant = "bar" }: Readonl
     const restartSignal = useExamTimerStore((s) => s.restartSignal);
     const startSignal = useExamTimerStore((s) => s.startSignal);
 
-    // DTZ has no recommended Teil times (the time configuration is Telc-only), so it is practised without the clock.
-    const eligible = TIMED_SECTIONS.includes(exercise.section) && exercise.teil != null && exercise.examType !== "DTZ";
+    // Telc and DTZ both have configured recommended Teil times (the DTZ ones are set per Teil in the admin time settings).
+    const eligible = TIMED_SECTIONS.includes(exercise.section) && exercise.teil != null;
     const manualStart = MANUAL_START_SECTIONS.includes(exercise.section);
     const mounted = useRef(false);
     const starting = useRef(false);

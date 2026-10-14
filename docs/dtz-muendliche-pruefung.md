@@ -37,3 +37,12 @@ Die DTZ Mündliche Prüfung hat denselben Aufbau wie Telc B1 Mündlicher Ausdruc
 - **Inhalt** liegt in `speaking_guides` (Schlüssel: `exam_type` + Level + Teil; DTZ wird mit Level `B1` gespeichert). Seed: `backend/src/main/resources/speaking/dtz/guide-B1-teil{1,2,3}.json`, wird nur angelegt, wenn noch kein Eintrag existiert. Bearbeiten im Admin unter „Sprechen lernen“ (Auswahl Telc / DTZ A2-B1).
 - **Schema**: Teil 1 `topics` (name, herkunft, wohnen, beruf, familie, sprachen), Teil 2 `goals` (DESCRIBE_PHOTO, ASK_ABOUT_PHOTO, TELL_EXPERIENCE, GIVE_OPINION), Teil 3 `functions` + `decisionCriteria`. Anders als bei Telc sind optionale `en`/`fa`-Hinweise erlaubt: `introHint {en, fa}` sowie `en`/`fa` an Einträgen von `tips` und `steps`. Redemittel bleiben Deutsch.
 - API: `GET /api/speaking/guides?exam=DTZ&level=B1`, `…/learn-progress?exam=DTZ&level=B1`; ohne `exam` gilt `TELC`.
+
+## Zeitvorgaben (Zeit-Check)
+
+DTZ hat wie Telc empfohlene Zeiten pro Teil (Trainingsziele, keine offiziellen Limits).
+
+- **Admin**: „Exam Time Management“ hat eine Auswahl *telc Deutsch / DTZ A2–B1* (DTZ ist fest Level B1). Teile: Lesen 1–5, Schreiben (Aufgabe A oder B = ein Teil), Mündliche Prüfung 1–3. Hören hat keinen Teil-Timer (Audio gibt das Tempo vor).
+- **Standardwerte** (`ExamTimeDefaults.DTZ_DEFAULT_MINUTES`, nur gesetzt wenn noch nichts existiert; „Reset to defaults“ stellt sie wieder her): Lesen 8/12/14/12/14 (= 60 Min. Gesamtdauer), Schreiben 30, Mündlich 2/4/4.
+- **API**: `GET /api/exam-time-configurations?level=B1&examType=DTZ`, Admin `GET/PUT/POST reset /api/admin/exam-time-configurations` mit `examType`; ohne Angabe gilt `TELC`.
+- **Lernerseite**: Zeit-Check auf der Teil-Übersicht (Lesen/Mündlich), Minuten-Chip in der Teil-Liste, Timer auf der Übungsseite; Sitzungen speichern den Prüfungstyp, damit ein Ergebnis nie bei der anderen Prüfung erscheint.

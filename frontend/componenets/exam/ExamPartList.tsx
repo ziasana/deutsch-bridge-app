@@ -18,14 +18,14 @@ interface ExamPartListProps {
     level: string;
     accent: LessonAccent;
     groups: ExamPartGroup[];
-    /** Recommended times only exist for Telc; DTZ lists show no minutes. */
+    /** Recommended times are configured per exam (Telc and DTZ). */
     examType?: ExamTypeCode;
     onOpen: (group: ExamPartGroup) => void;
 }
 
 /** Recommended time of a Teil as a small chip (nothing while unknown, so the card never shows a placeholder). */
 function MinutesChip({ section, level, teil, examType }: Readonly<{ section: ExamSection; level: string; teil: number | null; examType?: ExamTypeCode }>) {
-    const { minutes } = useExamTimeConfiguration(examType === "DTZ" ? null : level, section, teil);
+    const { minutes } = useExamTimeConfiguration(level, section, teil, examType === "DTZ" ? "DTZ" : "TELC");
     if (minutes == null) return null;
     return (
         <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
