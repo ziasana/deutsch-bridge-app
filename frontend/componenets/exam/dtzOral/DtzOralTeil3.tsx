@@ -2,17 +2,16 @@
 
 import { DtzOralTeil3 } from "@/types/dtzOral";
 import { AllDone, CoverCard, emojiFor, ProgressBar, SceneImage, shell, TaskBadge } from "../speaking/SpeakingStage";
+import DtzOralSolution, { hasDtzSolution } from "./DtzOralSolution";
 import PossibleSolution from "./PossibleSolution";
 import { CoverageProps, useCoverage } from "./useCoverage";
 
 /**
  * Teil 3 - Gemeinsam etwas planen: the shared situation (with an illustration beside it), the instruction and the planning notes, which the
- * learner taps once they are clarified. The notes are open questions; no decision is made in advance. Example phrases are optional help.
+ * learner taps once they are clarified. The notes are open questions; no decision is made in advance.
  */
-export default function DtzOralTeil3View({ content, hideHelp = false, covered: coveredProp, onToggle }: Readonly<{ content: DtzOralTeil3; hideHelp?: boolean } & CoverageProps>) {
+export default function DtzOralTeil3View({ content, hideHelp = false, hideSolution = false, covered: coveredProp, onToggle }: Readonly<{ content: DtzOralTeil3; hideHelp?: boolean; hideSolution?: boolean } & CoverageProps>) {
     const { covered, toggle } = useCoverage(coveredProp, onToggle);
-    const phrases = hideHelp ? [] : (content.learnerSupport?.examplePhrases ?? []);
-    const dialogue = hideHelp ? [] : (content.possibleSolution?.dialogue ?? []);
     const ids = content.planningNotes.map((n) => `note-${n.number}`);
     const done = ids.filter((id) => covered.includes(id)).length;
     return (
@@ -45,28 +44,10 @@ export default function DtzOralTeil3View({ content, hideHelp = false, covered: c
                 {ids.length > 0 && done === ids.length && <AllDone>Alles geplant – jetzt noch auf eine gemeinsame Lösung einigen!</AllDone>}
             </section>
 
-            {dialogue.length > 0 && (
+            {!hideHelp && !hideSolution && hasDtzSolution(content) && (
                 <PossibleSolution>
-                    <p className="text-xs text-foreground/60">Das ist nur ein mögliches Gespräch. Ihr Plan kann ganz anders aussehen — wichtig ist, dass Sie beide Vorschläge machen, nachfragen und sich gemeinsam entscheiden.</p>
-                    <ol className="space-y-2" aria-label="Mögliches Gespräch">
-                        {dialogue.map((turn, i) => (
-                            <li key={i} className={turn.speaker === "A" ? "flex" : "flex justify-end"}>
-                                <p className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm leading-relaxed ${turn.speaker === "A" ? "bg-primary/10 text-foreground" : "bg-foreground/[0.07] text-foreground"}`}>
-                                    <span className="me-2 text-xs font-bold text-primary">{turn.speaker}</span>{turn.text}
-                                </p>
-                            </li>
-                        ))}
-                    </ol>
+                    <DtzOralSolution content={content} />
                 </PossibleSolution>
-            )}
-
-            {phrases.length > 0 && (
-                <details className="rounded-2xl bg-card shadow-card ring-1 ring-foreground/10 open:ring-primary/30">
-                    <summary className="cursor-pointer px-5 py-3 text-sm font-semibold text-foreground">Redemittel (optional)</summary>
-                    <ul className="space-y-1.5 px-5 pb-5 text-sm text-foreground/80">
-                        {phrases.map((phrase) => <li key={phrase}>• {phrase}</li>)}
-                    </ul>
-                </details>
             )}
         </div>
     );

@@ -44,14 +44,28 @@ describe("DtzOralPractice", () => {
         expect(dialog.querySelector('a[href*="exam=DTZ"]')).not.toBeNull();
     });
 
+    it("shows the possible solution at the bottom on request, like the Telc Beispielantwort", () => {
+        render(<DtzOralPractice {...props} />);
+        expect(screen.queryByText("Redemittel (optional)")).toBeNull();
+        expect(screen.queryByRole("list", { name: "Mögliches Gespräch" })).toBeNull();
+        const toggle = screen.getByRole("button", { name: "Mögliche Lösung anzeigen" });
+        const finish = screen.getByRole("button", { name: /Übung beenden/ });
+        // it sits below the finish card
+        expect(finish.compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        fireEvent.click(toggle);
+        expect(screen.getByRole("list", { name: "Mögliches Gespräch" })).toBeTruthy();
+        expect(screen.getByText(/nur ein mögliches Gespräch/)).toBeTruthy();
+        fireEvent.click(screen.getByRole("button", { name: "Mögliche Lösung verbergen" }));
+        expect(screen.queryByRole("list", { name: "Mögliches Gespräch" })).toBeNull();
+    });
+
     it("hides help and the possible solution in the exam mode until the attempt is finished", () => {
         render(<DtzOralPractice {...props} />);
-        expect(screen.getByText("Mögliche Lösung")).toBeTruthy();
         fireEvent.click(screen.getByRole("button", { name: "Prüfung" }));
-        expect(screen.queryByText("Mögliche Lösung")).toBeNull();
+        expect(screen.queryByRole("button", { name: /Mögliche Lösung/ })).toBeNull();
         expect(screen.queryByRole("button", { name: /Redemittel & Tipps/ })).toBeNull();
         fireEvent.click(screen.getByRole("button", { name: /Übung beenden/ }));
-        expect(screen.getByText("Mögliche Lösung")).toBeTruthy();
+        expect(screen.getByRole("button", { name: "Mögliche Lösung anzeigen" })).toBeTruthy();
         expect(screen.getByRole("button", { name: /Redemittel & Tipps/ })).toBeTruthy();
     });
 

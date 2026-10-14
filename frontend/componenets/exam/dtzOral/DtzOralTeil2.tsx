@@ -6,6 +6,7 @@ import { resolveUploadUrl } from "@/lib/backendOrigin";
 import { cn } from "@/lib/utils";
 import { DtzOralTeil2, PracticeMode } from "@/types/dtzOral";
 import { AllDone, CoverCard, ProgressBar, SceneImage, shell, TaskBadge } from "../speaking/SpeakingStage";
+import DtzOralSolution, { hasDtzSolution } from "./DtzOralSolution";
 import PossibleSolution from "./PossibleSolution";
 import { CoverageProps, useCoverage } from "./useCoverage";
 
@@ -39,12 +40,14 @@ interface Props extends CoverageProps {
     adminImagePrompt?: string | null;
     /** Prüfung mode: the possible solution stays hidden. */
     hideHelp?: boolean;
+    /** The practice page shows the possible solution itself, at the bottom of the page. */
+    hideSolution?: boolean;
     /** The A2 / B1 / Gemischt choice; controlled by the practice page so it can count the questions, otherwise kept here. */
     practiceMode?: PracticeMode;
     onPracticeModeChange?: (mode: PracticeMode) => void;
 }
 
-export default function DtzOralTeil2View({ content, adminImagePrompt, hideHelp = false, practiceMode, onPracticeModeChange, covered: coveredProp, onToggle }: Readonly<Props>) {
+export default function DtzOralTeil2View({ content, adminImagePrompt, hideHelp = false, hideSolution = false, practiceMode, onPracticeModeChange, covered: coveredProp, onToggle }: Readonly<Props>) {
     const [localMode, setLocalMode] = useState<PracticeMode>("A2");
     const mode = practiceMode ?? localMode;
     const setMode = onPracticeModeChange ?? setLocalMode;
@@ -55,12 +58,6 @@ export default function DtzOralTeil2View({ content, adminImagePrompt, hideHelp =
     const bIds = questions.map((q) => `b-${q.level}-${q.text}`);
     const doneA = aIds.filter((id) => covered.includes(id)).length;
     const doneB = bIds.filter((id) => covered.includes(id)).length;
-    const solution = content.possibleSolution;
-    const solutionItems = [
-        { key: "description", label: "Teilnehmer/in A · Bildbeschreibung", text: solution?.description },
-        ...(mode !== "B1" ? [{ key: "experienceA2", label: "Teilnehmer/in B · Erfahrungen (A2)", text: solution?.experienceA2 }] : []),
-        ...(mode !== "A2" ? [{ key: "experienceB1", label: "Teilnehmer/in B · Erfahrungen (B1)", text: solution?.experienceB1 }] : []),
-    ].filter((item) => item.text);
     return (
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             <figure className={`${shell} lg:sticky lg:top-4 lg:self-start`}>
@@ -132,15 +129,9 @@ export default function DtzOralTeil2View({ content, adminImagePrompt, hideHelp =
                     {bIds.length > 0 && doneB === bIds.length && <AllDone>Alle Fragen besprochen – stark!</AllDone>}
                 </section>
 
-                {!hideHelp && solutionItems.length > 0 && (
+                {!hideHelp && !hideSolution && hasDtzSolution(content, mode) && (
                     <PossibleSolution>
-                        <p className="text-xs text-foreground/60">Das ist nur eine mögliche Antwort. Sie können auch ganz anders antworten — sprechen Sie über das, was Sie auf dem Foto sehen und erlebt haben.</p>
-                        {solutionItems.map((item) => (
-                            <div key={item.key}>
-                                <p className="text-xs font-bold uppercase tracking-wide text-primary">{item.label}</p>
-                                <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-foreground/85">{item.text}</p>
-                            </div>
-                        ))}
+                        <DtzOralSolution content={content} mode={mode} />
                     </PossibleSolution>
                 )}
             </div>

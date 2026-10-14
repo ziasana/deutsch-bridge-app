@@ -16,6 +16,8 @@ interface Props extends CoverageProps {
     showHeader?: boolean;
     /** Prüfung mode of the learner page: hides practice support, example phrases and the possible solution. */
     hideHelp?: boolean;
+    /** Learner page: the possible solution is shown by the page at the bottom instead of inside the task. */
+    hideSolution?: boolean;
     /** Teil 2: the A2 / B1 / Gemischt choice, when the practice page owns it. */
     practiceMode?: PracticeMode;
     onPracticeModeChange?: (mode: PracticeMode) => void;
@@ -26,7 +28,7 @@ interface Props extends CoverageProps {
 }
 
 /** The learner view of one DTZ Mündliche Prüfung exercise, by Teil. Also rendered (read only) by the admin preview. */
-export default function DtzOralExercise({ title, content, adminImagePrompt, showHeader = true, hideHelp = false, practiceMode, onPracticeModeChange, covered, onToggle, completed, marking, onMarkCompleted }: Readonly<Props>) {
+export default function DtzOralExercise({ title, content, adminImagePrompt, showHeader = true, hideHelp = false, hideSolution = false, practiceMode, onPracticeModeChange, covered, onToggle, completed, marking, onMarkCompleted }: Readonly<Props>) {
     const meta = DTZ_ORAL_PARTS.find((p) => p.part === content.part);
     return (
         <div className="space-y-5">
@@ -37,8 +39,8 @@ export default function DtzOralExercise({ title, content, adminImagePrompt, show
                 </header>
             )}
             {content.part === 1 && <DtzOralTeil1View content={content} hideHelp={hideHelp} covered={covered} onToggle={onToggle} />}
-            {content.part === 2 && <DtzOralTeil2View content={content} adminImagePrompt={adminImagePrompt} hideHelp={hideHelp} practiceMode={practiceMode} onPracticeModeChange={onPracticeModeChange} covered={covered} onToggle={onToggle} />}
-            {content.part === 3 && <DtzOralTeil3View content={content} hideHelp={hideHelp} covered={covered} onToggle={onToggle} />}
+            {content.part === 2 && <DtzOralTeil2View content={content} adminImagePrompt={adminImagePrompt} hideHelp={hideHelp} hideSolution={hideSolution} practiceMode={practiceMode} onPracticeModeChange={onPracticeModeChange} covered={covered} onToggle={onToggle} />}
+            {content.part === 3 && <DtzOralTeil3View content={content} hideHelp={hideHelp} hideSolution={hideSolution} covered={covered} onToggle={onToggle} />}
             {onMarkCompleted && (
                 <div className="flex justify-end">
                     <button

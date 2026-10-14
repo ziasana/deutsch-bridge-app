@@ -152,7 +152,7 @@ describe("Teil 3 learner view", () => {
         const notes = within(screen.getByRole("region", { name: "Notizen zur Planung" })).getAllByRole("listitem").map((li) => li.textContent ?? "");
         ["Wann?", "Wo feiern?", "Essen und Trinken?", "Musik?"].forEach((label, i) => expect(notes[i]).toContain(label));
         expect(notes).toHaveLength(4);
-        expect(screen.getByText("Redemittel (optional)")).toBeTruthy();
+        expect(screen.queryByText("Redemittel (optional)")).toBeNull();
     });
 });
 
@@ -170,6 +170,13 @@ describe("Teil 3 mögliche Lösung", () => {
 
     it("shows nothing when there is no solution", () => {
         render(<DtzOralExercise title="Klassenfest" content={{ ...teil3, possibleSolution: null }} />);
+        expect(screen.queryByText("Mögliche Lösung")).toBeNull();
+    });
+});
+
+describe("solution shown by the practice page", () => {
+    it("leaves the possible solution out of the task when the page shows it at the bottom", () => {
+        render(<DtzOralExercise title="Klassenfest" content={teil3} hideSolution />);
         expect(screen.queryByText("Mögliche Lösung")).toBeNull();
     });
 });

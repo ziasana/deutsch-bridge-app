@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronRight, LifeBuoy } from "lucide-react";
+import { ChevronRight, Eye, EyeOff, Lightbulb, LifeBuoy } from "lucide-react";
 import { zeitCheckMessage } from "@/lib/examTime";
 import { SpeakingGuideContent } from "@/types/exam";
 import { DTZ_ORAL_PARTS, DtzOralContent, PracticeMode } from "@/types/dtzOral";
@@ -11,6 +11,7 @@ import { FinishCard, SpeakingMode, SpeakingPracticeHeader, SpeakingReviewCard } 
 import { DTZ_LEVEL, DTZ_SPEAKING_PARTS } from "../speaking/speakingMeta";
 import { useSpeakingNotes } from "../speaking/useSpeakingNotes";
 import DtzOralExercise from "./DtzOralExercise";
+import DtzOralSolution, { hasDtzSolution } from "./DtzOralSolution";
 import { questionsFor } from "./DtzOralTeil2";
 
 /** The cards of the task the learner can tap off as "besprochen" in the current practice mode (ids as used by the Teil views). */
@@ -48,6 +49,7 @@ export default function DtzOralPractice({ exerciseId, title, content, guide, gui
     const [helpOpen, setHelpOpen] = useState(false);
     // Cards (topics / questions / planning notes) the learner has talked about in this attempt - a live aid, not stored.
     const [covered, setCovered] = useState<string[]>([]);
+    const [showSolution, setShowSolution] = useState(false);
     const [practiceMode, setPracticeMode] = useState<PracticeMode>("A2");
     const notes = useSpeakingNotes(exerciseId);
 
@@ -61,7 +63,10 @@ export default function DtzOralPractice({ exerciseId, title, content, guide, gui
 
     const changeMode = (next: SpeakingMode) => {
         setMode(next);
-        if (next === "EXAM") setHelpOpen(false);
+        if (next === "EXAM") {
+            setHelpOpen(false);
+            setShowSolution(false);
+        }
     };
     const finish = () => {
         setPhase("REVIEW");
@@ -71,6 +76,7 @@ export default function DtzOralPractice({ exerciseId, title, content, guide, gui
         setPhase("PRACTICE");
         onRepeat?.();
         setCovered([]);
+        setShowSolution(false);
         if (mode === "EXAM") setHelpOpen(false);
         notes.update({ checked: [], confidence: null });
     };
@@ -115,6 +121,7 @@ export default function DtzOralPractice({ exerciseId, title, content, guide, gui
                 showHeader={false}
                 content={content}
                 hideHelp={!helpVisible}
+                hideSolution
                 practiceMode={practiceMode}
                 onPracticeModeChange={setPracticeMode}
                 covered={covered}
@@ -139,6 +146,32 @@ export default function DtzOralPractice({ exerciseId, title, content, guide, gui
                     onMarkCompleted={onMarkCompleted}
                     onRepeat={repeat}
                 />
+            )}
+
+            {helpVisible && hasDtzSolution(content, practiceMode) && (
+                <section aria-label="Mögliche Lösung" className="space-y-3">
+                    <button
+                        type="button"
+                        aria-expanded={showSolution}
+                        aria-label={showSolution ? "Mögliche Lösung verbergen" : "Mögliche Lösung anzeigen"}
+                        onClick={() => setShowSolution((v) => !v)}
+                        className="group flex w-full cursor-pointer items-center gap-4 rounded-2xl border border-dashed border-amber-500/50 bg-amber-500/10 p-4 text-start transition hover:-translate-y-0.5 hover:bg-amber-500/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50"
+                    >
+                        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-600 transition group-hover:scale-110 dark:text-amber-300">
+                            <Lightbulb className="size-6" aria-hidden="true" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                            <span className="block text-base font-bold text-foreground">{showSolution ? "Mögliche Lösung verbergen" : "Mögliche Lösung anzeigen"}</span>
+                            <span className="block text-sm text-foreground/65">{showSolution ? "Zum Vergleichen mit Ihrem eigenen Gespräch." : "Tipp: Sprechen Sie zuerst selbst – vergleichen Sie danach."}</span>
+                        </span>
+                        {showSolution ? <EyeOff className="size-5 shrink-0 text-foreground/50" aria-hidden="true" /> : <Eye className="size-5 shrink-0 text-foreground/50" aria-hidden="true" />}
+                    </button>
+                    {showSolution && (
+                        <div className="anim-fade-up space-y-3 rounded-2xl bg-card p-5 shadow-card">
+                            <DtzOralSolution content={content} mode={practiceMode} />
+                        </div>
+                    )}
+                </section>
             )}
 
             <SpeakingHelpDrawer
