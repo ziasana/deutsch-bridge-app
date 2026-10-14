@@ -123,10 +123,9 @@ describe("Teil 2 learner view", () => {
 });
 
 describe("Teil 2 Beispielantwort", () => {
-    it("offers a collapsed possible solution that follows the practice mode and says it is only one possibility", () => {
+    it("offers a Beispielantwort that follows the practice mode and says it is only one possibility", () => {
         render(<DtzOralExercise title="Einkaufen" content={teil2} />);
-        const details = screen.getByText("Beispielantwort").closest("details") as HTMLDetailsElement;
-        expect(details.open).toBe(false);
+        expect(screen.getByRole("region", { name: "Beispielantwort" })).toBeTruthy();
         expect(screen.getByText(/nur eine Beispielantwort/)).toBeTruthy();
         expect(screen.getByText("Ich sehe eine Frau am Laptop.")).toBeTruthy();
         expect(screen.getByText("Ich kaufe manchmal online.")).toBeTruthy();
@@ -157,13 +156,13 @@ describe("Teil 3 learner view", () => {
 });
 
 describe("Teil 3 Beispielantwort", () => {
-    it("offers a collapsed sample conversation that is marked as only one possibility", () => {
+    it("offers a sample conversation that is marked as only one possibility", () => {
         render(<DtzOralExercise title="Klassenfest" content={teil3} />);
-        const details = screen.getByText("Beispielantwort").closest("details") as HTMLDetailsElement;
-        expect(details.open).toBe(false);
+        expect(screen.getByRole("region", { name: "Beispielgespräch" })).toBeTruthy();
         expect(screen.getByText(/nur ein Beispielgespräch/)).toBeTruthy();
         const turns = within(screen.getByRole("list", { name: "Beispielgespräch" })).getAllByRole("listitem").map((li) => li.textContent);
-        expect(turns).toEqual(["AWann feiern wir?", "BAm Freitag.", "AWo?", "BIm Kursraum."]);
+        ["Wann feiern wir?", "Am Freitag.", "Wo?", "Im Kursraum."].forEach((line, i) => expect(turns[i]).toContain(line));
+        expect(turns).toHaveLength(4);
         // The task itself holds no conversation.
         expect(within(screen.getByRole("region", { name: "Situation" })).queryByText("Am Freitag.")).toBeNull();
     });
@@ -178,6 +177,25 @@ describe("solution shown by the practice page", () => {
     it("leaves the possible solution out of the task when the page shows it at the bottom", () => {
         render(<DtzOralExercise title="Klassenfest" content={teil3} hideSolution />);
         expect(screen.queryByText("Beispielantwort")).toBeNull();
+    });
+});
+
+describe("Beispielantwort practice mode (as in Telc)", () => {
+    it("Teil 2: covers the paragraphs for self-practice until they are tapped", () => {
+        render(<DtzOralExercise title="Einkaufen" content={teil2} />);
+        fireEvent.click(screen.getByRole("button", { name: "Selbst üben" }));
+        expect(screen.queryByText("Ich sehe eine Frau am Laptop.")).toBeNull();
+        fireEvent.click(screen.getAllByRole("button", { name: /Antippen zum Aufdecken/ })[0]);
+        expect(screen.getByText("Ich sehe eine Frau am Laptop.")).toBeTruthy();
+        fireEvent.click(screen.getByRole("button", { name: /Alle aufdecken/ }));
+        expect(screen.getByText("Ich kaufe manchmal online.")).toBeTruthy();
+    });
+
+    it("Teil 3: covers the lines of the chosen role", () => {
+        render(<DtzOralExercise title="Klassenfest" content={teil3} />);
+        fireEvent.click(screen.getByRole("button", { name: "Ich bin B" }));
+        expect(screen.queryByText("Am Freitag.")).toBeNull();
+        expect(screen.getByText("Wann feiern wir?")).toBeTruthy();
     });
 });
 

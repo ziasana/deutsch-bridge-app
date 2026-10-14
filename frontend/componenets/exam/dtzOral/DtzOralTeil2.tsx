@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 import { DtzOralTeil2, PracticeMode } from "@/types/dtzOral";
 import { AllDone, CoverCard, ProgressBar, SceneImage, shell, TaskBadge } from "../speaking/SpeakingStage";
 import DtzOralSolution, { hasDtzSolution } from "./DtzOralSolution";
-import PossibleSolution from "./PossibleSolution";
 import { CoverageProps, useCoverage } from "./useCoverage";
 
 export const PRACTICE_MODES: { value: PracticeMode; label: string; hint: string }[] = [
@@ -135,9 +134,7 @@ export default function DtzOralTeil2View({ content, adminImagePrompt, hideHelp =
                     </section>
 
                     {!hideHelp && !hideSolution && hasDtzSolution(content, mode) && (
-                        <PossibleSolution>
-                            <DtzOralSolution content={content} mode={mode} />
-                        </PossibleSolution>
+                        <DtzOralSolution content={content} mode={mode} />
                     )}
                 </div>
             </div>

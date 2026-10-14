@@ -7,11 +7,11 @@ import { cn } from "@/lib/utils";
 import { lessonThemeVars } from "../lessonTheme";
 
 /** How the example is shown: read in full, or practise by covering your own lines until you tap them. */
-type Mode = "READ" | "PRACTISE" | "ROLE_A" | "ROLE_B";
+export type Mode = "READ" | "PRACTISE" | "ROLE_A" | "ROLE_B";
 
 const modeButton = "cursor-pointer rounded-full px-3 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50";
 
-function Segmented({ value, options, onChange }: Readonly<{ value: Mode; options: { value: Mode; label: string }[]; onChange: (mode: Mode) => void }>) {
+export function Segmented({ value, options, onChange }: Readonly<{ value: Mode; options: { value: Mode; label: string }[]; onChange: (mode: Mode) => void }>) {
     return (
         <div role="group" aria-label="Ansicht" className="inline-flex gap-1 rounded-full bg-primary/10 p-1">
             {options.map((o) => (
@@ -30,7 +30,7 @@ function Segmented({ value, options, onChange }: Readonly<{ value: Mode; options
 }
 
 /** A line of the example that can be covered: while covered the text is not on the page; tapping it reveals the line. */
-function Coverable({ covered, onReveal, children, className }: Readonly<{ covered: boolean; onReveal: () => void; children: ReactNode; className?: string }>) {
+export function Coverable({ covered, onReveal, children, className }: Readonly<{ covered: boolean; onReveal: () => void; children: ReactNode; className?: string }>) {
     if (!covered) return <>{children}</>;
     return (
         <button
@@ -45,7 +45,7 @@ function Coverable({ covered, onReveal, children, className }: Readonly<{ covere
 }
 
 /** Tracks which lines the learner has uncovered; switching the mode covers everything again. */
-function useReveal() {
+export function useReveal() {
     const [revealed, setRevealed] = useState<Set<string>>(new Set());
     return {
         isRevealed: (id: string) => revealed.has(id),
@@ -55,7 +55,7 @@ function useReveal() {
     };
 }
 
-function Shell({ label, title, subtitle, controls, children }: Readonly<{ label: string; title: string; subtitle?: string | null; controls?: ReactNode; children: ReactNode }>) {
+export function Shell({ label, title, subtitle, controls, children }: Readonly<{ label: string; title: string; subtitle?: string | null; controls?: ReactNode; children: ReactNode }>) {
     return (
         <section aria-label={label} style={lessonThemeVars("speaking")} className="overflow-hidden rounded-3xl bg-card shadow-card ring-1 ring-primary/15">
             <header className="relative overflow-hidden bg-gradient-to-br from-(--lesson-from) to-(--lesson-to) px-5 py-4 text-white">
@@ -78,7 +78,7 @@ function Shell({ label, title, subtitle, controls, children }: Readonly<{ label:
     );
 }
 
-const READ_PRACTISE: { value: Mode; label: string }[] = [
+export const READ_PRACTISE: { value: Mode; label: string }[] = [
     { value: "READ", label: "Lesen" },
     { value: "PRACTISE", label: "Selbst üben" },
 ];

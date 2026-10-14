@@ -3,7 +3,6 @@
 import { DtzOralTeil3 } from "@/types/dtzOral";
 import { AllDone, CoverCard, emojiFor, ProgressBar, SceneImage, shell, TaskBadge } from "../speaking/SpeakingStage";
 import DtzOralSolution, { hasDtzSolution } from "./DtzOralSolution";
-import PossibleSolution from "./PossibleSolution";
 import { CoverageProps, useCoverage } from "./useCoverage";
 
 /**
@@ -47,9 +46,7 @@ export default function DtzOralTeil3View({ content, hideHelp = false, hideSoluti
             </div>
 
             {!hideHelp && !hideSolution && hasDtzSolution(content) && (
-                <PossibleSolution>
-                    <DtzOralSolution content={content} />
-                </PossibleSolution>
+                <DtzOralSolution content={content} />
             )}
         </div>
     );

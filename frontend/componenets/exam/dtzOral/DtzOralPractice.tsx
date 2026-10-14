@@ -167,7 +167,7 @@ export default function DtzOralPractice({ exerciseId, title, content, guide, gui
                         {showSolution ? <EyeOff className="size-5 shrink-0 text-foreground/50" aria-hidden="true" /> : <Eye className="size-5 shrink-0 text-foreground/50" aria-hidden="true" />}
                     </button>
                     {showSolution && (
-                        <div className="anim-fade-up space-y-3 rounded-2xl bg-card p-5 shadow-card">
+                        <div className="anim-fade-up">
                             <DtzOralSolution content={content} mode={practiceMode} />
                         </div>
                     )}
