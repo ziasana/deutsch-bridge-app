@@ -43,7 +43,7 @@ describe("useSpeakingLearnProgress", () => {
         const { result } = renderHook(() => useSpeakingLearnProgress("B1", 2), { wrapper: wrapper() });
         await waitFor(() => expect(api.get).toHaveBeenCalled());
         act(() => result.current.markDone("redemittel", { correct: 3, total: 4 }));
-        expect(api.save).toHaveBeenCalledWith("B1", 2, "redemittel", 3, 4);
+        expect(api.save).toHaveBeenCalledWith("B1", 2, "redemittel", 3, 4, "TELC");
         expect(result.current.done.redemittel).toEqual({ correct: 3, total: 4 });
         expect(JSON.parse(localStorage.getItem("speaking-learn-progress-B1-2")!).redemittel).toEqual({ correct: 3, total: 4 });
     });
@@ -67,14 +67,23 @@ describe("useSpeakingLearnProgress", () => {
     it("uploads stations that exist only in this browser", async () => {
         localStorage.setItem("speaking-learn-progress-B1-1", JSON.stringify({ ablauf: { correct: 0, total: 0 } }));
         renderHook(() => useSpeakingLearnProgress("B1", 1), { wrapper: wrapper() });
-        await waitFor(() => expect(api.save).toHaveBeenCalledWith("B1", 1, "ablauf", 0, 0));
+        await waitFor(() => expect(api.save).toHaveBeenCalledWith("B1", 1, "ablauf", 0, 0, "TELC"));
+    });
+
+    it("keeps DTZ progress apart from Telc (own server request and browser key)", async () => {
+        const { result } = renderHook(() => useSpeakingLearnProgress("B1", 1, "DTZ"), { wrapper: wrapper() });
+        await waitFor(() => expect(api.get).toHaveBeenCalledWith("B1", "DTZ"));
+        act(() => result.current.markDone("ablauf", { correct: 0, total: 0 }));
+        expect(api.save).toHaveBeenCalledWith("B1", 1, "ablauf", 0, 0, "DTZ");
+        expect(localStorage.getItem("speaking-learn-progress-dtz-B1-1")).not.toBeNull();
+        expect(localStorage.getItem("speaking-learn-progress-B1-1")).toBeNull();
     });
 
     it("reset clears the Teil on the server and in the browser", async () => {
         const { result } = renderHook(() => useSpeakingLearnProgress("B1", 1), { wrapper: wrapper() });
         act(() => result.current.markDone("tipps", { correct: 1, total: 1 }));
         act(() => result.current.reset());
-        expect(api.reset).toHaveBeenCalledWith("B1", 1);
+        expect(api.reset).toHaveBeenCalledWith("B1", 1, "TELC");
         expect(result.current.done).toEqual({});
         expect(localStorage.getItem("speaking-learn-progress-B1-1")).toBeNull();
     });

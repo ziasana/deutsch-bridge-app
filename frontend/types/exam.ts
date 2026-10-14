@@ -77,9 +77,16 @@ export interface SpeakingContent {
     exampleDialogue?: { speaker: "A" | "B"; text: string }[];
 }
 
+/** Optional English / Persian helper text of a DTZ guide entry (Telc guides are German only). */
+export interface SpeakingHint {
+    en?: string;
+    fa?: string;
+}
+
 export interface SpeakingTitledText {
     title: string;
     text: string;
+    hint?: SpeakingHint;
 }
 
 export interface SpeakingGuideTopic {
@@ -106,9 +113,10 @@ export interface SpeakingGuideFunction {
     tip?: string | null;
 }
 
-/** The Lernbereich of one Teil: the shared learning content, German only. */
+/** The Lernbereich of one Teil: the shared learning content. German; DTZ guides may add en/fa hints. */
 export interface SpeakingGuideContent {
     intro: string;
+    introHint?: SpeakingHint;
     tips: SpeakingTitledText[];
     steps: SpeakingTitledText[];
     commonMistakes: string[];
@@ -124,6 +132,7 @@ export interface SpeakingGuideContent {
 }
 
 export interface SpeakingGuide {
+    exam: "TELC" | "DTZ";
     level: string;
     part: number;
     content: SpeakingGuideContent;

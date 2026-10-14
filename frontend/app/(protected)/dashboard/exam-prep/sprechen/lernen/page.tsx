@@ -7,7 +7,7 @@ import { ArrowLeft, ArrowRight, BookOpen } from "lucide-react";
 import Loading from "@/componenets/Loading";
 import useAuthStore from "@/store/useAuthStore";
 import { useSpeakingGuides } from "@/hooks/exam/useSpeakingGuides";
-import { GuideLearnView, SPEAKING_PARTS, SPEAKING_SECTIONS, learnHref, speakingPathTexts } from "@/componenets/exam/speaking";
+import { DTZ_LEVEL, GuideLearnView, SPEAKING_SECTIONS, SpeakingExam, learnHref, parseSpeakingExam, speakingHubHref, speakingPartsOf, speakingPathTexts, speakingTitleOf } from "@/componenets/exam/speaking";
 import { buildSpeakingStations } from "@/componenets/exam/speaking/learn/stations";
 import { useSpeakingLearnProgress } from "@/componenets/exam/speaking/learn/useSpeakingLearnProgress";
 import ThemedLearnPath from "@/componenets/exam/writing/learn/ThemedLearnPath";
@@ -16,6 +16,7 @@ import { SpeakingGuideContent } from "@/types/exam";
 import { cn } from "@/lib/utils";
 
 interface PathProps {
+    exam: SpeakingExam;
     level: string;
     part: number;
     guide: SpeakingGuideContent;
@@ -24,11 +25,11 @@ interface PathProps {
 }
 
 /** The path overview or one lesson, chosen by ?station=. Keyed by level + Teil so progress never leaks between them. */
-function PathView({ level, part, guide, stationId, onNavigate }: PathProps) {
+function PathView({ exam, level, part, guide, stationId, onNavigate }: PathProps) {
     const stations = useMemo(() => buildSpeakingStations(guide, part, level), [guide, part, level]);
-    const { done, markDone, reset } = useSpeakingLearnProgress(level, part);
+    const { done, markDone, reset } = useSpeakingLearnProgress(level, part, exam);
     const router = useRouter();
-    const texts = speakingPathTexts(level, part);
+    const texts = speakingPathTexts(level, part, exam);
 
     const current = stationId ? stations.find((s) => s.id === stationId) : undefined;
     if (current) {
@@ -71,18 +72,21 @@ function LernenContent() {
     const searchParams = useSearchParams();
     const { userProfile } = useAuthStore();
     const profileLevel = userProfile?.learningLevel && userProfile.learningLevel !== "null" ? userProfile.learningLevel : null;
-    const level = searchParams.get("level") ?? profileLevel ?? "B1";
+    const exam = parseSpeakingExam(searchParams.get("exam"));
+    const level = exam === "DTZ" ? DTZ_LEVEL : (searchParams.get("level") ?? profileLevel ?? "B1");
+    const parts = speakingPartsOf(exam);
     const requested = Number(searchParams.get("part") ?? "1");
-    const part = SPEAKING_PARTS.some((p) => p.part === requested) ? requested : 1;
-    const meta = SPEAKING_PARTS.find((p) => p.part === part)!;
+    const part = parts.some((p) => p.part === requested) ? requested : 1;
+    const meta = parts.find((p) => p.part === part)!;
     const stationParam = searchParams.get("station");
     const reference = searchParams.get("view") === "nachschlagen";
 
-    const { guideFor, isLoading, isError } = useSpeakingGuides(level);
+    const { guideFor, isLoading, isError } = useSpeakingGuides(level, exam);
     const guide = guideFor(part);
 
     const go = (params: Record<string, string | null>) => {
         const q = new URLSearchParams({ level, part: String(part) });
+        if (exam === "DTZ") q.set("exam", "DTZ");
         Object.entries(params).forEach(([k, v]) => v && q.set(k, v));
         router.replace(`/dashboard/exam-prep/sprechen/lernen?${q.toString()}`);
     };
@@ -101,11 +105,11 @@ function LernenContent() {
                 {!inLesson && (
                     <>
                         <Link
-                            href={`/dashboard/exam-prep/sprechen?level=${encodeURIComponent(level)}`}
+                            href={speakingHubHref(level, exam)}
                             className="inline-flex items-center gap-1.5 text-sm text-foreground/60 hover:text-foreground transition"
                         >
                             <ArrowLeft className="size-4" />
-                            Mündlicher Ausdruck
+                            {speakingTitleOf(exam)}
                         </Link>
 
                         <header className="relative mt-4 overflow-hidden rounded-3xl border border-pink-500/15 bg-card p-5 shadow-card sm:p-6">
@@ -113,7 +117,7 @@ function LernenContent() {
                             <span aria-hidden="true" className="pointer-events-none absolute end-6 top-4 text-7xl opacity-15 sm:text-8xl">{["👋", "💭", "🤝"][part - 1]}</span>
                             <div className="relative">
                                 <p className="inline-flex rounded-full bg-pink-500/15 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-pink-700 dark:text-pink-300">
-                                    {reference ? "Nachschlagen" : "Lernen"} · {level}
+                                    {reference ? "Nachschlagen" : "Lernen"} · {exam === "DTZ" ? "DTZ A2-B1" : level}
                                 </p>
                                 <h1 className="mt-2 text-2xl font-extrabold text-foreground sm:text-3xl">
                                     Teil {part}: {meta.title}
@@ -122,12 +126,12 @@ function LernenContent() {
                             </div>
 
                             <nav className="relative mt-4 flex flex-wrap items-center gap-2" aria-label="Teil wählen">
-                                {SPEAKING_PARTS.map((p) => (
+                                {parts.map((p) => (
                                     <button
                                         key={p.part}
                                         type="button"
                                         aria-current={p.part === part ? "page" : undefined}
-                                        onClick={() => router.replace(learnHref(level, p.part) + (reference ? "&view=nachschlagen" : ""))}
+                                        onClick={() => router.replace(learnHref(level, p.part, undefined, exam) + (reference ? "&view=nachschlagen" : ""))}
                                         className={cn(
                                             "cursor-pointer rounded-full border px-4 py-1.5 text-sm font-semibold transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500/50",
                                             p.part === part ? "border-transparent bg-gradient-to-r from-pink-500 to-orange-400 text-white shadow-sm" : "border-border bg-card text-foreground/70 hover:border-pink-500/40 hover:bg-pink-500/5",
@@ -165,14 +169,14 @@ function LernenContent() {
                     ) : reference ? (
                         <GuideLearnView guide={guide.content} part={part} />
                     ) : (
-                        <PathView key={`${level}-${part}`} level={level} part={part} guide={guide.content} stationId={stationParam} onNavigate={(s) => go(s ? { station: s } : {})} />
+                        <PathView key={`${exam}-${level}-${part}`} exam={exam} level={level} part={part} guide={guide.content} stationId={stationParam} onNavigate={(s) => go(s ? { station: s } : {})} />
                     )}
                 </div>
 
                 {!inLesson && (
                     <div className="mt-6 flex justify-end">
                         <Link
-                            href={speakingPathTexts(level, part).exerciseHref}
+                            href={speakingPathTexts(level, part, exam).exerciseHref}
                             className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-pink-500 to-orange-400 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:shadow-md hover:brightness-105"
                         >
                             Zu den Übungen <ArrowRight className="size-4" aria-hidden="true" />

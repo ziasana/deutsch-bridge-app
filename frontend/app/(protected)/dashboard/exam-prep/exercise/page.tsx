@@ -32,7 +32,7 @@ import { scoreTone } from "@/lib/examScore";
 import { hasGapMarkers } from "@/lib/examGap";
 import WritingTaskCard from "@/componenets/exam/writing/WritingTaskCard";
 import WritingChoiceExercise from "@/componenets/exam/writing/WritingChoiceExercise";
-import DtzOralExercise from "@/componenets/exam/dtzOral/DtzOralExercise";
+import DtzOralPractice from "@/componenets/exam/dtzOral/DtzOralPractice";
 import SprachbausteineClozeBoard, { hasGapText } from "@/componenets/exam/SprachbausteineClozeBoard";
 import HoerenBoard from "@/componenets/exam/HoerenBoard";
 import HighlightArea from "@/componenets/exam/HighlightArea";
@@ -471,23 +471,35 @@ function SchriftlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExerci
 
 function MuendlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse }>) {
     const { completed, marking, markCompleted } = useExerciseCompletion(exercise);
+    const isDtz = !!exercise.dtzOral;
     const level = exercise.level ?? "B1";
-    const { guideFor, isLoading: guideLoading } = useSpeakingGuides(level);
+    const { guideFor, isLoading: guideLoading } = useSpeakingGuides(level, isDtz ? "DTZ" : "TELC");
     const stopExerciseTimer = useStopExerciseTimer();
     const [timeResult, setTimeResult] = useState<ExamPracticeSessionResult | null>(null);
 
-    // DTZ Mündliche Prüfung: three Teile with their own structure, no Telc guide or notes.
+    // DTZ Mündliche Prüfung: three Teile with their own task layout, practised like the Telc ones (modes, help drawer, self-assessment).
     if (exercise.dtzOral) {
         return (
-            <DtzOralExercise
+            <DtzOralPractice
+                exerciseId={exercise.id}
                 title={exercise.title}
-                showHeader={false}
                 content={exercise.dtzOral}
+                guide={guideFor(exercise.dtzOral.part)?.content}
+                guideLoading={guideLoading}
                 completed={completed}
                 marking={marking}
-                onMarkCompleted={() => {
-                    markCompleted();
-                    stopExerciseTimer().then((result) => result && showZeitCheckToast(result));
+                onMarkCompleted={markCompleted}
+                timeResult={timeResult}
+                onFinish={() =>
+                    stopExerciseTimer().then((result) => {
+                        if (!result) return;
+                        setTimeResult(result);
+                        showZeitCheckToast(result);
+                    })
+                }
+                onRepeat={() => {
+                    setTimeResult(null);
+                    useExamTimerStore.getState().requestRestart();
                 }}
             />
         );

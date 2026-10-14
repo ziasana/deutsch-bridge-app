@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, BookOpen, Check, Mic, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WRITING_LEVELS } from "../writing/writingMeta";
-import { learnHref, SPEAKING_PARTS } from "./speakingMeta";
+import { learnHref, SpeakingExam, speakingExercisesHref, speakingPartsOf, speakingTitleOf } from "./speakingMeta";
 
 export interface SpeakingHubPart {
     part: number;
@@ -15,6 +15,7 @@ export interface SpeakingHubPart {
 }
 
 interface SpeakingHubViewProps {
+    exam?: SpeakingExam;
     level: string;
     onLevelChange: (level: string) => void;
     parts: SpeakingHubPart[];
@@ -71,14 +72,16 @@ function Ring({ done, total }: Readonly<{ done: number; total: number }>) {
  * Landing page of Mündlicher Ausdruck: a hero with the overall progress, a level switch and the three Teile as a learning journey
  * (numbered path, a learn and a practice meter per Teil, and a highlighted "next step").
  */
-export default function SpeakingHubView({ level, onLevelChange, parts }: Readonly<SpeakingHubViewProps>) {
+export default function SpeakingHubView({ exam = "TELC", level, onLevelChange, parts }: Readonly<SpeakingHubViewProps>) {
+    const speakingParts = speakingPartsOf(exam);
+    const title = speakingTitleOf(exam);
     const stepsDone = parts.reduce((sum, p) => sum + (p.path?.done ?? 0) + p.exercisesDone, 0);
     const stepsTotal = parts.reduce((sum, p) => sum + (p.path?.total ?? 0) + p.exercisesTotal, 0);
     const nextPart = parts.find((p) => stateOf(p) !== "DONE")?.part ?? null;
 
     return (
         <div className="space-y-6">
-            <Link href="/dashboard/exam-prep" className="inline-flex items-center gap-1.5 text-sm text-foreground/60 transition hover:text-foreground">
+            <Link href={exam === "DTZ" ? "/dashboard/exam-prep?exam=DTZ" : "/dashboard/exam-prep"} className="inline-flex items-center gap-1.5 text-sm text-foreground/60 transition hover:text-foreground">
                 <ArrowLeft className="size-4" aria-hidden="true" />
                 Prüfungsvorbereitung
             </Link>
@@ -92,8 +95,8 @@ export default function SpeakingHubView({ level, onLevelChange, parts }: Readonl
                             <Mic className="size-7 sm:size-8" aria-hidden="true" />
                         </span>
                         <div className="min-w-0">
-                            <h1 className="text-2xl font-extrabold sm:text-3xl">Mündlicher Ausdruck</h1>
-                            <span className="mt-1 inline-flex rounded-full bg-white/25 px-2.5 py-0.5 text-xs font-bold">{level}</span>
+                            <h1 className="text-2xl font-extrabold sm:text-3xl">{title}</h1>
+                            <span className="mt-1 inline-flex rounded-full bg-white/25 px-2.5 py-0.5 text-xs font-bold">{exam === "DTZ" ? "DTZ A2-B1" : level}</span>
                             <p className="mt-2 text-sm text-white/90">Erst lernen, dann üben: Jeder Teil hat einen Lernbereich mit Redemitteln und Tipps.</p>
                         </div>
                     </div>
@@ -101,6 +104,7 @@ export default function SpeakingHubView({ level, onLevelChange, parts }: Readonl
                 </div>
             </header>
 
+            {exam === "TELC" && (
             <div role="group" aria-label="Niveau" className="flex flex-wrap items-center gap-2">
                 {WRITING_LEVELS.map((l) => (
                     <button
@@ -117,10 +121,11 @@ export default function SpeakingHubView({ level, onLevelChange, parts }: Readonl
                     </button>
                 ))}
             </div>
+            )}
 
             <ol className="relative space-y-5">
                 <span aria-hidden="true" className="absolute bottom-8 start-6 top-8 hidden w-0.5 bg-gradient-to-b from-pink-500/40 via-orange-400/40 to-transparent sm:block" />
-                {SPEAKING_PARTS.map((meta, index) => {
+                {speakingParts.map((meta, index) => {
                     const p = parts.find((x) => x.part === meta.part) ?? { part: meta.part, path: null, exercisesTotal: 0, exercisesDone: 0 };
                     const state = stateOf(p);
                     const isNext = p.part === nextPart;
@@ -170,7 +175,7 @@ export default function SpeakingHubView({ level, onLevelChange, parts }: Readonl
 
                                 <div className="relative mt-5 flex flex-wrap gap-2">
                                     <Link
-                                        href={learnHref(level, meta.part)}
+                                        href={learnHref(level, meta.part, undefined, exam)}
                                         className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-orange-400 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:shadow-md hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500/60 focus-visible:ring-offset-2"
                                     >
                                         <BookOpen className="size-4" aria-hidden="true" />
@@ -178,7 +183,7 @@ export default function SpeakingHubView({ level, onLevelChange, parts }: Readonl
                                     </Link>
                                     {p.exercisesTotal > 0 ? (
                                         <Link
-                                            href={`/dashboard/exam-prep/teil?section=MUENDLICHER_AUSDRUCK&level=${encodeURIComponent(level)}&part=${meta.part}`}
+                                            href={speakingExercisesHref(level, meta.part, exam)}
                                             className="group/btn inline-flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground transition hover:border-pink-500/40 hover:bg-pink-500/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500/50"
                                         >
                                             Übungen <span className="text-foreground/50">({p.exercisesTotal})</span>

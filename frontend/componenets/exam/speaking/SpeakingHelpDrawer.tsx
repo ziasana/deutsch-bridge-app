@@ -6,7 +6,7 @@ import { ArrowRight, MessagesSquare, X } from "lucide-react";
 import { SpeakingContent, SpeakingGuideContent } from "@/types/exam";
 import { cn } from "@/lib/utils";
 import { SpeakingMistakesPanel, SpeakingPhrasesPanel, SpeakingTipsPanel } from "./SpeakingContentView";
-import { learnHref } from "./speakingMeta";
+import { learnHref, SpeakingExam } from "./speakingMeta";
 import { lessonThemeVars } from "../lessonTheme";
 
 export type SpeakingHelpTab = "TIPS" | "PHRASES" | "MISTAKES";
@@ -22,18 +22,20 @@ interface SpeakingHelpDrawerProps {
     onClose: () => void;
     /** Tabs the current mode offers, in display order. */
     tabs: SpeakingHelpTab[];
-    content: SpeakingContent;
+    /** Omitted for DTZ: the help is the whole guide of the Teil. */
+    content?: SpeakingContent | null;
     guide?: SpeakingGuideContent | null;
     loading: boolean;
     level: string;
     part: number;
+    exam?: SpeakingExam;
 }
 
 /**
  * Help drawer of a speaking exercise - the same pattern as Schreiben: a panel on the right (a bottom sheet on phones) with tabs.
  * The exercise stays mounted behind it, so the learner never leaves the page or loses the state of the attempt.
  */
-export default function SpeakingHelpDrawer({ open, onClose, tabs, content, guide, loading, level, part }: Readonly<SpeakingHelpDrawerProps>) {
+export default function SpeakingHelpDrawer({ open, onClose, tabs, content, guide, loading, level, part, exam = "TELC" }: Readonly<SpeakingHelpDrawerProps>) {
     const [tab, setTab] = useState<SpeakingHelpTab | null>(null);
     const closeRef = useRef<HTMLButtonElement>(null);
     const current = tab && tabs.includes(tab) ? tab : tabs[0];
@@ -96,7 +98,7 @@ export default function SpeakingHelpDrawer({ open, onClose, tabs, content, guide
                     ) : (
                         <>
                             {current === "TIPS" && <SpeakingTipsPanel content={content} guide={guide} />}
-                            {current === "PHRASES" && <SpeakingPhrasesPanel content={content} guide={guide} />}
+                            {current === "PHRASES" && <SpeakingPhrasesPanel content={content} guide={guide} part={part} />}
                             {current === "MISTAKES" && <SpeakingMistakesPanel guide={guide} />}
                             {!guide && <p className="mt-3 text-sm text-foreground/55">Der Lernbereich ist gerade nicht verfügbar.</p>}
                         </>
@@ -104,7 +106,7 @@ export default function SpeakingHelpDrawer({ open, onClose, tabs, content, guide
                 </div>
                 <div className="shrink-0 border-t border-border/60 bg-card p-3">
                     <Link
-                        href={learnHref(level, part)}
+                        href={learnHref(level, part, undefined, exam)}
                         className="flex items-center justify-center gap-2 rounded-full bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                     >
                         Zum Lernbereich <ArrowRight className="size-4" aria-hidden="true" />

@@ -5,6 +5,7 @@ import TapChecklist from "@/componenets/exam/writing/learn/games/TapChecklist";
 import { seededRandom, shuffled } from "@/componenets/exam/writing/learn/random";
 import { LessonStep, Station } from "@/componenets/exam/writing/learn/types";
 import { SPEAKING_SECTIONS, SpeakingStationId } from "../speakingMeta";
+import { Hint } from "../SpeakingContentView";
 
 const QUESTIONS = 5;
 const OPTIONS = 4;
@@ -55,6 +56,7 @@ function ablaufSteps(guide: SpeakingGuideContent): LessonStep[] {
             render: () => (
                 <Slide emoji="🎯" eyebrow="So läuft es ab" title="Das erwartet dich">
                     <p className="whitespace-pre-line text-base text-foreground/85">{guide.intro}</p>
+                    <Hint hint={guide.introHint} />
                 </Slide>
             ),
         },
@@ -68,6 +70,7 @@ function ablaufSteps(guide: SpeakingGuideContent): LessonStep[] {
                         {guide.steps.map((s) => (
                             <li key={s.title}>
                                 <span className="font-semibold text-foreground">{s.title}.</span> {s.text}
+                                <Hint hint={s.hint} />
                             </li>
                         ))}
                     </ol>
@@ -86,6 +89,7 @@ function tippsSteps(guide: SpeakingGuideContent): LessonStep[] {
             render: () => (
                 <Slide emoji="💡" eyebrow={`Tipp ${i + 1} von ${guide.tips.length}`} title={tip.title}>
                     <p className="text-base text-foreground/85">{tip.text}</p>
+                    <Hint hint={tip.hint} />
                 </Slide>
             ),
         })),

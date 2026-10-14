@@ -3,9 +3,17 @@ import { LearnSectionMeta } from "../writing/learn/types";
 
 export const SPEAKING_COLOR = "#ec4899";
 
+/** The exams that have a Mündlicher Ausdruck learning area. */
+export type SpeakingExam = "TELC" | "DTZ";
+
+/** DTZ A2-B1 exercises and guides are stored at this level. */
+export const DTZ_LEVEL = "B1";
+
+export const parseSpeakingExam = (value: string | null | undefined): SpeakingExam => (value === "DTZ" ? "DTZ" : "TELC");
+
 export interface SpeakingPartMeta {
     part: 1 | 2 | 3;
-    taskType: SpeakingTaskType;
+    taskType: SpeakingTaskType | "SELF_INTRODUCTION" | "PHOTO_EXPERIENCE";
     title: string;
     description: string;
 }
@@ -17,14 +25,36 @@ export const SPEAKING_PARTS: SpeakingPartMeta[] = [
     { part: 3, taskType: "JOINT_PLANNING", title: "Gemeinsam etwas planen", description: "Vorschläge machen, aushandeln und sich einigen." },
 ];
 
-export const partOfTaskType = (taskType: SpeakingTaskType): number => SPEAKING_PARTS.find((p) => p.taskType === taskType)?.part ?? 1;
+/** The three Teile of the DTZ Mündliche Prüfung. */
+export const DTZ_SPEAKING_PARTS: SpeakingPartMeta[] = [
+    { part: 1, taskType: "SELF_INTRODUCTION", title: "Über sich sprechen", description: "Sich vorstellen: Name, Herkunft, Wohnort, Arbeit, Familie, Sprachen." },
+    { part: 2, taskType: "PHOTO_EXPERIENCE", title: "Über Erfahrungen sprechen", description: "Ein Foto verstehen, Fragen stellen und von eigenen Erfahrungen erzählen." },
+    { part: 3, taskType: "JOINT_PLANNING", title: "Gemeinsam etwas planen", description: "Vorschläge machen, aushandeln und sich einigen." },
+];
+
+export const speakingPartsOf = (exam: SpeakingExam = "TELC"): SpeakingPartMeta[] => (exam === "DTZ" ? DTZ_SPEAKING_PARTS : SPEAKING_PARTS);
+
+/** "Mündlicher Ausdruck" (Telc) / "Mündliche Prüfung" (DTZ). */
+export const speakingTitleOf = (exam: SpeakingExam = "TELC") => (exam === "DTZ" ? "Mündliche Prüfung" : "Mündlicher Ausdruck");
+
+/** The Übungen of a Teil: Telc has a Teil page, the DTZ Übungen are listed on the exam-prep page (filtered to the Teil). */
+export const speakingExercisesHref = (level: string, part: number, exam: SpeakingExam = "TELC") =>
+    exam === "DTZ"
+        ? `/dashboard/exam-prep?exam=DTZ&section=MUENDLICHER_AUSDRUCK&level=${encodeURIComponent(level)}&part=${part}`
+        : `/dashboard/exam-prep/teil?section=MUENDLICHER_AUSDRUCK&level=${encodeURIComponent(level)}&part=${part}`;
+
+/** The hub of the learning area. */
+export const speakingHubHref = (level: string, exam: SpeakingExam = "TELC") =>
+    `/dashboard/exam-prep/sprechen?${exam === "DTZ" ? "exam=DTZ&" : ""}level=${encodeURIComponent(level)}`;
+
+export const partOfTaskType = (taskType: string): number => SPEAKING_PARTS.find((p) => p.taskType === taskType)?.part ?? 1;
 
 /**
  * Link to the Lernbereich of a Teil. Without an anchor it opens the learning path; with an anchor it opens the
  * reference view ("Nachschlagen") scrolled to that section - this is what the help panel of an exercise links to.
  */
-export const learnHref = (level: string, part: number, anchor?: string) =>
-    `/dashboard/exam-prep/sprechen/lernen?level=${encodeURIComponent(level)}&part=${part}${anchor ? `&view=nachschlagen#${anchor}` : ""}`;
+export const learnHref = (level: string, part: number, anchor?: string, exam: SpeakingExam = "TELC") =>
+    `/dashboard/exam-prep/sprechen/lernen?${exam === "DTZ" ? "exam=DTZ&" : ""}level=${encodeURIComponent(level)}&part=${part}${anchor ? `&view=nachschlagen#${anchor}` : ""}`;
 
 export type SpeakingStationId = "ablauf" | "tipps" | "fragen" | "redemittel" | "fehler" | "checkliste";
 
@@ -38,8 +68,8 @@ export const SPEAKING_SECTIONS: (LearnSectionMeta & { id: SpeakingStationId })[]
     { id: "checkliste", label: "Checkliste", emoji: "✅", hint: "Kontrolliere dein Gespräch nach der Übung." },
 ];
 
-export const speakingPathTexts = (level: string, part: number) => ({
-    exerciseHref: `/dashboard/exam-prep/teil?section=MUENDLICHER_AUSDRUCK&level=${encodeURIComponent(level)}&part=${part}`,
+export const speakingPathTexts = (level: string, part: number, exam: SpeakingExam = "TELC") => ({
+    exerciseHref: speakingExercisesHref(level, part, exam),
     exerciseLabel: "Zu den Übungen →",
     allDoneHint: "Du kennst jetzt die Methode. Wende sie in den Sprechübungen an.",
     remainingHint: (n: number) => `Noch ${n} ${n === 1 ? "Station" : "Stationen"} bis zum Sprech-Profi.`,

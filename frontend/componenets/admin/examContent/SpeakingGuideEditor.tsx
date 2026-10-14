@@ -7,7 +7,7 @@ import Button from "@/componenets/Button";
 import Loading from "@/componenets/Loading";
 import { getSpeakingGuides, saveSpeakingGuide } from "@/services/speakingService";
 import { ContentIssue } from "@/types/examContent";
-import { SPEAKING_PARTS } from "@/componenets/exam/speaking";
+import { DTZ_LEVEL, SpeakingExam, speakingPartsOf } from "@/componenets/exam/speaking";
 import ExamContentShell from "./ExamContentShell";
 import { cardClass, errorMessage, fieldClass, labelClass } from "./shared";
 
@@ -19,22 +19,25 @@ const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
  */
 export default function SpeakingGuideEditor() {
     const queryClient = useQueryClient();
-    const [level, setLevel] = useState("B1");
+    const [exam, setExam] = useState<SpeakingExam>("TELC");
+    // DTZ A2-B1 content is stored at level B1.
+    const [telcLevel, setLevel] = useState("B1");
+    const level = exam === "DTZ" ? DTZ_LEVEL : telcLevel;
     const [part, setPart] = useState(1);
     const [text, setText] = useState("");
     const [issues, setIssues] = useState<ContentIssue[]>([]);
     const [busy, setBusy] = useState(false);
 
     const { data: guides, isLoading } = useQuery({
-        queryKey: ["admin", "speaking", "guides", level],
-        queryFn: () => getSpeakingGuides(level).then((r) => r.data),
+        queryKey: ["admin", "speaking", "guides", exam, level],
+        queryFn: () => getSpeakingGuides(level, exam).then((r) => r.data),
     });
     const stored = guides?.find((g) => g.part === part);
 
     useEffect(() => {
         setText(stored ? JSON.stringify(stored.content, null, 2) : "");
         setIssues([]);
-    }, [stored, level, part]);
+    }, [stored, exam, level, part]);
 
     const run = async (dryRun: boolean) => {
         let content: unknown;
@@ -46,12 +49,12 @@ export default function SpeakingGuideEditor() {
         }
         setBusy(true);
         try {
-            const res = await saveSpeakingGuide(level, part, content, dryRun);
+            const res = await saveSpeakingGuide(level, part, content, dryRun, exam);
             setIssues(res.data.issues);
             if (res.data.saved) {
                 toast.success("Lernbereich saved.");
-                await queryClient.invalidateQueries({ queryKey: ["admin", "speaking", "guides", level] });
-                await queryClient.invalidateQueries({ queryKey: ["speaking", "guides", level] });
+                await queryClient.invalidateQueries({ queryKey: ["admin", "speaking", "guides", exam, level] });
+                await queryClient.invalidateQueries({ queryKey: ["speaking", "guides", exam, level] });
             } else if (dryRun && !res.data.issues.some((i) => i.severity === "ERROR")) {
                 toast.success("Valid - nothing was saved yet.");
             }
@@ -65,20 +68,27 @@ export default function SpeakingGuideEditor() {
     return (
         <ExamContentShell
             title="Sprechen lernen"
-            description="The learning area of each Mündlicher Ausdruck Teil: tips, questions, Redemittel and the checklist are written once here and shown next to every exercise of that Teil. German only."
+            description="The learning area of each Mündlicher Ausdruck Teil: tips, questions, Redemittel and the checklist are written once here and shown next to every exercise of that Teil. German only for Telc; DTZ guides may add optional en / fa hints (introHint, and en / fa on tips and steps)."
         >
             <div className={`${cardClass} p-6 space-y-4`}>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-3">
+                    <label>
+                        <span className={labelClass}>Exam</span>
+                        <select className={fieldClass} value={exam} onChange={(e) => setExam(e.target.value as SpeakingExam)}>
+                            <option value="TELC">Telc</option>
+                            <option value="DTZ">DTZ A2-B1</option>
+                        </select>
+                    </label>
                     <label>
                         <span className={labelClass}>Level</span>
-                        <select className={fieldClass} value={level} onChange={(e) => setLevel(e.target.value)}>
+                        <select className={fieldClass} value={level} disabled={exam === "DTZ"} onChange={(e) => setLevel(e.target.value)}>
                             {LEVELS.map((l) => <option key={l}>{l}</option>)}
                         </select>
                     </label>
                     <label>
                         <span className={labelClass}>Teil</span>
                         <select className={fieldClass} value={part} onChange={(e) => setPart(Number(e.target.value))}>
-                            {SPEAKING_PARTS.map((p) => <option key={p.part} value={p.part}>Teil {p.part} – {p.title}</option>)}
+                            {speakingPartsOf(exam).map((p) => <option key={p.part} value={p.part}>Teil {p.part} – {p.title}</option>)}
                         </select>
                     </label>
                 </div>
@@ -87,7 +97,7 @@ export default function SpeakingGuideEditor() {
                     <Loading message="Loading..." />
                 ) : (
                     <>
-                        {!stored && <p className="text-sm text-amber-700 dark:text-amber-300">No Lernbereich exists for {level} Teil {part} yet. Paste the JSON below and save.</p>}
+                        {!stored && <p className="text-sm text-amber-700 dark:text-amber-300">No Lernbereich exists for {exam} {level} Teil {part} yet. Paste the JSON below and save.</p>}
                         <textarea
                             aria-label="Lernbereich JSON"
                             className={`${fieldClass} h-[520px] font-mono text-xs leading-relaxed`}

@@ -13,6 +13,8 @@ interface Props {
     adminImagePrompt?: string | null;
     /** The learner page shows the title in its own header; the admin preview shows it here (default true). */
     showHeader?: boolean;
+    /** Prüfung mode of the learner page: hides practice support, example phrases and the possible solution. */
+    hideHelp?: boolean;
     /** Learner page only: marking the exercise as practised. Omitted in the admin preview. */
     completed?: boolean;
     marking?: boolean;
@@ -20,7 +22,7 @@ interface Props {
 }
 
 /** The learner view of one DTZ Mündliche Prüfung exercise, by Teil. Also rendered (read only) by the admin preview. */
-export default function DtzOralExercise({ title, content, adminImagePrompt, showHeader = true, completed, marking, onMarkCompleted }: Readonly<Props>) {
+export default function DtzOralExercise({ title, content, adminImagePrompt, showHeader = true, hideHelp = false, completed, marking, onMarkCompleted }: Readonly<Props>) {
     const meta = DTZ_ORAL_PARTS.find((p) => p.part === content.part);
     return (
         <div className="space-y-5">
@@ -30,9 +32,9 @@ export default function DtzOralExercise({ title, content, adminImagePrompt, show
                     <h2 className="mt-1 text-2xl font-bold text-foreground">{title}</h2>
                 </header>
             )}
-            {content.part === 1 && <DtzOralTeil1View content={content} />}
-            {content.part === 2 && <DtzOralTeil2View content={content} adminImagePrompt={adminImagePrompt} />}
-            {content.part === 3 && <DtzOralTeil3View content={content} />}
+            {content.part === 1 && <DtzOralTeil1View content={content} hideHelp={hideHelp} />}
+            {content.part === 2 && <DtzOralTeil2View content={content} adminImagePrompt={adminImagePrompt} hideHelp={hideHelp} />}
+            {content.part === 3 && <DtzOralTeil3View content={content} hideHelp={hideHelp} />}
             {onMarkCompleted && (
                 <div className="flex justify-end">
                     <button

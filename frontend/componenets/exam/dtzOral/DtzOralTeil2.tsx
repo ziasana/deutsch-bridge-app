@@ -31,7 +31,7 @@ export function questionsFor(content: DtzOralTeil2, mode: PracticeMode): { text:
  * participant B tells about their own experiences; the learner picks A2, B1 or mixed follow-up questions for the same photo.
  * There is no model answer: the task is to speak from the photo and from one's own life.
  */
-export default function DtzOralTeil2View({ content, adminImagePrompt }: Readonly<{ content: DtzOralTeil2; adminImagePrompt?: string | null }>) {
+export default function DtzOralTeil2View({ content, adminImagePrompt, hideHelp = false }: Readonly<{ content: DtzOralTeil2; adminImagePrompt?: string | null; hideHelp?: boolean }>) {
     const [mode, setMode] = useState<PracticeMode>("A2");
     const src = resolveUploadUrl(content.image.imageUrl);
     const questions = questionsFor(content, mode);
@@ -100,7 +100,7 @@ export default function DtzOralTeil2View({ content, adminImagePrompt }: Readonly
                     </ol>
                 </section>
 
-                {solutionItems.length > 0 && (
+                {!hideHelp && solutionItems.length > 0 && (
                     <details className="group rounded-[10px] bg-card shadow-card ring-1 ring-foreground/10 open:ring-primary/30" aria-label="Mögliche Lösung">
                         <summary className="flex cursor-pointer list-none items-center gap-2 px-6 py-4 text-sm font-semibold text-foreground">
                             Mögliche Lösung

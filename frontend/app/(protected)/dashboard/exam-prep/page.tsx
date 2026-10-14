@@ -40,6 +40,7 @@ import WritingTaskList from "@/componenets/exam/writing/WritingTaskList";
 import ExamPartList from "@/componenets/exam/ExamPartList";
 import { LessonAccent, SECTION_THEME, accentColor, lessonThemeVars } from "@/componenets/exam/lessonTheme";
 import SpeakingExamList from "@/componenets/exam/speaking/SpeakingExamList";
+import { speakingHubHref } from "@/componenets/exam/speaking/speakingMeta";
 import { useExerciseLastTimes } from "@/hooks/exam/useExerciseLastTimes";
 import { usePendingExamBookmarks } from "@/hooks/exam/usePendingExamBookmarks";
 import { useExamBookmark } from "@/hooks/exam/useExamBookmark";
@@ -101,9 +102,9 @@ function ExamPrepContent() {
             router.push(`/dashboard/exam-prep/schreiben?level=${encodeURIComponent(effectiveLevel)}`);
             return;
         }
-        // Telc Mündlicher Ausdruck too: learn each Teil first (Lernbereich), then practise. The DTZ Mündliche Prüfung lists its Übungen right here.
-        if (section === "MUENDLICHER_AUSDRUCK" && selectedSection !== section && examType !== "DTZ") {
-            router.push(`/dashboard/exam-prep/sprechen?level=${encodeURIComponent(effectiveLevel)}`);
+        // Mündlicher Ausdruck (Telc) and the DTZ Mündliche Prüfung: learn each Teil first (Lernbereich), then practise.
+        if (section === "MUENDLICHER_AUSDRUCK" && selectedSection !== section) {
+            router.push(speakingHubHref(effectiveLevel, examType === "DTZ" ? "DTZ" : "TELC"));
             return;
         }
         setSelectedSection(section);
@@ -383,7 +384,7 @@ function ExamPrepContent() {
                                 lastTimes={writingLastTimes}
                             />
                         ) : selectedSection === "MUENDLICHER_AUSDRUCK" && examType === "DTZ" ? (
-                            <DtzOralList key={`${selectedSection}-${effectiveLevel}-${searchTerm}`} groups={selectedGroups} />
+                            <DtzOralList key={`${selectedSection}-${effectiveLevel}-${searchTerm}-${searchParams.get("part")}`} groups={selectedGroups} onlyPart={searchParams.get("part")} />
                         ) : selectedSection === "MUENDLICHER_AUSDRUCK" ? (
                             <SpeakingExamList key={`${selectedSection}-${effectiveLevel}-${searchTerm}`} groups={selectedGroups} level={effectiveLevel} lastTimes={speakingLastTimes} />
                         ) : SECTION_THEME[selectedSection] ? (

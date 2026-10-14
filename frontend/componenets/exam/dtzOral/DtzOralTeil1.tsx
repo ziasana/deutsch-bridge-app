@@ -23,7 +23,7 @@ function Explanation({ explanation }: Readonly<{ explanation?: NonNullable<DtzOr
  * Teil 1 - Über sich sprechen: the six fixed topics. Practice support (a simple question, a sentence starter, useful vocabulary) is optional,
  * opens per topic and is kept visibly apart from the examination topics: it is help for practising, never a required answer.
  */
-export default function DtzOralTeil1View({ content }: Readonly<{ content: DtzOralTeil1 }>) {
+export default function DtzOralTeil1View({ content, hideHelp = false }: Readonly<{ content: DtzOralTeil1; /** Prüfung mode: practice support stays hidden until the attempt is over. */ hideHelp?: boolean }>) {
     const support = new Map(content.practiceSupport.map((entry) => [entry.topicNumber, entry]));
     return (
         <div className="space-y-5">
@@ -41,7 +41,7 @@ export default function DtzOralTeil1View({ content }: Readonly<{ content: DtzOra
                 <Explanation explanation={content.explanation} />
             </section>
 
-            {content.practiceSupport.length > 0 && (
+            {!hideHelp && content.practiceSupport.length > 0 && (
                 <section className="space-y-3" aria-label="Übungshilfe">
                     <div>
                         <h2 className="text-base font-bold text-foreground">Übungshilfe (optional)</h2>

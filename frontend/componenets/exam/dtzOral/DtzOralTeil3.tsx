@@ -6,9 +6,9 @@ import { DtzOralTeil3 } from "@/types/dtzOral";
  * Teil 3 - Gemeinsam etwas planen: the shared situation, the instruction and the planning notes. The notes are open questions; no decision is
  * made in advance. Example phrases are optional help, shown apart from the task.
  */
-export default function DtzOralTeil3View({ content }: Readonly<{ content: DtzOralTeil3 }>) {
-    const phrases = content.learnerSupport?.examplePhrases ?? [];
-    const dialogue = content.possibleSolution?.dialogue ?? [];
+export default function DtzOralTeil3View({ content, hideHelp = false }: Readonly<{ content: DtzOralTeil3; hideHelp?: boolean }>) {
+    const phrases = hideHelp ? [] : (content.learnerSupport?.examplePhrases ?? []);
+    const dialogue = hideHelp ? [] : (content.possibleSolution?.dialogue ?? []);
     return (
         <div className="space-y-5">
             <section className="rounded-[10px] bg-card p-6 shadow-card sm:p-8" aria-label="Situation">

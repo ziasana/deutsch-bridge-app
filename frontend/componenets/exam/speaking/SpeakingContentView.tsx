@@ -1,4 +1,4 @@
-import { SpeakingContent, SpeakingGuideContent } from "@/types/exam";
+import { SpeakingContent, SpeakingGuideContent, SpeakingHint } from "@/types/exam";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
 
 /**
@@ -23,6 +23,17 @@ export function PhraseList({ phrases }: Readonly<{ phrases: string[] }>) {
                 </li>
             ))}
         </ul>
+    );
+}
+
+/** Optional English / Persian helper text of a DTZ guide entry, shown quietly below the German text. */
+export function Hint({ hint }: Readonly<{ hint?: SpeakingHint | null }>) {
+    if (!hint || (!hint.en && !hint.fa)) return null;
+    return (
+        <span className="mt-1.5 block space-y-0.5 rounded-lg bg-foreground/[0.05] px-2.5 py-1.5 text-xs text-foreground/70">
+            {hint.en && <span lang="en" dir="ltr" className="block">{hint.en}</span>}
+            {hint.fa && <span lang="fa" dir="rtl" className="block">{hint.fa}</span>}
+        </span>
     );
 }
 
@@ -101,13 +112,14 @@ export function SpeakingStimulus({ content, guide }: Readonly<{ content: Speakin
 }
 
 interface HelpProps {
-    content: SpeakingContent;
+    /** The exercise's own content; DTZ exercises have none that fits (their help comes from the guide alone). */
+    content?: SpeakingContent | null;
     guide?: SpeakingGuideContent | null;
 }
 
 /** Tab "Tipps": the Lernbereich's tips and, when present, the exercise's own preparation notes. */
 export function SpeakingTipsPanel({ content, guide }: Readonly<HelpProps>) {
-    const notes = content.preparationNotes ?? [];
+    const notes = content?.preparationNotes ?? [];
     const tips = guide?.tips ?? [];
     if (notes.length === 0 && tips.length === 0) return <p className="text-sm text-foreground/55">Hier gibt es noch keine Tipps.</p>;
     return (
@@ -124,6 +136,7 @@ export function SpeakingTipsPanel({ content, guide }: Readonly<HelpProps>) {
                         <li key={tip.title} className="rounded-2xl border-s-4 border-primary bg-card p-3.5 leading-relaxed shadow-card">
                             <span className="block font-bold text-foreground">💡 {tip.title}</span>
                             <span className="text-foreground/75">{tip.text}</span>
+                            <Hint hint={tip.hint} />
                         </li>
                     ))}
                 </ul>
@@ -136,7 +149,9 @@ export function SpeakingTipsPanel({ content, guide }: Readonly<HelpProps>) {
  * Tab "Redemittel": the Lernbereich's questions and phrases that fit THIS exercise (its own topics / goals / functions),
  * plus the exercise's own extra phrases. Everything is shown in place - no navigation away from the exercise.
  */
-export function SpeakingPhrasesPanel({ content, guide }: Readonly<HelpProps>) {
+export function SpeakingPhrasesPanel({ content, guide, part }: Readonly<HelpProps & { part?: number }>) {
+    // No exercise-specific content (DTZ): everything the guide has for this Teil.
+    if (!content) return <GuidePhrasesPanel guide={guide} part={part ?? 1} />;
     if (content.taskType === "TOPIC_INTERVIEW") {
         const topics = (content.topics ?? []).map((t) => guide?.topics?.find((g) => g.id === t.id)).filter((g): g is NonNullable<typeof g> => !!g);
         if (topics.length === 0) return <p className="text-sm text-foreground/55">Hier gibt es noch keine Redemittel.</p>;
@@ -196,6 +211,41 @@ export function SpeakingPhrasesPanel({ content, guide }: Readonly<HelpProps>) {
     );
 }
 
+/** Tab "Redemittel" for exams whose exercises carry no phrases of their own: the whole Teil's questions and phrases from the guide. */
+export function GuidePhrasesPanel({ guide, part }: Readonly<{ guide?: SpeakingGuideContent | null; part: number }>) {
+    const groups =
+        part === 1
+            ? (guide?.topics ?? []).map((t) => ({ key: t.id, title: t.title, phrases: t.usefulPhrases, questions: t.questions, tip: t.tip }))
+            : part === 2
+              ? (guide?.goals ?? []).map((g) => ({ key: g.id, title: g.title, phrases: g.usefulPhrases, questions: [] as string[], tip: g.tip }))
+              : (guide?.functions ?? []).map((f) => ({ key: f.function, title: f.title, phrases: f.usefulPhrases, questions: [] as string[], tip: f.tip }));
+    if (groups.length === 0) return <p className="text-sm text-foreground/55">Hier gibt es noch keine Redemittel.</p>;
+    return (
+        <div className="space-y-3">
+            {groups.map((g) => (
+                <details key={g.key} className="rounded-2xl bg-card p-3.5 shadow-card open:ring-1 open:ring-primary/20">
+                    <summary className="cursor-pointer text-sm font-semibold text-foreground">{g.title}</summary>
+                    {g.questions.length > 0 && (
+                        <>
+                            <h3 className={`${heading} mt-3`}>Fragen</h3>
+                            <ul className={list}>{g.questions.map((q) => <li key={q}>{q}</li>)}</ul>
+                        </>
+                    )}
+                    <h3 className={`${heading} mt-3`}>Redemittel</h3>
+                    <PhraseList phrases={g.phrases} />
+                    <Tip text={g.tip} />
+                </details>
+            ))}
+            {part === 3 && (guide?.decisionCriteria ?? []).length > 0 && (
+                <div className="rounded-2xl bg-card p-3.5 shadow-card">
+                    <h3 className={heading}>Woran Sie eine gute Einigung erkennen</h3>
+                    <ul className={list}>{(guide?.decisionCriteria ?? []).map((c) => <li key={c}>{c}</li>)}</ul>
+                </div>
+            )}
+        </div>
+    );
+}
+
 /** Tab "Fehler": the typical mistakes of the Teil. */
 export function SpeakingMistakesPanel({ guide }: Readonly<{ guide?: SpeakingGuideContent | null }>) {
     const mistakes = guide?.commonMistakes ?? [];
@@ -218,6 +268,7 @@ export function GuideLearnView({ guide, part }: Readonly<{ guide: SpeakingGuideC
         <div className="space-y-4">
             <section className={card} aria-label="Einführung">
                 <p className="whitespace-pre-line text-sm text-foreground/85">{guide.intro}</p>
+                <Hint hint={guide.introHint} />
             </section>
 
             {guide.steps.length > 0 && (
@@ -227,6 +278,7 @@ export function GuideLearnView({ guide, part }: Readonly<{ guide: SpeakingGuideC
                         {guide.steps.map((step) => (
                             <li key={step.title}>
                                 <span className="font-semibold">{step.title}.</span> {step.text}
+                                <Hint hint={step.hint} />
                             </li>
                         ))}
                     </ol>
@@ -239,6 +291,7 @@ export function GuideLearnView({ guide, part }: Readonly<{ guide: SpeakingGuideC
                     {guide.tips.map((tip) => (
                         <li key={tip.title}>
                             <span className="font-semibold">{tip.title}.</span> {tip.text}
+                            <Hint hint={tip.hint} />
                         </li>
                     ))}
                 </ul>
