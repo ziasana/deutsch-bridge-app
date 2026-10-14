@@ -1442,7 +1442,7 @@ function ExamExerciseContent() {
                         icon={SECTION_HEADER[exercise.section]!.icon}
                         kicker={`Teil ${exercise.teil ?? exercise.partNumber ?? 1}`}
                         sectionLabel={SECTION_HEADER[exercise.section]!.label}
-                        showTimer={exercise.section !== "HOERVERSTEHEN" && exercise.examType !== "DTZ"}
+                        showTimer={exercise.section !== "HOERVERSTEHEN"}
                         descriptionAs={exercise.section === "HOERVERSTEHEN" || exercise.section === "LESEVERSTEHEN" || exercise.section === "SPRACHBAUSTEINE" ? "paragraph" : "steps"}
                         title={exercise.title.replace(/^.*?Teil\s+\d\s*[–-]\s*/i, "").trim() || exercise.title}
                         bookmarked={exercise.bookmarked}

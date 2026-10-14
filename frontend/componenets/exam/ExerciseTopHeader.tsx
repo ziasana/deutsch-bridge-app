@@ -35,7 +35,7 @@ interface ExerciseTopHeaderProps {
  * progress ring, and the task description as a collapsible speech bubble with numbered steps.
  */
 export default function ExerciseTopHeader({ exercise, accent, icon: Icon, kicker, sectionLabel, title, showTimer: showTimerProp = true, descriptionAs = "steps", bookmarked, bookmarkPending, onToggleBookmark }: Readonly<ExerciseTopHeaderProps>) {
-    const showTimer = showTimerProp && exercise.examType !== "DTZ";
+    const showTimer = showTimerProp;
     const [open, setOpen] = useState(true);
     const steps = exercise.teilDescription ? instructionSteps(exercise.teilDescription) : [];
 
