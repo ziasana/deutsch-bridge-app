@@ -3,6 +3,7 @@ package com.deutschbridge.backend.service;
 import com.deutschbridge.backend.context.RequestContext;
 import com.deutschbridge.backend.model.dto.SpeakingGuideDtos.LearnProgress;
 import com.deutschbridge.backend.model.entity.SpeakingLearnProgress;
+import com.deutschbridge.backend.model.enums.ExamType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.SpeakingLearnProgressRepository;
 import org.springframework.http.HttpStatus;
@@ -30,24 +31,26 @@ public class SpeakingLearnProgressService {
         this.requestContext = requestContext;
     }
 
-    public List<LearnProgress> list(LearningLevel level) {
-        return repository.findByUserIdAndLevel(requestContext.getUserId(), level.name()).stream()
+    public List<LearnProgress> list(ExamType exam, LearningLevel level) {
+        return repository.findByUserIdAndExamTypeAndLevel(requestContext.getUserId(), checkExam(exam).name(), level.name()).stream()
                 .map(p -> new LearnProgress(p.getPartNumber(), p.getStation(), p.getCorrect(), p.getTotal()))
                 .toList();
     }
 
     /** Upserts a finished station, keeping the better result so repeating a lesson can only improve it. */
-    public LearnProgress save(LearningLevel level, int part, String station, int correct, int total) {
+    public LearnProgress save(ExamType exam, LearningLevel level, int part, String station, int correct, int total) {
+        checkExam(exam);
         checkPart(part);
         if (!STATIONS.contains(station)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown station.");
         if (total < 0 || total > MAX_TOTAL || correct < 0 || correct > total) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid result.");
         }
         String userId = requestContext.getUserId();
-        SpeakingLearnProgress progress = repository.findByUserIdAndLevelAndPartNumberAndStation(userId, level.name(), part, station)
+        SpeakingLearnProgress progress = repository.findByUserIdAndExamTypeAndLevelAndPartNumberAndStation(userId, exam.name(), level.name(), part, station)
                 .orElseGet(() -> {
                     SpeakingLearnProgress p = new SpeakingLearnProgress();
                     p.setUserId(userId);
+                    p.setExamType(exam.name());
                     p.setLevel(level.name());
                     p.setPartNumber(part);
                     p.setStation(station);
@@ -64,9 +67,15 @@ public class SpeakingLearnProgressService {
         return new LearnProgress(saved.getPartNumber(), saved.getStation(), saved.getCorrect(), saved.getTotal());
     }
 
-    public void reset(LearningLevel level, int part) {
+    public void reset(ExamType exam, LearningLevel level, int part) {
         checkPart(part);
-        repository.deleteByUserIdAndLevelAndPartNumber(requestContext.getUserId(), level.name(), part);
+        repository.deleteByUserIdAndExamTypeAndLevelAndPartNumber(requestContext.getUserId(), checkExam(exam).name(), level.name(), part);
+    }
+
+    /** Only Telc and DTZ have a Mündlicher Ausdruck learning area. */
+    static ExamType checkExam(ExamType exam) {
+        if (exam != ExamType.TELC && exam != ExamType.DTZ) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown exam.");
+        return exam;
     }
 
     private static void checkPart(int part) {

@@ -6,6 +6,7 @@ import com.deutschbridge.backend.model.dto.ExamContentDtos.Issue;
 import com.deutschbridge.backend.model.dto.SpeakingGuideDtos.GuideResponse;
 import com.deutschbridge.backend.model.dto.SpeakingGuideDtos.SaveResult;
 import com.deutschbridge.backend.model.entity.SpeakingGuide;
+import com.deutschbridge.backend.model.enums.ExamType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.SpeakingGuideRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -36,32 +37,34 @@ public class SpeakingGuideService {
     }
 
     @Transactional(readOnly = true)
-    public List<GuideResponse> list(LearningLevel level) {
-        return repository.findByLevelOrderByPartNumberAsc(level).stream().map(SpeakingGuideService::toResponse).toList();
+    public List<GuideResponse> list(ExamType exam, LearningLevel level) throws DataNotFoundException {
+        return repository.findByExamTypeAndLevelOrderByPartNumberAsc(checkExam(exam), level).stream().map(SpeakingGuideService::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
-    public GuideResponse get(LearningLevel level, int part) throws DataNotFoundException {
+    public GuideResponse get(ExamType exam, LearningLevel level, int part) throws DataNotFoundException {
         checkPart(part);
-        return repository.findByLevelAndPartNumber(level, part).map(SpeakingGuideService::toResponse)
-                .orElseThrow(() -> new DataNotFoundException("No learning content for " + level.getValue() + " Teil " + part + " yet."));
+        return repository.findByExamTypeAndLevelAndPartNumber(checkExam(exam), level, part).map(SpeakingGuideService::toResponse)
+                .orElseThrow(() -> new DataNotFoundException("No learning content for " + exam + " " + level.getValue() + " Teil " + part + " yet."));
     }
 
     /** Validates {@code content}; unless {@code dryRun} (or there are errors) it replaces the stored guide of that level and Teil. */
     @Transactional
-    public SaveResult save(LearningLevel level, int part, Map<String, Object> content, boolean dryRun) throws DataNotFoundException {
+    public SaveResult save(ExamType exam, LearningLevel level, int part, Map<String, Object> content, boolean dryRun) throws DataNotFoundException {
         checkPart(part);
+        checkExam(exam);
         if (content == null || content.isEmpty()) {
             return new SaveResult(false, List.of(new Issue(ExamContentValidator.ERROR, "CONTENT_MISSING", "$", "The learning content must not be empty.")), null);
         }
         List<Issue> issues = new ArrayList<>();
         JsonNode node = mapper.valueToTree(content);
-        Map<String, Object> normalised = ExamSpeakingReader.validateGuide(part, node, issues);
+        Map<String, Object> normalised = ExamSpeakingReader.validateGuide(exam, part, node, issues);
         boolean hasErrors = issues.stream().anyMatch(i -> ExamContentValidator.ERROR.equals(i.severity()));
         if (hasErrors || dryRun) return new SaveResult(false, issues, null);
 
-        SpeakingGuide guide = repository.findByLevelAndPartNumber(level, part).orElseGet(() -> {
+        SpeakingGuide guide = repository.findByExamTypeAndLevelAndPartNumber(exam, level, part).orElseGet(() -> {
             SpeakingGuide g = new SpeakingGuide();
+            g.setExamType(exam);
             g.setLevel(level);
             g.setPartNumber(part);
             return g;
@@ -74,14 +77,15 @@ public class SpeakingGuideService {
 
     /** Used by the seeder: stores a built-in guide only when that level + Teil has none yet, so admin edits survive restarts. */
     @Transactional
-    public boolean seedIfMissing(LearningLevel level, int part, JsonNode json) {
-        if (repository.findByLevelAndPartNumber(level, part).isPresent()) return false;
+    public boolean seedIfMissing(ExamType exam, LearningLevel level, int part, JsonNode json) {
+        if (repository.findByExamTypeAndLevelAndPartNumber(exam, level, part).isPresent()) return false;
         List<Issue> issues = new ArrayList<>();
-        Map<String, Object> normalised = ExamSpeakingReader.validateGuide(part, json, issues);
+        Map<String, Object> normalised = ExamSpeakingReader.validateGuide(exam, part, json, issues);
         if (issues.stream().anyMatch(i -> ExamContentValidator.ERROR.equals(i.severity()))) {
-            throw new IllegalStateException("Built-in speaking guide " + level + " Teil " + part + " is invalid: " + issues.get(0).path() + " - " + issues.get(0).message());
+            throw new IllegalStateException("Built-in speaking guide " + exam + " " + level + " Teil " + part + " is invalid: " + issues.get(0).path() + " - " + issues.get(0).message());
         }
         SpeakingGuide guide = new SpeakingGuide();
+        guide.setExamType(exam);
         guide.setLevel(level);
         guide.setPartNumber(part);
         guide.setContent(normalised);
@@ -89,12 +93,17 @@ public class SpeakingGuideService {
         return true;
     }
 
+    private static ExamType checkExam(ExamType exam) throws DataNotFoundException {
+        if (exam != ExamType.TELC && exam != ExamType.DTZ) throw new DataNotFoundException("No speaking learning area for " + exam + ".");
+        return exam;
+    }
+
     private static void checkPart(int part) throws DataNotFoundException {
         if (part < 1 || part > PARTS) throw new DataNotFoundException("Unknown Teil " + part + ".");
     }
 
     private static GuideResponse toResponse(SpeakingGuide g) {
-        return new GuideResponse(g.getLevel().getValue(), g.getPartNumber(), g.getContent(), g.getUpdatedAt());
+        return new GuideResponse(g.getExamType().name(), g.getLevel().getValue(), g.getPartNumber(), g.getContent(), g.getUpdatedAt());
     }
 
     /** For tests. */

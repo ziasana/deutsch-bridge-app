@@ -11,10 +11,10 @@ import java.util.Optional;
 @Repository
 public interface SpeakingLearnProgressRepository extends JpaRepository<SpeakingLearnProgress, String> {
 
-    List<SpeakingLearnProgress> findByUserIdAndLevel(String userId, String level);
+    List<SpeakingLearnProgress> findByUserIdAndExamTypeAndLevel(String userId, String examType, String level);
 
-    Optional<SpeakingLearnProgress> findByUserIdAndLevelAndPartNumberAndStation(String userId, String level, int partNumber, String station);
+    Optional<SpeakingLearnProgress> findByUserIdAndExamTypeAndLevelAndPartNumberAndStation(String userId, String examType, String level, int partNumber, String station);
 
     @Transactional
-    void deleteByUserIdAndLevelAndPartNumber(String userId, String level, int partNumber);
+    void deleteByUserIdAndExamTypeAndLevelAndPartNumber(String userId, String examType, String level, int partNumber);
 }

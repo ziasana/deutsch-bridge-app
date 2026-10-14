@@ -1,0 +1,115 @@
+{
+  "intro": "In Teil 2 sprechen Sie mit Ihrem Partner über ein Foto und über Ihre Erfahrungen. Ein Teilnehmer stellt Fragen zum Foto, der andere antwortet und erzählt von sich. Danach tauschen Sie die Rollen. Sie sollen verstehen, was Ihr Partner fragt, und mit eigenen Worten antworten.",
+  "introHint": {
+    "en": "Part 2: you talk about a photo and your own experience. One person asks, the other answers; then you swap.",
+    "fa": "بخش ۲: درباره یک عکس و تجربه‌های خودتان صحبت می‌کنید. یک نفر می‌پرسد و دیگری جواب می‌دهد؛ بعد نقش‌ها عوض می‌شود."
+  },
+  "tips": [
+    {
+      "title": "Schauen Sie das Foto genau an",
+      "text": "Wer ist zu sehen? Wo sind die Personen? Was machen sie? Das hilft Ihnen bei den Fragen.",
+      "en": "Look closely at the photo.",
+      "fa": "عکس را با دقت نگاه کنید."
+    },
+    {
+      "title": "Antworten Sie nicht nur mit Ja oder Nein",
+      "text": "Geben Sie immer einen Grund oder ein Beispiel: „Ja, ich fahre gern Rad, weil es gesund ist.“",
+      "en": "Never answer only yes or no.",
+      "fa": "فقط با بله یا نه جواب ندهید."
+    },
+    {
+      "title": "Erzählen Sie von sich",
+      "text": "Die Fragen zu Ihren Erfahrungen können Sie mit einem Beispiel aus Ihrem Leben beantworten.",
+      "en": "Use examples from your own life.",
+      "fa": "از زندگی خودتان مثال بزنید."
+    },
+    {
+      "title": "Fragen Sie auch zurück",
+      "text": "Zeigen Sie Interesse: „Und wie ist das bei dir?“",
+      "en": "Ask your partner back.",
+      "fa": "از شریک گفت‌وگو هم بپرسید."
+    },
+    {
+      "title": "Wenn Ihnen ein Wort fehlt, umschreiben Sie es",
+      "text": "Sagen Sie „das Ding, mit dem man ...“ und sprechen Sie weiter.",
+      "en": "Describe a missing word and keep going.",
+      "fa": "اگر کلمه‌ای را بلد نیستید، توضیحش بدهید."
+    }
+  ],
+  "steps": [
+    {
+      "title": "1. Foto verstehen",
+      "text": "Sehen Sie sich das Foto an und lesen Sie Ihre Aufgabe."
+    },
+    {
+      "title": "2. Fragen stellen oder beantworten",
+      "text": "Als Teilnehmer A stellen Sie die Fragen zum Foto. Als Teilnehmer B beantworten Sie Fragen zu Ihrer Erfahrung."
+    },
+    {
+      "title": "3. Rollen tauschen",
+      "text": "Danach tauschen Sie die Rollen und machen dasselbe noch einmal."
+    }
+  ],
+  "commonMistakes": [
+    "Nur „Ja“ oder „Nein“ antworten.",
+    "Das Foto beschreiben, aber nicht auf die Frage antworten.",
+    "Keine Rückfrage stellen und das Gespräch nicht weiterführen.",
+    "Bei einer unklaren Frage schweigen, statt nachzufragen."
+  ],
+  "selfAssessment": [
+    "Ich habe das Foto verstanden und Fragen dazu gestellt.",
+    "Ich habe meine Antworten begründet.",
+    "Ich habe ein Beispiel aus meinem Leben erzählt.",
+    "Ich habe nachgefragt, wenn ich etwas nicht verstanden habe."
+  ],
+  "goals": [
+    {
+      "id": "DESCRIBE_PHOTO",
+      "title": "Das Foto beschreiben",
+      "description": "Sie sagen, was auf dem Foto zu sehen ist: Personen, Ort und Tätigkeit.",
+      "usefulPhrases": [
+        "Auf dem Foto sieht man ...",
+        "Im Hintergrund sehe ich ...",
+        "Die Personen sind wahrscheinlich ...",
+        "Ich glaube, sie sind gerade in ..."
+      ],
+      "tip": "Gehen Sie von Wichtigem (Personen) zu Details (Hintergrund)."
+    },
+    {
+      "id": "ASK_ABOUT_PHOTO",
+      "title": "Fragen zum Foto stellen",
+      "description": "Sie stellen Ihrem Partner Fragen, die zum Foto und zum Thema passen.",
+      "usefulPhrases": [
+        "Machen Sie das auch gern?",
+        "Wie oft machen Sie das?",
+        "Wo machen Sie das normalerweise?",
+        "Was gefällt Ihnen daran?"
+      ],
+      "tip": "Fragen mit „Wie“, „Wo“ oder „Warum“ bringen mehr als Ja/Nein-Fragen."
+    },
+    {
+      "id": "TELL_EXPERIENCE",
+      "title": "Von eigenen Erfahrungen berichten",
+      "description": "Sie erzählen von einem Erlebnis oder einer Gewohnheit aus Ihrem Leben.",
+      "usefulPhrases": [
+        "Ich habe das schon einmal gemacht.",
+        "Letztes Jahr war ich ...",
+        "Bei uns in meiner Heimat ist das so: ...",
+        "Das war ein tolles Erlebnis."
+      ],
+      "tip": "Für Vergangenes nutzen Sie das Perfekt: „Ich bin gefahren“, „ich habe gesehen“."
+    },
+    {
+      "id": "GIVE_OPINION",
+      "title": "Die eigene Meinung sagen und begründen",
+      "description": "Sie sagen, was Sie denken, und geben einen Grund dafür an.",
+      "usefulPhrases": [
+        "Ich finde, dass ...",
+        "Meiner Meinung nach ...",
+        "Ich denke, das ist gut, weil ...",
+        "Für mich ist wichtig, dass ..."
+      ],
+      "tip": "Nach „weil“ steht das Verb am Ende: „..., weil es gesund ist.“"
+    }
+  ]
+}

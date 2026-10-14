@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 
 /** A learner finished one "Mündlicher Ausdruck lernen" station of a Teil at a level, with their best first-try quiz result. */
 @Entity(name = "speakingLearnProgress")
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"userId", "level", "partNumber", "station"}))
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"userId", "examType", "level", "partNumber", "station"}))
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -19,6 +19,7 @@ public class SpeakingLearnProgress {
     private String id;
 
     private String userId;
+    private String examType = "TELC";
     private String level;
     private int partNumber;
     private String station;
