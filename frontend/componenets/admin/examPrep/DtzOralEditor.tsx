@@ -335,7 +335,7 @@ function Teil2Editor({ form, change }: Readonly<{ form: Teil2Form; change: (patc
             </fieldset>
 
             <fieldset className="space-y-3 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
-                <legend className="px-1 text-sm font-semibold text-gray-900 dark:text-white">Mögliche Lösung (optional, revealed to learners on request)</legend>
+                <legend className="px-1 text-sm font-semibold text-gray-900 dark:text-white">Beispielantwort (optional, revealed to learners on request)</legend>
                 <p className="text-xs text-gray-500 dark:text-gray-400">One possible answer in spoken A2–B1 German. It is an example, not the only correct answer, and must only describe what the photo can show.</p>
                 <label className="block">
                     <span className={labelClass}>Possible solution · picture description (A)</span>
@@ -401,7 +401,7 @@ function Teil3Editor({ form, change }: Readonly<{ form: Teil3Form; change: (patc
                 <textarea className={`${fieldClass} min-h-[70px]`} value={form.phrasesText} onChange={(e) => change({ phrasesText: e.target.value })} />
             </label>
             <label className="block">
-                <span className={labelClass}>Mögliche Lösung — sample conversation (optional, one turn per line starting with A: or B:)</span>
+                <span className={labelClass}>Beispielantwort — sample conversation (optional, one turn per line starting with A: or B:)</span>
                 <textarea
                     className={`${fieldClass} min-h-[140px] font-mono text-xs`}
                     placeholder={"A: Wann wollen wir das Fest machen?\nB: Ich schlage Freitag vor. Was meinst du?"}

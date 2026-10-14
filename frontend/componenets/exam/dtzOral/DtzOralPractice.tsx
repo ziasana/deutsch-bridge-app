@@ -130,7 +130,7 @@ export default function DtzOralPractice({ exerciseId, title, content, guide, gui
 
             {!helpVisible && (
                 <p className="rounded-2xl border border-dashed border-border p-4 text-sm text-foreground/60">
-                    Redemittel, Tipps und mögliche Lösungen sind im Prüfungsmodus ausgeblendet, bis Sie die Übung beenden.
+                    Redemittel, Tipps und Beispielantworten sind im Prüfungsmodus ausgeblendet, bis Sie die Übung beenden.
                 </p>
             )}
 
@@ -149,11 +149,11 @@ export default function DtzOralPractice({ exerciseId, title, content, guide, gui
             )}
 
             {helpVisible && hasDtzSolution(content, practiceMode) && (
-                <section aria-label="Mögliche Lösung" className="space-y-3">
+                <section aria-label="Beispielantwort" className="space-y-3">
                     <button
                         type="button"
                         aria-expanded={showSolution}
-                        aria-label={showSolution ? "Mögliche Lösung verbergen" : "Mögliche Lösung anzeigen"}
+                        aria-label={showSolution ? "Beispielantwort verbergen" : "Beispielantwort anzeigen"}
                         onClick={() => setShowSolution((v) => !v)}
                         className="group flex w-full cursor-pointer items-center gap-4 rounded-2xl border border-dashed border-amber-500/50 bg-amber-500/10 p-4 text-start transition hover:-translate-y-0.5 hover:bg-amber-500/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50"
                     >
@@ -161,7 +161,7 @@ export default function DtzOralPractice({ exerciseId, title, content, guide, gui
                             <Lightbulb className="size-6" aria-hidden="true" />
                         </span>
                         <span className="min-w-0 flex-1">
-                            <span className="block text-base font-bold text-foreground">{showSolution ? "Mögliche Lösung verbergen" : "Mögliche Lösung anzeigen"}</span>
+                            <span className="block text-base font-bold text-foreground">{showSolution ? "Beispielantwort verbergen" : "Beispielantwort anzeigen"}</span>
                             <span className="block text-sm text-foreground/65">{showSolution ? "Zum Vergleichen mit Ihrem eigenen Gespräch." : "Tipp: Sprechen Sie zuerst selbst – vergleichen Sie danach."}</span>
                         </span>
                         {showSolution ? <EyeOff className="size-5 shrink-0 text-foreground/50" aria-hidden="true" /> : <Eye className="size-5 shrink-0 text-foreground/50" aria-hidden="true" />}

@@ -75,7 +75,7 @@ export interface DtzOralImage {
     altText: string | null;
 }
 
-/** Teil 2 "Mögliche Lösung": one possible answer per task. Examples only, never the one correct answer. */
+/** Teil 2 "Beispielantwort": one possible answer per task. Examples only, never the one correct answer. */
 export interface DtzOralSolution {
     description: string | null;
     experienceA2: string | null;
@@ -92,7 +92,7 @@ export interface DtzOralTeil2 {
     possibleSolution?: DtzOralSolution | null;
 }
 
-/** Teil 3 "Mögliche Lösung": one possible planning conversation. An example only, never the one correct plan. */
+/** Teil 3 "Beispielantwort": one possible planning conversation. An example only, never the one correct plan. */
 export interface DtzOralDialogueTurn {
     speaker: "A" | "B";
     text: string;

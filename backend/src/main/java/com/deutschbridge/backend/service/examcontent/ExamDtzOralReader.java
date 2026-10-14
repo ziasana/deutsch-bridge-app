@@ -283,7 +283,7 @@ final class ExamDtzOralReader {
     }
 
     /**
-     * "Mögliche Lösung": one possible answer for the picture description (participant A) and one each for the A2 and B1 experience questions
+     * "Beispielantwort": one possible answer for the picture description (participant A) and one each for the A2 and B1 experience questions
      * (participant B). Optional; it is shown to learners on request and is never the only correct answer.
      */
     private Map<String, Object> readPossibleSolution(JsonNode node) {
@@ -311,7 +311,7 @@ final class ExamDtzOralReader {
             solution.put(key, text);
             any = true;
         }
-        if (!any) issues.add(warning("SOLUTION_MISSING", p + "possibleSolution", "The possible solution is empty."));
+        if (!any) issues.add(warning("SOLUTION_MISSING", p + "possibleSolution", "The Beispielantwort is empty."));
         return solution;
     }
 
@@ -473,7 +473,7 @@ final class ExamDtzOralReader {
     }
 
     /**
-     * "Mögliche Lösung" of Teil 3: one possible planning conversation between A and B. It is learner help shown on request, kept apart from the
+     * "Beispielantwort" of Teil 3: one possible planning conversation between A and B. It is learner help shown on request, kept apart from the
      * task (the task itself never contains a dialogue) and never the only correct plan.
      */
     private Map<String, Object> readPlanningSolution(JsonNode node, int noteCount) {

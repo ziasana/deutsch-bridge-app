@@ -47,25 +47,25 @@ describe("DtzOralPractice", () => {
     it("shows the possible solution at the bottom on request, like the Telc Beispielantwort", () => {
         render(<DtzOralPractice {...props} />);
         expect(screen.queryByText("Redemittel (optional)")).toBeNull();
-        expect(screen.queryByRole("list", { name: "Mögliches Gespräch" })).toBeNull();
-        const toggle = screen.getByRole("button", { name: "Mögliche Lösung anzeigen" });
+        expect(screen.queryByRole("list", { name: "Beispielgespräch" })).toBeNull();
+        const toggle = screen.getByRole("button", { name: "Beispielantwort anzeigen" });
         const finish = screen.getByRole("button", { name: /Übung beenden/ });
         // it sits below the finish card
         expect(finish.compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
         fireEvent.click(toggle);
-        expect(screen.getByRole("list", { name: "Mögliches Gespräch" })).toBeTruthy();
-        expect(screen.getByText(/nur ein mögliches Gespräch/)).toBeTruthy();
-        fireEvent.click(screen.getByRole("button", { name: "Mögliche Lösung verbergen" }));
-        expect(screen.queryByRole("list", { name: "Mögliches Gespräch" })).toBeNull();
+        expect(screen.getByRole("list", { name: "Beispielgespräch" })).toBeTruthy();
+        expect(screen.getByText(/nur ein Beispielgespräch/)).toBeTruthy();
+        fireEvent.click(screen.getByRole("button", { name: "Beispielantwort verbergen" }));
+        expect(screen.queryByRole("list", { name: "Beispielgespräch" })).toBeNull();
     });
 
     it("hides help and the possible solution in the exam mode until the attempt is finished", () => {
         render(<DtzOralPractice {...props} />);
         fireEvent.click(screen.getByRole("button", { name: "Prüfung" }));
-        expect(screen.queryByRole("button", { name: /Mögliche Lösung/ })).toBeNull();
+        expect(screen.queryByRole("button", { name: /Beispielantwort/ })).toBeNull();
         expect(screen.queryByRole("button", { name: /Redemittel & Tipps/ })).toBeNull();
         fireEvent.click(screen.getByRole("button", { name: /Übung beenden/ }));
-        expect(screen.getByRole("button", { name: "Mögliche Lösung anzeigen" })).toBeTruthy();
+        expect(screen.getByRole("button", { name: "Beispielantwort anzeigen" })).toBeTruthy();
         expect(screen.getByRole("button", { name: /Redemittel & Tipps/ })).toBeTruthy();
     });
 

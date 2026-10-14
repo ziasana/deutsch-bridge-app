@@ -122,12 +122,12 @@ describe("Teil 2 learner view", () => {
     });
 });
 
-describe("Teil 2 mögliche Lösung", () => {
+describe("Teil 2 Beispielantwort", () => {
     it("offers a collapsed possible solution that follows the practice mode and says it is only one possibility", () => {
         render(<DtzOralExercise title="Einkaufen" content={teil2} />);
-        const details = screen.getByText("Mögliche Lösung").closest("details") as HTMLDetailsElement;
+        const details = screen.getByText("Beispielantwort").closest("details") as HTMLDetailsElement;
         expect(details.open).toBe(false);
-        expect(screen.getByText(/nur eine mögliche Antwort/)).toBeTruthy();
+        expect(screen.getByText(/nur eine Beispielantwort/)).toBeTruthy();
         expect(screen.getByText("Ich sehe eine Frau am Laptop.")).toBeTruthy();
         expect(screen.getByText("Ich kaufe manchmal online.")).toBeTruthy();
         expect(screen.queryByText("Ich kaufe online, weil es bequem ist.")).toBeNull();
@@ -141,7 +141,7 @@ describe("Teil 2 mögliche Lösung", () => {
 
     it("shows no solution block when the exercise has none", () => {
         render(<DtzOralExercise title="Einkaufen" content={{ ...teil2, possibleSolution: null }} />);
-        expect(screen.queryByText("Mögliche Lösung")).toBeNull();
+        expect(screen.queryByText("Beispielantwort")).toBeNull();
     });
 });
 
@@ -156,13 +156,13 @@ describe("Teil 3 learner view", () => {
     });
 });
 
-describe("Teil 3 mögliche Lösung", () => {
+describe("Teil 3 Beispielantwort", () => {
     it("offers a collapsed sample conversation that is marked as only one possibility", () => {
         render(<DtzOralExercise title="Klassenfest" content={teil3} />);
-        const details = screen.getByText("Mögliche Lösung").closest("details") as HTMLDetailsElement;
+        const details = screen.getByText("Beispielantwort").closest("details") as HTMLDetailsElement;
         expect(details.open).toBe(false);
-        expect(screen.getByText(/nur ein mögliches Gespräch/)).toBeTruthy();
-        const turns = within(screen.getByRole("list", { name: "Mögliches Gespräch" })).getAllByRole("listitem").map((li) => li.textContent);
+        expect(screen.getByText(/nur ein Beispielgespräch/)).toBeTruthy();
+        const turns = within(screen.getByRole("list", { name: "Beispielgespräch" })).getAllByRole("listitem").map((li) => li.textContent);
         expect(turns).toEqual(["AWann feiern wir?", "BAm Freitag.", "AWo?", "BIm Kursraum."]);
         // The task itself holds no conversation.
         expect(within(screen.getByRole("region", { name: "Situation" })).queryByText("Am Freitag.")).toBeNull();
@@ -170,14 +170,14 @@ describe("Teil 3 mögliche Lösung", () => {
 
     it("shows nothing when there is no solution", () => {
         render(<DtzOralExercise title="Klassenfest" content={{ ...teil3, possibleSolution: null }} />);
-        expect(screen.queryByText("Mögliche Lösung")).toBeNull();
+        expect(screen.queryByText("Beispielantwort")).toBeNull();
     });
 });
 
 describe("solution shown by the practice page", () => {
     it("leaves the possible solution out of the task when the page shows it at the bottom", () => {
         render(<DtzOralExercise title="Klassenfest" content={teil3} hideSolution />);
-        expect(screen.queryByText("Mögliche Lösung")).toBeNull();
+        expect(screen.queryByText("Beispielantwort")).toBeNull();
     });
 });
 
