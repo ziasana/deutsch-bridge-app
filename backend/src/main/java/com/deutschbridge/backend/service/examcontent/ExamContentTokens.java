@@ -46,7 +46,7 @@ public final class ExamContentTokens {
             case "SPRACHBAUSTEINE" -> Optional.of(ExamSection.SPRACHBAUSTEINE);
             case "HOEREN", "HÖREN", "HOERVERSTEHEN", "HÖRVERSTEHEN" -> Optional.of(ExamSection.HOERVERSTEHEN);
             case "SCHREIBEN", "SCHRIFTLICHER_AUSDRUCK" -> Optional.of(ExamSection.SCHRIFTLICHER_AUSDRUCK);
-            case "SPRECHEN", "MUENDLICHER_AUSDRUCK", "MÜNDLICHER_AUSDRUCK" -> Optional.of(ExamSection.MUENDLICHER_AUSDRUCK);
+            case "SPRECHEN", "MUENDLICH", "MÜNDLICH", "MUENDLICHE_PRUEFUNG", "MÜNDLICHE_PRÜFUNG", "MUENDLICHER_AUSDRUCK", "MÜNDLICHER_AUSDRUCK" -> Optional.of(ExamSection.MUENDLICHER_AUSDRUCK);
             default -> Optional.empty();
         };
     }

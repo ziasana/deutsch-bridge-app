@@ -1,5 +1,6 @@
 "use client";
 
+import DtzOralList from "@/componenets/exam/dtzOral/DtzOralList";
 import { Suspense, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
@@ -100,8 +101,8 @@ function ExamPrepContent() {
             router.push(`/dashboard/exam-prep/schreiben?level=${encodeURIComponent(effectiveLevel)}`);
             return;
         }
-        // Mündlicher Ausdruck too: learn each Teil first (Lernbereich), then practise.
-        if (section === "MUENDLICHER_AUSDRUCK" && selectedSection !== section) {
+        // Telc Mündlicher Ausdruck too: learn each Teil first (Lernbereich), then practise. The DTZ Mündliche Prüfung lists its Übungen right here.
+        if (section === "MUENDLICHER_AUSDRUCK" && selectedSection !== section && examType !== "DTZ") {
             router.push(`/dashboard/exam-prep/sprechen?level=${encodeURIComponent(effectiveLevel)}`);
             return;
         }
@@ -381,6 +382,8 @@ function ExamPrepContent() {
                                 level={effectiveLevel}
                                 lastTimes={writingLastTimes}
                             />
+                        ) : selectedSection === "MUENDLICHER_AUSDRUCK" && examType === "DTZ" ? (
+                            <DtzOralList key={`${selectedSection}-${effectiveLevel}-${searchTerm}`} groups={selectedGroups} />
                         ) : selectedSection === "MUENDLICHER_AUSDRUCK" ? (
                             <SpeakingExamList key={`${selectedSection}-${effectiveLevel}-${searchTerm}`} groups={selectedGroups} level={effectiveLevel} lastTimes={speakingLastTimes} />
                         ) : SECTION_THEME[selectedSection] ? (

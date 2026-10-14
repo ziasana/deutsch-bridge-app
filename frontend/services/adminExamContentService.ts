@@ -8,6 +8,7 @@ import {
     StatusChangeResult,
     ValidationReport,
     WritingChoiceSaveResult,
+    DtzOralSaveResult,
 } from "@/types/examContent";
 
 export const getExamContentOptions = async () => api.get<ExamContentOptions>("/admin/exam-content/options");
@@ -68,6 +69,19 @@ export const createWritingChoice = async (body: WritingChoiceBody) =>
 /** Saves the edited title, situations, recipients, instructions and points of a DTZ Schreiben exercise. */
 export const updateWritingChoice = async (id: string, body: WritingChoiceBody) =>
     api.put<WritingChoiceSaveResult>(`/admin/exam-content/writing-choice/${id}`, body);
+
+/**
+ * Creates a DTZ Mündliche Prüfung exercise by hand (a draft). The body is the import shape of its Teil, with `part` (1, 2 or 3) and `title`;
+ * for Teil 2 `image.imageUrl` is the URL returned by the exam image upload.
+ */
+export const createDtzOral = async (body: Record<string, unknown>) => api.post<DtzOralSaveResult>("/admin/exam-content/dtz-oral", body);
+
+/** Saves the edited content of a DTZ Mündliche Prüfung exercise (the part cannot change). */
+export const updateDtzOral = async (id: string, body: Record<string, unknown>) =>
+    api.put<DtzOralSaveResult>(`/admin/exam-content/dtz-oral/${id}`, body);
+
+/** Creates the standard Teil 1 template (the six fixed topics) as a draft. */
+export const createDtzOralTemplate = async () => api.post<DtzOralSaveResult>("/admin/exam-content/dtz-oral/template");
 
 export const changeExamContentStatus = async (ids: string[], status: ExamContentStatus) =>
     api.post<StatusChangeResult>("/admin/exam-content/status", { ids, status });

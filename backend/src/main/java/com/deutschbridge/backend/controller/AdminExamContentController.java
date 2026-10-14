@@ -104,6 +104,24 @@ public class AdminExamContentController {
         return ResponseEntity.ok(service.saveWritingChoice(id, body));
     }
 
+    /** DTZ Mündliche Prüfung: create an exercise of Teil 1, 2 or 3 by hand (the import shape, with "part"); it starts as DRAFT. */
+    @PostMapping("/dtz-oral")
+    public ResponseEntity<DtzOralSaveResult> createDtzOral(@RequestBody com.fasterxml.jackson.databind.JsonNode body) throws DataNotFoundException {
+        return ResponseEntity.ok(service.saveDtzOral(null, body));
+    }
+
+    /** DTZ Mündliche Prüfung: edit the content of an existing exercise (the part cannot change). */
+    @PutMapping("/dtz-oral/{id}")
+    public ResponseEntity<DtzOralSaveResult> updateDtzOral(@PathVariable String id, @RequestBody com.fasterxml.jackson.databind.JsonNode body) throws DataNotFoundException {
+        return ResponseEntity.ok(service.saveDtzOral(id, body));
+    }
+
+    /** DTZ Mündliche Prüfung Teil 1: create the standard fixed template as a draft. */
+    @PostMapping("/dtz-oral/template")
+    public ResponseEntity<DtzOralSaveResult> createDtzOralTemplate() throws DataNotFoundException {
+        return ResponseEntity.ok(service.createDefaultTeil1Template());
+    }
+
     @PostMapping("/status")
     public ResponseEntity<StatusChangeResult> changeStatus(@RequestBody StatusChangeRequest request) {
         return ResponseEntity.ok(service.changeStatus(request));

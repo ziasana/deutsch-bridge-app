@@ -93,6 +93,9 @@ public class ExamContentPromptBuilder {
         if (spec.isDirectoryMatching()) {
             return buildDirectory(spec, request, existingCount, firstNumber, existingSummaries);
         }
+        if (spec.isDtzOral()) {
+            return buildDtzOral(spec, request, existingCount, firstNumber, existingSummaries);
+        }
         if (spec.isWritingChoice()) {
             return buildWritingChoice(spec, request, existingCount, firstNumber, existingSummaries);
         }
@@ -1403,6 +1406,145 @@ public class ExamContentPromptBuilder {
         ArrayNode skills = metadata.putArray("skills");
         skills.add("MAIN_IDEA").add("SELECTIVE_READING").add("PARAPHRASING");
         metadata.put("source", "AI_GENERATED_ORIGINAL");
+        return write(root);
+    }
+
+    // ------------------------------------------------------------------ DTZ Mündliche Prüfung (Teil 1 template, Teil 2 photo, Teil 3 planning)
+
+    /**
+     * One prompt per Teil - the three Teile have three different structures, so there is deliberately no generic prompt. Teil 1 is the fixed
+     * template (no topic, no count); Teil 2 and Teil 3 take a topic (a suggested category or free text) and an optional number of exercises.
+     */
+    private PromptResponse buildDtzOral(ExamContentSpec spec, PromptRequest request, int existingCount, int firstNumber, List<String> existingSummaries) {
+        int part = spec.part();
+        // The generic generator page sends MIXED / EASY / MEDIUM / HARD; the oral exam has one level (A2–B1), so those mean the default.
+        String requested = request.difficulty() != null && DIFFICULTIES.contains(request.difficulty().trim().toUpperCase(Locale.ROOT)) ? null : request.difficulty();
+        String level = directoryToken(requested, "A2_B1", DIRECTORY_LEVELS, "difficulty");
+        int count = part == 1 ? 1 : request.count() == null ? 1 : request.count();
+        if (count < 1 || count > MAX_COUNT) throw new IllegalArgumentException("count must be between 1 and " + MAX_COUNT);
+        List<String> topics = new ArrayList<>();
+        for (String t : request.topics() == null ? List.<String>of() : request.topics()) {
+            String topic = oralTopic(t);
+            if (topic != null && !topics.contains(topic)) topics.add(topic);
+        }
+        List<String> suggested = part == 2 ? DtzOralSchema.PHOTO_TOPICS : DtzOralSchema.PLANNING_TOPICS;
+
+        Map<String, String> values = new java.util.LinkedHashMap<>();
+        values.put("COUNT_LINE", count == 1 ? "Generate exactly one complete exercise" : "Generate exactly " + count + " complete, clearly different exercises");
+        values.put("BATCH_RULE", count == 1 ? ""
+                : "Because there are " + count + " exercises, return ONE JSON object that wraps them: schemaVersion, contentType \"EXAM_EXERCISE_BATCH\", exam, level, section, part and an \"exercises\" array with exactly "
+                + count + " exercise objects (each with the structure below). Each exercise must use a different topic, scenario and wording.\n\n");
+        values.put("DIFFICULTY", level.replace("_", "–"));
+        values.put("TOPIC", topics.isEmpty()
+                ? "random (choose a suitable everyday topic yourself, for example from: " + String.join(", ", suggested) + ")"
+                : topics.size() == 1 ? topics.get(0)
+                : "choose from these topics, one per exercise: " + String.join("; ", topics));
+        values.put("TOPIC_LIST", String.join(", ", suggested));
+        values.put("A2_COUNT", String.valueOf(DtzOralSchema.QUESTIONS_PER_LEVEL));
+        values.put("B1_COUNT", String.valueOf(DtzOralSchema.QUESTIONS_PER_LEVEL));
+        values.put("NOTES_MIN", String.valueOf(DtzOralSchema.MIN_NOTES));
+        values.put("NOTES_MAX", String.valueOf(DtzOralSchema.MAX_NOTES));
+        values.put("TOPIC_LABELS", String.join(", ", DtzOralSchema.TEIL1_TOPICS));
+        values.put("PARTICIPANT_A_INSTRUCTIONS", DtzOralSchema.PARTICIPANT_A_INSTRUCTIONS);
+        values.put("PICTURE_PROMPT_1", DtzOralSchema.PICTURE_PROMPTS.get(0));
+        values.put("PICTURE_PROMPT_2", DtzOralSchema.PICTURE_PROMPTS.get(1));
+        values.put("PARTICIPANT_B_INSTRUCTIONS", DtzOralSchema.PARTICIPANT_B_INSTRUCTIONS);
+        values.put("TASK_INSTRUCTION", DtzOralSchema.TASK_INSTRUCTION);
+        values.put("TEIL1_INSTRUCTIONS", DtzOralSchema.TEIL1_INSTRUCTIONS);
+        values.put("HIKING_NOTES", String.join(" / ", DtzOralSchema.HIKING_EXAMPLE_NOTES));
+        values.put("VARIATION_BLOCK", existingSummaries.isEmpty() || part == 1 ? ""
+                : "\nThe library already contains these exercises - choose clearly different topics, scenes and wording:\n"
+                + existingSummaries.stream().map(line -> "- " + line).collect(java.util.stream.Collectors.joining("\n")) + "\n");
+        String jsonExample = dtzOralJsonExample(part, level, count);
+        values.put("JSON_EXAMPLE", jsonExample);
+        values.put("NOTES_BLOCK", request.notes() == null || request.notes().isBlank() ? ""
+                : "\nADDITIONAL INSTRUCTIONS FROM THE EDITOR:\n" + request.notes().strip() + "\n");
+
+        String prompt = loadTemplate(spec.promptTemplate());
+        for (Map.Entry<String, String> e : values.entrySet()) {
+            prompt = prompt.replace("{{" + e.getKey() + "}}", e.getValue());
+        }
+        String firstId = spec.externalIdPrefix() + String.format("%03d", firstNumber);
+        return new PromptResponse(prompt.strip() + "\n", spec.promptVersion(), ExamContentSpecs.SCHEMA_VERSION, jsonExample, existingCount, firstId);
+    }
+
+    /** A free-text topic of the editor: one line, at most 80 characters, no template markers. Null when empty. */
+    private static String oralTopic(String raw) {
+        if (raw == null) return null;
+        String topic = raw.replaceAll("[\\p{Cntrl}]+", " ").replace("{{", "").replace("}}", "").trim();
+        if (topic.isEmpty() || topic.equalsIgnoreCase("RANDOM")) return null;
+        if (topic.length() > 80) throw new IllegalArgumentException("A topic may be at most 80 characters.");
+        return topic;
+    }
+
+    private String dtzOralJsonExample(int part, String level, int count) {
+        ObjectNode ex = MAPPER.createObjectNode();
+        ex.put("exam", DtzOralSchema.EXAM);
+        ex.put("section", DtzOralSchema.SECTION);
+        ex.put("part", part);
+        ex.put("exerciseType", DtzOralSchema.taskTypeOf(part));
+        ex.put("level", level);
+        switch (part) {
+            case 1 -> {
+                ObjectNode template = DtzOralTemplates.teil1();
+                ex.put("title", DtzOralSchema.TEIL1_TITLE);
+                ex.put("instructions", DtzOralSchema.TEIL1_INSTRUCTIONS);
+                ex.set("topics", template.get("topics"));
+                ex.putNull("guidance");
+                ex.set("practiceSupport", template.get("practiceSupport"));
+            }
+            case 2 -> {
+                ex.put("title", "...");
+                ex.put("topic", "...");
+                ObjectNode image = ex.putObject("image");
+                image.putNull("imageUrl");
+                image.put("imagePrompt", "...");
+                image.put("altText", "...");
+                ObjectNode a = ex.putObject("participantA");
+                a.put("title", DtzOralSchema.PARTICIPANT_A_TITLE);
+                a.put("instructions", DtzOralSchema.PARTICIPANT_A_INSTRUCTIONS);
+                ArrayNode prompts = a.putArray("questions");
+                DtzOralSchema.PICTURE_PROMPTS.forEach(prompts::add);
+                ObjectNode b = ex.putObject("participantB");
+                b.put("title", DtzOralSchema.PARTICIPANT_B_TITLE);
+                b.put("instructions", DtzOralSchema.PARTICIPANT_B_INSTRUCTIONS);
+                ArrayNode a2 = b.putArray("questionsA2");
+                ArrayNode b1 = b.putArray("questionsB1");
+                for (int i = 0; i < DtzOralSchema.QUESTIONS_PER_LEVEL; i++) {
+                    a2.add("...");
+                    b1.add("...");
+                }
+                ObjectNode solution = ex.putObject("possibleSolution");
+                solution.put("description", "...");
+                solution.put("experienceA2", "...");
+                solution.put("experienceB1", "...");
+            }
+            default -> {
+                ex.put("title", "...");
+                ex.put("topic", "...");
+                ex.put("situation", "...");
+                ex.put("taskInstruction", DtzOralSchema.TASK_INSTRUCTION);
+                ArrayNode notes = ex.putArray("planningNotes");
+                for (int i = 1; i <= DtzOralSchema.MIN_NOTES; i++) notes.addObject().put("number", i).put("label", "...");
+                ObjectNode support = ex.putObject("learnerSupport");
+                support.putArray("examplePhrases").add("...");
+                ArrayNode dialogue = ex.putObject("possibleSolution").putArray("dialogue");
+                for (int i = 0; i < 4; i++) dialogue.addObject().put("speaker", i % 2 == 0 ? "A" : "B").put("text", "...");
+            }
+        }
+        ObjectNode meta = ex.putObject("metadata");
+        meta.put("schemaVersion", 1);
+        meta.put("source", "AI_IMPORTED");
+        meta.putArray("tags");
+        if (count == 1) return write(ex);
+        ObjectNode root = MAPPER.createObjectNode();
+        root.put("schemaVersion", ExamContentSpecs.SCHEMA_VERSION);
+        root.put("contentType", "EXAM_EXERCISE_BATCH");
+        root.put("exam", DtzOralSchema.EXAM);
+        root.put("level", "A2_B1");
+        root.put("section", DtzOralSchema.SECTION);
+        root.put("part", "TEIL_" + part);
+        root.putArray("exercises").add(ex);
         return write(root);
     }
 

@@ -44,10 +44,20 @@ public enum ExamTaskType {
      * structured tasks in {@code metadata.writingChoice}.
      */
     WRITING_TASK_CHOICE,
+    /**
+     * DTZ Mündliche Prüfung Teil 1 (Über sich sprechen): one fixed template with the six introductory topics (Name, Geburtsort, Wohnort,
+     * Arbeit/Beruf, Familie, Sprachen). Stored in {@code metadata.dtzOral}; not graded.
+     */
+    SELF_INTRODUCTION,
+    /**
+     * DTZ Mündliche Prüfung Teil 2 (Über Erfahrungen sprechen): one photo with a picture description (participant A) and experience
+     * questions on two levels, A2 and B1 (participant B). Needs an attached image before it can be published. Not graded.
+     */
+    PHOTO_EXPERIENCE,
     /** Mündlicher Ausdruck Teil 1: introduce yourself and ask / answer questions on set topics. Not graded. */
     TOPIC_INTERVIEW,
     /** Mündlicher Ausdruck Teil 2: report another person's opinion, give your own, share experiences, react. Not graded. */
     OPINION_DISCUSSION,
-    /** Mündlicher Ausdruck Teil 3: plan something together with a partner and reach a joint decision. Not graded. */
+    /** Mündlicher Ausdruck Teil 3 (Telc and DTZ): plan something together with a partner and reach a joint decision. Not graded. */
     JOINT_PLANNING
 }

@@ -32,6 +32,7 @@ import { scoreTone } from "@/lib/examScore";
 import { hasGapMarkers } from "@/lib/examGap";
 import WritingTaskCard from "@/componenets/exam/writing/WritingTaskCard";
 import WritingChoiceExercise from "@/componenets/exam/writing/WritingChoiceExercise";
+import DtzOralExercise from "@/componenets/exam/dtzOral/DtzOralExercise";
 import SprachbausteineClozeBoard, { hasGapText } from "@/componenets/exam/SprachbausteineClozeBoard";
 import HoerenBoard from "@/componenets/exam/HoerenBoard";
 import HighlightArea from "@/componenets/exam/HighlightArea";
@@ -475,6 +476,22 @@ function MuendlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExercise
     const stopExerciseTimer = useStopExerciseTimer();
     const [timeResult, setTimeResult] = useState<ExamPracticeSessionResult | null>(null);
 
+    // DTZ Mündliche Prüfung: three Teile with their own structure, no Telc guide or notes.
+    if (exercise.dtzOral) {
+        return (
+            <DtzOralExercise
+                title={exercise.title}
+                showHeader={false}
+                content={exercise.dtzOral}
+                completed={completed}
+                marking={marking}
+                onMarkCompleted={() => {
+                    markCompleted();
+                    stopExerciseTimer().then((result) => result && showZeitCheckToast(result));
+                }}
+            />
+        );
+    }
     if (!exercise.speaking) {
         return <div className="rounded-[10px] bg-card p-6 shadow-card text-sm text-foreground/60">Diese Übung hat noch keinen Inhalt.</div>;
     }

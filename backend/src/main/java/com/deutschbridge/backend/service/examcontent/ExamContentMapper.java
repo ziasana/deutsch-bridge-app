@@ -51,6 +51,9 @@ public final class ExamContentMapper {
     public static ExamExercise toEntity(ParsedExercise ex, ExamType examType, String schemaVersion,
                                         String promptVersion, String hash, String userId) {
         ExamContentSpec spec = ex.spec();
+        if (spec.isDtzOral()) {
+            return toDtzOralEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
+        }
         if (spec.isSpeaking()) {
             return toSpeakingEntity(ex, examType, schemaVersion, promptVersion, hash, userId);
         }
@@ -804,6 +807,164 @@ public final class ExamContentMapper {
         return html.toString();
     }
 
+    // ------------------------------------------------------------------ DTZ Mündliche Prüfung (Teil 1 template, Teil 2 photo, Teil 3 planning)
+
+    /**
+     * DTZ Mündliche Prüfung in the existing exercise model: one passage with a readable summary (for Teil 2 it carries the photo as its
+     * {@code imageUrl}, the same field every other exam image uses) and the structured content in {@code metadata.dtzOral} (import shape), which
+     * the learner screen and the editor render. An exercise has no questions to grade.
+     */
+    private static ExamExercise toDtzOralEntity(ParsedExercise ex, ExamType examType, String schemaVersion,
+                                                String promptVersion, String hash, String userId) {
+        ExamContentSpec spec = ex.spec();
+        ParsedExercise.DtzOral oral = ex.dtzOral();
+
+        Map<String, Object> metadata = new LinkedHashMap<>(ex.metadata());
+        metadata.putIfAbsent("source", "AI_IMPORTED");
+        putDtzOralMetadata(metadata, oral);
+
+        ExamExercise exercise = new ExamExercise();
+        exercise.setTitle(ex.title());
+        exercise.setExamType(examType);
+        exercise.setSection(spec.section());
+        exercise.setTaskType(spec.taskType());
+        exercise.setLevel(spec.level());
+        exercise.setPartNumber(spec.part());
+        exercise.setPassages(toDtzOralPassages(oral, ex.title(), null));
+        exercise.setQuestions(List.of());
+        exercise.setTeilDescription(ex.instructions());
+        exercise.setExternalId(ex.externalId());
+        exercise.setSchemaVersion(schemaVersion);
+        exercise.setPromptVersion(promptVersion);
+        exercise.setMetadata(metadata);
+        exercise.setContentHash(hash);
+        exercise.setCreatedBy(userId);
+        exercise.setUpdatedBy(userId);
+        exercise.applyStatus(ExamContentStatus.DRAFT);
+        return exercise;
+    }
+
+    /** The single passage of an oral exercise; keeps the id of {@code previous} on an edit so references stay stable. */
+    static List<ExamPassage> toDtzOralPassages(ParsedExercise.DtzOral oral, String title, ExamPassage previous) {
+        String imageUrl = oral.part() == 2 ? dtzOralImageUrl(oral.data()) : null;
+        ExamPassage passage = new ExamPassage(previous == null ? null : previous.getId(), oral.part() == 2 ? "Foto" : "Aufgabe",
+                toDtzOralHtml(oral, title), imageUrl, null, null);
+        return List.of(passage.ensureId());
+    }
+
+    @SuppressWarnings("unchecked")
+    static String dtzOralImageUrl(Map<String, Object> data) {
+        return data.get("image") instanceof Map<?, ?> image && image.get("imageUrl") instanceof String url && !url.isBlank() ? url : null;
+    }
+
+    /** Writes the structured content and the fields the admin list shows (topic, level) into the exercise metadata. */
+    static void putDtzOralMetadata(Map<String, Object> metadata, ParsedExercise.DtzOral oral) {
+        metadata.put("dtzOral", oral.data());
+        metadata.put("languageLevel", oral.languageLevel());
+        Object topic = oral.data().get("topic");
+        if (topic instanceof String t && !t.isBlank()) metadata.put("topic", t);
+        else metadata.remove("topic");
+    }
+
+    /** A readable, escaped HTML summary of an oral exercise (what a reader of the stored passage, or duplicate detection, sees). */
+    @SuppressWarnings("unchecked")
+    static String toDtzOralHtml(ParsedExercise.DtzOral oral, String title) {
+        Map<String, Object> d = oral.data();
+        StringBuilder html = new StringBuilder();
+        if (title != null) html.append("<p><strong>").append(HtmlUtils.htmlEscape(title)).append("</strong></p>");
+        switch (oral.part()) {
+            case 1 -> {
+                if (d.get("instructions") instanceof String i) html.append("<p><em>").append(HtmlUtils.htmlEscape(i)).append("</em></p>");
+                if (d.get("topics") instanceof List<?> topics) {
+                    html.append("<ol>");
+                    for (Object t : topics) if (t instanceof Map<?, ?> m) html.append("<li>").append(HtmlUtils.htmlEscape(String.valueOf(m.get("label")))).append("</li>");
+                    html.append("</ol>");
+                }
+            }
+            case 2 -> {
+                Map<String, Object> a = d.get("participantA") instanceof Map<?, ?> m ? (Map<String, Object>) m : Map.of();
+                Map<String, Object> b = d.get("participantB") instanceof Map<?, ?> m ? (Map<String, Object>) m : Map.of();
+                if (d.get("topic") instanceof String t) html.append("<p>").append(HtmlUtils.htmlEscape(t)).append("</p>");
+                appendParticipant(html, a, "questions");
+                appendParticipant(html, b, "questionsA2");
+                appendList(html, b.get("questionsB1"));
+            }
+            default -> {
+                if (d.get("situation") instanceof String s) html.append("<p>").append(HtmlUtils.htmlEscape(s)).append("</p>");
+                if (d.get("taskInstruction") instanceof String i) html.append("<p><em>").append(HtmlUtils.htmlEscape(i)).append("</em></p>");
+                if (d.get("planningNotes") instanceof List<?> notes) {
+                    html.append("<ul>");
+                    for (Object n : notes) if (n instanceof Map<?, ?> m) html.append("<li>").append(HtmlUtils.htmlEscape(String.valueOf(m.get("label")))).append("</li>");
+                    html.append("</ul>");
+                }
+            }
+        }
+        return html.toString();
+    }
+
+    private static void appendParticipant(StringBuilder html, Map<String, Object> participant, String listKey) {
+        if (participant.get("instructions") instanceof String i) html.append("<p><em>").append(HtmlUtils.htmlEscape(i)).append("</em></p>");
+        appendList(html, participant.get(listKey));
+    }
+
+    private static void appendList(StringBuilder html, Object list) {
+        if (!(list instanceof List<?> items) || items.isEmpty()) return;
+        html.append("<ul>");
+        items.forEach(item -> html.append("<li>").append(HtmlUtils.htmlEscape(String.valueOf(item))).append("</li>"));
+        html.append("</ul>");
+    }
+
+    /** Reads the stored oral content back from the metadata; null when the exercise does not carry it. */
+    @SuppressWarnings("unchecked")
+    public static ParsedExercise.DtzOral dtzOralOf(ExamExercise e) {
+        if (e.getMetadata() == null || !(e.getMetadata().get("dtzOral") instanceof Map<?, ?> raw)) return null;
+        Map<String, Object> data = (Map<String, Object>) raw;
+        int part = data.get("part") instanceof Number n ? n.intValue() : e.getPartNumber() == null ? 0 : e.getPartNumber();
+        return new ParsedExercise.DtzOral(part, str(data.get("languageLevel")) == null ? "A2_B1" : str(data.get("languageLevel")), data);
+    }
+
+    /**
+     * What a learner may see of an oral exercise: the examination content and the practice support. The image prompt and the other admin-only
+     * fields are dropped, and the photo comes from the stored passage, so a hand-edited exercise without an uploaded image shows no picture.
+     */
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> dtzOralPublic(ExamExercise e) {
+        ParsedExercise.DtzOral oral = dtzOralOf(e);
+        if (oral == null) return null;
+        Map<String, Object> out = new LinkedHashMap<>(oral.data());
+        out.remove("image");
+        if (oral.part() == 2) {
+            Map<String, Object> image = new LinkedHashMap<>();
+            Map<String, Object> stored = oral.data().get("image") instanceof Map<?, ?> m ? (Map<String, Object>) m : Map.of();
+            image.put("imageUrl", dtzOralImageUrl(oral.data()));
+            image.put("altText", stored.get("altText"));
+            out.put("image", image);
+        }
+        return out;
+    }
+
+    /** Back to the import shape from {@code metadata.dtzOral}; null for an exercise without the structure. */
+    private static ObjectNode toDtzOralExportNode(ObjectMapper mapper, ExamExercise e) {
+        ParsedExercise.DtzOral oral = dtzOralOf(e);
+        if (oral == null) return null;
+        ObjectNode node = mapper.createObjectNode();
+        if (e.getExternalId() != null) node.put("externalId", e.getExternalId());
+        node.put("exam", DtzOralSchema.EXAM);
+        node.put("section", DtzOralSchema.SECTION);
+        node.put("part", oral.part());
+        node.put("exerciseType", DtzOralSchema.taskTypeOf(oral.part()));
+        node.put("level", oral.languageLevel());
+        node.put("title", e.getTitle());
+        for (Map.Entry<String, Object> entry : oral.data().entrySet()) {
+            if (List.of("part", "exerciseType", "languageLevel").contains(entry.getKey())) continue;
+            node.set(entry.getKey(), mapper.valueToTree(entry.getValue()));
+        }
+        Map<String, Object> rest = new LinkedHashMap<>(e.getMetadata());
+        for (String key : List.of("dtzOral", "languageLevel", "topic")) rest.remove(key);
+        if (!rest.isEmpty()) node.set("metadata", mapper.valueToTree(rest));
+        return node;
+    }
+
     /**
      * DTZ Schreiben in the existing exercise model: one passage per alternative (Aufgabe A, Aufgabe B) with the readable task, and the
      * structured tasks in {@code metadata.writingChoice} (import shape), which the learner screen renders. The two tasks' points differ,
@@ -1056,6 +1217,11 @@ public final class ExamContentMapper {
     }
 
     public static ExercisePreview toPreview(ParsedExercise ex) {
+        if (ex.dtzOral() != null) {
+            ParsedExercise.DtzOral oral = ex.dtzOral();
+            return new ExercisePreview(ex.title(), ex.instructions(), List.of(), List.of(), null, List.of(), List.of(), List.of(), null, null, null, null, null, null, null,
+                    new ExamContentDtos.DtzOralView(oral.part(), DtzOralSchema.taskTypeOf(oral.part()), oral.languageLevel(), oral.data()));
+        }
         if (ex.writingChoice() != null) {
             ParsedExercise.WritingChoice wc = ex.writingChoice();
             return new ExercisePreview(ex.title(), ex.instructions(), List.of(), List.of(), null, List.of(), List.of(), List.of(), null, null, null, null, null, null,
@@ -1146,6 +1312,7 @@ public final class ExamContentMapper {
      * labelled headings-matching exercise), so export never emits something re-import would reject.
      */
     public static ObjectNode toExportNode(ObjectMapper mapper, ExamExercise e) {
+        if (e.getExamType() == ExamType.DTZ && e.getSection() == ExamSection.MUENDLICHER_AUSDRUCK) return toDtzOralExportNode(mapper, e);
         if (e.getSection() == ExamSection.MUENDLICHER_AUSDRUCK) return toSpeakingExportNode(mapper, e);
         if (e.getTaskType() == ExamTaskType.WRITING_TASK_CHOICE) return toWritingChoiceExportNode(mapper, e);
         if (e.getTaskType() == ExamTaskType.WRITING_TASK) return toWritingExportNode(mapper, e);

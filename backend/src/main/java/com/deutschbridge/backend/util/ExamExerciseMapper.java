@@ -86,8 +86,15 @@ public class ExamExerciseMapper {
                 bookmarked,
                 speakingOf(exercise),
                 exercise.getExamType() != null ? exercise.getExamType().name() : null,
-                writingChoiceOf(exercise)
+                writingChoiceOf(exercise),
+                dtzOralOf(exercise)
         );
+    }
+
+    /** The learner-facing content of a DTZ Mündliche Prüfung exercise; null for everything else. */
+    private static Map<String, Object> dtzOralOf(ExamExercise exercise) {
+        if (exercise.getExamType() != com.deutschbridge.backend.model.enums.ExamType.DTZ || exercise.getSection() != ExamSection.MUENDLICHER_AUSDRUCK) return null;
+        return com.deutschbridge.backend.service.examcontent.ExamContentMapper.dtzOralPublic(exercise);
     }
 
     /** The two tasks of a DTZ Schreiben exercise as the learner sees them; null for everything else. */

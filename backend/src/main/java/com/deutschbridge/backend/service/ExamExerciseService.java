@@ -236,7 +236,8 @@ public class ExamExerciseService {
                         metadataText(e, "sourceType"),
                         e.getCreatedAt(),
                         e.getPassages() != null ? e.getPassages().size() : 0,
-                        wordCount(e)))
+                        wordCount(e),
+                        e.getPassages() != null && e.getPassages().stream().anyMatch(pg -> pg.getImageUrl() != null && !pg.getImageUrl().isBlank())))
                 .toList();
     }
 

@@ -1,3 +1,4 @@
+import type { DtzOralContent } from "./dtzOral";
 import type { SpeakingContent } from "./exam";
 
 /** Editorial lifecycle of an exam exercise; only PUBLISHED reaches learners. */
@@ -27,7 +28,9 @@ export interface ExamContentSpecInfo {
         | "WRITING_TASK_CHOICE"
         | "TOPIC_INTERVIEW"
         | "OPINION_DISCUSSION"
-        | "JOINT_PLANNING";
+        | "JOINT_PLANNING"
+        | "SELF_INTRODUCTION"
+        | "PHOTO_EXPERIENCE";
     questionCount: number;
     optionCount: number;
 }
@@ -322,6 +325,20 @@ export interface ExercisePreviewData {
     letter?: PreviewLetter | null;
     /** DTZ Schreiben: Aufgabe A and Aufgabe B with four content points each. */
     writingChoice?: PreviewWritingChoice | null;
+    /** DTZ Mündliche Prüfung: the Teil's content (admins also see the image prompt of Teil 2). */
+    dtzOral?: PreviewDtzOral | null;
+}
+
+export interface PreviewDtzOral {
+    part: 1 | 2 | 3;
+    exerciseType: string;
+    languageLevel: string | null;
+    content: DtzOralContent;
+}
+
+export interface DtzOralSaveResult {
+    id: string;
+    warnings: ContentIssue[];
 }
 
 export interface DuplicateMatch {

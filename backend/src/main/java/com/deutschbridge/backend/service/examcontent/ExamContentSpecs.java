@@ -100,6 +100,24 @@ public final class ExamContentSpecs {
                     "1.0",
                     8, 0, 1),
             new ExamContentSpec(
+                    ExamType.DTZ, LearningLevel.B1, ExamSection.MUENDLICHER_AUSDRUCK, 1, ExamTaskType.SELF_INTRODUCTION,
+                    0, 0, 0, 0,
+                    DtzOralSchema.TEIL1_INSTRUCTIONS,
+                    "exam-content/prompts/dtz-muendlich-teil1.v1.0.txt",
+                    "1.0"),
+            new ExamContentSpec(
+                    ExamType.DTZ, LearningLevel.B1, ExamSection.MUENDLICHER_AUSDRUCK, 2, ExamTaskType.PHOTO_EXPERIENCE,
+                    0, 0, 0, 0,
+                    DtzOralSchema.PARTICIPANT_A_INSTRUCTIONS,
+                    "exam-content/prompts/dtz-muendlich-teil2.v1.0.txt",
+                    "1.0"),
+            new ExamContentSpec(
+                    ExamType.DTZ, LearningLevel.B1, ExamSection.MUENDLICHER_AUSDRUCK, 3, ExamTaskType.JOINT_PLANNING,
+                    0, 0, 0, 0,
+                    DtzOralSchema.TASK_INSTRUCTION,
+                    "exam-content/prompts/dtz-muendlich-teil3.v1.0.txt",
+                    "1.0"),
+            new ExamContentSpec(
                     ExamType.TELC, LearningLevel.B1, ExamSection.SPRACHBAUSTEINE, 1, ExamTaskType.MULTIPLE_CHOICE,
                     0, 0, 120, 220,
                     "Lesen Sie den Text und schließen Sie die Lücken 21–30. Welche Lösung (a, b oder c) ist jeweils richtig? "

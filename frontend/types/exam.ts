@@ -1,4 +1,5 @@
 import type { ExamContentStatus } from "./examContent";
+import { DtzOralContent } from "./dtzOral";
 
 export type ExamSection =
     | "LESEVERSTEHEN"
@@ -32,7 +33,11 @@ export type ExamTaskType =
     | "WRITING_TASK_CHOICE"
     | "TOPIC_INTERVIEW"
     | "OPINION_DISCUSSION"
-    | "JOINT_PLANNING";
+    | "JOINT_PLANNING"
+    /** DTZ Mündliche Prüfung Teil 1: the fixed template with the six introductory topics. */
+    | "SELF_INTRODUCTION"
+    /** DTZ Mündliche Prüfung Teil 2: one photo with a picture description and experience questions on two levels. */
+    | "PHOTO_EXPERIENCE";
 
 /** The three Mündlicher Ausdruck task types, in Teil order. All learning content is German only. */
 export type SpeakingTaskType = "TOPIC_INTERVIEW" | "OPINION_DISCUSSION" | "JOINT_PLANNING";
@@ -200,6 +205,8 @@ export interface ExamExerciseAdminRow {
     passageCount?: number;
     /** Words in all passages together (the text length of a DTZ Lesen Teil 4 exercise). */
     wordCount?: number;
+    /** True when a passage carries an image (DTZ Mündliche Prüfung Teil 2: the photo is attached). */
+    hasImage?: boolean;
 }
 
 export interface ExamExerciseResponse {
@@ -305,6 +312,8 @@ export interface ExamExercisePublicResponse {
     examType: ExamTypeCode | null;
     /** DTZ Schreiben only: the two alternative tasks and the writing time. */
     writingChoice?: WritingChoiceContent | null;
+    /** DTZ Mündliche Prüfung only: the content of the Teil (no admin-only fields). */
+    dtzOral?: DtzOralContent | null;
 }
 
 /**

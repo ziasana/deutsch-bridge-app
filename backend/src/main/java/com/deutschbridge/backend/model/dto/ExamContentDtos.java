@@ -330,6 +330,17 @@ public final class ExamContentDtos {
     public record WritingChoiceSaveResult(String id, List<Issue> warnings) {
     }
 
+    /**
+     * DTZ Mündliche Prüfung: one exercise of Teil 1 (fixed template), Teil 2 (photo + experience questions) or Teil 3 (joint planning) in the import shape.
+     * {@code content} is the stored tree (part-specific keys, see DtzOralSchema); the image prompt is part of it for admins only.
+     */
+    public record DtzOralView(int part, String exerciseType, String languageLevel, Map<String, Object> content) {
+    }
+
+    /** Admin editor / manual creation of a DTZ Mündliche Prüfung exercise: the body is the import shape of the Teil. */
+    public record DtzOralSaveResult(String id, List<Issue> warnings) {
+    }
+
     public record ExercisePreview(
             String title,
             String instructions,
@@ -354,8 +365,18 @@ public final class ExamContentDtos {
             /** DTZ Lesen Teil 5 (letter with six gaps) only: the letter, the example gap and the answer-key details. */
             LetterView letter,
             /** DTZ Schreiben only: the two alternative tasks A and B with four content points each. */
-            WritingChoiceView writingChoice
+            WritingChoiceView writingChoice,
+            /** DTZ Mündliche Prüfung only: the content of the Teil (fixed template, photo exercise or planning task). */
+            DtzOralView dtzOral
     ) {
+        public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
+                               String readingText, List<QuestionView> questions, List<SituationView> situations,
+                               List<AdvertisementView> advertisements, ContextView context, WritingView writing, SpeakingView speaking,
+                               DirectoryView directory, TextQuestionsView textQuestions, LetterView letter, WritingChoiceView writingChoice) {
+            this(title, instructions, headings, texts, readingText, questions, situations, advertisements, context, writing, speaking, directory,
+                    textQuestions, letter, writingChoice, null);
+        }
+
         public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
                                String readingText, List<QuestionView> questions, List<SituationView> situations,
                                List<AdvertisementView> advertisements, ContextView context, WritingView writing, SpeakingView speaking,

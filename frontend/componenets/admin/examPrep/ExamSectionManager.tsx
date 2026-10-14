@@ -75,6 +75,8 @@ const TASK_TYPE_LABELS: Record<ExamTaskType, string> = {
     WORD_BANK_CLOZE: "Lückentext (Wortbank)",
     WRITING_TASK: "Schriftlicher Ausdruck",
     WRITING_TASK_CHOICE: "Schreiben: Aufgabe A oder B",
+    SELF_INTRODUCTION: "DTZ Mündlich Teil 1: Über sich sprechen",
+    PHOTO_EXPERIENCE: "DTZ Mündlich Teil 2: Über Erfahrungen sprechen",
     TOPIC_INTERVIEW: "Einander kennenlernen",
     OPINION_DISCUSSION: "Über ein Thema sprechen",
     JOINT_PLANNING: "Gemeinsam etwas planen",

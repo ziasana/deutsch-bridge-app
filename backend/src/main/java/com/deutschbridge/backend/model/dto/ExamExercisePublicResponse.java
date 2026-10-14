@@ -41,6 +41,11 @@ public record ExamExercisePublicResponse(
          * DTZ Schreiben only: the two alternative tasks A and B (situation, recipient, writing instruction, four numbered points) and the writing time.
          * Null for every other exercise. Carries no admin-only metadata.
          */
-        Map<String, Object> writingChoice
+        Map<String, Object> writingChoice,
+        /**
+         * DTZ Mündliche Prüfung only: the content of the Teil (fixed Teil 1 topics with practice support, Teil 2 photo with both question sets, Teil 3
+         * situation and planning notes). The image prompt and other admin-only fields are not part of it. Null for every other exercise.
+         */
+        Map<String, Object> dtzOral
 ) {
 }

@@ -3,17 +3,18 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, Eye, Pencil, X } from "lucide-react";
+import { Download, Eye, Pencil, Trash2, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import Button from "@/componenets/Button";
 import Loading from "@/componenets/Loading";
 import AdminTablePagination from "@/componenets/admin/table/AdminTablePagination";
 import useAuthStore from "@/store/useAuthStore";
-import { getExamExerciseForAdmin, getExamExercisesForAdmin } from "@/services/adminExamService";
+import { deleteExamExercise, getExamExerciseForAdmin, getExamExercisesForAdmin } from "@/services/adminExamService";
 import { changeExamContentStatus, downloadExamContentExport } from "@/services/adminExamContentService";
 import { ExamExerciseAdminRow, ExamExerciseResponse, ExamSection } from "@/types/exam";
 import type { SpeakingContent } from "@/types/exam";
 import { EXAM_CONTENT_STATUSES, ExamContentStatus, ExercisePreviewData, PreviewAdvertisement, PreviewSituation } from "@/types/examContent";
+import { DTZ_ORAL_PARTS, DtzOralContent } from "@/types/dtzOral";
 import ExamContentShell from "./ExamContentShell";
 import { cardClass, errorMessage, ExerciseView, fieldClass, htmlToText, labelClass, StatusBadge } from "./shared";
 
@@ -89,6 +90,17 @@ const withoutMetaLine = (text: string) => text.replace(/^(Von|Absender|Datum): [
 
 /** Matching exercises as the import format sees them (lettered headings, correct heading per text). */
 function toPreview(exercise: ExamExerciseResponse): ExercisePreviewData | null {
+    const oral = exercise.metadata?.dtzOral as DtzOralContent | undefined;
+    if (oral?.part) {
+        // DTZ Mündliche Prüfung: the stored tree is the content (the admin also sees the image prompt of Teil 2).
+        return {
+            title: exercise.title,
+            instructions: exercise.teilDescription,
+            headings: [],
+            texts: [],
+            dtzOral: { part: oral.part, exerciseType: DTZ_ORAL_PARTS.find((p) => p.part === oral.part)?.exerciseType ?? "", languageLevel: oral.languageLevel ?? null, content: oral },
+        };
+    }
     if (exercise.section === "MUENDLICHER_AUSDRUCK") {
         const stored = exercise.metadata?.speaking as SpeakingContent | undefined;
         if (!stored?.taskType) return null; // hand-made: nothing structured to preview
@@ -407,6 +419,7 @@ export default function ContentLibrary() {
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [busy, setBusy] = useState(false);
     const [previewRow, setPreviewRow] = useState<ExamExerciseAdminRow | null>(null);
+    const [deleteTargets, setDeleteTargets] = useState<ExamExerciseAdminRow[] | null>(null);
 
     const { data: rows = [], isLoading } = useQuery({
         queryKey: ["admin", "exam", "exercises", "library", applied],
@@ -441,6 +454,33 @@ export default function ContentLibrary() {
     });
 
     const refresh = () => queryClient.invalidateQueries({ queryKey: ["admin", "exam"] });
+
+    const askDelete = (ids: string[]) => {
+        const targets = rows.filter((r) => ids.includes(r.id));
+        if (targets.length > 0) setDeleteTargets(targets);
+    };
+
+    const confirmDelete = async () => {
+        const targets = deleteTargets ?? [];
+        setDeleteTargets(null);
+        setBusy(true);
+        const failed: string[] = [];
+        let reason = "";
+        for (const r of targets) {
+            try {
+                await deleteExamExercise(r.id);
+            } catch (err) {
+                failed.push(r.title);
+                reason = errorMessage(err, "The server refused it.");
+            }
+        }
+        const done = targets.length - failed.length;
+        if (done > 0) toast.success(`${done} exercise${done === 1 ? "" : "s"} deleted.`);
+        if (failed.length > 0) toast.error(`Could not delete ${failed.slice(0, 3).join(", ")}: ${reason}`);
+        setSelected(new Set());
+        setBusy(false);
+        await refresh();
+    };
 
     const moveTo = async (status: ExamContentStatus, ids: string[]) => {
         if (ids.length === 0) return;
@@ -522,6 +562,7 @@ export default function ContentLibrary() {
                             <Button key={a.status} variant="secondary" className="px-3 py-1 text-sm" disabled={busy} onClick={() => moveTo(a.status, [...selected])}>{a.label}</Button>
                         ))}
                         <Button variant="secondary" className="px-3 py-1 text-sm" disabled={busy} onClick={() => exportContent([...selected])}>Export JSON</Button>
+                        <Button variant="secondary" className="inline-flex items-center gap-1 px-3 py-1 text-sm text-red-700 dark:text-red-300" disabled={busy} onClick={() => askDelete([...selected])}><Trash2 className="size-4" />Delete</Button>
                         <button type="button" onClick={() => setSelected(new Set())} className="ml-auto text-sm underline text-blue-800 dark:text-blue-200">Clear</button>
                     </div>
                 )}
@@ -559,9 +600,20 @@ export default function ContentLibrary() {
                                         <td className="px-3 py-3">v{r.version}</td>
                                         <td className="px-3 py-3 whitespace-nowrap space-x-1.5">
                                             <Button variant="secondary" className="px-2.5 py-1 text-xs inline-flex items-center gap-1" onClick={() => setPreviewRow(r)}><Eye className="size-3.5" />Preview</Button>
-                                            {SECTION_PATHS[r.section] && (
+                                            {r.examType === "DTZ" && r.section === "MUENDLICHER_AUSDRUCK" ? (
+                                                <Link href={`/admin/exam-prep/dtz-muendlich?part=${r.partNumber ?? 1}&edit=${r.id}`} className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent"><Pencil className="size-3.5" />Edit</Link>
+                                            ) : SECTION_PATHS[r.section] && (
                                                 <Link href={r.taskType === "WRITING_TASK_CHOICE" ? `/admin/exam-prep/dtz-schreiben?edit=${r.id}` : `/admin/exam-prep/${SECTION_PATHS[r.section]}?edit=${r.id}`} className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent"><Pencil className="size-3.5" />Edit</Link>
                                             )}
+                                            <Button
+                                                variant="secondary"
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-red-700 dark:text-red-300"
+                                                disabled={busy}
+                                                aria-label={`Delete ${r.title}`}
+                                                onClick={() => askDelete([r.id])}
+                                            >
+                                                <Trash2 className="size-3.5" />Delete
+                                            </Button>
                                         </td>
                                     </tr>
                                 ))}
@@ -585,6 +637,27 @@ export default function ContentLibrary() {
                 </div>
             </div>
 
+            {deleteTargets && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="alertdialog" aria-modal="true" aria-label="Confirm delete">
+                    <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-gray-800">
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Delete {deleteTargets.length} exercise{deleteTargets.length === 1 ? "" : "s"}?</h2>
+                        <ul className="mt-3 max-h-40 list-disc overflow-y-auto pl-5 text-sm text-gray-700 dark:text-gray-200">
+                            {deleteTargets.slice(0, 8).map((r) => <li key={r.id}>{r.title}</li>)}
+                            {deleteTargets.length > 8 && <li>…and {deleteTargets.length - 8} more</li>}
+                        </ul>
+                        {deleteTargets.some((r) => r.status === "PUBLISHED") && (
+                            <p role="alert" className="mt-3 rounded-lg bg-amber-50 p-2 text-sm font-semibold text-amber-900 dark:bg-amber-900/20 dark:text-amber-200">
+                                {deleteTargets.filter((r) => r.status === "PUBLISHED").length} of these {deleteTargets.filter((r) => r.status === "PUBLISHED").length === 1 ? "is" : "are"} published and live for learners right now.
+                            </p>
+                        )}
+                        <p className="mt-3 text-sm text-red-700 dark:text-red-300">This cannot be undone. Uploaded images and all learner attempts, progress and bookmarks of these exercises are deleted too. Archive instead if you may need them again.</p>
+                        <div className="mt-5 flex justify-end gap-2">
+                            <Button variant="secondary" onClick={() => setDeleteTargets(null)}>Cancel</Button>
+                            <Button onClick={confirmDelete}>Delete permanently</Button>
+                        </div>
+                    </div>
+                </div>
+            )}
             {previewRow && <PreviewDialog row={previewRow} onClose={() => setPreviewRow(null)} onMove={(status) => { setPreviewRow(null); void moveTo(status, [previewRow.id]); }} />}
             {busy && <Loading message="Please wait..." />}
         </ExamContentShell>

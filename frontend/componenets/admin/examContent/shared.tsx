@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { SpeakingModel, SpeakingStimulus, hasSpeakingModel } from "@/componenets/exam/speaking";
 import WritingChoicePreview from "./WritingChoicePreview";
+import DtzOralPreview from "./DtzOralPreview";
 import { ExamContentStatus, ExercisePreviewData, PreviewAdvertisement, PreviewDirectory, PreviewLetter, PreviewTextQuestions } from "@/types/examContent";
 
 export const cardClass =
@@ -80,6 +81,7 @@ export function htmlToText(html: string | null | undefined): string {
  * the admin only - the answer key and which headings stay unused.
  */
 export function ExerciseView({ preview, showAnswers = true }: Readonly<{ preview: ExercisePreviewData; showAnswers?: boolean }>) {
+    if (preview.dtzOral) return <DtzOralPreview preview={preview} oral={preview.dtzOral} />;
     if (preview.writingChoice) return <WritingChoicePreview preview={preview} choice={preview.writingChoice} />;
     if (preview.letter) return <LetterExerciseView preview={preview} letter={preview.letter} />;
     if (preview.textQuestions) return <TextQuestionsExerciseView preview={preview} set={preview.textQuestions} />;

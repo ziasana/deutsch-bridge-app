@@ -72,6 +72,7 @@ export function getAdminNavItems(t: Dictionary): NavItem[] {
                 { href: "/admin/exam-prep/dtz-lesen-teil4", label: "DTZ A2–B1 · Lesen Teil 4", icon: BookOpenText },
                 { href: "/admin/exam-prep/dtz-lesen-teil5", label: "DTZ A2–B1 · Lesen Teil 5", icon: BookOpenText },
                 { href: "/admin/exam-prep/dtz-schreiben", label: "DTZ A2–B1 · Schreiben", icon: PenLine },
+                { href: "/admin/exam-prep/dtz-muendlich", label: "DTZ A2–B1 · Mündliche Prüfung", icon: Mic },
                 { href: "/admin/exam-prep/sprachbausteine", label: "Sprachbausteine", icon: Blocks },
                 { href: "/admin/exam-prep/hoerverstehen", label: "Hörverstehen", icon: Headphones },
                 { href: "/admin/exam-prep/schriftlicher-ausdruck", label: "Schriftlicher Ausdruck", icon: PenLine },

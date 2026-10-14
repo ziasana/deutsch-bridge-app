@@ -75,7 +75,15 @@ public record ExamContentSpec(
 
     /** True for Mündlicher Ausdruck (Teil 1-3): a speaking task with a part-specific structure, no gradable answers. */
     public boolean isSpeaking() {
-        return section == ExamSection.MUENDLICHER_AUSDRUCK;
+        return section == ExamSection.MUENDLICHER_AUSDRUCK && examType != ExamType.DTZ;
+    }
+
+    /**
+     * True for the DTZ Mündliche Prüfung (Teil 1 fixed self-introduction template, Teil 2 photo + experience questions, Teil 3 joint planning).
+     * Each Teil has its own structure; all three are read with {@link ExamDtzOralReader}.
+     */
+    public boolean isDtzOral() {
+        return section == ExamSection.MUENDLICHER_AUSDRUCK && examType == ExamType.DTZ;
     }
 
     /** Word bank: words that stay unused. */

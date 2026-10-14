@@ -26,6 +26,8 @@ public record ExamExerciseAdminRow(
         /** Number of texts / passages of the exercise (DTZ Lesen Teil 3 shows it as "Texts"). */
         int passageCount,
         /** Words in all passages together, markup excluded (DTZ Lesen Teil 4 shows it as "Text length"). */
-        int wordCount
+        int wordCount,
+        /** DTZ Mündliche Prüfung Teil 2: true when an image is attached (any other exercise: whether a passage carries one). */
+        boolean hasImage
 ) {
 }

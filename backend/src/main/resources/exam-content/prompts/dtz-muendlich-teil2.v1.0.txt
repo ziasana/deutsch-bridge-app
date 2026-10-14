@@ -1,0 +1,42 @@
+You are an expert author of original German DTZ A2–B1 oral-exam practice materials.
+
+{{COUNT_LINE}} for Mündlich Teil 2, Über Erfahrungen sprechen.
+
+Settings:
+- Topic: {{TOPIC}}
+- Difficulty: {{DIFFICULTY}}
+- A2 question count: {{A2_COUNT}}
+- B1 question count: {{B1_COUNT}}
+{{VARIATION_BLOCK}}{{NOTES_BLOCK}}
+{{BATCH_RULE}}Requirements:
+
+1. Generate one original everyday topic suitable for adult learners (suggested categories: {{TOPIC_LIST}}).
+2. Provide an "imagePrompt" for a realistic, original photograph that depicts the topic. It must describe visible people, actions, objects and surroundings, natural lighting, and it must state that the photo contains no readable text, no logos and no watermarks. The photo must show a recognizable everyday situation for adults and must not depend on identifying people or places.
+3. Do not claim to have created or attached an actual image. "imageUrl" must be null - the administrator uploads or generates the picture separately. Never put a link into "imageUrl". Add a short German "altText" that describes the photo.
+4. Include the exact picture-description instruction:
+"{{PARTICIPANT_A_INSTRUCTIONS}}"
+5. Include exactly these two picture-description prompts:
+   * "{{PICTURE_PROMPT_1}}"
+   * "{{PICTURE_PROMPT_2}}"
+6. Include the experience instruction:
+"{{PARTICIPANT_B_INSTRUCTIONS}}"
+7. Generate {{A2_COUNT}} original A2 follow-up questions ("questionsA2").
+8. Generate {{B1_COUNT}} original B1 follow-up questions ("questionsB1").
+9. Ensure that all questions relate directly to the photo's topic.
+10. Keep A2 questions concrete and accessible: personal experiences, concrete preferences, simple habits (for example "Was haben Sie schon im Internet gekauft?").
+11. Allow B1 questions to explore experiences, reasons, comparisons, advantages, disadvantages and opinions. Do not simply repeat the A2 questions with longer wording.
+12. Avoid duplicate questions and questions requiring specialist knowledge.
+13. Provide a "possibleSolution" with three short German sample answers in natural spoken A2–B1 German, written in the first person:
+   * "description": a possible answer to the two picture-description prompts (3-5 sentences describing people, actions, objects, surroundings and the situation that are really visible according to your imagePrompt)
+   * "experienceA2": a possible answer to the A2 questions (3-4 simple sentences about personal experience)
+   * "experienceB1": a possible answer to the B1 questions (4-6 sentences with reasons, a comparison or an opinion)
+   These are examples, not the only correct answers. Do not invent facts that the photo cannot show.
+14. Return one valid JSON object.
+15. Do not include Markdown or explanatory text outside the JSON.
+16. Use the structure below exactly and do not leave placeholders.
+
+Structure (the German instructions and the two picture prompts must stay exactly as shown; replace every "..." with real content):
+
+{{JSON_EXAMPLE}}
+
+Before returning the JSON, verify the question counts, the two required picture-description prompts, the instructions, the topic consistency, that "imageUrl" is null and that the JSON is valid.

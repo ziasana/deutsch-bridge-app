@@ -169,12 +169,18 @@ public class ExamContentValidator {
         if (instructions == null && node.get("instructions") != null && node.get("instructions").isObject()) {
             instructions = text(node.get("instructions"), "de");
         }
-        if (instructions == null) {
+        if (instructions == null && spec != null && spec.isDtzOral()) {
+            // The oral Teile carry their examiner texts in their own fields (participantA / participantB / taskInstruction); the Teil default stands in.
+            instructions = spec.defaultInstructions();
+        } else if (instructions == null) {
             issues.add(error("INSTRUCTIONS_MISSING", p + "instructions", "instructions must not be empty."));
         } else if (instructions.length() > MAX_FIELD_LENGTH) {
             issues.add(error("INSTRUCTIONS_TOO_LONG", p + "instructions", "instructions are too long."));
         }
 
+        if (spec != null && spec.isDtzOral()) {
+            return readDtzOralExercise(index, spec, node, p, externalId, title, instructions, issues);
+        }
         if (spec != null && spec.isWritingChoice()) {
             return readWritingChoiceExercise(index, spec, node, p, externalId, title, instructions, issues);
         }
@@ -478,6 +484,21 @@ public class ExamContentValidator {
         if (node.get("metadata") != null && node.get("metadata").isObject()) putStringList(node.get("metadata"), "tags", metadata);
         return new ParsedExercise(index, spec, externalId, title, instructions, List.of(), List.of(), metadata, null, List.of(),
                 List.of(), List.of(), List.of(), null, null, null, null, null, null, result.writingChoice());
+    }
+
+    // ------------------------------------------------------------------ DTZ Mündliche Prüfung (Teil 1 template, Teil 2 photo, Teil 3 planning)
+
+    private ParsedExercise readDtzOralExercise(int index, ExamContentSpec spec, JsonNode node, String p, String externalId,
+                                               String title, String instructions, List<Issue> issues) {
+        ExamDtzOralReader.Result result = new ExamDtzOralReader(p, issues).read(spec, node);
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        if (node.get("metadata") != null && node.get("metadata").isObject()) {
+            metadata = readMetadata(node.get("metadata"), p, issues);
+            putStringList(node.get("metadata"), "tags", metadata);
+        }
+        String shown = result.oral().part() == 1 && result.oral().data().get("instructions") instanceof String own ? own : instructions;
+        return new ParsedExercise(index, spec, externalId, title, shown, List.of(), List.of(), metadata, null, List.of(),
+                List.of(), List.of(), List.of(), null, null, null, null, null, null, null, result.oral());
     }
 
     // ------------------------------------------------------------------ Mündlicher Ausdruck
