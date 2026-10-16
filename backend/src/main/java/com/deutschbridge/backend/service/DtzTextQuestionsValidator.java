@@ -3,18 +3,22 @@ package com.deutschbridge.backend.service;
 import com.deutschbridge.backend.model.dto.ExamExerciseManualRequest;
 import com.deutschbridge.backend.model.entity.ExamPassage;
 import com.deutschbridge.backend.model.entity.ExamQuestion;
+import com.deutschbridge.backend.model.enums.ExamSection;
 import com.deutschbridge.backend.model.enums.ExamTaskType;
 
 import java.util.List;
 
 /**
- * Structural check for DTZ Leseverstehen Teil 3 ({@link ExamTaskType#TEXT_QUESTIONS}): every text carries exactly one
- * richtig/falsch task and one multiple-choice task, each with a usable answer key. Other task types are not checked here.
+ * Structural check for DTZ Leseverstehen Teil 3 and Hörverstehen Teil 3 ({@link ExamTaskType#TEXT_QUESTIONS}): every text (or
+ * recording) carries exactly one richtig/falsch task and one multiple-choice task, each with a usable answer key. Other task types are
+ * not checked here.
  */
 final class DtzTextQuestionsValidator {
 
     /** The DTZ paper has three texts, each with a richtig/falsch task and a multiple-choice task of three options (tasks 31-36). */
     static final int TEXT_COUNT = 3;
+    /** The DTZ listening paper has four conversations in Teil 3 (tasks 10-17). */
+    static final int RECORDING_COUNT = 4;
     static final int OPTION_COUNT = 3;
 
     private DtzTextQuestionsValidator() {
@@ -25,7 +29,11 @@ final class DtzTextQuestionsValidator {
 
         List<ExamPassage> passages = request.passages() != null ? request.passages() : List.of();
         List<ExamQuestion> questions = request.questions() != null ? request.questions() : List.of();
-        if (passages.size() != TEXT_COUNT) throw new IllegalArgumentException("Exactly " + TEXT_COUNT + " texts are required (found " + passages.size() + ").");
+        boolean listening = request.section() == ExamSection.HOERVERSTEHEN;
+        int expected = listening ? RECORDING_COUNT : TEXT_COUNT;
+        if (passages.size() != expected) {
+            throw new IllegalArgumentException("Exactly " + expected + (listening ? " recordings" : " texts") + " are required (found " + passages.size() + ").");
+        }
 
         int[] trueFalse = new int[passages.size()];
         int[] multipleChoice = new int[passages.size()];

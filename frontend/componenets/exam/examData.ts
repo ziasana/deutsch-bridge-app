@@ -1,5 +1,5 @@
 import { ExamExerciseSummaryResponse, ExamSection } from "@/types/exam";
-import { SPRACHBAUSTEINE_TASK_TYPE_LABELS, TASK_TYPE_LABELS } from "./examMeta";
+import { DTZ_HOEREN_PART_LABELS, SPRACHBAUSTEINE_TASK_TYPE_LABELS, TASK_TYPE_LABELS } from "./examMeta";
 
 const SECTION_FALLBACK_LABEL: Partial<Record<ExamSection, string>> = {
     LESEVERSTEHEN: "Leseverstehen",
@@ -93,7 +93,9 @@ export function groupIntoParts(items: ExamExerciseSummaryResponse[], section: Ex
             .sort(([a], [b]) => Number(a) - Number(b))
             .map(([key, groupItems]) => {
                 const taskType = groupItems[0]?.taskType ?? null;
-                const suffix = (taskType && TASK_TYPE_LABELS[taskType]) || sectionLabel;
+                // DTZ Hören names every Teil after what the learner listens to, not after its task type.
+                const dtzListening = section === "HOERVERSTEHEN" && groupItems[0]?.examType === "DTZ" ? DTZ_HOEREN_PART_LABELS[Number(key)] : undefined;
+                const suffix = dtzListening ?? ((taskType && TASK_TYPE_LABELS[taskType]) || sectionLabel);
                 return buildGroup(key, `Teil ${key} – ${suffix}`, `Teil ${key}`, suffix, groupItems);
             });
     }

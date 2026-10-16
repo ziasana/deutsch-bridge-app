@@ -34,6 +34,12 @@ public enum ExamTaskType {
      * catalogue ...) as the only passage and five multiple-choice situations (a, b, c) that are solved with it.
      */
     DIRECTORY_MATCHING,
+    /**
+     * DTZ Hörverstehen Teil 4 (Unterschiedliche Meinungen zu einem Thema verstehen): one recording (the passage) in which several people give
+     * their opinion, and one question per person. Each question's correctAnswer is one statement of the shared answerOptions pool, which
+     * also holds distractors; a statement is the answer of at most one person.
+     */
+    STATEMENT_MATCHING,
     /** Sprachbausteine Teil 2: one running text with numbered gaps filled from a shared word pool. */
     WORD_BANK_CLOZE,
     /** Schriftlicher Ausdruck: a writing prompt with no grading, just a revealable model solution. */

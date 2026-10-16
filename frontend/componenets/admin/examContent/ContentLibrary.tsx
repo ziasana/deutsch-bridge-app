@@ -601,9 +601,9 @@ export default function ContentLibrary() {
                                         <td className="px-3 py-3 whitespace-nowrap space-x-1.5">
                                             <Button variant="secondary" className="px-2.5 py-1 text-xs inline-flex items-center gap-1" onClick={() => setPreviewRow(r)}><Eye className="size-3.5" />Preview</Button>
                                             {r.examType === "DTZ" && r.section === "MUENDLICHER_AUSDRUCK" ? (
-                                                <Link href={`/admin/exam-prep/dtz-muendlich?part=${r.partNumber ?? 1}&edit=${r.id}`} className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent"><Pencil className="size-3.5" />Edit</Link>
+                                                <Link href={`/admin/exam-prep/muendlicher-ausdruck?exam=DTZ&part=${r.partNumber ?? 1}&edit=${r.id}`} className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent"><Pencil className="size-3.5" />Edit</Link>
                                             ) : SECTION_PATHS[r.section] && (
-                                                <Link href={r.taskType === "WRITING_TASK_CHOICE" ? `/admin/exam-prep/dtz-schreiben?edit=${r.id}` : `/admin/exam-prep/${SECTION_PATHS[r.section]}?edit=${r.id}`} className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent"><Pencil className="size-3.5" />Edit</Link>
+                                                <Link href={r.taskType === "WRITING_TASK_CHOICE" ? `/admin/exam-prep/schriftlicher-ausdruck?exam=DTZ&edit=${r.id}` : `/admin/exam-prep/${SECTION_PATHS[r.section]}?${r.examType === "DTZ" ? "exam=DTZ&" : ""}edit=${r.id}`} className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent"><Pencil className="size-3.5" />Edit</Link>
                                             )}
                                             <Button
                                                 variant="secondary"

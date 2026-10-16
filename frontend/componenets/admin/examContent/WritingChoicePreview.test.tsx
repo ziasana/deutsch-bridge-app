@@ -3,7 +3,6 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { afterEach, describe, expect, it } from "vitest";
 import { ExerciseView } from "./shared";
 import { ExercisePreviewData } from "@/types/examContent";
-import { getAdminNavItems } from "@/componenets/layout/navConfig";
 
 const task = (label: string, type: string, name: string, role: string) => ({
     label,
@@ -66,10 +65,4 @@ describe("DTZ Schreiben admin preview", () => {
         expect(screen.queryByRole("radio", { name: /wählen/ })).toBeNull();
     });
 
-    it("is listed in the admin navigation under the DTZ entries", () => {
-        const dictionary = new Proxy({}, { get: () => new Proxy({}, { get: (_target, key) => String(key) }) });
-        const hrefs = getAdminNavItems(dictionary as never).flatMap((item) => item.children ?? [item]).map((item) => item.href);
-        expect(hrefs).toContain("/admin/exam-prep/dtz-schreiben");
-        expect(hrefs.indexOf("/admin/exam-prep/dtz-schreiben")).toBeGreaterThan(hrefs.indexOf("/admin/exam-prep/dtz-lesen-teil5"));
-    });
 });

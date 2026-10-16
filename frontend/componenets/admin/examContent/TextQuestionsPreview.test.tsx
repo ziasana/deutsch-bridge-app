@@ -63,10 +63,12 @@ describe("DTZ Lesen Teil 3 preview", () => {
         expect(screen.queryByText("DE 1")).toBeNull();
     });
 
-    it("is listed in the admin navigation under the DTZ Lesen parts", () => {
+    it("reaches the DTZ exercises through the exam filter of the Telc pages, not through links of their own", () => {
         const dictionary = new Proxy({}, { get: () => new Proxy({}, { get: (_target, key) => String(key) }) });
         const hrefs = getAdminNavItems(dictionary as never).flatMap((item) => item.children ?? [item]).map((item) => item.href);
-        expect(hrefs).toContain("/admin/exam-prep/dtz-lesen-teil3");
-        expect(hrefs.indexOf("/admin/exam-prep/dtz-lesen-teil3")).toBeGreaterThan(hrefs.indexOf("/admin/exam-prep/dtz-lesen-teil2"));
+        expect(hrefs.filter((href) => href?.includes("/dtz-"))).toEqual([]);
+        for (const page of ["leseverstehen", "hoerverstehen", "schriftlicher-ausdruck", "muendlicher-ausdruck"]) {
+            expect(hrefs).toContain(`/admin/exam-prep/${page}`);
+        }
     });
 });

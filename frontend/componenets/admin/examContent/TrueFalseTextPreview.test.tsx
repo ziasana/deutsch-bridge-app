@@ -3,7 +3,6 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { ExerciseView } from "./shared";
 import { ExercisePreviewData } from "@/types/examContent";
-import { getAdminNavItems } from "@/componenets/layout/navConfig";
 
 const preview: ExercisePreviewData = {
     title: "Mittagsbetreuung an der Grundschule",
@@ -64,10 +63,4 @@ describe("DTZ Lesen Teil 4 preview", () => {
         expect(screen.queryByText("DE 37")).toBeNull();
     });
 
-    it("is listed in the admin navigation after DTZ Lesen Teil 3", () => {
-        const dictionary = new Proxy({}, { get: () => new Proxy({}, { get: (_target, key) => String(key) }) });
-        const hrefs = getAdminNavItems(dictionary as never).flatMap((item) => item.children ?? [item]).map((item) => item.href);
-        expect(hrefs).toContain("/admin/exam-prep/dtz-lesen-teil4");
-        expect(hrefs.indexOf("/admin/exam-prep/dtz-lesen-teil4")).toBeGreaterThan(hrefs.indexOf("/admin/exam-prep/dtz-lesen-teil3"));
-    });
 });

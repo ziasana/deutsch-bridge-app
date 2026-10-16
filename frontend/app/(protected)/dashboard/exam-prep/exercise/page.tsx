@@ -40,6 +40,7 @@ import LesenTextPanel from "@/componenets/exam/LesenTextPanel";
 import LesenTeil1Board from "@/componenets/exam/LesenTeil1Board";
 import LesenTextQuestionsBoard from "@/componenets/exam/LesenTextQuestionsBoard";
 import LesenDirectoryBoard from "@/componenets/exam/LesenDirectoryBoard";
+import HoerenMatchingBoard from "@/componenets/exam/HoerenMatchingBoard";
 import LesenTeil3Board, { NO_AD_ANSWER as NO_AD_ANSWER_VALUE } from "@/componenets/exam/LesenTeil3Board";
 import TranscriptModal from "@/componenets/exam/TranscriptModal";
 import TranscriptContent from "@/componenets/exam/TranscriptContent";
@@ -1151,11 +1152,16 @@ interface TextQuestionsQuizState {
     attemptId: string;
     passages: ExamPassagePublic[];
     questions: ExamQuestionPublic[];
+    answerOptions: string[];
+    answerOptionLabels: string[];
     answers: Record<string, string>;
     submitting: boolean;
 }
 
 /**
+ * DTZ Hören Teil 1-4 use the same flow with a recording instead of a text: Teil 1 and 2 (one multiple-choice task per recording), Teil 3
+ * (TEXT_QUESTIONS: richtig/falsch + multiple choice per conversation) and Teil 4 (STATEMENT_MATCHING: one discussion, three persons).
+ *
  * DTZ Lesen Teil 3 (TEXT_QUESTIONS): every text is shown with its richtig/falsch and multiple-choice task; all tasks are
  * answered on one page and submitted together, then the usual result review follows. DTZ Lesen Teil 4 (TEXT_TRUE_FALSE: one text,
  * three richtig/falsch statements) and Teil 1 (DIRECTORY_MATCHING) use the same flow with the information source next to its five situations.
@@ -1172,7 +1178,15 @@ function TextQuestionsQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublic
         startExamAttempt(exercise.id)
             .then((res) => {
                 useExamTimerStore.getState().requestStart();
-                setQuiz({ attemptId: res.data.attemptId, passages: res.data.passages, questions: res.data.questions, answers: {}, submitting: false });
+                setQuiz({
+                    attemptId: res.data.attemptId,
+                    passages: res.data.passages,
+                    questions: res.data.questions,
+                    answerOptions: res.data.answerOptions ?? [],
+                    answerOptionLabels: res.data.answerOptionLabels ?? [],
+                    answers: {},
+                    submitting: false,
+                });
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Übung konnte nicht gestartet werden."))
             .finally(() => setStarting(false));
@@ -1223,25 +1237,45 @@ function TextQuestionsQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublic
     const answeredCount = quiz.questions.filter((q) => quiz.answers[q.id]).length;
     const allAnswered = answeredCount === quiz.questions.length;
     const isDirectory = exercise.taskType === "DIRECTORY_MATCHING";
+    const isListening = exercise.section === "HOERVERSTEHEN";
+    const isOpinionMatching = exercise.taskType === "STATEMENT_MATCHING";
     const Board = isDirectory ? LesenDirectoryBoard : LesenTextQuestionsBoard;
+    const onAnswer = (questionId: string, value: string) =>
+        setQuiz((prev) => {
+            if (!prev) return prev;
+            const answers = { ...prev.answers };
+            if (value) answers[questionId] = value;
+            else delete answers[questionId];
+            return { ...prev, answers };
+        });
 
     return (
         <div className="space-y-5">
             <p className="px-1 text-sm text-foreground/65">
-                {isDirectory
+                {isListening
+                    ? isOpinionMatching
+                        ? "Höre die Diskussion und ordne jeder Person die passende Aussage zu. Nicht alle Aussagen passen. Klicke danach auf \"Antworten abgeben\"."
+                        : "Höre jeden Text und löse die Aufgabe(n) dazu. Klicke danach auf \"Antworten abgeben\"."
+                    : isDirectory
                     ? "Lies die Aufgaben und den Wegweiser. Wähle bei jeder Aufgabe die passende Lösung. Klicke danach auf \"Antworten abgeben\"."
                     : exercise.taskType === "TEXT_TRUE_FALSE"
                     ? "Lies den Text und entscheide bei jeder Aussage, ob sie richtig oder falsch ist. Klicke danach auf \"Antworten abgeben\"."
                     : "Lies jeden Text und löse die beiden Aufgaben dazu. Klicke danach auf \"Antworten abgeben\"."}
             </p>
             <HighlightArea>
-                            <Board
-                passages={quiz.passages}
-                questions={quiz.questions}
-                answers={quiz.answers}
-                disabled={quiz.submitting}
-                onAnswer={(questionId, value) => setQuiz((prev) => (prev ? { ...prev, answers: { ...prev.answers, [questionId]: value } } : prev))}
-            />
+                {isOpinionMatching ? (
+                    <HoerenMatchingBoard
+                        passages={quiz.passages}
+                        questions={quiz.questions}
+                        answerOptions={quiz.answerOptions}
+                        answerOptionLabels={quiz.answerOptionLabels}
+                        answers={quiz.answers}
+                        disabled={quiz.submitting}
+                        onAnswer={onAnswer}
+                    />
+                ) : (
+                    <Board passages={quiz.passages} questions={quiz.questions} answers={quiz.answers} disabled={quiz.submitting} onAnswer={onAnswer} />
+                )}
             </HighlightArea>
             <div className="flex items-center justify-end gap-4 pt-2">
                 <span className="text-xs text-foreground/55">
@@ -1521,7 +1555,7 @@ function ExamExerciseContent() {
                 )}
 
                 {exercise.section === "HOERVERSTEHEN" ? (
-                    <HoerenListQuiz exercise={exercise} />
+                    exercise.examType === "DTZ" ? <TextQuestionsQuiz exercise={exercise} /> : <HoerenListQuiz exercise={exercise} />
                 ) : exercise.section === "SCHRIFTLICHER_AUSDRUCK" ? (
                     <SchriftlicherAusdruckView exercise={exercise} />
                 ) : exercise.section === "MUENDLICHER_AUSDRUCK" ? (

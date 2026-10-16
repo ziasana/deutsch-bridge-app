@@ -59,15 +59,15 @@ export function removeTextTasks(questions: ExamQuestion[], textIndex: number): E
 export const taskNumber = (firstNumber: number, textIndex: number, kind: TextTaskKind): number =>
     firstNumber + textIndex * TEXT_TASK_KINDS.length + TEXT_TASK_KINDS.indexOf(kind);
 
-const hasContent = (p: ExamPassage) => p.content.replace(/<[^>]*>/g, "").trim().length > 0 || /<img[\s>]/i.test(p.content) || Boolean(p.imageUrl);
+const hasContent = (p: ExamPassage) => p.content.replace(/<[^>]*>/g, "").trim().length > 0 || /<img[\s>]/i.test(p.content) || Boolean(p.imageUrl) || Boolean(p.audioUrl);
 
 /**
  * Checks that there are exactly three texts with content and the tasks of each, and returns the first problem (in English, like the rest of the admin
  * UI), or null when the exercise can be saved.
  */
-export function validateTextQuestions(passages: ExamPassage[], questions: ExamQuestion[]): string | null {
+export function validateTextQuestions(passages: ExamPassage[], questions: ExamQuestion[], textCount: number = TEXT_COUNT, noun = "texts"): string | null {
     const texts = passages.map((p, index) => ({ p, index })).filter(({ p }) => hasContent(p));
-    if (texts.length !== TEXT_COUNT) return `Exactly ${TEXT_COUNT} texts are required (found ${texts.length}).`;
+    if (texts.length !== textCount) return `Exactly ${textCount} ${noun} are required (found ${texts.length}).`;
     for (const { p, index } of texts) {
         const name = p.label.trim() || `Text ${index + 1}`;
         const trueFalse = findTextTask(questions, index, "TRUE_FALSE");

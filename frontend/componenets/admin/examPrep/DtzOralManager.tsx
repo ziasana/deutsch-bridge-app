@@ -57,7 +57,16 @@ export default function DtzOralManager() {
                     </button>
                 ))}
             </div>
-            <DtzOralPartPanel key={part} part={part} initialEditId={editId} onEditHandled={() => setEditId(null)} />
+            <DtzOralPartPanel
+                key={part}
+                part={part}
+                initialEditId={editId}
+                onEditHandled={() => setEditId(null)}
+                onEditOtherPart={(other, id) => {
+                    setEditId(id);
+                    choose(other);
+                }}
+            />
         </ExamContentShell>
     );
 }

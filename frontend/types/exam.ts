@@ -27,6 +27,8 @@ export type ExamTaskType =
     | "LETTER_GAP_FILL"
     /** DTZ Lesen Teil 1: one information source (Wegweiser, Verzeichnis, Katalog ...) and five a/b/c situations. */
     | "DIRECTORY_MATCHING"
+    /** DTZ Hören Teil 4: one recording with three persons; each person is matched to one statement of a shared pool (with distractors). */
+    | "STATEMENT_MATCHING"
     | "WORD_BANK_CLOZE"
     | "WRITING_TASK"
     /** DTZ Schreiben: two alternative letter / email tasks (Aufgabe A and B) with four content points each; the learner writes one. */

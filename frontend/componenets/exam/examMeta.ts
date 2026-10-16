@@ -69,6 +69,7 @@ export const TASK_TYPE_LABELS: Record<ExamTaskType, string> = {
     TEXT_TRUE_FALSE: "Informationstext mit Aussagen (richtig/falsch)",
     LETTER_GAP_FILL: "Brief oder E-Mail mit Lücken (a, b, c)",
     DIRECTORY_MATCHING: "Kataloge, Register, Verzeichnisse verstehen",
+    STATEMENT_MATCHING: "Zuordnungsaufgaben",
     WORD_BANK_CLOZE: "Lückentext (Wortbank)",
     WRITING_TASK: "Schriftlicher Ausdruck",
     WRITING_TASK_CHOICE: "Schreiben: Aufgabe A oder B",
@@ -82,6 +83,14 @@ export const TASK_TYPE_LABELS: Record<ExamTaskType, string> = {
 export const SPRACHBAUSTEINE_TASK_TYPE_LABELS: Partial<Record<ExamTaskType, string>> = {
     MULTIPLE_CHOICE: "Sprachbausteine Teil 1",
     WORD_BANK_CLOZE: "Sprachbausteine Teil 2",
+};
+
+/** The four DTZ Hörverstehen Teile as the learner sees them (tasks 1-20). */
+export const DTZ_HOEREN_PART_LABELS: Record<number, string> = {
+    1: "Ansagen am Telefon und Durchsagen verstehen",
+    2: "Kurze Informationen in den Medien verstehen",
+    3: "Alltägliche Gespräche verstehen",
+    4: "Unterschiedliche Meinungen zu einem Thema verstehen",
 };
 
 export interface ExamTypeInfo {

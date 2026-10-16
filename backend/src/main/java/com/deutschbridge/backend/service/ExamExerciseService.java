@@ -269,6 +269,7 @@ public class ExamExerciseService {
         DtzLetterGapValidator.validate(request);
         DtzDirectoryValidator.validate(request);
         DtzAdMatchingValidator.validate(request);
+        DtzHoerenValidator.validate(request);
         ExamExercise exercise = new ExamExercise();
         applyRequest(exercise, request);
         exercise.setCreatedBy(requestContext.getUserId());
@@ -289,6 +290,7 @@ public class ExamExerciseService {
         DtzLetterGapValidator.validate(request);
         DtzDirectoryValidator.validate(request);
         DtzAdMatchingValidator.validate(request);
+        DtzHoerenValidator.validate(request);
         Set<String> previousUploadUrls = collectUploadUrls(existing);
         applyRequest(existing, request);
         existing.setVersion(existing.getVersion() + 1);

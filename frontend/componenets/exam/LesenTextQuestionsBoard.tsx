@@ -1,5 +1,7 @@
 "use client";
 
+import { Headphones } from "lucide-react";
+import AudioPlayer from "@/componenets/AudioPlayer";
 import LessonMarkdown from "@/componenets/LessonMarkdown";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
 import { formatTextHeadings } from "@/lib/textHeadings";
@@ -34,7 +36,7 @@ export const badgeClass = (selected: boolean) =>
     );
 
 /**
- * DTZ Lesen Teil 3: each text is followed by its two tasks - a richtig/falsch statement and a multiple-choice question
+ * DTZ Lesen Teil 3 and DTZ Hören Teil 1-3: each text (or recording - a passage with audio gets a player) is followed by its two tasks - a richtig/falsch statement and a multiple-choice question
  * with the options a, b, c. Everything is answered on one page (like the paper test) and submitted together.
  */
 export default function LesenTextQuestionsBoard({ passages, questions, answers, disabled, onAnswer }: Readonly<Props>) {
@@ -96,13 +98,15 @@ export default function LesenTextQuestionsBoard({ passages, questions, answers, 
             {passages.map((passage, index) => {
                 const color = readingColorAt(index);
                 const imageSrc = resolveUploadUrl(passage.imageUrl);
+                const audioSrc = resolveUploadUrl(passage.audioUrl);
                 return (
                     <section key={passage.id} aria-label={passage.label} className={cn("overflow-hidden rounded-[10px] border bg-card shadow-card", color.border)}>
                         <header className={cn("flex items-center gap-2 px-5 py-3 text-sm font-bold", color.soft, color.text)}>
-                            <span aria-hidden="true" className={cn("size-2.5 rounded-full", color.solid)} />
+                            {audioSrc ? <Headphones aria-hidden="true" className="size-4" /> : <span aria-hidden="true" className={cn("size-2.5 rounded-full", color.solid)} />}
                             {passage.label}
                         </header>
                         <div className="space-y-5 p-5 sm:p-6">
+                            {audioSrc && <AudioPlayer key={audioSrc} src={audioSrc} />}
                             {imageSrc && <img src={imageSrc} alt="" className="max-w-full rounded-lg" />}
                             {passage.content && <LessonMarkdown
                                     content={formatHeadings ? formatTextHeadings(passage.content) : passage.content}

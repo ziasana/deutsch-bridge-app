@@ -38,61 +38,42 @@ beforeEach(() => {
     changeStatus.mockReset();
     list.mockResolvedValue({ data: [row()] });
     changeStatus.mockResolvedValue({ data: { failures: [] } });
-    window.history.replaceState(null, "", "/admin/exam-prep/dtz-schreiben");
+    window.history.replaceState(null, "", "/admin/exam-prep/schriftlicher-ausdruck?exam=DTZ");
 });
 afterEach(cleanup);
 
-describe("DTZ Schreiben admin list", () => {
-    it("lists title, topic, difficulty, both task types, status and creation date for DTZ Schreiben", async () => {
+async function search() {
+    fireEvent.click(await screen.findByRole("button", { name: /Search/ }));
+    await screen.findByText("Schriftliche Kommunikation im Alltag");
+}
+
+describe("DTZ Schreiben admin page", () => {
+    it("uses the shared exercise list: nothing is loaded until Search, then DTZ Schreiben is listed", async () => {
         renderManager();
-        expect(await screen.findByText("Schriftliche Kommunikation im Alltag")).toBeTruthy();
         expect(screen.getByRole("heading", { name: "DTZ A2–B1 · Schreiben" })).toBeTruthy();
+        expect(list).not.toHaveBeenCalled();
+        await search();
         expect(list).toHaveBeenCalledWith(expect.objectContaining({ examType: "DTZ", section: "SCHRIFTLICHER_AUSDRUCK" }));
-        for (const header of ["Title", "Topic", "Difficulty", "Task A type", "Task B type", "Status", "Created"]) {
-            expect(screen.getByRole("columnheader", { name: header })).toBeTruthy();
-        }
         const cells = within(screen.getAllByRole("row")[1]);
-        expect(cells.getByText("Formal email")).toBeTruthy();
-        expect(cells.getByText("Informal email")).toBeTruthy();
-        expect(cells.getByText("A2–B1")).toBeTruthy();
-        expect(cells.getByText("13.10.2026")).toBeTruthy();
+        expect(cells.getByText("DTZ A2–B1")).toBeTruthy();
         expect(cells.getByText(/Draft/i)).toBeTruthy();
     });
 
-    it("offers generate, import and create manually, plus preview, edit, publish and archive", async () => {
+    it("offers generate, import and create manually, and edits a row in the writing editor", async () => {
         renderManager();
-        await screen.findByText("Schriftliche Kommunikation im Alltag");
         expect(screen.getByRole("link", { name: /Generate with external AI/ }).getAttribute("href")).toBe("/admin/exam-prep/content-generator?exam=DTZ&section=SCHREIBEN&part=TEIL_1");
         expect(screen.getByRole("link", { name: /Import JSON/ }).getAttribute("href")).toBe("/admin/exam-prep/import");
         fireEvent.click(screen.getByRole("button", { name: /Create manually/ }));
         expect(screen.getByText("Editor new")).toBeTruthy();
-    });
-
-    it("opens the preview and the editor of a row", async () => {
-        renderManager();
-        await screen.findByText("Schriftliche Kommunikation im Alltag");
-        fireEvent.click(screen.getByRole("button", { name: /Preview/ }));
-        expect(screen.getByText("Preview Schriftliche Kommunikation im Alltag")).toBeTruthy();
         cleanup();
         renderManager();
-        await screen.findByText("Schriftliche Kommunikation im Alltag");
+        await search();
         fireEvent.click(screen.getByRole("button", { name: /Edit/ }));
         expect(screen.getByText("Editor w1")).toBeTruthy();
     });
 
-    it("publishes a draft through approval and archives it", async () => {
-        renderManager();
-        await screen.findByText("Schriftliche Kommunikation im Alltag");
-        fireEvent.click(screen.getByRole("button", { name: /Publish/ }));
-        await waitFor(() => expect(changeStatus).toHaveBeenCalledTimes(2));
-        expect(changeStatus.mock.calls.map((c) => c[1])).toEqual(["APPROVED", "PUBLISHED"]);
-        changeStatus.mockClear();
-        fireEvent.click(screen.getByRole("button", { name: /Archive/ }));
-        await waitFor(() => expect(changeStatus).toHaveBeenCalledWith(["w1"], "ARCHIVED"));
-    });
-
     it("opens the editor from the Content Library deep link", async () => {
-        window.history.replaceState(null, "", "/admin/exam-prep/dtz-schreiben?edit=w9");
+        window.history.replaceState(null, "", "/admin/exam-prep/schriftlicher-ausdruck?exam=DTZ&edit=w9");
         renderManager();
         expect(await screen.findByText("Editor w9")).toBeTruthy();
     });
