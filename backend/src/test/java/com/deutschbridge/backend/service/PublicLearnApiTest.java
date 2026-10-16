@@ -36,6 +36,7 @@ class PublicLearnApiTest {
     @Autowired private ObjectMapper json;
     @Autowired private GrammarCategoryRepository categoryRepository;
     @Autowired private GrammarLessonRepository lessonRepository;
+    @Autowired private org.springframework.cache.CacheManager cacheManager;
 
     private GrammarCategory category;
     private GrammarLesson free;
@@ -79,6 +80,8 @@ class PublicLearnApiTest {
         category = categoryRepository.save(category);
         free = lesson("First lesson", 0);
         locked = lesson("Second lesson", 1);
+        // Other tests in this class read the level first, which caches it without this category.
+        cacheManager.getCacheNames().forEach(n -> java.util.Objects.requireNonNull(cacheManager.getCache(n)).clear());
 
         JsonNode view = body("/api/public/learn/grammar?level=A2");
         JsonNode lessons = null;
