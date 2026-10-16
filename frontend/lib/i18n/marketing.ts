@@ -465,7 +465,7 @@ const en = {
     learnPage: {
         badge: "Try it free",
         title: "Try the real lessons before you sign up",
-        subtitle: "Browse the same levels and topics you get in your dashboard. The first item of every topic is free to open in full, with its exercises. The rest is one free account away.",
+        subtitle: "Browse the same levels and topics you get in your dashboard. Grammar opens with the first lesson of every topic; Redemittel, expressions and reading open with the first two of every level. Everything free comes in full, with its exercises. The rest is one free account away.",
         backToHub: "Back to the free preview",
         kinds: {
             grammar: { title: "Grammar lessons", text: "Pick a level and a topic, read the lesson and test yourself with its exercises." },
@@ -506,7 +506,7 @@ const en = {
         },
         redemittel: {
             heroTitle: "Redemittel",
-            heroSubtitle: "Phrases for speaking and writing. The first phrase of every function is open.",
+            heroSubtitle: "Phrases for speaking and writing. The first two phrases of every level are open, with all their exercises.",
             search: "Level",
             all: "All",
             functionLabel: "Function",
@@ -516,13 +516,13 @@ const en = {
         },
         expressions: {
             heroTitle: "Expressions",
-            heroSubtitle: "Idioms and noun-verb phrases. The first two of every collection are open.",
+            heroSubtitle: "Idioms and noun-verb phrases. The first two of every collection and level are open, with all their practice questions.",
             collections: { NOMEN_VERB_VERBINDUNG: "Noun-verb phrases", REDEWENDUNG: "Idioms" },
             openCta: "Open expression",
         },
         reading: {
             heroTitle: "Reading",
-            heroSubtitle: "Articles at your level. The first article of every topic is open.",
+            heroSubtitle: "Articles at your level. The first two articles of every level are open.",
             topic: "Topic",
             allTopics: "All topics",
             openCta: "Read article",
@@ -1066,7 +1066,7 @@ const fa: Marketing = {
     learnPage: {
         badge: "رایگان امتحان کنید",
         title: "پیش از ثبت‌نام، درس‌های واقعی را امتحان کنید",
-        subtitle: "همان سطح‌ها و موضوع‌هایی را ببینید که در داشبورد خود دارید. اولین مورد هر موضوع کامل و همراه با تمرین‌هایش رایگان باز است. بقیه با یک حساب رایگان باز می‌شود.",
+        subtitle: "همان سطح‌ها و موضوع‌هایی را ببینید که در داشبورد خود دارید. درس‌های گرامر با اولین درس هر موضوع باز می‌شوند؛ عبارت‌ها، اصطلاح‌ها و مقاله‌ها با دو مورد اول هر سطح، کامل و همراه با تمرین‌هایشان. بقیه با یک حساب رایگان باز می‌شود.",
         backToHub: "بازگشت به پیش‌نمایش رایگان",
         kinds: {
             grammar: { title: "درس‌های گرامر", text: "سطح و موضوع را انتخاب کنید، درس را بخوانید و با تمرین‌های آن خودتان را بسنجید." },
@@ -1107,7 +1107,7 @@ const fa: Marketing = {
         },
         redemittel: {
             heroTitle: "Redemittel",
-            heroSubtitle: "عبارت‌هایی برای صحبت و نوشتن. اولین عبارت هر کارکرد باز است.",
+            heroSubtitle: "عبارت‌هایی برای صحبت و نوشتن. دو عبارت اول هر سطح همراه با همه تمرین‌هایشان باز است.",
             search: "سطح",
             all: "همه",
             functionLabel: "کارکرد",
@@ -1117,13 +1117,13 @@ const fa: Marketing = {
         },
         expressions: {
             heroTitle: "اصطلاح‌ها",
-            heroSubtitle: "اصطلاح‌ها و ترکیب‌های اسم و فعل. دو مورد اول هر مجموعه باز است.",
+            heroSubtitle: "اصطلاح‌ها و ترکیب‌های اسم و فعل. دو مورد اول هر مجموعه و سطح همراه با همه سؤال‌های تمرینی باز است.",
             collections: { NOMEN_VERB_VERBINDUNG: "ترکیب‌های اسم و فعل", REDEWENDUNG: "اصطلاح‌ها" },
             openCta: "باز کردن اصطلاح",
         },
         reading: {
             heroTitle: "خواندن",
-            heroSubtitle: "مقاله‌هایی در سطح شما. اولین مقاله هر موضوع باز است.",
+            heroSubtitle: "مقاله‌هایی در سطح شما. دو مقاله اول هر سطح باز است.",
             topic: "موضوع",
             allTopics: "همه موضوع‌ها",
             openCta: "خواندن مقاله",

@@ -9,6 +9,7 @@ import { getPublicExpression } from "@/services/publicLearnService";
 import type { ExpressionType } from "@/types/expression";
 import { useMarketing } from "../useMarketing";
 import DetailModal from "./DetailModal";
+import PublicExpressionPractice from "./PublicExpressionPractice";
 
 const sectionTitle = "text-xs font-semibold uppercase tracking-wide text-primary";
 
@@ -120,6 +121,8 @@ export default function PublicExpressionDialog({ id, title, onClose }: Readonly<
                             </section>
                         )}
                     </div>
+
+                    <PublicExpressionPractice id={id} />
 
                     <footer className="flex flex-wrap items-center gap-3 border-t border-border/60 bg-foreground/[0.02] px-5 py-4 sm:px-8">
                         <Link href="/signup" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90">

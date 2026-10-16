@@ -1,5 +1,11 @@
 import api from "./api";
+import type { RedemittelAnswer, RedemittelExercise } from "@/types/redemittel";
 import type {
+    PublicExpressionPractice,
+    PublicProductionResult,
+    PublicTransformationResult,
+    PublicQuestionResult,
+    PublicRecallResult,
     PublicArticleFull,
     PublicArticlePage,
     PublicExpressionFull,
@@ -29,3 +35,20 @@ export const getPublicExpression = (id: string) => api.get<PublicExpressionFull>
 export const getPublicReading = (params: { level: string; category?: string; page: number; size: number }) =>
     api.get<PublicArticlePage>(`${base}/reading`, { params });
 export const getPublicArticle = (id: string) => api.get<PublicArticleFull>(`${base}/reading/${id}`);
+
+/** Practice of the free items. Answers are graded on the server and nothing is stored. */
+export const getPublicRedemittelExercises = (id: string) => api.get<RedemittelExercise[]>(`${base}/redemittel/${id}/exercises`);
+export const answerPublicRedemittel = (id: string, exerciseId: string, answer: string) =>
+    api.post<RedemittelAnswer>(`${base}/redemittel/${id}/answer`, { exerciseId, answer });
+
+export const getPublicExpressionPractice = (id: string) => api.get<PublicExpressionPractice>(`${base}/expressions/${id}/practice`);
+export const answerPublicExpressionRecall = (id: string, answer: string) =>
+    api.post<PublicRecallResult>(`${base}/expressions/${id}/practice/recall`, { answer });
+export const answerPublicExpressionQuestion = (id: string, questionId: string, optionId: string) =>
+    api.post<PublicQuestionResult>(`${base}/expressions/${id}/practice/question`, { questionId, optionId });
+
+/** Graded by the AI teacher; a visitor gets a few checks per hour, then the call answers 429. */
+export const answerPublicExpressionProduction = (id: string, sentence: string) =>
+    api.post<PublicProductionResult>(`${base}/expressions/${id}/practice/production`, { sentence });
+export const answerPublicExpressionTransformation = (id: string, questionId: string, sentence: string) =>
+    api.post<PublicTransformationResult>(`${base}/expressions/${id}/practice/transformation`, { questionId, sentence });

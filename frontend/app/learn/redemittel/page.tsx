@@ -15,6 +15,7 @@ import { REDEMITTEL_ACCENT } from "@/componenets/redemittel/redemittelMeta";
 import DetailModal from "@/componenets/marketing/learn/DetailModal";
 import SampleNotice from "@/componenets/marketing/learn/SampleNotice";
 import PublicPager from "@/componenets/marketing/learn/PublicPager";
+import PublicRedemittelPractice from "@/componenets/marketing/learn/PublicRedemittelPractice";
 import UnlockBanner from "@/componenets/marketing/learn/UnlockBanner";
 import { useUnlockPrompt } from "@/componenets/marketing/learn/UnlockPrompt";
 import { useMarketing } from "@/componenets/marketing/useMarketing";
@@ -149,6 +150,7 @@ export default function PublicRedemittelPage() {
                             {l.unlock.cta}
                         </Link>
                     </RedemittelDetailCard>
+                    <PublicRedemittelPractice id={opened.id} />
                 </DetailModal>
             )}
             {dialog}

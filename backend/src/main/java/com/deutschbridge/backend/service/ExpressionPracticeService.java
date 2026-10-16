@@ -387,14 +387,14 @@ public class ExpressionPracticeService {
         );
     }
 
-    private String maskExpression(String sentence, String expression) {
+    static String maskExpression(String sentence, String expression) {
         if (sentence == null || expression == null) return null;
         Pattern pattern = Pattern.compile(Pattern.quote(expression), Pattern.CASE_INSENSITIVE);
         if (!pattern.matcher(sentence).find()) return null;
         return pattern.matcher(sentence).replaceFirst("______");
     }
 
-    private String normalizeForComparison(String text) {
+    static String normalizeForComparison(String text) {
         if (text == null) return "";
         String cleaned = text.toLowerCase().replaceAll("[^\\p{L}\\p{N}\\s]", " ");
         List<String> tokens = new ArrayList<>();
@@ -406,7 +406,7 @@ public class ExpressionPracticeService {
         return String.join(" ", tokens);
     }
 
-    private Map<String, String> parseAiResponse(String raw) {
+    static Map<String, String> parseAiResponse(String raw) {
         Map<String, String> result = new HashMap<>();
         if (raw == null) return result;
         for (String line : raw.split("\n")) {
@@ -419,7 +419,7 @@ public class ExpressionPracticeService {
         return result;
     }
 
-    private boolean parseBool(String value) {
+    static boolean parseBool(String value) {
         return value != null && value.strip().equalsIgnoreCase("true");
     }
 

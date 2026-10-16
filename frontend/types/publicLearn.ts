@@ -174,3 +174,46 @@ export interface PublicArticleFull {
     keyVocabulary: { word: string; meaning: string }[];
     quiz: PublicQuizQuestion[];
 }
+
+export interface PublicExpressionPracticeQuestion {
+    id: string;
+    type: string;
+    format: string | null;
+    prompt: string;
+    options: { id: string; text: string }[];
+}
+
+/** The practice of a free expression: type it from memory, then the multiple-choice questions. */
+export interface PublicExpressionPractice {
+    expressionId: string;
+    expression: string;
+    maskedSentence: string | null;
+    questions: PublicExpressionPracticeQuestion[];
+}
+
+export interface PublicRecallResult {
+    correct: boolean;
+    expression: string;
+}
+
+export interface PublicQuestionResult {
+    correct: boolean;
+    correctOptionId: string | null;
+    explanation: string | null;
+}
+
+export interface PublicProductionResult {
+    usedCorrectly: boolean;
+    grammarCorrect: boolean;
+    natural: boolean;
+    feedback: string;
+    c1Suggestion: string | null;
+}
+
+export interface PublicTransformationResult {
+    usedExpression: boolean;
+    grammarCorrect: boolean;
+    meaningPreserved: boolean;
+    feedback: string;
+    c1Suggestion: string | null;
+}

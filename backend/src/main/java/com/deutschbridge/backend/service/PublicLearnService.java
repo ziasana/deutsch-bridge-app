@@ -1,10 +1,16 @@
 package com.deutschbridge.backend.service;
 
 import com.deutschbridge.backend.context.LanguageContext;
+import com.deutschbridge.backend.model.dto.PracticeQuestionDto;
+import com.deutschbridge.backend.model.dto.PracticeQuestionOptionDto;
 import com.deutschbridge.backend.model.dto.PublicLearnDtos.*;
+import com.deutschbridge.backend.model.dto.RedemittelAnswerRequest;
+import com.deutschbridge.backend.model.dto.RedemittelAnswerResponse;
+import com.deutschbridge.backend.model.dto.RedemittelExerciseDto;
 import com.deutschbridge.backend.model.entity.*;
 import com.deutschbridge.backend.model.enums.ExpressionType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
+import com.deutschbridge.backend.model.enums.RedemittelExerciseType;
 import com.deutschbridge.backend.repository.WritingPhraseRepository;
 import com.deutschbridge.backend.service.cache.ContentCacheService;
 import com.deutschbridge.backend.service.cache.RedemittelCacheService;
@@ -16,34 +22,48 @@ import java.util.*;
 
 /**
  * The public "try it free" learning area. It reads the same shared, cached content the learner dashboard lists, and decides
- * what a visitor may open: the first item of every category (the first two expressions of a collection) is free and served in
- * full; everything else is listed by title only. Nothing here is per user, so it is safe without a login.
+ * what a visitor may open: the first lesson of every grammar category and the first two Redemittel, expressions (per collection)
+ * and reading articles of every level are free and served in full, with their exercises and practice questions; everything else
+ * is listed by title only. Nothing here is per user, so it is safe without a login.
  */
 @Service
 public class PublicLearnService {
 
     static final int FREE_PER_CATEGORY = 1;
     static final int FREE_EXPRESSIONS = 2;
+    /** Redemittel and reading articles: this many per level are free, whatever their topic. */
+    static final int FREE_PER_LEVEL = 2;
     /** The most entries one level and topic lists on the public pages; the free ones are always among them. */
     static final int SAMPLE_PER_GROUP = 40;
     private static final int ALL = 1000;
+    /** AI checks (own sentence, free-text questions) one visitor address may run per hour, and all visitors together. */
+    static final int AI_CHECKS_PER_HOUR = 8;
+    static final int AI_CHECKS_PER_HOUR_TOTAL = 300;
+    static final int MAX_SENTENCE = 300;
+    private static final long HOUR_MS = 60 * 60 * 1000L;
     private static final long TTL_MS = 10 * 60 * 1000L;
 
     private final ContentCacheService content;
     private final RedemittelCacheService redemittelCache;
     private final WritingPhraseRepository phraseRepository;
     private final Clock clock;
+    private final RedemittelExerciseFactory exerciseFactory = new RedemittelExerciseFactory(new Random());
+    private final Random random = new Random();
+    private final OllamaService ollama;
+    private final Map<String, Deque<Long>> aiChecks = new HashMap<>();
+    private final Deque<Long> aiChecksTotal = new ArrayDeque<>();
 
     private Overview overview;
     private long overviewAt;
     private PhraseSnapshot phrases;
     private long phrasesAt;
 
-    public PublicLearnService(ContentCacheService content, RedemittelCacheService redemittelCache, WritingPhraseRepository phraseRepository, Clock clock) {
+    public PublicLearnService(ContentCacheService content, RedemittelCacheService redemittelCache, WritingPhraseRepository phraseRepository, Clock clock, OllamaService ollama) {
         this.content = content;
         this.redemittelCache = redemittelCache;
         this.phraseRepository = phraseRepository;
         this.clock = clock;
+        this.ollama = ollama;
     }
 
     /** The ids that stay free in each group: the first {@code free} entries, in the order the list shows them. */
@@ -163,7 +183,7 @@ public class PublicLearnService {
             all.sort(Comparator.comparing(WritingPhrase::getLevel).thenComparingInt((WritingPhrase p) -> p.getCategory() == null ? 0 : p.getCategory().getSortOrder())
                     .thenComparingInt(WritingPhrase::getSortOrder));
             java.util.function.Function<WritingPhrase, Object> bucket = p -> p.getLevel() + "|" + (p.getCategory() == null ? "" : p.getCategory().getId());
-            Set<String> free = firstPerGroup(all, bucket, WritingPhrase::getId, FREE_PER_CATEGORY);
+            Set<String> free = firstPerGroup(all, WritingPhrase::getLevel, WritingPhrase::getId, FREE_PER_LEVEL);
             Set<String> sample = firstPerGroup(all, bucket, WritingPhrase::getId, SAMPLE_PER_GROUP);
             Map<String, String> freeLevelById = new LinkedHashMap<>();
             for (WritingPhrase p : all) if (free.contains(p.getId())) freeLevelById.put(p.getId(), p.getLevel().getValue());
@@ -216,10 +236,9 @@ public class PublicLearnService {
 
     @Transactional(readOnly = true)
     public Optional<ExpressionFull> expression(String id) {
-        Optional<Expression> found = content.getExpressionDetail(id);
+        Optional<Expression> found = freeExpression(id);
         if (found.isEmpty()) return Optional.empty();
         Expression e = found.get();
-        if (e.getStatus() != com.deutschbridge.backend.model.enums.ExpressionStatus.PUBLISHED || !freeExpressions(e.getType(), e.getLevel()).contains(id)) return Optional.empty();
         return Optional.of(new ExpressionFull(e.getId(), e.getType() == null ? null : e.getType().name(), e.getLevel() == null ? null : e.getLevel().getValue(), e.getExpression(),
                 e.getMeaningDe(), e.getMeaningEn(), e.getMeaningFa(), e.getLiteralMeaning(), e.getFigurativeMeaning(), e.getGrammarNote(), e.getUsageNote(),
                 e.getRegister() == null ? null : e.getRegister().name(), e.getCommonMistakes(), e.getImageUrl(),
@@ -230,7 +249,7 @@ public class PublicLearnService {
     // ---------------------------------------------------------------- reading
 
     private static Set<String> readingFree(List<ContentCacheService.ReadingArticleListEntry> level) {
-        return firstPerGroup(level, a -> a.categoryId() == null ? "" : a.categoryId(), ContentCacheService.ReadingArticleListEntry::id, FREE_PER_CATEGORY);
+        return firstPerGroup(level, a -> a.level(), ContentCacheService.ReadingArticleListEntry::id, FREE_PER_LEVEL);
     }
 
     public ArticlePage reading(LearningLevel level, String categoryId, int page, int size) {
@@ -283,5 +302,156 @@ public class PublicLearnService {
         notes.sort(Comparator.comparingInt(Note::start));
         return Optional.of(new ArticleFull(a.getId(), a.getTitle(), a.getLevel().getValue(), a.getCategory() == null ? null : a.getCategory().getTitle(), a.getImageUrl(),
                 a.getContent(), notes, a.getKeyVocabulary() == null ? List.of() : a.getKeyVocabulary(), a.getQuiz() == null ? List.of() : a.getQuiz()));
+    }
+
+    // ---------------------------------------------------------------- practice of the free items
+
+    /**
+     * Every exercise of a free Redemittel - the ones an admin wrote plus the ones derived from it - from recognition to production.
+     * Empty when the Redemittel is not one of the free ones. Nothing is stored: a visitor has no progress.
+     */
+    public Optional<List<RedemittelExerciseDto>> redemittelExercises(String id) {
+        Optional<WritingPhrase> phrase = freePhrase(id);
+        if (phrase.isEmpty()) return Optional.empty();
+        WritingPhrase p = phrase.get();
+        List<RedemittelExerciseDto> out = new ArrayList<>();
+        for (RedemittelExercise ex : redemittelCache.getExercises(id)) {
+            if (!ex.getType().isDerived()) out.add(exerciseFactory.toDto(ex, p));
+        }
+        for (RedemittelExerciseType type : RedemittelExerciseType.values()) {
+            if (type.isDerived()) exerciseFactory.derive(type, p, redemittelCache.getFunctionLabels()).ifPresent(out::add);
+        }
+        out.sort(Comparator.comparingInt((RedemittelExerciseDto e) -> e.type().tier().ordinal()));
+        return Optional.of(out);
+    }
+
+    /** Grades one answer to a free Redemittel's exercise without touching any progress. Empty when the Redemittel or exercise is not available. */
+    public Optional<RedemittelAnswerResponse> redemittelAnswer(String id, RedemittelAnswerRequest request) {
+        Optional<WritingPhrase> found = freePhrase(id);
+        if (found.isEmpty() || request == null || request.exerciseId() == null) return Optional.empty();
+        WritingPhrase phrase = found.get();
+        Optional<RedemittelExerciseType> derived = RedemittelExerciseFactory.autoType(request.exerciseId());
+        RedemittelExercise exercise = derived.isPresent() ? null : redemittelCache.getExercises(id).stream().filter(e -> e.getId().equals(request.exerciseId())).findFirst().orElse(null);
+        if (derived.isPresent() ? !exerciseFactory.canDerive(derived.get(), phrase) : exercise == null) return Optional.empty();
+        RedemittelExerciseType type = exercise == null ? derived.get() : exercise.getType();
+        boolean production = type == RedemittelExerciseType.PRODUCTION;
+        boolean correct = exercise == null ? exerciseFactory.isCorrectDerived(type, phrase, request.answer()) : exerciseFactory.isCorrect(exercise, request.answer());
+        if (production && !correct) return Optional.empty();
+        return Optional.of(new RedemittelAnswerResponse(correct, production, exercise == null ? exerciseFactory.correctAnswerDerived(type, phrase) : exerciseFactory.correctAnswer(exercise),
+                production ? exerciseFactory.modelAnswer(phrase) : null, com.deutschbridge.backend.model.enums.RedemittelStatus.NEW, null, null));
+    }
+
+    private Optional<WritingPhrase> freePhrase(String id) {
+        if (!phraseSnapshot().freeLevelById().containsKey(id)) return Optional.empty();
+        return redemittelCache.getActivePhrase(id);
+    }
+
+    /**
+     * The practice of a free expression: type it from memory (with its example sentence blanked) and the multiple-choice questions an admin wrote.
+     * Free-text questions and writing your own sentence are graded by the AI teacher, so they are limited per visitor address (see {@link #AI_CHECKS_PER_HOUR}).
+     */
+    @Transactional(readOnly = true)
+    public Optional<ExpressionPractice> expressionPractice(String id) {
+        Optional<Expression> found = freeExpression(id);
+        if (found.isEmpty()) return Optional.empty();
+        Expression e = found.get();
+        String sentence = e.getExamples().isEmpty() ? null : e.getExamples().get(0).getSentence();
+        List<PracticeQuestionDto> questions = new ArrayList<>();
+        for (ExpressionQuestion q : e.getQuestions()) {
+            boolean freeText = q.getFormat() == com.deutschbridge.backend.model.enums.ExpressionQuestionFormat.FREE_TEXT;
+            if (!freeText && q.getOptions().isEmpty()) continue;
+            List<ExpressionQuestionOption> options = new ArrayList<>(q.getOptions());
+            Collections.shuffle(options, random);
+            questions.add(new PracticeQuestionDto(q.getId(), q.getType() == null ? null : q.getType().name(), q.getFormat() == null ? null : q.getFormat().name(), q.getPrompt(),
+                    options.stream().map(o -> new PracticeQuestionOptionDto(o.getId(), o.getText())).toList()));
+        }
+        return Optional.of(new ExpressionPractice(e.getId(), e.getExpression(), ExpressionPracticeService.maskExpression(sentence, e.getExpression()), questions));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<RecallResult> expressionRecall(String id, String answer) {
+        return freeExpression(id).map(e -> new RecallResult(
+                ExpressionPracticeService.normalizeForComparison(answer).equals(ExpressionPracticeService.normalizeForComparison(e.getExpression())), e.getExpression()));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<QuestionResult> expressionQuestion(String id, String questionId, String optionId) {
+        Optional<Expression> found = freeExpression(id);
+        if (found.isEmpty()) return Optional.empty();
+        Optional<ExpressionQuestion> question = found.get().getQuestions().stream().filter(q -> q.getId().equals(questionId)).findFirst();
+        if (question.isEmpty()) return Optional.empty();
+        ExpressionQuestion q = question.get();
+        Optional<ExpressionQuestionOption> chosen = q.getOptions().stream().filter(o -> o.getId().equals(optionId)).findFirst();
+        if (chosen.isEmpty()) return Optional.empty();
+        String correctId = q.getOptions().stream().filter(ExpressionQuestionOption::isCorrect).map(ExpressionQuestionOption::getId).findFirst().orElse(null);
+        return Optional.of(new QuestionResult(chosen.get().isCorrect(), correctId, q.getExplanation()));
+    }
+
+    private Optional<Expression> freeExpression(String id) {
+        Optional<Expression> found = content.getExpressionDetail(id);
+        if (found.isEmpty()) return Optional.empty();
+        Expression e = found.get();
+        if (e.getStatus() != com.deutschbridge.backend.model.enums.ExpressionStatus.PUBLISHED || !freeExpressions(e.getType(), e.getLevel()).contains(id)) return Optional.empty();
+        return found;
+    }
+
+    /** Thrown when a visitor has used up the free AI checks; the controller answers 429. */
+    public static class AiLimitException extends RuntimeException {
+    }
+
+    /** Takes one AI check for this visitor, or throws when they (or all visitors together) used up the hour's allowance. */
+    private synchronized void takeAiCheck(String visitor) {
+        long now = clock.millis();
+        Deque<Long> mine = aiChecks.computeIfAbsent(visitor, k -> new ArrayDeque<>());
+        while (!mine.isEmpty() && now - mine.peekFirst() > HOUR_MS) mine.pollFirst();
+        while (!aiChecksTotal.isEmpty() && now - aiChecksTotal.peekFirst() > HOUR_MS) aiChecksTotal.pollFirst();
+        aiChecks.values().removeIf(Deque::isEmpty);
+        if (mine.size() >= AI_CHECKS_PER_HOUR || aiChecksTotal.size() >= AI_CHECKS_PER_HOUR_TOTAL) throw new AiLimitException();
+        aiChecks.computeIfAbsent(visitor, k -> new ArrayDeque<>()).addLast(now);
+        aiChecksTotal.addLast(now);
+    }
+
+    private static String clean(String sentence) {
+        String s = sentence == null ? "" : sentence.strip();
+        return s.length() > MAX_SENTENCE ? s.substring(0, MAX_SENTENCE) : s;
+    }
+
+    /** The AI teacher's verdict on a sentence the visitor wrote with a free expression. Empty when the expression is not free or the sentence is blank. */
+    @Transactional(readOnly = true)
+    public Optional<ProductionResult> expressionProduction(String id, String sentence, String visitor) {
+        Optional<Expression> found = freeExpression(id);
+        String text = clean(sentence);
+        if (found.isEmpty() || text.isEmpty()) return Optional.empty();
+        Expression e = found.get();
+        takeAiCheck(visitor);
+        Map<String, String> parsed = ExpressionPracticeService.parseAiResponse(ollama.evaluateExpressionProductionUnmetered(e.getExpression(), e.getMeaningDe(), levelOf(e), text));
+        return Optional.of(new ProductionResult(ExpressionPracticeService.parseBool(parsed.get("USED_CORRECTLY")), ExpressionPracticeService.parseBool(parsed.get("GRAMMAR_CORRECT")),
+                ExpressionPracticeService.parseBool(parsed.get("NATURAL")), parsed.getOrDefault("FEEDBACK", ""), suggestion(parsed)));
+    }
+
+    /** The AI teacher's verdict on a free-text transformation question of a free expression. */
+    @Transactional(readOnly = true)
+    public Optional<TransformationResult> expressionTransformation(String id, String questionId, String sentence, String visitor) {
+        Optional<Expression> found = freeExpression(id);
+        String text = clean(sentence);
+        if (found.isEmpty() || text.isEmpty()) return Optional.empty();
+        Expression e = found.get();
+        Optional<ExpressionQuestion> question = e.getQuestions().stream().filter(q -> q.getId().equals(questionId)
+                && q.getFormat() == com.deutschbridge.backend.model.enums.ExpressionQuestionFormat.FREE_TEXT).findFirst();
+        if (question.isEmpty()) return Optional.empty();
+        takeAiCheck(visitor);
+        Map<String, String> parsed = ExpressionPracticeService.parseAiResponse(
+                ollama.evaluateTransformationUnmetered(question.get().getPrompt(), e.getExpression(), e.getMeaningDe(), levelOf(e), text));
+        return Optional.of(new TransformationResult(ExpressionPracticeService.parseBool(parsed.get("USED_EXPRESSION")), ExpressionPracticeService.parseBool(parsed.get("GRAMMAR_CORRECT")),
+                ExpressionPracticeService.parseBool(parsed.get("MEANING_PRESERVED")), parsed.getOrDefault("FEEDBACK", ""), suggestion(parsed)));
+    }
+
+    private static LearningLevel levelOf(Expression e) {
+        return e.getLevel() != null ? e.getLevel() : LearningLevel.B1;
+    }
+
+    private static String suggestion(Map<String, String> parsed) {
+        String s = parsed.get("C1_SUGGESTION");
+        return s == null || s.strip().equals("-") ? null : s;
     }
 }

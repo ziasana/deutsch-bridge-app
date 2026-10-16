@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * Shapes of the public "try it free" learning area. They mirror what the learner dashboard lists, but carry no user data
  * and no content for locked items: a locked item is only a title, so a visitor sees what exists without reading it.
- * A free item is the first of its category; its full content is served by the matching detail endpoint. Redemittel, expression and reading
+ * A free item is one of the first of its category (or level); its full content is served by the matching detail endpoint. Redemittel, expression and reading
  * lists are a sample: each level and topic lists at most {@code SAMPLE_PER_GROUP} entries, while every count is the real one.
  */
 public final class PublicLearnDtos {
@@ -97,5 +97,31 @@ public final class PublicLearnDtos {
 
     public record ArticleFull(String id, String title, String level, String categoryTitle, String imageUrl, String content, List<Note> notes,
                               List<KeyVocabularyItem> keyVocabulary, List<ReadingQuizQuestion> quiz) {
+    }
+
+    // ---- practice of the free items
+
+    public record ExpressionPractice(String expressionId, String expression, String maskedSentence, List<com.deutschbridge.backend.model.dto.PracticeQuestionDto> questions) {
+    }
+
+    public record RecallResult(boolean correct, String expression) {
+    }
+
+    public record QuestionResult(boolean correct, String correctOptionId, String explanation) {
+    }
+
+    public record RecallBody(String answer) {
+    }
+
+    public record QuestionBody(String questionId, String optionId) {
+    }
+
+    public record ProductionResult(boolean usedCorrectly, boolean grammarCorrect, boolean natural, String feedback, String c1Suggestion) {
+    }
+
+    public record TransformationResult(boolean usedExpression, boolean grammarCorrect, boolean meaningPreserved, String feedback, String c1Suggestion) {
+    }
+
+    public record SentenceBody(String questionId, String sentence) {
     }
 }

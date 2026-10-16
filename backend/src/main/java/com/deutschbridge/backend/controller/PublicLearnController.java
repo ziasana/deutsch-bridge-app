@@ -1,19 +1,24 @@
 package com.deutschbridge.backend.controller;
 
 import com.deutschbridge.backend.model.dto.PublicLearnDtos.*;
+import com.deutschbridge.backend.model.dto.RedemittelAnswerRequest;
+import com.deutschbridge.backend.model.dto.RedemittelAnswerResponse;
+import com.deutschbridge.backend.model.dto.RedemittelExerciseDto;
 import com.deutschbridge.backend.model.enums.ExpressionType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.service.PublicLearnService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Unauthenticated, read-only "try it free" area: the same lists the dashboard shows, with the first item of every category
+ * Unauthenticated, read-only "try it free" area: the same lists the dashboard shows, with the first item(s) of every category or level
  * open and the rest locked. A locked item's content is never served; asking for it answers 403.
  */
 @RestController
@@ -73,6 +78,53 @@ public class PublicLearnController {
     @GetMapping("/reading/{id}")
     public ResponseEntity<ArticleFull> article(@PathVariable String id) {
         return open(service.article(id));
+    }
+
+    @GetMapping("/redemittel/{id}/exercises")
+    public ResponseEntity<List<RedemittelExerciseDto>> redemittelExercises(@PathVariable String id) {
+        return answer(service.redemittelExercises(id)); // options are shuffled per request
+    }
+
+    @PostMapping("/redemittel/{id}/answer")
+    public ResponseEntity<RedemittelAnswerResponse> redemittelAnswer(@PathVariable String id, @RequestBody RedemittelAnswerRequest body) {
+        return answer(service.redemittelAnswer(id, body));
+    }
+
+    @GetMapping("/expressions/{id}/practice")
+    public ResponseEntity<ExpressionPractice> expressionPractice(@PathVariable String id) {
+        // Questions are shuffled per request, so this is not shared between visitors.
+        return service.expressionPractice(id).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.FORBIDDEN).build());
+    }
+
+    @PostMapping("/expressions/{id}/practice/recall")
+    public ResponseEntity<RecallResult> expressionRecall(@PathVariable String id, @RequestBody RecallBody body) {
+        return answer(service.expressionRecall(id, body == null ? null : body.answer()));
+    }
+
+    @PostMapping("/expressions/{id}/practice/question")
+    public ResponseEntity<QuestionResult> expressionQuestion(@PathVariable String id, @RequestBody QuestionBody body) {
+        return answer(body == null ? Optional.empty() : service.expressionQuestion(id, body.questionId(), body.optionId()));
+    }
+
+    @PostMapping("/expressions/{id}/practice/production")
+    public ResponseEntity<ProductionResult> expressionProduction(@PathVariable String id, @RequestBody SentenceBody body, HttpServletRequest request) {
+        return answer(body == null ? Optional.empty() : service.expressionProduction(id, body.sentence(), request.getRemoteAddr()));
+    }
+
+    @PostMapping("/expressions/{id}/practice/transformation")
+    public ResponseEntity<TransformationResult> expressionTransformation(@PathVariable String id, @RequestBody SentenceBody body, HttpServletRequest request) {
+        return answer(body == null ? Optional.empty() : service.expressionTransformation(id, body.questionId(), body.sentence(), request.getRemoteAddr()));
+    }
+
+    /** The visitor used up the free AI checks for this hour. */
+    @ExceptionHandler(PublicLearnService.AiLimitException.class)
+    public ResponseEntity<Void> aiLimit() {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).header("Retry-After", "3600").build();
+    }
+
+    /** A graded answer is specific to the visitor's input, so it is never cached. */
+    private static <T> ResponseEntity<T> answer(Optional<T> result) {
+        return result.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.FORBIDDEN).build());
     }
 
     private static <T> ResponseEntity<T> cached(T body) {

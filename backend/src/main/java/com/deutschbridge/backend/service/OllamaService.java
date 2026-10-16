@@ -144,6 +144,11 @@ public class OllamaService {
 
     public String evaluateExpressionProduction(String expression, String meaningDe, LearningLevel level, String userSentence) {
         entitlementService.consume(requestContext.getUserId(), FeatureType.AI_CORRECTION);
+        return evaluateExpressionProductionUnmetered(expression, meaningDe, level, userSentence);
+    }
+
+    /** Same check without a user's daily allowance, for the public preview, which limits visitors by address instead. */
+    public String evaluateExpressionProductionUnmetered(String expression, String meaningDe, LearningLevel level, String userSentence) {
         List<OllamaMessage> messages = List.of(
                 new OllamaMessage("system", PromptLibrary.evaluateExpressionProduction(expression, meaningDe, level.name(), userSentence)),
                 new OllamaMessage("user", userSentence)
@@ -153,6 +158,10 @@ public class OllamaService {
 
     public String evaluateTransformation(String sourceSentence, String expression, String meaningDe, LearningLevel level, String userSentence) {
         entitlementService.consume(requestContext.getUserId(), FeatureType.AI_CORRECTION);
+        return evaluateTransformationUnmetered(sourceSentence, expression, meaningDe, level, userSentence);
+    }
+
+    public String evaluateTransformationUnmetered(String sourceSentence, String expression, String meaningDe, LearningLevel level, String userSentence) {
         List<OllamaMessage> messages = List.of(
                 new OllamaMessage("system", PromptLibrary.evaluateTransformation(sourceSentence, expression, meaningDe, level.name(), userSentence)),
                 new OllamaMessage("user", userSentence)

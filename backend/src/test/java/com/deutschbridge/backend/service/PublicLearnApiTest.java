@@ -161,4 +161,33 @@ class PublicLearnApiTest {
         assertNull(PublicLearnService.align(text, 0, 5, "Wetter"), "a word that is not nearby is dropped");
         assertNull(PublicLearnService.align(text, 99, 120, "Grüße"), "out of range");
     }
+
+    @Test
+    @DisplayName("Reading and Redemittel open two items per level; the overview and the lists agree")
+    void twoFreePerLevel() throws Exception {
+        JsonNode overview = body("/api/public/learn/overview");
+        for (String kind : List.of("reading", "redemittel")) {
+            for (JsonNode level : overview.get(kind)) {
+                assertTrue(level.get("free").asLong() <= PublicLearnService.FREE_PER_LEVEL, kind + " " + level.get("level").asText());
+                assertEquals(Math.min(PublicLearnService.FREE_PER_LEVEL, level.get("total").asLong()), level.get("free").asLong());
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("Practice of a Redemittel or expression that is not free answers 403")
+    void practiceOfLockedItemsIsForbidden() throws Exception {
+        mvc.perform(get("/api/public/learn/redemittel/nope/exercises")).andExpect(status().isForbidden());
+        mvc.perform(get("/api/public/learn/expressions/nope/practice")).andExpect(status().isForbidden());
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/public/learn/redemittel/nope/answer")
+                .contentType("application/json").content("{\"exerciseId\":\"auto:FUNCTION\",\"answer\":\"x\"}")).andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("AI-graded practice of a locked expression answers 403 before any AI check is used")
+    void aiPracticeOfLockedExpressionIsForbidden() throws Exception {
+        var post = org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/public/learn/expressions/nope/practice/production")
+                .contentType("application/json").content("{\"sentence\":\"Ein Satz.\"}");
+        for (int i = 0; i < PublicLearnService.AI_CHECKS_PER_HOUR + 2; i++) mvc.perform(post).andExpect(status().isForbidden());
+    }
 }
