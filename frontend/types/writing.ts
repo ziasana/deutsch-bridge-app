@@ -82,6 +82,8 @@ export interface WritingAttemptRequest {
     mode: WritingMode;
     planNotes?: string[];
     parentAttemptId?: string | null;
+    /** DTZ Schreiben: the alternative the text answers ("A" or "B"). */
+    selectedTask?: string | null;
 }
 
 export interface WritingAttempt {
@@ -97,6 +99,8 @@ export interface WritingAttempt {
     feedback: WritingFeedback | null;
     /** Present once the learner has requested AI feedback for this attempt. */
     aiFeedback: WritingAiFeedback | null;
+    /** DTZ Schreiben: the alternative (A or B) this text answers. */
+    selectedTask?: string | null;
 }
 
 export type WritingFeedbackStatus = "GOOD" | "OK" | "IMPROVE" | "NOT_ASSESSED";

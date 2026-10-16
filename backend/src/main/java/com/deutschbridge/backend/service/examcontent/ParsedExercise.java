@@ -29,8 +29,68 @@ public record ParsedExercise(
         /** Writing tasks (Schriftlicher Ausdruck): the incoming email, the four points and the classification. */
         Writing writing,
         /** Speaking tasks (Mündlicher Ausdruck): the validated, part-specific learner content. */
-        Speaking speaking
+        Speaking speaking,
+        /** DTZ Lesen Teil 1 (directory matching): the shared information source, the optional example and per-situation extras. */
+        Directory directory,
+        /** DTZ Lesen Teil 3 (texts with richtig/falsch + multiple choice): the three texts with their two tasks each. */
+        TextSet textSet,
+        /** DTZ Lesen Teil 5 (letter with six gaps): the letter, its metadata and the optional unscored example gap. */
+        Letter letter,
+        /** DTZ Schreiben: the two alternative tasks A and B with four content points each. */
+        WritingChoice writingChoice,
+        /** DTZ Mündliche Prüfung (Teil 1-3): the validated, part-specific content. */
+        DtzOral dtzOral
 ) {
+    /** Everything except the oral content (all shapes before the DTZ Mündliche Prüfung). */
+    public ParsedExercise(int index, ExamContentSpec spec, String externalId, String title, String instructions,
+                          List<Heading> headings, List<Text> texts, Map<String, Object> metadata,
+                          String readingText, List<Question> questions, List<Situation> situations,
+                          List<Advertisement> advertisements, List<Option> wordBank, Context context, Writing writing,
+                          Speaking speaking, Directory directory, TextSet textSet, Letter letter, WritingChoice writingChoice) {
+        this(index, spec, externalId, title, instructions, headings, texts, metadata, readingText, questions, situations,
+                advertisements, wordBank, context, writing, speaking, directory, textSet, letter, writingChoice, null);
+    }
+
+    /** Everything except the writing choice (all shapes before DTZ Schreiben). */
+    public ParsedExercise(int index, ExamContentSpec spec, String externalId, String title, String instructions,
+                          List<Heading> headings, List<Text> texts, Map<String, Object> metadata,
+                          String readingText, List<Question> questions, List<Situation> situations,
+                          List<Advertisement> advertisements, List<Option> wordBank, Context context, Writing writing,
+                          Speaking speaking, Directory directory, TextSet textSet, Letter letter) {
+        this(index, spec, externalId, title, instructions, headings, texts, metadata, readingText, questions, situations,
+                advertisements, wordBank, context, writing, speaking, directory, textSet, letter, null);
+    }
+
+    /** Everything except the letter (all shapes before DTZ Lesen Teil 5). */
+    public ParsedExercise(int index, ExamContentSpec spec, String externalId, String title, String instructions,
+                          List<Heading> headings, List<Text> texts, Map<String, Object> metadata,
+                          String readingText, List<Question> questions, List<Situation> situations,
+                          List<Advertisement> advertisements, List<Option> wordBank, Context context, Writing writing,
+                          Speaking speaking, Directory directory, TextSet textSet) {
+        this(index, spec, externalId, title, instructions, headings, texts, metadata, readingText, questions, situations,
+                advertisements, wordBank, context, writing, speaking, directory, textSet, null);
+    }
+
+    /** Everything except the text set (all shapes before DTZ Lesen Teil 3). */
+    public ParsedExercise(int index, ExamContentSpec spec, String externalId, String title, String instructions,
+                          List<Heading> headings, List<Text> texts, Map<String, Object> metadata,
+                          String readingText, List<Question> questions, List<Situation> situations,
+                          List<Advertisement> advertisements, List<Option> wordBank, Context context, Writing writing,
+                          Speaking speaking, Directory directory) {
+        this(index, spec, externalId, title, instructions, headings, texts, metadata, readingText, questions, situations,
+                advertisements, wordBank, context, writing, speaking, directory, null, null);
+    }
+
+    /** Everything except the directory task (all pre-DTZ shapes). */
+    public ParsedExercise(int index, ExamContentSpec spec, String externalId, String title, String instructions,
+                          List<Heading> headings, List<Text> texts, Map<String, Object> metadata,
+                          String readingText, List<Question> questions, List<Situation> situations,
+                          List<Advertisement> advertisements, List<Option> wordBank, Context context, Writing writing,
+                          Speaking speaking) {
+        this(index, spec, externalId, title, instructions, headings, texts, metadata, readingText, questions, situations,
+                advertisements, wordBank, context, writing, speaking, null);
+    }
+
     /** Everything except the speaking task (the writing task and the pre-writing shapes). */
     public ParsedExercise(int index, ExamContentSpec spec, String externalId, String title, String instructions,
                           List<Heading> headings, List<Text> texts, Map<String, Object> metadata,
@@ -72,6 +132,22 @@ public record ParsedExercise(
 
     /** Every text that identifies this exercise's content: the matching texts, or the single reading text. */
     public List<String> textContents() {
+        if (textSet != null) {
+            return textSet.texts().stream().map(TextItem::body).toList();
+        }
+        if (dtzOral != null) {
+            return List.of(ExamContentMapper.toPlainText(ExamContentMapper.toDtzOralHtml(dtzOral, title)));
+        }
+        if (writingChoice != null) {
+            // Same text the stored passages yield, so duplicate detection compares like with like.
+            return writingChoice.tasks().stream().map(t -> ExamContentMapper.toPlainText(ExamContentMapper.toWritingTaskHtml(t))).toList();
+        }
+        if (letter != null && readingText != null) {
+            return List.of(readingText);
+        }
+        if (directory != null) {
+            return List.of(directory.plainText());
+        }
         if (speaking != null) {
             // Same text the stored passage yields, so duplicate detection compares like with like.
             return List.of(ExamContentMapper.toPlainText(ExamContentMapper.toSpeakingHtml(speaking, instructions)));
@@ -86,6 +162,84 @@ public record ParsedExercise(
         if (readingText != null) return List.of(readingText);
         if (!advertisements.isEmpty()) return advertisements.stream().map(a -> AdvertisementRenderer.toPlainText(a.content())).toList();
         return texts.stream().map(Text::content).toList();
+    }
+
+    /**
+     * DTZ Lesen Teil 1: {@code sourceType} is DIRECTORY | REGISTER | CATALOGUE | SERVICE_LIST. The five scored situations are
+     * {@link #questions()} of the exercise (options a, b, c, correct option id); this holds what they share and what only
+     * the admin sees: {@code sourceEntryIds} and the de/en/fa explanations per question id, plus the unscored example.
+     */
+    public record Directory(String sourceType, String topic, String languageLevel, String sourceTitle, String introduction,
+                            List<Entry> entries, String displayText, Example example,
+                            Map<String, List<String>> sourceEntryIdsByQuestion, Map<String, Map<String, String>> explanationsByQuestion) {
+
+        /** The source as plain text (entries, not the free-form displayText): what the learner reads and what duplicate detection compares. */
+        public String plainText() {
+            StringBuilder b = new StringBuilder();
+            if (sourceTitle != null) b.append(sourceTitle).append('\n');
+            if (introduction != null) b.append(introduction).append('\n');
+            for (Entry entry : entries) {
+                b.append('\n').append(entry.heading());
+                for (String detail : entry.details()) b.append('\n').append(detail);
+            }
+            return b.toString().strip();
+        }
+    }
+
+    /**
+     * DTZ Lesen Teil 3: {@code texts} are the three texts in order. The six scored tasks are also {@link #questions()} of the
+     * exercise (TRUE_FALSE: correctOptionId RICHTIG / FALSCH, no options; MULTIPLE_CHOICE: options a, b, c); this holds the
+     * text structure and the de/en/fa explanations that only the admin sees.
+     */
+    public record TextSet(String topic, String languageLevel, List<TextItem> texts) {
+        /** The distinct text types in order of appearance, e.g. PRESS_TEXT, EMAIL, FORMAL_NOTICE. */
+        public List<String> textTypes() {
+            return texts.stream().map(TextItem::type).filter(java.util.Objects::nonNull).distinct().toList();
+        }
+    }
+
+    public record TextItem(String id, int number, String type, String title, String sender, String date, String body, List<TextTask> tasks) {
+    }
+
+    /** {@code kind} is TRUE_FALSE or MULTIPLE_CHOICE; {@code options} is empty for TRUE_FALSE; {@code correctAnswer} RICHTIG / FALSCH or a, b, c. */
+    public record TextTask(Integer number, String kind, String prompt, List<Option> options, String correctAnswer, Map<String, String> explanation) {
+    }
+
+    /**
+     * DTZ Schreiben: both alternatives in the order A, B. {@code communicationType} is FORMAL_EMAIL | FORMAL_LETTER | INFORMAL_EMAIL | SEMI_FORMAL_EMAIL
+     * (or SEMI_FORMAL_LETTER); {@code recipient} may be null; {@code points} are the four content points in number order.
+     */
+    public record WritingChoice(int durationMinutes, String languageLevel, List<WritingChoiceTask> tasks) {
+    }
+
+    /**
+     * DTZ Mündliche Prüfung. {@code data} is the import-shaped tree of the Teil (whitelisted keys, plain German strings, lists and maps; Teil 1 may
+     * carry optional en / fa explanations); it is stored as {@code metadata.dtzOral}. {@code languageLevel} is A2, A2_B1 or B1.
+     */
+    public record DtzOral(int part, String languageLevel, Map<String, Object> data) {
+    }
+
+    public record WritingChoiceTask(String label, String title, String topic, String communicationType, String situation,
+                                    String recipientName, String recipientRole, String writingInstruction, List<String> points) {
+    }
+
+    /**
+     * DTZ Lesen Teil 5: one letter or email. {@code body} keeps the {{40}}..{{45}} markers; the six scored gaps are {@link #questions()} of the
+     * exercise (options a, b, c, correct option id, grammar category / focus, de/en/fa explanations). {@code type} is e.g. FORMAL_EMAIL, COMPLAINT.
+     */
+    public record Letter(String type, String topic, String languageLevel, String sender, String recipient, String date, String subject,
+                         String body, GapExample example) {
+    }
+
+    /** The unscored example gap (number 0): the sentence around the gap, three options, the correct one and the explanation. */
+    public record GapExample(String textBeforeGap, String textAfterGap, List<Option> options, String correctOptionId, Map<String, String> explanation) {
+    }
+
+    public record Entry(String id, String heading, List<String> details) {
+    }
+
+    /** The unscored example; {@code correctOptionId} is a, b or c. */
+    public record Example(String situation, List<Option> options, String correctOptionId, Map<String, String> explanation) {
     }
 
     /**
@@ -106,7 +260,11 @@ public record ParsedExercise(
     }
 
     /** {@code answer} is a..l or x; the profile maps are the optional admin-only matching metadata. */
-    public record Situation(String id, Integer number, String text, String correctAdvertisementId, Map<String, Object> matchingProfile) {
+    public record Situation(String id, Integer number, String text, String correctAdvertisementId, Map<String, Object> matchingProfile,
+                            Map<String, String> explanation) {
+        public Situation(String id, Integer number, String text, String correctAdvertisementId, Map<String, Object> matchingProfile) {
+            this(id, number, text, correctAdvertisementId, matchingProfile, Map.of());
+        }
     }
 
     /** Structured advertisement; content / visual / matchingProfile keep the import JSON shape. */

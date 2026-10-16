@@ -1,0 +1,138 @@
+{
+  "intro": "In Teil 3 planen Sie gemeinsam mit Ihrem Partner etwas, zum Beispiel einen Ausflug, eine Feier oder ein Geschenk. Sie machen Vorschläge, geben Gründe, reagieren auf die Ideen Ihres Partners und einigen sich am Ende.",
+  "introHint": {
+    "en": "Part 3: you plan something together. Make suggestions, give reasons, react, and agree on a decision.",
+    "fa": "بخش ۳: با هم چیزی را برنامه‌ریزی می‌کنید. پیشنهاد بدهید، دلیل بیاورید، واکنش نشان دهید و در پایان به توافق برسید."
+  },
+  "tips": [
+    {
+      "title": "Lesen Sie die Situation genau",
+      "text": "Was planen Sie? Wer kommt mit? Wann und wo? Die Stichwörter helfen Ihnen.",
+      "en": "Read the situation carefully.",
+      "fa": "موقعیت را با دقت بخوانید."
+    },
+    {
+      "title": "Machen Sie selbst Vorschläge",
+      "text": "Warten Sie nicht nur ab: „Wie wäre es, wenn wir ...?“",
+      "en": "Make your own suggestions.",
+      "fa": "خودتان پیشنهاد بدهید."
+    },
+    {
+      "title": "Begründen Sie kurz",
+      "text": "Ein kurzer Grund macht Ihren Vorschlag besser: „..., weil es dort billiger ist.“",
+      "en": "Give a short reason.",
+      "fa": "یک دلیل کوتاه بیاورید."
+    },
+    {
+      "title": "Widersprechen Sie höflich",
+      "text": "Erst loben, dann „aber“: „Das ist eine gute Idee, aber ...“",
+      "en": "Disagree politely.",
+      "fa": "مؤدبانه مخالفت کنید."
+    },
+    {
+      "title": "Einigen Sie sich am Ende",
+      "text": "Sagen Sie zum Schluss, was Sie beschlossen haben.",
+      "en": "End with a decision.",
+      "fa": "در پایان تصمیم را بگویید."
+    }
+  ],
+  "steps": [
+    {
+      "title": "1. Einstieg",
+      "text": "Sagen Sie, was Sie planen möchten, und beginnen Sie mit dem ersten Punkt."
+    },
+    {
+      "title": "2. Vorschlag – Grund – Reaktion",
+      "text": "Besprechen Sie die wichtigen Punkte der Reihe nach."
+    },
+    {
+      "title": "3. Entscheidung",
+      "text": "Fassen Sie die Ergebnisse zusammen."
+    }
+  ],
+  "commonMistakes": [
+    "Nur zustimmen und keine eigenen Ideen nennen.",
+    "Keinen Grund für einen Vorschlag nennen.",
+    "Zu schnell „Nein“ sagen, ohne eine Alternative anzubieten.",
+    "Sich am Ende nicht einigen."
+  ],
+  "selfAssessment": [
+    "Ich habe eigene Vorschläge gemacht.",
+    "Ich habe meine Vorschläge begründet.",
+    "Ich habe auf die Ideen meines Partners reagiert.",
+    "Wir haben am Ende eine Entscheidung getroffen."
+  ],
+  "functions": [
+    {
+      "function": "SUGGEST",
+      "title": "Vorschläge machen",
+      "usefulPhrases": [
+        "Wie wäre es, wenn wir ...?",
+        "Ich schlage vor, dass wir ...",
+        "Wir könnten ...",
+        "Was hältst du davon, wenn ...?"
+      ],
+      "tip": "Mit „Wir könnten ...“ klingt ein Vorschlag freundlich."
+    },
+    {
+      "function": "GIVE_REASON",
+      "title": "Begründen",
+      "usefulPhrases": [
+        "..., weil ...",
+        "Das ist gut, denn ...",
+        "Ich finde das wichtig, weil ...",
+        "Dafür spricht, dass ..."
+      ],
+      "tip": "Nach „weil“ steht das Verb am Ende, nach „denn“ nicht."
+    },
+    {
+      "function": "AGREE",
+      "title": "Zustimmen",
+      "usefulPhrases": [
+        "Das finde ich auch.",
+        "Das ist eine gute Idee.",
+        "Einverstanden!",
+        "Da hast du recht."
+      ],
+      "tip": "Zustimmung ist besser mit einem Zusatz: „Das finde ich auch, weil ...“"
+    },
+    {
+      "function": "DISAGREE",
+      "title": "Höflich widersprechen",
+      "usefulPhrases": [
+        "Das ist eine gute Idee, aber ...",
+        "Ich bin nicht sicher, ob das klappt.",
+        "Das finde ich schwierig, weil ...",
+        "Ich sehe das ein bisschen anders."
+      ],
+      "tip": "Sagen Sie erst, was gut ist, und dann Ihr „aber“."
+    },
+    {
+      "function": "NEGOTIATE",
+      "title": "Alternativen anbieten und aushandeln",
+      "usefulPhrases": [
+        "Wie wäre es stattdessen mit ...?",
+        "Wir könnten auch ...",
+        "Was meinst du dazu?",
+        "Können wir uns in der Mitte treffen?"
+      ],
+      "tip": "Bieten Sie eine Alternative an, statt nur „Nein“ zu sagen."
+    },
+    {
+      "function": "DECIDE",
+      "title": "Eine gemeinsame Entscheidung treffen",
+      "usefulPhrases": [
+        "Dann machen wir es so.",
+        "Wir haben uns also geeinigt.",
+        "Also treffen wir uns um ... Uhr.",
+        "Das machen wir!"
+      ],
+      "tip": "Wiederholen Sie am Ende kurz, was Sie beschlossen haben."
+    }
+  ],
+  "decisionCriteria": [
+    "Wann haben alle Zeit?",
+    "Was kostet es?",
+    "Was gefällt allen?"
+  ]
+}

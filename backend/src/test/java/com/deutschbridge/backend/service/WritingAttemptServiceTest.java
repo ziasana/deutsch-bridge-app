@@ -8,6 +8,7 @@ import com.deutschbridge.backend.model.dto.WritingAttemptResponse;
 import com.deutschbridge.backend.model.entity.ExamExercise;
 import com.deutschbridge.backend.model.entity.WritingAttempt;
 import com.deutschbridge.backend.model.enums.ExamSection;
+import com.deutschbridge.backend.model.enums.ExamTaskType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.model.enums.WritingMode;
 import com.deutschbridge.backend.repository.ExamExerciseRepository;
@@ -92,6 +93,92 @@ class WritingAttemptServiceTest {
         when(exerciseRepository.findById("ex1")).thenReturn(Optional.of(e));
         assertThrows(ResponseStatusException.class,
                 () -> service.submit(new WritingAttemptRequest("ex1", "Text", WritingMode.EXAM, null, null)));
+    }
+
+    private static final String PRIMARY_TEXT = "Sehr geehrte Frau Becker, ich habe eine Frage zum Kurs.";
+
+    /** A DTZ Schreiben exercise with the tasks A and B stored the way the importer stores them. */
+    private ExamExercise choiceExercise(boolean published) {
+        ExamExercise e = writingExercise();
+        e.setTaskType(ExamTaskType.WRITING_TASK_CHOICE);
+        e.setPublished(published);
+        java.util.function.BiFunction<String, List<String>, java.util.Map<String, Object>> task = (label, points) -> {
+            java.util.Map<String, Object> t = new java.util.LinkedHashMap<>();
+            t.put("taskLabel", label);
+            t.put("title", "Aufgabe " + label);
+            t.put("situation", "Eine Situation für " + label);
+            t.put("writingInstruction", "Schreiben Sie eine E-Mail.");
+            List<java.util.Map<String, Object>> pts = new java.util.ArrayList<>();
+            for (int i = 0; i < points.size(); i++) pts.add(java.util.Map.of("number", i + 1, "text", points.get(i)));
+            t.put("points", pts);
+            return t;
+        };
+        e.setMetadata(java.util.Map.of("writingChoice", java.util.Map.of("durationMinutes", 30, "tasks", List.of(
+                task.apply("A", List.of("Grund", "Erfahrung", "Termine", "Kosten")),
+                task.apply("B", List.of("Anlass", "Ort", "Mitbringen", "Anfahrt"))))));
+        e.setPassages(List.of(
+                new com.deutschbridge.backend.model.entity.ExamPassage("pa", "Aufgabe A", "<p>Text A</p>", null, null, null),
+                new com.deutschbridge.backend.model.entity.ExamPassage("pb", "Aufgabe B", "<p>Text B</p>", null, null, null)));
+        return e;
+    }
+
+    @Test
+    @DisplayName("submit (DTZ Schreiben) -> stores the chosen alternative with the response")
+    void submit_choice_storesSelectedTask() throws DataNotFoundException {
+        when(exerciseRepository.findById("ex1")).thenReturn(Optional.of(choiceExercise(true)));
+
+        WritingAttemptResponse res = service.submit(new WritingAttemptRequest("ex1", PRIMARY_TEXT, WritingMode.EXAM, null, null, "b"));
+
+        assertEquals("B", res.selectedTask());
+        assertEquals(PRIMARY_TEXT, res.text());
+        org.mockito.ArgumentCaptor<WritingAttempt> saved = org.mockito.ArgumentCaptor.forClass(WritingAttempt.class);
+        verify(attemptRepository).save(saved.capture());
+        assertEquals("B", saved.getValue().getSelectedTask());
+    }
+
+    @Test
+    @DisplayName("submit (DTZ Schreiben) -> a task must be chosen, and it must be A or B")
+    void submit_choice_validatesLabel() {
+        when(exerciseRepository.findById("ex1")).thenReturn(Optional.of(choiceExercise(true)));
+
+        assertThrows(ResponseStatusException.class, () -> service.submit(new WritingAttemptRequest("ex1", PRIMARY_TEXT, WritingMode.EXAM, null, null, null)));
+        assertThrows(ResponseStatusException.class, () -> service.submit(new WritingAttemptRequest("ex1", PRIMARY_TEXT, WritingMode.EXAM, null, null, " ")));
+        assertThrows(ResponseStatusException.class, () -> service.submit(new WritingAttemptRequest("ex1", PRIMARY_TEXT, WritingMode.EXAM, null, null, "C")));
+        verify(attemptRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("submit (DTZ Schreiben) -> an unpublished (draft) exercise cannot be answered")
+    void submit_choice_rejectsDraft() {
+        when(exerciseRepository.findById("ex1")).thenReturn(Optional.of(choiceExercise(false)));
+
+        assertThrows(DataNotFoundException.class, () -> service.submit(new WritingAttemptRequest("ex1", PRIMARY_TEXT, WritingMode.EXAM, null, null, "A")));
+        verify(attemptRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("submit -> single-task exercises never carry a selected task")
+    void submit_singleTask_ignoresLabel() throws DataNotFoundException {
+        when(exerciseRepository.findById("ex1")).thenReturn(Optional.of(writingExercise()));
+
+        WritingAttemptResponse res = service.submit(new WritingAttemptRequest("ex1", "Liebe Anna, danke.", WritingMode.EXAM, null, null, "A"));
+
+        assertNull(res.selectedTask());
+    }
+
+    @Test
+    @DisplayName("requestAiFeedback (DTZ Schreiben) -> uses the chosen task's text and points")
+    void aiFeedback_choice_usesChosenTask() throws DataNotFoundException {
+        WritingAttempt a = storedAttempt("u1");
+        a.setSelectedTask("B");
+        when(attemptRepository.findById("a1")).thenReturn(Optional.of(a));
+        when(exerciseRepository.findById("ex1")).thenReturn(Optional.of(choiceExercise(true)));
+        when(ollamaService.evaluateWriting(any(), any(), any(), any())).thenReturn("POSITIVE|Gut.");
+
+        service.requestAiFeedback("a1");
+
+        verify(ollamaService).evaluateWriting(any(), org.mockito.ArgumentMatchers.eq("Text B"),
+                org.mockito.ArgumentMatchers.eq(List.of("Anlass", "Ort", "Mitbringen", "Anfahrt")), any());
     }
 
     private WritingAttempt storedAttempt(String owner) {

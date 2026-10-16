@@ -9,6 +9,7 @@ import com.deutschbridge.backend.model.dto.ExamPracticeSessionStartRequest;
 import com.deutschbridge.backend.model.dto.ExamTimeManagementRowResponse;
 import com.deutschbridge.backend.model.dto.ExamTimeWeekSummaryResponse;
 import com.deutschbridge.backend.model.enums.ExamSection;
+import com.deutschbridge.backend.model.enums.ExamType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.service.ExamPracticeSessionService;
 import org.springframework.http.ResponseEntity;
@@ -45,8 +46,9 @@ public class ExamPracticeSessionController {
     }
 
     @GetMapping("/time-management")
-    public ResponseEntity<List<ExamTimeManagementRowResponse>> timeManagement(@RequestParam LearningLevel level) {
-        return ResponseEntity.ok(service.timeManagement(level));
+    public ResponseEntity<List<ExamTimeManagementRowResponse>> timeManagement(@RequestParam LearningLevel level,
+                                                                                 @RequestParam(defaultValue = "TELC") ExamType examType) {
+        return ResponseEntity.ok(service.timeManagement(examType, level));
     }
 
     @GetMapping("/last-times")

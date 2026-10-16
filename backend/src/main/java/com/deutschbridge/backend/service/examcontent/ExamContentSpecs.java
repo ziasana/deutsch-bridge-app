@@ -21,6 +21,16 @@ public final class ExamContentSpecs {
     public static final String WRITING_GUIDANCE = "Überlegen Sie sich vor dem Schreiben eine passende Reihenfolge der Punkte, "
             + "einen passenden Betreff, eine passende Anrede, Einleitung und einen passenden Schluss.";
 
+    /** The exact instruction of DTZ Lesen Teil 5. */
+    public static final String LETTER_INSTRUCTIONS = "Lesen Sie den Text und schließen Sie die Lücken 40–45. Welche Lösung (a, b oder c) passt am besten? "
+            + "Markieren Sie Ihre Lösungen für die Aufgaben 40–45 auf dem Antwortbogen.";
+
+    /** The exact instruction of DTZ Schreiben. */
+    public static final String WRITING_CHOICE_INSTRUCTIONS = "Wählen Sie Aufgabe A oder Aufgabe B. Zeigen Sie, was Sie können. Schreiben Sie möglichst viel. "
+            + "Vergessen Sie nicht die Anrede und den Gruß. Schreiben Sie Ihren Text auf den Antwortbogen. "
+            + "Kreuzen Sie auf dem Antwortbogen an, welche Aufgabe Sie gewählt haben.";
+    public static final int WRITING_CHOICE_MINUTES = 30;
+
     private static final List<ExamContentSpec> SPECS = List.of(
             new ExamContentSpec(
                     ExamType.TELC, LearningLevel.B1, ExamSection.LESEVERSTEHEN, 1, ExamTaskType.MATCHING,
@@ -43,6 +53,70 @@ public final class ExamContentSpecs {
                     "exam-content/prompts/situation-matching-ads.v1.0.txt",
                     "1.0",
                     10, 12, 11),
+            new ExamContentSpec(
+                    ExamType.DTZ, LearningLevel.B1, ExamSection.LESEVERSTEHEN, 1, ExamTaskType.DIRECTORY_MATCHING,
+                    0, 0, 0, 0,
+                    "Sie lesen die Aufgaben 21–25 und den Wegweiser. Wählen Sie bei jeder Aufgabe die passende Lösung (a, b oder c).",
+                    "exam-content/prompts/directory-matching.v1.0.txt",
+                    "1.0",
+                    5, 3, 21),
+            new ExamContentSpec(
+                    ExamType.DTZ, LearningLevel.B1, ExamSection.LESEVERSTEHEN, 2, ExamTaskType.SITUATION_MATCHING,
+                    0, 0, 0, 0,
+                    "Lesen Sie die Situationen 26–30 und die Anzeigen a–h. Finden Sie für jede Situation die passende Anzeige. "
+                            + "Markieren Sie Ihre Lösungen für die Aufgaben 26–30 auf dem Antwortbogen. "
+                            + "Für eine Aufgabe gibt es keine Lösung. Markieren Sie in diesem Fall ein X.",
+                    "exam-content/prompts/ad-matching.v1.0.txt",
+                    "1.0",
+                    5, 8, 26),
+            new ExamContentSpec(
+                    ExamType.DTZ, LearningLevel.B1, ExamSection.LESEVERSTEHEN, 3, ExamTaskType.TEXT_QUESTIONS,
+                    0, 3, 0, 0,
+                    "Lesen Sie die drei Texte. Zu jedem Text gibt es zwei Aufgaben. Entscheiden Sie bei jedem Text, ob die Aussage richtig oder falsch ist "
+                            + "und welche Antwort (a, b oder c) am besten passt. Markieren Sie Ihre Lösungen für die Aufgaben 31–36 auf dem Antwortbogen.",
+                    "exam-content/prompts/text-questions.v1.0.txt",
+                    "1.0",
+                    6, 3, 31),
+            new ExamContentSpec(
+                    ExamType.DTZ, LearningLevel.B1, ExamSection.LESEVERSTEHEN, 4, ExamTaskType.TEXT_TRUE_FALSE,
+                    0, 1, 180, 300,
+                    "Lesen Sie den Text. Entscheiden Sie, ob die Aussagen 37–39 richtig oder falsch sind. "
+                            + "Markieren Sie Ihre Lösungen für die Aufgaben 37–39 auf dem Antwortbogen.",
+                    "exam-content/prompts/text-true-false.v1.0.txt",
+                    "1.0",
+                    3, 0, 37),
+            new ExamContentSpec(
+                    ExamType.DTZ, LearningLevel.B1, ExamSection.LESEVERSTEHEN, 5, ExamTaskType.LETTER_GAP_FILL,
+                    0, 1, 100, 230,
+                    LETTER_INSTRUCTIONS,
+                    "exam-content/prompts/letter-gap-fill.v1.0.txt",
+                    "1.0",
+                    6, 3, 40),
+            new ExamContentSpec(
+                    ExamType.DTZ, LearningLevel.B1, ExamSection.SCHRIFTLICHER_AUSDRUCK, 1, ExamTaskType.WRITING_TASK_CHOICE,
+                    0, 0, 0, 0,
+                    WRITING_CHOICE_INSTRUCTIONS,
+                    "exam-content/prompts/writing-task-choice.v1.0.txt",
+                    "1.0",
+                    8, 0, 1),
+            new ExamContentSpec(
+                    ExamType.DTZ, LearningLevel.B1, ExamSection.MUENDLICHER_AUSDRUCK, 1, ExamTaskType.SELF_INTRODUCTION,
+                    0, 0, 0, 0,
+                    DtzOralSchema.TEIL1_INSTRUCTIONS,
+                    "exam-content/prompts/dtz-muendlich-teil1.v1.0.txt",
+                    "1.0"),
+            new ExamContentSpec(
+                    ExamType.DTZ, LearningLevel.B1, ExamSection.MUENDLICHER_AUSDRUCK, 2, ExamTaskType.PHOTO_EXPERIENCE,
+                    0, 0, 0, 0,
+                    DtzOralSchema.PARTICIPANT_A_INSTRUCTIONS,
+                    "exam-content/prompts/dtz-muendlich-teil2.v1.0.txt",
+                    "1.0"),
+            new ExamContentSpec(
+                    ExamType.DTZ, LearningLevel.B1, ExamSection.MUENDLICHER_AUSDRUCK, 3, ExamTaskType.JOINT_PLANNING,
+                    0, 0, 0, 0,
+                    DtzOralSchema.TASK_INSTRUCTION,
+                    "exam-content/prompts/dtz-muendlich-teil3.v1.0.txt",
+                    "1.0"),
             new ExamContentSpec(
                     ExamType.TELC, LearningLevel.B1, ExamSection.SPRACHBAUSTEINE, 1, ExamTaskType.MULTIPLE_CHOICE,
                     0, 0, 120, 220,

@@ -5,6 +5,7 @@ import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.ExamTimeBulkUpdateRequest;
 import com.deutschbridge.backend.model.dto.ExamTimeSettingsResponse;
 import com.deutschbridge.backend.model.dto.ExamTimeUpdateRequest;
+import com.deutschbridge.backend.model.enums.ExamType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.service.AdminAuditLogService;
 import com.deutschbridge.backend.service.ExamTimeConfigurationService;
@@ -33,14 +34,15 @@ public class AdminExamTimeConfigurationController {
     }
 
     @GetMapping
-    public ResponseEntity<ExamTimeSettingsResponse> get(@RequestParam LearningLevel level) {
-        return ResponseEntity.ok(service.getSettings(level));
+    public ResponseEntity<ExamTimeSettingsResponse> get(@RequestParam LearningLevel level,
+                                                       @RequestParam(defaultValue = "TELC") ExamType examType) {
+        return ResponseEntity.ok(service.getSettings(examType, level));
     }
 
     @PutMapping
     public ResponseEntity<ExamTimeSettingsResponse> saveAll(@RequestBody ExamTimeBulkUpdateRequest request) {
         ExamTimeSettingsResponse saved = service.saveSettings(request);
-        audit("TELC " + saved.level() + ": saved " + summary(saved));
+        audit(saved.examType() + " " + saved.level() + ": saved " + summary(saved));
         return ResponseEntity.ok(saved);
     }
 
@@ -49,14 +51,15 @@ public class AdminExamTimeConfigurationController {
                                                            @RequestBody ExamTimeUpdateRequest request)
             throws DataNotFoundException {
         ExamTimeSettingsResponse saved = service.update(id, request);
-        audit("TELC " + saved.level() + ": updated " + id + " -> " + summary(saved));
+        audit(saved.examType() + " " + saved.level() + ": updated " + id + " -> " + summary(saved));
         return ResponseEntity.ok(saved);
     }
 
     @PostMapping("/reset")
-    public ResponseEntity<ExamTimeSettingsResponse> reset(@RequestParam LearningLevel level) {
-        ExamTimeSettingsResponse saved = service.resetToDefaults(level);
-        audit("TELC " + saved.level() + ": reset to defaults");
+    public ResponseEntity<ExamTimeSettingsResponse> reset(@RequestParam LearningLevel level,
+                                                         @RequestParam(defaultValue = "TELC") ExamType examType) {
+        ExamTimeSettingsResponse saved = service.resetToDefaults(examType, level);
+        audit(saved.examType() + " " + saved.level() + ": reset to defaults");
         return ResponseEntity.ok(saved);
     }
 

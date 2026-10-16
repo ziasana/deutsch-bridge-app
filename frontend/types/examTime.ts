@@ -34,6 +34,8 @@ export interface ExamTimeSettings {
 }
 
 export interface ExamTimeBulkUpdateRequest {
+    /** Defaults to TELC. */
+    examType?: "TELC" | "DTZ";
     level: string;
     totalDurationMinutes?: number | null;
     configurations: { section: ExamSection; teil: number; recommendedMinutes: number; enabled: boolean }[];
@@ -74,6 +76,8 @@ export interface ExamPracticeSessionResult {
     questionsAnswered: number;
     correctAnswers: number;
     score: number | null;
+    /** Absent in results stored before DTZ timing existed: those are Telc. */
+    examType?: "TELC" | "DTZ";
 }
 
 export interface ExamTimeWeekSummary {

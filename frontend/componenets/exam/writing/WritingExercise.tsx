@@ -27,13 +27,17 @@ interface WritingExerciseProps {
     requiresPlanning: boolean;
     leitpunkte: string[];
     modelSolution: string | null;
+    /** DTZ Schreiben: the alternative ("A" or "B") this text answers; sent with the submission. Attempts of the other alternative are not shown. */
+    selectedTask?: string;
+    /** Key of the browser draft (defaults to the exercise id); DTZ Schreiben keeps one draft per alternative. */
+    draftKey?: string;
     /** Called after a successful submission (the page marks the exercise done / stops its timer). */
     onSubmitted: () => void;
 }
 
 /** Write flow for one task: (optional plan) -> write with mode-dependent help -> confirm -> submit. */
-export default function WritingExercise({ exerciseId, level, requiresPlanning, leitpunkte, modelSolution, onSubmitted }: WritingExerciseProps) {
-    const draft = useWritingDraft(exerciseId, leitpunkte.length);
+export default function WritingExercise({ exerciseId, level, requiresPlanning, leitpunkte, modelSolution, selectedTask, draftKey, onSubmitted }: WritingExerciseProps) {
+    const draft = useWritingDraft(draftKey ?? exerciseId, leitpunkte.length);
     const { text, mode } = draft;
     const [helpOpen, setHelpOpen] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -43,10 +47,11 @@ export default function WritingExercise({ exerciseId, level, requiresPlanning, l
     const queryClient = useQueryClient();
 
     const attemptsKey = ["writing", "attempts", exerciseId];
-    const { data: attempts = [] } = useQuery({
+    const { data: allAttempts = [] } = useQuery({
         queryKey: attemptsKey,
         queryFn: () => getWritingAttempts(exerciseId).then((res) => res.data),
     });
+    const attempts = selectedTask ? allAttempts.filter((a) => a.selectedTask === selectedTask) : allAttempts;
     const submitted: WritingAttempt | null = attempts.length > 0 ? attempts[attempts.length - 1] : null;
     // Reopening an exercise that already has attempts (and no unsent draft) lands on the latest result;
     // revising flips this to false and keeps the latest attempt as the parent of the next one.
@@ -100,6 +105,7 @@ export default function WritingExercise({ exerciseId, level, requiresPlanning, l
                 mode,
                 planNotes: mode === "EXAM" ? [] : draft.plan,
                 parentAttemptId: submitted?.id ?? null,
+                ...(selectedTask ? { selectedTask } : {}),
             });
             queryClient.setQueryData<WritingAttempt[]>(attemptsKey, (old = []) => [...old, res.data]);
             setDone(true);
@@ -172,7 +178,7 @@ export default function WritingExercise({ exerciseId, level, requiresPlanning, l
                     <div>
                         <h2 className="text-xl font-extrabold text-foreground">✅ Text abgegeben</h2>
                         <p className="mt-1 text-sm text-foreground/60">
-                            Versuch {submitted.attemptNumber} · {submitted.wordCount} Wörter
+                            {submitted.selectedTask ? `Aufgabe ${submitted.selectedTask} · ` : ""}Versuch {submitted.attemptNumber} · {submitted.wordCount} Wörter
                         </p>
                     </div>
                     <p className="whitespace-pre-wrap rounded-lg bg-background p-4 text-sm leading-relaxed text-foreground/85">{submitted.text}</p>

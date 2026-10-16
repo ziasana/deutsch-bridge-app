@@ -47,4 +47,32 @@ class ExamAttemptExplanationLanguageTest {
         assertEquals("Deutsch", ExamAttemptService.localizedExplanation(new ExamExercise(), plain, "PR"));
         assertEquals("Deutsche Erklärung", ExamAttemptService.localizedExplanation(exercise(), gap(21), null));
     }
+
+    @Test
+    void directoryQuestionsAreLocalisedByQuestionNumber() {
+        ExamExercise e = new ExamExercise();
+        e.setMetadata(Map.of("directory", Map.of("questions", List.of(
+                Map.of("number", 21, "explanation", Map.of("en", "Social office", "fa", "اداره اجتماعی"))))));
+        ExamQuestion q = new ExamQuestion();
+        q.setQuestionNumber(21);
+        q.setExplanation("Das Sozialamt hilft.");
+        assertEquals("اداره اجتماعی", ExamAttemptService.localizedExplanation(e, q, "PR"));
+        assertEquals("Social office", ExamAttemptService.localizedExplanation(e, q, "EN"));
+        assertEquals("Das Sozialamt hilft.", ExamAttemptService.localizedExplanation(e, q, "DE"));
+        q.setQuestionNumber(22);
+        assertEquals("Das Sozialamt hilft.", ExamAttemptService.localizedExplanation(e, q, "PR"));
+    }
+
+    @Test
+    void textQuestionsAreLocalisedByQuestionNumber() {
+        ExamExercise e = new ExamExercise();
+        e.setMetadata(Map.of("textQuestions", Map.of("questions", List.of(
+                Map.of("number", 33, "explanation", Map.of("en", "The course starts earlier.", "fa", "کلاس زودتر شروع می‌شود."))))));
+        ExamQuestion q = new ExamQuestion();
+        q.setQuestionNumber(33);
+        q.setExplanation("Der Kurs beginnt früher.");
+        assertEquals("کلاس زودتر شروع می‌شود.", ExamAttemptService.localizedExplanation(e, q, "PR"));
+        assertEquals("The course starts earlier.", ExamAttemptService.localizedExplanation(e, q, "EN"));
+        assertEquals("Der Kurs beginnt früher.", ExamAttemptService.localizedExplanation(e, q, "DE"));
+    }
 }

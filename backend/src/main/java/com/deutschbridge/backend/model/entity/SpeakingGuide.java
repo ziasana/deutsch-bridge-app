@@ -1,6 +1,7 @@
 package com.deutschbridge.backend.model.entity;
 
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
+import com.deutschbridge.backend.model.enums.ExamType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.vladmihalcea.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
@@ -14,17 +15,21 @@ import java.util.Map;
 
 /**
  * The "Mündlicher Ausdruck lernen" content of one Teil at one level: intro, tips, typical mistakes, checklist and the part-specific
- * questions / Redemittel. German only. Exercises link to it instead of repeating it. The JSON shape is validated on save
+ * questions / Redemittel. German only for Telc; DTZ guides may carry optional en/fa hints. Exercises link to it instead of repeating it. The JSON shape is validated on save
  * (see ExamSpeakingReader#readGuide).
  */
 @Entity(name = "speakingGuides")
-@Table(uniqueConstraints = @UniqueConstraint(name = "uk_speaking_guides_level_part", columnNames = {"level", "partNumber"}))
+@Table(uniqueConstraints = @UniqueConstraint(name = "uk_speaking_guides_exam_level_part", columnNames = {"examType", "level", "partNumber"}))
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class SpeakingGuide {
     @Id
     private String id;
+
+    /** TELC or DTZ: each exam has its own guides. */
+    @Enumerated(EnumType.STRING)
+    private ExamType examType = ExamType.TELC;
 
     @Enumerated(EnumType.STRING)
     private LearningLevel level;

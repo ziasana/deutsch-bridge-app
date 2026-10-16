@@ -222,6 +222,9 @@ export default function ContentImport() {
                             <Button variant="secondary" onClick={() => setSelected(new Set(report.exercises.filter((e) => e.state === "OK").map((e) => e.index)))}>
                                 Select all ready
                             </Button>
+                            <Button variant="secondary" onClick={() => setMode("paste")}>Edit JSON</Button>
+                            <Button variant="secondary" disabled={busy} onClick={() => validate(json)}>Revalidate</Button>
+                            <Button variant="secondary" onClick={() => { reset(); setJson(""); setFileName(null); }}>Cancel</Button>
                             {!report.valid && <span className="text-sm text-gray-500 dark:text-gray-400">Exercises with errors are skipped.</span>}
                         </div>
                     )}

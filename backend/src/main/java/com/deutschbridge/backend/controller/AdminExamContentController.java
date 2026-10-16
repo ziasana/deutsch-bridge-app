@@ -6,6 +6,7 @@ import com.deutschbridge.backend.model.enums.ExamContentStatus;
 import com.deutschbridge.backend.model.enums.ExamSection;
 import com.deutschbridge.backend.model.enums.ExamType;
 import com.deutschbridge.backend.service.examcontent.ExamContentService;
+import com.deutschbridge.backend.service.examcontent.ExamGeneratorTopicService;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -23,9 +24,43 @@ import java.util.List;
 public class AdminExamContentController {
 
     private final ExamContentService service;
+    private final ExamGeneratorTopicService topicService;
 
-    public AdminExamContentController(ExamContentService service) {
+    public AdminExamContentController(ExamContentService service, ExamGeneratorTopicService topicService) {
         this.service = service;
+        this.topicService = topicService;
+    }
+
+    /** The saved topic list changes (added topics, removed built-in topics) of one exam part's generator, e.g. partKey DTZ_TEIL_5. */
+    public record TopicRequest(String partKey, String topic) {
+    }
+
+    public record HiddenTopicRequest(String partKey, String topic, boolean hidden) {
+    }
+
+    @GetMapping("/topics")
+    public ResponseEntity<ExamGeneratorTopicService.Topics> topics(@RequestParam String partKey) {
+        return ResponseEntity.ok(topicService.list(partKey));
+    }
+
+    @PostMapping("/topics")
+    public ResponseEntity<ExamGeneratorTopicService.Topics> addTopic(@RequestBody TopicRequest request) {
+        return ResponseEntity.ok(topicService.add(request.partKey(), request.topic()));
+    }
+
+    @PostMapping("/topics/remove")
+    public ResponseEntity<ExamGeneratorTopicService.Topics> removeTopic(@RequestBody TopicRequest request) {
+        return ResponseEntity.ok(topicService.remove(request.partKey(), request.topic()));
+    }
+
+    @PostMapping("/topics/hidden")
+    public ResponseEntity<ExamGeneratorTopicService.Topics> hideTopic(@RequestBody HiddenTopicRequest request) {
+        return ResponseEntity.ok(topicService.setHidden(request.partKey(), request.topic(), request.hidden()));
+    }
+
+    @PostMapping("/topics/restore")
+    public ResponseEntity<ExamGeneratorTopicService.Topics> restoreTopics(@RequestParam String partKey) {
+        return ResponseEntity.ok(topicService.restoreBuiltIn(partKey));
     }
 
     @GetMapping("/options")
@@ -55,6 +90,36 @@ public class AdminExamContentController {
     @PostMapping("/import")
     public ResponseEntity<ImportResult> importContent(@RequestBody ImportRequest request) {
         return ResponseEntity.ok(service.importContent(request));
+    }
+
+    /** DTZ Schreiben: create an exercise by hand (tasks A and B in the import shape); it starts as DRAFT. */
+    @PostMapping("/writing-choice")
+    public ResponseEntity<WritingChoiceSaveResult> createWritingChoice(@RequestBody com.fasterxml.jackson.databind.JsonNode body) throws DataNotFoundException {
+        return ResponseEntity.ok(service.saveWritingChoice(null, body));
+    }
+
+    /** DTZ Schreiben: edit the title, situations, recipients, instructions and the eight points of an existing exercise. */
+    @PutMapping("/writing-choice/{id}")
+    public ResponseEntity<WritingChoiceSaveResult> updateWritingChoice(@PathVariable String id, @RequestBody com.fasterxml.jackson.databind.JsonNode body) throws DataNotFoundException {
+        return ResponseEntity.ok(service.saveWritingChoice(id, body));
+    }
+
+    /** DTZ Mündliche Prüfung: create an exercise of Teil 1, 2 or 3 by hand (the import shape, with "part"); it starts as DRAFT. */
+    @PostMapping("/dtz-oral")
+    public ResponseEntity<DtzOralSaveResult> createDtzOral(@RequestBody com.fasterxml.jackson.databind.JsonNode body) throws DataNotFoundException {
+        return ResponseEntity.ok(service.saveDtzOral(null, body));
+    }
+
+    /** DTZ Mündliche Prüfung: edit the content of an existing exercise (the part cannot change). */
+    @PutMapping("/dtz-oral/{id}")
+    public ResponseEntity<DtzOralSaveResult> updateDtzOral(@PathVariable String id, @RequestBody com.fasterxml.jackson.databind.JsonNode body) throws DataNotFoundException {
+        return ResponseEntity.ok(service.saveDtzOral(id, body));
+    }
+
+    /** DTZ Mündliche Prüfung Teil 1: create the standard fixed template as a draft. */
+    @PostMapping("/dtz-oral/template")
+    public ResponseEntity<DtzOralSaveResult> createDtzOralTemplate() throws DataNotFoundException {
+        return ResponseEntity.ok(service.createDefaultTeil1Template());
     }
 
     @PostMapping("/status")

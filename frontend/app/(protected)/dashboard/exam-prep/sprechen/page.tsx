@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import Loading from "@/componenets/Loading";
 import useAuthStore from "@/store/useAuthStore";
 import { getExamExercisesSummary } from "@/services/examService";
-import { SPEAKING_PARTS } from "@/componenets/exam/speaking";
+import { DTZ_LEVEL, parseSpeakingExam, speakingHubHref, speakingPartsOf } from "@/componenets/exam/speaking";
 import SpeakingHubView, { SpeakingHubPart } from "@/componenets/exam/speaking/SpeakingHubView";
 import { buildSpeakingStations } from "@/componenets/exam/speaking/learn/stations";
 import { useSpeakingGuides } from "@/hooks/exam/useSpeakingGuides";
@@ -17,17 +17,19 @@ function SprechenContent() {
     const searchParams = useSearchParams();
     const { userProfile } = useAuthStore();
     const profileLevel = userProfile?.learningLevel && userProfile.learningLevel !== "null" ? userProfile.learningLevel : null;
-    const level = searchParams.get("level") ?? profileLevel ?? "B1";
+    const exam = parseSpeakingExam(searchParams.get("exam"));
+    // DTZ A2-B1 has one fixed level; its exercises and guides are stored at B1.
+    const level = exam === "DTZ" ? DTZ_LEVEL : (searchParams.get("level") ?? profileLevel ?? "B1");
 
     const { data: exercises = [], isLoading } = useQuery({
-        queryKey: ["exam", "exercises", "MUENDLICHER_AUSDRUCK", level],
-        queryFn: () => getExamExercisesSummary("MUENDLICHER_AUSDRUCK", level).then((res) => res.data),
+        queryKey: ["exam", "exercises", "MUENDLICHER_AUSDRUCK", exam, level],
+        queryFn: () => getExamExercisesSummary("MUENDLICHER_AUSDRUCK", level, undefined, exam).then((res) => res.data),
     });
 
-    const { guideFor } = useSpeakingGuides(level);
+    const { guideFor } = useSpeakingGuides(level, exam);
     const { data: progress = [] } = useQuery({
-        queryKey: ["speaking", "learn-progress", level],
-        queryFn: () => getSpeakingLearnProgress(level).then((r) => r.data),
+        queryKey: ["speaking", "learn-progress", exam, level],
+        queryFn: () => getSpeakingLearnProgress(level, exam).then((r) => r.data),
         retry: 1,
     });
     /** Finished / total stations of the Teil's learning path; null while the Lernbereich is unavailable. */
@@ -38,7 +40,7 @@ function SprechenContent() {
         return { total: stations.length, done: stations.filter((s) => progress.some((p) => p.part === part && p.station === s.id)).length };
     };
 
-    const parts: SpeakingHubPart[] = SPEAKING_PARTS.map((part) => {
+    const parts: SpeakingHubPart[] = speakingPartsOf(exam).map((part) => {
         const items = exercises.filter((e) => (e.partNumber ?? 1) === part.part);
         return { part: part.part, path: pathOf(part.part), exercisesTotal: items.length, exercisesDone: items.filter((e) => e.completed).length };
     });
@@ -49,7 +51,7 @@ function SprechenContent() {
                 {isLoading ? (
                     <Loading />
                 ) : (
-                    <SpeakingHubView level={level} parts={parts} onLevelChange={(l) => router.replace(`/dashboard/exam-prep/sprechen?level=${encodeURIComponent(l)}`)} />
+                    <SpeakingHubView exam={exam} level={level} parts={parts} onLevelChange={(l) => router.replace(speakingHubHref(l, exam))} />
                 )}
             </div>
         </div>

@@ -3,7 +3,7 @@
 import { useExamTimeConfiguration } from "@/hooks/exam/useExamTimeConfiguration";
 import useExamTimerStore from "@/store/useExamTimerStore";
 import { formatClock, formatDifference } from "@/lib/examTime";
-import { ExamSection } from "@/types/exam";
+import { ExamSection, ExamTypeCode } from "@/types/exam";
 
 const STATUS_CHIP = {
     within: "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300",
@@ -28,13 +28,14 @@ export default function TeilTimeCard({
     level,
     teil,
     showLastResult = true,
-}: Readonly<{ section: ExamSection; level: string; teil: number; showLastResult?: boolean }>) {
-    const { minutes } = useExamTimeConfiguration(level, section, teil);
+    examType = "TELC",
+}: Readonly<{ section: ExamSection; level: string; teil: number; showLastResult?: boolean; examType?: ExamTypeCode }>) {
+    const { minutes } = useExamTimeConfiguration(level, section, teil, examType === "DTZ" ? "DTZ" : "TELC");
     const lastResult = useExamTimerStore((s) => s.lastResult);
     const hasHydrated = useExamTimerStore((s) => s.hasHydrated);
 
     const result =
-        showLastResult && hasHydrated && lastResult?.section === section && lastResult.level === level && lastResult.teil === teil
+        showLastResult && hasHydrated && lastResult?.section === section && lastResult.level === level && lastResult.teil === teil && (lastResult.examType ?? "TELC") === examType
             ? lastResult
             : null;
     if (minutes == null && !result) return null;

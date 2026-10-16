@@ -1,3 +1,4 @@
+import type { DtzOralContent } from "./dtzOral";
 import type { SpeakingContent } from "./exam";
 
 /** Editorial lifecycle of an exam exercise; only PUBLISHED reaches learners. */
@@ -18,11 +19,18 @@ export interface ExamContentSpecInfo {
         | "MATCHING"
         | "MULTIPLE_CHOICE"
         | "SITUATION_MATCHING"
+        | "DIRECTORY_MATCHING"
+        | "TEXT_QUESTIONS"
+        | "TEXT_TRUE_FALSE"
+        | "LETTER_GAP_FILL"
         | "WORD_BANK_CLOZE"
         | "WRITING_TASK"
+        | "WRITING_TASK_CHOICE"
         | "TOPIC_INTERVIEW"
         | "OPINION_DISCUSSION"
-        | "JOINT_PLANNING";
+        | "JOINT_PLANNING"
+        | "SELF_INTRODUCTION"
+        | "PHOTO_EXPERIENCE";
     questionCount: number;
     optionCount: number;
 }
@@ -42,6 +50,19 @@ export interface ExamContentOptions {
     scenarioTypes?: string[];
     relationships?: string[];
     communicationTypes?: string[];
+    /** DTZ Lesen Teil 1 generator choices (first entry = default). */
+    directoryTopics?: string[];
+    directorySourceTypes?: string[];
+    directoryLevels?: string[];
+    directoryVariations?: string[];
+    /** DTZ Lesen Teil 2 generator choices (first entry = default). */
+    adTopics?: string[];
+    adCategories?: string[];
+    /** DTZ Lesen Teil 3 generator choices (first entry = default). */
+    lesenTextTopics?: string[];
+    lesenTextMixes?: string[];
+    lesenTextTypes?: string[];
+    lesenTextLengths?: string[];
 }
 
 export interface PromptRequest {
@@ -68,6 +89,26 @@ export interface PromptRequest {
     /** Schriftlicher Ausdruck: omitted = chosen by the AI to fit the situation. */
     relationship?: string;
     communicationType?: string;
+    /** DTZ Lesen Teil 1: DIRECTORY | REGISTER | CATALOGUE | SERVICE_LIST | RANDOM. */
+    sourceType?: string;
+    /** DTZ Lesen Teil 1: include the unscored example. */
+    includeExample?: boolean;
+    /** DTZ Lesen Teil 1: RANDOM | NEW_SCENARIO | AVOID_KNOWN_TOPICS. */
+    variation?: string;
+    /** DTZ Lesen Teil 2: advertisement categories; omitted = chosen by the AI. */
+    adCategories?: string[];
+    /** DTZ Lesen Teil 3: RANDOM_MIX | PRESS_EMAIL_NOTICE | THREE_PRESS | THREE_EMAILS | THREE_NOTICES | CUSTOM. */
+    textMix?: string;
+    /** DTZ Lesen Teil 3, textMix CUSTOM: the type of text 1, 2 and 3. */
+    customTextTypes?: string[];
+    /** DTZ Lesen Teil 3: SHORT | MEDIUM | LONG. */
+    textLength?: string;
+    /** DTZ Lesen Teil 3: include dates and times where appropriate. */
+    includeDatesTimes?: boolean;
+    /** DTZ Lesen Teil 3: optional metadata tags. */
+    tags?: string[];
+    /** DTZ Schreiben: DIFFERENT_TOPICS | DIFFERENT_PURPOSES | FORMAL_AND_INFORMAL | RANDOM_BALANCED. */
+    pairPreference?: string;
 }
 
 export interface PromptResponse {
@@ -118,6 +159,8 @@ export interface PreviewSituation {
     /** a–l, or x when no advertisement fits. */
     correctAdvertisementId: string | null;
     matchingProfile?: { primaryNeed?: string; requirements?: string[] } | null;
+    /** DTZ Lesen Teil 2 (admin only): the German explanation of the answer, by language ("de"). */
+    explanation?: Record<string, string> | null;
 }
 
 export interface AdvertisementContent {
@@ -172,6 +215,91 @@ export interface PreviewSpeaking {
     content: SpeakingContent;
 }
 
+/** DTZ Lesen Teil 1: the shared information source, the unscored example and (admin only) what supports each answer. */
+export interface PreviewDirectory {
+    sourceType: string | null;
+    topic: string | null;
+    languageLevel: string | null;
+    sourceTitle: string | null;
+    introduction: string | null;
+    entries: { id: string; heading: string; details: string[] }[];
+    displayText: string | null;
+    example: { situation: string | null; options: PreviewHeading[]; correctOptionId: string | null; explanation: Record<string, string> } | null;
+    questionDetails: { number: number | null; sourceEntryIds: string[]; explanation: Record<string, string> }[];
+}
+
+/** DTZ Lesen Teil 3: one task of a text. `options` is empty for TRUE_FALSE; `correctAnswer` is RICHTIG / FALSCH or a, b, c. */
+export interface PreviewTextTask {
+    number: number | null;
+    type: "TRUE_FALSE" | "MULTIPLE_CHOICE" | string;
+    prompt: string | null;
+    options: PreviewHeading[];
+    correctAnswer: string | null;
+    explanation: Record<string, string>;
+}
+
+export interface PreviewTextItem {
+    id: string | null;
+    number: number | null;
+    type: string | null;
+    title: string | null;
+    sender: string | null;
+    date: string | null;
+    body: string | null;
+    tasks: PreviewTextTask[];
+}
+
+/** DTZ Lesen Teil 3: the three texts with their two tasks each and the answer key (admin only). */
+export interface PreviewTextQuestions {
+    topic: string | null;
+    languageLevel: string | null;
+    texts: PreviewTextItem[];
+}
+
+/** DTZ Lesen Teil 5: the letter / email with its {{40}}..{{45}} markers, the unscored example gap and (admin only) what each gap tests. */
+export interface PreviewLetter {
+    type: string | null;
+    topic: string | null;
+    languageLevel: string | null;
+    sender: string | null;
+    recipient: string | null;
+    date: string | null;
+    subject: string | null;
+    body: string | null;
+    example: {
+        textBeforeGap: string | null;
+        textAfterGap: string | null;
+        options: PreviewHeading[];
+        correctOptionId: string | null;
+        explanation: Record<string, string>;
+    } | null;
+    gaps: { number: number | null; grammarCategory: string | null; grammarFocus: string | null; explanation: Record<string, string> }[];
+}
+
+/** DTZ Schreiben: one alternative in the import-file shape; the same shape is sent to the editor endpoints. */
+export interface PreviewWritingChoiceTask {
+    label: string;
+    title: string | null;
+    topic: string | null;
+    communicationType: string | null;
+    situation: string | null;
+    recipientName: string | null;
+    recipientRole: string | null;
+    writingInstruction: string | null;
+    points: string[];
+}
+
+export interface PreviewWritingChoice {
+    durationMinutes: number;
+    languageLevel: string | null;
+    tasks: PreviewWritingChoiceTask[];
+}
+
+export interface WritingChoiceSaveResult {
+    id: string;
+    warnings: ContentIssue[];
+}
+
 export interface ExercisePreviewData {
     title: string | null;
     instructions: string | null;
@@ -189,6 +317,28 @@ export interface ExercisePreviewData {
     writing?: PreviewWriting | null;
     /** Speaking tasks (Mündlicher Ausdruck). */
     speaking?: PreviewSpeaking | null;
+    /** DTZ Lesen Teil 1 (directory matching): the questions are in `questions`, the source and answer-key details here. */
+    directory?: PreviewDirectory | null;
+    /** DTZ Lesen Teil 3 (texts with richtig/falsch + multiple choice): texts, tasks and answer key. */
+    textQuestions?: PreviewTextQuestions | null;
+    /** DTZ Lesen Teil 5 (letter with six gaps): the letter, the example and the answer key; the six gap questions are in `questions`. */
+    letter?: PreviewLetter | null;
+    /** DTZ Schreiben: Aufgabe A and Aufgabe B with four content points each. */
+    writingChoice?: PreviewWritingChoice | null;
+    /** DTZ Mündliche Prüfung: the Teil's content (admins also see the image prompt of Teil 2). */
+    dtzOral?: PreviewDtzOral | null;
+}
+
+export interface PreviewDtzOral {
+    part: 1 | 2 | 3;
+    exerciseType: string;
+    languageLevel: string | null;
+    content: DtzOralContent;
+}
+
+export interface DtzOralSaveResult {
+    id: string;
+    warnings: ContentIssue[];
 }
 
 export interface DuplicateMatch {

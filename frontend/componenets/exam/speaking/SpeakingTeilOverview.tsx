@@ -12,7 +12,7 @@ import { useExamBookmark } from "@/hooks/exam/useExamBookmark";
 import { useExamTimeConfiguration } from "@/hooks/exam/useExamTimeConfiguration";
 import useExamTimerStore from "@/store/useExamTimerStore";
 import { effectiveScore } from "../examData";
-import { learnHref, SPEAKING_PARTS } from "./speakingMeta";
+import { learnHref, SpeakingExam, speakingPartsOf, speakingTitleOf } from "./speakingMeta";
 import SpeakingExerciseRow, { TEIL_EMOJI } from "./SpeakingExerciseRow";
 import { shortSpeakingTitle } from "./SpeakingTopHeader";
 
@@ -25,6 +25,8 @@ const FILTERS: { value: Filter; label: string }[] = [
 ];
 
 interface SpeakingTeilOverviewProps {
+    /** Telc Mündlicher Ausdruck (default) or the DTZ Mündliche Prüfung. */
+    exam?: SpeakingExam;
     items: ExamExerciseSummaryResponse[];
     level: string;
     teil: number;
@@ -54,11 +56,11 @@ function ProgressRing({ done, total }: Readonly<{ done: number; total: number }>
 }
 
 /** Recommended time per Übung and, once one was finished, the Zeit-Check of the latest Übung of this Teil. */
-function TimeStrip({ level, teil }: Readonly<{ level: string; teil: number }>) {
-    const { minutes } = useExamTimeConfiguration(level, "MUENDLICHER_AUSDRUCK", teil);
+function TimeStrip({ level, teil, exam }: Readonly<{ level: string; teil: number; exam: SpeakingExam }>) {
+    const { minutes } = useExamTimeConfiguration(level, "MUENDLICHER_AUSDRUCK", teil, exam);
     const lastResult = useExamTimerStore((s) => s.lastResult);
     const hydrated = useExamTimerStore((s) => s.hasHydrated);
-    const result = hydrated && lastResult?.section === "MUENDLICHER_AUSDRUCK" && lastResult.level === level && lastResult.teil === teil ? lastResult : null;
+    const result = hydrated && lastResult?.section === "MUENDLICHER_AUSDRUCK" && lastResult.level === level && lastResult.teil === teil && (lastResult.examType ?? "TELC") === exam ? lastResult : null;
     if (minutes == null && !result) return null;
 
     const difference = result?.differenceSeconds ?? null;
@@ -116,13 +118,13 @@ function TimeStrip({ level, teil }: Readonly<{ level: string; teil: number }>) {
  * Teil page of Mündlicher Ausdruck: a hero with the progress ring and one big "continue" button, the Zeit-Check, a shortcut to the
  * Lernbereich and the Übungen as cards (status, last time against the recommendation, bookmark).
  */
-export default function SpeakingTeilOverview({ items, level, teil, heading, subheading, backHref, backLabel, lastTimes }: Readonly<SpeakingTeilOverviewProps>) {
+export default function SpeakingTeilOverview({ exam = "TELC", items, level, teil, heading, subheading, backHref, backLabel, lastTimes }: Readonly<SpeakingTeilOverviewProps>) {
     const router = useRouter();
     const { toggle: toggleBookmark, pendingId } = useExamBookmark();
     const [filter, setFilter] = useState<Filter>("ALL");
     const [visible, setVisible] = useState(PAGE_SIZE);
 
-    const part = SPEAKING_PARTS.find((p) => p.part === teil);
+    const part = speakingPartsOf(exam).find((p) => p.part === teil);
     const mastered = items.filter((i) => effectiveScore(i) >= 100).length;
     const openIndex = items.findIndex((i) => effectiveScore(i) < 100);
     const next = items[openIndex === -1 ? 0 : openIndex];
@@ -147,7 +149,7 @@ export default function SpeakingTeilOverview({ items, level, teil, heading, subh
                 <span aria-hidden="true" className="absolute end-6 top-4 text-7xl opacity-20 sm:text-8xl">{TEIL_EMOJI[teil] ?? "🎤"}</span>
                 <div className="relative flex flex-wrap items-center justify-between gap-5">
                     <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold uppercase tracking-wider text-white/80">Mündlicher Ausdruck · {level}</p>
+                        <p className="text-xs font-bold uppercase tracking-wider text-white/80">{speakingTitleOf(exam)} · {exam === "DTZ" ? "DTZ A2-B1" : level}</p>
                         <h1 className="mt-1 text-3xl font-extrabold">{heading}</h1>
                         {(subheading ?? part?.title) && <p className="mt-0.5 text-lg font-medium text-white/90">{subheading ?? part?.title}</p>}
                         {part && <p className="mt-1 text-sm text-white/80">{part.description}</p>}
@@ -176,10 +178,10 @@ export default function SpeakingTeilOverview({ items, level, teil, heading, subh
             </header>
 
             <div className="grid gap-4 md:grid-cols-2 md:[&>*:only-child]:col-span-2">
-                <TimeStrip level={level} teil={teil} />
+                <TimeStrip level={level} teil={teil} exam={exam} />
 
                 <Link
-                    href={learnHref(level, teil)}
+                    href={learnHref(level, teil, undefined, exam)}
                     className="group relative flex items-center gap-4 overflow-hidden rounded-2xl bg-gradient-to-br from-pink-500/10 via-card to-orange-400/10 p-4 shadow-card ring-1 ring-pink-500/20 transition hover:-translate-y-0.5 hover:shadow-md hover:ring-pink-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500/60 sm:p-5"
                 >
                     <span aria-hidden="true" className="pointer-events-none absolute -bottom-8 -end-6 text-7xl opacity-10 transition group-hover:rotate-6 group-hover:opacity-20">📖</span>

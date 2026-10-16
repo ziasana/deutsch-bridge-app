@@ -7,6 +7,7 @@ import { toast } from "@/lib/toast";
 import useAuthStore from "@/store/useAuthStore";
 import { getExamTimeSettings, resetExamTimeSettings, saveExamTimeSettings } from "@/services/examTimeService";
 import { ExamTimeSettings as Settings } from "@/types/examTime";
+import type { ExamTimeExam } from "@/services/examTimeService";
 import {
     checkTotal,
     DraftRow,
@@ -38,7 +39,10 @@ export default function ExamTimeSettings() {
     const router = useRouter();
     const { userProfile, hasHydrated } = useAuthStore();
 
-    const [level, setLevel] = useState("B1");
+    const [exam, setExam] = useState<ExamTimeExam>("TELC");
+    // DTZ A2-B1 is practised and stored at B1.
+    const [telcLevel, setLevel] = useState("B1");
+    const level = exam === "DTZ" ? "B1" : telcLevel;
     const [settings, setSettings] = useState<Settings | null>(null);
     const [rows, setRows] = useState<DraftRow[]>([]);
     const [total, setTotal] = useState("");
@@ -53,8 +57,8 @@ export default function ExamTimeSettings() {
     }, []);
 
     const load = useCallback(
-        (forLevel: string) => {
-            getExamTimeSettings(forLevel)
+        (forLevel: string, forExam: ExamTimeExam) => {
+            getExamTimeSettings(forLevel, forExam)
                 .then((res) => apply(res.data))
                 .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to load time settings."))
                 .finally(() => setIsLoading(false));
@@ -68,8 +72,8 @@ export default function ExamTimeSettings() {
             router.push("/dashboard");
             return;
         }
-        load(level);
-    }, [hasHydrated, userProfile, router, load, level]);
+        load(level, exam);
+    }, [hasHydrated, userProfile, router, load, level, exam]);
 
     const min = settings?.minMinutes ?? 1;
     const max = settings?.maxMinutes ?? 180;
@@ -98,6 +102,7 @@ export default function ExamTimeSettings() {
         });
         setIsSaving(true);
         saveExamTimeSettings({
+            examType: exam,
             level,
             totalDurationMinutes: derived.parsedTotal.kind === "ok" ? derived.parsedTotal.value : null,
             configurations,
@@ -113,7 +118,7 @@ export default function ExamTimeSettings() {
     const reset = () => {
         setConfirmReset(false);
         setIsSaving(true);
-        resetExamTimeSettings(level)
+        resetExamTimeSettings(level, exam)
             .then((res) => {
                 apply(res.data);
                 toast.success("Reset to defaults.");
@@ -162,11 +167,15 @@ export default function ExamTimeSettings() {
                                         <select
                                             aria-label="Exam"
                                             className={SELECT_CLASS}
-                                            disabled
-                                            value="TELC"
-                                            onChange={() => undefined}
+                                            value={exam}
+                                            disabled={isSaving}
+                                            onChange={(e) => {
+                                                setIsLoading(true);
+                                                setExam(e.target.value as ExamTimeExam);
+                                            }}
                                         >
                                             <option value="TELC">telc Deutsch</option>
+                                            <option value="DTZ">DTZ A2–B1</option>
                                         </select>
                                         <select
                                             aria-label="Level"
@@ -176,7 +185,7 @@ export default function ExamTimeSettings() {
                                                 setLevel(e.target.value);
                                             }}
                                             className={SELECT_CLASS}
-                                            disabled={isSaving}
+                                            disabled={isSaving || exam === "DTZ"}
                                         >
                                             {LEVELS.map((lvl) => (
                                                 <option key={lvl} value={lvl}>
@@ -197,6 +206,7 @@ export default function ExamTimeSettings() {
                                     min={min}
                                     max={max}
                                     disabled={isSaving}
+                                    examType={exam}
                                     onChange={(index, patch) =>
                                         setRows((prev) => prev.map((row, i) => (i === index ? { ...row, ...patch } : row)))
                                     }
@@ -224,7 +234,7 @@ export default function ExamTimeSettings() {
             <ConfirmDialog
                 isOpen={confirmReset}
                 title="Reset to defaults?"
-                message={`This replaces all ${level} time settings with the built-in training defaults. Levels without defaults are cleared.`}
+                message={`This replaces all ${exam === "DTZ" ? "DTZ A2–B1" : level} time settings with the built-in training defaults. Levels without defaults are cleared.`}
                 confirmLabel="Reset"
                 cancelLabel="Cancel"
                 onConfirm={reset}

@@ -12,7 +12,7 @@ public final class SpeakingGuideDtos {
     private SpeakingGuideDtos() {
     }
 
-    public record GuideResponse(String level, int part, Map<String, Object> content, LocalDateTime updatedAt) {
+    public record GuideResponse(String exam, String level, int part, Map<String, Object> content, LocalDateTime updatedAt) {
     }
 
     /** One finished learning station of a Teil with the learner's best first-try quiz result. */

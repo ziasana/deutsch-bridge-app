@@ -4,6 +4,7 @@ import com.deutschbridge.backend.model.entity.ExamPassage;
 import com.deutschbridge.backend.model.entity.ExamQuestion;
 import com.deutschbridge.backend.model.enums.ExamSection;
 import com.deutschbridge.backend.model.enums.ExamTaskType;
+import com.deutschbridge.backend.model.enums.ExamType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 
 import java.util.List;
@@ -24,6 +25,8 @@ public record ExamExerciseManualRequest(
         String modelSolution,
         Boolean published,
         Boolean requiresPlanning,
-        List<String> leitpunkte
+        List<String> leitpunkte,
+        /** Which exam the exercise prepares for; null keeps the current value (TELC for new exercises). */
+        ExamType examType
 ) {
 }

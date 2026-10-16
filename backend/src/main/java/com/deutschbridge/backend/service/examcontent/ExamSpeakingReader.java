@@ -1,6 +1,7 @@
 package com.deutschbridge.backend.service.examcontent;
 
 import com.deutschbridge.backend.model.dto.ExamContentDtos.Issue;
+import com.deutschbridge.backend.model.enums.ExamType;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.ArrayList;
@@ -37,15 +38,34 @@ final class ExamSpeakingReader {
     private final String p;
     private final List<Issue> issues;
     private final List<String> strings = new ArrayList<>();
+    /** Optional en/fa hints of a DTZ guide: checked for markup only, since Arabic script is allowed there. */
+    private final List<String> hintStrings = new ArrayList<>();
+    private final boolean dtz;
+    private final Map<String, String> coreTopics;
+    private final Map<String, String> allTopics;
+    private final Map<String, String> goalMap;
 
     ExamSpeakingReader(String pathPrefix, List<Issue> issues) {
+        this(pathPrefix, issues, ExamType.TELC);
+    }
+
+    ExamSpeakingReader(String pathPrefix, List<Issue> issues, ExamType exam) {
         this.p = pathPrefix;
         this.issues = issues;
+        this.dtz = exam == ExamType.DTZ;
+        this.coreTopics = dtz ? SpeakingSchema.DTZ_TOPICS : SpeakingSchema.CORE_TOPICS;
+        this.allTopics = dtz ? SpeakingSchema.DTZ_TOPICS : SpeakingSchema.allTopics();
+        this.goalMap = dtz ? SpeakingSchema.DTZ_GOALS : SpeakingSchema.GOALS;
     }
 
     /** Validates the Lernbereich content of one Teil; returns the normalised content. */
     static Map<String, Object> validateGuide(int part, JsonNode node, List<Issue> issues) {
-        return new ExamSpeakingReader("", issues).readGuide(part, node);
+        return validateGuide(ExamType.TELC, part, node, issues);
+    }
+
+    /** Telc guides are German only; DTZ guides may add optional {@code en}/{@code fa} hints to the intro, tips and steps. */
+    static Map<String, Object> validateGuide(ExamType exam, int part, JsonNode node, List<Issue> issues) {
+        return new ExamSpeakingReader("", issues, exam).readGuide(part, node);
     }
 
     Result read(ExamContentSpec spec, JsonNode node, String title, String instructions) {
@@ -285,11 +305,15 @@ final class ExamSpeakingReader {
      * questions / Redemittel (topics, goals or functions). Returns the normalised content; errors go to the issue list.
      */
     Map<String, Object> readGuide(int part, JsonNode node) {
-        rejectTranslations(node, "$");
+        if (!dtz) rejectTranslations(node, "$");
         Map<String, Object> data = new LinkedHashMap<>();
         String intro = requiredText(node, "intro", "", SpeakingSchema.MAX_TEXT, "INTRO");
         strings.add(intro);
         data.put("intro", intro);
+        if (dtz) {
+            Map<String, String> hint = readHints(node.get("introHint"), "introHint");
+            if (!hint.isEmpty()) data.put("introHint", hint);
+        }
         data.put("tips", readTitledTexts(node, "tips", 2, 8, "TIPS", true));
         data.put("steps", readTitledTexts(node, "steps", 0, 6, "STEPS", false));
         data.put("commonMistakes", stringList(node, "commonMistakes", "", 0, 8, SpeakingSchema.MAX_LINE, "COMMON_MISTAKES", false));
@@ -330,6 +354,10 @@ final class ExamSpeakingReader {
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("title", title);
             m.put("text", body);
+            if (dtz) {
+                Map<String, String> hint = readHints(entry, field + "[" + i + "]");
+                if (!hint.isEmpty()) m.put("hint", hint);
+            }
             out.add(m);
         }
         if (out.size() < min || out.size() > max) {
@@ -338,13 +366,33 @@ final class ExamSpeakingReader {
         return out;
     }
 
+    /** Optional English / Persian helper text (DTZ only): {@code {"en": "...", "fa": "..."}}. */
+    private Map<String, String> readHints(JsonNode source, String path) {
+        Map<String, String> hint = new LinkedHashMap<>();
+        if (source == null || source.isNull() || !source.isObject()) return hint;
+        for (String lang : List.of("en", "fa")) {
+            JsonNode raw = source.get(lang);
+            if (raw == null || raw.isNull()) continue;
+            if (!raw.isTextual()) {
+                issues.add(error("HINT_INVALID", path + "." + lang, lang + " must be a plain string."));
+                continue;
+            }
+            String value = raw.asText().trim();
+            if (value.isEmpty()) continue;
+            if (value.length() > 800) issues.add(error("HINT_TOO_LONG", path + "." + lang, lang + " may be at most 800 characters."));
+            hint.put(lang, value);
+            hintStrings.add(value);
+        }
+        return hint;
+    }
+
     private void readGuideTopics(JsonNode node, Map<String, Object> data) {
         List<Map<String, Object>> topics = new ArrayList<>();
         JsonNode array = node.get("topics");
-        Map<String, String> allowed = SpeakingSchema.allTopics();
+        Map<String, String> allowed = allTopics;
         Set<String> seen = new LinkedHashSet<>();
         if (array == null || !array.isArray() || array.isEmpty()) {
-            issues.add(error("TOPICS_MISSING", "topics", "topics must cover the seven core topics: " + String.join(", ", SpeakingSchema.CORE_TOPICS.keySet()) + "."));
+            issues.add(error("TOPICS_MISSING", "topics", "topics must cover the core topics: " + String.join(", ", coreTopics.keySet()) + "."));
         } else {
             for (int i = 0; i < array.size(); i++) {
                 JsonNode t = array.get(i);
@@ -370,8 +418,8 @@ final class ExamSpeakingReader {
                 topic.put("tip", optionalText(t, "tip", SpeakingSchema.MAX_LINE, "TOPIC_TIP"));
                 topics.add(topic);
             }
-            List<String> missing = SpeakingSchema.CORE_TOPICS.keySet().stream().filter(id -> !seen.contains(id)).toList();
-            if (!missing.isEmpty()) issues.add(error("CORE_TOPIC_MISSING", "topics", "The guide needs all seven core topics. Missing: " + String.join(", ", missing) + "."));
+            List<String> missing = coreTopics.keySet().stream().filter(id -> !seen.contains(id)).toList();
+            if (!missing.isEmpty()) issues.add(error("CORE_TOPIC_MISSING", "topics", "The guide needs all " + coreTopics.size() + " core topics. Missing: " + String.join(", ", missing) + "."));
         }
         data.put("topics", topics);
         data.put("usefulPhrases", stringList(node, "usefulPhrases", "", 0, SpeakingSchema.MAX_PHRASES, SpeakingSchema.MAX_LINE, "PHRASES", false));
@@ -382,14 +430,14 @@ final class ExamSpeakingReader {
         JsonNode array = node.get("goals");
         Set<String> seen = new LinkedHashSet<>();
         if (array == null || !array.isArray() || array.isEmpty()) {
-            issues.add(error("GOALS_MISSING", "goals", "goals must contain the four goals: " + String.join(", ", SpeakingSchema.GOALS.keySet()) + "."));
+            issues.add(error("GOALS_MISSING", "goals", "goals must contain the four goals: " + String.join(", ", goalMap.keySet()) + "."));
         } else {
             for (int i = 0; i < array.size(); i++) {
                 JsonNode g = array.get(i);
                 String path = "goals[" + i + "]";
                 String id = g.isObject() ? text(g, "id") : null;
-                if (id == null || !SpeakingSchema.GOALS.containsKey(id)) {
-                    issues.add(error("GOAL_ID_INVALID", path + ".id", "Goal id must be one of " + String.join(", ", SpeakingSchema.GOALS.keySet()) + " (found: " + id + ")."));
+                if (id == null || !goalMap.containsKey(id)) {
+                    issues.add(error("GOAL_ID_INVALID", path + ".id", "Goal id must be one of " + String.join(", ", goalMap.keySet()) + " (found: " + id + ")."));
                     continue;
                 }
                 if (!seen.add(id)) {
@@ -398,13 +446,13 @@ final class ExamSpeakingReader {
                 }
                 Map<String, Object> goal = new LinkedHashMap<>();
                 goal.put("id", id);
-                goal.put("title", titleOr(g, SpeakingSchema.GOALS.get(id), path));
+                goal.put("title", titleOr(g, goalMap.get(id), path));
                 goal.put("description", requiredText(g, "description", path, 500, "GOAL_DESCRIPTION"));
                 goal.put("usefulPhrases", stringList(g, "usefulPhrases", path, SpeakingSchema.MIN_GOAL_PHRASES, SpeakingSchema.MAX_PHRASES, SpeakingSchema.MAX_LINE, "GOAL_PHRASES", true));
                 goal.put("tip", optionalText(g, "tip", SpeakingSchema.MAX_LINE, "GOAL_TIP"));
                 goals.add(goal);
             }
-            List<String> missing = SpeakingSchema.GOALS.keySet().stream().filter(id -> !seen.contains(id)).toList();
+            List<String> missing = goalMap.keySet().stream().filter(id -> !seen.contains(id)).toList();
             if (!missing.isEmpty()) issues.add(error("GOAL_MISSING", "goals", "All four goals are required. Missing: " + String.join(", ", missing) + "."));
         }
         data.put("goals", goals);
@@ -544,6 +592,12 @@ final class ExamSpeakingReader {
             if (MARKUP.matcher(value).find()) {
                 issues.add(error("HTML_CONTENT", p.isEmpty() ? "$" : p.substring(0, p.length() - 1),
                         "Content must be plain text — HTML/script was found in: \"" + shorten(value) + "\"."));
+                return;
+            }
+        }
+        for (String value : hintStrings) {
+            if (MARKUP.matcher(value).find()) {
+                issues.add(error("HTML_CONTENT", "$", "Content must be plain text — HTML/script was found in: \"" + shorten(value) + "\"."));
                 return;
             }
         }

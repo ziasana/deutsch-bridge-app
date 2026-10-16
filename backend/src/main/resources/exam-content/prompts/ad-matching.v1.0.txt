@@ -1,0 +1,187 @@
+You are an expert author of original German DTZ A2–B1 exam-preparation exercises.
+
+{{COUNT_LINE}} for:
+
+- Exam: DTZ
+- Section: Lesen
+- Part: 2
+- Skill: Anzeigen zuordnen
+- Exercise type: ADVERTISEMENT_MATCHING
+- Difficulty: {{DIFFICULTY}}
+- Main topic: {{TOPIC}}
+- Advertisement categories: {{ADVERTISEMENT_CATEGORIES}}
+- Example question: {{INCLUDE_EXAMPLE}}
+{{VARIATION_BLOCK}}
+The exercise must follow the task structure described below. It is original practice material for an independent learning application.
+
+### A. Mandatory structure
+
+Create:
+
+- Exactly five situations, numbered 26–30.
+- Exactly eight advertisements, labelled a–h.
+- Exactly four correct situation-to-advertisement matches.
+- Exactly one situation for which no suitable advertisement exists.
+- Exactly one correct answer for each situation.
+- Exactly one `X` answer in the answer key.
+- No repeated use of an advertisement as the correct answer.
+
+The possible answers are:
+
+`a`, `b`, `c`, `d`, `e`, `f`, `g`, `h`, `X`.
+
+An `X` means that none of the eight advertisements offers a suitable solution for that situation.
+
+### B. Instructions
+
+Use the following instruction text exactly:
+
+"{{INSTRUCTIONS}}"
+
+### C. Situations
+
+Create exactly five short situations.
+
+Each situation should describe a realistic everyday need or goal of a person.
+
+Use simple, natural German at the configured level.
+
+Situations must be sufficiently specific to distinguish the intended match from advertisements that offer similar but unsuitable services.
+
+For example, relevant distinctions may include:
+
+- Weekend work versus weekday work.
+- Training from home versus classroom training.
+- A required qualification versus a qualification someone already possesses.
+- A course for adults versus a course for children.
+- A driving school versus a general transport information service.
+- A suitable time, age group, location, or eligibility requirement.
+
+Do not simply repeat an advertisement's headline in the situation.
+
+Use reasonable paraphrasing so that learners must understand the information rather than search for identical words.
+
+Do not use obscure vocabulary or complicated inference.
+
+### D. Advertisements
+
+Generate exactly eight separate advertisements labelled a, b, c, d, e, f, g and h.
+
+Every advertisement must be a realistic notice with an appropriate title and a coherent body.
+
+Use a variety of realistic styles, such as:
+
+- Short job announcements.
+- Course announcements.
+- Training offers.
+- Education and qualification information.
+- Local services.
+- Practical public information.
+- Leisure and community offers.
+
+Use the selected topic and categories as guidance, but ensure the advertisements remain a coherent set. Assign to every advertisement the category that accurately describes it.
+
+Do not create eight nearly identical advertisements.
+
+Do not create advertisements that are so short that they lack the information needed for matching (about 25–70 words each).
+
+Do not make the correct answer depend on facts that are absent from the advertisement.
+
+Use realistic details where useful, including schedules, duration, eligibility, age requirements, costs, location, qualifications, and contact information. Use fictional names, addresses and phone numbers.
+
+Write the advertisement body as plain text. Lines that start with "- " are shown as bullet points. Do not use HTML or Markdown.
+
+Do not add irrelevant complexity just to make an advertisement longer.
+
+### E. Design the matching relationships
+
+Before writing the final output, silently design the answer relationships:
+
+1. Define four distinct matching relationships.
+2. Assign one unique advertisement to each matching situation.
+3. Define one realistic situation for which none of the eight advertisements offers a suitable solution.
+4. Create four plausible distractor advertisements.
+5. Write all eight complete advertisements.
+6. Write the five situations without exposing their intended answers.
+7. Solve all five situations against all eight advertisements.
+8. Revise any ambiguous situation or advertisement.
+
+The `X` answer must not be arbitrary. For that situation, ensure that every advertisement has a meaningful mismatch, such as an incompatible schedule, wrong target group, unavailable service, unsuitable qualification, or different purpose.
+
+Do not make the unmatched situation impossible to answer because it is vague. It must be clear what the person needs; the missing match must be a property of the advertisements.
+
+### F. Uniqueness and ambiguity validation
+
+Before returning the JSON, solve every situation against all eight advertisements.
+
+For each situation:
+
+1. Compare its complete requirements against advertisement a, then b, and continue through h.
+2. Identify all advertisements that genuinely satisfy the situation.
+3. Confirm that exactly one advertisement satisfies each matched situation.
+4. Confirm that no advertisement satisfies the `X` situation.
+5. Confirm that the four correct advertisements are distinct.
+6. Revise any situation with multiple plausible matches or with an unintended missing match.
+7. Recheck the entire answer key after revising the text.
+
+A similar topic alone does not establish a match. A suitable advertisement must satisfy the essential requirements in the situation.
+
+Do not rely on the answer key to resolve ambiguity. The actual texts must make the answer clear.
+
+### G. Difficulty and originality
+
+{{LEVEL_RULES}}
+
+Create original practice material. Do not copy or closely paraphrase advertisements or situations from published model tests or other sources; use the structure only.
+
+Do not claim that the generated content is an official DTZ examination question.
+
+### H. Example question
+
+{{EXAMPLE_RULE}}
+
+### I. Explanations
+
+For each scored question, provide a short explanation in German (`de`) only. Do not add English or Persian explanations.
+
+Each explanation must identify the decisive detail that supports the answer. In an explanation, refer to an advertisement as "Anzeige b" (with its label).
+
+For an `X` answer, explain briefly why none of the advertisements satisfies the essential requirements.
+
+Keep explanations separate from the advertisements and situations.
+
+### J. Required JSON output
+
+Return only valid JSON.
+
+Do not use Markdown or code fences.
+
+Do not add comments or text outside the JSON.
+
+{{BATCH_RULE}}Use this structure{{STRUCTURE_NOTE}}:
+
+{{JSON_EXAMPLE}}
+
+The arrays shown in this structure are abbreviated. In your actual output, generate all eight advertisements, all five situations and all five answer-key entries. Replace every "..." with real content and do not return placeholders. Set "difficulty" and "level" as shown.
+
+### K. Final verification
+
+Before returning the JSON, silently verify:
+
+- Valid JSON.
+- Correct DTZ metadata.
+- Exactly five situations numbered 26–30.
+- Exactly eight advertisements labelled a–h with unique labels.
+- Exactly five answer-key entries whose question numbers match the five situations.
+- Exactly four distinct advertisement answers and exactly one `X`.
+- No repeated correct advertisement labels.
+- Every matched answer is supported by its advertisement.
+- The `X` situation has no valid match.
+- All other situations have exactly one valid match.
+- Every explanation is in German and matches the actual content.
+- No accidental contradictions.
+- Correct difficulty and natural German.
+- Original content.
+- Example configuration is respected.
+{{NOTES_BLOCK}}
+Return only the final JSON object.

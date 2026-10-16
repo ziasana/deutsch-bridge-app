@@ -2,7 +2,7 @@
 
 import { Check, ChevronRight, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ExamSection } from "@/types/exam";
+import { ExamSection, ExamTypeCode } from "@/types/exam";
 import { useExamTimeConfiguration } from "@/hooks/exam/useExamTimeConfiguration";
 import { ExamPartGroup, PartState } from "./examData";
 import { LessonAccent, lessonThemeVars } from "./lessonTheme";
@@ -18,12 +18,14 @@ interface ExamPartListProps {
     level: string;
     accent: LessonAccent;
     groups: ExamPartGroup[];
+    /** Recommended times are configured per exam (Telc and DTZ). */
+    examType?: ExamTypeCode;
     onOpen: (group: ExamPartGroup) => void;
 }
 
 /** Recommended time of a Teil as a small chip (nothing while unknown, so the card never shows a placeholder). */
-function MinutesChip({ section, level, teil }: Readonly<{ section: ExamSection; level: string; teil: number | null }>) {
-    const { minutes } = useExamTimeConfiguration(level, section, teil);
+function MinutesChip({ section, level, teil, examType }: Readonly<{ section: ExamSection; level: string; teil: number | null; examType?: ExamTypeCode }>) {
+    const { minutes } = useExamTimeConfiguration(level, section, teil, examType === "DTZ" ? "DTZ" : "TELC");
     if (minutes == null) return null;
     return (
         <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
@@ -33,7 +35,7 @@ function MinutesChip({ section, level, teil }: Readonly<{ section: ExamSection; 
 }
 
 /** The Teile of a section as a journey: numbered path, one card per Teil with progress, recommended time and a clear next action. */
-export default function ExamPartList({ section, level, accent, groups, onOpen }: Readonly<ExamPartListProps>) {
+export default function ExamPartList({ section, level, accent, groups, examType, onOpen }: Readonly<ExamPartListProps>) {
     const nextKey = groups.find((g) => g.state !== "completed")?.key ?? null;
 
     return (
@@ -67,7 +69,7 @@ export default function ExamPartList({ section, level, accent, groups, onOpen }:
                                 <div className="flex flex-wrap items-center gap-2">
                                     <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-primary">Teil {teil ?? index + 1}</span>
                                     <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-semibold", ACTION[state].chipClass)}>{ACTION[state].chip}</span>
-                                    <MinutesChip section={section} level={level} teil={teil} />
+                                    <MinutesChip section={section} level={level} teil={teil} examType={examType} />
                                 </div>
                                 <h3 className="mt-2 text-lg font-bold leading-tight text-foreground">{group.subheading ?? group.label}</h3>
                                 <p className="mt-0.5 text-sm text-foreground/60">

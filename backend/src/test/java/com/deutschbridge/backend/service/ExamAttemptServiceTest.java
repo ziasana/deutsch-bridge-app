@@ -160,6 +160,97 @@ class ExamAttemptServiceTest {
     }
 
     @Test
+    @DisplayName("submitAnswer -> DTZ Lesen Teil 4 scores each of the three statements on RICHTIG/FALSCH")
+    void submitAnswer_shouldScoreTrueFalseTextStatements() throws DataNotFoundException {
+        List<ExamQuestion> statements = List.of(
+                new ExamQuestion("q37", ExamTaskType.TRUE_FALSE, "Aussage 1", 0, null, "RICHTIG", null, 37, "Erklärung", null),
+                new ExamQuestion("q38", ExamTaskType.TRUE_FALSE, "Aussage 2", 0, null, "FALSCH", null, 38, "Erklärung", null),
+                new ExamQuestion("q39", ExamTaskType.TRUE_FALSE, "Aussage 3", 0, null, "RICHTIG", null, 39, "Erklärung", null));
+        ExamExercise exercise = new ExamExercise();
+        exercise.setId("ex4");
+        exercise.setSection(ExamSection.LESEVERSTEHEN);
+        exercise.setTaskType(ExamTaskType.TEXT_TRUE_FALSE);
+        exercise.setLevel(LearningLevel.B1);
+        exercise.setPassages(List.of(new ExamPassage("t1", "Text", "<p>Inhalt</p>", null, null, null)));
+        exercise.setQuestions(statements);
+        ExamAttempt attempt = new ExamAttempt();
+        attempt.setId("attempt4");
+        attempt.setExercise(exercise);
+        attempt.setAnswers(new ArrayList<>());
+        when(attemptRepository.findById("attempt4")).thenReturn(Optional.of(attempt));
+
+        assertTrue(service.submitAnswer("attempt4", new SubmitExamAnswerRequest("q37", "RICHTIG")).correct());
+        assertFalse(service.submitAnswer("attempt4", new SubmitExamAnswerRequest("q37", "FALSCH")).correct());
+        assertTrue(service.submitAnswer("attempt4", new SubmitExamAnswerRequest("q38", "FALSCH")).correct());
+        assertFalse(service.submitAnswer("attempt4", new SubmitExamAnswerRequest("q39", "FALSCH")).correct());
+        assertFalse(service.submitAnswer("attempt4", new SubmitExamAnswerRequest("q39", null)).correct());
+    }
+
+    @Test
+    @DisplayName("DTZ Lesen Teil 5 -> six gaps are scored on the chosen option text; the example gap is not a question and not scored")
+    void letterGapFill_shouldScoreSixGapsAndIgnoreTheExample() throws DataNotFoundException {
+        List<ExamQuestion> gaps = new ArrayList<>();
+        String[] correct = {"meinem", "denn", "mit", "war", "zurück", "auf"};
+        for (int i = 0; i < 6; i++) {
+            gaps.add(new ExamQuestion("g" + (40 + i), ExamTaskType.MULTIPLE_CHOICE, "Lücke " + (40 + i), 1,
+                    List.of(correct[i], "x" + i, "y" + i), correct[i], 40 + i, 40 + i, "Erklärung " + (40 + i), null));
+        }
+        ExamExercise exercise = new ExamExercise();
+        exercise.setId("ex5");
+        exercise.setSection(ExamSection.LESEVERSTEHEN);
+        exercise.setTaskType(ExamTaskType.LETTER_GAP_FILL);
+        exercise.setLevel(LearningLevel.B1);
+        exercise.setPassages(List.of(
+                new ExamPassage("example", "Beispiel", "<p>Sehr geehrte Damen und Herren</p>", null, null, null),
+                new ExamPassage("letter", "Beschwerde", "<p>Text</p>", null, null, null)));
+        exercise.setQuestions(gaps);
+        ExamAttempt attempt = new ExamAttempt();
+        attempt.setId("attempt5");
+        attempt.setUser(createUser());
+        attempt.setExercise(exercise);
+        attempt.setAnswers(new ArrayList<>());
+        when(attemptRepository.findById("attempt5")).thenReturn(Optional.of(attempt));
+
+        for (int i = 0; i < 4; i++) {
+            assertTrue(service.submitAnswer("attempt5", new SubmitExamAnswerRequest("g" + (40 + i), correct[i])).correct());
+        }
+        assertFalse(service.submitAnswer("attempt5", new SubmitExamAnswerRequest("g44", "x4")).correct());
+        // g45 stays unanswered
+
+        ExamAttemptResultResponse result = service.complete("attempt5", new CompleteExamAttemptRequest());
+        assertEquals(100.0 * 4 / 6, result.score(), 0.0001, "score out of six");
+        assertEquals(5, result.answerBreakdown().size());
+        verify(examExerciseService).saveLastScore("ex5", result.score());
+    }
+
+    @Test
+    @DisplayName("submitAnswer -> DTZ texts exercise is scored on RICHTIG/FALSCH and on the chosen option text")
+    void submitAnswer_shouldScoreTextQuestionsTasks() throws DataNotFoundException {
+        ExamQuestion trueFalse = new ExamQuestion("q31", ExamTaskType.TRUE_FALSE, "Die Bibliothek ist montags offen.", 0, null, "FALSCH", null, 31,
+                "Erklärung", null);
+        ExamQuestion choice = new ExamQuestion("q32", ExamTaskType.MULTIPLE_CHOICE, "Was kostet es?", 0, List.of("Nichts.", "Zehn Euro.", "Zwanzig Euro."),
+                "Zehn Euro.", null, 32, "Erklärung", null);
+        ExamExercise exercise = new ExamExercise();
+        exercise.setId("ex3");
+        exercise.setSection(ExamSection.LESEVERSTEHEN);
+        exercise.setTaskType(ExamTaskType.TEXT_QUESTIONS);
+        exercise.setLevel(LearningLevel.B1);
+        exercise.setPassages(List.of(new ExamPassage("t1", "Text 1", "<p>Inhalt</p>", null, null, null)));
+        exercise.setQuestions(List.of(trueFalse, choice));
+        ExamAttempt attempt = new ExamAttempt();
+        attempt.setId("attempt3");
+        attempt.setExercise(exercise);
+        attempt.setAnswers(new ArrayList<>());
+        when(attemptRepository.findById("attempt3")).thenReturn(Optional.of(attempt));
+
+        assertTrue(service.submitAnswer("attempt3", new SubmitExamAnswerRequest("q31", "FALSCH")).correct());
+        assertFalse(service.submitAnswer("attempt3", new SubmitExamAnswerRequest("q31", "RICHTIG")).correct());
+        assertTrue(service.submitAnswer("attempt3", new SubmitExamAnswerRequest("q32", "Zehn Euro.")).correct());
+        assertFalse(service.submitAnswer("attempt3", new SubmitExamAnswerRequest("q32", "Nichts.")).correct());
+        assertFalse(service.submitAnswer("attempt3", new SubmitExamAnswerRequest("q32", null)).correct());
+    }
+
+    @Test
     @DisplayName("submitAnswer -> question without a referenced passage should not return a transcript")
     void submitAnswer_shouldReturnNullTranscriptWhenNoSectionIndex() throws DataNotFoundException {
         ExamPassage passage = audioPassage("Nicht relevant.");

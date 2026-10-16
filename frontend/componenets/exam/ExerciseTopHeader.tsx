@@ -5,6 +5,7 @@ import { Bookmark, BookmarkCheck, ChevronDown, type LucideIcon } from "lucide-re
 import { cn } from "@/lib/utils";
 import { ExamExercisePublicResponse } from "@/types/exam";
 import ExamExerciseTimer from "./ExamExerciseTimer";
+import { displayLevel } from "./examMeta";
 import { LessonAccent, lessonThemeVars } from "./lessonTheme";
 
 /** The task text as short steps: one per sentence, so a two-sentence instruction reads as "1. ... 2. ...". */
@@ -33,7 +34,8 @@ interface ExerciseTopHeaderProps {
  * Top of an exercise as ONE card instead of three stacked boxes: title with Teil badge, the timer as a
  * progress ring, and the task description as a collapsible speech bubble with numbered steps.
  */
-export default function ExerciseTopHeader({ exercise, accent, icon: Icon, kicker, sectionLabel, title, showTimer = true, descriptionAs = "steps", bookmarked, bookmarkPending, onToggleBookmark }: Readonly<ExerciseTopHeaderProps>) {
+export default function ExerciseTopHeader({ exercise, accent, icon: Icon, kicker, sectionLabel, title, showTimer: showTimerProp = true, descriptionAs = "steps", bookmarked, bookmarkPending, onToggleBookmark }: Readonly<ExerciseTopHeaderProps>) {
+    const showTimer = showTimerProp;
     const [open, setOpen] = useState(true);
     const steps = exercise.teilDescription ? instructionSteps(exercise.teilDescription) : [];
 
@@ -50,7 +52,7 @@ export default function ExerciseTopHeader({ exercise, accent, icon: Icon, kicker
                     <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                             <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-bold text-primary">{kicker}</span>
-                            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">{exercise.level ?? "Alle Niveaus"}</span>
+                            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">{displayLevel(exercise.level, exercise.examType)}</span>
                             <span className="text-xs font-medium text-foreground/50">{sectionLabel}</span>
                         </div>
                         <h1 className="mt-1.5 text-xl font-extrabold leading-tight text-foreground sm:text-2xl">{title}</h1>

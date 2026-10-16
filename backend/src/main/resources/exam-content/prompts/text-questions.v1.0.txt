@@ -1,0 +1,212 @@
+You are an expert author of original German DTZ A2–B1 exam-preparation reading exercises.
+
+{{COUNT_LINE}} for:
+
+- Exam: DTZ
+- Section: Lesen
+- Part: 3
+- Skill: Understanding information and opinions in press texts and understanding formal notices
+- Exercise type: TEXT_COMPREHENSION_MIXED
+- Difficulty: {{DIFFICULTY}}
+- Topic: {{TOPIC}}
+- Text types: {{TEXT_TYPES}}
+- Text length: {{TEXT_LENGTH}}
+{{VARIATION_BLOCK}}
+Create original practice content following the structure and constraints below. It is practice material for an independent learning application.
+
+### A. Mandatory exercise structure
+
+Generate:
+
+- Exactly three independent German texts.
+- Exactly two questions for each text.
+- Exactly six questions in total.
+- Question numbers 31, 32, 33, 34, 35, 36.
+- One Richtig/Falsch question for each text.
+- One multiple-choice question for each text.
+- Exactly three answer options for each multiple-choice question.
+- Exactly one correct answer for each question.
+
+Use the following sequence:
+
+- Text 1: Question 31 TRUE_FALSE, Question 32 MULTIPLE_CHOICE.
+- Text 2: Question 33 TRUE_FALSE, Question 34 MULTIPLE_CHOICE.
+- Text 3: Question 35 TRUE_FALSE, Question 36 MULTIPLE_CHOICE.
+
+Do not create additional scored questions.
+
+### B. Instructions
+
+Use this exact German instruction:
+
+"{{INSTRUCTIONS}}"
+
+### C. Text creation
+
+Create three independent, realistic texts.
+
+Possible formats include:
+
+- Short newspaper or press texts (PRESS_TEXT).
+- Local news reports (PRESS_TEXT).
+- Emails (EMAIL).
+- Public announcements (PUBLIC_ANNOUNCEMENT).
+- Formal notices and letters (FORMAL_NOTICE).
+- Information from institutions (INFORMATION_TEXT).
+- Practical messages about work, education, services, events, or everyday life.
+
+Follow the configured text-type selection. The `type` of every text must be exactly one of: PRESS_TEXT, EMAIL, FORMAL_NOTICE, PUBLIC_ANNOUNCEMENT, INFORMATION_TEXT.
+
+Each text must have:
+
+- A unique ID (text_1, text_2, text_3).
+- A text number (1, 2, 3).
+- A type.
+- A meaningful title.
+- A coherent body in plain text (no HTML, no Markdown).
+- Optional sender and date fields where appropriate (use `null` when not needed). An EMAIL and a FORMAL_NOTICE should have a sender.
+- Exactly two associated questions.
+
+Text length: {{TEXT_LENGTH}}. Keep the text length manageable and adapt it to the level.
+
+Use natural German at the configured level. Keep the texts informative and practical. Include relevant details such as times, dates, conditions, reasons, changes, responsibilities, or instructions when appropriate. {{DATES_RULE}}
+
+Do not include irrelevant details merely to increase the word count.
+
+Do not make the texts depend on one another. Every question must be answerable using its own associated text. Do not make all three texts identical in style.
+
+### D. Richtig/Falsch questions
+
+Create exactly one TRUE_FALSE question per text.
+
+The question is a statement about a meaningful detail or message in the text, written in the `statement` field.
+
+The answer (`correctAnswer`) must be exactly one of:
+
+- `RICHTIG`
+- `FALSCH`
+
+A RICHTIG statement must be clearly supported by the text.
+
+A FALSCH statement must contradict a meaningful detail in the text, not rely on a tiny or confusing wording trick.
+
+Avoid statements that are partially true, unclear, or dependent on outside knowledge.
+
+Do not use vague statements such as "The text is about an event" if the text clearly discusses an event.
+
+Use meaningful reading comprehension rather than trivial word recognition.
+
+### E. Multiple-choice questions
+
+Create exactly one MULTIPLE_CHOICE question per text (field `question`).
+
+Each question must contain exactly three options with the keys:
+
+- `a`
+- `b`
+- `c`
+
+Exactly one option must be correct. `correctAnswer` is the key of that option (`a`, `b` or `c`).
+
+The question should test understanding of an important detail, purpose, reason, consequence, instruction, rule, condition or opinion.
+
+The correct option must be supported by the associated text.
+
+The two distractors should be plausible but clearly incorrect based on the text.
+
+Do not include two options that could both reasonably be considered correct.
+
+Do not make the correct answer depend on knowledge not provided in the text.
+
+Vary the question pattern and the position of the correct answer: do not use the same question wording or pattern for all three texts, and do not put the correct answer at the same position every time.
+
+### F. Answer and explanation validation
+
+Before returning the JSON, solve all six questions using only the generated texts.
+
+For every Richtig/Falsch question:
+
+1. Locate the relevant information in the text.
+2. Confirm whether the statement is true or false.
+3. Ensure that no ambiguity exists.
+4. Confirm that the answer key uses the correct value (RICHTIG or FALSCH).
+
+For every multiple-choice question:
+
+1. Evaluate option a.
+2. Evaluate option b.
+3. Evaluate option c.
+4. Confirm that exactly one option is correct.
+5. Confirm that the answer key identifies that option.
+6. Rewrite the question or options if multiple answers could be correct.
+
+Provide short explanations in German (`de`), English (`en`) and Persian (`fa`) for every question.
+
+Each explanation must accurately refer to information contained in the associated text.
+
+Do not use outside knowledge to justify an answer.
+
+### G. Difficulty and language
+
+{{LEVEL_RULES}}
+
+Use correct spelling, punctuation, dates, times, and German grammar.
+
+Do not deliberately introduce language errors into the texts.
+
+### H. Originality
+
+Create original practice material.
+
+Do not reproduce official examination texts or copy existing model-test texts.
+
+Do not claim that the generated content is an official DTZ examination question.
+
+### I. Required JSON structure
+
+{{BATCH_RULE}}Return exactly one valid JSON object.
+
+Do not include Markdown, code fences, comments, or text outside the JSON.
+
+{{TAGS_RULE}}Use this structure{{STRUCTURE_NOTE}}:
+
+{{JSON_EXAMPLE}}
+
+The example structure above is illustrative. Your final output must populate all three texts and all six questions with real content.
+
+Always write `"level": "A2_B1"` and put the configured difficulty into `"difficulty"`.
+
+Use `RICHTIG` or `FALSCH` for TRUE_FALSE answers.
+
+Use `a`, `b`, or `c` for MULTIPLE_CHOICE answers.
+
+Every multiple-choice question must have exactly three options with unique keys.
+
+The `questions` array inside every text must contain exactly two questions: first the TRUE_FALSE question, then the MULTIPLE_CHOICE question.
+
+Do not include placeholders ("...") in the final JSON.
+{{NOTES_BLOCK}}
+### J. Final checklist
+
+Before returning the JSON, verify:
+
+- The JSON parses successfully.
+- Metadata is correct.
+- There are exactly three texts.
+- Text IDs are unique.
+- Text numbers are 1, 2, and 3.
+- Every text has exactly two questions.
+- There are exactly six questions in total.
+- Question numbers are exactly 31–36.
+- Each text has one TRUE_FALSE question followed by one MULTIPLE_CHOICE question.
+- TRUE_FALSE answers use only RICHTIG or FALSCH.
+- Multiple-choice answers use only a, b, or c.
+- Every multiple-choice question has exactly three options.
+- Exactly one answer is correct per question.
+- All answers are supported by the corresponding text.
+- All explanations match the text and answer key.
+- The texts are original and appropriate for the selected level.
+- No question depends on outside knowledge.
+- No ambiguity remains.
+
+Return only the final JSON object.

@@ -3,22 +3,23 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, Eye, Pencil, X } from "lucide-react";
+import { Download, Eye, Pencil, Trash2, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import Button from "@/componenets/Button";
 import Loading from "@/componenets/Loading";
 import AdminTablePagination from "@/componenets/admin/table/AdminTablePagination";
 import useAuthStore from "@/store/useAuthStore";
-import { getExamExerciseForAdmin, getExamExercisesForAdmin } from "@/services/adminExamService";
+import { deleteExamExercise, getExamExerciseForAdmin, getExamExercisesForAdmin } from "@/services/adminExamService";
 import { changeExamContentStatus, downloadExamContentExport } from "@/services/adminExamContentService";
 import { ExamExerciseAdminRow, ExamExerciseResponse, ExamSection } from "@/types/exam";
 import type { SpeakingContent } from "@/types/exam";
 import { EXAM_CONTENT_STATUSES, ExamContentStatus, ExercisePreviewData, PreviewAdvertisement, PreviewSituation } from "@/types/examContent";
+import { DTZ_ORAL_PARTS, DtzOralContent } from "@/types/dtzOral";
 import ExamContentShell from "./ExamContentShell";
 import { cardClass, errorMessage, ExerciseView, fieldClass, htmlToText, labelClass, StatusBadge } from "./shared";
 
 const PAGE_SIZE = 15;
-const EXAM_LABELS: Record<string, string> = { TELC: "Telc", GOETHE: "Goethe", TESTDAF: "TestDaF", DSH: "DSH", OTHER: "Other" };
+const EXAM_LABELS: Record<string, string> = { TELC: "Telc", GOETHE: "Goethe", TESTDAF: "TestDaF", DTZ: "DTZ A2-B1", DSH: "DSH", OTHER: "Other" };
 /** Sections with a manual editor; Mündlicher Ausdruck is import-only and has none. */
 const SECTION_PATHS: Partial<Record<ExamSection, string>> = {
     LESEVERSTEHEN: "leseverstehen",
@@ -56,8 +57,50 @@ interface Filters {
 }
 const emptyFilters: Filters = { examType: "", level: "", section: "", partNumber: "", status: "", search: "" };
 
+/** metadata.directory of an imported DTZ Lesen Teil 1 exercise (see ExamContentMapper.toDirectoryEntity). */
+interface StoredDirectory {
+    sourceType?: string;
+    title?: string;
+    introduction?: string;
+    entries?: { id: string; heading: string; details: string[] }[];
+    displayText?: string;
+    example?: { situation?: string; options?: { key: string; text: string }[]; correctAnswer?: string; explanation?: Record<string, string> };
+    questions?: { number: number; sourceEntryIds?: string[]; explanation?: Record<string, string> }[];
+}
+
+/** metadata.textQuestions of an imported DTZ Lesen Teil 3 / Teil 4 exercise (see ExamContentMapper.toTextQuestionsEntity). */
+interface StoredTextQuestions {
+    texts?: { id?: string; number?: number; type?: string; sender?: string; date?: string }[];
+    questions?: { number: number; explanation?: Record<string, string> }[];
+}
+
+/** metadata.letter of an imported DTZ Lesen Teil 5 exercise (see ExamContentMapper.toLetterEntity). */
+interface StoredLetter {
+    type?: string;
+    sender?: string;
+    recipient?: string;
+    date?: string;
+    subject?: string;
+    body?: string;
+    example?: { textBeforeGap?: string; textAfterGap?: string; options?: { key: string; text: string }[]; correctAnswer?: string; explanation?: Record<string, string> };
+}
+
+/** Drops the "Von / Absender · Datum" line that the importer puts in front of a text's body. */
+const withoutMetaLine = (text: string) => text.replace(/^(Von|Absender|Datum): [^\n]*\n*/, "");
+
 /** Matching exercises as the import format sees them (lettered headings, correct heading per text). */
 function toPreview(exercise: ExamExerciseResponse): ExercisePreviewData | null {
+    const oral = exercise.metadata?.dtzOral as DtzOralContent | undefined;
+    if (oral?.part) {
+        // DTZ Mündliche Prüfung: the stored tree is the content (the admin also sees the image prompt of Teil 2).
+        return {
+            title: exercise.title,
+            instructions: exercise.teilDescription,
+            headings: [],
+            texts: [],
+            dtzOral: { part: oral.part, exerciseType: DTZ_ORAL_PARTS.find((p) => p.part === oral.part)?.exerciseType ?? "", languageLevel: oral.languageLevel ?? null, content: oral },
+        };
+    }
     if (exercise.section === "MUENDLICHER_AUSDRUCK") {
         const stored = exercise.metadata?.speaking as SpeakingContent | undefined;
         if (!stored?.taskType) return null; // hand-made: nothing structured to preview
@@ -67,6 +110,34 @@ function toPreview(exercise: ExamExerciseResponse): ExercisePreviewData | null {
             headings: [],
             texts: [],
             speaking: { taskType: stored.taskType, topic: stored.topic ?? null, content: stored },
+        };
+    }
+    if (exercise.taskType === "WRITING_TASK_CHOICE") {
+        const stored = exercise.metadata?.writingChoice as
+            | { durationMinutes?: number; languageLevel?: string; tasks?: { taskLabel: string; title?: string; topic?: string | null; communicationType?: string | null;
+                  situation?: string; recipient?: { name?: string | null; role?: string | null } | null; writingInstruction?: string; points?: { number: number; text: string }[] }[] }
+            | undefined;
+        if (!stored?.tasks?.length) return null;
+        return {
+            title: exercise.title,
+            instructions: exercise.teilDescription,
+            headings: [],
+            texts: [],
+            writingChoice: {
+                durationMinutes: stored.durationMinutes ?? 30,
+                languageLevel: stored.languageLevel ?? null,
+                tasks: stored.tasks.map((t) => ({
+                    label: t.taskLabel,
+                    title: t.title ?? null,
+                    topic: t.topic ?? null,
+                    communicationType: t.communicationType ?? null,
+                    situation: t.situation ?? null,
+                    recipientName: t.recipient?.name ?? null,
+                    recipientRole: t.recipient?.role ?? null,
+                    writingInstruction: t.writingInstruction ?? null,
+                    points: [...(t.points ?? [])].sort((a, b) => a.number - b.number).map((p) => p.text),
+                })),
+            },
         };
     }
     if (exercise.taskType === "WRITING_TASK") {
@@ -153,7 +224,151 @@ function toPreview(exercise: ExamExerciseResponse): ExercisePreviewData | null {
                 text: q.prompt,
                 correctAdvertisementId: q.correctAnswer?.toUpperCase() === "X" ? "x" : (letterByPassage.get(q.correctAnswer) ?? null),
                 matchingProfile: teil3.situations?.find((s) => s.number === (q.questionNumber ?? i + 1))?.matchingProfile ?? null,
+                explanation: q.explanation ? { de: q.explanation } : null,
             })),
+        };
+    }
+    if ((exercise.taskType === "TEXT_QUESTIONS" || exercise.taskType === "TEXT_TRUE_FALSE") && exercise.passages?.length && exercise.questions?.length) {
+        const meta = exercise.metadata ?? {};
+        const stored = (meta.textQuestions ?? null) as StoredTextQuestions | null;
+        const questions = [...exercise.questions].sort((a, b) => (a.questionNumber ?? 0) - (b.questionNumber ?? 0));
+        return {
+            title: exercise.title,
+            instructions: exercise.teilDescription,
+            headings: [],
+            texts: [],
+            textQuestions: {
+                topic: typeof meta.topic === "string" ? meta.topic : null,
+                languageLevel: typeof meta.languageLevel === "string" ? meta.languageLevel : null,
+                texts: exercise.passages.map((p, index) => {
+                    const info = stored?.texts?.[index];
+                    return {
+                        id: info?.id ?? p.id,
+                        number: index + 1,
+                        type: info?.type ?? null,
+                        title: p.label,
+                        sender: info?.sender ?? null,
+                        date: info?.date ?? null,
+                        body: info?.sender || info?.date ? withoutMetaLine(htmlToText(p.content)) : htmlToText(p.content),
+                        tasks: questions
+                            .filter((q) => q.sectionIndex === index)
+                            .map((q, i) => {
+                                const options = (q.options ?? []).map((text, j) => ({ id: String.fromCharCode(97 + j), text }));
+                                const number = q.questionNumber ?? (exercise.taskType === "TEXT_TRUE_FALSE" ? 37 + i : 31 + index * 2 + i);
+                                const detail = stored?.questions?.find((d) => d.number === number);
+                                return {
+                                    number,
+                                    type: q.taskType,
+                                    prompt: q.prompt,
+                                    options,
+                                    correctAnswer: q.taskType === "TRUE_FALSE" ? q.correctAnswer : (options.find((o) => o.text === q.correctAnswer)?.id ?? null),
+                                    explanation: detail?.explanation ?? (q.explanation ? { de: q.explanation } : {}),
+                                };
+                            }),
+                    };
+                }),
+            },
+        };
+    }
+    if (exercise.taskType === "LETTER_GAP_FILL" && exercise.passages?.length && exercise.questions?.length) {
+        const meta = exercise.metadata ?? {};
+        const stored = (meta.letter ?? null) as StoredLetter | null;
+        const gapInfo = (meta.gapQuestions ?? []) as { number: number; category?: string; grammarFocus?: string; explanation?: Record<string, string> }[];
+        const letterPassage = exercise.passages.find((p) => p.content.includes("data-exam-gap")) ?? exercise.passages[0];
+        // The letter header (Absender / An / Datum / Betreff) is its own first paragraph; the body keeps the blanks as {{40}}.
+        const body = htmlToText(letterPassage.content.replace(/^<p class="letter-head">.*?<\/p>/, "")).replace(/\[(\d{1,3})]/g, "{{$1}}");
+        const questions = [...exercise.questions].sort((a, b) => (a.questionNumber ?? 0) - (b.questionNumber ?? 0));
+        return {
+            title: exercise.title,
+            instructions: exercise.teilDescription,
+            headings: [],
+            texts: [],
+            questions: questions.map((q, i) => {
+                const options = (q.options ?? []).map((text, j) => ({ id: String.fromCharCode(97 + j), text }));
+                return {
+                    id: q.id,
+                    number: q.questionNumber ?? 40 + i,
+                    question: q.prompt,
+                    options,
+                    correctOptionId: options.find((o) => o.text === q.correctAnswer)?.id ?? null,
+                    questionType: null,
+                };
+            }),
+            letter: {
+                type: stored?.type ?? (typeof meta.sourceType === "string" ? meta.sourceType : null),
+                topic: typeof meta.topic === "string" ? meta.topic : null,
+                languageLevel: typeof meta.languageLevel === "string" ? meta.languageLevel : null,
+                sender: stored?.sender ?? null,
+                recipient: stored?.recipient ?? null,
+                date: stored?.date ?? null,
+                subject: stored?.subject ?? null,
+                body,
+                example: stored?.example
+                    ? {
+                          textBeforeGap: stored.example.textBeforeGap ?? null,
+                          textAfterGap: stored.example.textAfterGap ?? null,
+                          options: (stored.example.options ?? []).map((o) => ({ id: o.key, text: o.text })),
+                          correctOptionId: stored.example.correctAnswer ?? null,
+                          explanation: stored.example.explanation ?? {},
+                      }
+                    : null,
+                gaps: questions.map((q, i) => {
+                    const number = q.questionNumber ?? 40 + i;
+                    const info = gapInfo.find((g) => g.number === number);
+                    return {
+                        number,
+                        grammarCategory: info?.category ?? null,
+                        grammarFocus: info?.grammarFocus ?? null,
+                        explanation: { ...(q.explanation ? { de: q.explanation } : {}), ...(info?.explanation ?? {}) },
+                    };
+                }),
+            },
+        };
+    }
+    if (exercise.taskType === "DIRECTORY_MATCHING" && exercise.passages?.length && exercise.questions?.length) {
+        const meta = exercise.metadata ?? {};
+        const stored = (meta.directory ?? null) as StoredDirectory | null;
+        const sourceText = htmlToText(exercise.passages[0].content);
+        const questions = [...exercise.questions].sort((a, b) => (a.questionNumber ?? 0) - (b.questionNumber ?? 0));
+        return {
+            title: exercise.title,
+            instructions: exercise.teilDescription,
+            headings: [],
+            texts: [],
+            questions: questions.map((q, i) => {
+                const options = (q.options ?? []).map((text, j) => ({ id: String.fromCharCode(97 + j), text }));
+                return {
+                    id: q.id,
+                    number: q.questionNumber ?? 21 + i,
+                    question: q.prompt,
+                    options,
+                    correctOptionId: options.find((o) => o.text === q.correctAnswer)?.id ?? null,
+                    questionType: null,
+                };
+            }),
+            directory: {
+                sourceType: stored?.sourceType ?? (typeof meta.sourceType === "string" ? meta.sourceType : null),
+                topic: typeof meta.topic === "string" ? meta.topic : null,
+                languageLevel: typeof meta.languageLevel === "string" ? meta.languageLevel : null,
+                sourceTitle: stored?.title ?? exercise.passages[0].label,
+                introduction: stored?.introduction ?? null,
+                // Hand-made exercises have no structured entries: show the source text as one block.
+                entries: stored?.entries?.length ? stored.entries : [{ id: "source", heading: exercise.passages[0].label || "Quelle", details: sourceText.split("\n").filter(Boolean) }],
+                displayText: stored?.displayText ?? sourceText,
+                example: stored?.example
+                    ? {
+                          situation: stored.example.situation ?? null,
+                          options: (stored.example.options ?? []).map((o) => ({ id: o.key, text: o.text })),
+                          correctOptionId: stored.example.correctAnswer ?? null,
+                          explanation: stored.example.explanation ?? {},
+                      }
+                    : null,
+                questionDetails: questions.map((q, i) => {
+                    const number = q.questionNumber ?? 21 + i;
+                    const detail = stored?.questions?.find((d) => d.number === number);
+                    return { number, sourceEntryIds: detail?.sourceEntryIds ?? [], explanation: detail?.explanation ?? (q.explanation ? { de: q.explanation } : {}) };
+                }),
+            },
         };
     }
     if (exercise.taskType === "MULTIPLE_CHOICE" && exercise.passages?.length === 1 && exercise.questions?.length) {
@@ -204,6 +419,7 @@ export default function ContentLibrary() {
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [busy, setBusy] = useState(false);
     const [previewRow, setPreviewRow] = useState<ExamExerciseAdminRow | null>(null);
+    const [deleteTargets, setDeleteTargets] = useState<ExamExerciseAdminRow[] | null>(null);
 
     const { data: rows = [], isLoading } = useQuery({
         queryKey: ["admin", "exam", "exercises", "library", applied],
@@ -238,6 +454,33 @@ export default function ContentLibrary() {
     });
 
     const refresh = () => queryClient.invalidateQueries({ queryKey: ["admin", "exam"] });
+
+    const askDelete = (ids: string[]) => {
+        const targets = rows.filter((r) => ids.includes(r.id));
+        if (targets.length > 0) setDeleteTargets(targets);
+    };
+
+    const confirmDelete = async () => {
+        const targets = deleteTargets ?? [];
+        setDeleteTargets(null);
+        setBusy(true);
+        const failed: string[] = [];
+        let reason = "";
+        for (const r of targets) {
+            try {
+                await deleteExamExercise(r.id);
+            } catch (err) {
+                failed.push(r.title);
+                reason = errorMessage(err, "The server refused it.");
+            }
+        }
+        const done = targets.length - failed.length;
+        if (done > 0) toast.success(`${done} exercise${done === 1 ? "" : "s"} deleted.`);
+        if (failed.length > 0) toast.error(`Could not delete ${failed.slice(0, 3).join(", ")}: ${reason}`);
+        setSelected(new Set());
+        setBusy(false);
+        await refresh();
+    };
 
     const moveTo = async (status: ExamContentStatus, ids: string[]) => {
         if (ids.length === 0) return;
@@ -319,6 +562,7 @@ export default function ContentLibrary() {
                             <Button key={a.status} variant="secondary" className="px-3 py-1 text-sm" disabled={busy} onClick={() => moveTo(a.status, [...selected])}>{a.label}</Button>
                         ))}
                         <Button variant="secondary" className="px-3 py-1 text-sm" disabled={busy} onClick={() => exportContent([...selected])}>Export JSON</Button>
+                        <Button variant="secondary" className="inline-flex items-center gap-1 px-3 py-1 text-sm text-red-700 dark:text-red-300" disabled={busy} onClick={() => askDelete([...selected])}><Trash2 className="size-4" />Delete</Button>
                         <button type="button" onClick={() => setSelected(new Set())} className="ml-auto text-sm underline text-blue-800 dark:text-blue-200">Clear</button>
                     </div>
                 )}
@@ -356,9 +600,20 @@ export default function ContentLibrary() {
                                         <td className="px-3 py-3">v{r.version}</td>
                                         <td className="px-3 py-3 whitespace-nowrap space-x-1.5">
                                             <Button variant="secondary" className="px-2.5 py-1 text-xs inline-flex items-center gap-1" onClick={() => setPreviewRow(r)}><Eye className="size-3.5" />Preview</Button>
-                                            {SECTION_PATHS[r.section] && (
-                                                <Link href={`/admin/exam-prep/${SECTION_PATHS[r.section]}?edit=${r.id}`} className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent"><Pencil className="size-3.5" />Edit</Link>
+                                            {r.examType === "DTZ" && r.section === "MUENDLICHER_AUSDRUCK" ? (
+                                                <Link href={`/admin/exam-prep/dtz-muendlich?part=${r.partNumber ?? 1}&edit=${r.id}`} className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent"><Pencil className="size-3.5" />Edit</Link>
+                                            ) : SECTION_PATHS[r.section] && (
+                                                <Link href={r.taskType === "WRITING_TASK_CHOICE" ? `/admin/exam-prep/dtz-schreiben?edit=${r.id}` : `/admin/exam-prep/${SECTION_PATHS[r.section]}?edit=${r.id}`} className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent"><Pencil className="size-3.5" />Edit</Link>
                                             )}
+                                            <Button
+                                                variant="secondary"
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-red-700 dark:text-red-300"
+                                                disabled={busy}
+                                                aria-label={`Delete ${r.title}`}
+                                                onClick={() => askDelete([r.id])}
+                                            >
+                                                <Trash2 className="size-3.5" />Delete
+                                            </Button>
                                         </td>
                                     </tr>
                                 ))}
@@ -382,13 +637,34 @@ export default function ContentLibrary() {
                 </div>
             </div>
 
+            {deleteTargets && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="alertdialog" aria-modal="true" aria-label="Confirm delete">
+                    <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-gray-800">
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Delete {deleteTargets.length} exercise{deleteTargets.length === 1 ? "" : "s"}?</h2>
+                        <ul className="mt-3 max-h-40 list-disc overflow-y-auto pl-5 text-sm text-gray-700 dark:text-gray-200">
+                            {deleteTargets.slice(0, 8).map((r) => <li key={r.id}>{r.title}</li>)}
+                            {deleteTargets.length > 8 && <li>…and {deleteTargets.length - 8} more</li>}
+                        </ul>
+                        {deleteTargets.some((r) => r.status === "PUBLISHED") && (
+                            <p role="alert" className="mt-3 rounded-lg bg-amber-50 p-2 text-sm font-semibold text-amber-900 dark:bg-amber-900/20 dark:text-amber-200">
+                                {deleteTargets.filter((r) => r.status === "PUBLISHED").length} of these {deleteTargets.filter((r) => r.status === "PUBLISHED").length === 1 ? "is" : "are"} published and live for learners right now.
+                            </p>
+                        )}
+                        <p className="mt-3 text-sm text-red-700 dark:text-red-300">This cannot be undone. Uploaded images and all learner attempts, progress and bookmarks of these exercises are deleted too. Archive instead if you may need them again.</p>
+                        <div className="mt-5 flex justify-end gap-2">
+                            <Button variant="secondary" onClick={() => setDeleteTargets(null)}>Cancel</Button>
+                            <Button onClick={confirmDelete}>Delete permanently</Button>
+                        </div>
+                    </div>
+                </div>
+            )}
             {previewRow && <PreviewDialog row={previewRow} onClose={() => setPreviewRow(null)} onMove={(status) => { setPreviewRow(null); void moveTo(status, [previewRow.id]); }} />}
             {busy && <Loading message="Please wait..." />}
         </ExamContentShell>
     );
 }
 
-function PreviewDialog({ row, onClose, onMove }: Readonly<{ row: ExamExerciseAdminRow; onClose: () => void; onMove: (s: ExamContentStatus) => void }>) {
+export function PreviewDialog({ row, onClose, onMove }: Readonly<{ row: ExamExerciseAdminRow; onClose: () => void; onMove: (s: ExamContentStatus) => void }>) {
     const { data, isLoading } = useQuery({
         queryKey: ["admin", "exam", "exercises", "detail", row.id],
         queryFn: () => getExamExerciseForAdmin(row.id).then((r) => r.data),
@@ -416,7 +692,7 @@ function PreviewDialog({ row, onClose, onMove }: Readonly<{ row: ExamExerciseAdm
                 </div>
                 <div className="mt-5">
                     {isLoading && <Loading message="Loading..." />}
-                    {data && (preview ? <ExerciseView preview={preview} /> : <p className="text-sm text-gray-600 dark:text-gray-300">A preview is only available for headings-matching, reading-text multiple-choice and situation-matching exercises. Use Edit to review this one.</p>)}
+                    {data && (preview ? <ExerciseView preview={preview} /> : <p className="text-sm text-gray-600 dark:text-gray-300">A preview is only available for headings-matching, reading-text multiple-choice, situation-matching, directory and texts-with-questions exercises. Use Edit to review this one.</p>)}
                 </div>
                 <div className="mt-6 flex flex-wrap justify-end gap-2">
                     {next.map((n) => <Button key={n.status} onClick={() => onMove(n.status)}>{n.label}</Button>)}

@@ -17,6 +17,7 @@ function item(id: string, title: string, partNumber: number, taskType: ExamExerc
         completed,
         lastScore: null,
         bookmarked: false,
+        examType: "TELC",
     };
 }
 

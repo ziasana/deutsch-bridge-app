@@ -403,7 +403,7 @@ export default function SimExerciseView({ attemptId, part, answers, disabled, on
                 if (exercise.taskType === "SITUATION_MATCHING" && exercise.questions.length > 0) {
                     return <SituationMatchingExercise key={exercise.ordinal} startNumber={start} exercise={exercise} answers={answers} disabled={locked} onAnswer={onAnswer} />;
                 }
-                if (part.section === "SPRACHBAUSTEINE" && hasGapText(exercise.passages, exercise.questions, exercise.taskType === "WORD_BANK_CLOZE")) {
+                if ((part.section === "SPRACHBAUSTEINE" || exercise.taskType === "LETTER_GAP_FILL") && hasGapText(exercise.passages, exercise.questions, exercise.taskType === "WORD_BANK_CLOZE")) {
                     return <GapTextExercise key={exercise.ordinal} startNumber={start} exercise={exercise} answers={answers} disabled={locked} onAnswer={onAnswer} />;
                 }
                 return <ObjectiveExercise key={exercise.ordinal} audioCtx={audioCtx} partKey={part.key} startNumber={start} exercise={exercise} answers={answers} disabled={locked} onAnswer={onAnswer} />;

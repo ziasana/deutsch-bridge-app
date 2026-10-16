@@ -82,8 +82,8 @@ public class ExamExerciseService {
     }
 
     /** Navigation/summary shape for lists (section tabs, level selector, Teil listings) - see ExamExerciseSummaryResponse. */
-    public List<ExamExerciseSummaryResponse> findSummary(ExamSection section, LearningLevel level, ExamTaskType taskType) {
-        List<ExamExercise> exercises = contentCacheService.getPublishedExamExercises(section, level, taskType);
+    public List<ExamExerciseSummaryResponse> findSummary(ExamSection section, LearningLevel level, ExamTaskType taskType, ExamType examType) {
+        List<ExamExercise> exercises = contentCacheService.getPublishedExamExercises(section, level, taskType, examType);
 
         Map<String, ExamExerciseCompletion> completionsByExerciseId = examExerciseCompletionRepository.findByUserId(requestContext.getUserId()).stream()
                 .collect(Collectors.toMap(ExamExerciseCompletion::getExerciseId, completion -> completion));
@@ -96,8 +96,10 @@ public class ExamExerciseService {
     }
 
     /** Per-level aggregate progress for the current user, for the level selector - see ExamLevelSummaryResponse. */
-    public List<ExamLevelSummaryResponse> findLevelSummary() {
-        return examProgressCacheService.getLevelSummary(requestContext.getUserId());
+    public List<ExamLevelSummaryResponse> findLevelSummary(ExamType examType) {
+        return examProgressCacheService.getLevelSummary(requestContext.getUserId()).stream()
+                .filter(summary -> examType == null || examType.name().equals(summary.examType()))
+                .toList();
     }
 
     public ExamExercisePublicResponse findByIdPublic(String id) throws DataNotFoundException {
@@ -228,9 +230,20 @@ public class ExamExerciseService {
                         e.getExternalId(),
                         e.getVersion(),
                         e.getMetadata() != null && e.getMetadata().get("difficulty") != null
-                                ? String.valueOf(e.getMetadata().get("difficulty")) : null,
-                        e.getUpdatedAt()))
+                                ? String.valueOf(e.getMetadata().get("difficulty")) : metadataText(e, "languageLevel"),
+                        e.getUpdatedAt(),
+                        metadataText(e, "topic"),
+                        metadataText(e, "sourceType"),
+                        e.getCreatedAt(),
+                        e.getPassages() != null ? e.getPassages().size() : 0,
+                        wordCount(e),
+                        e.getPassages() != null && e.getPassages().stream().anyMatch(pg -> pg.getImageUrl() != null && !pg.getImageUrl().isBlank())))
                 .toList();
+    }
+
+    private static String metadataText(ExamExercise e, String key) {
+        Object value = e.getMetadata() == null ? null : e.getMetadata().get(key);
+        return value instanceof String text && !text.isBlank() ? text : null;
     }
 
     private static Integer effectivePartNumber(ExamExercise e) {
@@ -251,6 +264,11 @@ public class ExamExerciseService {
     })
     public ExamExerciseResponse createManual(ExamExerciseManualRequest request) {
         validateNoDuplicateLevel(request, null);
+        DtzTextQuestionsValidator.validate(request);
+        DtzTrueFalseTextValidator.validate(request);
+        DtzLetterGapValidator.validate(request);
+        DtzDirectoryValidator.validate(request);
+        DtzAdMatchingValidator.validate(request);
         ExamExercise exercise = new ExamExercise();
         applyRequest(exercise, request);
         exercise.setCreatedBy(requestContext.getUserId());
@@ -266,6 +284,11 @@ public class ExamExerciseService {
     public ExamExerciseResponse update(String id, ExamExerciseManualRequest request) throws DataNotFoundException {
         ExamExercise existing = findById(id);
         validateNoDuplicateLevel(request, id);
+        DtzTextQuestionsValidator.validate(request);
+        DtzTrueFalseTextValidator.validate(request);
+        DtzLetterGapValidator.validate(request);
+        DtzDirectoryValidator.validate(request);
+        DtzAdMatchingValidator.validate(request);
         Set<String> previousUploadUrls = collectUploadUrls(existing);
         applyRequest(existing, request);
         existing.setVersion(existing.getVersion() + 1);
@@ -353,6 +376,7 @@ public class ExamExerciseService {
         }
         if (request.requiresPlanning() != null) exercise.setRequiresPlanning(request.requiresPlanning());
         if (request.leitpunkte() != null) exercise.setLeitpunkte(request.leitpunkte());
+        if (request.examType() != null) exercise.setExamType(request.examType());
     }
 
     private List<ExamPassage> preparePassages(List<ExamPassage> passages) {
@@ -376,5 +400,18 @@ public class ExamExerciseService {
             }
         }
         return questions;
+    }
+
+    /** Words of all passages together with the markup removed. */
+    private static int wordCount(ExamExercise e) {
+        if (e.getPassages() == null) return 0;
+        return e.getPassages().stream()
+                .map(ExamPassage::getContent)
+                .filter(java.util.Objects::nonNull)
+                .mapToInt(html -> {
+                    String plain = html.replaceAll("<[^>]*>", " ").strip();
+                    return plain.isEmpty() ? 0 : plain.split("\\s+").length;
+                })
+                .sum();
     }
 }

@@ -1,0 +1,179 @@
+{
+  "intro": "In Teil 1 stellen Sie sich vor. Sie sprechen über Ihren Namen, Ihren Geburtsort, Ihren Wohnort, Ihre Arbeit oder Ihren Beruf, Ihre Familie und Ihre Sprachen. Sie können ganze Sätze sagen und müssen nicht perfekt sprechen.",
+  "introHint": {
+    "en": "Part 1: you introduce yourself. Six topics: name, place of birth, where you live, work, family, languages. Short, clear sentences are enough.",
+    "fa": "بخش ۱: خودتان را معرفی می‌کنید. شش موضوع: نام، محل تولد، محل زندگی، شغل، خانواده و زبان‌ها. جمله‌های کوتاه و روشن کافی است."
+  },
+  "tips": [
+    {
+      "title": "Sprechen Sie in ganzen Sätzen",
+      "text": "Sagen Sie nicht nur „Berlin“, sondern „Ich wohne in Berlin.“ So hört man, dass Sie Sätze bilden können.",
+      "en": "Say full sentences, not single words.",
+      "fa": "جمله کامل بگویید، نه فقط یک کلمه."
+    },
+    {
+      "title": "Gehen Sie die sechs Themen der Reihe nach durch",
+      "text": "Name, Geburtsort, Wohnort, Arbeit, Familie, Sprachen: Mit dieser Reihenfolge verlieren Sie nicht den Faden.",
+      "en": "Follow the six topics in order.",
+      "fa": "شش موضوع را به‌ترتیب بگویید."
+    },
+    {
+      "title": "Geben Sie eine Zusatzinformation",
+      "text": "Zu jedem Thema ein bis zwei Sätze mehr, zum Beispiel: „Ich arbeite als Verkäufer. Die Arbeit gefällt mir gut.“",
+      "en": "Add one or two extra sentences per topic.",
+      "fa": "برای هر موضوع یک یا دو جمله اضافه بگویید."
+    },
+    {
+      "title": "Sprechen Sie langsam und deutlich",
+      "text": "Eine ruhige Aussprache ist besser als schnelles Sprechen mit Fehlern.",
+      "en": "Speak slowly and clearly.",
+      "fa": "آرام و واضح صحبت کنید."
+    },
+    {
+      "title": "Fragen Sie nach, wenn Sie etwas nicht verstehen",
+      "text": "„Können Sie das bitte wiederholen?“ ist in der Prüfung völlig in Ordnung.",
+      "en": "Ask for repetition if you did not understand.",
+      "fa": "اگر نفهمیدید، بخواهید تکرار کنند."
+    }
+  ],
+  "steps": [
+    {
+      "title": "1. Begrüßung",
+      "text": "Begrüßen Sie Ihren Partner und nennen Sie Ihren Namen."
+    },
+    {
+      "title": "2. Herkunft und Wohnort",
+      "text": "Sagen Sie, wo Sie geboren sind und wo Sie jetzt wohnen."
+    },
+    {
+      "title": "3. Arbeit, Familie, Sprachen",
+      "text": "Erzählen Sie kurz von Ihrer Arbeit oder Ihrem Beruf, Ihrer Familie und den Sprachen, die Sie sprechen."
+    }
+  ],
+  "commonMistakes": [
+    "Nur einzelne Wörter statt ganzer Sätze sagen.",
+    "Ein Thema auslassen, zum Beispiel die Sprachen.",
+    "Zu leise oder zu schnell sprechen.",
+    "Das Verb nicht an die zweite Stelle setzen („Ich Berlin wohne“ statt „Ich wohne in Berlin“)."
+  ],
+  "selfAssessment": [
+    "Ich habe alle sechs Themen angesprochen.",
+    "Ich habe in ganzen Sätzen gesprochen.",
+    "Ich habe zu mindestens drei Themen eine Zusatzinformation gegeben.",
+    "Ich habe langsam und deutlich gesprochen."
+  ],
+  "topics": [
+    {
+      "id": "name",
+      "title": "Name",
+      "questions": [
+        "Wie heißen Sie?",
+        "Wie schreibt man Ihren Namen?"
+      ],
+      "followUpQuestions": [
+        "Woher kommt Ihr Name?"
+      ],
+      "usefulPhrases": [
+        "Ich heiße ...",
+        "Mein Name ist ...",
+        "Man schreibt das so: ..."
+      ],
+      "tip": "Sprechen Sie Ihren Namen langsam und buchstabieren Sie ihn, wenn er schwierig ist."
+    },
+    {
+      "id": "herkunft",
+      "title": "Geburtsort",
+      "questions": [
+        "Woher kommen Sie?",
+        "Wo sind Sie geboren?"
+      ],
+      "followUpQuestions": [
+        "Wie ist Ihre Heimatstadt?"
+      ],
+      "usefulPhrases": [
+        "Ich komme aus ...",
+        "Ich bin in ... geboren.",
+        "Meine Heimatstadt liegt in ...",
+        "Das ist eine große Stadt."
+      ],
+      "tip": "Nennen Sie Stadt und Land, damit Ihr Partner sich etwas vorstellen kann."
+    },
+    {
+      "id": "wohnen",
+      "title": "Wohnort",
+      "questions": [
+        "Wo wohnen Sie jetzt?",
+        "Wie lange wohnen Sie schon dort?"
+      ],
+      "followUpQuestions": [
+        "Wie gefällt es Ihnen dort?"
+      ],
+      "usefulPhrases": [
+        "Ich wohne in ...",
+        "Ich wohne seit zwei Jahren hier.",
+        "Ich wohne in einer Wohnung.",
+        "Es gefällt mir hier sehr gut."
+      ],
+      "tip": "Mit „seit“ zeigen Sie, wie lange Sie schon dort wohnen: „seit drei Jahren“."
+    },
+    {
+      "id": "beruf",
+      "title": "Arbeit oder Beruf",
+      "questions": [
+        "Was sind Sie von Beruf?",
+        "Arbeiten Sie im Moment?"
+      ],
+      "followUpQuestions": [
+        "Was gefällt Ihnen an Ihrer Arbeit?"
+      ],
+      "usefulPhrases": [
+        "Ich arbeite als ...",
+        "Ich bin Verkäufer von Beruf.",
+        "Im Moment suche ich Arbeit.",
+        "Ich mache eine Ausbildung."
+      ],
+      "tip": "Auch wenn Sie nicht arbeiten, können Sie sagen, was Sie früher gemacht haben oder suchen."
+    },
+    {
+      "id": "familie",
+      "title": "Familie",
+      "questions": [
+        "Haben Sie Familie?",
+        "Haben Sie Kinder?"
+      ],
+      "followUpQuestions": [
+        "Wie alt sind Ihre Kinder?"
+      ],
+      "usefulPhrases": [
+        "Ich bin verheiratet.",
+        "Ich habe zwei Kinder.",
+        "Meine Familie wohnt in ...",
+        "Ich bin ledig."
+      ],
+      "tip": "Sagen Sie kurz, wer zur Familie gehört, und wo die Personen leben."
+    },
+    {
+      "id": "sprachen",
+      "title": "Sprachen",
+      "questions": [
+        "Welche Sprachen sprechen Sie?",
+        "Wo haben Sie Deutsch gelernt?"
+      ],
+      "followUpQuestions": [
+        "Wie lange lernen Sie schon Deutsch?"
+      ],
+      "usefulPhrases": [
+        "Meine Muttersprache ist ...",
+        "Ich spreche auch ein bisschen Englisch.",
+        "Ich lerne seit einem Jahr Deutsch.",
+        "Ich habe Deutsch im Kurs gelernt."
+      ],
+      "tip": "Nennen Sie Ihre Muttersprache zuerst und dann die anderen Sprachen."
+    }
+  ],
+  "usefulPhrases": [
+    "Ich möchte mich kurz vorstellen.",
+    "Außerdem ...",
+    "Das ist alles, was ich über mich erzählen möchte."
+  ]
+}

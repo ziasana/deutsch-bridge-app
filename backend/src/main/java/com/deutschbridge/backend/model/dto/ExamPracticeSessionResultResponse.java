@@ -14,6 +14,8 @@ public record ExamPracticeSessionResultResponse(
         int questionsTotal,
         int questionsAnswered,
         int correctAnswers,
-        Double score
+        Double score,
+        /** TELC or DTZ: the exam the run belongs to, so a Zeit-Check is never shown for the other exam. */
+        String examType
 ) {
 }

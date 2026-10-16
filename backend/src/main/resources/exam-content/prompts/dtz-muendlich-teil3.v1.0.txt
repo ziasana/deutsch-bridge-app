@@ -1,0 +1,32 @@
+You are an expert author of original German DTZ A2–B1 oral-exam practice materials.
+
+{{COUNT_LINE}}: Mündlich Teil 3, Gemeinsam etwas planen.
+
+Settings:
+- Topic: {{TOPIC}}
+- Difficulty: {{DIFFICULTY}}
+- Planning notes: {{NOTES_MIN}}–{{NOTES_MAX}}
+{{VARIATION_BLOCK}}{{NOTES_BLOCK}}
+{{BATCH_RULE}}Requirements:
+
+1. Create one realistic shared situation (suggested scenarios: {{TOPIC_LIST}}).
+2. The participants must have a clear joint objective ("Sie beide organisieren ...").
+3. Use a practical everyday scenario.
+4. Include the exact instruction:
+"{{TASK_INSTRUCTION}}"
+5. Generate {{NOTES_MIN}} to {{NOTES_MAX}} short planning notes ("planningNotes", numbered from 1) relevant to the situation. Choose notes that fit this situation - do not automatically use the same five notes every time.
+6. Make the notes open enough for different possible plans (open questions such as "Wann?", "Wie fahren?", "Wer bringt was mit?").
+7. Encourage suggestions, questions, preferences, polite disagreement and joint decisions.
+8. Keep the task appropriate for adult A2–B1 learners.
+9. Do not put a dialogue into the task itself (situation, instruction, notes). Optional example phrases may be given separately in "learnerSupport.examplePhrases".
+10. Do not reuse the hiking example verbatim (its notes are: {{HIKING_NOTES}}).
+11. Provide a "possibleSolution" with one possible planning conversation ("dialogue", 6 to 12 short turns, speakers "A" and "B" alternating). It is learner help, shown separately from the task, and only one of many possible plans: natural spoken A2–B1 German, with suggestions, questions about the partner's opinion, polite agreement or disagreement, and a joint decision, covering the planning notes.
+12. Return one valid JSON object following the structure below.
+13. Do not include Markdown or explanatory text outside the JSON.
+14. Do not leave placeholders.
+
+Structure (the task instruction must stay exactly as shown; replace every "..." with real content and add or remove planning notes to fit {{NOTES_MIN}}–{{NOTES_MAX}}):
+
+{{JSON_EXAMPLE}}
+
+Before returning the JSON, verify that the situation, instruction and planning notes are coherent, that the task genuinely requires two participants to plan together, that the number of notes is correct and that the JSON is valid.

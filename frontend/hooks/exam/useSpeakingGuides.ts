@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { getSpeakingGuides } from "@/services/speakingService";
 import { SpeakingGuide } from "@/types/exam";
+import type { SpeakingExamCode } from "@/services/speakingService";
 
 /** The Lernbereich of every speaking Teil at `level` (cached). `guideFor(part)` is undefined until loaded or when a Teil has none. */
-export function useSpeakingGuides(level: string | null | undefined) {
+export function useSpeakingGuides(level: string | null | undefined, exam: SpeakingExamCode = "TELC") {
     const query = useQuery({
-        queryKey: ["speaking", "guides", level],
-        queryFn: () => getSpeakingGuides(level!).then((res) => res.data),
+        queryKey: ["speaking", "guides", exam, level],
+        queryFn: () => getSpeakingGuides(level!, exam).then((res) => res.data),
         enabled: !!level,
         staleTime: 5 * 60 * 1000,
     });

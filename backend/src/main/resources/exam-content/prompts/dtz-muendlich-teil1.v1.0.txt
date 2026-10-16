@@ -1,0 +1,48 @@
+Create the fixed DTZ A2–B1 speaking introduction template (Mündliche Prüfung, Teil 1: Über sich sprechen).
+
+This is a FIXED template, not a new scenario. The examination content is stable and must not be regenerated or varied.
+{{NOTES_BLOCK}}
+==================================================
+A. REQUIRED TOPICS
+
+The fixed topics, in exactly this order and with exactly these labels:
+1. Name
+2. Geburtsort
+3. Wohnort
+4. Arbeit/Beruf
+5. Familie
+6. Sprachen
+
+Do not invent a new set of topics. Do not add, remove, rename or reorder topics.
+The "topics" list contains only "number" and "label" - no sample answers, no sample biographies, no invented personal details.
+
+==================================================
+B. EXAM INSTRUCTION
+
+Use this exact German instruction:
+"{{TEIL1_INSTRUCTIONS}}"
+
+==================================================
+C. OPTIONAL PRACTICE SUPPORT (kept separate from the fixed topics)
+
+In "practiceSupport" you may give, for each of the six topics (by "topicNumber" 1-6):
+- "question": one simple German question (A2–B1)
+- "sentenceStarter": a sentence starter that the learner completes with their own information (use "..." inside the sentence as the open part, e.g. "Ich wohne in ...")
+- "vocabulary": three to six useful A2–B1 words or phrases
+- optionally "explanation": {"en": "...", "fa": "..."} - a short explanation in English and Persian
+
+Sentence starters are practice help only. They must be open ("...") and must never be presented as the required answer. Do not write complete sample biographies.
+"guidance" is an optional short German hint for learners (one or two sentences, or null).
+
+==================================================
+D. OUTPUT RULES
+
+- Return one valid JSON object that follows the structure below.
+- Do not include Markdown or any explanatory text outside the JSON.
+- Do not add extra topics.
+
+Structure (the fixed values must stay exactly as shown):
+
+{{JSON_EXAMPLE}}
+
+Before returning the JSON, verify that there are exactly six topics in the required order, that every label matches exactly, that the topics contain no sample answers and that the JSON is valid.

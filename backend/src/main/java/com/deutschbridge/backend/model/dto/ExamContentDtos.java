@@ -36,8 +36,66 @@ public final class ExamContentDtos {
             /** Schriftlicher Ausdruck: FRIEND, FAMILY ... ; null / empty = chosen by the AI to fit the situation. */
             String relationship,
             /** Schriftlicher Ausdruck: INFORMAL_EMAIL | SEMI_FORMAL_EMAIL | FORMAL_EMAIL; null / empty = fits the relationship. */
-            String communicationType
+            String communicationType,
+            /** DTZ Lesen Teil 1: DIRECTORY | REGISTER | CATALOGUE | SERVICE_LIST | RANDOM (default). */
+            String sourceType,
+            /** DTZ Lesen Teil 1: include an unscored example (default true). */
+            Boolean includeExample,
+            /** DTZ Lesen Teil 1: NEW_SCENARIO | AVOID_KNOWN_TOPICS | RANDOM (default). */
+            String variation,
+            /** DTZ Lesen Teil 2: advertisement categories (see ExamContentPromptBuilder.AD_CATEGORIES); empty = the AI chooses. */
+            List<String> adCategories,
+            /** DTZ Lesen Teil 3: RANDOM_MIX (default) | PRESS_EMAIL_NOTICE | THREE_PRESS | THREE_EMAILS | THREE_NOTICES | CUSTOM. */
+            String textMix,
+            /** DTZ Lesen Teil 3, textMix CUSTOM: the type of text 1, 2 and 3 (see ExamContentPromptBuilder.LESEN_TEXT_TYPES). */
+            List<String> customTextTypes,
+            /** DTZ Lesen Teil 3: SHORT | MEDIUM | LONG (default MEDIUM). */
+            String textLength,
+            /** DTZ Lesen Teil 3: include dates and times where appropriate (default true). */
+            Boolean includeDatesTimes,
+            /** DTZ Lesen Teil 3: optional metadata tags the AI should put into metadata.tags. */
+            List<String> tags,
+            /** DTZ Schreiben: DIFFERENT_TOPICS | DIFFERENT_PURPOSES | FORMAL_AND_INFORMAL | RANDOM_BALANCED (default). */
+            String pairPreference
     ) {
+        /** The request shape before the DTZ Schreiben pair preference existed. */
+        public PromptRequest(String exam, String level, String section, String part, Integer count, String difficulty,
+                             List<String> topics, String notes, Boolean includeVisuals, String textType, List<String> grammarCategories,
+                             String contextMode, List<String> wordCategories, String scenarioType, String relationship,
+                             String communicationType, String sourceType, Boolean includeExample, String variation, List<String> adCategories,
+                             String textMix, List<String> customTextTypes, String textLength, Boolean includeDatesTimes, List<String> tags) {
+            this(exam, level, section, part, count, difficulty, topics, notes, includeVisuals, textType, grammarCategories,
+                    contextMode, wordCategories, scenarioType, relationship, communicationType, sourceType, includeExample, variation,
+                    adCategories, textMix, customTextTypes, textLength, includeDatesTimes, tags, null);
+        }
+
+        /** The request shape before the Teil 3 text settings existed. */
+        public PromptRequest(String exam, String level, String section, String part, Integer count, String difficulty,
+                             List<String> topics, String notes, Boolean includeVisuals, String textType, List<String> grammarCategories,
+                             String contextMode, List<String> wordCategories, String scenarioType, String relationship,
+                             String communicationType, String sourceType, Boolean includeExample, String variation, List<String> adCategories) {
+            this(exam, level, section, part, count, difficulty, topics, notes, includeVisuals, textType, grammarCategories,
+                    contextMode, wordCategories, scenarioType, relationship, communicationType, sourceType, includeExample, variation,
+                    adCategories, null, null, null, null, null, null);
+        }
+
+        /** The request shape before the Teil 2 advertisement categories existed. */
+        public PromptRequest(String exam, String level, String section, String part, Integer count, String difficulty,
+                             List<String> topics, String notes, Boolean includeVisuals, String textType, List<String> grammarCategories,
+                             String contextMode, List<String> wordCategories, String scenarioType, String relationship,
+                             String communicationType, String sourceType, Boolean includeExample, String variation) {
+            this(exam, level, section, part, count, difficulty, topics, notes, includeVisuals, textType, grammarCategories,
+                    contextMode, wordCategories, scenarioType, relationship, communicationType, sourceType, includeExample, variation, null);
+        }
+
+        /** The request shape before the DTZ settings existed. */
+        public PromptRequest(String exam, String level, String section, String part, Integer count, String difficulty,
+                             List<String> topics, String notes, Boolean includeVisuals, String textType, List<String> grammarCategories,
+                             String contextMode, List<String> wordCategories, String scenarioType, String relationship, String communicationType) {
+            this(exam, level, section, part, count, difficulty, topics, notes, includeVisuals, textType, grammarCategories,
+                    contextMode, wordCategories, scenarioType, relationship, communicationType, null, null, null, null);
+        }
+
         public PromptRequest(String exam, String level, String section, String part, Integer count, String difficulty,
                              List<String> topics, String notes) {
             this(exam, level, section, part, count, difficulty, topics, notes, null, null, null, null, null, null, null, null);
@@ -101,7 +159,20 @@ public final class ExamContentDtos {
             /** Schriftlicher Ausdruck generator choices. */
             List<String> scenarioTypes,
             List<String> relationships,
-            List<String> communicationTypes
+            List<String> communicationTypes,
+            /** DTZ Lesen Teil 1 generator choices (first entry = default). */
+            List<String> directoryTopics,
+            List<String> directorySourceTypes,
+            List<String> directoryLevels,
+            List<String> directoryVariations,
+            /** DTZ Lesen Teil 2 generator choices (first entry = default). */
+            List<String> adTopics,
+            List<String> adCategories,
+            /** DTZ Lesen Teil 3 generator choices (first entry = default). */
+            List<String> lesenTextTopics,
+            List<String> lesenTextMixes,
+            List<String> lesenTextTypes,
+            List<String> lesenTextLengths
     ) {
     }
 
@@ -144,8 +215,13 @@ public final class ExamContentDtos {
             Integer number,
             String text,
             String correctAdvertisementId,
-            Map<String, Object> matchingProfile
+            Map<String, Object> matchingProfile,
+            /** DTZ Lesen Teil 2 (admin only): the German explanation of the answer; empty for other content. */
+            Map<String, String> explanation
     ) {
+        public SituationView(String id, Integer number, String text, String correctAdvertisementId, Map<String, Object> matchingProfile) {
+            this(id, number, text, correctAdvertisementId, matchingProfile, Map.of());
+        }
     }
 
     /** Lesen Teil 3: one structured advertisement; content / visual / matchingProfile keep the import JSON shape. */
@@ -189,6 +265,82 @@ public final class ExamContentDtos {
     ) {
     }
 
+    /** DTZ Lesen Teil 1: the shared information source as the learner reads it. */
+    public record DirectoryEntryView(String id, String heading, List<String> details) {
+    }
+
+    /** DTZ Lesen Teil 1: the unscored example (options reuse {@link HeadingView}: key + text). */
+    public record DirectoryExampleView(
+            String situation,
+            List<HeadingView> options,
+            String correctOptionId,
+            Map<String, String> explanation
+    ) {
+    }
+
+    /** DTZ Lesen Teil 1, admin only: what supports a question's answer and why (the answer-key view of the preview). */
+    public record DirectoryQuestionDetail(Integer number, List<String> sourceEntryIds, Map<String, String> explanation) {
+    }
+
+    public record DirectoryView(
+            String sourceType,
+            String topic,
+            String languageLevel,
+            String sourceTitle,
+            String introduction,
+            List<DirectoryEntryView> entries,
+            String displayText,
+            DirectoryExampleView example,
+            List<DirectoryQuestionDetail> questionDetails
+    ) {
+    }
+
+    /** DTZ Lesen Teil 3: one task of a text; options are empty for TRUE_FALSE, correctAnswer is RICHTIG / FALSCH or a, b, c (admin preview only). */
+    public record TextTaskView(Integer number, String type, String prompt, List<HeadingView> options, String correctAnswer, Map<String, String> explanation) {
+    }
+
+    public record TextItemView(String id, Integer number, String type, String title, String sender, String date, String body, List<TextTaskView> tasks) {
+    }
+
+    public record TextQuestionsView(String topic, String languageLevel, List<TextItemView> texts) {
+    }
+
+    /** DTZ Lesen Teil 5: the unscored example gap (number 0) with its options and explanation. */
+    public record GapExampleView(String textBeforeGap, String textAfterGap, List<HeadingView> options, String correctOptionId, Map<String, String> explanation) {
+    }
+
+    /** DTZ Lesen Teil 5, admin only: what a gap tests and why its answer is right (the answer-key view of the preview). */
+    public record LetterGapDetail(Integer number, String grammarCategory, String grammarFocus, Map<String, String> explanation) {
+    }
+
+    /** DTZ Lesen Teil 5: the letter / email with its {{40}}..{{45}} markers, the optional example and the answer-key details of the six gaps. */
+    public record LetterView(String type, String topic, String languageLevel, String sender, String recipient, String date, String subject,
+                             String body, GapExampleView example, List<LetterGapDetail> gaps) {
+    }
+
+    /** DTZ Schreiben: one of the two alternatives as the learner sees it. */
+    public record WritingChoiceTaskView(String label, String title, String topic, String communicationType, String situation,
+                                        String recipientName, String recipientRole, String writingInstruction, List<String> points) {
+    }
+
+    public record WritingChoiceView(int durationMinutes, String languageLevel, List<WritingChoiceTaskView> tasks) {
+    }
+
+    /** Admin editor / manual creation of a DTZ Schreiben exercise: the tasks in the import shape (taskLabel, title, topic, communicationType, situation, recipient, writingInstruction, points). */
+    public record WritingChoiceSaveResult(String id, List<Issue> warnings) {
+    }
+
+    /**
+     * DTZ Mündliche Prüfung: one exercise of Teil 1 (fixed template), Teil 2 (photo + experience questions) or Teil 3 (joint planning) in the import shape.
+     * {@code content} is the stored tree (part-specific keys, see DtzOralSchema); the image prompt is part of it for admins only.
+     */
+    public record DtzOralView(int part, String exerciseType, String languageLevel, Map<String, Object> content) {
+    }
+
+    /** Admin editor / manual creation of a DTZ Mündliche Prüfung exercise: the body is the import shape of the Teil. */
+    public record DtzOralSaveResult(String id, List<Issue> warnings) {
+    }
+
     public record ExercisePreview(
             String title,
             String instructions,
@@ -205,8 +357,55 @@ public final class ExamContentDtos {
             /** Writing tasks (Schriftlicher Ausdruck) only. */
             WritingView writing,
             /** Speaking tasks (Mündlicher Ausdruck) only. */
-            SpeakingView speaking
+            SpeakingView speaking,
+            /** DTZ Lesen Teil 1 (directory matching) only: the information source, the example and the answer-key details. */
+            DirectoryView directory,
+            /** DTZ Lesen Teil 3 (texts with richtig/falsch + multiple choice) only: the three texts with their tasks and the answer key. */
+            TextQuestionsView textQuestions,
+            /** DTZ Lesen Teil 5 (letter with six gaps) only: the letter, the example gap and the answer-key details. */
+            LetterView letter,
+            /** DTZ Schreiben only: the two alternative tasks A and B with four content points each. */
+            WritingChoiceView writingChoice,
+            /** DTZ Mündliche Prüfung only: the content of the Teil (fixed template, photo exercise or planning task). */
+            DtzOralView dtzOral
     ) {
+        public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
+                               String readingText, List<QuestionView> questions, List<SituationView> situations,
+                               List<AdvertisementView> advertisements, ContextView context, WritingView writing, SpeakingView speaking,
+                               DirectoryView directory, TextQuestionsView textQuestions, LetterView letter, WritingChoiceView writingChoice) {
+            this(title, instructions, headings, texts, readingText, questions, situations, advertisements, context, writing, speaking, directory,
+                    textQuestions, letter, writingChoice, null);
+        }
+
+        public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
+                               String readingText, List<QuestionView> questions, List<SituationView> situations,
+                               List<AdvertisementView> advertisements, ContextView context, WritingView writing, SpeakingView speaking,
+                               DirectoryView directory, TextQuestionsView textQuestions, LetterView letter) {
+            this(title, instructions, headings, texts, readingText, questions, situations, advertisements, context, writing, speaking, directory,
+                    textQuestions, letter, null);
+        }
+
+        public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
+                               String readingText, List<QuestionView> questions, List<SituationView> situations,
+                               List<AdvertisementView> advertisements, ContextView context, WritingView writing, SpeakingView speaking,
+                               DirectoryView directory, TextQuestionsView textQuestions) {
+            this(title, instructions, headings, texts, readingText, questions, situations, advertisements, context, writing, speaking, directory,
+                    textQuestions, null);
+        }
+
+        public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
+                               String readingText, List<QuestionView> questions, List<SituationView> situations,
+                               List<AdvertisementView> advertisements, ContextView context, WritingView writing, SpeakingView speaking,
+                               DirectoryView directory) {
+            this(title, instructions, headings, texts, readingText, questions, situations, advertisements, context, writing, speaking, directory, null);
+        }
+
+        public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
+                               String readingText, List<QuestionView> questions, List<SituationView> situations,
+                               List<AdvertisementView> advertisements, ContextView context, WritingView writing, SpeakingView speaking) {
+            this(title, instructions, headings, texts, readingText, questions, situations, advertisements, context, writing, speaking, null);
+        }
+
         public ExercisePreview(String title, String instructions, List<HeadingView> headings, List<TextView> texts,
                                String readingText, List<QuestionView> questions, List<SituationView> situations,
                                List<AdvertisementView> advertisements, ContextView context, WritingView writing) {

@@ -411,31 +411,64 @@ class ExamContentSpeakingTest {
         assertTrue(codes.containsAll(List.of("TIPS_MISSING", "SELF_ASSESSMENT_MISSING", "INTRO_MISSING")), codes.toString());
     }
 
+    private static List<String> dtzGuideCodes(int part, ObjectNode node, String severity) {
+        List<com.deutschbridge.backend.model.dto.ExamContentDtos.Issue> issues = new java.util.ArrayList<>();
+        ExamSpeakingReader.validateGuide(ExamType.DTZ, part, node, issues);
+        return issues.stream().filter(i -> severity.equals(i.severity())).map(i -> i.code()).toList();
+    }
+
+    private static ObjectNode dtzGuide(int part) throws IOException {
+        return (ObjectNode) MAPPER.readTree(new ClassPathResource("speaking/dtz/guide-B1-teil" + part + ".json").getContentAsString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void builtInDtzGuidesAreValidAndMayCarryEnglishAndPersianHints() throws IOException {
+        for (int part = 1; part <= 3; part++) {
+            assertTrue(dtzGuideCodes(part, dtzGuide(part), "ERROR").isEmpty(), "part " + part + ": " + dtzGuideCodes(part, dtzGuide(part), "ERROR"));
+            assertTrue(dtzGuideCodes(part, dtzGuide(part), "WARNING").isEmpty(), "part " + part + ": " + dtzGuideCodes(part, dtzGuide(part), "WARNING"));
+        }
+        // the very same DTZ file is not valid as a Telc guide: Telc is German only and has different topics / goals
+        var telc = guideCodes(1, dtzGuide(1), "ERROR");
+        assertTrue(telc.contains("TRANSLATION_NOT_ALLOWED"), telc.toString());
+        assertTrue(guideCodes(2, dtzGuide(2), "ERROR").contains("GOAL_ID_INVALID"));
+    }
+
+    @Test
+    void dtzGuideNeedsAllSixTopicsAndRejectsMarkupInHints() throws IOException {
+        ObjectNode missing = dtzGuide(1);
+        ((ArrayNode) missing.get("topics")).remove(5);
+        assertTrue(dtzGuideCodes(1, missing, "ERROR").contains("CORE_TOPIC_MISSING"));
+
+        ObjectNode markup = dtzGuide(3);
+        ((ObjectNode) markup.get("tips").get(0)).put("fa", "<script>x</script>");
+        assertTrue(dtzGuideCodes(3, markup, "ERROR").contains("HTML_CONTENT"));
+    }
+
     @Test
     void guideServiceSavesOnlyValidContentAndSupportsDryRun() throws Exception {
         var repository = org.mockito.Mockito.mock(com.deutschbridge.backend.repository.SpeakingGuideRepository.class);
         var context = org.mockito.Mockito.mock(com.deutschbridge.backend.context.RequestContext.class);
-        org.mockito.Mockito.when(repository.findByLevelAndPartNumber(LearningLevel.B1, 2)).thenReturn(java.util.Optional.empty());
+        org.mockito.Mockito.when(repository.findByExamTypeAndLevelAndPartNumber(ExamType.TELC, LearningLevel.B1, 2)).thenReturn(java.util.Optional.empty());
         org.mockito.Mockito.when(repository.save(org.mockito.ArgumentMatchers.any())).thenAnswer(i -> i.getArgument(0));
         var service = new SpeakingGuideService(repository, context, MAPPER);
         @SuppressWarnings("unchecked")
         Map<String, Object> valid = MAPPER.convertValue(guide(2), Map.class);
 
-        assertTrue(service.save(LearningLevel.B1, 2, valid, false).saved());
+        assertTrue(service.save(ExamType.TELC, LearningLevel.B1, 2, valid, false).saved());
         org.mockito.Mockito.verify(repository, org.mockito.Mockito.times(1)).save(org.mockito.ArgumentMatchers.any());
 
-        assertFalse(service.save(LearningLevel.B1, 2, valid, true).saved(), "dry run never stores");
+        assertFalse(service.save(ExamType.TELC, LearningLevel.B1, 2, valid, true).saved(), "dry run never stores");
         org.mockito.Mockito.verify(repository, org.mockito.Mockito.times(1)).save(org.mockito.ArgumentMatchers.any());
 
         @SuppressWarnings("unchecked")
         Map<String, Object> invalid = MAPPER.convertValue(guide(2), Map.class);
         invalid.remove("goals");
-        var result = service.save(LearningLevel.B1, 2, invalid, false);
+        var result = service.save(ExamType.TELC, LearningLevel.B1, 2, invalid, false);
         assertFalse(result.saved());
         assertTrue(result.issues().stream().anyMatch(i -> i.code().equals("GOALS_MISSING")));
         org.mockito.Mockito.verify(repository, org.mockito.Mockito.times(1)).save(org.mockito.ArgumentMatchers.any());
 
-        assertThrows(com.deutschbridge.backend.exception.DataNotFoundException.class, () -> service.save(LearningLevel.B1, 4, valid, false));
+        assertThrows(com.deutschbridge.backend.exception.DataNotFoundException.class, () -> service.save(ExamType.TELC, LearningLevel.B1, 4, valid, false));
     }
 
     // ------------------------------------------------------------------ storage, export, learner view

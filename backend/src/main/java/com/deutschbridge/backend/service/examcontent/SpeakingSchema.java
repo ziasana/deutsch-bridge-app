@@ -37,6 +37,15 @@ public final class SpeakingSchema {
             "wochenende", "Wochenende",
             "hobbys", "Hobbys");
 
+    /** The six fixed topics of the DTZ Teil 1 self-introduction (same ids as the Telc topics they overlap with). */
+    public static final Map<String, String> DTZ_TOPICS = orderedMap(
+            "name", "Name",
+            "herkunft", "Geburtsort",
+            "wohnen", "Wohnort",
+            "beruf", "Arbeit oder Beruf",
+            "familie", "Familie",
+            "sprachen", "Sprachen");
+
     // ---- Teil 2: the four communication goals
 
     public static final Map<String, String> GOALS = orderedMap(
@@ -44,6 +53,13 @@ public final class SpeakingSchema {
             "EXPRESS_OWN_OPINION", "Die eigene Meinung sagen",
             "DESCRIBE_EXPERIENCE", "Eigene Erfahrungen erzählen",
             "REACT_TO_PARTNER", "Auf die Meinung des Partners reagieren");
+
+    /** DTZ Teil 2 (photo + experience questions): what a candidate has to be able to do. */
+    public static final Map<String, String> DTZ_GOALS = orderedMap(
+            "DESCRIBE_PHOTO", "Das Foto beschreiben",
+            "ASK_ABOUT_PHOTO", "Fragen zum Foto stellen",
+            "TELL_EXPERIENCE", "Von eigenen Erfahrungen berichten",
+            "GIVE_OPINION", "Die eigene Meinung sagen und begründen");
 
     // ---- Teil 3: conversational functions
 

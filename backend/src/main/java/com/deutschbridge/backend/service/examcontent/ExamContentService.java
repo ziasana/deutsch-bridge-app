@@ -125,7 +125,17 @@ public class ExamContentService {
                 ExamContentPromptBuilder.WORD_CATEGORIES,
                 ExamContentPromptBuilder.SCENARIO_TYPES,
                 ExamContentPromptBuilder.RELATIONSHIPS,
-                ExamContentPromptBuilder.COMMUNICATION_TYPES);
+                ExamContentPromptBuilder.COMMUNICATION_TYPES,
+                ExamContentPromptBuilder.DIRECTORY_TOPICS,
+                ExamContentPromptBuilder.DIRECTORY_SOURCE_TYPES,
+                ExamContentPromptBuilder.DIRECTORY_LEVELS,
+                ExamContentPromptBuilder.DIRECTORY_VARIATIONS,
+                ExamContentPromptBuilder.AD_TOPICS,
+                ExamContentPromptBuilder.AD_CATEGORIES,
+                ExamContentPromptBuilder.LESEN_TEXT_TOPICS,
+                ExamContentPromptBuilder.LESEN_TEXT_MIXES,
+                ExamContentPromptBuilder.LESEN_TEXT_TYPES,
+                ExamContentPromptBuilder.LESEN_TEXT_LENGTHS);
     }
 
     @Transactional(readOnly = true)
@@ -135,12 +145,14 @@ public class ExamContentService {
                 spec.examType(), spec.section(), spec.level(), spec.part());
         int next = ExamContentPromptBuilder.nextNumber(spec.externalIdPrefix(),
                 repository.findExternalIdsStartingWith(spec.externalIdPrefix()));
-        return promptBuilder.build(spec, request, existing, next, spec.isWriting() || spec.isSpeaking() ? existingWritingSummaries(spec) : List.of());
+        return promptBuilder.build(spec, request, existing, next, spec.isWriting() || spec.isWritingChoice() || spec.isSpeaking() || spec.isDtzOral() || spec.isDirectoryMatching() || spec.isAdMatching() || spec.isTextQuestions() || spec.isTrueFalseText() || spec.isLetterGap() ? existingWritingSummaries(spec) : List.of());
     }
 
     /** Newest first, capped so the prompt stays a manageable size: "title - topic (scenario)". */
     private List<String> existingWritingSummaries(ExamContentSpec spec) {
         return repository.findBySectionAndTaskType(spec.section(), spec.taskType()).stream()
+                .filter(e -> e.getExamType() == spec.examType())
+                .filter(e -> spec.part() == 0 || e.getPartNumber() == null || e.getPartNumber() == spec.part())
                 .filter(e -> e.getStatus() != ExamContentStatus.ARCHIVED && e.getStatus() != ExamContentStatus.REJECTED)
                 .sorted(java.util.Comparator.comparing(ExamExercise::getCreatedAt, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
                 .limit(EXISTING_SUMMARY_LIMIT)
@@ -256,16 +268,26 @@ public class ExamContentService {
         boolean anyError = fileIssues.stream().anyMatch(i -> ExamContentValidator.ERROR.equals(i.severity()))
                 || reports.stream().anyMatch(r -> !r.valid());
         int headings = file.exercises().stream().mapToInt(e -> e.headings().size()).sum();
-        int texts = file.exercises().stream().mapToInt(e -> e.texts().size()).sum();
+        int texts = file.exercises().stream().mapToInt(e -> e.texts().size() + (e.textSet() == null ? 0 : e.textSet().texts().size())).sum();
         int questions = file.exercises().stream().mapToInt(e -> e.questions().size() + e.situations().size()
-                + (e.writing() == null ? 0 : e.writing().points().size())).sum();
+                + (e.writing() == null ? 0 : e.writing().points().size())
+                + (e.writingChoice() == null ? 0 : e.writingChoice().tasks().stream().mapToInt(t -> t.points().size()).sum())).sum();
         boolean reading = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isMultipleChoice());
-        boolean situation = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isSituationMatching());
+        boolean directory = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isDirectoryMatching());
+        boolean situation = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isSituationMatching() && !e.spec().isAdMatching());
+        boolean adMatching = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isAdMatching());
+        boolean textQuestions = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isTextQuestions());
+        boolean letterGap = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isLetterGap());
+        boolean trueFalseText = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isTrueFalseText());
         boolean wordBank = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isWordBank());
         boolean writing = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isWriting());
+        boolean writingChoice = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isWritingChoice());
         boolean speaking = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isSpeaking());
-        boolean matching = file.exercises().stream().anyMatch(e -> e.spec() != null && !e.spec().isMultipleChoice()
-                && !e.spec().isSituationMatching() && !e.spec().isWordBank() && !e.spec().isWriting() && !e.spec().isSpeaking());
+        boolean dtzOral = file.exercises().stream().anyMatch(e -> e.spec() != null && e.spec().isDtzOral());
+        int oralPart = file.exercises().stream().filter(e -> e.spec() != null && e.spec().isDtzOral()).mapToInt(e -> e.spec().part()).findFirst().orElse(0);
+        boolean matching = file.exercises().stream().anyMatch(e -> e.spec() != null && !e.spec().isMultipleChoice() && !e.spec().isDirectoryMatching()
+                && !e.spec().isSituationMatching() && !e.spec().isWordBank() && !e.spec().isWriting() && !e.spec().isWritingChoice() && !e.spec().isSpeaking() && !e.spec().isDtzOral()
+                && !e.spec().isTextQuestions() && !e.spec().isTrueFalseText() && !e.spec().isLetterGap());
         int situations = file.exercises().stream().mapToInt(e -> e.situations().size()).sum();
         int advertisements = file.exercises().stream().mapToInt(e -> e.advertisements().size()).sum();
 
@@ -281,7 +303,7 @@ public class ExamContentService {
         checks.add(new Check("Section: " + orDash(file.section()), noCode(all, "SECTION_INVALID")));
         checks.add(new Check("Part: " + orDash(file.part()), noCode(all, "PART_INVALID", "SPEC_UNSUPPORTED")));
         checks.add(new Check("Exercises: " + reports.size(), !reports.isEmpty() && noCode(all, "EXERCISE_NOT_OBJECT", "EXTERNAL_ID_INVALID", "EXTERNAL_ID_DUPLICATE_IN_FILE")));
-        if (matching || (!reading && !situation && !wordBank && !writing && !speaking)) {
+        if (matching || (!reading && !directory && !situation && !adMatching && !textQuestions && !trueFalseText && !letterGap && !wordBank && !writing && !writingChoice && !speaking && !dtzOral)) {
             checks.add(new Check("Headings: " + headings, !reports.isEmpty() && noCode(all, STRUCTURE_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Texts: " + texts, !reports.isEmpty() && noCode(all, TEXT_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Answer assignments valid", !reports.isEmpty() && noCode(all, ANSWER_ERROR_CODES.toArray(String[]::new))));
@@ -293,21 +315,80 @@ public class ExamContentService {
             checks.add(new Check("Self-assessment checklist (" + SpeakingSchema.MIN_SELF_ASSESSMENT + "–" + SpeakingSchema.MAX_SELF_ASSESSMENT + " items)",
                     !reports.isEmpty() && noCode(all, "SELF_ASSESSMENT_MISSING", "SELF_ASSESSMENT_COUNT", "SELF_ASSESSMENT_INVALID", "SELF_ASSESSMENT_EMPTY", "SELF_ASSESSMENT_TOO_LONG")));
         }
+        if (dtzOral) {
+            checks.add(new Check("Exam type, section, exercise type, topic and difficulty valid", !reports.isEmpty() && noCode(all, ExamDtzOralReader.HEADER_CODES.toArray(String[]::new))));
+            if (oralPart == 1) {
+                checks.add(new Check("Exactly the six fixed topics, in order (Name, Geburtsort, Wohnort, Arbeit/Beruf, Familie, Sprachen)", !reports.isEmpty() && noCode(all, ExamDtzOralReader.TEIL1_CODES.toArray(String[]::new))));
+            }
+            if (oralPart == 2) {
+                checks.add(new Check("Image data valid (the photo itself is uploaded before publishing)", !reports.isEmpty() && noCode(all, ExamDtzOralReader.PHOTO_CODES.toArray(String[]::new))));
+                checks.add(new Check("Participant A and B with the exact examiner instructions and the two picture-description prompts", !reports.isEmpty() && noCode(all, ExamDtzOralReader.PARTICIPANT_CODES.toArray(String[]::new))));
+                checks.add(new Check(DtzOralSchema.QUESTIONS_PER_LEVEL + " A2 and " + DtzOralSchema.QUESTIONS_PER_LEVEL + " B1 questions, none empty or duplicated", !reports.isEmpty() && noCode(all, ExamDtzOralReader.QUESTION_CODES.toArray(String[]::new))));
+            }
+            if (oralPart == 3) {
+                checks.add(new Check("Situation, fixed task instruction and " + DtzOralSchema.MIN_NOTES + "–" + DtzOralSchema.MAX_NOTES + " planning notes, none empty or duplicated", !reports.isEmpty() && noCode(all, ExamDtzOralReader.PLANNING_CODES.toArray(String[]::new))));
+            }
+            checks.add(new Check("Plain text, no placeholders", !reports.isEmpty() && noCode(all, ExamDtzOralReader.CONTENT_CODES.toArray(String[]::new))));
+        }
         if (writing) {
             checks.add(new Check("Task type, scenario, topic, relationship and communication type valid", !reports.isEmpty() && noCode(all, WRITING_TASK_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Incoming email found (greeting, body, closing, sender)", !reports.isEmpty() && noCode(all, WRITING_EMAIL_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Exactly 4 content points (numbered 1–4)", !reports.isEmpty() && noCode(all, WRITING_POINT_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Communication style matches the relationship", !reports.isEmpty() && noCode(all, "STYLE_MISMATCH")));
         }
+        if (writingChoice) {
+            checks.add(new Check("Exam type, section, exercise type and a duration of 30 minutes", !reports.isEmpty() && noCode(all, ExamWritingChoiceReader.HEADER_CODES.toArray(String[]::new))));
+            checks.add(new Check("Exactly two tasks, labelled A and B", !reports.isEmpty() && noCode(all, ExamWritingChoiceReader.TASK_CODES.toArray(String[]::new))));
+            checks.add(new Check("Situation, writing instruction, recipient and communication style present and valid", !reports.isEmpty() && noCode(all, ExamWritingChoiceReader.FIELD_CODES.toArray(String[]::new))));
+            checks.add(new Check("Exactly 4 content points per task (numbered 1–4)", !reports.isEmpty() && noCode(all, ExamWritingChoiceReader.POINT_CODES.toArray(String[]::new))));
+            checks.add(new Check("Metadata present", !reports.isEmpty() && noCode(all, "METADATA_REQUIRED", "METADATA_INVALID")));
+        }
         if (situation) {
             checks.add(new Check("Situations: " + situations, !reports.isEmpty() && noCode(all, SITUATION_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Advertisements: " + advertisements, !reports.isEmpty() && noCode(all, AD_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Matching valid (each advertisement used once)", !reports.isEmpty() && noCode(all, SITUATION_ANSWER_CODES.toArray(String[]::new))));
         }
+        if (textQuestions) {
+            checks.add(new Check("Exactly 3 texts (with id, number, type, title and body)", !reports.isEmpty() && noCode(all, ExamTextQuestionsReader.TEXT_CODES.toArray(String[]::new))));
+            checks.add(new Check("Exactly 2 questions per text, numbered 31–36 (richtig/falsch, then multiple choice)", !reports.isEmpty() && noCode(all, ExamTextQuestionsReader.QUESTION_CODES.toArray(String[]::new))));
+            checks.add(new Check("Three options a, b, c per multiple-choice question", !reports.isEmpty() && noCode(all, ExamTextQuestionsReader.OPTION_CODES.toArray(String[]::new))));
+            checks.add(new Check("One valid answer per question (RICHTIG / FALSCH, a / b / c)", !reports.isEmpty() && noCode(all, ExamTextQuestionsReader.ANSWER_CODES.toArray(String[]::new))));
+            checks.add(new Check("Explanation for every answer", !reports.isEmpty() && noCode(all, ExamTextQuestionsReader.EXPLANATION_CODES.toArray(String[]::new))));
+        }
+        if (trueFalseText) {
+            checks.add(new Check("Exactly one text with title and body", !reports.isEmpty() && noCode(all, ExamTrueFalseReader.TEXT_CODES.toArray(String[]::new))));
+            checks.add(new Check("Exactly 3 true/false statements, numbered 37–39", !reports.isEmpty() && noCode(all, ExamTrueFalseReader.QUESTION_CODES.toArray(String[]::new))));
+            checks.add(new Check("One valid answer per statement (RICHTIG / FALSCH)", !reports.isEmpty() && noCode(all, ExamTrueFalseReader.ANSWER_CODES.toArray(String[]::new))));
+            checks.add(new Check("Explanation (de, en, fa) for every statement", !reports.isEmpty() && noCode(all, ExamTrueFalseReader.EXPLANATION_CODES.toArray(String[]::new))));
+            checks.add(new Check("Metadata present", !reports.isEmpty() && noCode(all, "METADATA_REQUIRED", "METADATA_INVALID")));
+        }
+        if (letterGap) {
+            checks.add(new Check("Exactly one letter or email with a body", !reports.isEmpty() && noCode(all, ExamLetterReader.TEXT_CODES.toArray(String[]::new))));
+            checks.add(new Check("Gap markers {{40}}–{{45}}: each exactly once, in ascending order", !reports.isEmpty() && noCode(all, ExamLetterReader.GAP_CODES.toArray(String[]::new))));
+            checks.add(new Check("Exactly 6 MULTIPLE_CHOICE questions, numbered 40–45", !reports.isEmpty() && noCode(all, ExamLetterReader.QUESTION_CODES.toArray(String[]::new))));
+            checks.add(new Check("Exactly 3 options a, b, c per question", !reports.isEmpty() && noCode(all, ExamLetterReader.OPTION_CODES.toArray(String[]::new))));
+            checks.add(new Check("One correct answer per question (key matches an option)", !reports.isEmpty() && noCode(all, ExamLetterReader.ANSWER_CODES.toArray(String[]::new))));
+            checks.add(new Check("Explanation (de, en, fa) for every question", !reports.isEmpty() && noCode(all, ExamLetterReader.EXPLANATION_CODES.toArray(String[]::new))));
+            checks.add(new Check("Example gap valid (when present)", !reports.isEmpty() && noCode(all, ExamLetterReader.EXAMPLE_CODES.toArray(String[]::new))));
+            checks.add(new Check("Metadata present", !reports.isEmpty() && noCode(all, "METADATA_REQUIRED", "METADATA_INVALID")));
+        }
+        if (adMatching) {
+            checks.add(new Check("Exactly 5 situations numbered 26–30", !reports.isEmpty() && noCode(all, ExamAdMatchingReader.SITUATION_CODES.toArray(String[]::new))));
+            checks.add(new Check("Exactly 8 advertisements a–h with title and body", !reports.isEmpty() && noCode(all, ExamAdMatchingReader.AD_CODES.toArray(String[]::new))));
+            checks.add(new Check("Answer key: 4 distinct advertisements and exactly one X", !reports.isEmpty() && noCode(all, ExamAdMatchingReader.ANSWER_CODES.toArray(String[]::new))));
+            checks.add(new Check("German explanation for every answer", !reports.isEmpty() && noCode(all, ExamAdMatchingReader.EXPLANATION_CODES.toArray(String[]::new))));
+            checks.add(new Check("Example valid (when enabled)", !reports.isEmpty() && noCode(all, ExamAdMatchingReader.EXAMPLE_CODES.toArray(String[]::new))));
+        }
         if (wordBank) {
             checks.add(new Check("Text with gaps 31–40", !reports.isEmpty() && noCode(all, READING_TEXT_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Word bank: 15 words a–o", !reports.isEmpty() && noCode(all, WORD_BANK_ERROR_CODES.toArray(String[]::new))));
             checks.add(new Check("Gaps and answers: 10 gaps, each word used once", !reports.isEmpty() && noCode(all, WORD_ANSWER_ERROR_CODES.toArray(String[]::new))));
+        }
+        if (directory) {
+            checks.add(new Check("Information source with entries", !reports.isEmpty() && noCode(all, ExamDirectoryReader.SOURCE_CODES.toArray(String[]::new))));
+            checks.add(new Check("Exactly 5 scored questions numbered 21–25", !reports.isEmpty() && noCode(all, ExamDirectoryReader.QUESTION_CODES.toArray(String[]::new))));
+            checks.add(new Check("Three options a, b, c and one correct answer per question", !reports.isEmpty() && noCode(all, ExamDirectoryReader.OPTION_CODES.toArray(String[]::new))));
+            checks.add(new Check("Example valid (when enabled)", !reports.isEmpty() && noCode(all, ExamDirectoryReader.EXAMPLE_CODES.toArray(String[]::new))));
         }
         if (reading) {
             checks.add(new Check("Reading texts: " + file.exercises().stream().filter(e -> e.readingText() != null).count(),
@@ -366,6 +447,11 @@ public class ExamContentService {
             }
             if (!report.importable()) {
                 skipped.add(new SkippedExercise(report.index(), report.externalId(), report.title(), skipReason(report)));
+                continue;
+            }
+            if (parsed.spec().isDtzOral() && parsed.spec().part() == 1 && hasActiveTemplate()) {
+                skipped.add(new SkippedExercise(report.index(), report.externalId(), report.title(),
+                        "There is already a Teil 1 template — edit it, or archive it before importing another one."));
                 continue;
             }
             ExamExercise saved = repository.save(ExamContentMapper.toEntity(parsed, parsed.spec().examType(),
@@ -435,10 +521,15 @@ public class ExamContentService {
     /** Last line of defence against publishing something broken by a hand edit after import. */
     static String publishProblem(ExamExercise e) {
         if (e.getPassages() == null || e.getPassages().isEmpty()) return "Has no texts.";
+        if (e.getExamType() == ExamType.DTZ && e.getSection() == ExamSection.MUENDLICHER_AUSDRUCK) return dtzOralProblem(e);
         if (e.getSection() == ExamSection.MUENDLICHER_AUSDRUCK) {
             // A speaking task has no questions. Imported tasks carry their structure in the metadata; one that lost it cannot be shown.
             boolean structured = e.getMetadata() != null && e.getMetadata().get("speaking") instanceof Map<?, ?>;
             return structured ? null : "A speaking task needs its structured content (metadata.speaking).";
+        }
+        if (e.getTaskType() == ExamTaskType.WRITING_TASK_CHOICE) {
+            // Two alternatives, four points each; a hand edit must not break that (the learner chooses one of exactly two tasks).
+            return writingChoiceProblem(e);
         }
         if (e.getTaskType() == ExamTaskType.WRITING_TASK) {
             // A writing task has no questions. Imported tasks (they carry their structure in the metadata) must keep exactly four points.
@@ -468,8 +559,46 @@ public class ExamContentService {
                 if (e.getPassages().stream().noneMatch(p -> answer.equals(p.getId()))) return label + " refers to an advertisement that does not exist.";
                 if (!used.add(answer)) return "An advertisement is the correct answer for more than one situation.";
             }
+            if (e.getExamType() == ExamType.DTZ) {
+                if (e.getQuestions().size() != 5) return "A DTZ advertisement exercise needs exactly 5 situations (found " + e.getQuestions().size() + ").";
+                if (e.getPassages().size() != 8) return "A DTZ advertisement exercise needs exactly 8 advertisements (found " + e.getPassages().size() + ").";
+                long none = e.getQuestions().stream().filter(q -> "X".equalsIgnoreCase(q.getCorrectAnswer())).count();
+                if (none != 1) return "Exactly one situation must have the answer X (found " + none + ").";
+            }
         }
-        if (e.getTaskType() == ExamTaskType.MULTIPLE_CHOICE) {
+        if (e.getTaskType() == ExamTaskType.TEXT_QUESTIONS) {
+            if (e.getPassages().size() != 3) return "A DTZ texts exercise needs exactly 3 texts (found " + e.getPassages().size() + ").";
+            if (e.getQuestions().size() != 6) return "A DTZ texts exercise needs exactly 6 questions (found " + e.getQuestions().size() + ").";
+            for (int i = 0; i < 3; i++) {
+                final int textIndex = i;
+                long trueFalse = e.getQuestions().stream().filter(q -> q.getSectionIndex() != null && q.getSectionIndex() == textIndex && q.getTaskType() == ExamTaskType.TRUE_FALSE).count();
+                long choice = e.getQuestions().stream().filter(q -> q.getSectionIndex() != null && q.getSectionIndex() == textIndex && q.getTaskType() == ExamTaskType.MULTIPLE_CHOICE).count();
+                if (trueFalse != 1 || choice != 1) return "Text " + (i + 1) + " needs exactly one richtig/falsch and one multiple-choice question.";
+            }
+            for (var q : e.getQuestions()) {
+                String label = "Question " + (q.getQuestionNumber() != null ? q.getQuestionNumber() : "?");
+                if (q.getPrompt() == null || q.getPrompt().isBlank()) return label + " has no statement or question.";
+                if (q.getTaskType() == ExamTaskType.TRUE_FALSE) {
+                    if (!"RICHTIG".equals(q.getCorrectAnswer()) && !"FALSCH".equals(q.getCorrectAnswer())) return label + " must have RICHTIG or FALSCH as its correct answer.";
+                } else {
+                    if (q.getOptions() == null || q.getOptions().size() != 3 || q.getOptions().stream().anyMatch(o -> o == null || o.isBlank())) return label + " needs exactly 3 options.";
+                    if (q.getCorrectAnswer() == null || !q.getOptions().contains(q.getCorrectAnswer())) return label + " has no valid correct option.";
+                }
+            }
+        }
+        if (e.getTaskType() == ExamTaskType.TEXT_TRUE_FALSE) {
+            String problem = com.deutschbridge.backend.service.DtzTrueFalseTextValidator.check(e.getPassages(), e.getQuestions());
+            if (problem != null) return problem;
+        }
+        if (e.getTaskType() == ExamTaskType.LETTER_GAP_FILL) {
+            String problem = com.deutschbridge.backend.service.DtzLetterGapValidator.check(e.getPassages(), e.getQuestions());
+            if (problem != null) return problem;
+        }
+        if (e.getTaskType() == ExamTaskType.DIRECTORY_MATCHING) {
+            if (e.getQuestions().size() != 5) return "A directory exercise needs exactly 5 questions (found " + e.getQuestions().size() + ").";
+            if (e.getQuestions().stream().anyMatch(q -> q.getOptions() == null || q.getOptions().size() != 3)) return "Every question needs exactly 3 options.";
+        }
+        if (e.getTaskType() == ExamTaskType.MULTIPLE_CHOICE || e.getTaskType() == ExamTaskType.DIRECTORY_MATCHING) {
             for (var q : e.getQuestions()) {
                 String label = "Question " + (q.getQuestionNumber() != null ? q.getQuestionNumber() : "?");
                 if (q.getOptions() == null || q.getOptions().size() < 2) return label + " has fewer than two options.";
@@ -485,6 +614,220 @@ public class ExamContentService {
             }
         }
         return null;
+    }
+
+    /** DTZ Schreiben: exactly the tasks A and B with situation, instruction and four non-blank points each. Null when fine. */
+    static String writingChoiceProblem(ExamExercise e) {
+        ParsedExercise.WritingChoice wc = ExamContentMapper.writingChoiceOf(e);
+        if (wc == null) return "A writing task with alternatives needs its structured tasks (metadata.writingChoice).";
+        if (wc.tasks().size() != 2 || !"A".equals(wc.tasks().get(0).label()) || !"B".equals(wc.tasks().get(1).label())) {
+            return "A writing exercise needs exactly two tasks, Aufgabe A and Aufgabe B.";
+        }
+        for (ParsedExercise.WritingChoiceTask t : wc.tasks()) {
+            String name = "Aufgabe " + t.label();
+            if (t.situation() == null || t.situation().isBlank()) return name + " has no situation.";
+            if (t.writingInstruction() == null || t.writingInstruction().isBlank()) return name + " has no writing instruction.";
+            if (t.points().size() != ExamWritingChoiceReader.POINT_COUNT || t.points().stream().anyMatch(pt -> pt == null || pt.isBlank())) {
+                return name + " needs exactly four content points.";
+            }
+        }
+        return null;
+    }
+
+    // ------------------------------------------------------------------ create / edit (DTZ Schreiben)
+
+    /**
+     * Creates a DTZ Schreiben exercise by hand, or replaces the title and the two tasks of an existing one. The body has the import shape
+     * ({@code title}, {@code tasks[]} with taskLabel, title, topic, communicationType, situation, recipient, writingInstruction, points[]) and
+     * goes through the same deterministic checks as an import; errors reject the save, warnings come back for review.
+     */
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "examExercises", allEntries = true),
+            @CacheEvict(cacheNames = "examAdminList", allEntries = true),
+            @CacheEvict(cacheNames = "examLevelSummary", allEntries = true)
+    })
+    public WritingChoiceSaveResult saveWritingChoice(String id, com.fasterxml.jackson.databind.JsonNode body) throws DataNotFoundException {
+        ExamContentSpec spec = ExamContentSpecs.find(ExamType.DTZ, LearningLevel.B1, ExamSection.SCHRIFTLICHER_AUSDRUCK, 1).orElseThrow();
+        ExamExercise existing = null;
+        if (id != null) {
+            existing = repository.findById(id).orElseThrow(() -> new DataNotFoundException("Exercise not found."));
+            if (existing.getTaskType() != ExamTaskType.WRITING_TASK_CHOICE) {
+                throw new IllegalArgumentException("This exercise is not a DTZ Schreiben exercise.");
+            }
+        }
+        if (body == null || !body.isObject()) throw new IllegalArgumentException("The body must be a JSON object.");
+        ObjectNode node = ((ObjectNode) body).deepCopy();
+        node.put("durationMinutes", ExamContentSpecs.WRITING_CHOICE_MINUTES);
+        String title = node.hasNonNull("title") ? node.get("title").asText().trim() : "";
+        if (title.isEmpty()) throw new IllegalArgumentException("title must not be empty.");
+        if (title.length() > 200) throw new IllegalArgumentException("title may be at most 200 characters.");
+
+        List<Issue> issues = new ArrayList<>();
+        ParsedExercise.WritingChoice choice = new ExamWritingChoiceReader("", issues).read(spec, node).writingChoice();
+        List<Issue> errors = issues.stream().filter(i -> ExamContentValidator.ERROR.equals(i.severity())).toList();
+        if (!errors.isEmpty()) {
+            throw new IllegalArgumentException(errors.stream().limit(5).map(i -> i.path() + ": " + i.message()).collect(java.util.stream.Collectors.joining(" ")));
+        }
+        List<Issue> warnings = issues.stream().filter(i -> ExamContentValidator.WARNING.equals(i.severity())).toList();
+
+        String userId = requestContext.getUserId();
+        if (existing == null) {
+            Map<String, Object> metadata = new LinkedHashMap<>();
+            metadata.put("schemaVersion", 1);
+            metadata.put("source", "MANUAL");
+            metadata.put("tags", List.of());
+            ParsedExercise parsed = new ParsedExercise(0, spec, null, title, spec.defaultInstructions(), List.of(), List.of(), metadata, null, List.of(),
+                    List.of(), List.of(), List.of(), null, null, null, null, null, null, choice);
+            String hash = ExamContentFingerprint.hashTexts(parsed.textContents());
+            ExamExercise saved = repository.save(ExamContentMapper.toEntity(parsed, ExamType.DTZ, ExamContentSpecs.SCHEMA_VERSION, spec.promptVersion(), hash, userId));
+            return new WritingChoiceSaveResult(saved.getId(), warnings);
+        }
+        ParsedExercise parsed = new ParsedExercise(0, spec, existing.getExternalId(), title, existing.getTeilDescription(), List.of(), List.of(),
+                Map.of(), null, List.of(), List.of(), List.of(), List.of(), null, null, null, null, null, null, choice);
+        Map<String, Object> metadata = new LinkedHashMap<>(existing.getMetadata() == null ? Map.of() : existing.getMetadata());
+        ExamContentMapper.putWritingChoiceMetadata(metadata, choice);
+        existing.setTitle(title);
+        existing.setPassages(ExamContentMapper.toWritingChoicePassages(choice));
+        existing.setMetadata(metadata);
+        existing.setContentHash(ExamContentFingerprint.hashTexts(parsed.textContents()));
+        existing.setVersion(existing.getVersion() + 1);
+        existing.setUpdatedBy(userId);
+        existing.setUpdatedAt(java.time.LocalDateTime.now());
+        repository.save(existing);
+        return new WritingChoiceSaveResult(existing.getId(), warnings);
+    }
+
+    // ------------------------------------------------------------------ DTZ Mündliche Prüfung (create / edit / publish rule)
+
+    private static final ObjectMapper TREE_MAPPER = new ObjectMapper();
+
+    /**
+     * The publish rule of the DTZ Mündliche Prüfung: the stored content must pass the same deterministic checks as an import, and a Teil 2
+     * exercise needs an uploaded image (a valid JSON file alone, or an image prompt, does not make it publishable). Null when fine.
+     */
+    static String dtzOralProblem(ExamExercise e) {
+        ParsedExercise.DtzOral oral = ExamContentMapper.dtzOralOf(e);
+        if (oral == null) return "A DTZ oral exercise needs its structured content (metadata.dtzOral).";
+        ExamContentSpec spec = ExamContentSpecs.find(ExamType.DTZ, LearningLevel.B1, ExamSection.MUENDLICHER_AUSDRUCK, oral.part()).orElse(null);
+        if (spec == null) return "Unknown part of the DTZ Mündliche Prüfung: " + oral.part() + ".";
+        List<Issue> issues = new ArrayList<>();
+        new ExamDtzOralReader("", issues).read(spec, TREE_MAPPER.valueToTree(oral.data()));
+        for (Issue issue : issues) {
+            if (ExamContentValidator.ERROR.equals(issue.severity())) return issue.path() + ": " + issue.message();
+        }
+        if (e.getTitle() == null || e.getTitle().isBlank()) return "Has no title.";
+        if (oral.part() == 2) {
+            String url = ExamContentMapper.dtzOralImageUrl(oral.data());
+            boolean stored = e.getPassages().stream().anyMatch(p -> url != null && url.equals(p.getImageUrl()));
+            if (url == null || !stored || !ExamDtzOralReader.IMAGE_URL.matcher(url).matches()) {
+                return "A Teil 2 exercise needs an uploaded photo before it can be published.";
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Creates a DTZ oral exercise by hand, or replaces the content of an existing one. The body has the import shape of its Teil
+     * ({@code part}, {@code title}, and the Teil-specific fields) and goes through the same deterministic checks as an import; errors reject the
+     * save, warnings come back for review. For Teil 2 the body carries {@code image.imageUrl} of an image uploaded through the exam-image upload.
+     * A new exercise starts as DRAFT; editing a published exercise keeps its status (the publish rule is checked again).
+     */
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "examExercises", allEntries = true),
+            @CacheEvict(cacheNames = "examAdminList", allEntries = true),
+            @CacheEvict(cacheNames = "examLevelSummary", allEntries = true)
+    })
+    public DtzOralSaveResult saveDtzOral(String id, com.fasterxml.jackson.databind.JsonNode body) throws DataNotFoundException {
+        if (body == null || !body.isObject()) throw new IllegalArgumentException("The body must be a JSON object.");
+        ExamExercise existing = null;
+        if (id != null) {
+            existing = repository.findById(id).orElseThrow(() -> new DataNotFoundException("Exercise not found."));
+            if (existing.getExamType() != ExamType.DTZ || existing.getSection() != ExamSection.MUENDLICHER_AUSDRUCK) {
+                throw new IllegalArgumentException("This exercise is not a DTZ oral exercise.");
+            }
+        }
+        int part = body.path("part").asInt(existing == null || existing.getPartNumber() == null ? 0 : existing.getPartNumber());
+        if (existing != null && existing.getPartNumber() != null && part != existing.getPartNumber()) {
+            throw new IllegalArgumentException("The part of an exercise cannot be changed.");
+        }
+        ExamContentSpec spec = ExamContentSpecs.find(ExamType.DTZ, LearningLevel.B1, ExamSection.MUENDLICHER_AUSDRUCK, part)
+                .orElseThrow(() -> new IllegalArgumentException("part must be 1, 2 or 3."));
+        ObjectNode node = ((ObjectNode) body).deepCopy();
+        node.put("exerciseType", DtzOralSchema.taskTypeOf(part));
+        String title = node.hasNonNull("title") ? node.get("title").asText().trim() : "";
+        if (title.isEmpty()) throw new IllegalArgumentException("title must not be empty.");
+        if (title.length() > ExamDtzOralReader.MAX_TITLE) throw new IllegalArgumentException("title may be at most " + ExamDtzOralReader.MAX_TITLE + " characters.");
+        if (part == 1 && existing == null && hasActiveTemplate()) {
+            throw new IllegalArgumentException("There is already a Teil 1 template. Edit it, or archive it before creating another one.");
+        }
+
+        List<Issue> issues = new ArrayList<>();
+        ParsedExercise.DtzOral oral = new ExamDtzOralReader("", issues).read(spec, node).oral();
+        List<Issue> errors = issues.stream().filter(i -> ExamContentValidator.ERROR.equals(i.severity())).toList();
+        if (!errors.isEmpty()) {
+            throw new IllegalArgumentException(errors.stream().limit(5).map(i -> i.path() + ": " + i.message()).collect(java.util.stream.Collectors.joining(" ")));
+        }
+        List<Issue> warnings = issues.stream().filter(i -> ExamContentValidator.WARNING.equals(i.severity())).toList();
+
+        String userId = requestContext.getUserId();
+        String instructions = oral.part() == 1 && oral.data().get("instructions") instanceof String own ? own : spec.defaultInstructions();
+        if (existing == null) {
+            Map<String, Object> metadata = new LinkedHashMap<>();
+            metadata.put("schemaVersion", 1);
+            metadata.put("source", "MANUAL");
+            metadata.put("tags", List.of());
+            ParsedExercise parsed = new ParsedExercise(0, spec, null, title, instructions, List.of(), List.of(), metadata, null, List.of(),
+                    List.of(), List.of(), List.of(), null, null, null, null, null, null, null, oral);
+            String hash = ExamContentFingerprint.hashTexts(parsed.textContents());
+            ExamExercise saved = repository.save(ExamContentMapper.toEntity(parsed, ExamType.DTZ, ExamContentSpecs.SCHEMA_VERSION, spec.promptVersion(), hash, userId));
+            return new DtzOralSaveResult(saved.getId(), warnings);
+        }
+        ParsedExercise parsed = new ParsedExercise(0, spec, existing.getExternalId(), title, instructions, List.of(), List.of(), Map.of(), null, List.of(),
+                List.of(), List.of(), List.of(), null, null, null, null, null, null, null, oral);
+        Map<String, Object> metadata = new LinkedHashMap<>(existing.getMetadata() == null ? Map.of() : existing.getMetadata());
+        ExamContentMapper.putDtzOralMetadata(metadata, oral);
+        List<com.deutschbridge.backend.model.entity.ExamPassage> passages = ExamContentMapper.toDtzOralPassages(oral, title,
+                existing.getPassages() == null || existing.getPassages().isEmpty() ? null : existing.getPassages().get(0));
+        if (existing.getStatus() == ExamContentStatus.PUBLISHED) {
+            // Check the result on a copy first, so a refused edit leaves the live exercise untouched.
+            ExamExercise probe = new ExamExercise();
+            probe.setTitle(title);
+            probe.setPassages(passages);
+            probe.setMetadata(metadata);
+            String problem = dtzOralProblem(probe);
+            if (problem != null) throw new IllegalArgumentException("This change would break a published exercise: " + problem + " Unpublish it first.");
+        }
+        existing.setTitle(title);
+        existing.setPassages(passages);
+        existing.setTeilDescription(instructions);
+        existing.setMetadata(metadata);
+        existing.setContentHash(ExamContentFingerprint.hashTexts(parsed.textContents()));
+        existing.setVersion(existing.getVersion() + 1);
+        existing.setUpdatedBy(userId);
+        existing.setUpdatedAt(java.time.LocalDateTime.now());
+        repository.save(existing);
+        return new DtzOralSaveResult(existing.getId(), warnings);
+    }
+
+    private boolean hasActiveTemplate() {
+        return repository.findBySectionAndTaskType(ExamSection.MUENDLICHER_AUSDRUCK, ExamTaskType.SELF_INTRODUCTION).stream()
+                .anyMatch(e -> e.getExamType() == ExamType.DTZ && e.getStatus() != ExamContentStatus.ARCHIVED && e.getStatus() != ExamContentStatus.REJECTED);
+    }
+
+    /**
+     * Creates the standard Teil 1 template (the six fixed topics, the examiner instruction and a simple question, sentence starter and vocabulary per
+     * topic as optional practice support) as a DRAFT. Refused while another, non-archived Teil 1 template exists.
+     */
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "examExercises", allEntries = true),
+            @CacheEvict(cacheNames = "examAdminList", allEntries = true),
+            @CacheEvict(cacheNames = "examLevelSummary", allEntries = true)
+    })
+    public DtzOralSaveResult createDefaultTeil1Template() throws DataNotFoundException {
+        return saveDtzOral(null, DtzOralTemplates.teil1());
     }
 
     // ------------------------------------------------------------------ export

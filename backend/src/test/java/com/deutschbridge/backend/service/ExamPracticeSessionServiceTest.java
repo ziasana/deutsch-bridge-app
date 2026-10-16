@@ -16,6 +16,7 @@ import com.deutschbridge.backend.model.enums.ExamPracticeScope;
 import com.deutschbridge.backend.model.enums.ExamSection;
 import com.deutschbridge.backend.model.enums.ExamTaskType;
 import com.deutschbridge.backend.model.enums.ExamTimeMode;
+import com.deutschbridge.backend.model.enums.ExamType;
 import com.deutschbridge.backend.model.enums.LearningLevel;
 import com.deutschbridge.backend.repository.ExamAttemptRepository;
 import com.deutschbridge.backend.repository.ExamPracticeSessionRepository;
@@ -110,7 +111,7 @@ class ExamPracticeSessionServiceTest {
     @Test
     @DisplayName("a time-training Teil session gets its target from the configuration")
     void teilSessionResolvesTarget() throws DataNotFoundException {
-        when(timeConfigurationService.targetSeconds(LearningLevel.B1, ExamSection.LESEVERSTEHEN, 2))
+        when(timeConfigurationService.targetSeconds(ExamType.TELC, LearningLevel.B1, ExamSection.LESEVERSTEHEN, 2))
                 .thenReturn(Optional.of(1200));
 
         ExamPracticeSessionResponse response = service.start(teilRequest(ExamTimeMode.TIME_TRAINING));
@@ -131,7 +132,7 @@ class ExamPracticeSessionServiceTest {
     @Test
     @DisplayName("missing configuration starts the session without a target instead of failing")
     void missingConfigurationStillStarts() throws DataNotFoundException {
-        when(timeConfigurationService.targetSeconds(any(), any(), anyInt())).thenReturn(Optional.empty());
+        when(timeConfigurationService.targetSeconds(any(), any(), any(), anyInt())).thenReturn(Optional.empty());
 
         ExamPracticeSessionResponse response = service.start(teilRequest(ExamTimeMode.TIME_TRAINING));
 
@@ -142,7 +143,7 @@ class ExamPracticeSessionServiceTest {
     @DisplayName("an exercise session takes section, level and Teil from the exercise and is timed against that Teil's target")
     void exerciseSessionUsesTeilTarget() throws DataNotFoundException {
         when(examExerciseService.findById("e1")).thenReturn(exercise("e1", 3, 5));
-        when(timeConfigurationService.targetSeconds(LearningLevel.B1, ExamSection.LESEVERSTEHEN, 3))
+        when(timeConfigurationService.targetSeconds(ExamType.TELC, LearningLevel.B1, ExamSection.LESEVERSTEHEN, 3))
                 .thenReturn(Optional.of(1200));
 
         ExamPracticeSessionResponse response = service.start(new ExamPracticeSessionStartRequest(
@@ -302,8 +303,8 @@ class ExamPracticeSessionServiceTest {
     void timeManagementAveragesPerTeil() {
         when(sessionRepository.findByUserIdAndLevelAndCompletedAtIsNotNull("user-1", LearningLevel.B1)).thenReturn(List.of(
                 finished(2, 1200, 1200), finished(2, 1500, 1200), finished(1, 600, 900)));
-        when(timeConfigurationService.targetSeconds(LearningLevel.B1, ExamSection.LESEVERSTEHEN, 1)).thenReturn(Optional.of(900));
-        when(timeConfigurationService.targetSeconds(LearningLevel.B1, ExamSection.LESEVERSTEHEN, 2)).thenReturn(Optional.empty());
+        when(timeConfigurationService.targetSeconds(ExamType.TELC, LearningLevel.B1, ExamSection.LESEVERSTEHEN, 1)).thenReturn(Optional.of(900));
+        when(timeConfigurationService.targetSeconds(ExamType.TELC, LearningLevel.B1, ExamSection.LESEVERSTEHEN, 2)).thenReturn(Optional.empty());
 
         var rows = service.timeManagement(LearningLevel.B1);
 

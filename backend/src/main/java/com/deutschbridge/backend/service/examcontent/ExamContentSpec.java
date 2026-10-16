@@ -50,7 +50,12 @@ public record ExamContentSpec(
 
     /** True for Sprachbausteine Teil 1: one text with numbered gaps ([21] ...) and a three-option choice per gap. */
     public boolean isGapText() {
-        return isMultipleChoice() && section == ExamSection.SPRACHBAUSTEINE;
+        return (isMultipleChoice() && section == ExamSection.SPRACHBAUSTEINE) || isLetterGap();
+    }
+
+    /** True for DTZ Lesen Teil 5: one letter / email with six gaps {{40}}..{{45}}, each closed with one of three options (read with {@link ExamLetterReader}). */
+    public boolean isLetterGap() {
+        return taskType == ExamTaskType.LETTER_GAP_FILL;
     }
 
     /** True for Sprachbausteine Teil 2: one text with gaps [31]..[40] filled from a shared word bank a..o (each word once). */
@@ -63,9 +68,22 @@ public record ExamContentSpec(
         return taskType == ExamTaskType.WRITING_TASK;
     }
 
+    /** True for DTZ Schreiben: two alternative tasks (A and B) with four content points each, of which the learner writes one (read with {@link ExamWritingChoiceReader}). */
+    public boolean isWritingChoice() {
+        return taskType == ExamTaskType.WRITING_TASK_CHOICE;
+    }
+
     /** True for Mündlicher Ausdruck (Teil 1-3): a speaking task with a part-specific structure, no gradable answers. */
     public boolean isSpeaking() {
-        return section == ExamSection.MUENDLICHER_AUSDRUCK;
+        return section == ExamSection.MUENDLICHER_AUSDRUCK && examType != ExamType.DTZ;
+    }
+
+    /**
+     * True for the DTZ Mündliche Prüfung (Teil 1 fixed self-introduction template, Teil 2 photo + experience questions, Teil 3 joint planning).
+     * Each Teil has its own structure; all three are read with {@link ExamDtzOralReader}.
+     */
+    public boolean isDtzOral() {
+        return section == ExamSection.MUENDLICHER_AUSDRUCK && examType == ExamType.DTZ;
     }
 
     /** Word bank: words that stay unused. */
@@ -76,6 +94,24 @@ public record ExamContentSpec(
     /** True for "situations matched to advertisements" specs (Lesen Teil 3). */
     public boolean isSituationMatching() {
         return taskType == ExamTaskType.SITUATION_MATCHING;
+    }
+
+    /** True for DTZ Lesen Teil 2: five situations (26-30) matched to eight advertisements a-h or X, read with {@link ExamAdMatchingReader}. */
+    public boolean isAdMatching() {
+        return isSituationMatching() && examType == ExamType.DTZ;
+    }
+
+    /**
+     * True for DTZ Lesen Teil 3: three independent texts, each followed by one richtig/falsch and one multiple-choice (a, b, c) task,
+     * numbered 31-36 ({@code textCount} texts, {@code questionCount} tasks in total, {@code optionCount} options per multiple-choice task).
+     */
+    public boolean isTextQuestions() {
+        return taskType == ExamTaskType.TEXT_QUESTIONS;
+    }
+
+    /** True for DTZ Lesen Teil 4: one information text followed by three richtig/falsch statements numbered 37-39, read with {@link ExamTrueFalseReader}. */
+    public boolean isTrueFalseText() {
+        return taskType == ExamTaskType.TEXT_TRUE_FALSE;
     }
 
     /** Situation spec: {@code questionCount} situations numbered from {@code firstQuestionNumber}, {@code optionCount} ads a, b, c ... */
@@ -98,6 +134,11 @@ public record ExamContentSpec(
 
     public int unusedHeadingCount() {
         return headingCount - textCount;
+    }
+
+    /** True for DTZ Lesen Teil 1: one shared information source (directory, register ...) and five multiple-choice situations. */
+    public boolean isDirectoryMatching() {
+        return taskType == ExamTaskType.DIRECTORY_MATCHING;
     }
 
     /** Short human label, e.g. "TELC B1 · Lesen · Teil 1". */

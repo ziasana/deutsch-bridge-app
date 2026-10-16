@@ -14,6 +14,8 @@ public record WritingAttemptResponse(
         String parentAttemptId,
         LocalDateTime submittedAt,
         WritingFeedback feedback,
-        WritingAiFeedback aiFeedback
+        WritingAiFeedback aiFeedback,
+        /** DTZ Schreiben only: the alternative (A or B) this text answers; null otherwise. */
+        String selectedTask
 ) {
 }

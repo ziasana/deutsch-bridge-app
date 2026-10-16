@@ -31,17 +31,22 @@ import { resolveUploadUrl } from "@/lib/backendOrigin";
 import { scoreTone } from "@/lib/examScore";
 import { hasGapMarkers } from "@/lib/examGap";
 import WritingTaskCard from "@/componenets/exam/writing/WritingTaskCard";
+import WritingChoiceExercise from "@/componenets/exam/writing/WritingChoiceExercise";
+import DtzOralPractice from "@/componenets/exam/dtzOral/DtzOralPractice";
 import SprachbausteineClozeBoard, { hasGapText } from "@/componenets/exam/SprachbausteineClozeBoard";
 import HoerenBoard from "@/componenets/exam/HoerenBoard";
+import HighlightArea from "@/componenets/exam/HighlightArea";
 import LesenTextPanel from "@/componenets/exam/LesenTextPanel";
 import LesenTeil1Board from "@/componenets/exam/LesenTeil1Board";
+import LesenTextQuestionsBoard from "@/componenets/exam/LesenTextQuestionsBoard";
+import LesenDirectoryBoard from "@/componenets/exam/LesenDirectoryBoard";
 import LesenTeil3Board, { NO_AD_ANSWER as NO_AD_ANSWER_VALUE } from "@/componenets/exam/LesenTeil3Board";
 import TranscriptModal from "@/componenets/exam/TranscriptModal";
 import TranscriptContent from "@/componenets/exam/TranscriptContent";
 import { isEmptyTranscript } from "@/lib/transcriptFormat";
 import { ArrowLeft, ArrowRight, BookOpen, Bookmark, BookmarkCheck, Check, ChevronDown, FileText, Headphones, PenLine, Play, Puzzle, type LucideIcon, RotateCw, X } from "lucide-react";
 import LearningPageHero from "@/componenets/learning/LearningPageHero";
-import { EXAM_TYPE_META } from "@/componenets/exam";
+import { EXAM_TYPE_META, displayLevel } from "@/componenets/exam";
 import { cn } from "@/lib/utils";
 import { useExamBookmark } from "@/hooks/exam/useExamBookmark";
 import ExamExerciseTimer, { useStopExerciseTimer } from "@/componenets/exam/ExamExerciseTimer";
@@ -433,6 +438,18 @@ function SchriftlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExerci
     const { completed, markCompleted } = useExerciseCompletion(exercise);
     const stopExerciseTimer = useStopExerciseTimer();
 
+    if (exercise.taskType === "WRITING_TASK_CHOICE") {
+        return (
+            <WritingChoiceExercise
+                exercise={exercise}
+                onSubmitted={() => {
+                    if (!completed) markCompleted();
+                    stopExerciseTimer().then((result) => result && showZeitCheckToast(result));
+                }}
+            />
+        );
+    }
+
     return (
         <div className="space-y-4">
             <WritingTaskCard passages={exercise.passages} />
@@ -454,11 +471,39 @@ function SchriftlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExerci
 
 function MuendlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse }>) {
     const { completed, marking, markCompleted } = useExerciseCompletion(exercise);
+    const isDtz = !!exercise.dtzOral;
     const level = exercise.level ?? "B1";
-    const { guideFor, isLoading: guideLoading } = useSpeakingGuides(level);
+    const { guideFor, isLoading: guideLoading } = useSpeakingGuides(level, isDtz ? "DTZ" : "TELC");
     const stopExerciseTimer = useStopExerciseTimer();
     const [timeResult, setTimeResult] = useState<ExamPracticeSessionResult | null>(null);
 
+    // DTZ Mündliche Prüfung: three Teile with their own task layout, practised like the Telc ones (modes, help drawer, self-assessment).
+    if (exercise.dtzOral) {
+        return (
+            <DtzOralPractice
+                exerciseId={exercise.id}
+                title={exercise.title}
+                content={exercise.dtzOral}
+                guide={guideFor(exercise.dtzOral.part)?.content}
+                guideLoading={guideLoading}
+                completed={completed}
+                marking={marking}
+                onMarkCompleted={markCompleted}
+                timeResult={timeResult}
+                onFinish={() =>
+                    stopExerciseTimer().then((result) => {
+                        if (!result) return;
+                        setTimeResult(result);
+                        showZeitCheckToast(result);
+                    })
+                }
+                onRepeat={() => {
+                    setTimeResult(null);
+                    useExamTimerStore.getState().requestRestart();
+                }}
+            />
+        );
+    }
     if (!exercise.speaking) {
         return <div className="rounded-[10px] bg-card p-6 shadow-card text-sm text-foreground/60">Diese Übung hat noch keinen Inhalt.</div>;
     }
@@ -583,10 +628,13 @@ function QuestionSelect({
 const isLesenMultipleChoice = (exercise: ExamExercisePublicResponse) =>
     exercise.section === "LESEVERSTEHEN" && exercise.taskType === "MULTIPLE_CHOICE";
 
-/** Sprachbausteine Teil 1 (multiple choice per gap) and Teil 2 (shared word bank): a text with numbered gap badges. */
+/**
+ * Sprachbausteine Teil 1 (multiple choice per gap) and Teil 2 (shared word bank), and DTZ Lesen Teil 5 (a letter with six gaps,
+ * three options each): a text with numbered gap badges.
+ */
 const isSprachbausteineGapText = (exercise: ExamExercisePublicResponse) =>
-    exercise.section === "SPRACHBAUSTEINE" &&
-    (exercise.taskType === "MULTIPLE_CHOICE" || exercise.taskType === "WORD_BANK_CLOZE") &&
+    ((exercise.section === "SPRACHBAUSTEINE" && (exercise.taskType === "MULTIPLE_CHOICE" || exercise.taskType === "WORD_BANK_CLOZE")) ||
+        exercise.taskType === "LETTER_GAP_FILL") &&
     exercise.passages.some((p) => hasGapMarkers(p.content));
 
 /** Shared "mark as completed" state/handler for both quiz flows. */
@@ -741,6 +789,7 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
 
             {isGapText ? (
                 <SprachbausteineClozeBoard
+                highlight={exercise.taskType === "LETTER_GAP_FILL"}
                     passages={quiz.passages}
                     questions={quiz.questions}
                     answers={quiz.answers}
@@ -749,7 +798,8 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
                     wordBank={exercise.taskType === "WORD_BANK_CLOZE" ? { options: quiz.answerOptions, labels: quiz.answerOptionLabels } : undefined}
                 />
             ) : isHeadingMatching ? (
-                <LesenTeil1Board
+                <HighlightArea>
+                    <LesenTeil1Board
                     passages={quiz.passages}
                     questions={quiz.questions}
                     answerOptions={quiz.answerOptions}
@@ -758,14 +808,17 @@ function ClozeGridQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResp
                     disabled={quiz.submitting}
                     onAnswer={setAnswer}
                 />
+                </HighlightArea>
             ) : isSituationMatching ? (
-                <LesenTeil3Board
+                <HighlightArea>
+                    <LesenTeil3Board
                     passages={quiz.passages}
                     questions={quiz.questions}
                     answers={quiz.answers}
                     disabled={quiz.submitting}
                     onAnswer={setAnswer}
                 />
+                </HighlightArea>
             ) : (
             <div className={`grid gap-3 sm:grid-cols-2 ${isSituationMatching ? "" : "lg:grid-cols-3 xl:grid-cols-4"}`}>
                 {quiz.questions.map((question, idx) => {
@@ -1094,6 +1147,114 @@ function StepQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse 
     );
 }
 
+interface TextQuestionsQuizState {
+    attemptId: string;
+    passages: ExamPassagePublic[];
+    questions: ExamQuestionPublic[];
+    answers: Record<string, string>;
+    submitting: boolean;
+}
+
+/**
+ * DTZ Lesen Teil 3 (TEXT_QUESTIONS): every text is shown with its richtig/falsch and multiple-choice task; all tasks are
+ * answered on one page and submitted together, then the usual result review follows. DTZ Lesen Teil 4 (TEXT_TRUE_FALSE: one text,
+ * three richtig/falsch statements) and Teil 1 (DIRECTORY_MATCHING) use the same flow with the information source next to its five situations.
+ */
+function TextQuestionsQuiz({ exercise }: Readonly<{ exercise: ExamExercisePublicResponse }>) {
+    const [quiz, setQuiz] = useState<TextQuestionsQuizState | null>(null);
+    const [results, setResults] = useState<ResultsState | null>(null);
+    const [previousScore, setPreviousScore] = useState(exercise.lastScore);
+    const [starting, setStarting] = useState(false);
+    const { completed, marking, markCompleted } = useExerciseCompletion(exercise);
+
+    const beginAttempt = () => {
+        setStarting(true);
+        startExamAttempt(exercise.id)
+            .then((res) => {
+                useExamTimerStore.getState().requestStart();
+                setQuiz({ attemptId: res.data.attemptId, passages: res.data.passages, questions: res.data.questions, answers: {}, submitting: false });
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Übung konnte nicht gestartet werden."))
+            .finally(() => setStarting(false));
+    };
+
+    const practiceAgain = () => {
+        setPreviousScore(results?.score ?? previousScore);
+        setResults(null);
+        setQuiz(null);
+    };
+
+    const submitAll = async () => {
+        if (!quiz) return;
+        setQuiz({ ...quiz, submitting: true });
+        try {
+            const items: ResultItem[] = [];
+            for (const question of quiz.questions) {
+                const answer = quiz.answers[question.id] ?? "";
+                const res = await submitExamAnswer(quiz.attemptId, { questionId: question.id, answer });
+                items.push({ question, feedback: res.data, answer });
+            }
+            const completeRes = await completeExamAttempt(quiz.attemptId);
+            setResults({ score: completeRes.data.score, items, transcripts: completeRes.data.transcripts ?? [] });
+        } catch (err) {
+            toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Übung konnte nicht abgeschlossen werden.");
+            setQuiz((prev) => (prev ? { ...prev, submitting: false } : prev));
+        }
+    };
+
+    if (results) {
+        return (
+            <ResultsView
+                results={results}
+                defaultExplanation={exercise.defaultExplanation}
+                defaultCommonMistake={exercise.defaultCommonMistake}
+                completed={completed}
+                markingCompleted={marking}
+                onPracticeAgain={practiceAgain}
+                previousScore={previousScore}
+                onMarkCompleted={markCompleted}
+                formatAnswer={(value) => (value === "RICHTIG" ? "richtig" : value === "FALSCH" ? "falsch" : value)}
+            />
+        );
+    }
+    if (!quiz) return <StartCard starting={starting} onStart={beginAttempt} lastScore={previousScore} />;
+    if (quiz.questions.length === 0) return <p className="text-sm text-foreground/60">Diese Übung enthält noch keine Aufgaben.</p>;
+
+    const answeredCount = quiz.questions.filter((q) => quiz.answers[q.id]).length;
+    const allAnswered = answeredCount === quiz.questions.length;
+    const isDirectory = exercise.taskType === "DIRECTORY_MATCHING";
+    const Board = isDirectory ? LesenDirectoryBoard : LesenTextQuestionsBoard;
+
+    return (
+        <div className="space-y-5">
+            <p className="px-1 text-sm text-foreground/65">
+                {isDirectory
+                    ? "Lies die Aufgaben und den Wegweiser. Wähle bei jeder Aufgabe die passende Lösung. Klicke danach auf \"Antworten abgeben\"."
+                    : exercise.taskType === "TEXT_TRUE_FALSE"
+                    ? "Lies den Text und entscheide bei jeder Aussage, ob sie richtig oder falsch ist. Klicke danach auf \"Antworten abgeben\"."
+                    : "Lies jeden Text und löse die beiden Aufgaben dazu. Klicke danach auf \"Antworten abgeben\"."}
+            </p>
+            <HighlightArea>
+                            <Board
+                passages={quiz.passages}
+                questions={quiz.questions}
+                answers={quiz.answers}
+                disabled={quiz.submitting}
+                onAnswer={(questionId, value) => setQuiz((prev) => (prev ? { ...prev, answers: { ...prev.answers, [questionId]: value } } : prev))}
+            />
+            </HighlightArea>
+            <div className="flex items-center justify-end gap-4 pt-2">
+                <span className="text-xs text-foreground/55">
+                    {answeredCount} / {quiz.questions.length} beantwortet
+                </span>
+                <button type="button" className={pillPrimary} disabled={!allAnswered || quiz.submitting} onClick={submitAll}>
+                    {quiz.submitting ? "Wird geprüft..." : "Antworten abgeben"}
+                </button>
+            </div>
+        </div>
+    );
+}
+
 interface HoerenListQuizState {
     attemptId: string;
     passages: ExamPassagePublic[];
@@ -1265,7 +1426,7 @@ function ExamExerciseContent() {
                             router.back();
                         } else {
                             const levelQuery = exercise.level ? `&level=${encodeURIComponent(exercise.level)}` : "";
-                            router.push(`/dashboard/exam-prep?section=${exercise.section}${levelQuery}`);
+                            router.push(`/dashboard/exam-prep?section=${exercise.section}${levelQuery}&exam=${exercise.examType ?? "TELC"}`);
                         }
                     }}
                     className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-foreground/60 transition hover:text-foreground"
@@ -1313,7 +1474,7 @@ function ExamExerciseContent() {
                         icon={sectionMeta?.icon ?? FileText}
                         title={exercise.title}
                         subtitle={sectionMeta?.label ?? "Prüfungsvorbereitung"}
-                        meta={<span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">{exercise.level ?? "Alle Niveaus"}</span>}
+                        meta={<span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">{displayLevel(exercise.level, exercise.examType)}</span>}
                         actions={
                             <button
                                 type="button"
@@ -1353,7 +1514,7 @@ function ExamExerciseContent() {
                             <AnswerOptionsPoolView answerOptions={exercise.answerOptions ?? []} answerOptionLabels={exercise.answerOptionLabels ?? []} taskType={exercise.taskType} />
                         )}
                         {/* Lesen Teil 1 (headings) and Teil 3 (ads) show their texts inside the matching board once the exercise is started. */}
-                        {exercise.taskType !== "SITUATION_MATCHING" && exercise.taskType !== "MATCHING" && !isLesenMultipleChoice(exercise) && !isSprachbausteineGapText(exercise) && (
+                        {exercise.taskType !== "SITUATION_MATCHING" && exercise.taskType !== "MATCHING" && exercise.taskType !== "TEXT_QUESTIONS" && exercise.taskType !== "TEXT_TRUE_FALSE" && exercise.taskType !== "DIRECTORY_MATCHING" && !isLesenMultipleChoice(exercise) && !isSprachbausteineGapText(exercise) && (
                             <PassagesView passages={exercise.passages} taskType={exercise.taskType ?? ""} />
                         )}
                     </>
@@ -1367,6 +1528,8 @@ function ExamExerciseContent() {
                     <MuendlicherAusdruckView exercise={exercise} />
                 ) : exercise.section === "TESTFORMAT_INFORMATION" ? (
                     <TestformatInformationView exercise={exercise} />
+                ) : exercise.taskType === "TEXT_QUESTIONS" || exercise.taskType === "TEXT_TRUE_FALSE" || exercise.taskType === "DIRECTORY_MATCHING" ? (
+                    <TextQuestionsQuiz exercise={exercise} />
                 ) : exercise.taskType === "WORD_BANK_CLOZE" || exercise.taskType === "SITUATION_MATCHING" || exercise.taskType === "MATCHING" || isSprachbausteineGapText(exercise) ? (
                     <ClozeGridQuiz exercise={exercise} />
                 ) : (

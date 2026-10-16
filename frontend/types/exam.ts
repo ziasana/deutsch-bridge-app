@@ -1,4 +1,5 @@
 import type { ExamContentStatus } from "./examContent";
+import { DtzOralContent } from "./dtzOral";
 
 export type ExamSection =
     | "LESEVERSTEHEN"
@@ -8,16 +9,35 @@ export type ExamSection =
     | "MUENDLICHER_AUSDRUCK"
     | "TESTFORMAT_INFORMATION";
 
+/** The exams exercises can prepare for. DTZ exercises are stored with level B1 and shown as "A2–B1". */
+export type ExamTypeCode = "TELC" | "DTZ";
+
 export type ExamTaskType =
     | "MATCHING"
     | "SITUATION_MATCHING"
     | "MULTIPLE_CHOICE"
     | "TRUE_FALSE_NOT_GIVEN"
+    /** DTZ: richtig/falsch only (no "nicht im Text"). Used as the type of a question inside TEXT_QUESTIONS. */
+    | "TRUE_FALSE"
+    /** DTZ Lesen Teil 3: several texts, each with one richtig/falsch and one multiple-choice task. */
+    | "TEXT_QUESTIONS"
+    /** DTZ Lesen Teil 4: one information text and three richtig/falsch statements (37–39). */
+    | "TEXT_TRUE_FALSE"
+    /** DTZ Lesen Teil 5: one letter / email with six gaps (40–45), each closed with one of three options (a, b, c). */
+    | "LETTER_GAP_FILL"
+    /** DTZ Lesen Teil 1: one information source (Wegweiser, Verzeichnis, Katalog ...) and five a/b/c situations. */
+    | "DIRECTORY_MATCHING"
     | "WORD_BANK_CLOZE"
     | "WRITING_TASK"
+    /** DTZ Schreiben: two alternative letter / email tasks (Aufgabe A and B) with four content points each; the learner writes one. */
+    | "WRITING_TASK_CHOICE"
     | "TOPIC_INTERVIEW"
     | "OPINION_DISCUSSION"
-    | "JOINT_PLANNING";
+    | "JOINT_PLANNING"
+    /** DTZ Mündliche Prüfung Teil 1: the fixed template with the six introductory topics. */
+    | "SELF_INTRODUCTION"
+    /** DTZ Mündliche Prüfung Teil 2: one photo with a picture description and experience questions on two levels. */
+    | "PHOTO_EXPERIENCE";
 
 /** The three Mündlicher Ausdruck task types, in Teil order. All learning content is German only. */
 export type SpeakingTaskType = "TOPIC_INTERVIEW" | "OPINION_DISCUSSION" | "JOINT_PLANNING";
@@ -57,9 +77,16 @@ export interface SpeakingContent {
     exampleDialogue?: { speaker: "A" | "B"; text: string }[];
 }
 
+/** Optional English / Persian helper text of a DTZ guide entry (Telc guides are German only). */
+export interface SpeakingHint {
+    en?: string;
+    fa?: string;
+}
+
 export interface SpeakingTitledText {
     title: string;
     text: string;
+    hint?: SpeakingHint;
 }
 
 export interface SpeakingGuideTopic {
@@ -86,9 +113,10 @@ export interface SpeakingGuideFunction {
     tip?: string | null;
 }
 
-/** The Lernbereich of one Teil: the shared learning content, German only. */
+/** The Lernbereich of one Teil: the shared learning content. German; DTZ guides may add en/fa hints. */
 export interface SpeakingGuideContent {
     intro: string;
+    introHint?: SpeakingHint;
     tips: SpeakingTitledText[];
     steps: SpeakingTitledText[];
     commonMistakes: string[];
@@ -104,6 +132,7 @@ export interface SpeakingGuideContent {
 }
 
 export interface SpeakingGuide {
+    exam: "TELC" | "DTZ";
     level: string;
     part: number;
     content: SpeakingGuideContent;
@@ -176,6 +205,17 @@ export interface ExamExerciseAdminRow {
     version: number;
     difficulty: string | null;
     updatedAt: string | null;
+    /** Imported content: the exercise's theme. */
+    topic?: string | null;
+    /** DTZ directory exercises: DIRECTORY | REGISTER | CATALOGUE | SERVICE_LIST; DTZ texts exercises: the text types, comma-separated. */
+    sourceType?: string | null;
+    createdAt?: string | null;
+    /** Number of texts / passages of the exercise. */
+    passageCount?: number;
+    /** Words in all passages together (the text length of a DTZ Lesen Teil 4 exercise). */
+    wordCount?: number;
+    /** True when a passage carries an image (DTZ Mündliche Prüfung Teil 2: the photo is attached). */
+    hasImage?: boolean;
 }
 
 export interface ExamExerciseResponse {
@@ -231,6 +271,24 @@ export interface ExamQuestionPublic {
     questionNumber: number | null;
 }
 
+/** One alternative of DTZ Schreiben, as the learner sees it. */
+export interface WritingChoiceTask {
+    taskLabel: "A" | "B";
+    title: string;
+    topic: string | null;
+    communicationType: string | null;
+    situation: string;
+    recipient: { name: string | null; role: string | null } | null;
+    writingInstruction: string;
+    points: { number: number; text: string }[];
+}
+
+export interface WritingChoiceContent {
+    durationMinutes: number;
+    languageLevel?: string | null;
+    tasks: WritingChoiceTask[];
+}
+
 export interface ExamExercisePublicResponse {
     id: string;
     title: string;
@@ -260,6 +318,11 @@ export interface ExamExercisePublicResponse {
     bookmarked: boolean;
     /** MUENDLICHER_AUSDRUCK only: the structured, German-only speaking content. */
     speaking?: SpeakingContent | null;
+    examType: ExamTypeCode | null;
+    /** DTZ Schreiben only: the two alternative tasks and the writing time. */
+    writingChoice?: WritingChoiceContent | null;
+    /** DTZ Mündliche Prüfung only: the content of the Teil (no admin-only fields). */
+    dtzOral?: DtzOralContent | null;
 }
 
 /**
@@ -282,6 +345,7 @@ export interface ExamExerciseSummaryResponse {
     completed: boolean;
     lastScore: number | null;
     bookmarked: boolean;
+    examType: ExamTypeCode | null;
 }
 
 /** A bookmarked exercise the user hasn't mastered yet (the "saved for later" strip), from any level. */
@@ -299,6 +363,7 @@ export interface ExamLevelSummaryResponse {
     total: number;
     mastered: number;
     avgScore: number;
+    examType?: ExamTypeCode;
 }
 
 export interface ExamExerciseManualRequest {
@@ -319,6 +384,8 @@ export interface ExamExerciseManualRequest {
     requiresPlanning?: boolean;
     leitpunkte?: string[] | null;
     published: boolean;
+    /** Which exam the exercise belongs to; omitted keeps the current value (TELC for new exercises). */
+    examType?: ExamTypeCode;
 }
 
 // ---- Attempts ----
