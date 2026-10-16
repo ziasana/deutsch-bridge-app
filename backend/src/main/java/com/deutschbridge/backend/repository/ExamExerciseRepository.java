@@ -1,5 +1,6 @@
 package com.deutschbridge.backend.repository;
 
+import com.deutschbridge.backend.model.dto.PublicExamCount;
 import com.deutschbridge.backend.model.entity.ExamExercise;
 import com.deutschbridge.backend.model.enums.ExamSection;
 import com.deutschbridge.backend.model.enums.ExamType;
@@ -40,6 +41,20 @@ public interface ExamExerciseRepository extends JpaRepository<ExamExercise, Stri
     List<ExamExercise> findPublishedFor(@Param("examType") ExamType examType,
                                         @Param("level") LearningLevel level,
                                         @Param("section") ExamSection section);
+
+    /**
+     * Published practice exercises per exam, level and section for the public exam pages. Counts only: no content and no
+     * user data. Level-agnostic rows and the informational Testformat section are not practice and are left out.
+     */
+    @Query("""
+            SELECT new com.deutschbridge.backend.model.dto.PublicExamCount(e.examType, e.level, e.section, COUNT(e))
+            FROM examExercises e
+            WHERE e.status = com.deutschbridge.backend.model.enums.ExamContentStatus.PUBLISHED
+              AND e.level IS NOT NULL
+              AND e.section <> com.deutschbridge.backend.model.enums.ExamSection.TESTFORMAT_INFORMATION
+            GROUP BY e.examType, e.level, e.section
+            """)
+    List<PublicExamCount> countPublishedByExamLevelSection();
 
     /** Used to enforce one Testformat Information entry per level (see ExamExerciseService). */
     boolean existsBySectionAndLevel(ExamSection section, LearningLevel level);

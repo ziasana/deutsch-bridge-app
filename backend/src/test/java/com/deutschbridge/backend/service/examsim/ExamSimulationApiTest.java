@@ -110,6 +110,38 @@ class ExamSimulationApiTest {
     }
 
     @Test
+    @DisplayName("The public catalogue lists published mock exams without login and exposes no user specific data")
+    void publicCatalogue() throws Exception {
+        JsonNode list = read(mvc.perform(get("/api/public/exam-simulation/profiles")).andExpect(status().isOk()).andReturn());
+        JsonNode entry = null;
+        for (JsonNode n : list) {
+            if (profile.getId().equals(n.get("id").asText())) entry = n;
+        }
+        assertNotNull(entry, "published profile is listed");
+        assertTrue(entry.get("totalMinutes").asInt() > 0);
+        assertTrue(entry.get("parts").size() > 0);
+        assertFalse(entry.has("activeAttemptId"));
+        assertFalse(entry.has("best"));
+        assertFalse(entry.has("attemptCount"));
+        assertFalse(entry.get("parts").get(0).has("unused"));
+    }
+
+    @Test
+    @DisplayName("The public exam overview counts published practice exercises per exam, level and section without login")
+    void publicExamOverview() throws Exception {
+        JsonNode rows = read(mvc.perform(get("/api/public/exam/overview")).andExpect(status().isOk()).andReturn());
+        long c1Lesen = 0;
+        for (JsonNode r : rows) {
+            assertNotEquals("TESTFORMAT_INFORMATION", r.get("section").asText());
+            assertTrue(r.get("count").asLong() > 0);
+            if ("TELC".equals(r.get("examType").asText()) && "C1".equals(r.get("level").asText()) && "LESEVERSTEHEN".equals(r.get("section").asText())) {
+                c1Lesen += r.get("count").asLong();
+            }
+        }
+        assertTrue(c1Lesen > 0, "the C1 test pool is counted");
+    }
+
+    @Test
     @DisplayName("Admin endpoints are closed to students and open to administrators")
     void adminAuthorisation() throws Exception {
         mvc.perform(as(studentA, get("/api/admin/exam-simulation/profiles"))).andExpect(status().isForbidden());

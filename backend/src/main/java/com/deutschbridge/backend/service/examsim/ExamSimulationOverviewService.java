@@ -49,6 +49,12 @@ public class ExamSimulationOverviewService {
         return profileService.listPublished().stream().map(p -> overview(userId, p)).toList();
     }
 
+    /** Published, valid mock exams for the public site: structure and rules only, no per-user availability or results. */
+    @Transactional(readOnly = true)
+    public List<PublicProfile> listPublic() {
+        return profileService.listPublished().stream().filter(p -> validator.validate(p).isValid()).map(this::publicOverview).toList();
+    }
+
     @Transactional(readOnly = true)
     public ProfileOverview get(String userId, String profileId) throws DataNotFoundException {
         ExamProfile profile = profileService.get(profileId);
@@ -98,5 +104,15 @@ public class ExamSimulationOverviewService {
                 p.getLevel().getValue(), p.isOralScoringEnabled(), p.getWrittenMaxPoints(), p.getWrittenPassThreshold(), p.getOralMaxPoints(),
                 p.getOralPassThreshold(), total, p.getAnswerReleasePolicy(), totalMinutes, stages, parts, blocked == null,
                 blocked, active, activeAttempt != null && activeAttempt.getPausedAt() != null, best, latest, finished.size());
+    }
+
+    private PublicProfile publicOverview(ExamProfile p) {
+        List<PublicStage> stages = p.getConfig().timersOrEmpty().stream().map(t -> new PublicStage(t.label(), t.minutes())).toList();
+        List<PublicPart> parts = p.getConfig().partsOrEmpty().stream()
+                .map(c -> new PublicPart(c.label(), c.module(), c.section(), c.teil(), c.questionCount() != null ? c.questionCount() : 0, c.maxPoints()))
+                .toList();
+        int totalMinutes = stages.stream().mapToInt(PublicStage::minutes).sum();
+        return new PublicProfile(p.getId(), p.getProvider(), p.getExamName(), p.getTitle(), p.getDescription(), p.getLevel().getValue(), totalMinutes,
+                p.isOralScoringEnabled(), p.getWrittenMaxPoints(), p.getWrittenPassThreshold(), stages, parts);
     }
 }

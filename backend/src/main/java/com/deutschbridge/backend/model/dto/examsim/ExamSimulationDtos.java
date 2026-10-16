@@ -62,6 +62,22 @@ public final class ExamSimulationDtos {
                                   int attemptCount) {
     }
 
+    // ---------------------------------------------------------------- public catalogue (no login)
+
+    /** One timed stage of a mock exam, as shown to visitors. */
+    public record PublicStage(String label, int minutes) {
+    }
+
+    /** One part of a mock exam, as shown to visitors: structure only, never content or user data. */
+    public record PublicPart(String label, ExamPartModule module, ExamSection section, int teil, int questionCount, BigDecimal maxPoints) {
+    }
+
+    /** A published mock exam as listed on the public site: structure and rules, nothing user specific. */
+    public record PublicProfile(String id, String provider, String examName, String title, String description, String level, int totalMinutes,
+                                boolean oralScoringEnabled, BigDecimal writtenMaxPoints, BigDecimal writtenPassThreshold,
+                                List<PublicStage> stages, List<PublicPart> parts) {
+    }
+
     // ---------------------------------------------------------------- active exam
 
     public record ExercisePublic(int ordinal, String title, ExamTaskType taskType, String teilDescription, List<ExamPassagePublic> passages,
