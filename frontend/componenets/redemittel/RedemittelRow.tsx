@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronRight, Star } from "lucide-react";
+import { Check, ChevronRight, Lock, Star } from "lucide-react";
 import { Redemittel } from "@/types/redemittel";
 import { cn } from "@/lib/utils";
 import { getLevelMeta } from "@/componenets/learning/levelMeta";
@@ -12,6 +12,10 @@ interface Props {
     onToggleSave: (redemittel: Redemittel) => void;
     /** Position in the list, used to stagger the entrance animation. */
     index?: number;
+    /** Public preview: only the phrase is shown, with a lock; opening it asks the visitor to sign up. */
+    locked?: boolean;
+    /** Public preview: no progress and no personal collection, so the status steps and the star are left out. */
+    preview?: boolean;
 }
 
 const STEPS = 3;
@@ -38,7 +42,7 @@ function StatusStepper({ status, color }: Readonly<{ status: Redemittel["status"
  * One Redemittel as a row of the list: no box of its own, just a hairline separator, so the whole
  * list reads as one calm surface. Hovering lifts a soft highlight and nudges the chevron.
  */
-export default function RedemittelRow({ redemittel: r, onOpen, onToggleSave, index = 0 }: Readonly<Props>) {
+export default function RedemittelRow({ redemittel: r, onOpen, onToggleSave, index = 0, locked = false, preview = false }: Readonly<Props>) {
     const color = getLevelMeta(r.level).color;
 
     return (
@@ -61,13 +65,13 @@ export default function RedemittelRow({ redemittel: r, onOpen, onToggleSave, ind
                 </span>
 
                 <span className="min-w-0 flex-1">
-                    <h3 className="break-words text-base font-bold leading-snug text-foreground">{r.phrase}</h3>
+                    <h3 className={cn("break-words text-base font-bold leading-snug", locked ? "text-foreground/70" : "text-foreground")}>{r.phrase}</h3>
                     <span className="mt-0.5 block truncate text-sm text-foreground/60">
-                        {r.meaning ?? r.categoryLabel}
+                        {locked ? r.categoryLabel : (r.meaning ?? r.categoryLabel)}
                     </span>
                     <span className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                         <span className="text-xs font-medium text-foreground/50">{r.categoryLabel}</span>
-                        <StatusStepper status={r.status} color={color} />
+                        {!preview && !locked && <StatusStepper status={r.status} color={color} />}
                     </span>
                 </span>
 
@@ -76,15 +80,23 @@ export default function RedemittelRow({ redemittel: r, onOpen, onToggleSave, ind
                 </span>
             </button>
 
+            {locked ? (
+                <span className="mr-3 flex size-10 shrink-0 items-center justify-center rounded-full bg-foreground/[0.06] text-foreground/50" aria-label="Gesperrt">
+                    <Lock className="size-4" aria-hidden="true" />
+                </span>
+            ) : (
+                !preview && (
             <button
-                type="button"
-                onClick={() => onToggleSave(r)}
-                aria-pressed={r.saved}
-                aria-label={r.saved ? "Aus meiner Sammlung entfernen" : "Zu meinen Redemitteln hinzufügen"}
-                className="mr-1 flex size-10 shrink-0 items-center justify-center rounded-full text-foreground/40 transition hover:scale-110 hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 active:scale-90 cursor-pointer"
-            >
-                <Star className={cn("size-5 transition-colors", r.saved && "fill-amber-400 text-amber-500")} aria-hidden="true" />
-            </button>
+                    type="button"
+                    onClick={() => onToggleSave(r)}
+                    aria-pressed={r.saved}
+                    aria-label={r.saved ? "Aus meiner Sammlung entfernen" : "Zu meinen Redemitteln hinzufügen"}
+                    className="mr-1 flex size-10 shrink-0 items-center justify-center rounded-full text-foreground/40 transition hover:scale-110 hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 active:scale-90 cursor-pointer"
+                >
+                    <Star className={cn("size-5 transition-colors", r.saved && "fill-amber-400 text-amber-500")} aria-hidden="true" />
+                </button>
+                )
+            )}
             <ChevronRight className="mr-3 hidden size-4 shrink-0 text-foreground/30 transition-transform group-hover:translate-x-0.5 group-hover:text-foreground/60 sm:mr-4 md:block" aria-hidden="true" />
         </li>
     );

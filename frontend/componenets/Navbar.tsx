@@ -7,6 +7,9 @@ import {  Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import { GraduationCap, Menu as MenuIcon, X } from "lucide-react";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
 import ChangePasswordDialog from "@/componenets/profile/ChangePasswordDialog";
+import NavDropdown from "@/componenets/marketing/NavDropdown";
+import { getExamLinks, getLearnLinks } from "@/componenets/marketing/siteLinks";
+import { useMarketing } from "@/componenets/marketing/useMarketing";
 
 export default function Navbar() {
   const {userProfile, isLoggedIn} = useAuthStore();
@@ -24,6 +27,9 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const { t } = useI18n();
+  const { m } = useMarketing();
+  const examLinks = getExamLinks(m);
+  const learnLinks = getLearnLinks(m);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -57,11 +63,13 @@ export default function Navbar() {
           <Link href="/" className="nav-link">
             {t.nav.home}
           </Link>
-          <Link href="/#features" className="nav-link">
-            {t.nav.features}
+          <NavDropdown label={m.nav.exams} links={examLinks} />
+          <NavDropdown label={m.nav.learn} links={learnLinks} />
+          <Link href="/mock-test" className="nav-link">
+            {m.nav.mockTest}
           </Link>
-          <Link href="/#about" className="nav-link">
-            {t.nav.about}
+          <Link href="/pricing" className="nav-link">
+            {m.nav.pricing}
           </Link>
           <Link href="/blog" className="nav-link">
             {t.nav.blog}
@@ -173,6 +181,8 @@ export default function Navbar() {
         {/* Mobile Menu Button */}
         <button
           className="md:hidden text-foreground"
+          aria-label="Menu"
+          aria-expanded={isOpen}
           onClick={() => setIsOpen(!isOpen)}
         >
           {isOpen ? <X className="size-6" /> : <MenuIcon className="size-6" />}
@@ -181,15 +191,32 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="md:hidden bg-card border-t border-border">
+        <div
+          className="md:hidden bg-card border-t border-border max-h-[calc(100vh-5rem)] overflow-y-auto"
+          onClick={(event) => {
+            if ((event.target as HTMLElement).closest("a")) setIsOpen(false);
+          }}
+        >
           <Link href="/" className="mobile-link">
             {t.nav.home}
           </Link>
-          <Link href="/#features" className="mobile-link">
-            {t.nav.features}
+          <p className="px-6 pt-3 text-xs font-semibold uppercase tracking-wide text-foreground/50">{m.nav.exams}</p>
+          {examLinks.map((link) => (
+            <Link key={link.href} href={link.href} className="mobile-link ps-10 !py-2">
+              {link.title}
+            </Link>
+          ))}
+          <p className="px-6 pt-3 text-xs font-semibold uppercase tracking-wide text-foreground/50">{m.nav.learn}</p>
+          {learnLinks.map((link) => (
+            <Link key={link.href} href={link.href} className="mobile-link ps-10 !py-2">
+              {link.title}
+            </Link>
+          ))}
+          <Link href="/mock-test" className="mobile-link">
+            {m.nav.mockTest}
           </Link>
-          <Link href="/#about" className="mobile-link">
-            {t.nav.about}
+          <Link href="/pricing" className="mobile-link">
+            {m.nav.pricing}
           </Link>
           <Link href="/blog" className="mobile-link">
             {t.nav.blog}

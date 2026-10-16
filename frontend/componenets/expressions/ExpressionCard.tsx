@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Bookmark, BookmarkCheck } from "lucide-react";
+import { ArrowRight, Bookmark, BookmarkCheck, Lock } from "lucide-react";
 import { Badge } from "@/componenets/ui/badge";
 import LearningProgressBar from "@/componenets/learning/LearningProgressBar";
 import { ExpressionListItem, ExpressionType } from "@/types/expression";
@@ -25,6 +25,10 @@ interface ExpressionCardProps {
     onPractice: (expression: ExpressionListItem) => void;
     onToggleBookmark: (expression: ExpressionListItem) => void;
     className?: string;
+    /** Public preview: only the expression is shown, with a lock; opening it asks the visitor to sign up. */
+    locked?: boolean;
+    /** Public preview: no progress, practice or bookmark; one button opens the expression (or the sign-up prompt when locked). */
+    previewLabel?: string;
 }
 
 export default function ExpressionCard({
@@ -35,7 +39,10 @@ export default function ExpressionCard({
     onPractice,
     onToggleBookmark,
     className,
+    locked = false,
+    previewLabel,
 }: ExpressionCardProps) {
+    const preview = locked || previewLabel !== undefined;
     const understand = Math.round(expression.overallScore ?? 0);
     const use = Math.round(expression.productionScore ?? 0);
     const example = expression.exampleSentence;
@@ -61,7 +68,7 @@ export default function ExpressionCard({
             >
                 {TYPE_LABEL[collectionType]}
             </Badge>
-            {expression.masteryLevel !== "NEW" && (
+            {!preview && expression.masteryLevel !== "NEW" && (
                 <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", hasVisual ? "bg-white/90 text-foreground shadow-sm backdrop-blur-sm" : MASTERY_STYLE[expression.masteryLevel].chip)}>
                     {MASTERY_STYLE[expression.masteryLevel].label}
                 </span>
@@ -79,6 +86,7 @@ export default function ExpressionCard({
             }}
             className={cn(
                 "group flex flex-col gap-3 rounded-3xl border border-border/60 bg-card text-left shadow-card transition-all duration-200 cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                locked && "border-dashed bg-foreground/[0.02]",
                 hasVisual ? "pb-5" : "border-t-4 border-t-primary p-5",
                 className,
             )}
@@ -99,15 +107,30 @@ export default function ExpressionCard({
 
             <div className={cn(hasVisual && "px-5")}>
                 <h3 className="text-lg font-extrabold leading-snug text-foreground transition group-hover:text-primary">{expression.expression}</h3>
-                <p className="mt-1 text-sm text-foreground/60">{expression.meaningDe}</p>
+                {!locked && <p className="mt-1 text-sm text-foreground/60">{expression.meaningDe}</p>}
             </div>
 
-            {example && (
+            {example && !locked && (
                 <div className={cn("rounded-2xl border-s-4 border-primary/40 bg-primary/[0.06] px-3 py-2.5 text-sm italic text-foreground/75", hasVisual && "mx-5")}>
                     „{example}“
                 </div>
             )}
 
+            {preview ? (
+                <div className={cn("mt-auto pt-1", hasVisual && "px-5")}>
+                    <span
+                        className={cn(
+                            "flex w-full items-center justify-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold",
+                            locked ? "bg-foreground/[0.06] text-foreground/60" : "bg-primary text-primary-foreground",
+                        )}
+                    >
+                        {locked && <Lock className="size-3.5" aria-hidden="true" />}
+                        {previewLabel}
+                        {!locked && <ArrowRight className="size-3.5" aria-hidden="true" />}
+                    </span>
+                </div>
+            ) : (
+                <>
             <div className={cn("mt-auto space-y-2 pt-1", hasVisual && "px-5")}>
                 <div className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
@@ -164,6 +187,8 @@ export default function ExpressionCard({
                     )}
                 </button>
             </div>
+                </>
+            )}
         </div>
     );
 }

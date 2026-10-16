@@ -6,11 +6,15 @@ import {
     AttemptSummary,
     HistoryResponse,
     ProfileOverview,
+    PublicMockProfile,
     ResultResponse,
     SaveAnswersResponse,
 } from "@/types/examSimulation";
 
 const base = "/exam-simulation";
+
+/** Published mock exams for visitors; works without a login and carries no user specific data. */
+export const getPublicMockExams = () => api.get<PublicMockProfile[]>("/public/exam-simulation/profiles");
 
 export const getSimulationProfiles = () => api.get<ProfileOverview[]>(`${base}/profiles`);
 

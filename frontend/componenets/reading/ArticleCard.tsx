@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Bookmark, Check, Eye, RotateCw, Sparkles } from "lucide-react";
+import { ArrowRight, Bookmark, Check, Eye, Lock, RotateCw, Sparkles } from "lucide-react";
 import { getArticleImageSrc } from "@/lib/readingImages";
 import { getLevelMeta } from "@/componenets/learning/levelMeta";
 import { cn } from "@/lib/utils";
@@ -18,13 +18,18 @@ interface ArticleCardProps {
     viewsLabel: (count: number) => string;
     dateLabel: string;
     onOpen: (id: string) => void;
+    /** Public preview: the article is listed by title and picture only; opening it asks the visitor to sign up. */
+    locked?: boolean;
+    /** Public preview: no views, new words or progress; the button shows this label instead of the quiz one. */
+    previewLabel?: string;
 }
 
 /**
  * One reading text as a card: picture with the level badge, a check once learned, the new-word count, then title,
  * topic and a clear call to action. The card lifts on hover and its accent follows the level colour.
  */
-export default function ArticleCard({ article, featured = false, featuredLabel, quizLabel, reviewLabel, newWordsLabel, viewsLabel, dateLabel, onOpen }: Readonly<ArticleCardProps>) {
+export default function ArticleCard({ article, featured = false, featuredLabel, quizLabel, reviewLabel, newWordsLabel, viewsLabel, dateLabel, onOpen, locked = false, previewLabel }: Readonly<ArticleCardProps>) {
+    const preview = locked || previewLabel !== undefined;
     const color = getLevelMeta(article.level).color;
     const learned = article.learned;
     return (
@@ -68,7 +73,7 @@ export default function ArticleCard({ article, featured = false, featuredLabel, 
                         </span>
                     )
                 )}
-                {article.newWordCount > 0 && (
+                {!preview && article.newWordCount > 0 && (
                     <span className="absolute bottom-3 start-3 inline-flex items-center gap-1 rounded-full bg-black/55 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
                         <Sparkles className="size-3.5 text-amber-300" aria-hidden="true" />
                         {newWordsLabel(article.newWordCount)}
@@ -84,13 +89,15 @@ export default function ArticleCard({ article, featured = false, featuredLabel, 
                     </span>
                 )}
                 <h3 className={cn("font-bold leading-snug text-foreground", featured ? "text-2xl" : "line-clamp-2 text-lg")}>{article.title}</h3>
-                <p className="flex flex-wrap items-center gap-x-3 text-xs text-foreground/50">
-                    <span className="inline-flex items-center gap-1">
-                        <Eye className="size-3.5" aria-hidden="true" />
-                        {viewsLabel(article.viewCount).replace("👁 ", "")}
-                    </span>
-                    <span>{dateLabel}</span>
-                </p>
+                {!preview && (
+                    <p className="flex flex-wrap items-center gap-x-3 text-xs text-foreground/50">
+                        <span className="inline-flex items-center gap-1">
+                            <Eye className="size-3.5" aria-hidden="true" />
+                            {viewsLabel(article.viewCount).replace("👁 ", "")}
+                        </span>
+                        <span>{dateLabel}</span>
+                    </p>
+                )}
                 <div className="mt-auto pt-2">
                     <button
                         type="button"
@@ -101,11 +108,17 @@ export default function ArticleCard({ article, featured = false, featuredLabel, 
                         className={cn(
                             "inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
                             featured && "sm:w-fit sm:px-6",
-                            learned ? "bg-[var(--lc)]/10 hover:bg-[var(--lc)]/20" : "text-white shadow-sm hover:opacity-90",
+                            locked ? "bg-foreground/[0.06] text-foreground/60" : learned ? "bg-[var(--lc)]/10 hover:bg-[var(--lc)]/20" : "text-white shadow-sm hover:opacity-90",
                         )}
-                        style={learned ? { color } : { backgroundColor: color }}
+                        style={locked ? undefined : learned ? { color } : { backgroundColor: color }}
                     >
-                        {learned ? (
+                        {preview ? (
+                            <>
+                                {locked && <Lock className="size-4" aria-hidden="true" />}
+                                {previewLabel}
+                                {!locked && <ArrowRight className="size-4" aria-hidden="true" />}
+                            </>
+                        ) : learned ? (
                             <>
                                 <RotateCw className="size-4" aria-hidden="true" />
                                 {reviewLabel}

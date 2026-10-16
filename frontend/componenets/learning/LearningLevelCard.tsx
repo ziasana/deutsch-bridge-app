@@ -17,6 +17,10 @@ export interface LearningLevelCardProps {
     className?: string;
     /** Overrides the derived completed/total percentage (e.g. an average-score metric instead of a count). */
     percentOverride?: number;
+    /** Replaces the "completed / total unit" line (e.g. the public pages show "7 free, 36 lessons"). */
+    detailLabel?: string;
+    /** Hides the percentage and progress bar, for pages that have no progress to show. */
+    hideProgress?: boolean;
 }
 
 export default function LearningLevelCard({
@@ -30,6 +34,8 @@ export default function LearningLevelCard({
     onClick,
     className,
     percentOverride,
+    detailLabel,
+    hideProgress = false,
 }: LearningLevelCardProps) {
     const pct = percentOverride ?? (total > 0 ? Math.round((completed / total) * 100) : 0);
     const meta = getLevelMeta(level);
@@ -43,7 +49,7 @@ export default function LearningLevelCard({
             role="tab"
             onClick={onClick}
             aria-selected={active}
-            aria-label={`${level}: ${completed} of ${total} ${unitLabel} completed, ${pct}%${active ? `, ${activeLabel ?? "current level"}` : ""}`}
+            aria-label={detailLabel ? `${level}: ${detailLabel}${active ? `, ${activeLabel ?? "current level"}` : ""}` : `${level}: ${completed} of ${total} ${unitLabel} completed, ${pct}%${active ? `, ${activeLabel ?? "current level"}` : ""}`}
             style={{
                 "--hover-color": color,
                 ...(active ? { borderColor: `${color}80`, backgroundImage: `linear-gradient(135deg, ${color}40, ${color}14 65%, ${color}0d)` } : {}),
@@ -79,12 +85,10 @@ export default function LearningLevelCard({
 
             <div className="relative space-y-1.5">
                 <div className="flex items-baseline justify-between gap-2 text-xs">
-                    <span className="truncate text-foreground/55">
-                        {completed} / {total} {unitLabel}
-                    </span>
-                    <span className={cn("shrink-0 text-sm font-extrabold tabular-nums", active ? "text-foreground" : "text-foreground/75")}>{pct}%</span>
+                    <span className="truncate text-foreground/55">{detailLabel ?? `${completed} / ${total} ${unitLabel}`}</span>
+                    {!hideProgress && <span className={cn("shrink-0 text-sm font-extrabold tabular-nums", active ? "text-foreground" : "text-foreground/75")}>{pct}%</span>}
                 </div>
-                <LearningProgressBar value={pct} color={color} className="h-2" ariaLabel={`${level} progress`} />
+                {!hideProgress && <LearningProgressBar value={pct} color={color} className="h-2" ariaLabel={`${level} progress`} />}
             </div>
         </button>
     );

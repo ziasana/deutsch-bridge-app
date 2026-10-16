@@ -437,3 +437,11 @@ export interface ExamAttemptResultResponse {
     /** Every audio transcript of the exercise, revealed once the attempt is complete. */
     transcripts: ExamTranscript[];
 }
+
+/** Published practice exercises for one exam, level and section, as counted for the public exam pages. */
+export interface PublicExamCount {
+    examType: ExamTypeCode;
+    level: string;
+    section: ExamSection;
+    count: number;
+}

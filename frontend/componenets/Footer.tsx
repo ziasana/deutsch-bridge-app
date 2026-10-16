@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { Facebook, GraduationCap, Instagram, Linkedin, Mail, Twitter, Youtube } from "lucide-react";
 import { useI18n } from "./I18nProvider";
+import { getExamLinks, getLearnLinks } from "@/componenets/marketing/siteLinks";
+import { useMarketing } from "@/componenets/marketing/useMarketing";
 
 const SOCIALS = [
   { icon: Facebook, href: "#", label: "Facebook" },
@@ -14,11 +16,24 @@ const SOCIALS = [
 
 export default function Footer() {
   const { t } = useI18n();
+  const { m } = useMarketing();
+  const companyLinks = [
+    { href: "/", title: t.nav.home },
+    { href: "/mock-test", title: m.nav.mockTest },
+    { href: "/pricing", title: m.nav.pricing },
+    { href: "/blog", title: t.nav.blog },
+    { href: "/contact", title: t.nav.contact },
+  ];
+  const columns = [
+    { title: m.nav.exams, links: getExamLinks(m) },
+    { title: m.nav.learn, links: getLearnLinks(m) },
+    { title: t.footer.quickLinksTitle, links: companyLinks },
+  ];
   const year = new Date().getFullYear();
 
   return (
     <footer className="bg-[#0d0d21] text-slate-300">
-      <div className="container mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+      <div className="container mx-auto px-6 py-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10">
         {/* Brand + about */}
         <div className="flex flex-col gap-4">
           <Link href="/" className="flex items-center gap-2 text-xl font-bold text-white">
@@ -42,33 +57,20 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Quick links */}
-        <div>
-          <h3 className="text-white font-semibold mb-5">{t.footer.quickLinksTitle}</h3>
-          <ul className="flex flex-col gap-3 text-sm">
-            {t.footer.quickLinks.map((label) => (
-              <li key={label}>
-                <Link href="/" className="text-slate-400 hover:text-primary transition">
-                  {label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Resources */}
-        <div>
-          <h3 className="text-white font-semibold mb-5">{t.footer.resourcesTitle}</h3>
-          <ul className="flex flex-col gap-3 text-sm">
-            {t.footer.resources.map((label) => (
-              <li key={label}>
-                <Link href="/" className="text-slate-400 hover:text-primary transition">
-                  {label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {columns.map((column) => (
+          <div key={column.title}>
+            <h3 className="text-white font-semibold mb-5">{column.title}</h3>
+            <ul className="flex flex-col gap-3 text-sm">
+              {column.links.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className="text-slate-400 hover:text-primary transition">
+                    {link.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
 
         {/* Get in touch */}
         <div>
@@ -86,7 +88,10 @@ export default function Footer() {
 
       <div className="border-t border-white/10">
         <div className="container mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
-          <p>{t.footer.copyright(year)}</p>
+          <div className="flex flex-col gap-1 text-center sm:text-start">
+            <p>{t.footer.copyright(year)}</p>
+            <p className="max-w-2xl text-slate-500">{m.common.disclaimer}</p>
+          </div>
           <div className="flex items-center gap-4">
             <Link href="/" className="hover:text-primary transition">
               {t.footer.termsLabel}

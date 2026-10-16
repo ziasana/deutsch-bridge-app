@@ -11,6 +11,8 @@ export interface LearningLevelOption {
     icon?: LucideIcon;
     /** Overrides the derived completed/total percentage (e.g. an average-score metric instead of a count). */
     percentOverride?: number;
+    detailLabel?: string;
+    hideProgress?: boolean;
 }
 
 interface LearningLevelSelectorProps {
@@ -50,6 +52,8 @@ export default function LearningLevelSelector({
                     activeLabel={activeLabel}
                     onClick={() => onLevelChange(opt.level)}
                     percentOverride={opt.percentOverride}
+                    detailLabel={opt.detailLabel}
+                    hideProgress={opt.hideProgress}
                 />
             ))}
         </div>

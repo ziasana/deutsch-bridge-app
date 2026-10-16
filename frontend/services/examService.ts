@@ -7,7 +7,11 @@ import {
     ExamSection,
     ExamTaskType,
     ExamTypeCode,
+    PublicExamCount,
 } from "@/types/exam";
+
+/** Published exercise counts per exam, level and section for visitors; needs no login. */
+export const getPublicExamCounts = () => api.get<PublicExamCount[]>("/public/exam/overview");
 
 /** Lightweight navigation shape - no passages/questions/answerOptions. Use for lists/summaries only. */
 export const getExamExercisesSummary = async (section?: ExamSection, level?: string, taskType?: ExamTaskType, examType: ExamTypeCode = "TELC") => {

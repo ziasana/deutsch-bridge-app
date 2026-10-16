@@ -197,6 +197,38 @@ export interface ProfileOverview {
     attemptCount: number;
 }
 
+// ------------------------------------------------------------------ public catalogue (no login)
+
+export interface PublicMockStage {
+    label: string;
+    minutes: number;
+}
+
+export interface PublicMockPart {
+    label: string;
+    module: PartModule;
+    section: ExamSection;
+    teil: number;
+    questionCount: number;
+    maxPoints: number;
+}
+
+/** A published mock exam as listed on the public /mock-test page: structure and rules only. */
+export interface PublicMockProfile {
+    id: string;
+    provider: string;
+    examName: string;
+    title: string;
+    description: string | null;
+    level: string;
+    totalMinutes: number;
+    oralScoringEnabled: boolean;
+    writtenMaxPoints: number;
+    writtenPassThreshold: number;
+    stages: PublicMockStage[];
+    parts: PublicMockPart[];
+}
+
 // ------------------------------------------------------------------ active exam
 
 export interface ExercisePublic {

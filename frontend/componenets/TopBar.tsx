@@ -18,7 +18,7 @@ export default function TopBar() {
 
     return (
         <div className="bg-[#0d0d21] text-slate-300">
-            <div className="container mx-auto px-6 py-2.5 flex items-center justify-between gap-4 text-sm">
+            <div className="container mx-auto px-6 py-2.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm">
                 <div className="flex items-center gap-5">
                     <span className="flex items-center gap-2">
                         <MapPin className="size-4 shrink-0 text-primary" />
