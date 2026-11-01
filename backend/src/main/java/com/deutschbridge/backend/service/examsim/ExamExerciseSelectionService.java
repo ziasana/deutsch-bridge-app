@@ -41,7 +41,9 @@ public class ExamExerciseSelectionService {
 
     private final ExamPoolService poolService;
     private final ExamSimulationUsageRepository usageRepository;
-    private RandomGenerator random = RandomGenerator.getDefault();
+    // java.util.Random rather than RandomGenerator.getDefault(): the default needs the jdk.random module, which the
+    // slim eclipse-temurin JRE runtime image does not include (startup then fails with "Constructor threw exception").
+    private RandomGenerator random = new java.util.Random();
 
     public ExamExerciseSelectionService(ExamPoolService poolService, ExamSimulationUsageRepository usageRepository) {
         this.poolService = poolService;
