@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 
 interface ConfirmDialogProps {
@@ -32,9 +32,15 @@ export default function ConfirmDialog({
 }: Readonly<ConfirmDialogProps>) {
     const [typed, setTyped] = useState("");
 
-    useEffect(() => {
-        if (!isOpen) setTyped("");
-    }, [isOpen]);
+    // Cleared by the buttons rather than an effect: both close the dialog, and the next open starts empty.
+    const handleCancel = () => {
+        setTyped("");
+        onCancel();
+    };
+    const handleConfirm = () => {
+        setTyped("");
+        onConfirm();
+    };
 
     if (!isOpen) return null;
 
@@ -73,14 +79,14 @@ export default function ConfirmDialog({
                 <div className="mt-5 flex justify-end gap-3">
                     <button
                         type="button"
-                        onClick={onCancel}
+                        onClick={handleCancel}
                         className="rounded-lg border border-border/60 bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:bg-accent"
                     >
                         {cancelLabel}
                     </button>
                     <button
                         type="button"
-                        onClick={onConfirm}
+                        onClick={handleConfirm}
                         disabled={confirmBlocked}
                         className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50 ${
                             danger ? "bg-red-500 hover:bg-red-600" : "bg-primary hover:bg-primary/90"
