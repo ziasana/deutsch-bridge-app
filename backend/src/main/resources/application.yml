@@ -8,6 +8,15 @@ spring:
   lifecycle:
     timeout-per-shutdown-phase: 20s
 
+  # Fail fast on an unreachable/blocked SMTP port instead of hanging the request (JavaMail default is infinite).
+  mail:
+    properties:
+      mail:
+        smtp:
+          connectiontimeout: 10000
+          timeout: 15000
+          writetimeout: 15000
+
   servlet:
     multipart:
       max-file-size: 20MB

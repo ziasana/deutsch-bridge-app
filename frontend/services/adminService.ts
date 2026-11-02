@@ -4,6 +4,9 @@ import {
     AdminBulkDeleteUsersResult,
     AdminCreateUserPayload,
     AdminUpdateUserPayload,
+    EmailConfig,
+    EmailSendLogEntry,
+    EmailTestType,
     FeatureLimitUpdatePayload,
 } from "@/types/admin";
 
@@ -65,4 +68,16 @@ export const updateFeatureLimits = async (payload: FeatureLimitUpdatePayload[]) 
 
 export const getAuditLog = async () => {
     return await api.get("/admin/settings/audit-log");
+};
+
+export const getEmailTestConfig = async () => {
+    return await api.get<EmailConfig>("/admin/settings/email-test/config");
+};
+
+export const getEmailTestLogs = async () => {
+    return await api.get<EmailSendLogEntry[]>("/admin/settings/email-test/logs");
+};
+
+export const sendTestEmail = async (recipientEmail: string, type: EmailTestType) => {
+    return await api.post<EmailSendLogEntry>("/admin/settings/email-test", { recipientEmail, type });
 };
