@@ -11,7 +11,6 @@ import { Card, CardContent } from "@/componenets/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/componenets/ui/table";
 import Button from "@/componenets/Button";
 import Loading from "@/componenets/Loading";
-import SettingsSubNav from "@/componenets/admin/SettingsSubNav";
 
 const TYPE_LABELS: Record<EmailTestType, string> = {
     TEST: "Simple test email",
@@ -109,9 +108,7 @@ export default function AdminEmailTestPage() {
                     Send a test email to a user or any address and see exactly whether delivery worked.
                 </p>
 
-                <div className="mt-6">
-                    <SettingsSubNav />
-                </div>
+                <div className="mt-6" />
 
                 {isLoading ? (
                     <Loading />

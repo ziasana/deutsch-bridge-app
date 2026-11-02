@@ -12,6 +12,7 @@ import {
     Info,
     LayoutDashboard,
     Layers,
+    Mail,
     MessageSquare,
     MessagesSquare,
     Mic,
@@ -95,6 +96,7 @@ export function getAdminNavItems(t: Dictionary): NavItem[] {
             children: [
                 { href: "/admin/notifications", label: t.nav.manageNotifications, icon: Bell },
                 { href: "/admin/settings", label: t.nav.monetization, icon: CreditCard },
+                { href: "/admin/settings/email-test", label: "Email Testing", icon: Mail },
             ],
         },
         { href: "/profile", label: t.nav.profile, icon: User },

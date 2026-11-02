@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 const TABS = [
     { href: "/admin/settings", label: "Monetization & Limits" },
     { href: "/admin/settings/exam-time", label: "Exam Time Management" },
-    { href: "/admin/settings/email-test", label: "Email Testing" },
 ];
 
 export default function SettingsSubNav() {
