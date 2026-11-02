@@ -132,4 +132,24 @@ class AdminUserHardDeleteServiceIntegrationTest {
         missing.removeAll(covered);
         assertTrue(missing.isEmpty(), "Tables referencing users but not cleaned by AdminUserHardDeleteService: " + missing);
     }
+
+    @Test
+    @DisplayName("schema -> every table with an FK to a cleaned table is itself cleaned first")
+    void everyChildOfACleanedTableIsCovered() {
+        Set<String> cleaned = new HashSet<>(AdminUserHardDeleteService.USER_OWNED_TABLES);
+        cleaned.addAll(List.of("users", "chat_sessions", "vocabulary_items", "exam_simulation_attempts", "chat_messages"));
+        Set<String> children = new HashSet<>(AdminUserHardDeleteService.PROFILE_COLLECTION_TABLES);
+        children.addAll(cleaned);
+        children.addAll(List.of("daily_words", "dictionary_missing_report")); // FK nulled, rows kept
+
+        List<String> fkChildren = jdbc.queryForList("""
+                SELECT DISTINCT tc.table_name FROM information_schema.table_constraints tc
+                JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name
+                WHERE tc.constraint_type = 'FOREIGN KEY' AND ccu.table_name = ANY (?)
+                """, String.class, (Object) cleaned.toArray(new String[0]));
+
+        Set<String> missing = new HashSet<>(fkChildren);
+        missing.removeAll(children);
+        assertTrue(missing.isEmpty(), "Tables with an FK to a cleaned table but not cleaned: " + missing);
+    }
 }

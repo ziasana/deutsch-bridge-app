@@ -53,6 +53,12 @@ public class AdminUserHardDeleteService {
             "writing_learn_progress"
     );
 
+    /** Collection tables of a user-owned row; they hold an FK to it and must go first. */
+    static final List<String> PROFILE_COLLECTION_TABLES = List.of(
+            "user_profile_focus_areas",
+            "user_profile_learning_reasons"
+    );
+
     private final UserRepository userRepository;
 
     @PersistenceContext
@@ -113,6 +119,10 @@ public class AdminUserHardDeleteService {
         // shared content that merely points at the user: keep the row, drop the link
         update("UPDATE daily_words SET assigned_to_id = NULL WHERE assigned_to_id = :uid", uid);
         update("UPDATE dictionary_missing_report SET reported_by_id = NULL WHERE reported_by_id = :uid", uid);
+
+        for (String table : PROFILE_COLLECTION_TABLES) {
+            update("DELETE FROM " + table + " WHERE user_profile_id IN (SELECT id FROM user_profiles WHERE user_id = :uid)", uid);
+        }
 
         for (String table : USER_OWNED_TABLES) {
             update("DELETE FROM " + table + " WHERE user_id = :uid", uid);
