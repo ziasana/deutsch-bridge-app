@@ -27,6 +27,11 @@ export const deleteUser = async (id: string) => {
     return await api.delete(`/admin/users/${id}`);
 };
 
+/** Irreversible hard delete; the server also checks that confirmEmail matches the user's email. */
+export const permanentlyDeleteUser = async (id: string, confirmEmail: string) => {
+    return await api.post(`/admin/users/${id}/permanent-delete`, { confirmEmail });
+};
+
 export const bulkDeleteUsers = async (ids: string[]) => {
     return await api.post<AdminBulkDeleteUsersResult>("/admin/users/bulk-delete", { ids });
 };

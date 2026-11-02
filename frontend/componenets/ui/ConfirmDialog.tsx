@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 
 interface ConfirmDialogProps {
@@ -9,6 +10,9 @@ interface ConfirmDialogProps {
     confirmLabel: string;
     cancelLabel: string;
     danger?: boolean;
+    /** When set, the confirm button stays disabled until the user types exactly this text (case-insensitive). */
+    requireText?: string;
+    requireTextLabel?: string;
     onConfirm: () => void;
     onCancel: () => void;
 }
@@ -21,10 +25,20 @@ export default function ConfirmDialog({
     confirmLabel,
     cancelLabel,
     danger = true,
+    requireText,
+    requireTextLabel,
     onConfirm,
     onCancel,
 }: Readonly<ConfirmDialogProps>) {
+    const [typed, setTyped] = useState("");
+
+    useEffect(() => {
+        if (!isOpen) setTyped("");
+    }, [isOpen]);
+
     if (!isOpen) return null;
+
+    const confirmBlocked = requireText !== undefined && typed.trim().toLowerCase() !== requireText.trim().toLowerCase();
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -41,6 +55,21 @@ export default function ConfirmDialog({
                     </div>
                 </div>
 
+                {requireText !== undefined && (
+                    <label className="mt-4 block text-sm text-foreground/70">
+                        {requireTextLabel ?? `Type "${requireText}" to confirm`}
+                        <input
+                            type="text"
+                            value={typed}
+                            onChange={(e) => setTyped(e.target.value)}
+                            autoFocus
+                            autoComplete="off"
+                            spellCheck={false}
+                            className="mt-1 w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-red-500"
+                        />
+                    </label>
+                )}
+
                 <div className="mt-5 flex justify-end gap-3">
                     <button
                         type="button"
@@ -52,7 +81,8 @@ export default function ConfirmDialog({
                     <button
                         type="button"
                         onClick={onConfirm}
-                        className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition ${
+                        disabled={confirmBlocked}
+                        className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50 ${
                             danger ? "bg-red-500 hover:bg-red-600" : "bg-primary hover:bg-primary/90"
                         }`}
                     >

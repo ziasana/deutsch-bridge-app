@@ -13,6 +13,7 @@ import {
     setUserEnabled,
     deleteUser,
     bulkDeleteUsers,
+    permanentlyDeleteUser,
 } from "@/services/adminService";
 import { AccountType, AdminCreateUserPayload, AdminUser } from "@/types/admin";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
@@ -36,6 +37,7 @@ import {
     Trash2,
     UserPlus,
     Users,
+    UserX,
 } from "lucide-react";
 
 const CARD_HOVER = "transition-all duration-300 hover:-translate-y-1 hover:shadow-lg";
@@ -69,6 +71,7 @@ export default function AdminUsersPage() {
     const [selectedAccountType, setSelectedAccountType] = useState<AccountType>("BASIC");
     const [showAddUser, setShowAddUser] = useState(false);
     const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
+    const [userToPurge, setUserToPurge] = useState<AdminUser | null>(null);
     const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
     const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
@@ -207,6 +210,20 @@ export default function AdminUsersPage() {
                 fetchUsers();
             })
             .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to delete user."))
+            .finally(() => setIsSaving(false));
+    };
+
+    const confirmPurgeUser = () => {
+        const user = userToPurge;
+        if (!user) return;
+        setUserToPurge(null);
+        setIsSaving(true);
+        permanentlyDeleteUser(user.id, user.email)
+            .then(() => {
+                toast.success(`${user.email} permanently deleted.`);
+                fetchUsers();
+            })
+            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to permanently delete user."))
             .finally(() => setIsSaving(false));
     };
 
@@ -571,6 +588,16 @@ export default function AdminUsersPage() {
                                                 >
                                                     <Trash2 className="size-3.5" />
                                                 </Button>
+                                                <Button
+                                                    variant="secondary"
+                                                    className={`px-3 py-1 text-sm text-destructive ${BUTTON_HOVER}`}
+                                                    onClick={() => setUserToPurge(user)}
+                                                    disabled={isSelf}
+                                                    title={isSelf ? "You can't delete your own account." : "Delete permanently (irreversible)"}
+                                                    aria-label="Delete permanently"
+                                                >
+                                                    <UserX className="size-3.5" />
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
                                         );
@@ -877,6 +904,18 @@ export default function AdminUsersPage() {
                 cancelLabel="Cancel"
                 onConfirm={confirmRemoveUser}
                 onCancel={() => setUserToDelete(null)}
+            />
+
+            <ConfirmDialog
+                isOpen={Boolean(userToPurge)}
+                title="Permanently delete this user?"
+                message={`This permanently deletes "${userToPurge?.email}" and ALL of their data (progress, bookmarks, attempts, chats, notifications, exam data). This cannot be undone.`}
+                confirmLabel="Delete permanently"
+                cancelLabel="Cancel"
+                requireText={userToPurge?.email}
+                requireTextLabel="Type the user's email to confirm"
+                onConfirm={confirmPurgeUser}
+                onCancel={() => setUserToPurge(null)}
             />
 
             <ConfirmDialog

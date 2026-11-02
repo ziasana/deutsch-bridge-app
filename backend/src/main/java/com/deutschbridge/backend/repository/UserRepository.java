@@ -24,6 +24,8 @@ public interface UserRepository extends JpaRepository<User,String> {
 
     long countByDeletedFalse();
 
+    long countByRoleAndDeletedFalse(String role);
+
     long countByDeletedFalseAndCreatedAtAfter(Instant after);
 
     long countByDeletedFalseAndAccountType(AccountType accountType);
