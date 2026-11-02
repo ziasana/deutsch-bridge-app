@@ -12,14 +12,20 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.io.UnsupportedEncodingException;
+
 
 @Service
 public class EmailService {
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
     private final JavaMailSender mailSender;
-    @Value("${spring.mail.username}")
+    // Sender address. MAIL_FROM lets mail go out as an alias (e.g. noreply@) while the SMTP login stays the real mailbox.
+    @Value("${MAIL_FROM:${spring.mail.username}}")
     private String from ="";
+    // Display name shown next to the sender address; without it the mail server shows the mailbox's own name (e.g. "info").
+    @Value("${MAIL_FROM_NAME:DeutschCertify}")
+    private String fromName = "";
 
     public static final String VERIFICATION_ENDPOINT = "/req/signup/verify"; // Compliant path is relative and has only two parts
     public static final String RESET_PASSWORD_ENDPOINT = "/req/reset-password"; // Compliant path is relative and has only two parts
@@ -84,11 +90,15 @@ public class EmailService {
 
             helper.setTo(email);
             helper.setSubject(subject);
-            helper.setFrom(from);
+            if (fromName == null || fromName.isBlank()) {
+                helper.setFrom(from);
+            } else {
+                helper.setFrom(from, fromName);
+            }
             helper.setText(content, true);
             mailSender.send(mimeMessage);
 
-        } catch (MailException | MessagingException ex) {
+        } catch (MailException | MessagingException | UnsupportedEncodingException ex) {
             // SMTP auth/connection failures are often thrown without a wrapped cause, so fall
             // back to the exception itself rather than NPE-ing on a null getCause().
             Throwable root = ex.getCause() != null ? ex.getCause() : ex;
