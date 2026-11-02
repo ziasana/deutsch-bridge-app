@@ -28,7 +28,7 @@ function MinutesChip({ section, level, teil, examType }: Readonly<{ section: Exa
     const { minutes } = useExamTimeConfiguration(level, section, teil, examType === "DTZ" ? "DTZ" : "TELC");
     if (minutes == null) return null;
     return (
-        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
             <Timer className="size-3" aria-hidden="true" /> {minutes} Min.
         </span>
     );
@@ -51,7 +51,7 @@ export default function ExamPartList({ section, level, accent, groups, examType,
                         <span
                             aria-hidden="true"
                             className={cn(
-                                "absolute start-0 top-5 hidden size-12 items-center justify-center rounded-full text-lg font-extrabold text-white shadow-md ring-4 ring-background sm:flex",
+                                "absolute start-0 top-5 hidden size-12 items-center justify-center rounded-full text-base font-semibold text-white shadow-md ring-4 ring-background sm:flex",
                                 state === "completed" ? "bg-emerald-500" : "bg-primary",
                             )}
                         >
@@ -67,22 +67,22 @@ export default function ExamPartList({ section, level, accent, groups, examType,
                         >
                             <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-primary">Teil {teil ?? index + 1}</span>
+                                    <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary">Teil {teil ?? index + 1}</span>
                                     <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-semibold", ACTION[state].chipClass)}>{ACTION[state].chip}</span>
                                     <MinutesChip section={section} level={level} teil={teil} examType={examType} />
                                 </div>
-                                <h3 className="mt-2 text-lg font-bold leading-tight text-foreground">{group.subheading ?? group.label}</h3>
-                                <p className="mt-0.5 text-sm text-foreground/60">
+                                <h3 className="mt-2 text-base font-semibold leading-6 text-foreground">{group.subheading ?? group.label}</h3>
+                                <p className="mt-0.5 text-sm leading-5 text-foreground/60">
                                     {group.total} {group.total === 1 ? "Übung" : "Übungen"} · {group.mastered} erledigt
                                 </p>
                                 <div className="mt-3 flex items-center gap-3">
                                     <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-foreground/10" role="progressbar" aria-label={`${group.label} Fortschritt`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent}>
                                         <div className="h-full rounded-full bg-primary transition-all duration-700" style={{ width: `${percent}%` }} />
                                     </div>
-                                    <span className="shrink-0 text-xs font-bold tabular-nums text-foreground/60">{percent}%</span>
+                                    <span className="shrink-0 text-xs font-semibold tabular-nums text-foreground/60">{percent}%</span>
                                 </div>
                             </div>
-                            <span className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition group-hover:bg-primary/90 group-hover:shadow-md">
+                            <span className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-[15px] font-semibold leading-5 text-primary-foreground shadow-sm transition group-hover:bg-primary/90 group-hover:shadow-md">
                                 {ACTION[state].label}
                                 <ChevronRight className="size-4 transition group-hover:translate-x-0.5" aria-hidden="true" />
                             </span>

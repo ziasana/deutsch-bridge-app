@@ -10,7 +10,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Lightbulb, Play, TriangleAlert } 
 import { getExpressionImageSrc } from "@/lib/expressionImages";
 import { getIllustrationFor } from "@/componenets/expressions/illustrations";
 import { COLLECTION_ACCENT } from "@/componenets/expressions/expressionMeta";
-import { ACCENT_TITLE_COLOR, levelThemeVars } from "@/componenets/learning/levelMeta";
+import { ACCENT_TITLE_COLOR, levelThemeVars, readableOn } from "@/componenets/learning/levelMeta";
 
 const pillPrimary =
     "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50";
@@ -163,7 +163,7 @@ function ExpressionDetailContent({ id }: Readonly<{ id: string | null }>) {
                             <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                             <header className="absolute inset-x-0 bottom-0 p-5 text-white sm:p-8">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <span className={`${chip} text-white shadow-sm`} style={{ backgroundColor: accent }}>{expression.level}</span>
+                                    <span className={`${chip} shadow-sm`} style={{ backgroundColor: accent, color: readableOn(accent) }}>{expression.level}</span>
                                     <span className={`${chip} bg-white/20 text-white backdrop-blur-sm`}>{typeLabel}</span>
                                     {expression.register && <span className={`${chip} bg-white/20 text-white backdrop-blur-sm`}>{expression.register}</span>}
                                 </div>

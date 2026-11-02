@@ -10,7 +10,7 @@ import { getVocabulary, addVocabularyBookmark, removeVocabularyBookmark, deleteV
 import { VocabularyItem, VocabularyMasteryLevel, VocabularySource } from "@/types/vocabulary";
 import { LearningSearch } from "@/componenets/learning";
 import ExpressionFilterSelect from "@/componenets/expressions/ExpressionFilterSelect";
-import VocabularySourceSelector, { VocabularySourceOption } from "@/componenets/vocabulary/VocabularySourceSelector";
+import { VocabularySourceOption } from "@/componenets/vocabulary/VocabularySourceSelector";
 import VocabularyHeader from "@/componenets/vocabulary/VocabularyHeader";
 import VocabularyCard from "@/componenets/vocabulary/VocabularyCard";
 import VocabularyCardSkeleton from "@/componenets/vocabulary/VocabularyCardSkeleton";
@@ -123,18 +123,6 @@ function VocabularyPageContent() {
         return counts;
     }, [sourceItems]);
 
-    // Words floating in the header: the ones you have started learning (strongest first), topped up with
-    // other words so the header never sits still. More learning means more bubbles.
-    const showcase = useMemo(() => {
-        const order: VocabularyMasteryLevel[] = ["MASTERED", "FAMILIAR", "LEARNING", "NEW"];
-        const level = (i: VocabularyItem) => i.progress?.masteryLevel ?? "NEW";
-        const started = sourceItems.filter((i) => level(i) !== "NEW").sort((a, b) => order.indexOf(level(a)) - order.indexOf(level(b)));
-        const rest = sourceItems.filter((i) => level(i) === "NEW");
-        const MIN_BUBBLES = 3;
-        const shown = started.length >= MIN_BUBBLES ? started : [...started, ...rest.slice(0, MIN_BUBBLES - started.length)];
-        return shown.slice(0, 6).map((i) => ({ word: i.word }));
-    }, [sourceItems]);
-
     const continueLearning = useMemo(() => {
         const candidates = sourceItems.filter((i) => (i.progress?.masteryLevel ?? "NEW") !== "MASTERED");
         const sorted = [...candidates].sort((a, b) => {
@@ -171,16 +159,16 @@ function VocabularyPageContent() {
     return (
         <div className="min-h-screen bg-background px-6 py-10" style={levelThemeVars(SOURCE_ACCENT[source])}>
             <div className="max-w-4xl mx-auto">
-                <VocabularyHeader accent={SOURCE_ACCENT[source]} counts={masteryCounts} showcase={showcase} onAdd={() => setAddOpen(true)} onPractice={() => router.push("/dashboard/vocabulary/practice")} />
-
-                <VocabularySourceSelector
-                    className="mt-8"
-                    options={sourceOptions}
-                    selected={source}
-                    onSelect={(s) => {
+                <VocabularyHeader
+                    counts={masteryCounts}
+                    sources={sourceOptions}
+                    source={source}
+                    onSource={(s) => {
                         setSource(s);
                         resetPage();
                     }}
+                    onAdd={() => setAddOpen(true)}
+                    onPractice={() => router.push("/dashboard/vocabulary/practice")}
                 />
 
                 <div className="mt-6 flex flex-wrap items-start gap-3">

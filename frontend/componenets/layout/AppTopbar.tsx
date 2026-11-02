@@ -3,9 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
-import { GraduationCap, Menu as MenuIcon, Moon, Search, Sun } from "lucide-react";
+import { Menu as MenuIcon, Moon, Search, Sun } from "lucide-react";
 import { useDarkMode } from "@/componenets/DarkModeProvider";
 import { useI18n } from "@/componenets/I18nProvider";
+import { Logo } from "@/componenets/brand/Logo";
 import useAuthStore from "@/store/useAuthStore";
 import NotificationBell from "@/componenets/notifications/NotificationBell";
 import ChangePasswordDialog from "@/componenets/profile/ChangePasswordDialog";
@@ -33,10 +34,7 @@ export default function AppTopbar({ collapsed, onToggleCollapsed, onOpenMobileSi
     return (
         <header className="flex h-16 shrink-0 items-center gap-3 bg-topbar text-topbar-foreground px-4 md:px-6 shadow-sm z-30">
             <Link href={userProfile?.role === "ADMIN" ? "/admin" : "/dashboard"} className="flex items-center gap-2 shrink-0">
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-topbar-foreground/15">
-                    <GraduationCap className="size-5" />
-                </div>
-                <span className="hidden sm:inline truncate text-lg font-semibold">DeutschBridge</span>
+                <Logo variant="bare" collapseText />
             </Link>
 
             <button

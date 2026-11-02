@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { HexLogo } from '@/components/brand/HexLogo';
+import { BrandMark } from '@/components/brand/BrandMark';
 import { AppText, DirectionalIcon, Screen } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { MIN_TOUCH, colors, radius, spacing } from '@/theme';
@@ -51,9 +51,9 @@ export function AuthFrame({ title, subtitle, children }: Props) {
             />
           ))}
         </View>
-        <HexLogo size={84} tone="dark" background="#FFFFFF" />
+        <BrandMark size={84} />
         <AppText style={styles.wordmark} color="#2A3238" accessibilityRole="header">
-          Deutsch Bridge
+          DeutschCertify
         </AppText>
       </View>
       {title ? (

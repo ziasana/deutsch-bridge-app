@@ -4,7 +4,8 @@ import Link from "next/link";
 import useAuthStore from "@/store/useAuthStore";
 import { useI18n } from "./I18nProvider";
 import {  Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
-import { GraduationCap, Menu as MenuIcon, X } from "lucide-react";
+import { Menu as MenuIcon, X } from "lucide-react";
+import { Logo } from "@/componenets/brand/Logo";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
 import ChangePasswordDialog from "@/componenets/profile/ChangePasswordDialog";
 import NavDropdown from "@/componenets/marketing/NavDropdown";
@@ -50,12 +51,10 @@ export default function Navbar() {
         {/* Logo */}
         <Link
           href="/"
-          className="group flex items-center gap-2 text-xl font-bold text-foreground"
+          aria-label="DeutschCertify home"
+          className="group flex items-center text-foreground"
         >
-          <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-transform duration-300 group-hover:-rotate-12 group-hover:scale-110">
-            <GraduationCap className="size-5" />
-          </span>
-          DeutschBridge
+          <Logo textClassName="text-xl font-bold" />
         </Link>
 
         {/* Desktop Menu */}
@@ -73,9 +72,6 @@ export default function Navbar() {
           </Link>
           <Link href="/blog" className="nav-link">
             {t.nav.blog}
-          </Link>
-          <Link href="/contact" className="nav-link">
-            {t.nav.contact}
           </Link>
 
           {isLoggedIn && userProfile != null && (

@@ -15,7 +15,7 @@ export default function PricingPage() {
         <main className="bg-background">
             <section className="bg-gradient-to-b from-accent/60 to-background py-16 md:py-20">
                 <div className="container mx-auto px-6">
-                    <SectionHeading badge={p.badge} title={p.title} subtitle={p.subtitle} />
+                    <SectionHeading title={p.title} subtitle={p.subtitle} />
                     <div className="mt-12">
                         <PricingCards />
                     </div>

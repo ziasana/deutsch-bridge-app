@@ -17,12 +17,12 @@ export default function LearningMilestone({ data }: Readonly<LearningMilestonePr
 
     return (
         <div className="flex items-center gap-4">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-motivation/12">
-                <Trophy className="size-5 text-motivation" aria-hidden="true" />
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand-amber/20">
+                <Trophy className="size-5 text-[#c98a12]" aria-hidden="true" />
             </span>
             <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-foreground">{m.reached(data.wordsMastered)}</p>
-                <LearningProgressBar value={percent} className="mt-2 h-2" barClassName="bg-motivation" ariaLabel={m.title} />
+                <LearningProgressBar value={percent} className="mt-2 h-2" barClassName="bg-brand-slate" ariaLabel={m.title} />
                 <p className="mt-1.5 text-xs text-foreground/55">{m.next(data.nextThreshold)}</p>
             </div>
         </div>

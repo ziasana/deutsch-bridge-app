@@ -15,7 +15,7 @@ export default function SavedLessonsChip() {
     return (
         <Link
             href="/dashboard/grammar"
-            className="group flex items-center gap-3 rounded-full bg-primary/8 px-5 py-2.5 transition hover:bg-primary/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+            className="group flex items-center gap-3 rounded-full bg-[#fdf3dc] px-5 py-2.5 text-[#16324f] transition hover:bg-[#fbe9bd] dark:bg-[#3a3426] dark:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
         >
             <BookmarkCheck className="size-5 shrink-0 text-primary" aria-hidden="true" />
             <p className="min-w-0 flex-1 text-sm font-medium text-foreground">{t.grammar.savedChip(lessons.length)}</p>

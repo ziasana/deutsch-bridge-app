@@ -70,7 +70,7 @@ export default function PublicRedemittelPage() {
     const lockedOnPage = items.filter((i) => !i.free).length;
 
     return (
-        <div className="min-h-[60vh] bg-background px-4 py-8 sm:px-6 sm:py-10" dir="ltr" style={levelThemeVars(accent)}>
+        <div className="min-h-[60vh] bg-gradient-to-b from-accent/60 to-background px-4 py-8 sm:px-6 sm:py-10" dir="ltr" style={levelThemeVars(accent)}>
             <div className="mx-auto max-w-4xl space-y-6">
                 <Link href="/learn" className="inline-block text-sm font-medium text-foreground/60 transition hover:text-foreground">
                     ← {l.backToHub}

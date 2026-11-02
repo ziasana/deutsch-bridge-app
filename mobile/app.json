@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Deutsch Bridge",
+    "name": "DeutschCertify",
     "slug": "deutsch-bridge",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -15,7 +15,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#16324F",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -38,7 +38,7 @@
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
-          "backgroundColor": "#3F86F0"
+          "backgroundColor": "#16324F"
         }
       ],
       [
@@ -61,7 +61,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Deutsch Bridge braucht Zugriff auf deine Fotos, damit du ein Profilbild auswählen kannst.",
+          "photosPermission": "DeutschCertify braucht Zugriff auf deine Fotos, damit du ein Profilbild auswählen kannst.",
           "cameraPermission": false,
           "microphonePermission": false
         }

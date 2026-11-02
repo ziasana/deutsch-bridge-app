@@ -12,9 +12,6 @@ import { ExamSection, ExamTypeCode } from "@/types/exam";
 import Loading from "@/componenets/Loading";
 import {
     CurrentLevelChip,
-    LearningLevelOption,
-    LearningLevelSelector,
-    LearningSearch,
     SavedItemsButton,
     SavedItemsLabels,
     SavedItemsPanel,
@@ -56,6 +53,19 @@ const SAVED_LABELS: SavedItemsLabels = {
 
 const VALID_SECTIONS = new Set<string>(EXAM_TYPE_ORDER);
 
+/** Numbered heading above a group of choices: makes the order (exam first, then exam part) obvious. */
+function StepLabel({ step, title, hint, className }: Readonly<{ step: number; title: string; hint?: string; className?: string }>) {
+    return (
+        <div className={`flex items-center gap-3 ${className ?? ""}`}>
+            <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#16324f] text-sm font-bold text-[#f2b544]">
+                {step}
+            </span>
+            <h2 className="text-base font-bold text-foreground">{title}</h2>
+            {hint && <span className="hidden text-sm text-foreground/55 sm:inline">{hint}</span>}
+        </div>
+    );
+}
+
 function ExamPrepContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -82,7 +92,6 @@ function ExamPrepContent() {
             ? (initialSection as ExamSection)
             : "LESEVERSTEHEN",
     );
-    const [search, setSearch] = useState("");
     const { data: pendingBookmarks = [] } = usePendingExamBookmarks();
     const { toggle: toggleBookmark, pendingId: bookmarkPendingId } = useExamBookmark();
     const [savedOpen, setSavedOpen] = useState(false);
@@ -117,7 +126,6 @@ function ExamPrepContent() {
         setExamType(next);
         setSelectedSection("LESEVERSTEHEN");
         setSelectedLevel(info.fixedLevel ?? null);
-        setSearch("");
         syncUrl({ exam: next, section: "LESEVERSTEHEN", level: info.fixedLevel ?? profileLevel ?? "B1" });
     };
     const chooseLevel = (level: string) => {
@@ -149,13 +157,6 @@ function ExamPrepContent() {
 
     if (levelSummaryLoading || exercisesLoading) return <Loading />;
 
-    const levelOptions: LearningLevelOption[] = levelSummaries.map((s) => ({
-        level: s.level,
-        total: s.total,
-        completed: s.mastered,
-        percentOverride: s.avgScore,
-    }));
-
     const examTypeOptions = examInfo.sections.map((section) => {
         const meta = EXAM_TYPE_META[section];
         if (meta.informational) {
@@ -170,24 +171,15 @@ function ExamPrepContent() {
 
     const selectedMeta = EXAM_TYPE_META[selectedSection];
     const selectedItems = exercisesForSectionAndLevel(exercises, selectedSection, effectiveLevel);
-    const searchTerm = search.trim().toLowerCase();
 
     // Schriftlicher Ausdruck has no Teile: its Übungen are listed directly instead of as Teil cards.
     const isFlatList = selectedSection === "SCHRIFTLICHER_AUSDRUCK";
     const flatItems = isFlatList
-        ? (groupIntoParts(selectedItems, selectedSection)[0]?.items ?? []).filter(
-              (i) => searchTerm === "" || i.title.toLowerCase().includes(searchTerm),
-          )
+        ? (groupIntoParts(selectedItems, selectedSection)[0]?.items ?? [])
         : [];
 
-    const selectedGroups = isFlatList
-        ? []
-        : groupIntoParts(selectedItems, selectedSection).filter(
-              (g) => searchTerm === "" || g.label.toLowerCase().includes(searchTerm) || g.items.some((i) => i.title.toLowerCase().includes(searchTerm)),
-          );
-    const infoItems = selectedMeta.informational
-        ? selectedItems.filter((i) => searchTerm === "" || i.title.toLowerCase().includes(searchTerm))
-        : [];
+    const selectedGroups = isFlatList ? [] : groupIntoParts(selectedItems, selectedSection);
+    const infoItems = selectedMeta.informational ? selectedItems : [];
 
     const selectedFilteredItems = isFlatList ? flatItems : selectedGroups.flatMap((g) => g.items);
     const selectedMastered = masteredCount(selectedFilteredItems);
@@ -227,10 +219,32 @@ function ExamPrepContent() {
                     title="Prüfungsvorbereitung"
                     subtitle="Bereite dich Schritt für Schritt auf die Deutschprüfung vor."
                     accent={sectionAccent ? accentColor(sectionAccent) : undefined}
-                    bubbles
-                    actionsBelow
-                    actions={
-                        savedItems.length > 0 && (
+                    meta={
+                        <>
+                            <span className="inline-flex items-center rounded-full bg-[#f2b544] px-2.5 py-0.5 text-xs font-bold text-[#16324f]">{examInfo.label}</span>
+                            {isTelc && <CurrentLevelChip onSelect={chooseLevel} title="Dein aktuelles Niveau" />}
+                        </>
+                    }
+                >
+                    {isTelc && (
+                        <Link
+                            href="/dashboard/exam-prep/pruefung"
+                            className="group flex items-center justify-between gap-4 rounded-2xl bg-white/[0.07] px-4 py-3 ring-1 ring-white/15 transition hover:bg-white/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                        >
+                            <span className="flex min-w-0 items-center gap-3">
+                                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#f2b544] text-[#16324f]">
+                                    <ClipboardCheck className="size-5" aria-hidden="true" />
+                                </span>
+                                <span className="min-w-0">
+                                    <span className="block text-sm font-bold text-white">Probeprüfung</span>
+                                    <span className="block text-xs text-[#b9c7d6]">Eine komplette Prüfung mit Zeitlimit und Auswertung – ohne Wiederholung von Aufgaben.</span>
+                                </span>
+                            </span>
+                            <span className="shrink-0 text-sm font-semibold text-[#f2b544] transition group-hover:translate-x-0.5">Starten →</span>
+                        </Link>
+                    )}
+                    {savedItems.length > 0 && (
+                        <div className="mt-4">
                             <SavedItemsButton
                                 items={savedItems}
                                 labels={SAVED_LABELS}
@@ -238,18 +252,9 @@ function ExamPrepContent() {
                                 onToggle={() => setSavedOpen((v) => !v)}
                                 onOpen={openSaved}
                             />
-                        )
-                    }
-                    meta={
-                        isTelc ? (
-                            <CurrentLevelChip onSelect={chooseLevel} title="Dein aktuelles Niveau" />
-                        ) : (
-                            <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                                {examInfo.label}
-                            </span>
-                        )
-                    }
-                />
+                        </div>
+                    )}
+                </LearningPageHero>
 
                 {savedOpen && savedItems.length > 0 && (
                     <SavedItemsPanel
@@ -261,53 +266,15 @@ function ExamPrepContent() {
                     />
                 )}
 
-                <ExamTypeSwitch className="mt-6" selected={examType} onSelect={chooseExamType} />
+                <StepLabel step={1} title="Prüfung wählen" hint="Wofür bereitest du dich vor?" className="mt-8" />
+                <ExamTypeSwitch className="mt-3" selected={examType} onSelect={chooseExamType} />
 
-                {isTelc && (
-                <Link
-                    href="/dashboard/exam-prep/pruefung"
-                    className="mt-6 flex items-center justify-between gap-4 rounded-2xl border border-primary/30 bg-primary/5 px-5 py-4 transition hover:bg-primary/10"
-                >
-                    <span className="flex items-center gap-3">
-                        <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                            <ClipboardCheck className="size-5" aria-hidden="true" />
-                        </span>
-                        <span>
-                            <span className="block text-sm font-bold text-foreground">Probeprüfung</span>
-                            <span className="block text-xs text-foreground/60">Eine komplette Prüfung mit Zeitlimit und Auswertung – ohne Wiederholung von Aufgaben.</span>
-                        </span>
-                    </span>
-                    <span className="text-sm font-semibold text-primary">Starten →</span>
-                </Link>
-                )}
-
+                <StepLabel step={2} title="Prüfungsteil wählen" hint={`${examInfo.label}: Wähle einen Teil zum Üben.`} className="mt-8" />
                 <ExamTypeSelector
-                    className="mt-6"
+                    className="mt-3"
                     types={examTypeOptions}
                     selected={selectedSection}
                     onSelect={chooseSection}
-                />
-
-                {isTelc && (
-                    <>
-                        <h2 className="mt-8 text-sm font-semibold text-foreground/70">Prüfungsniveau</h2>
-                        <LearningLevelSelector
-                            className="mt-3"
-                            levels={levelOptions}
-                            selectedLevel={effectiveLevel}
-                            onLevelChange={chooseLevel}
-                            unitLabel="Aufgaben"
-                            activeLabel="Aktuelles Niveau"
-                            ariaLabel="Prüfungsniveau"
-                        />
-                    </>
-                )}
-
-                <LearningSearch
-                    className="mt-6"
-                    value={search}
-                    onChange={setSearch}
-                    placeholder="Suche nach Prüfungsteil oder Aufgabe..."
                 />
 
                 {continueTarget && (
@@ -378,16 +345,16 @@ function ExamPrepContent() {
                             </>
                         ) : isFlatList ? (
                             <WritingTaskList
-                                key={`${selectedSection}-${effectiveLevel}-${searchTerm}`}
+                                key={`${selectedSection}-${effectiveLevel}`}
                                 items={flatItems}
                                 level={effectiveLevel}
                                 examType={examType}
                                 lastTimes={writingLastTimes}
                             />
                         ) : selectedSection === "MUENDLICHER_AUSDRUCK" && examType === "DTZ" ? (
-                            <DtzOralList key={`${selectedSection}-${effectiveLevel}-${searchTerm}`} groups={selectedGroups} />
+                            <DtzOralList key={`${selectedSection}-${effectiveLevel}`} groups={selectedGroups} />
                         ) : selectedSection === "MUENDLICHER_AUSDRUCK" ? (
-                            <SpeakingExamList key={`${selectedSection}-${effectiveLevel}-${searchTerm}`} groups={selectedGroups} level={effectiveLevel} lastTimes={speakingLastTimes} />
+                            <SpeakingExamList key={`${selectedSection}-${effectiveLevel}`} groups={selectedGroups} level={effectiveLevel} lastTimes={speakingLastTimes} />
                         ) : SECTION_THEME[selectedSection] ? (
                             <ExamPartList
                                 section={selectedSection}

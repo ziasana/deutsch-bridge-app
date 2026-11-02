@@ -72,7 +72,7 @@ export default function SignupPage() {
                     Create your account
                 </h1>
                 <p className="text-lg text-foreground/70 mb-8">
-                    Join thousands of learners mastering German with DeutschBridge. It only takes a minute to get started.
+                    Join thousands of learners mastering German with DeutschCertify. It only takes a minute to get started.
                 </p>
 
                 {isLoading && <Loading message="Please wait..." />}

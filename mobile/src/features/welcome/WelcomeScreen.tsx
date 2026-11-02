@@ -12,7 +12,7 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { HexLogo } from '@/components/brand/HexLogo';
+import { BrandMark } from '@/components/brand/BrandMark';
 import { AppText, DirectionalIcon } from '@/components/ui';
 import { SLIDE_KEYS, type Slide } from '@/features/welcome/slides';
 import { useI18n } from '@/i18n';
@@ -158,9 +158,9 @@ export function WelcomeScreen() {
               },
             ]}
           >
-            <HexLogo size={128} tone="dark" background="#FFFFFF" />
+            <BrandMark size={128} />
             <AppText style={styles.wordmark} color="#2A3238" accessibilityRole="header">
-              Deutsch Bridge
+              DeutschCertify
             </AppText>
           </Animated.View>
         </View>

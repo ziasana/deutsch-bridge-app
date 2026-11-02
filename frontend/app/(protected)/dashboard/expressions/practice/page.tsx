@@ -24,7 +24,7 @@ import { ReactNode } from "react";
 import CircularProgress from "@/componenets/CircularProgress";
 import { cn } from "@/lib/utils";
 import { COLLECTION_ACCENT } from "@/componenets/expressions/expressionMeta";
-import { levelThemeVars } from "@/componenets/learning/levelMeta";
+import { levelThemeVars, readableOn } from "@/componenets/learning/levelMeta";
 
 const pillPrimary =
     "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-default disabled:opacity-50";
@@ -219,17 +219,17 @@ function ExpressionPracticeContent() {
         return (
             <div className="dashboard-atmosphere flex min-h-screen items-center justify-center p-4 sm:p-6" dir="ltr" style={levelThemeVars(finishAccent)}>
                 <div className="anim-fade-up w-full max-w-lg overflow-hidden rounded-3xl bg-card shadow-card">
-                    <div className="relative overflow-hidden px-6 py-7 text-center text-white sm:px-8" style={{ backgroundImage: `linear-gradient(135deg, ${finishAccent}, ${finishAccent}b3)` }}>
+                    <div className="relative overflow-hidden px-6 py-7 text-center sm:px-8" style={{ backgroundImage: `linear-gradient(135deg, ${finishAccent}, ${finishAccent}b3)`, color: readableOn(finishAccent) }}>
                         <span aria-hidden="true" className="absolute -end-8 -top-10 size-36 rounded-full bg-white/10" />
                         <p className="anim-pop relative text-5xl" aria-hidden="true">{finishPercent >= 0.9 ? "🏆" : finishPercent >= 0.6 ? "🎉" : "💪"}</p>
                         <h2 className="relative mt-2 text-2xl font-extrabold">Session complete 🎉</h2>
-                        <p className="relative mt-1 text-white/90">Wendungen geübt: {results.length}</p>
+                        <p className="relative mt-1 opacity-90">Wendungen geübt: {results.length}</p>
                     </div>
                     <div className="p-6 sm:p-8">
 
                     <div className="mb-6 flex justify-center">
                         <div className="relative">
-                            <CircularProgress value={totalSteps > 0 ? (totalCorrect / totalSteps) * 100 : 0} size={112} color="hsl(216 100% 62%)" trackColor="hsl(0 0% 50% / 0.15)" />
+                            <CircularProgress value={totalSteps > 0 ? (totalCorrect / totalSteps) * 100 : 0} size={112} color="#4f9d96" trackColor="hsl(0 0% 50% / 0.15)" />
                             <span className="absolute inset-0 flex items-center justify-center text-xl font-bold text-foreground">
                                 {totalSteps > 0 ? Math.round((totalCorrect / totalSteps) * 100) : 0}%
                             </span>

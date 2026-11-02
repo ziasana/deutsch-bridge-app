@@ -3,7 +3,7 @@ import { WritingFormality, WritingHelpTab, WritingMode, WritingGuideItem, Writin
 /** Levels the Schreiben architecture is prepared for; content decides what is actually shown. */
 export const WRITING_LEVELS = ["A2", "B1", "B2", "C1", "C2"] as const;
 
-export const WRITING_COLOR = "#f97316";
+export const WRITING_COLOR = "#c2674f";
 
 /** The functions present in `phrases` (id -> label), in the order the server sent them. */
 export function phraseCategoryLabels(phrases: WritingPhrase[]): Record<WritingPhraseCategory, string> {

@@ -6,7 +6,7 @@ export default function TutorAvatar({ className, iconClassName }: Readonly<{ cla
     return (
         <span
             aria-hidden="true"
-            className={cn("flex size-8 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,hsl(228_78%_44%),hsl(216_100%_62%))] text-white shadow-sm", className)}
+            className={cn("flex size-8 shrink-0 items-center justify-center rounded-full bg-[#16324f] text-[#f2b544] shadow-sm ring-1 ring-white/15", className)}
         >
             <Sparkles className={cn("size-4", iconClassName)} />
         </span>

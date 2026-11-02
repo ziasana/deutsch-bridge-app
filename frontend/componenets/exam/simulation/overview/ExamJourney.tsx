@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { readableOn } from "@/componenets/learning/levelMeta";
 import { Eye, Flag, Timer } from "lucide-react";
 import { formatPoints } from "@/lib/examSimulation";
 import { cn } from "@/lib/utils";
@@ -52,9 +53,10 @@ export default function ExamJourney({ profile }: Readonly<{ profile: ProfileOver
                                 onClick={() => setSelected(i)}
                                 aria-pressed={active}
                                 aria-label={`${s.label}, ${s.minutes} Minuten`}
+                                style={{ color: prep || !style ? "#16324f" : readableOn(style.hex) }}
                                 className={cn(
-                                    "group flex h-24 w-full cursor-pointer flex-col justify-between rounded-2xl p-2.5 text-start text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                                    prep ? "bg-gradient-to-br from-pink-400 to-amber-400" : (style?.solid ?? "bg-primary"),
+                                    "group flex h-24 w-full cursor-pointer flex-col justify-between rounded-2xl p-2.5 text-start shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                                    prep ? "bg-brand-amber" : (style?.solid ?? "bg-primary"),
                                     active ? "-translate-y-1 shadow-lg ring-2 ring-foreground/70 ring-offset-2 ring-offset-background" : "opacity-70 hover:-translate-y-0.5 hover:opacity-100",
                                 )}
                             >
@@ -66,7 +68,7 @@ export default function ExamJourney({ profile }: Readonly<{ profile: ProfileOver
                                 </span>
                                 <span>
                                     <span className="block truncate text-xs font-bold leading-tight">{s.label}</span>
-                                    <span className="text-[11px] font-semibold tabular-nums text-white/85">{s.minutes} Min.</span>
+                                    <span className="text-[11px] font-semibold tabular-nums opacity-85">{s.minutes} Min.</span>
                                 </span>
                             </button>
                         </li>
@@ -140,7 +142,7 @@ export default function ExamJourney({ profile }: Readonly<{ profile: ProfileOver
                         <span className="absolute -top-0 -translate-x-1/2 whitespace-nowrap text-[11px] font-bold text-green-700 dark:text-green-400">
                             <Flag className="me-0.5 inline size-3" aria-hidden />ab {formatPoints(profile.writtenPassThreshold)}
                         </span>
-                        <span className="absolute inset-y-5 w-0.5 -translate-x-1/2 bg-green-600" />
+                        <span className="absolute inset-y-5 w-0.5 -translate-x-1/2 bg-brand-slate" />
                     </div>
                 </div>
                 <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 p-0">

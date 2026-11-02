@@ -15,7 +15,7 @@ interface ProgressStatTileProps {
 export function ProgressStatTile({ title, learned, total, subtitle, icon, tone }: Readonly<ProgressStatTileProps>) {
     const percent = total > 0 ? Math.min(100, Math.round((learned / total) * 100)) : 0
     return (
-        <div className={cn("flex flex-col rounded-2xl bg-gradient-to-br p-5 transition duration-200 hover:-translate-y-1 hover:shadow-card", tone.surface)}>
+        <div className={cn("flex flex-col rounded-2xl bg-card p-5 shadow-card transition duration-200 hover:-translate-y-1 hover:shadow-md", tone.surface)}>
             <div className="flex items-center justify-between gap-2">
                 <span className="text-sm font-medium text-foreground/70">{title}</span>
                 <span className={cn("flex size-9 items-center justify-center rounded-xl", tone.iconBg, tone.icon)} aria-hidden="true">

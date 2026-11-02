@@ -45,11 +45,11 @@ export default function ProgressPage() {
     const s = t.progress.stats
     const tiles = overview
         ? [
-              { title: s.wordsMastered, learned: stats?.vocabulary.mastered ?? 0, total: stats?.vocabulary.total ?? 0, icon: <Award className="size-4" />, tone: { surface: "from-motivation/15 to-motivation/5", icon: "text-motivation", iconBg: "bg-motivation/15", bar: "bg-motivation" } },
-              { title: s.dailyWordsLearned, learned: overview.dailyWords.learned, total: overview.dailyWords.total, icon: <SpellCheck className="size-4" />, tone: { surface: "from-learning-vocabulary/15 to-learning-vocabulary/5", icon: "text-learning-vocabulary", iconBg: "bg-learning-vocabulary/15", bar: "bg-learning-vocabulary" } },
-              { title: s.lessonsCompleted, learned: overview.grammar.learned, total: overview.grammar.total, icon: <GraduationCap className="size-4" />, tone: { surface: "from-learning-grammar/15 to-learning-grammar/5", icon: "text-learning-grammar", iconBg: "bg-learning-grammar/15", bar: "bg-learning-grammar" } },
-              { title: s.activeExpressions, learned: overview.expressions.learned, total: overview.expressions.total, icon: <Link2 className="size-4" />, tone: { surface: "from-learning-expression/15 to-learning-expression/5", icon: "text-learning-expression", iconBg: "bg-learning-expression/15", bar: "bg-learning-expression" } },
-              { title: s.readingCompleted, learned: overview.reading.learned, total: overview.reading.total, icon: <Newspaper className="size-4" />, tone: { surface: "from-learning-reading/15 to-learning-reading/5", icon: "text-learning-reading", iconBg: "bg-learning-reading/15", bar: "bg-learning-reading" } },
+              { title: s.wordsMastered, learned: stats?.vocabulary.mastered ?? 0, total: stats?.vocabulary.total ?? 0, icon: <Award className="size-4" />, tone: { surface: "", icon: "text-brand-slate", iconBg: "bg-brand-slate/15", bar: "bg-brand-slate" } },
+              { title: s.dailyWordsLearned, learned: overview.dailyWords.learned, total: overview.dailyWords.total, icon: <SpellCheck className="size-4" />, tone: { surface: "", icon: "text-learning-vocabulary", iconBg: "bg-learning-vocabulary/15", bar: "bg-learning-vocabulary" } },
+              { title: s.lessonsCompleted, learned: overview.grammar.learned, total: overview.grammar.total, icon: <GraduationCap className="size-4" />, tone: { surface: "", icon: "text-learning-grammar", iconBg: "bg-learning-grammar/15", bar: "bg-learning-grammar" } },
+              { title: s.activeExpressions, learned: overview.expressions.learned, total: overview.expressions.total, icon: <Link2 className="size-4" />, tone: { surface: "", icon: "text-learning-expression", iconBg: "bg-learning-expression/15", bar: "bg-learning-expression" } },
+              { title: s.readingCompleted, learned: overview.reading.learned, total: overview.reading.total, icon: <Newspaper className="size-4" />, tone: { surface: "", icon: "text-learning-reading", iconBg: "bg-learning-reading/15", bar: "bg-learning-reading" } },
           ]
         : []
 
@@ -80,7 +80,7 @@ export default function ProgressPage() {
                                     { key: "new", label: t.progress.segments.new, count: stats.vocabulary.newCount, color: "color-mix(in srgb, var(--foreground) 25%, transparent)" },
                                     { key: "learning", label: t.progress.segments.learning, count: stats.vocabulary.learning, color: "var(--chart-1)" },
                                     { key: "familiar", label: t.progress.segments.familiar, count: stats.vocabulary.familiar, color: "var(--chart-4)" },
-                                    { key: "mastered", label: t.progress.segments.mastered, count: stats.vocabulary.mastered, color: "var(--chart-3)" },
+                                    { key: "mastered", label: t.progress.segments.mastered, count: stats.vocabulary.mastered, color: "var(--brand-slate)" },
                                 ]}
                             />
                             <MasteryBreakdownCard
@@ -95,7 +95,7 @@ export default function ProgressPage() {
                                     { key: "learning", label: t.progress.segments.learning, count: stats.expressions.learning, color: "var(--chart-1)" },
                                     { key: "familiar", label: t.progress.segments.familiar, count: stats.expressions.familiar, color: "var(--chart-4)" },
                                     { key: "active", label: t.progress.segments.active, count: stats.expressions.active, color: "var(--chart-2)" },
-                                    { key: "mastered", label: t.progress.segments.mastered, count: stats.expressions.mastered, color: "var(--chart-3)" },
+                                    { key: "mastered", label: t.progress.segments.mastered, count: stats.expressions.mastered, color: "var(--brand-slate)" },
                                 ]}
                             />
                         </div>

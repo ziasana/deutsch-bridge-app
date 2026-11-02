@@ -15,7 +15,7 @@ export default function FeaturesPage() {
         <main className="bg-background">
             <section className="bg-gradient-to-b from-accent/60 to-background py-16 md:py-20">
                 <div className="container mx-auto px-6">
-                    <SectionHeading badge={f.badge} title={f.title} subtitle={f.subtitle} />
+                    <SectionHeading title={f.title} subtitle={f.subtitle} />
                 </div>
             </section>
 

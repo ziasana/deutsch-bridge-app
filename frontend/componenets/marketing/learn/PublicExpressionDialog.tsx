@@ -1,5 +1,6 @@
 "use client";
 
+import { readableOn } from "@/componenets/learning/levelMeta";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getExpressionImageSrc } from "@/lib/expressionImages";
@@ -23,7 +24,7 @@ export default function PublicExpressionDialog({ id, title, onClose }: Readonly<
         retry: false,
     });
 
-    const color = data ? (COLLECTION_ACCENT[data.type as ExpressionType] ?? "#3b82f6") : "#3b82f6";
+    const color = data ? (COLLECTION_ACCENT[data.type as ExpressionType] ?? "#3d8bff") : "#3d8bff";
     const image = data ? getExpressionImageSrc(data.imageUrl) : null;
     const illustration = data && data.type === "REDEWENDUNG" && !image ? getIllustrationFor(data.expression) : null;
     const illustrationNode = illustration ? illustration({ className: "h-full w-full object-cover" }) : null;
@@ -46,7 +47,7 @@ export default function PublicExpressionDialog({ id, title, onClose }: Readonly<
                     )}
                     <header className="px-5 pb-4 pt-6 sm:px-8" style={{ backgroundImage: `linear-gradient(180deg, ${color}1f, transparent)` }}>
                         <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold">
-                            <span className="rounded-full px-2.5 py-0.5 text-white" style={{ backgroundColor: color }}>
+                            <span className="rounded-full px-2.5 py-0.5" style={{ backgroundColor: color, color: readableOn(color) }}>
                                 {data.level}
                             </span>
                             <span className="rounded-full bg-foreground/[0.06] px-2.5 py-0.5 text-foreground/70">{l.expressions.collections[data.type as ExpressionType] ?? data.type}</span>

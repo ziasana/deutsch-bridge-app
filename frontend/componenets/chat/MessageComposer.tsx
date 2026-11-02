@@ -11,7 +11,7 @@ interface MessageComposerProps {
     disabled?: boolean;
 }
 
-/** Clean single-row composer matching the rest of DeutschBridge - same send/disabled behavior as
+/** Clean single-row composer matching the rest of DeutschCertify - same send/disabled behavior as
  *  before, just restyled (spec s18). */
 const MessageComposer = forwardRef<HTMLTextAreaElement, MessageComposerProps>(function MessageComposer(
     { value, onChange, onSubmit, disabled }: MessageComposerProps,

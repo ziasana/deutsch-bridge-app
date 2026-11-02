@@ -17,7 +17,7 @@ const en = {
         learnMore: "Learn more",
         noCard: "No credit card needed",
         disclaimer:
-            "DeutschBridge is an independent learning platform. It is not affiliated with or endorsed by telc, the Goethe-Institut, BAMF or any examination body.",
+            "DeutschCertify is an independent learning platform. It is not affiliated with or endorsed by telc, the Goethe-Institut, BAMF or any examination body.",
     },
     nav: {
         exams: "Exams",
@@ -40,14 +40,17 @@ const en = {
     home: {
         hero: {
             badge: "telc B1 · DTZ A2–B1",
-            titleStart: "Pass your German exam with",
-            titleHighlight: "real exam practice",
+            titleStart: "Your Path to",
+            titleHighlight: "German",
+            titleEnd: "Proficiency",
+            pills: ["Learn", "Practice", "Certify"],
             subtitle:
-                "Practise every part of telc and DTZ in the real exam format, get hints from an AI tutor, and test yourself under the clock before the big day.",
+                "Improve your German with structured lessons, interactive exercises, and personalised AI support. Build your skills at your own pace and get ready for TELC and DTZ exams.",
             bullets: [
-                "Exercises for Lesen, Hören, Schreiben and Sprechen",
-                "Timed mock exams with a result report",
-                "AI tutor for hints, corrections and speaking practice",
+                "Structured Learning: Vocabulary, grammar, expressions, and guided lessons.",
+                "All Four Skills: Practise Reading, Listening, Writing, and Speaking.",
+                "Exam Preparation: Timed mock exams with detailed results.",
+                "AI Tutor: Get hints, corrections, and explanations.",
             ],
             chips: [
                 { value: "2", label: "Exams" },
@@ -121,7 +124,7 @@ const en = {
                 },
                 {
                     question: "Are these the real exam questions?",
-                    answer: "No. The exercises follow the format and difficulty of the real exams but are written for practice. DeutschBridge is independent and not affiliated with any exam provider.",
+                    answer: "No. The exercises follow the format and difficulty of the real exams but are written for practice. DeutschCertify is independent and not affiliated with any exam provider.",
                 },
                 {
                     question: "How does the AI tutor help me?",
@@ -140,7 +143,7 @@ const en = {
         blog: {
             badge: "From the blog",
             title: "Exam guides and study tips",
-            subtitle: "Guides, grammar tips and study strategies from the DeutschBridge team.",
+            subtitle: "Guides, grammar tips and study strategies from the DeutschCertify team.",
             viewAll: "Visit the blog",
         },
         finalCta: {
@@ -157,12 +160,12 @@ const en = {
             { label: "Level", telc: "B1", dtz: "A2–B1" },
             { label: "Skills", telc: "Lesen, Sprachbausteine, Hören, Schreiben, Sprechen", dtz: "Lesen, Hören, Schreiben, Sprechen" },
             { label: "Typical purpose", telc: "Integration courses, work, naturalisation, study", dtz: "Integration course final test, residence and work" },
-            { label: "On DeutschBridge", telc: "Exercises, mock exam, AI help", dtz: "Exercises for every Teil, mock exam, AI help" },
+            { label: "On DeutschCertify", telc: "Exercises, mock exam, AI help", dtz: "Exercises for every Teil, mock exam, AI help" },
         ],
         compareLabels: { telc: "telc B1", dtz: "DTZ A2–B1" },
         partsTitle: "Exam parts",
         factsTitle: "Key facts",
-        includedTitle: "What you get on DeutschBridge",
+        includedTitle: "What you get on DeutschCertify",
         faqTitle: "Common questions",
         officialNote:
             "Times and structure are based on the published exam formats and can change. Always check the official information of your exam centre before you register.",
@@ -641,14 +644,17 @@ const fa: Marketing = {
     home: {
         hero: {
             badge: "telc B1 · DTZ A2–B1",
-            titleStart: "آزمون آلمانی را با",
-            titleHighlight: "تمرین واقعی آزمون",
+            titleStart: "مسیر شما به تسلط بر",
+            titleHighlight: "زبان آلمانی",
+            titleEnd: "",
+            pills: ["یادگیری", "تمرین", "گواهی"],
             subtitle:
-                "هر بخش telc و DTZ را در قالب واقعی آزمون تمرین کنید، از معلم هوش مصنوعی راهنمایی بگیرید و پیش از روز آزمون با زمان‌سنج خود را محک بزنید.",
+                "آلمانی خود را با درس‌های ساختاریافته، تمرین‌های تعاملی و پشتیبانی شخصی‌سازی‌شده هوش مصنوعی بهتر کنید. با سرعت خودتان مهارت‌هایتان را بسازید و برای آزمون‌های TELC و DTZ آماده شوید.",
             bullets: [
-                "تمرین برای Lesen، Hören، Schreiben و Sprechen",
-                "آزمون آزمایشی زمان‌دار با گزارش نتیجه",
-                "معلم هوش مصنوعی برای راهنمایی، اصلاح و تمرین صحبت",
+                "یادگیری ساختاریافته: واژگان، دستور زبان، عبارت‌ها و درس‌های راهنما.",
+                "هر چهار مهارت: خواندن، شنیدن، نوشتن و صحبت کردن را تمرین کنید.",
+                "آمادگی آزمون: آزمون‌های آزمایشی زمان‌دار با نتایج دقیق.",
+                "معلم هوش مصنوعی: راهنمایی، اصلاح و توضیح بگیرید.",
             ],
             chips: [
                 { value: "۲", label: "آزمون" },

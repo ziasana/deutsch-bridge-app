@@ -106,7 +106,7 @@ function CategoryTestContent() {
                                 <span className={`${chip} bg-white/25 text-white`}>{category.level}</span>
                                 <span className={`${chip} bg-white/15 text-white`}>{t.grammar.categoryTest.passMark(category.passThreshold)}</span>
                                 {category.testStatus.completed && (
-                                    <span className={`${chip} bg-green-500 text-white`}>{t.grammar.categoryTest.completedBadge}</span>
+                                    <span className={`${chip} bg-brand-teal text-white`}>{t.grammar.categoryTest.completedBadge}</span>
                                 )}
                             </div>
                             <h1 className="mt-2 text-2xl font-extrabold leading-tight sm:text-3xl">{title}</h1>

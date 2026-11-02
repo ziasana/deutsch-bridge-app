@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Facebook, GraduationCap, Instagram, Linkedin, Mail, Twitter, Youtube } from "lucide-react";
+import { Logo } from "@/componenets/brand/Logo";
+import { Facebook, Instagram, Linkedin, Mail, Twitter, Youtube } from "lucide-react";
 import { useI18n } from "./I18nProvider";
 import { getExamLinks, getLearnLinks } from "@/componenets/marketing/siteLinks";
 import { useMarketing } from "@/componenets/marketing/useMarketing";
@@ -36,11 +37,8 @@ export default function Footer() {
       <div className="container mx-auto px-6 py-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10">
         {/* Brand + about */}
         <div className="flex flex-col gap-4">
-          <Link href="/" className="flex items-center gap-2 text-xl font-bold text-white">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <GraduationCap className="size-5" />
-            </span>
-            DeutschBridge
+          <Link href="/" aria-label="DeutschCertify home" className="flex items-center text-white">
+            <Logo variant="bare" textClassName="text-xl font-bold" />
           </Link>
           <p className="text-sm text-slate-400 leading-relaxed">{t.footer.about}</p>
           <div className="flex items-center gap-3 pt-2">

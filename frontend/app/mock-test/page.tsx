@@ -23,7 +23,7 @@ export default function MockTestPage() {
         <main className="bg-background">
             <section className="bg-gradient-to-b from-accent/60 to-background py-16 md:py-20">
                 <div className="container mx-auto px-6">
-                    <SectionHeading badge={t.badge} title={t.title} subtitle={t.subtitle} />
+                    <SectionHeading title={t.title} subtitle={t.subtitle} />
                     <div className="mt-8 flex flex-wrap justify-center gap-4">
                         <Link href="/signup" className="btn-primary rounded-xl px-6 py-3 text-base">
                             {m.common.startFree}

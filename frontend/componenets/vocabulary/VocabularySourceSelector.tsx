@@ -1,6 +1,7 @@
 "use client";
 
 import { LucideIcon, ChevronRight } from "lucide-react";
+import { readableOn } from "@/componenets/learning/levelMeta";
 import { VocabularySource } from "@/types/vocabulary";
 import { cn } from "@/lib/utils";
 import { SOURCE_ACCENT } from "@/componenets/vocabulary/sourceColors";
@@ -51,8 +52,8 @@ export default function VocabularySourceSelector({
                     >
                         {active && <span aria-hidden="true" className="absolute -end-6 -top-8 size-24 rounded-full" style={{ backgroundColor: `${color}1a` }} />}
                         <div
-                            className={cn("relative flex size-12 shrink-0 items-center justify-center rounded-2xl transition", active ? "text-white shadow-sm" : "bg-[var(--hover-color)]/10")}
-                            style={active ? { backgroundColor: color } : { color }}
+                            className={cn("relative flex size-12 shrink-0 items-center justify-center rounded-2xl transition", active ? "shadow-sm" : "bg-[var(--hover-color)]/10")}
+                            style={active ? { backgroundColor: color, color: readableOn(color) } : { color }}
                         >
                             <Icon className="size-6" />
                         </div>

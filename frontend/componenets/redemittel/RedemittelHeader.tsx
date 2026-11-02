@@ -2,26 +2,25 @@
 
 import { ArrowRight, MessagesSquare } from "lucide-react";
 import { RedemittelHub } from "@/types/redemittel";
-import RisingBubbles from "@/componenets/learning/RisingBubbles";
-import RisingWords from "@/componenets/learning/RisingWords";
+import LearningPageHero from "@/componenets/learning/LearningPageHero";
+import HeroLevelFilter from "@/componenets/learning/HeroLevelFilter";
 import MasteryBar from "@/componenets/learning/MasteryBar";
 import CurrentLevelChip from "@/componenets/learning/CurrentLevelChip";
-import { ACCENT_TITLE_COLOR } from "@/componenets/learning/levelMeta";
-import { cn } from "@/lib/utils";
-
-// Sample phrases floating up the hero: a taste of what Redemittel are.
-const SAMPLE_PHRASES = ["Meiner Meinung nach …", "Da stimme ich dir zu!", "Wie wäre es mit …?", "Ich möchte mich entschuldigen", "Darf ich Sie kurz stören?", "Vielen Dank im Voraus"];
+import { REDEMITTEL_LEVELS } from "./redemittelMeta";
 
 interface Props {
     hub: RedemittelHub | undefined;
     onNavigate: (href: string) => void;
     onDiscover: () => void;
-    /** Tints the hero softly (the Redemittel colour, or the level colour while a level is filtered). */
+    /** Colour of the leading stripe: the Redemittel colour, or the level colour while a level is filtered. */
     accent?: string;
+    /** Selected level filter ("ALL" = none). */
+    level: string;
+    onLevel: (level: string) => void;
 }
 
-/** The Redemittel hero, built like the vocabulary and expressions heroes: title, one calm next step and a progress bar. No filters here. */
-export default function RedemittelHeader({ hub, onNavigate, onDiscover, accent }: Readonly<Props>) {
+/** The Redemittel header: the shared navy learning header with the level filter, one calm next step and the mastery bar. */
+export default function RedemittelHeader({ hub, onNavigate, onDiscover, accent, level, onLevel }: Readonly<Props>) {
     const loading = !hub;
     const dueCount = hub?.dueCount ?? 0;
     const newToday = hub?.newToday ?? 0;
@@ -39,44 +38,38 @@ export default function RedemittelHeader({ hub, onNavigate, onDiscover, accent }
                 : { label: "Entdecken", run: onDiscover };
 
     return (
-        <header
-            className={cn("relative overflow-hidden rounded-3xl border p-5 transition-colors duration-300 sm:p-6", accent ? "border-primary/40 bg-card" : "border-primary/10 bg-gradient-to-br from-primary/[0.03] via-card to-card")}
-            // Re-pointing --primary makes the icon tile, chip, button and bubbles take the accent colour.
-            style={accent ? ({ "--primary": accent, "--primary-foreground": "#ffffff", backgroundImage: `linear-gradient(135deg, ${accent}52, ${accent}1f 60%, ${accent}0d)` } as React.CSSProperties) : undefined}
-        >
-            <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-12 size-44 rounded-full bg-primary/[0.06]" />
-            <div aria-hidden="true" className="pointer-events-none absolute -bottom-16 right-1/4 size-36 rounded-full bg-primary/[0.04]" />
-            <RisingBubbles count={10} />
-            <RisingWords words={SAMPLE_PHRASES} />
-
-            <div className="relative flex flex-wrap items-center justify-between gap-4">
-                <div className="flex w-full min-w-0 items-center gap-3.5">
-                    <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
-                        <MessagesSquare className="size-6" aria-hidden="true" />
-                    </span>
-                    <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                            <h1 className="text-xl font-bold text-foreground sm:text-2xl" style={accent ? { color: ACCENT_TITLE_COLOR } : undefined}>Redemittel</h1>
-                            <CurrentLevelChip title="Dein aktuelles Niveau" />
-                        </div>
-                        <p className="text-sm text-foreground/60">Ausdrücke für Schreiben, Sprechen und Alltag.</p>
-                    </div>
-                </div>
+        <LearningPageHero
+            icon={MessagesSquare}
+            title="Redemittel"
+            subtitle="Ausdrücke für Schreiben, Sprechen und Alltag."
+            meta={<CurrentLevelChip title="Dein aktuelles Niveau" />}
+            accent={accent}
+            actions={
                 <button
                     type="button"
                     onClick={next.run}
                     disabled={loading}
-                    className="mt-4 inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-[13px] font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-[#f2b544] px-5 py-2 text-sm font-semibold text-[#16324f] shadow-sm transition hover:bg-[#f5c26b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     {next.label}
-                    <ArrowRight className="size-3.5" aria-hidden="true" />
+                    <ArrowRight className="size-4" aria-hidden="true" />
                 </button>
-            </div>
-
+            }
+        >
+            <HeroLevelFilter
+                levels={REDEMITTEL_LEVELS.map((l) => ({ level: l }))}
+                selectedLevel={level}
+                onLevelChange={onLevel}
+                ariaLabel="Niveau"
+                allLabel="Alle"
+                learned={0}
+                total={0}
+                hideProgress
+            />
             {!loading && (
                 <MasteryBar
                     slim
-                    className="mt-3"
+                    className="mt-4"
                     segments={[
                         { key: "MASTERED", label: "Sicher", count: summary.mastered, color: "var(--learning-reading)" },
                         { key: "REVIEW", label: "Wiederholen", count: summary.review, color: "var(--learning-review)" },
@@ -85,6 +78,6 @@ export default function RedemittelHeader({ hub, onNavigate, onDiscover, accent }
                     ]}
                 />
             )}
-        </header>
+        </LearningPageHero>
     );
 }

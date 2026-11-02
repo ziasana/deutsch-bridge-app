@@ -7,7 +7,6 @@ import { LearningSearch } from "@/componenets/learning";
 import { cn } from "@/lib/utils";
 import { ACCENT_TITLE_COLOR } from "@/componenets/learning/levelMeta";
 import RedemittelCategoryPicker from "./RedemittelCategoryPicker";
-import RedemittelLevelPills from "./RedemittelLevelPills";
 
 /** The learning journey, in order: new → learning → review → mastered. Colors are the app's learning tokens. */
 const STATUS_CHIPS: { status: RedemittelStatus; label: string; icon: LucideIcon; tint: string; text: string; bar: string }[] = [
@@ -94,8 +93,6 @@ export default function RedemittelExplorer(p: Readonly<Props>) {
                 </div>
 
                 <div className="relative flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <RedemittelLevelPills value={p.level} onChange={p.onLevel} />
-                    <span aria-hidden="true" className="hidden h-5 w-px bg-border sm:block" />
                     <RedemittelCategoryPicker categories={p.categories} value={p.category} onChange={p.onCategory} />
                     {p.statusCounts && (
                         <>

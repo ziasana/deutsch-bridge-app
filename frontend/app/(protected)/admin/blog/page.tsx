@@ -255,7 +255,7 @@ export default function AdminBlogPage() {
                                         <input
                                             value={form.authorName}
                                             onChange={(e) => setForm({ ...form, authorName: e.target.value })}
-                                            placeholder="Shown on the post (default: DeutschBridge)"
+                                            placeholder="Shown on the post (default: DeutschCertify)"
                                             maxLength={100}
                                             className={FIELD_CLASS}
                                         />

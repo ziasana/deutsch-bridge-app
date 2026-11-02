@@ -59,19 +59,19 @@ export default function GrammarCategoryCard({ title, level, itemCount, learnedCo
     const percent = itemCount > 0 ? Math.round((learnedCount / itemCount) * 100) : 0;
     const done = itemCount > 0 && learnedCount === itemCount;
     return (
-        <section className={cn("overflow-hidden rounded-3xl bg-card shadow-card ring-2 transition", done ? "ring-green-500/40" : "ring-transparent")}>
+        <section className={cn("overflow-hidden rounded-3xl bg-card shadow-card ring-2 transition", done ? "ring-brand-slate/40" : "ring-transparent")}>
             <button
                 type="button"
                 onClick={onToggle}
                 aria-expanded={!collapsed}
                 className="flex w-full cursor-pointer items-center gap-4 p-4 text-start transition hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 sm:p-5"
             >
-                <ProgressRing value={percent} color={done ? "#22c55e" : color} />
+                <ProgressRing value={percent} color={done ? "#527c91" : color} />
                 <div className="min-w-0 flex-1">
                     <p className="truncate text-lg font-bold" style={{ color: ACCENT_TITLE_COLOR }}>{title}</p>
                     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-foreground/55">
                         <span>{topicsLabel}</span>
-                        <span className="font-semibold" style={{ color: done ? "#16a34a" : color }}>
+                        <span className="font-semibold" style={{ color: done ? "#3f6477" : color }}>
                             {completedLabel}
                         </span>
                         {headerExtra}

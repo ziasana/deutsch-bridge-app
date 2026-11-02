@@ -14,8 +14,8 @@ const TYPE_LABEL: Record<ExpressionType, string> = {
     REDEWENDUNG: "Redewendung",
 };
 
-const UNDERSTAND_COLOR = "#22c55e";
-const USE_COLOR = "#3b82f6";
+const UNDERSTAND_COLOR = "#4f9d96";
+const USE_COLOR = "#3d8bff";
 
 interface ExpressionCardProps {
     expression: ExpressionListItem;

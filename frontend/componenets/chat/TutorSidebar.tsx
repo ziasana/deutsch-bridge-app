@@ -33,7 +33,7 @@ export default function TutorSidebar({
         <aside className="flex h-full w-full flex-col bg-card">
             <div className="space-y-3 p-3 pb-2">
                 <div className="flex items-center gap-2.5 px-1 pt-1">
-                    <span aria-hidden="true" className="flex size-8 items-center justify-center rounded-xl bg-[linear-gradient(135deg,hsl(228_78%_44%),hsl(216_100%_62%))] text-white shadow-sm">
+                    <span aria-hidden="true" className="flex size-8 items-center justify-center rounded-xl bg-[#16324f] text-[#f2b544] shadow-sm">
                         <Sparkles className="size-4" />
                     </span>
                     <span className="font-bold text-foreground">{t.chat.yourAiTutor}</span>
@@ -41,7 +41,7 @@ export default function TutorSidebar({
                 <button
                     type="button"
                     onClick={onNewChat}
-                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,hsl(228_78%_44%),hsl(216_100%_62%))] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-[#f2b544] px-4 py-2.5 text-sm font-semibold text-[#16324f] shadow-sm transition hover:bg-[#f5c26b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                 >
                     <Plus className="size-4" />
                     {t.chat.newChat}
