@@ -22,9 +22,9 @@ public interface UserRepository extends JpaRepository<User,String> {
 
     List<User> findAllByDeletedFalse();
 
-    long countByDeletedFalse();
+    List<User> findAllByDeletedTrue();
 
-    long countByRoleAndDeletedFalse(String role);
+    long countByDeletedFalse();
 
     long countByDeletedFalseAndCreatedAtAfter(Instant after);
 

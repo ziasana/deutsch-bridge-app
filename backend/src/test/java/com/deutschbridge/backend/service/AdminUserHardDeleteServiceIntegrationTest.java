@@ -53,6 +53,8 @@ class AdminUserHardDeleteServiceIntegrationTest {
     void hardDelete_shouldRemoveUserAndDependentData() throws Exception {
         User admin = newUser("ADMIN");
         User victim = newUser("STUDENT");
+        victim.setDeleted(true);
+        userRepository.saveAndFlush(victim);
         User other = newUser("STUDENT");
 
         ChatSession session = chatSessionRepository.save(new ChatSession("cs-" + System.nanoTime()));
@@ -92,27 +94,21 @@ class AdminUserHardDeleteServiceIntegrationTest {
     }
 
     @Test
-    @DisplayName("hardDelete -> should reject self-deletion, a wrong confirmation email and the last admin")
+    @DisplayName("hardDelete -> should reject self-deletion, a wrong confirmation email and a user that is not soft-deleted")
     void hardDelete_shouldRejectUnsafeRequests() {
         User admin = newUser("ADMIN");
         User student = newUser("STUDENT");
+        User deleted = newUser("STUDENT");
+        deleted.setDeleted(true);
+        userRepository.saveAndFlush(deleted);
 
         assertThrows(IllegalArgumentException.class, () -> service.hardDelete(admin.getId(), admin.getId(), admin.getEmail()));
-        assertThrows(IllegalArgumentException.class, () -> service.hardDelete(admin.getId(), student.getId(), "nope@test.local"));
-        assertThrows(IllegalArgumentException.class, () -> service.hardDelete(admin.getId(), student.getId(), null));
+        assertThrows(IllegalArgumentException.class, () -> service.hardDelete(admin.getId(), student.getId(), student.getEmail()));
+        assertThrows(IllegalArgumentException.class, () -> service.hardDelete(admin.getId(), deleted.getId(), "nope@test.local"));
+        assertThrows(IllegalArgumentException.class, () -> service.hardDelete(admin.getId(), deleted.getId(), null));
         assertThrows(DataNotFoundException.class, () -> service.hardDelete(admin.getId(), "missing", "x@test.local"));
         assertEquals(1, count("users", "id", student.getId()));
-    }
-
-    @Test
-    @DisplayName("hardDelete -> should refuse to delete the only remaining admin")
-    void hardDelete_shouldProtectLastAdmin() {
-        jdbc.update("UPDATE users SET role = 'STUDENT' WHERE role = 'ADMIN'");
-        User actor = newUser("STUDENT"); // not an admin row; the requester id is only compared for self-deletion
-        User onlyAdmin = newUser("ADMIN");
-
-        assertThrows(IllegalArgumentException.class, () -> service.hardDelete(actor.getId(), onlyAdmin.getId(), onlyAdmin.getEmail()));
-        assertEquals(1, count("users", "id", onlyAdmin.getId()));
+        assertEquals(1, count("users", "id", deleted.getId()));
     }
 
     @Test

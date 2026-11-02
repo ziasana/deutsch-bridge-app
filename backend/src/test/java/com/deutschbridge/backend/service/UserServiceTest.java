@@ -300,4 +300,23 @@ class UserServiceTest {
                 .isInstanceOf(DataNotFoundException.class);
     }
 
+    @Test
+    void adminRestore_shouldClearDeletedFlag() throws Exception {
+        user.setDeleted(true);
+        when(userRepository.findById("u1")).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+
+        User restored = userService.adminRestore("u1");
+
+        assertThat(restored.isDeleted()).isFalse();
+    }
+
+    @Test
+    void adminRestore_shouldRejectUserThatIsNotDeleted() {
+        when(userRepository.findById("u1")).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> userService.adminRestore("u1")).isInstanceOf(IllegalArgumentException.class);
+        verify(userRepository, never()).save(any());
+    }
+
 }

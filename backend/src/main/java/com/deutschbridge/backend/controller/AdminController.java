@@ -51,6 +51,23 @@ public class AdminController {
         return ResponseEntity.ok(users);
     }
 
+    @GetMapping("/users/deleted")
+    public ResponseEntity<List<AdminUserResponse>> getDeletedUsers() {
+        return ResponseEntity.ok(userService.findDeletedForAdmin().stream()
+                .map(AdminUserResponse::fromEntity)
+                .toList());
+    }
+
+    @PostMapping("/users/{id}/restore")
+    public ResponseEntity<ApiResponse<AdminUserResponse>> restoreUser(@PathVariable String id) throws DataNotFoundException {
+        User restored = userService.adminRestore(id);
+
+        adminAuditLogService.record(requestContext.getUserId(), requestContext.getUserEmail(),
+                "USER_RESTORED", "Restored user " + restored.getEmail());
+
+        return ResponseEntity.ok(new ApiResponse<>("User restored", AdminUserResponse.fromEntity(restored)));
+    }
+
     @PostMapping("/users")
     public ResponseEntity<ApiResponse<AdminUserResponse>> createUser(@RequestBody @Valid AdminCreateUserRequest request) {
         User created = userService.adminCreateUser(request);

@@ -13,7 +13,6 @@ import {
     setUserEnabled,
     deleteUser,
     bulkDeleteUsers,
-    permanentlyDeleteUser,
 } from "@/services/adminService";
 import { AccountType, AdminCreateUserPayload, AdminUser } from "@/types/admin";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
@@ -37,7 +36,7 @@ import {
     Trash2,
     UserPlus,
     Users,
-    UserX,
+    Archive,
 } from "lucide-react";
 
 const CARD_HOVER = "transition-all duration-300 hover:-translate-y-1 hover:shadow-lg";
@@ -71,7 +70,6 @@ export default function AdminUsersPage() {
     const [selectedAccountType, setSelectedAccountType] = useState<AccountType>("BASIC");
     const [showAddUser, setShowAddUser] = useState(false);
     const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
-    const [userToPurge, setUserToPurge] = useState<AdminUser | null>(null);
     const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
     const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
@@ -213,20 +211,6 @@ export default function AdminUsersPage() {
             .finally(() => setIsSaving(false));
     };
 
-    const confirmPurgeUser = () => {
-        const user = userToPurge;
-        if (!user) return;
-        setUserToPurge(null);
-        setIsSaving(true);
-        permanentlyDeleteUser(user.id, user.email)
-            .then(() => {
-                toast.success(`${user.email} permanently deleted.`);
-                fetchUsers();
-            })
-            .catch((err) => toast.error(err?.response?.data?.message ?? "Failed to permanently delete user."))
-            .finally(() => setIsSaving(false));
-    };
-
     const toggleSelectUser = (id: string) => {
         setSelectedUserIds((prev) => {
             const next = new Set(prev);
@@ -362,6 +346,14 @@ export default function AdminUsersPage() {
                                 Delete Selected ({validSelectedIds.size})
                             </Button>
                         )}
+                        <Button
+                            variant="secondary"
+                            className={`flex items-center gap-2 ${BUTTON_HOVER}`}
+                            onClick={() => router.push("/admin/users/deleted")}
+                        >
+                            <Archive className="size-4" />
+                            Deleted Users
+                        </Button>
                         <Button variant="primary" className={`flex items-center gap-2 ${BUTTON_HOVER}`} onClick={openAddUser}>
                             <UserPlus className="size-4" />
                             Add User
@@ -587,16 +579,6 @@ export default function AdminUsersPage() {
                                                     title={isSelf ? "You can't delete your own account." : undefined}
                                                 >
                                                     <Trash2 className="size-3.5" />
-                                                </Button>
-                                                <Button
-                                                    variant="secondary"
-                                                    className={`px-3 py-1 text-sm text-destructive ${BUTTON_HOVER}`}
-                                                    onClick={() => setUserToPurge(user)}
-                                                    disabled={isSelf}
-                                                    title={isSelf ? "You can't delete your own account." : "Delete permanently (irreversible)"}
-                                                    aria-label="Delete permanently"
-                                                >
-                                                    <UserX className="size-3.5" />
                                                 </Button>
                                             </TableCell>
                                         </TableRow>
@@ -899,23 +881,11 @@ export default function AdminUsersPage() {
             <ConfirmDialog
                 isOpen={Boolean(userToDelete)}
                 title="Delete this user?"
-                message={`Delete "${userToDelete?.email}"? Their account will be hidden and login blocked, but their data is kept.`}
+                message={`Delete "${userToDelete?.email}"? Their account will be hidden and login blocked, but their data is kept. You can restore or permanently delete them later under Deleted Users.`}
                 confirmLabel="Delete"
                 cancelLabel="Cancel"
                 onConfirm={confirmRemoveUser}
                 onCancel={() => setUserToDelete(null)}
-            />
-
-            <ConfirmDialog
-                isOpen={Boolean(userToPurge)}
-                title="Permanently delete this user?"
-                message={`This permanently deletes "${userToPurge?.email}" and ALL of their data (progress, bookmarks, attempts, chats, notifications, exam data). This cannot be undone.`}
-                confirmLabel="Delete permanently"
-                cancelLabel="Cancel"
-                requireText={userToPurge?.email}
-                requireTextLabel="Type the user's email to confirm"
-                onConfirm={confirmPurgeUser}
-                onCancel={() => setUserToPurge(null)}
             />
 
             <ConfirmDialog

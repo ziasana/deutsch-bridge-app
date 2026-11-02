@@ -58,6 +58,23 @@ public class UserService {
         return userRepository.findAllByDeletedFalse();
     }
 
+    /** Soft-deleted accounts, for the admin "deleted users" list where they can be restored or purged. */
+    public List<User> findDeletedForAdmin() {
+        return userRepository.findAllByDeletedTrue();
+    }
+
+    /** Undoes {@link #adminSoftDelete}: the account shows up in the list again; login depends on its enabled flag. */
+    @Transactional
+    public User adminRestore(String id) throws DataNotFoundException {
+        User existing = userRepository.findById(id)
+                .orElseThrow(() -> new DataNotFoundException(NOT_FOUND));
+        if (!existing.isDeleted()) {
+            throw new IllegalArgumentException("This user is not deleted.");
+        }
+        existing.setDeleted(false);
+        return userRepository.save(existing);
+    }
+
     public User findByEmail(String email) {
         return userRepository.findByEmail(email).orElseThrow(
                 () -> new UsernameNotFoundException("User not found")

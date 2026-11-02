@@ -3,6 +3,7 @@ import {
     AccountType,
     AdminBulkDeleteUsersResult,
     AdminCreateUserPayload,
+    AdminUser,
     AdminUpdateUserPayload,
     FeatureLimitUpdatePayload,
 } from "@/types/admin";
@@ -25,6 +26,14 @@ export const setUserEnabled = async (id: string, enabled: boolean) => {
 
 export const deleteUser = async (id: string) => {
     return await api.delete(`/admin/users/${id}`);
+};
+
+export const getDeletedUsers = async () => {
+    return await api.get<AdminUser[]>("/admin/users/deleted");
+};
+
+export const restoreUser = async (id: string) => {
+    return await api.post(`/admin/users/${id}/restore`);
 };
 
 /** Irreversible hard delete; the server also checks that confirmEmail matches the user's email. */

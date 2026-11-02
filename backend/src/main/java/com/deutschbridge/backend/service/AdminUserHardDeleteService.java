@@ -22,8 +22,6 @@ import java.util.List;
 @Service
 public class AdminUserHardDeleteService {
 
-    static final String ADMIN_ROLE = "ADMIN";
-
     /** Tables whose {@code user_id} column holds the owning user and whose rows are removed with that user. */
     static final List<String> USER_OWNED_TABLES = List.of(
             "exam_attempt",
@@ -66,7 +64,7 @@ public class AdminUserHardDeleteService {
 
     /**
      * @return the deleted user's email (for the audit log)
-     * @throws IllegalArgumentException for self-deletion, a wrong confirmation email, or the last admin
+     * @throws IllegalArgumentException for self-deletion, a wrong confirmation email, or a user that is not soft-deleted yet
      * @throws DataNotFoundException    if the user does not exist
      */
     @Transactional
@@ -79,9 +77,9 @@ public class AdminUserHardDeleteService {
         if (confirmEmail == null || !user.getEmail().equalsIgnoreCase(confirmEmail.trim())) {
             throw new IllegalArgumentException("The confirmation email does not match this user.");
         }
-        if (ADMIN_ROLE.equals(user.getRole()) && !user.isDeleted()
-                && userRepository.countByRoleAndDeletedFalse(ADMIN_ROLE) <= 1) {
-            throw new IllegalArgumentException("You can't delete the last admin account.");
+        // Two-step on purpose: a user must be soft-deleted first, which also means an active (last) admin can't be purged.
+        if (!user.isDeleted()) {
+            throw new IllegalArgumentException("Delete the user first; only deleted users can be permanently deleted.");
         }
 
         String email = user.getEmail();
