@@ -66,3 +66,39 @@ export interface AdminAuditLogEntry {
     details: string;
     createdAt: string;
 }
+
+export type EmailTestType = "TEST" | "VERIFICATION" | "PASSWORD_RESET";
+
+export type EmailErrorCategory =
+    | "INVALID_RECIPIENT"
+    | "AUTHENTICATION_FAILED"
+    | "CONNECTION_FAILED"
+    | "TIMEOUT"
+    | "TLS_ERROR"
+    | "SENDER_REJECTED"
+    | "UNKNOWN";
+
+export interface EmailSendLogEntry {
+    id: string;
+    recipientEmail: string;
+    registeredUser: boolean;
+    emailType: EmailTestType;
+    status: "SUCCESS" | "FAILED";
+    errorCategory: EmailErrorCategory | null;
+    errorMessage: string | null;
+    errorDetail: string | null;
+    smtpHost: string | null;
+    smtpPort: number | null;
+    fromAddress: string | null;
+    durationMs: number;
+    sentByAdminEmail: string;
+    createdAt: string;
+}
+
+export interface EmailConfig {
+    host: string | null;
+    port: number | null;
+    username: string | null;
+    fromAddress: string | null;
+    fromName: string | null;
+}
