@@ -10,6 +10,7 @@ import com.deutschbridge.backend.model.entity.ExamSimulationAudit;
 import com.deutschbridge.backend.model.enums.SimulationAttemptStatus;
 import com.deutschbridge.backend.model.examsim.ExamResult;
 import com.deutschbridge.backend.service.examsim.ExamProfileService;
+import com.deutschbridge.backend.service.examsim.ExamSetService;
 import com.deutschbridge.backend.service.examsim.ExamSimulationAdminService;
 import com.deutschbridge.backend.service.examsim.ExamSimulationAuditService;
 import com.deutschbridge.backend.service.examsim.ProfileValidationResult;
@@ -28,8 +29,10 @@ public class AdminExamSimulationController {
     private final ExamProfileService profileService;
     private final ExamSimulationAdminService adminService;
     private final RequestContext requestContext;
+    private final ExamSetService setService;
 
-    public AdminExamSimulationController(ExamProfileService profileService, ExamSimulationAdminService adminService, RequestContext requestContext) {
+    public AdminExamSimulationController(ExamProfileService profileService, ExamSimulationAdminService adminService, RequestContext requestContext, ExamSetService setService) {
+        this.setService = setService;
         this.profileService = profileService;
         this.adminService = adminService;
         this.requestContext = requestContext;
@@ -84,6 +87,29 @@ public class AdminExamSimulationController {
     @GetMapping("/profiles/{id}/availability")
     public ResponseEntity<AvailabilityResponse> availability(@PathVariable String id) throws DataNotFoundException {
         return ResponseEntity.ok(adminService.availability(id));
+    }
+
+    @GetMapping("/profiles/{id}/sets")
+    public ResponseEntity<List<ExamSetService.SetDetail>> sets(@PathVariable String id) throws DataNotFoundException {
+        return ResponseEntity.ok(setService.list(profileService.get(id)));
+    }
+
+    /** Draws a new draft set (one random exercise per part, preferring exercises not used in other sets). */
+    @PostMapping("/profiles/{id}/sets/generate")
+    public ResponseEntity<ExamSetService.SetDetail> generateSet(@PathVariable String id) throws DataNotFoundException {
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(setService.generate(profileService.get(id), requestContext.getUserId()));
+    }
+
+    @PostMapping("/profiles/{id}/sets/{setId}/publish")
+    public ResponseEntity<ExamSetService.SetDetail> publishSet(@PathVariable String id, @PathVariable String setId) throws DataNotFoundException {
+        return ResponseEntity.ok(setService.publish(profileService.get(id), setId));
+    }
+
+    /** Deletes a draft; archives a published set. */
+    @DeleteMapping("/profiles/{id}/sets/{setId}")
+    public ResponseEntity<Void> discardSet(@PathVariable String id, @PathVariable String setId) throws DataNotFoundException {
+        setService.discard(profileService.get(id), setId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/profiles/{id}/audit")

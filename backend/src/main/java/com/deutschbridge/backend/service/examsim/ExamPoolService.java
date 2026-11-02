@@ -36,9 +36,12 @@ public class ExamPoolService {
     private final ExamExerciseRepository exerciseRepository;
     private final ExamSimulationUsageRepository usageRepository;
     private final ExamExerciseCompletionRepository completionRepository;
+    private final com.deutschbridge.backend.repository.ExamSimulationSetPartRepository setPartRepository;
 
     public ExamPoolService(ExamExerciseRepository exerciseRepository, ExamSimulationUsageRepository usageRepository,
-                           ExamExerciseCompletionRepository completionRepository) {
+                           ExamExerciseCompletionRepository completionRepository,
+                           com.deutschbridge.backend.repository.ExamSimulationSetPartRepository setPartRepository) {
+        this.setPartRepository = setPartRepository;
         this.exerciseRepository = exerciseRepository;
         this.usageRepository = usageRepository;
         this.completionRepository = completionRepository;
@@ -58,7 +61,8 @@ public class ExamPoolService {
     }
 
     public Set<String> blockedIds(String userId, ExamProfile profile) {
-        Set<String> blocked = new HashSet<>(usageRepository.findExerciseIds(userId, profile.getCode()));
+        // Exam sets are shared and generated up front, so there is no per-user reservation any more.
+        Set<String> blocked = new HashSet<>();
         if (profile.isExcludePracticedExercises()) {
             completionRepository.findByUserId(userId).stream().map(ExamExerciseCompletion::getExerciseId).forEach(blocked::add);
         }
@@ -78,20 +82,17 @@ public class ExamPoolService {
     }
 
     /**
-     * Admin overview: eligible content per part and how much is left for the learner who has already used the most of it
-     * (the first learner to hit an exhausted pool).
+     * Admin overview: eligible content per part and, as minRemainingAcrossUsers, how many eligible exercises are not yet in any
+     * exam set of the profile (how many more sets can be generated without reusing an exercise).
      */
     public List<PartAvailability> availabilityOverview(ExamProfile profile) {
+        Set<String> inSets = setPartRepository.countUses(profile.getCode()).stream()
+                .map(com.deutschbridge.backend.repository.ExamSimulationSetPartRepository.ExerciseUse::getExerciseId).collect(Collectors.toSet());
         List<PartAvailability> result = new ArrayList<>();
         for (ExamPartConfig part : profile.getConfig().partsOrEmpty()) {
             List<ExamExercise> eligible = eligibleExercises(profile, part);
-            int maxUsed = 0;
-            if (!eligible.isEmpty()) {
-                Set<String> ids = eligible.stream().map(ExamExercise::getId).collect(Collectors.toSet());
-                maxUsed = usageRepository.countByUserForExercises(profile.getCode(), ids).stream()
-                        .mapToInt(u -> (int) u.getUsed()).max().orElse(0);
-            }
-            result.add(diagnose(profile, part, new PartAvailability(part.key(), part.label(), part.effectiveExerciseCount(), eligible.size(), -1, eligible.size() - maxUsed)));
+            int fresh = (int) eligible.stream().filter(e -> !inSets.contains(e.getId())).count();
+            result.add(diagnose(profile, part, new PartAvailability(part.key(), part.label(), part.effectiveExerciseCount(), eligible.size(), -1, fresh)));
         }
         return result;
     }

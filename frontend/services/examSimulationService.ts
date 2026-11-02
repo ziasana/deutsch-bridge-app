@@ -20,7 +20,8 @@ export const getSimulationProfiles = () => api.get<ProfileOverview[]>(`${base}/p
 
 export const getSimulationProfile = (profileId: string) => api.get<ProfileOverview>(`${base}/profiles/${profileId}`);
 
-export const startSimulationAttempt = (profileId: string) => api.post<AttemptState>(`${base}/attempts`, { profileId });
+/** Starts one of the published exams (set) of the profile; every learner can take each set once. */
+export const startSimulationAttempt = (profileId: string, setId: string) => api.post<AttemptState>(`${base}/attempts`, { profileId, setId });
 
 export const getSimulationHistory = () => api.get<HistoryResponse>(`${base}/attempts`);
 

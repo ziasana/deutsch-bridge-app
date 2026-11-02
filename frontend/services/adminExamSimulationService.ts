@@ -4,6 +4,7 @@ import {
     AssessmentQueueItem,
     AttemptStatus,
     AuditEntry,
+    AdminExamSet,
     AvailabilityResponse,
     ExamProfileRequest,
     ExamProfileResponse,
@@ -24,6 +25,11 @@ export const adminPublishExamProfile = (id: string, verificationNote: string, ac
 export const adminDeactivateExamProfile = (id: string) => api.post<ExamProfileResponse>(`${base}/profiles/${id}/deactivate`);
 export const adminArchiveExamProfile = (id: string) => api.post<ExamProfileResponse>(`${base}/profiles/${id}/archive`);
 export const adminExamProfileAvailability = (id: string) => api.get<AvailabilityResponse>(`${base}/profiles/${id}/availability`);
+export const adminListExamSets = (profileId: string) => api.get<AdminExamSet[]>(`${base}/profiles/${profileId}/sets`);
+export const adminGenerateExamSet = (profileId: string) => api.post<AdminExamSet>(`${base}/profiles/${profileId}/sets/generate`);
+export const adminPublishExamSet = (profileId: string, setId: string) => api.post<AdminExamSet>(`${base}/profiles/${profileId}/sets/${setId}/publish`);
+/** Deletes a draft, archives a published set. */
+export const adminDiscardExamSet = (profileId: string, setId: string) => api.delete(`${base}/profiles/${profileId}/sets/${setId}`);
 export const adminExamProfileAudit = (id: string) => api.get<AuditEntry[]>(`${base}/profiles/${id}/audit`);
 
 export const adminListExamAttempts = (status?: AttemptStatus) =>

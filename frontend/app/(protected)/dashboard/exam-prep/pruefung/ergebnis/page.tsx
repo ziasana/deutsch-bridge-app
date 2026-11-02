@@ -64,8 +64,8 @@ function ResultContent() {
                     <Link href="/dashboard/exam-prep/pruefung" className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90">
                         <RotateCw className="size-4" aria-hidden /> Weitere Prüfung starten
                     </Link>
-                    <Link href="/dashboard/exam-prep/pruefung#verlauf" className="rounded-full border border-border bg-card px-6 py-2.5 text-sm font-semibold text-foreground transition hover:bg-accent">
-                        Verlauf ansehen
+                    <Link href="/dashboard/exam-prep/pruefung" className="rounded-full border border-border bg-card px-6 py-2.5 text-sm font-semibold text-foreground transition hover:bg-accent">
+                        Alle Prüfungen ansehen
                     </Link>
                 </div>
             </div>

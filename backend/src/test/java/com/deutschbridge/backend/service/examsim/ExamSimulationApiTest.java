@@ -49,13 +49,16 @@ class ExamSimulationApiTest {
     @Autowired private ExamSimulationAttemptRepository attemptRepository;
     @Autowired private ExamSimulationAttemptPartRepository partRepository;
     @Autowired private ExamSimulationAnswerRepository answerRepository;
-    @Autowired private ExamSimulationUsageRepository usageRepository;
+    @Autowired private ExamSetService setService;
+    @Autowired private com.deutschbridge.backend.repository.ExamSimulationSetRepository setRepository;
+    @Autowired private com.deutschbridge.backend.repository.ExamSimulationSetPartRepository setPartRepository;
     @Autowired private ExamSimulationAssessmentRepository assessmentRepository;
     @Autowired private ExamSimulationAuditRepository auditRepository;
 
     private final List<String> exerciseIds = new ArrayList<>();
     private final List<User> users = new ArrayList<>();
     private ExamProfile profile;
+    private final List<String> setIds = new ArrayList<>();
     private String studentA;
     private String studentB;
     private String admin;
@@ -68,6 +71,10 @@ class ExamSimulationApiTest {
                 false, base.writtenMaxPoints(), base.writtenPassThreshold(), base.oralMaxPoints(), base.oralPassThreshold(), base.overallResultPolicy(),
                 base.answerReleasePolicy(), null, false, base.config()), "admin");
         profile = profileService.publish(draft.getId(), "Test", "admin");
+        setIds.clear();
+        for (int i = 0; i < 2; i++) {
+            setIds.add(setService.publish(profile, setService.generate(profile, "admin").id()).id());
+        }
         studentA = token("STUDENT");
         studentB = token("STUDENT");
         admin = token("ADMIN");
@@ -79,11 +86,16 @@ class ExamSimulationApiTest {
         assessmentRepository.deleteAll();
         answerRepository.deleteAll();
         partRepository.deleteAll();
-        usageRepository.deleteAll();
         attemptRepository.deleteAll();
+        setPartRepository.deleteAll();
+        setRepository.deleteAll();
         profileRepository.deleteAll();
         exerciseRepository.deleteAllById(exerciseIds);
         userRepository.deleteAll(users);
+    }
+
+    private String startBody(int setIndex) {
+        return "{\"profileId\":\"" + profile.getId() + "\",\"setId\":\"" + setIds.get(setIndex) + "\"}";
     }
 
     private String token(String role) {
@@ -166,7 +178,7 @@ class ExamSimulationApiTest {
     @Test
     @DisplayName("Attempt ownership is enforced; answers, scores and keys never come from or leak to the wrong party")
     void ownershipOverHttp() throws Exception {
-        MvcResult started = mvc.perform(as(studentA, post("/api/exam-simulation/attempts").content("{\"profileId\":\"" + profile.getId() + "\"}")))
+        MvcResult started = mvc.perform(as(studentA, post("/api/exam-simulation/attempts").content(startBody(0))))
                 .andExpect(status().isCreated()).andReturn();
         String body = started.getResponse().getContentAsString();
         assertFalse(body.contains("correctAnswer"));
@@ -174,7 +186,7 @@ class ExamSimulationApiTest {
         String base = "/api/exam-simulation/attempts/" + attemptId;
 
         // second start while one is running: 409 with a machine readable code and the running attempt id
-        MvcResult dup = mvc.perform(as(studentA, post("/api/exam-simulation/attempts").content("{\"profileId\":\"" + profile.getId() + "\"}")))
+        MvcResult dup = mvc.perform(as(studentA, post("/api/exam-simulation/attempts").content(startBody(0))))
                 .andExpect(status().isConflict()).andReturn();
         assertEquals("ACTIVE_ATTEMPT_EXISTS", read(dup).get("code").asText());
         assertEquals(attemptId, read(dup).get("details").get("attemptId").asText());
@@ -230,7 +242,8 @@ class ExamSimulationApiTest {
     @Test
     @DisplayName("End to end over HTTP: start, autosave, refresh/resume, sections, submit, manual assessment, repeat without reusing exercises, pool exhaustion")
     void fullExamFlow() throws Exception {
-        String start = "{\"profileId\":\"" + profile.getId() + "\"}";
+        String start = startBody(0);
+        String start2 = startBody(1);
         String api = "/api/exam-simulation/attempts";
 
         JsonNode state = read(mvc.perform(as(studentA, post(api).content(start))).andExpect(status().isCreated()).andReturn());
@@ -283,17 +296,19 @@ class ExamSimulationApiTest {
         assertEquals(1, history.get("attempts").size());
         assertEquals(1, history.get("progress").size());
 
-        JsonNode second = read(mvc.perform(as(studentA, post(api).content(start))).andExpect(status().isCreated()).andReturn());
+        JsonNode second = read(mvc.perform(as(studentA, post(api).content(start2))).andExpect(status().isCreated()).andReturn());
         assertNotEquals(id, second.get("attemptId").asText());
         postOk(studentA, api + "/" + second.get("attemptId").asText() + "/submit");
 
-        MvcResult exhausted = mvc.perform(as(studentA, post(api).content(start))).andExpect(status().isConflict()).andReturn();
-        assertEquals("INSUFFICIENT_CONTENT", read(exhausted).get("code").asText());
+        MvcResult again = mvc.perform(as(studentA, post(api).content(start))).andExpect(status().isConflict()).andReturn();
+        assertEquals("SET_ALREADY_STARTED", read(again).get("code").asText());
         JsonNode overview = read(mvc.perform(as(studentA, get("/api/exam-simulation/profiles/" + profile.getId()))).andExpect(status().isOk()).andReturn());
         assertFalse(overview.get("canStart").asBoolean());
-        assertEquals("INSUFFICIENT_CONTENT", overview.get("blockedReason").asText());
+        assertEquals("NO_NEW_EXAM", overview.get("blockedReason").asText());
+        assertEquals(2, overview.get("sets").size());
+        assertEquals("DONE", overview.get("sets").get(0).get("status").asText());
 
-        // another learner is not affected by studentA's reservations
+        // another learner can take the same exam
         mvc.perform(as(studentB, post(api).content(start))).andExpect(status().isCreated());
     }
 }

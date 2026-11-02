@@ -8,6 +8,7 @@ import com.deutschbridge.backend.model.entity.ExamSimulationAnswer;
 import com.deutschbridge.backend.model.entity.ExamSimulationAssessment;
 import com.deutschbridge.backend.model.entity.ExamSimulationAttempt;
 import com.deutschbridge.backend.model.entity.ExamSimulationAttemptPart;
+import com.deutschbridge.backend.model.entity.ExamSimulationSet;
 import com.deutschbridge.backend.model.enums.AssessmentSource;
 import com.deutschbridge.backend.model.enums.AssessmentStatus;
 import com.deutschbridge.backend.model.enums.ExamPartModule;
@@ -25,6 +26,8 @@ import com.deutschbridge.backend.repository.ExamSimulationAnswerRepository;
 import com.deutschbridge.backend.repository.ExamSimulationAssessmentRepository;
 import com.deutschbridge.backend.repository.ExamSimulationAttemptPartRepository;
 import com.deutschbridge.backend.repository.ExamSimulationAttemptRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -61,7 +64,10 @@ public class ExamSimulationService {
     private final ExamSimulationAnswerRepository answerRepository;
     private final ExamSimulationAssessmentRepository assessmentRepository;
     private final com.deutschbridge.backend.repository.ExamSimulationAudioPlayRepository audioPlayRepository;
-    private final ExamExerciseSelectionService selectionService;
+    private final ExamSetService setService;
+
+    @PersistenceContext
+    private EntityManager entityManager;
     private final ExamProfileValidator validator;
     private final ExamResultCalculator calculator;
     private final ExamSimulationViewBuilder views;
@@ -73,7 +79,7 @@ public class ExamSimulationService {
     public ExamSimulationService(ExamProfileRepository profileRepository, ExamSimulationAttemptRepository attemptRepository,
                                  ExamSimulationAttemptPartRepository partRepository, ExamSimulationAnswerRepository answerRepository,
                                  ExamSimulationAssessmentRepository assessmentRepository,
-                                 com.deutschbridge.backend.repository.ExamSimulationAudioPlayRepository audioPlayRepository, ExamExerciseSelectionService selectionService,
+                                 com.deutschbridge.backend.repository.ExamSimulationAudioPlayRepository audioPlayRepository, ExamSetService setService,
                                  ExamProfileValidator validator, ExamResultCalculator calculator, ExamSimulationViewBuilder views,
                                  ExamSimulationAuditService audit, Clock clock,
                                  @Value("${exam.simulation.save-grace-seconds:5}") long graceSeconds,
@@ -84,7 +90,7 @@ public class ExamSimulationService {
         this.answerRepository = answerRepository;
         this.assessmentRepository = assessmentRepository;
         this.audioPlayRepository = audioPlayRepository;
-        this.selectionService = selectionService;
+        this.setService = setService;
         this.validator = validator;
         this.calculator = calculator;
         this.views = views;
@@ -96,8 +102,15 @@ public class ExamSimulationService {
 
     // ================================================================ start / resume / read
 
+    /** Serialises concurrent starts of the same learner and profile until the surrounding transaction ends. */
+    private void lockUser(String userId, String profileCode) {
+        entityManager.createNativeQuery("SELECT count(*) FROM (SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))) l")
+                .setParameter("key", "exam-sim:" + userId + ":" + profileCode)
+                .getSingleResult();
+    }
+
     @Transactional
-    public AttemptState start(String userId, String profileId) throws DataNotFoundException {
+    public AttemptState start(String userId, String profileId, String setId) throws DataNotFoundException {
         ExamProfile profile = profileRepository.findById(profileId).orElseThrow(() -> new DataNotFoundException("Exam profile not found!"));
         if (profile.getStatus() != ExamProfileStatus.PUBLISHED) {
             throw ExamSimulationException.conflict("PROFILE_NOT_AVAILABLE", "This exam profile is not available.");
@@ -108,7 +121,7 @@ public class ExamSimulationService {
                     Map.of("errors", validation.errors()));
         }
 
-        selectionService.lockPool(userId, profile.getCode());
+        lockUser(userId, profile.getCode());
 
         Optional<ExamSimulationAttempt> running = attemptRepository.findFirstByUserIdAndProfileCodeAndStatus(userId, profile.getCode(), SimulationAttemptStatus.IN_PROGRESS);
         if (running.isPresent()) {
@@ -119,6 +132,12 @@ public class ExamSimulationService {
             }
         }
 
+        ExamSimulationSet set = setService.requirePublished(profile, setId);
+        if (attemptRepository.existsByUserIdAndSetId(userId, set.getId())) {
+            throw ExamSimulationException.conflict("SET_ALREADY_STARTED", "You have already taken this exam.");
+        }
+        List<ExamSetService.StartPart> startParts = setService.resolveForStart(profile, set);
+
         Instant now = Instant.now(clock);
         ProfileSnapshot snapshot = ProfileSnapshot.of(profile);
         List<ExamTimerConfig> timers = snapshot.config().timersOrEmpty();
@@ -126,6 +145,7 @@ public class ExamSimulationService {
         attempt.setUserId(userId);
         attempt.setProfileId(profile.getId());
         attempt.setProfileCode(profile.getCode());
+        attempt.setSetId(set.getId());
         attempt.setProfileVersion(profile.getVersion());
         attempt.setProfileSnapshot(snapshot);
         attempt.setStatus(SimulationAttemptStatus.IN_PROGRESS);
@@ -135,8 +155,7 @@ public class ExamSimulationService {
         attempt.setUpdatedAt(now);
         attempt = attemptRepository.saveAndFlush(attempt);
 
-        List<ExamExerciseSelectionService.Selection> selections = selectionService.selectAndReserve(userId, profile, attempt.getId());
-        for (ExamExerciseSelectionService.Selection s : selections) {
+        for (ExamSetService.StartPart s : startParts) {
             ExamSimulationAttemptPart part = new ExamSimulationAttemptPart();
             part.setAttemptId(attempt.getId());
             part.setPartKey(s.part().key());
@@ -147,7 +166,7 @@ public class ExamSimulationService {
             partRepository.save(part);
         }
         audit.record(ExamSimulationAuditService.ATTEMPT, attempt.getId(), "STARTED", null, SimulationAttemptStatus.IN_PROGRESS.name(), userId,
-                Map.of("profileCode", profile.getCode(), "profileVersion", profile.getVersion(), "exercises", selections.stream().map(s -> s.exercise().getId()).toList()));
+                Map.of("profileCode", profile.getCode(), "setId", set.getId(), "profileVersion", profile.getVersion(), "exercises", startParts.stream().map(s -> s.exercise().getId()).toList()));
         return state(attempt);
     }
 

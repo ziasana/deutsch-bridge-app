@@ -7,10 +7,12 @@ import useAuthStore from "@/store/useAuthStore";
 import Loading from "@/componenets/Loading";
 import AssessmentQueuePanel from "@/componenets/admin/examSimulation/AssessmentQueuePanel";
 import AttemptsPanel from "@/componenets/admin/examSimulation/AttemptsPanel";
+import ExamSetsPanel from "@/componenets/admin/examSimulation/ExamSetsPanel";
 import ProfilesPanel from "@/componenets/admin/examSimulation/ProfilesPanel";
 import { cn } from "@/lib/utils";
 
 const TABS = [
+    { id: "exams", label: "Prüfungen" },
     { id: "profiles", label: "Prüfungsprofile" },
     { id: "assessments", label: "Bewertungswarteschlange" },
     { id: "attempts", label: "Versuche" },
@@ -19,7 +21,7 @@ const TABS = [
 export default function AdminExamSimulationPage() {
     const router = useRouter();
     const { userProfile, hasHydrated } = useAuthStore();
-    const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("profiles");
+    const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("exams");
 
     useEffect(() => {
         if (hasHydrated && userProfile?.role !== "ADMIN") router.push("/dashboard");
@@ -35,7 +37,7 @@ export default function AdminExamSimulationPage() {
                 </span>
                 <div>
                     <h1 className="text-2xl font-bold text-foreground">Prüfungssimulation verwalten</h1>
-                    <p className="text-sm text-foreground/60">Profile, Bewertungsraster, verfügbare Aufgaben und offene Bewertungen.</p>
+                    <p className="text-sm text-foreground/60">Prüfungen erstellen und veröffentlichen, Profile, Bewertungsraster und offene Bewertungen.</p>
                 </div>
             </header>
             <div role="tablist" className="flex gap-2 border-b border-border/60">
@@ -45,6 +47,7 @@ export default function AdminExamSimulationPage() {
                     </button>
                 ))}
             </div>
+            {tab === "exams" && <ExamSetsPanel />}
             {tab === "profiles" && <ProfilesPanel />}
             {tab === "assessments" && <AssessmentQueuePanel />}
             {tab === "attempts" && <AttemptsPanel />}

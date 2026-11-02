@@ -7,6 +7,7 @@ import com.deutschbridge.backend.model.dto.examsim.ExamSimulationDtos.*;
 import com.deutschbridge.backend.model.entity.ExamExercise;
 import com.deutschbridge.backend.model.entity.ExamExerciseCompletion;
 import com.deutschbridge.backend.model.entity.ExamProfile;
+import com.deutschbridge.backend.model.entity.ExamSimulationSet;
 import com.deutschbridge.backend.model.entity.ExamSimulationAttemptPart;
 import com.deutschbridge.backend.model.enums.ExamResultStatus;
 import com.deutschbridge.backend.model.enums.ExamSection;
@@ -80,7 +81,9 @@ class ExamSimulationIntegrationTest {
     @Autowired private ExamSimulationAttemptRepository attemptRepository;
     @Autowired private ExamSimulationAttemptPartRepository partRepository;
     @Autowired private ExamSimulationAnswerRepository answerRepository;
-    @Autowired private ExamSimulationUsageRepository usageRepository;
+    @Autowired private ExamSetService setService;
+    @Autowired private com.deutschbridge.backend.repository.ExamSimulationSetRepository setRepository;
+    @Autowired private com.deutschbridge.backend.repository.ExamSimulationSetPartRepository setPartRepository;
     @Autowired private ExamSimulationAssessmentRepository assessmentRepository;
     @Autowired private ExamSimulationAuditRepository auditRepository;
 
@@ -101,8 +104,9 @@ class ExamSimulationIntegrationTest {
         assessmentRepository.deleteAll();
         answerRepository.deleteAll();
         partRepository.deleteAll();
-        usageRepository.deleteAll();
         attemptRepository.deleteAll();
+        setPartRepository.deleteAll();
+        setRepository.deleteAll();
         profileRepository.deleteAll();
         completionRepository.deleteAll();
         exerciseRepository.deleteAllById(createdExerciseIds);
@@ -119,7 +123,9 @@ class ExamSimulationIntegrationTest {
                 base.overallResultPolicy(), base.answerReleasePolicy(), null, false, base.config());
         ExamProfile created = profileService.create(request, "admin-1");
         try {
-            return profileService.publish(created.getId(), "Gegen telc-Prüfungsordnung geprüft (Test)", "admin-1");
+            ExamProfile published = profileService.publish(created.getId(), "Gegen telc-Prüfungsordnung geprüft (Test)", "admin-1");
+            for (int i = 0; i < perPart; i++) setService.publish(published, setService.generate(published, "admin-1").id());
+            return published;
         } catch (DataNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -133,8 +139,12 @@ class ExamSimulationIntegrationTest {
         return "user-" + UUID.randomUUID();
     }
 
+    /** Starts the first published exam this learner has not taken yet. */
     private AttemptState start(String user) throws Exception {
-        return service.start(user, profile.getId());
+        for (ExamSimulationSet set : setService.publishedSets(profile)) {
+            if (!attemptRepository.existsByUserIdAndSetId(user, set.getId())) return service.start(user, profile.getId(), set.getId());
+        }
+        throw ExamSimulationException.conflict("SET_ALREADY_STARTED", "No new exam left.");
     }
 
     private List<ExamSimulationAttemptPart> parts(String attemptId) {
@@ -175,7 +185,6 @@ class ExamSimulationIntegrationTest {
 
         assertEquals(SimulationAttemptStatus.IN_PROGRESS, state.status());
         assertEquals(partCount, parts(state.attemptId()).size());
-        assertEquals(partCount, usageRepository.countByUserIdAndProfileCode(user, profile.getCode()));
         assertEquals(5, state.stages().size());
         assertEquals(List.of("LESEN_1", "LESEN_2", "LESEN_3", "SPRACHBAUSTEINE_1", "SPRACHBAUSTEINE_2"), partKeysOf(state));
         assertEquals(90 * 60, state.remainingSeconds());
@@ -228,18 +237,68 @@ class ExamSimulationIntegrationTest {
             seen.addAll(reserved);
             service.submit(user, state.attemptId());
         }
-        long usageBefore = usageRepository.count();
         long attemptsBefore = attemptRepository.count();
 
-        ExamSimulationException ex = assertCode("INSUFFICIENT_CONTENT", () -> start(user));
+        ExamSimulationException ex = assertCode("SET_ALREADY_STARTED", () -> start(user));
         assertEquals(409, ex.getStatus().value());
-        assertEquals(usageBefore, usageRepository.count(), "a failed start must not reserve anything");
+        String firstSet = attemptRepository.findByUserIdOrderByStartedAtDesc(user).get(0).getSetId();
+        assertCode("SET_ALREADY_STARTED", () -> service.start(user, profile.getId(), firstSet));
         assertEquals(attemptsBefore, attemptRepository.count(), "a failed start must not leave an attempt behind");
 
         ProfileOverview overview = overviewService.get(user, profile.getId());
         assertFalse(overview.canStart());
-        assertEquals("INSUFFICIENT_CONTENT", overview.blockedReason());
-        assertTrue(overview.parts().stream().allMatch(p -> p.unused() == 0));
+        assertEquals("NO_NEW_EXAM", overview.blockedReason());
+        assertEquals(POOL, overview.sets().size());
+        assertTrue(overview.sets().stream().allMatch(x -> x.status().equals("DONE") && x.attempt() != null));
+    }
+
+    @Test
+    @DisplayName("Generated sets use fresh exercises while the pool lasts, then reuse the least used one with a warning")
+    void setGenerationPrefersUnusedExercises() throws Exception {
+        List<ExamSetService.SetDetail> existing = setService.list(profile);
+        assertEquals(POOL, existing.size());
+        Map<String, Set<String>> byPart = new HashMap<>();
+        for (ExamSetService.SetDetail d : existing) {
+            for (ExamSetService.SetPart p : d.parts()) {
+                assertTrue(byPart.computeIfAbsent(p.partKey(), k -> new HashSet<>()).add(p.exerciseId()), "exercise repeated across sets in " + p.partKey());
+            }
+        }
+        ExamSetService.SetDetail extra = setService.generate(profile, "admin-1");
+        assertEquals(com.deutschbridge.backend.model.enums.ExamSetStatus.DRAFT, extra.status());
+        assertEquals(POOL + 1, extra.number());
+        assertEquals(partCount, extra.parts().size());
+        assertFalse(extra.warnings().isEmpty(), "reuse must be reported");
+        // a draft is invisible to learners until published, and can be discarded
+        assertEquals(POOL, setService.publishedSets(profile).size());
+        setService.discard(profile, extra.id());
+        assertEquals(POOL, setService.list(profile).size());
+    }
+
+    @Test
+    @DisplayName("Every learner can take every set once; the result stays with the set")
+    void everyLearnerOncePerSet() throws Exception {
+        String a = user();
+        String b = user();
+        ExamSimulationSet first = setService.publishedSets(profile).get(0);
+        AttemptState sa = service.start(a, profile.getId(), first.getId());
+        service.submit(a, sa.attemptId());
+        assertCode("SET_ALREADY_STARTED", () -> service.start(a, profile.getId(), first.getId()));
+        AttemptState sb = service.start(b, profile.getId(), first.getId());
+        assertEquals(reservedExercises(sa.attemptId()), reservedExercises(sb.attemptId()));
+
+        ProfileOverview overview = overviewService.get(a, profile.getId());
+        assertEquals("DONE", overview.sets().get(0).status());
+        assertEquals("NEW", overview.sets().get(1).status());
+        assertTrue(overview.canStart());
+    }
+
+    @Test
+    @DisplayName("Archived sets disappear for learners")
+    void archivedSetIsHidden() throws Exception {
+        ExamSimulationSet first = setService.publishedSets(profile).get(0);
+        setService.discard(profile, first.getId());
+        assertEquals(POOL - 1, setService.publishedSets(profile).size());
+        assertCode("SET_NOT_AVAILABLE", () -> service.start(user(), profile.getId(), first.getId()));
     }
 
     @Test
@@ -252,7 +311,6 @@ class ExamSimulationIntegrationTest {
         }
         // Each learner draws from the same POOL * partCount exercises; no per-user exhaustion across learners.
         assertTrue(all.size() <= POOL * partCount);
-        assertEquals(3L * partCount, usageRepository.count());
     }
 
     @Test
@@ -261,13 +319,11 @@ class ExamSimulationIntegrationTest {
         String user = user();
         AttemptState first = start(user);
         service.cancel(user, first.attemptId());
-        assertEquals(partCount, usageRepository.countByUserIdAndProfileCode(user, profile.getCode()));
 
         AttemptState second = start(user);
         clock.advance(Duration.ofHours(6));
         assertEquals(1, expiryJob.run());
         assertEquals(SimulationAttemptStatus.EXPIRED, attemptRepository.findById(second.attemptId()).orElseThrow().getStatus());
-        assertEquals(2L * partCount, usageRepository.countByUserIdAndProfileCode(user, profile.getCode()));
 
         AttemptState third = start(user);
         assertTrue(Collections.disjoint(reservedExercises(first.attemptId()), reservedExercises(third.attemptId())));
@@ -307,7 +363,6 @@ class ExamSimulationIntegrationTest {
         pool.shutdown();
         assertEquals(1, started);
         assertEquals(1, attemptRepository.findByUserIdOrderByStartedAtDesc(user).size());
-        assertEquals(partCount, usageRepository.countByUserIdAndProfileCode(user, profile.getCode()));
     }
 
     @Test
@@ -327,7 +382,6 @@ class ExamSimulationIntegrationTest {
         go.countDown();
         for (Future<AttemptState> f : futures) assertNotNull(f.get(60, TimeUnit.SECONDS));
         pool.shutdown();
-        assertEquals((long) threads * partCount, usageRepository.count());
     }
 
     // ------------------------------------------------------------------ autosave / resume
@@ -718,7 +772,7 @@ class ExamSimulationIntegrationTest {
 
         ExamSimulationException ex = assertCode("PROFILE_INVALID", () -> profileService.publish(draft.getId(), "x", "admin-1"));
         assertTrue(ex.getDetails().toString().contains("PART_POINTS_MISMATCH"));
-        assertCode("PROFILE_NOT_AVAILABLE", () -> service.start(user(), draft.getId()));
+        assertCode("PROFILE_NOT_AVAILABLE", () -> service.start(user(), draft.getId(), null));
     }
 
     @Test
@@ -744,7 +798,7 @@ class ExamSimulationIntegrationTest {
         AvailabilityResponse availability = adminService.availability(profile.getId());
         assertTrue(availability.sufficient());
         assertEquals(partCount, availability.parts().size());
-        assertTrue(availability.parts().stream().allMatch(p -> p.eligible() == POOL && p.minRemainingAcrossUsers() == POOL - 1));
+        assertTrue(availability.parts().stream().allMatch(p -> p.eligible() == POOL && p.minRemainingAcrossUsers() == 0));
     }
 
     // ------------------------------------------------------------------ ownership
@@ -875,8 +929,8 @@ class ExamSimulationIntegrationTest {
 
         ProfileOverview overview = overviewService.get(user(), published.getId());
         assertFalse(overview.canStart());
-        assertEquals("INSUFFICIENT_CONTENT", overview.blockedReason());
-        assertCode("INSUFFICIENT_CONTENT", () -> service.start(user(), published.getId()));
+        assertEquals("NO_NEW_EXAM", overview.blockedReason());
+        assertCode("SET_NOT_AVAILABLE", () -> service.start(user(), published.getId(), null));
 
         // structural problems are never waived
         ExamPartConfig lesen1 = base.config().parts().get(0);

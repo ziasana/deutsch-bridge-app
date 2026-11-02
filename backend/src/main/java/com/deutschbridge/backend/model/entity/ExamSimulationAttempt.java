@@ -39,6 +39,9 @@ public class ExamSimulationAttempt {
     @Column(nullable = false)
     private int profileVersion;
 
+    /** The pre-generated exam this attempt runs; null for attempts from before exam sets existed. */
+    private String setId;
+
     @Type(JsonType.class)
     @Column(columnDefinition = "jsonb", nullable = false)
     private ProfileSnapshot profileSnapshot;
