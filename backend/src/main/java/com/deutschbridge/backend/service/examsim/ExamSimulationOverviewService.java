@@ -4,6 +4,7 @@ import com.deutschbridge.backend.exception.DataNotFoundException;
 import com.deutschbridge.backend.model.dto.examsim.ExamSimulationDtos.*;
 import com.deutschbridge.backend.model.entity.ExamProfile;
 import com.deutschbridge.backend.model.entity.ExamSimulationAttempt;
+import com.deutschbridge.backend.model.entity.ExamSimulationSet;
 import com.deutschbridge.backend.model.enums.ExamProfileStatus;
 import com.deutschbridge.backend.model.enums.SimulationAttemptStatus;
 import com.deutschbridge.backend.model.examsim.ExamPartConfig;
@@ -26,17 +27,19 @@ public class ExamSimulationOverviewService {
 
     private final ExamProfileService profileService;
     private final ExamPoolService poolService;
+    private final ExamSetService setService;
     private final ExamProfileValidator validator;
     private final ExamSimulationAttemptRepository attemptRepository;
     private final ExamSimulationViewBuilder views;
     private final ExamSimulationService simulationService;
     private final Clock clock;
 
-    public ExamSimulationOverviewService(ExamProfileService profileService, ExamPoolService poolService, ExamProfileValidator validator,
+    public ExamSimulationOverviewService(ExamProfileService profileService, ExamPoolService poolService, ExamSetService setService, ExamProfileValidator validator,
                                          ExamSimulationAttemptRepository attemptRepository, ExamSimulationViewBuilder views,
                                          ExamSimulationService simulationService, Clock clock) {
         this.profileService = profileService;
         this.poolService = poolService;
+        this.setService = setService;
         this.validator = validator;
         this.attemptRepository = attemptRepository;
         this.views = views;
@@ -96,14 +99,22 @@ public class ExamSimulationOverviewService {
             blocked = "ACTIVE_ATTEMPT";
         } else if (!validator.validate(p).isValid()) {
             blocked = "PROFILE_INVALID";
-        } else if (availability.stream().anyMatch(a -> a.unusedForUser() < a.required())) {
-            blocked = "INSUFFICIENT_CONTENT";
+        }
+        List<SetOverview> sets = new ArrayList<>();
+        for (ExamSimulationSet set : setService.publishedSets(p)) {
+            ExamSimulationAttempt mine = attempts.stream().filter(a -> set.getId().equals(a.getSetId())).findFirst().orElse(null);
+            String status = mine == null ? "NEW" : mine == activeAttempt ? "IN_PROGRESS" : "DONE";
+            sets.add(new SetOverview(set.getId(), set.getNumber(), set.getTitle(), status, mine != null ? mine.getId() : null,
+                    mine != null && status.equals("DONE") ? views.summary(mine) : null));
+        }
+        if (blocked == null && sets.stream().noneMatch(x -> x.status().equals("NEW"))) {
+            blocked = "NO_NEW_EXAM";
         }
         BigDecimal total = p.getWrittenMaxPoints().add(p.getOralMaxPoints());
         return new ProfileOverview(p.getId(), p.getCode(), p.getVersion(), p.getProvider(), p.getExamName(), p.getTitle(), p.getDescription(),
                 p.getLevel().getValue(), p.isOralScoringEnabled(), p.getWrittenMaxPoints(), p.getWrittenPassThreshold(), p.getOralMaxPoints(),
                 p.getOralPassThreshold(), total, p.getAnswerReleasePolicy(), totalMinutes, stages, parts, blocked == null,
-                blocked, active, activeAttempt != null && activeAttempt.getPausedAt() != null, best, latest, finished.size());
+                blocked, active, activeAttempt != null && activeAttempt.getPausedAt() != null, best, latest, finished.size(), sets);
     }
 
     private PublicProfile publicOverview(ExamProfile p) {

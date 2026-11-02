@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 class ExamSimulationMigrationTest {
 
     @Test
-    @DisplayName("V33-V36 migrations match the exam simulation entity mappings")
+    @DisplayName("V33-V36 and V41 migrations match the exam simulation entity mappings")
     void migrationMatchesEntities() throws Exception {
         String url = "jdbc:tc:postgresql:15:///migrationtest?TC_DAEMON=true";
         try (Connection c = DriverManager.getConnection(url, "test", "test")) {
@@ -33,6 +33,7 @@ class ExamSimulationMigrationTest {
             ScriptUtils.executeSqlScript(c, new EncodedResource(new ClassPathResource("db/migration/V34__exam_simulation_audio_plays.sql")));
             ScriptUtils.executeSqlScript(c, new EncodedResource(new ClassPathResource("db/migration/V35__exam_simulation_pause.sql")));
             ScriptUtils.executeSqlScript(c, new EncodedResource(new ClassPathResource("db/migration/V36__exam_simulation_paused_at_timestamptz.sql")));
+            ScriptUtils.executeSqlScript(c, new EncodedResource(new ClassPathResource("db/migration/V41__exam_simulation_sets.sql")));
             try (Statement st = c.createStatement()) {
                 st.execute("SELECT 1");
             }
@@ -56,6 +57,8 @@ class ExamSimulationMigrationTest {
                     .addAnnotatedClass(ExamSimulationUsage.class)
                     .addAnnotatedClass(ExamSimulationAssessment.class)
                     .addAnnotatedClass(ExamSimulationAudit.class)
+                    .addAnnotatedClass(ExamSimulationSet.class)
+                    .addAnnotatedClass(ExamSimulationSetPart.class)
                     .addAnnotatedClass(ExamSimulationAudioPlay.class);
             Metadata metadata = sources.buildMetadata();
             assertDoesNotThrow(() -> metadata.buildSessionFactory().close()); // hbm2ddl=validate fails on any mismatch

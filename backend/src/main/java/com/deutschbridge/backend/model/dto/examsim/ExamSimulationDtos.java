@@ -26,7 +26,7 @@ public final class ExamSimulationDtos {
 
     // ---------------------------------------------------------------- requests
 
-    public record StartAttemptRequest(String profileId) {
+    public record StartAttemptRequest(String profileId, String setId) {
     }
 
     public record AnswerItem(String partKey, String questionId, String answer, boolean flagged, Long clientTs) {
@@ -59,7 +59,11 @@ public final class ExamSimulationDtos {
                                   BigDecimal oralMaxPoints, BigDecimal oralPassThreshold, BigDecimal totalMaxPoints,
                                   AnswerReleasePolicy answerReleasePolicy, int totalMinutes, List<StageOverview> stages, List<PartOverview> parts,
                                   boolean canStart, String blockedReason, String activeAttemptId, boolean activeAttemptPaused, AttemptSummary best, AttemptSummary latest,
-                                  int attemptCount) {
+                                  int attemptCount, List<SetOverview> sets) {
+    }
+
+    /** One published exam of a profile for one learner: NEW, IN_PROGRESS (activeAttemptId) or DONE (attempt = their result summary). */
+    public record SetOverview(String id, int number, String title, String status, String attemptId, AttemptSummary attempt) {
     }
 
     // ---------------------------------------------------------------- public catalogue (no login)

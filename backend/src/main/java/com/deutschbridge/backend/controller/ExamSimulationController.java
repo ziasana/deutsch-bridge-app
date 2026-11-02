@@ -41,7 +41,7 @@ public class ExamSimulationController {
 
     @PostMapping("/attempts")
     public ResponseEntity<AttemptState> start(@RequestBody StartAttemptRequest request) throws DataNotFoundException {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.start(requestContext.getUserId(), request.profileId()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.start(requestContext.getUserId(), request.profileId(), request.setId()));
     }
 
     @GetMapping("/attempts")

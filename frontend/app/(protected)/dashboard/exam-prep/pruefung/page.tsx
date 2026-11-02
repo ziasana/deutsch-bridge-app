@@ -7,11 +7,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ArrowLeft, ClipboardCheck, Flag, Mic, Pause, Play, RotateCw, Target, Timer, Trophy } from "lucide-react";
 import Loading from "@/componenets/Loading";
 import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
-import ContentSupply from "@/componenets/exam/simulation/overview/ContentSupply";
+import ExamSetList from "@/componenets/exam/simulation/overview/ExamSetList";
 import ExamJourney from "@/componenets/exam/simulation/overview/ExamJourney";
-import ResultsPanel from "@/componenets/exam/simulation/overview/ResultsPanel";
 import StartDialog from "@/componenets/exam/simulation/overview/StartDialog";
-import { cancelSimulationAttempt, getSimulationHistory, getSimulationProfiles, startSimulationAttempt } from "@/services/examSimulationService";
+import { cancelSimulationAttempt, getSimulationProfiles, startSimulationAttempt } from "@/services/examSimulationService";
 import { BLOCKED_REASON, formatPoints, simulationError, simulationErrorMessage } from "@/lib/examSimulation";
 import { enterFullscreen, exitFullscreen } from "@/lib/fullscreen";
 import { toast } from "@/lib/toast";
@@ -21,13 +20,13 @@ function ProfileSection({ profile }: Readonly<{ profile: ProfileOverview }>) {
     const router = useRouter();
     const queryClient = useQueryClient();
     const [confirmCancel, setConfirmCancel] = useState(false);
-    const [confirmStart, setConfirmStart] = useState(false);
+    const [startSetId, setStartSetId] = useState<string | null>(null);
 
     const start = useMutation({
-        mutationFn: () => startSimulationAttempt(profile.id),
+        mutationFn: (setId: string) => startSimulationAttempt(profile.id, setId),
         onSuccess: (res) => router.push(`/dashboard/exam-prep/pruefung/durchfuehrung?attempt=${encodeURIComponent(res.data.attemptId)}&fresh=1`),
         onError: (error) => {
-            setConfirmStart(false);
+            setStartSetId(null);
             const body = simulationError(error);
             if (body?.code !== "ACTIVE_ATTEMPT_EXISTS") exitFullscreen();
             if (body?.code === "ACTIVE_ATTEMPT_EXISTS" && typeof body.details?.attemptId === "string") {
@@ -42,14 +41,14 @@ function ProfileSection({ profile }: Readonly<{ profile: ProfileOverview }>) {
     const cancel = useMutation({
         mutationFn: () => cancelSimulationAttempt(profile.activeAttemptId as string),
         onSuccess: () => {
-            toast.info("Die Prüfung wurde abgebrochen. Die verwendeten Aufgaben bleiben verbraucht.");
+            toast.info("Die Prüfung wurde abgebrochen. Diese Prüfung kannst du nicht noch einmal starten.");
             void queryClient.invalidateQueries({ queryKey: ["exam-simulation"] });
         },
         onError: (error) => toast.error(simulationErrorMessage(error, "Die Prüfung konnte nicht abgebrochen werden.")),
         onSettled: () => setConfirmCancel(false),
     });
 
-    const lowContent = profile.parts.filter((p) => p.unused < p.required);
+    const nextSet = profile.sets.find((x) => x.status === "NEW");
     const running = Boolean(profile.activeAttemptId);
     const stats = [
         { icon: Timer, label: "Dauer", value: `${profile.totalMinutes} Min.` },
@@ -100,8 +99,8 @@ function ProfileSection({ profile }: Readonly<{ profile: ProfileOverview }>) {
                                 )}
                             </>
                         ) : (
-                            <button type="button" disabled={!profile.canStart || start.isPending} onClick={() => setConfirmStart(true)} className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-3 text-base font-bold text-primary shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0">
-                                <Play className="size-5" aria-hidden /> Prüfung starten
+                            <button type="button" disabled={!profile.canStart || !nextSet || start.isPending} onClick={() => nextSet && setStartSetId(nextSet.id)} className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-3 text-base font-bold text-primary shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0">
+                                <Play className="size-5" aria-hidden /> {nextSet ? `${nextSet.title} starten` : "Prüfung starten"}
                             </button>
                         )}
                     </div>
@@ -111,10 +110,7 @@ function ProfileSection({ profile }: Readonly<{ profile: ProfileOverview }>) {
             {profile.blockedReason && profile.blockedReason !== "ACTIVE_ATTEMPT" && (
                 <p role="alert" className="flex items-start gap-2 rounded-2xl bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
                     <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
-                    <span>
-                        {BLOCKED_REASON[profile.blockedReason]}
-                        {profile.blockedReason === "INSUFFICIENT_CONTENT" && lowContent.length > 0 && <> Betroffen: {lowContent.map((p) => p.label).join(", ")}.</>}
-                    </span>
+                    <span>{BLOCKED_REASON[profile.blockedReason]}</span>
                 </p>
             )}
 
@@ -124,7 +120,7 @@ function ProfileSection({ profile }: Readonly<{ profile: ProfileOverview }>) {
                 {[
                     { icon: ClipboardCheck, tone: "bg-teal-500/10 text-teal-700 dark:text-teal-300", title: "Schriftlich", text: `${formatPoints(profile.writtenMaxPoints)} Punkte, bestanden ab ${formatPoints(profile.writtenPassThreshold)}. Der Schriftliche Ausdruck wird von Hand bewertet – bis dahin steht das Ergebnis aus.` },
                     { icon: Mic, tone: "bg-pink-500/10 text-pink-700 dark:text-pink-300", title: "Mündlich", text: profile.oralScoringEnabled ? `${formatPoints(profile.oralMaxPoints)} Punkte, bestanden ab ${formatPoints(profile.oralPassThreshold)}.` : "In dieser Simulation übst du nur – es gibt keine Punkte und kein Bestehen." },
-                    { icon: Trophy, tone: "bg-amber-500/10 text-amber-700 dark:text-amber-300", title: "Gesamtergebnis", text: "„Bestanden“ erscheint erst, wenn alle verlangten Teile bewertet sind. Jede Aufgabe wird dir nur einmal vorgelegt." },
+                    { icon: Trophy, tone: "bg-amber-500/10 text-amber-700 dark:text-amber-300", title: "Gesamtergebnis", text: "„Bestanden“ erscheint erst, wenn alle verlangten Teile bewertet sind. Jede Prüfung kannst du einmal machen." },
                 ].map(({ icon: Icon, tone, title, text }) => (
                     <div key={title} className="rounded-3xl border border-border/70 bg-card p-5 shadow-sm">
                         <span className={`flex size-10 items-center justify-center rounded-xl ${tone}`}><Icon className="size-5" aria-hidden /></span>
@@ -134,24 +130,24 @@ function ProfileSection({ profile }: Readonly<{ profile: ProfileOverview }>) {
                 ))}
             </section>
 
-            <ContentSupply profile={profile} />
+            <ExamSetList profile={profile} starting={start.isPending} onStart={setStartSetId} />
 
-            {confirmStart && (
+            {startSetId && (
                 <StartDialog
                     totalMinutes={profile.totalMinutes}
                     starting={start.isPending}
-                    onCancel={() => setConfirmStart(false)}
+                    onCancel={() => setStartSetId(null)}
                     onStart={() => {
                         // Must happen inside the click: browsers only allow fullscreen after a user gesture.
                         enterFullscreen();
-                        start.mutate();
+                        start.mutate(startSetId);
                     }}
                 />
             )}
             <ConfirmDialog
                 isOpen={confirmCancel}
                 title="Prüfung abbrechen?"
-                message="Die Prüfung wird beendet und nicht gewertet. Die bereits zugeteilten Aufgaben werden dir nicht noch einmal angeboten."
+                message="Die Prüfung wird beendet und nicht gewertet. Diese Prüfung kannst du danach nicht noch einmal starten."
                 confirmLabel="Prüfung abbrechen"
                 cancelLabel="Zurück"
                 onConfirm={() => cancel.mutate()}
@@ -163,9 +159,8 @@ function ProfileSection({ profile }: Readonly<{ profile: ProfileOverview }>) {
 
 function OverviewContent() {
     const profiles = useQuery({ queryKey: ["exam-simulation", "profiles"], queryFn: () => getSimulationProfiles().then((r) => r.data) });
-    const history = useQuery({ queryKey: ["exam-simulation", "history"], queryFn: () => getSimulationHistory().then((r) => r.data) });
 
-    if (profiles.isLoading || history.isLoading) return <Loading />;
+    if (profiles.isLoading) return <Loading />;
     const list = profiles.data ?? [];
 
     return (
@@ -182,8 +177,6 @@ function OverviewContent() {
                 {list.map((profile) => (
                     <ProfileSection key={profile.id} profile={profile} />
                 ))}
-
-                <ResultsPanel profile={list[0]} attempts={history.data?.attempts ?? []} progress={history.data?.progress ?? []} />
             </div>
         </div>
     );

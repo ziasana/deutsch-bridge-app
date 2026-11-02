@@ -37,4 +37,8 @@ public interface ExamSimulationAttemptRepository extends JpaRepository<ExamSimul
     List<ExamSimulationAttempt> findAllByStatus(@Param("status") SimulationAttemptStatus status, Pageable pageable);
 
     long countByProfileId(String profileId);
+
+    List<ExamSimulationAttempt> findByUserIdAndSetIdIn(String userId, java.util.Collection<String> setIds);
+
+    boolean existsByUserIdAndSetId(String userId, String setId);
 }

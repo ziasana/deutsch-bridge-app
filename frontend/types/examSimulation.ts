@@ -115,6 +115,29 @@ export interface PartAvailability {
     questionCounts?: Record<string, number>;
 }
 
+export interface AdminSetPart {
+    partKey: string;
+    partLabel: string;
+    ordinal: number;
+    exerciseId: string;
+    exerciseTitle: string | null;
+    /** false when the exercise was deleted, unpublished or no longer fits the part. */
+    exerciseAvailable: boolean;
+}
+
+export interface AdminExamSet {
+    id: string;
+    profileCode: string;
+    number: number;
+    title: string;
+    status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+    createdAt: string;
+    publishedAt: string | null;
+    parts: AdminSetPart[];
+    /** Only on a freshly generated set, e.g. exercises reused from other sets. */
+    warnings: string[];
+}
+
 export interface AvailabilityResponse {
     profileId: string;
     parts: PartAvailability[];
@@ -188,13 +211,25 @@ export interface ProfileOverview {
     stages: StageOverview[];
     parts: PartOverview[];
     canStart: boolean;
-    blockedReason: "ACTIVE_ATTEMPT" | "PROFILE_INVALID" | "INSUFFICIENT_CONTENT" | null;
+    blockedReason: "ACTIVE_ATTEMPT" | "PROFILE_INVALID" | "NO_NEW_EXAM" | null;
     activeAttemptId: string | null;
     /** The running attempt is paused: its clock is stopped. */
     activeAttemptPaused: boolean;
     best: AttemptSummary | null;
     latest: AttemptSummary | null;
     attemptCount: number;
+    /** The published exams of this level, in order, with this learner's status for each. */
+    sets: SetOverview[];
+}
+
+export interface SetOverview {
+    id: string;
+    number: number;
+    title: string;
+    status: "NEW" | "IN_PROGRESS" | "DONE";
+    attemptId: string | null;
+    /** Result of the learner's attempt; only for DONE. */
+    attempt: AttemptSummary | null;
 }
 
 // ------------------------------------------------------------------ public catalogue (no login)

@@ -209,7 +209,7 @@ function Detail({ profile, onClose }: Readonly<{ profile: ExamProfileResponse | 
                                     <th className="p-1 text-start">Teil</th>
                                     <th className="p-1 text-end">Benötigt</th>
                                     <th className="p-1 text-end">Geeignet (veröffentlicht)</th>
-                                    <th className="p-1 text-end">Übrig für Lernende mit dem höchsten Verbrauch</th>
+                                    <th className="p-1 text-end">Noch in keiner Prüfung verwendet</th>
                                     <th className="p-1 text-start">Warum nicht geeignet?</th>
                                 </tr>
                             </thead>

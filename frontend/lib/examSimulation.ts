@@ -44,8 +44,10 @@ export const SECTION_LABEL: Record<ExamSection, string> = {
 export const BLOCKED_REASON: Record<string, string> = {
     ACTIVE_ATTEMPT: "Du hast bereits eine Prüfung begonnen.",
     PROFILE_INVALID: "Dieses Prüfungsprofil ist derzeit nicht verfügbar.",
-    INSUFFICIENT_CONTENT:
-        "Für ein neues Prüfungsset fehlen noch ungenutzte Aufgaben. Bereits verwendete Aufgaben werden nie wiederholt.",
+    NO_NEW_EXAM: "Du hast alle verfügbaren Prüfungen gemacht. Sobald eine neue Prüfung erscheint, kannst du sie hier starten.",
+    SET_ALREADY_STARTED: "Diese Prüfung hast du schon gemacht.",
+    SET_NOT_AVAILABLE: "Diese Prüfung ist nicht mehr verfügbar.",
+    SET_UNAVAILABLE: "Diese Prüfung ist gerade nicht verfügbar. Bitte wähle eine andere.",
 };
 
 /** Points with at most one decimal place, German decimal comma: 7.5 -> "7,5", 25 -> "25". */
@@ -74,7 +76,7 @@ export function simulationError(error: unknown): ExamSimulationError | null {
 export function simulationErrorMessage(error: unknown, fallback: string): string {
     const e = simulationError(error);
     if (!e) return fallback;
-    if (e.code === "INSUFFICIENT_CONTENT") return BLOCKED_REASON.INSUFFICIENT_CONTENT;
+    if (e.code && ["SET_ALREADY_STARTED", "SET_NOT_AVAILABLE", "SET_UNAVAILABLE"].includes(e.code)) return BLOCKED_REASON[e.code];
     if (e.code === "ACTIVE_ATTEMPT_EXISTS") return BLOCKED_REASON.ACTIVE_ATTEMPT;
     return e.message || fallback;
 }
