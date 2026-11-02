@@ -19,7 +19,7 @@ export default function LearnPage() {
         <main className="bg-background">
             <section className="relative overflow-hidden bg-gradient-to-b from-accent/60 to-background py-14 md:py-20">
                 <div className="container relative mx-auto px-6">
-                    <SectionHeading badge={l.badge} title={l.title} subtitle={l.subtitle} />
+                    <SectionHeading title={l.title} subtitle={l.subtitle} />
                 </div>
             </section>
 

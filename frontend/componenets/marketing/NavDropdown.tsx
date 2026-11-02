@@ -8,9 +8,9 @@ import type { SiteLink } from "./siteLinks";
 export default function NavDropdown({ label, links }: Readonly<{ label: string; links: SiteLink[] }>) {
     return (
         <Menu as="div" className="relative">
-            <MenuButton className="nav-link flex items-center gap-1 data-open:text-primary">
+            <MenuButton className="nav-link !inline-flex items-center gap-1 data-open:text-primary">
                 {label}
-                <ChevronDown className="size-4" />
+                <ChevronDown className="size-4 shrink-0" />
             </MenuButton>
             <MenuItems
                 transition

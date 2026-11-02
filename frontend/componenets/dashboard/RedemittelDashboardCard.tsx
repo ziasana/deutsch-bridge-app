@@ -35,7 +35,7 @@ export default function RedemittelDashboardCard() {
             title="Redemittel"
             cta={data.dueCount > 0 ? "Jetzt üben" : "Jetzt lernen"}
             tone={{
-                surface: "bg-gradient-to-br from-learning-expression/15 to-learning-expression/5",
+                surface: "",
                 icon: "text-learning-expression",
                 iconBg: "bg-learning-expression/15",
             }}

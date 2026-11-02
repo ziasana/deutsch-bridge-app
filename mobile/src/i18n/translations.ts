@@ -1099,7 +1099,7 @@ const en = {
     push: {
       title: 'PUSH NOTIFICATIONS',
       active: 'Active on this device. Reminders reach you even when the app is closed.',
-      denied: 'Notifications are turned off for Deutsch Bridge in your device settings.',
+      denied: 'Notifications are turned off for DeutschCertify in your device settings.',
       offer: 'Get reminders even when the app is closed.',
       openSettings: 'Open settings',
       enable: 'Enable push',
@@ -2203,7 +2203,7 @@ const fa: Dictionary = {
     push: {
       title: 'اعلان‌های فوری',
       active: 'روی این دستگاه فعال است. یادآوری‌ها حتی وقتی برنامه بسته است به شما می‌رسند.',
-      denied: 'اعلان‌ها برای Deutsch Bridge در تنظیمات دستگاه خاموش است.',
+      denied: 'اعلان‌ها برای DeutschCertify در تنظیمات دستگاه خاموش است.',
       offer: 'یادآوری‌ها را حتی وقتی برنامه بسته است دریافت کنید.',
       openSettings: 'باز کردن تنظیمات',
       enable: 'فعال‌سازی اعلان فوری',

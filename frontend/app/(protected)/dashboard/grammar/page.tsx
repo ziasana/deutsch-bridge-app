@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
-import { BookOpen, ChevronLeft, ChevronRight, ArrowRight, ClipboardCheck, Trophy } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, ClipboardCheck } from "lucide-react";
 import { getLevelMeta, levelThemeVars } from "@/componenets/learning/levelMeta";
 import { getGrammarLevelSummary, getGrammarLevelView } from "@/services/grammarService";
 import { GrammarLessonSummary } from "@/types/grammar";
 import Loading from "@/componenets/Loading";
 import { Badge } from "@/componenets/ui/badge";
-import { LearningLevelOption, LearningLevelSelector, LearningSearch } from "@/componenets/learning";
-import LearningPageHero from "@/componenets/learning/LearningPageHero";
+import { LearningLevelOption, LearningSearch } from "@/componenets/learning";
+import GrammarHeader from "@/componenets/grammar/GrammarHeader";
 import GrammarCategoryCard from "@/componenets/grammar/GrammarCategoryCard";
 import GrammarLessonItem from "@/componenets/grammar/GrammarLessonItem";
 import { useI18n } from "@/componenets/I18nProvider";
@@ -19,7 +19,7 @@ import { localizedLessonHeading } from "@/lib/grammarLocalization";
 import useAuthStore from "@/store/useAuthStore";
 import { useGrammarBookmark } from "@/hook/useGrammarBookmark";
 import { usePendingGrammarBookmarks } from "@/hook/usePendingGrammarBookmarks";
-import { CurrentLevelChip, SavedItemsButton, SavedItemsPanel, SavedItemsLabels } from "@/componenets/learning";
+import { SavedItemsButton, SavedItemsPanel, SavedItemsLabels } from "@/componenets/learning";
 import { cn } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 10;
@@ -139,22 +139,22 @@ export default function GrammarLessonsPage() {
     return (
         <div className="min-h-screen bg-background px-6 py-10" style={levelThemeVars(levelColor)}>
             <div className="max-w-4xl mx-auto">
-                <LearningPageHero
-                    icon={BookOpen}
+                <GrammarHeader
                     title={t.grammar.title}
                     subtitle={t.grammar.subtitle}
-                    accent={levelColor}
-                    bubbles
-                    meta={
-                        <CurrentLevelChip
-                            onSelect={(level) => {
-                                setSelectedLevel(level);
-                                setPage(1);
-                            }}
-                        />
-                    }
-                    actionsBelow
-                    actions={
+                    levels={levelOptions}
+                    selectedLevel={effectiveLevel}
+                    onLevelChange={(level) => {
+                        setSelectedLevel(level);
+                        setPage(1);
+                    }}
+                    levelsLabel={t.grammar.level}
+                    learned={currentSummary?.learned ?? 0}
+                    total={currentSummary?.total ?? 0}
+                    progressLabel={currentSummary && currentSummary.total > 0 ? `${effectiveLevel} · ${t.grammar.levelProgress(currentSummary.learned, currentSummary.total)}` : undefined}
+                    continueLabel={nextLesson ? t.grammar.continueLearning : undefined}
+                    onContinue={nextLesson ? () => router.push(`/dashboard/grammar/lesson?id=${nextLesson.id}`) : undefined}
+                    saved={
                         pendingBookmarks.length > 0 && (
                             <SavedItemsButton
                                 items={savedItems}
@@ -177,57 +177,6 @@ export default function GrammarLessonsPage() {
                 )}
 
                 {(summaryLoading || levelLoading) && <Loading />}
-
-                <LearningLevelSelector
-                    className="mt-6"
-                    levels={levelOptions}
-                    selectedLevel={effectiveLevel}
-                    onLevelChange={(level) => {
-                        setSelectedLevel(level);
-                        setPage(1);
-                    }}
-                    unitLabel={t.grammar.lessonsUnit}
-                    activeLabel={t.grammar.currentLevel}
-                    ariaLabel={t.grammar.level}
-                />
-
-                {currentSummary && currentSummary.total > 0 && (
-                    <div className="mt-4 flex items-center gap-4 rounded-2xl bg-card px-4 py-3 shadow-card ring-1 ring-border/60">
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl text-white" style={{ backgroundColor: levelColor }}>
-                            <Trophy className="size-5" aria-hidden="true" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-foreground">
-                                {effectiveLevel} · {t.grammar.levelProgress(currentSummary.learned, currentSummary.total)}
-                            </p>
-                            <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-foreground/10" role="progressbar" aria-valuemin={0} aria-valuemax={currentSummary.total} aria-valuenow={currentSummary.learned}>
-                                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${(currentSummary.learned / currentSummary.total) * 100}%`, backgroundColor: levelColor }} />
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {nextLesson && (
-                    <button
-                        type="button"
-                        onClick={() => router.push(`/dashboard/grammar/lesson?id=${nextLesson.id}`)}
-                        dir={localizedLessonHeading(nextLesson, language).dir}
-                        className="group relative mt-4 flex w-full cursor-pointer items-center gap-4 overflow-hidden rounded-3xl border bg-card p-5 text-start shadow-card transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-                        style={{ borderColor: `${levelColor}66`, backgroundImage: `linear-gradient(135deg, ${levelColor}40, ${levelColor}14 65%, ${levelColor}0d)` }}
-                    >
-                        <span aria-hidden="true" className="absolute -end-8 -top-10 size-36 rounded-full" style={{ backgroundColor: `${levelColor}1a` }} />
-                        <span className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm" style={{ backgroundColor: levelColor }}>
-                            <BookOpen className="size-6" aria-hidden="true" />
-                        </span>
-                        <span className="relative min-w-0 flex-1">
-                            <span className="block text-xs font-bold uppercase tracking-wider" style={{ color: levelColor }}>{t.grammar.continueLearning}</span>
-                            <span className="block truncate text-lg font-extrabold text-foreground">{localizedLessonHeading(nextLesson, language).title}</span>
-                        </span>
-                        <span className="relative flex size-9 shrink-0 items-center justify-center rounded-full text-white transition group-hover:translate-x-1 rtl:group-hover:-translate-x-1" style={{ backgroundColor: levelColor }}>
-                            <ArrowRight className="size-5 rtl:rotate-180" aria-hidden="true" />
-                        </span>
-                    </button>
-                )}
 
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                     <LearningSearch

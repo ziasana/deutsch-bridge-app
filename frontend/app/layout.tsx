@@ -1,5 +1,5 @@
 
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Poppins, Geist_Mono } from "next/font/google";
 import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
@@ -21,8 +21,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DeutschBridge",
-  description: "Learn German the smart way with DeutschBridge.",
+  metadataBase: new URL("https://deutschcertify.com"),
+  title: { default: "DeutschCertify", template: "%s | DeutschCertify" },
+  description: "Learn German the smart way and pass your exam with DeutschCertify.",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#16324F",
 };
 
 export default function RootLayout({

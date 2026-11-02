@@ -8,7 +8,7 @@ type CircularProgressProps = {
 export default function CircularProgress({
     value,
     size = 60,
-    color = "#22c55e",
+    color = "#527c91",
     trackColor = "#e5e7eb",
     showLabel = false,
 }: Readonly<CircularProgressProps> ) {

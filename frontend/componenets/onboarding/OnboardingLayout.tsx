@@ -4,6 +4,7 @@ import { ReactNode } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/componenets/ui/button";
 import OnboardingProgress from "@/componenets/onboarding/OnboardingProgress";
+import { Logo } from "@/componenets/brand/Logo";
 
 interface OnboardingLayoutProps {
     stepIndex: number; // 0-based
@@ -36,7 +37,7 @@ export default function OnboardingLayout({
                 {banner && <div className="mb-4">{banner}</div>}
 
                 <div className="mb-3 flex items-center justify-between">
-                    <span className="text-lg font-bold text-foreground">DeutschBridge</span>
+                    <Logo size={32} textClassName="font-bold text-foreground" />
                     <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
                         Step {stepIndex + 1} of {totalSteps}
                     </span>

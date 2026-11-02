@@ -56,8 +56,11 @@ export default function TutorHeader({ title, onRename, onDelete }: Readonly<Tuto
     };
 
     return (
-        <div className="relative flex items-center justify-between gap-2 overflow-hidden bg-card/80 px-4 py-3 shadow-sm backdrop-blur sm:px-6">
-            <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,hsl(228_78%_44%),hsl(216_100%_62%))]" />
+        <div
+            className="relative flex items-center justify-between gap-2 overflow-hidden bg-[#16324f] px-4 py-3 text-white shadow-sm sm:px-6"
+            style={{ "--foreground": "#f1f5f9", "--card": "#1e3f63", "--background": "#16324f", "--accent": "#254969", "--accent-foreground": "#f2b544", "--border": "#2f5278", "--primary": "#f2b544" } as React.CSSProperties}
+        >
+            <span aria-hidden="true" className="absolute inset-y-0 start-0 w-1.5 bg-[#f2b544]" />
             <div className="flex min-w-0 items-center gap-3">
                 <TutorAvatar />
                 {renaming ? (
@@ -84,7 +87,7 @@ export default function TutorHeader({ title, onRename, onDelete }: Readonly<Tuto
                 ) : (
                     <div className="min-w-0">
                         <h1 className="truncate text-base font-semibold leading-tight text-foreground">{title ?? t.chat.yourAiTutor}</h1>
-                        {title && <p className="truncate text-xs text-foreground/50">{t.chat.yourAiTutor}</p>}
+                        {title && <p className="truncate text-xs text-[#b9c7d6]">{t.chat.yourAiTutor}</p>}
                     </div>
                 )}
             </div>
@@ -122,7 +125,7 @@ export default function TutorHeader({ title, onRename, onDelete }: Readonly<Tuto
                                     setMenuOpen(false);
                                     setConfirmDeleteOpen(true);
                                 }}
-                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-red-500 transition hover:bg-accent"
+                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-red-400 transition hover:bg-accent"
                             >
                                 <Trash2 className="size-3.5" />
                                 {t.chat.delete}

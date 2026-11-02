@@ -40,7 +40,7 @@ export default function TodaysLearningPlan({ data }: Readonly<TodaysLearningPlan
                 aria-valuemax={100}
                 className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-foreground/10"
             >
-                <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${percent}%` }} />
+                <div className="h-full rounded-full bg-brand-slate transition-all duration-500" style={{ width: `${percent}%` }} />
             </div>
 
             <ul className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -60,11 +60,11 @@ export default function TodaysLearningPlan({ data }: Readonly<TodaysLearningPlan
                                 <span
                                     className={cn(
                                         "relative flex size-14 items-center justify-center rounded-full transition-transform group-hover:scale-110",
-                                        activity.completed ? "bg-primary" : bgClass,
+                                        activity.completed ? "bg-brand-slate" : bgClass,
                                     )}
                                 >
                                     {activity.completed ? (
-                                        <Check className="size-6 text-primary-foreground" strokeWidth={3} aria-hidden="true" />
+                                        <Check className="size-6 text-white" strokeWidth={3} aria-hidden="true" />
                                     ) : (
                                         <Icon className={cn("size-6", iconClass)} aria-hidden="true" />
                                     )}

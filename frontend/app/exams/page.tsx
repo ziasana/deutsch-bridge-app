@@ -15,7 +15,7 @@ export default function ExamsPage() {
         <main className="bg-background">
             <section className="bg-gradient-to-b from-accent/60 to-background py-16 md:py-20">
                 <div className="container mx-auto px-6">
-                    <SectionHeading badge={e.badge} title={e.title} subtitle={e.subtitle} />
+                    <SectionHeading title={e.title} subtitle={e.subtitle} />
                     <div className="mx-auto mt-12 grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2">
                         <ExamCard slug="telc" />
                         <ExamCard slug="dtz" />

@@ -7,7 +7,7 @@ import type { Focus, Level, Reason } from '@/features/onboarding/plan';
 type Choice = { label: string; description: string };
 
 export const entryEn = {
-  common: { back: 'Back', next: 'Next', brand: 'Deutsch Bridge' },
+  common: { back: 'Back', next: 'Next', brand: 'DeutschCertify' },
   welcome: {
     slides: [
       {
@@ -200,7 +200,7 @@ export const entryEn = {
 export type EntryDictionary = typeof entryEn;
 
 export const entryFa: EntryDictionary = {
-  common: { back: 'بازگشت', next: 'بعدی', brand: 'Deutsch Bridge' },
+  common: { back: 'بازگشت', next: 'بعدی', brand: 'DeutschCertify' },
   welcome: {
     slides: [
       {

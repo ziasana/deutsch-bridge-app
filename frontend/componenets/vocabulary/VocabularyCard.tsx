@@ -9,8 +9,8 @@ import { playVocabularyAudio } from "@/lib/vocabularyAudio";
 import { useI18n } from "@/componenets/I18nProvider";
 import { ARTICLE_TONE, MASTERY_CHIP, SOURCE_HOVER_BORDER } from "@/componenets/vocabulary/sourceColors";
 
-const RECALL_COLOR = "#22c55e";
-const CONTEXT_COLOR = "#3b82f6";
+const RECALL_COLOR = "#4f9d96";
+const CONTEXT_COLOR = "#3d8bff";
 
 interface VocabularyCardProps {
     item: VocabularyItem;

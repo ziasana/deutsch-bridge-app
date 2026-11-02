@@ -1,28 +1,33 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { Logo } from "@/componenets/brand/Logo";
 
 export default function NotFound() {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-            <div className="text-center max-w-md">
-                <h1 className="text-7xl font-extrabold text-blue-600">404</h1>
+        <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
+            <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-[#16324f] px-6 py-10 text-center text-white shadow-card ring-1 ring-white/10 sm:px-10">
+                <div className="flex justify-center">
+                    <Logo />
+                </div>
 
-                <h2 className="mt-4 text-2xl font-semibold text-gray-800">
-                    Page not found
-                </h2>
+                <p className="mt-8 text-7xl font-bold tracking-tight text-[#f2b544]">404</p>
+                <span aria-hidden="true" className="mx-auto mt-3 block h-0.5 w-8 rounded-full bg-[#f2b544]" />
 
-                <p className="mt-2 text-gray-500">
-                    Sorry, the page you are looking for doesn’t exist or has been moved.
+                <h1 className="mt-4 text-xl font-semibold tracking-tight sm:text-2xl">Seite nicht gefunden</h1>
+                <p className="mt-2 text-sm leading-relaxed text-[#b9c7d6]">
+                    Die Seite, die du suchst, existiert nicht oder wurde verschoben.
+                    <br />
+                    Page not found – it doesn’t exist or has been moved.
                 </p>
 
-                <div className="mt-6">
-                    <Link
-                        href="/"
-                        className="inline-block rounded-lg bg-blue-600 px-6 py-2 text-white font-medium hover:bg-blue-700 transition"
-                    >
-                        Go back home
-                    </Link>
-                </div>
+                <Link
+                    href="/"
+                    className="mt-7 inline-flex items-center gap-2 rounded-full bg-[#f2b544] px-6 py-2.5 text-sm font-semibold text-[#16324f] transition hover:bg-[#f5c46a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                >
+                    <ArrowLeft className="size-4" aria-hidden="true" />
+                    Zur Startseite
+                </Link>
             </div>
-        </div>
+        </main>
     );
 }

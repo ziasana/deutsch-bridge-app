@@ -10,9 +10,9 @@ export default function DailyWordsCompletion({ total, onReview }: Readonly<Daily
     const { t } = useI18n();
     return (
         <div className="anim-fade-up overflow-hidden rounded-3xl bg-card text-center shadow-card ring-1 ring-border/60">
-            <div className="relative overflow-hidden bg-gradient-to-br from-primary to-primary/70 px-6 py-9 text-white">
+            <div className="relative overflow-hidden bg-gradient-to-br from-primary to-brand-teal px-6 py-9 text-white">
                 <span aria-hidden="true" className="absolute -end-8 -top-10 size-36 rounded-full bg-white/10" />
-                <span className="relative mx-auto flex size-16 items-center justify-center rounded-full bg-white/25">
+                <span className="relative mx-auto flex size-16 items-center justify-center rounded-full bg-brand-amber text-[#16324f]">
                     <PartyPopper className="anim-pop size-8" aria-hidden="true" />
                 </span>
                 <h2 className="relative mt-4 text-2xl font-extrabold">{t.dailyWords.completion.title}</h2>

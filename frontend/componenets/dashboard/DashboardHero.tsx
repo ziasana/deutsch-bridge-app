@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Check, Flame } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
+import { StreakIcon } from "@/componenets/brand/icons";
 import { useI18n } from "@/componenets/I18nProvider";
 import { getLevelMeta } from "@/componenets/learning/levelMeta";
 import ActivityIcon from "@/componenets/learning/ActivityIcon";
@@ -56,19 +57,18 @@ export default function DashboardHero({ displayName, level, streak, week, next }
     const progress = next.progressPercent;
 
     return (
-        <section className="relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,hsl(228_78%_44%),hsl(216_100%_62%))] p-6 text-white shadow-card sm:p-8">
-            <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 size-64 rounded-full bg-white/10" />
-            <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 left-1/3 size-56 rounded-full bg-white/5" />
+        <section className="relative overflow-hidden rounded-2xl bg-[#16324f] px-5 py-6 text-white shadow-card ring-1 ring-white/10 sm:px-7 sm:py-7">
 
             <div className="relative grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-center">
                 <div>
-                    <h1 className="text-2xl font-bold sm:text-3xl">{greeting}</h1>
-                    <p className="mt-1 text-white/75">{g.subtitle}</p>
+                    <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{greeting}</h1>
+                    <span aria-hidden="true" className="mt-1.5 block h-0.5 w-8 rounded-full bg-brand-amber" />
+                    <p className="mt-2 text-sm text-[#b9c7d6]">{g.subtitle}</p>
 
                     <div className="mt-4 flex flex-wrap items-center gap-2">
                         {streak > 0 && (
                             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-sm font-medium">
-                                <Flame className="h-4 w-4 text-amber-300" aria-hidden="true" />
+                                <StreakIcon className="h-4 w-4 text-brand-amber" aria-hidden="true" />
                                 {g.streakDays(streak)}
                             </span>
                         )}
@@ -90,8 +90,8 @@ export default function DashboardHero({ displayName, level, streak, week, next }
                                         <span
                                             className={cn(
                                                 "flex size-8 items-center justify-center rounded-full transition",
-                                                learned ? "bg-white text-primary" : "bg-white/15",
-                                                isToday && !learned && "ring-2 ring-white/70",
+                                                learned ? "bg-brand-slate text-white" : "bg-white/15",
+                                                isToday && !learned && "ring-2 ring-brand-amber",
                                             )}
                                         >
                                             {learned && <Check className="size-4" strokeWidth={3} aria-hidden="true" />}
@@ -106,7 +106,7 @@ export default function DashboardHero({ displayName, level, streak, week, next }
 
                 <Link
                     href={next.route}
-                    className="group block rounded-2xl bg-white/12 p-5 ring-1 ring-white/20 backdrop-blur-sm transition hover:bg-white/18 hover:ring-white/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                    className="group block rounded-2xl bg-white/[0.07] p-5 ring-1 ring-white/10 transition hover:bg-white/18 hover:ring-white/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                 >
                     <p className="text-xs font-semibold uppercase tracking-wide text-white/70">{isStart ? c.startTitle : c.label}</p>
                     <div className="mt-3 flex items-start gap-4">
@@ -120,13 +120,13 @@ export default function DashboardHero({ displayName, level, streak, week, next }
                     {progress !== null && (
                         <div className="mt-4">
                             <div className="h-2 w-full overflow-hidden rounded-full bg-white/20">
-                                <div className="h-full rounded-full bg-white transition-all duration-500" style={{ width: `${Math.max(0, Math.min(100, progress))}%` }} />
+                                <div className="h-full rounded-full bg-brand-amber transition-all duration-500" style={{ width: `${Math.max(0, Math.min(100, progress))}%` }} />
                             </div>
                             <p className="mt-2 text-xs text-white/75">{c.progressOf(next.completed, next.total)}</p>
                         </div>
                     )}
 
-                    <span className="mt-5 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-primary shadow-sm transition group-hover:gap-3">
+                    <span className="mt-5 inline-flex items-center gap-2 rounded-full bg-brand-amber px-5 py-2.5 text-sm font-semibold text-[#16324f] shadow-sm transition group-hover:gap-3">
                         {isStart ? c.startCta : c.cta}
                         <ArrowRight className="h-4 w-4" aria-hidden="true" />
                     </span>

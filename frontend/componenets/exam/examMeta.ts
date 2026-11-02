@@ -1,4 +1,5 @@
-import { BookOpen, Headphones, Info, LucideIcon, Mic, PenLine, Puzzle } from "lucide-react";
+import { Info, LucideIcon, Puzzle } from "lucide-react";
+import { ListeningIcon, ReadingIcon, SpeakingIcon, WritingIcon } from "@/componenets/brand/icons";
 import { ExamSection, ExamTaskType, ExamTypeCode } from "@/types/exam";
 
 export interface ExamTypeMeta {
@@ -23,38 +24,38 @@ export const EXAM_TYPE_META: Record<ExamSection, ExamTypeMeta> = {
     LESEVERSTEHEN: {
         label: "Lesen",
         description: "Trainiere dein Leseverstehen im Prüfungsformat.",
-        icon: BookOpen,
-        color: "#0d9488",
+        icon: ReadingIcon,
+        color: "#16324f",
     },
     SPRACHBAUSTEINE: {
         label: "Sprachbausteine",
         description: "Übe Grammatik und Wortschatz im Prüfungsformat.",
         icon: Puzzle,
-        color: "#7c3aed",
+        color: "#7a6a9e",
     },
     HOERVERSTEHEN: {
         label: "Hörverstehen",
         description: "Trainiere dein Hörverstehen mit echten Prüfungsaufgaben.",
-        icon: Headphones,
-        color: "#059669",
+        icon: ListeningIcon,
+        color: "#35618f",
     },
     SCHRIFTLICHER_AUSDRUCK: {
         label: "Schreiben",
         description: "Übe das Schreiben im Prüfungsformat.",
-        icon: PenLine,
-        color: "#f97316",
+        icon: WritingIcon,
+        color: "#c2674f",
     },
     MUENDLICHER_AUSDRUCK: {
         label: "Mündlicher Ausdruck",
         description: "Übe das Sprechen: Kennenlernen, über ein Thema sprechen und gemeinsam planen.",
-        icon: Mic,
-        color: "#ec4899",
+        icon: SpeakingIcon,
+        color: "#b5637f",
     },
     TESTFORMAT_INFORMATION: {
         label: "Testformat",
         description: "Prüfungsaufbau, Punkte, Dauer und mehr.",
         icon: Info,
-        color: "#0ea5e9",
+        color: "#c98a12",
         informational: true,
     },
 };

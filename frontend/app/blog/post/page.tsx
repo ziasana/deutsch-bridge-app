@@ -52,7 +52,7 @@ function BlogPostContent() {
     });
 
     useEffect(() => {
-        if (post) document.title = `${post.title} | DeutschBridge`;
+        if (post) document.title = `${post.title} | DeutschCertify`;
     }, [post]);
 
     const BackIcon = dir === "rtl" ? ArrowRight : ArrowLeft;
@@ -133,7 +133,7 @@ function BlogPostContent() {
                                 {authorInitial(post.authorName)}
                             </span>
                             <span className="flex flex-col leading-tight">
-                                <span className="font-semibold text-foreground">{post.authorName ?? "DeutschBridge"}</span>
+                                <span className="font-semibold text-foreground">{post.authorName ?? "DeutschCertify"}</span>
                                 <span>{formatBlogDate(post.publishedAt, language)}</span>
                             </span>
                         </span>

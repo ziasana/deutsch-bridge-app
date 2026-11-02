@@ -1,15 +1,16 @@
 import { CSSProperties } from "react";
 import { ExamSection } from "@/types/exam";
+import { readableOn } from "@/componenets/learning/levelMeta";
 
-/** The colour identity of a section: Mündlicher Ausdruck is pink, Schriftlicher Ausdruck is orange, Leseverstehen is teal, Sprachbausteine is violet, Hörverstehen is green. */
+/** The colour identity of a section: Mündlicher Ausdruck is Clay Rose, Schriftlicher Ausdruck is Terracotta, Leseverstehen is Sage Teal, Sprachbausteine is Dusty Plum, Hörverstehen is Harbor Blue. */
 export type LessonAccent = "speaking" | "writing" | "reading" | "grammar" | "listening";
 
 const THEMES: Record<LessonAccent, { primary: string; from: string; to: string }> = {
-    speaking: { primary: "hsl(330 81% 60%)", from: "#ec4899", to: "#fb923c" },
-    writing: { primary: "hsl(25 95% 53%)", from: "#f97316", to: "#f59e0b" },
-    listening: { primary: "hsl(161 94% 30%)", from: "#059669", to: "#4ade80" },
-    grammar: { primary: "hsl(262 83% 58%)", from: "#7c3aed", to: "#c084fc" },
-    reading: { primary: "hsl(175 84% 32%)", from: "#0d9488", to: "#22d3ee" },
+    speaking: { primary: "#b5637f", from: "#b5637f", to: "#d98ba3" },
+    writing: { primary: "#c2674f", from: "#c2674f", to: "#d9917c" },
+    listening: { primary: "#35618f", from: "#35618f", to: "#6f9fd0" },
+    grammar: { primary: "#7a6a9e", from: "#7a6a9e", to: "#a597c6" },
+    reading: { primary: "#16324f", from: "#16324f", to: "#35618f" },
 };
 
 /** The solid colour of an accent (hex), for tinting a panel such as the page hero. */
@@ -23,7 +24,7 @@ export function accentColor(accent: LessonAccent): string {
  */
 export function lessonThemeVars(accent: LessonAccent): CSSProperties {
     const t = THEMES[accent];
-    return { "--primary": t.primary, "--primary-foreground": "hsl(0 0% 100%)", "--lesson-from": t.from, "--lesson-to": t.to } as CSSProperties;
+    return { "--primary": t.primary, "--primary-foreground": readableOn(t.primary), "--lesson-from": t.from, "--lesson-to": t.to } as CSSProperties;
 }
 
 /** Sections that use the redesigned Teil list / Teil page / exercise header, with their colour and decoration. */

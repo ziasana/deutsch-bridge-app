@@ -67,7 +67,11 @@ export function SavedItemsButton({ items, labels, open, onToggle, onOpen }: Read
     const moreCount = items.length - preview.length;
 
     return (
-        <div className="mt-2 w-full">
+        // Light-yellow strip: readable on any parent (it re-points the theme variables, so it also works inside the navy page header).
+        <div
+            className="w-full rounded-2xl bg-[#fdf3dc] p-3 text-[#16324f]"
+            style={{ "--foreground": "#16324f", "--primary": "#16324f", "--primary-foreground": "#ffffff", "--card": "#fdf3dc" } as React.CSSProperties}
+        >
             <button
                 type="button"
                 onClick={onToggle}
@@ -76,7 +80,7 @@ export function SavedItemsButton({ items, labels, open, onToggle, onOpen }: Read
             >
                 <span aria-hidden="true" className="absolute -right-1 -top-1 flex size-3">
                     <span className="absolute inline-flex size-full rounded-full bg-learning-expression opacity-70 motion-safe:animate-ping" />
-                    <span className="relative inline-flex size-3 rounded-full bg-learning-expression ring-2 ring-card" />
+                    <span className="relative inline-flex size-3 rounded-full bg-learning-expression ring-2 ring-[#fdf3dc]" />
                 </span>
                 <Bookmark className="size-4" aria-hidden="true" />
                 <span>{labels.title}</span>

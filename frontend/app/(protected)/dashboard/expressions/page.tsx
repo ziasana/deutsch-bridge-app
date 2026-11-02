@@ -16,7 +16,7 @@ import {
 } from "@/services/expressionService";
 import { ExpressionListItem, ExpressionMasteryLevel, ExpressionType } from "@/types/expression";
 import { LearningSearch } from "@/componenets/learning";
-import ExpressionCollectionSelector, {
+import {
     ExpressionCollectionOption,
 } from "@/componenets/expressions/ExpressionCollectionSelector";
 import ExpressionFilterSelect from "@/componenets/expressions/ExpressionFilterSelect";
@@ -224,34 +224,22 @@ function ExpressionsPageContent() {
         ? (Object.fromEntries(MASTERY_LEVELS.map((level, i) => [level, masteryQueries[i].data as number])) as Record<ExpressionMasteryLevel, number>)
         : null;
 
-    // Expressions floating in the header: the ones you have started (from the lists already loaded), topped up with others.
     const items = expressionPage?.items ?? [];
-    const showcase = (() => {
-        const pool = [...(continueLearning?.items ?? []), ...items];
-        const seen = new Set<string>();
-        const unique = pool.filter((e) => !seen.has(e.id) && seen.add(e.id));
-        const started = unique.filter((e) => e.masteryLevel !== "NEW");
-        const rest = unique.filter((e) => e.masteryLevel === "NEW");
-        const MIN_BUBBLES = 3;
-        const shown = started.length >= MIN_BUBBLES ? started : [...started, ...rest.slice(0, MIN_BUBBLES - started.length)];
-        return shown.slice(0, 6).map((e) => e.expression);
-    })();
     const currentPage = page + 1;
     const totalElements = expressionPage?.totalElements ?? 0;
 
     return (
         <div className="min-h-screen bg-background px-6 py-10" dir="ltr" style={levelThemeVars(COLLECTION_ACCENT[collection])}>
             <div className="max-w-4xl mx-auto">
-                <ExpressionsHeader accent={COLLECTION_ACCENT[collection]} counts={masteryCounts} words={showcase} onPractice={() => router.push("/dashboard/expressions/practice")} />
-
-                <ExpressionCollectionSelector
-                    className="mt-8"
-                    options={collectionOptions}
-                    selected={collection}
-                    onSelect={(type) => {
+                <ExpressionsHeader
+                    counts={masteryCounts}
+                    collections={collectionOptions}
+                    collection={collection}
+                    onCollection={(type) => {
                         setCollection(type);
                         resetPage();
                     }}
+                    onPractice={() => router.push("/dashboard/expressions/practice")}
                 />
 
                 <div className="mt-6 flex flex-wrap items-start gap-3">

@@ -1,7 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, StyleSheet, View } from 'react-native';
-import { HexLogo } from '@/components/brand/HexLogo';
+import { BrandMark } from '@/components/brand/BrandMark';
 import { AppText } from '@/components/ui';
 import { colors } from '@/theme';
 
@@ -50,7 +50,7 @@ export function SplashIntro({ onDone }: { onDone: () => void }) {
   }, [logo, word, onDone]);
 
   return (
-    <View style={styles.root} accessibilityLabel="Deutsch Bridge" accessible>
+    <View style={styles.root} accessibilityLabel="DeutschCertify" accessible>
       <StatusBar style="light" />
       <Animated.View
         style={{
@@ -58,7 +58,7 @@ export function SplashIntro({ onDone }: { onDone: () => void }) {
           transform: [{ scale: logo.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }],
         }}
       >
-        <HexLogo size={150} ring background={colors.brand} />
+        <BrandMark size={150} variant="bare" />
       </Animated.View>
       <Animated.View
         style={{
@@ -69,7 +69,7 @@ export function SplashIntro({ onDone }: { onDone: () => void }) {
         }}
       >
         <AppText style={styles.wordmark} color="#FFFFFF">
-          Deutsch Bridge
+          DeutschCertify
         </AppText>
       </Animated.View>
     </View>

@@ -444,13 +444,13 @@ describe("Redemittel hub", () => {
         expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     });
 
-    it("the hero is tinted with the accent colour; the content panels themselves stay plain cards", async () => {
+    it("the hero is the navy page header; the content panels themselves stay plain cards", async () => {
         service.getRedemittelHub.mockReturnValue(ok(hub({ newToday: 2, learnedToday: 1 })));
         service.getRedemittelPage.mockReturnValue(ok({ ...emptyPage, items: [redemittel()], totalElements: 1, totalPages: 1 }));
         withClient(<RedemittelPage />);
         const heading = await screen.findByRole("heading", { level: 1, name: "Redemittel" });
         const hero = heading.closest("header") as HTMLElement;
-        expect(hero.style.backgroundImage).toMatch(/linear-gradient/);
+        expect(hero.className).toMatch(/bg-\[#16324f\]/);
         const day = await screen.findByRole("region", { name: "Heute für dich" });
         const explore = screen.getByRole("region", { name: "Entdecken" });
         [day, explore.firstElementChild as HTMLElement].forEach((panel) => {
@@ -480,9 +480,9 @@ describe("Redemittel hub", () => {
         const hero = (await screen.findByRole("heading", { level: 1, name: "Redemittel" })).closest("header") as HTMLElement;
         expect(await within(hero).findByRole("img", { name: /Sicher: 18/ })).toBeTruthy();
         expect(within(hero).getByRole("button", { name: "Neue lernen" })).toBeTruthy();
-        // no filters in the hero
+        // the level filter lives in the hero; the status filter stays in Entdecken
         expect(within(hero).queryByRole("group", { name: "Nach Lernstatus filtern" })).toBeNull();
-        expect(within(hero).queryByRole("group", { name: "Niveau" })).toBeNull();
+        expect(within(hero).getByRole("group", { name: "Niveau" })).toBeTruthy();
         expect(within(hero).queryByRole("button", { name: /Überrasch mich/ })).toBeNull();
 
         const day = await screen.findByRole("region", { name: "Heute für dich" });
@@ -491,7 +491,7 @@ describe("Redemittel hub", () => {
 
         const explore = screen.getByRole("region", { name: "Entdecken" });
         expect(within(explore).getByRole("group", { name: "Nach Lernstatus filtern" })).toBeTruthy();
-        expect(within(explore).getByRole("group", { name: "Niveau" })).toBeTruthy();
+        expect(within(explore).queryByRole("group", { name: "Niveau" })).toBeNull();
         expect(within(explore).getByRole("button", { name: /Überrasch mich/ })).toBeTruthy();
     });
 
@@ -740,13 +740,12 @@ describe("explorer toolbar", () => {
         expect(await screen.findByRole("button", { name: "Filter „dank“ entfernen" })).toBeTruthy();
     });
 
-    it("level pills carry the level icons and colors", async () => {
+    it("level chips carry the level colors", async () => {
         withItems();
         withClient(<RedemittelPage />);
         const pills = await screen.findByRole("group", { name: "Niveau" });
         const b2 = within(pills).getByRole("button", { name: "B2" });
-        expect(b2.querySelector("svg")).not.toBeNull();
-        expect(b2.style.color).not.toBe("");
+        expect(b2.style.backgroundColor).not.toBe("");
         fireEvent.click(b2);
         expect(b2.style.backgroundColor).not.toBe("");
     });

@@ -21,12 +21,12 @@ export default function TutorEmptyState({ onStarterSelect }: Readonly<TutorEmpty
     return (
         <div className="mx-auto flex min-h-full max-w-2xl flex-col items-center justify-center px-4 py-10 text-center">
             <div className="relative">
-                <span aria-hidden="true" className="absolute inset-0 rounded-full bg-primary/25 motion-safe:animate-ping [animation-duration:2.5s]" />
-                <span className="relative flex size-20 items-center justify-center rounded-full bg-[linear-gradient(135deg,hsl(228_78%_44%),hsl(216_100%_62%))] text-white shadow-card">
+                <span aria-hidden="true" className="absolute inset-0 rounded-full bg-[#16324f]/25 motion-safe:animate-ping [animation-duration:2.5s]" />
+                <span className="relative flex size-20 items-center justify-center rounded-full bg-[#16324f] text-[#f2b544] shadow-card">
                     <Sparkles className="size-9" aria-hidden="true" />
                 </span>
             </div>
-            <h2 className="mt-6 bg-[linear-gradient(135deg,hsl(228_78%_44%),hsl(216_100%_62%))] bg-clip-text text-3xl font-extrabold text-transparent sm:text-4xl">{t.chat.emptyState.greeting}</h2>
+            <h2 className="mt-6 text-3xl font-semibold text-[#16324f] dark:text-foreground sm:text-4xl">{t.chat.emptyState.greeting}</h2>
             <p className="mt-2 max-w-md text-foreground/65">{t.chat.emptyState.intro}</p>
 
             <div className="mt-8 grid w-full grid-cols-1 gap-3 text-left sm:grid-cols-2">

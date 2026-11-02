@@ -71,7 +71,7 @@ export default function BlogCard({ post, featured = false }: Readonly<{ post: Bl
                         <span className="flex size-7 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
                             {authorInitial(post.authorName)}
                         </span>
-                        {post.authorName ?? "DeutschBridge"}
+                        {post.authorName ?? "DeutschCertify"}
                     </span>
                     <Link href={href} className="inline-flex items-center gap-1 text-sm font-semibold text-primary">
                         {t.blogPage.readMore}

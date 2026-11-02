@@ -96,7 +96,14 @@ export default function RedemittelPage() {
         <div className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-10" dir="ltr" style={levelThemeVars(accent)}>
             <div className="mx-auto max-w-4xl">
                 <div className="space-y-6">
-                    <RedemittelHeader accent={accent} hub={hub} onNavigate={(href) => router.push(href)} onDiscover={() => scrollToList()} />
+                    <RedemittelHeader
+                        accent={accent}
+                        level={level}
+                        onLevel={(l) => {
+                            setLevel(l);
+                            resetPage();
+                        }}
+                        hub={hub} onNavigate={(href) => router.push(href)} onDiscover={() => scrollToList()} />
 
                     <RedemittelDayPanel hub={hub} onNavigate={(href) => router.push(href)} onDiscover={() => scrollToList()}>
                         <RedemittelTodayStrip onStart={() => router.push("/dashboard/redemittel/learn")} />

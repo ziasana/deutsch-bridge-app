@@ -18,6 +18,13 @@ import { skillMeta } from "@/componenets/marketing/skillMeta";
 import { useMarketing } from "@/componenets/marketing/useMarketing";
 import { getHomeBlogPosts } from "@/services/blogService";
 
+// Learn / Practice / Certify: Sage Teal, Bright Blue, Honey - each a brand colour, tinted so text stays readable.
+const PILL_STYLES = [
+    "bg-brand-teal/15 text-[#2f6f69] dark:text-[#7bbdb6]",
+    "bg-brand-blue/15 text-[#2b6fd6] dark:text-brand-blue",
+    "bg-brand-amber/25 text-[#8a5d00] dark:text-brand-amber",
+];
+
 const HERO_IMAGE = "/images/hero-image.jpg";
 
 export default function HomePage() {
@@ -35,11 +42,21 @@ export default function HomePage() {
             <section className="relative overflow-hidden bg-gradient-to-b from-accent/60 to-background">
                 <div className="container mx-auto flex flex-col items-center gap-14 px-6 py-12 md:flex-row md:py-24">
                     <div className="flex flex-col gap-6 md:w-1/2">
-                        <span className="w-fit rounded-full bg-card px-4 py-1.5 text-sm font-semibold text-primary shadow-card">{home.hero.badge}</span>
                         <h1 className="text-4xl font-bold leading-tight text-foreground md:text-5xl">
                             {home.hero.titleStart}{" "}
-                            <span className="inline-block rounded-lg bg-primary/15 px-2 text-primary">{home.hero.titleHighlight}</span>
+                            <span className="inline-block rounded-lg bg-[#f2b544] px-3 text-[#16324f]">{home.hero.titleHighlight}</span>
+                            {home.hero.titleEnd ? ` ${home.hero.titleEnd}` : ""}
                         </h1>
+                        <ul className="flex flex-wrap gap-3" aria-label={home.hero.pills.join(". ")}>
+                            {home.hero.pills.map((pill, index) => (
+                                <li
+                                    key={pill}
+                                    className={`rounded-full px-4 py-1.5 text-sm font-semibold uppercase tracking-wide ${PILL_STYLES[index] ?? PILL_STYLES[0]}`}
+                                >
+                                    {pill}
+                                </li>
+                            ))}
+                        </ul>
                         <p className="text-lg text-foreground/70">{home.hero.subtitle}</p>
 
                         <ul className="flex flex-col gap-3">
@@ -48,7 +65,10 @@ export default function HomePage() {
                                     <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
                                         <Check className="size-3.5" />
                                     </span>
-                                    {bullet}
+                                    <span>
+                                        <strong className="font-semibold text-foreground">{bullet.split(/[:：]/)[0]}:</strong>
+                                        {bullet.slice(bullet.search(/[:：]/) + 1)}
+                                    </span>
                                 </li>
                             ))}
                         </ul>

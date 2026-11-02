@@ -1,10 +1,10 @@
-# DeutschBridge
+# DeutschCertify
 ![Java CI with Maven](https://github.com/ziasana/deutsch-bridge-app/actions/workflows/maven.yml/badge.svg)
 ![Frontend CI](https://github.com/ziasana/deutsch-bridge-app/actions/workflows/frontend.yml/badge.svg)
 ![SonarQube CI Backend](https://github.com/ziasana/deutsch-bridge-app/actions/workflows/sonar-backend.yml/badge.svg)
 ![Coverage](https://sonarcloud.io/api/project_badges/measure?project=ziatest_deutsch-bridge-app&metric=coverage)
 
-DeutschBridge is a full‑stack language‑learning platform that helps
+DeutschCertify is a full‑stack language‑learning platform that helps
 learners improve their German skills through daily vocabulary,
 personalized learning plans, grammar lessons, and progress tracking. It
 integrates AI‑generated content, interactive exercises, and a clean user

@@ -1,4 +1,4 @@
-# Deutsch Bridge – Mobile
+# DeutschCertify – Mobile
 
 React Native + Expo (SDK 57) + TypeScript client for the existing Spring Boot API.
 

@@ -547,7 +547,7 @@ public class BlogPostSeeder {
                 post.setCategory(sample.category());
                 post.setExcerpt(sample.excerpt());
                 post.setContent(sample.content().strip());
-                post.setAuthorName("DeutschBridge Team");
+                post.setAuthorName("DeutschCertify Team");
                 post.setImageUrl(coverFor(sample.slug()));
                 post.setStatus(BlogPostStatus.PUBLISHED);
                 post.setPublishedAt(now.minusDays(sample.daysAgo()));

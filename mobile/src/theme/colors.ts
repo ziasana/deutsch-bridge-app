@@ -1,23 +1,24 @@
-// Mirrors the web design tokens in frontend/app/globals.css (light theme).
+// Mirrors the DeutschCertify brand tokens in frontend/app/globals.css (light theme).
+// Deep Navy #16324F is the brand foundation; teal, amber and bright blue are accents.
 export const colors = {
-  background: '#F7F9FC', // hsl(220 50% 98%)
+  background: '#F6F8FC',
   surface: '#FFFFFF', // --card
-  foreground: '#1D2433', // hsl(224 27% 15%)
-  mutedForeground: '#687083', // hsl(222 12% 46%)
-  primary: '#4D94FF', // hsl(216 100% 62%)
-  ink: '#2A3552', // headings on the onboarding / auth screens
-  brand: '#3F86F0', // splash + welcome surfaces: white text on it stays legible at 3.7:1+
-  primaryDark: '#2F6FDB', // pressed / text-on-light variant with AA contrast
+  foreground: '#253449',
+  mutedForeground: '#64748B',
+  primary: '#16324F',
+  ink: '#253449',
+  brand: '#16324F',
+  primaryDark: '#0F2438',
   primaryForeground: '#FFFFFF',
-  accent: '#E9F2FF', // hsl(216 100% 96%)
-  secondary: '#EBF0F8', // hsl(216 45% 95%)
-  muted: '#F1F3F7', // hsl(220 25% 95%)
-  border: '#E4E8EF', // hsl(220 20% 91%)
-  success: '#27AE7A', // chart-3
-  successSoft: '#E4F6EE',
-  warning: '#D98E04',
+  accent: '#eaf3f1',
+  secondary: '#EEF3F8', // hsl(216 45% 95%)
+  muted: '#EFF3F8', // hsl(220 25% 95%)
+  border: '#E1E7EF',
+  success: '#527C91',
+  successSoft: '#E6EEF2',
+  warning: '#c98a12',
   warningSoft: '#FDF3DC',
-  destructive: '#EF4444',
+  destructive: '#DC4545',
   destructiveSoft: '#FDE8E8',
 } as const;
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
-import { Newspaper, ChevronLeft, ChevronRight, Trophy } from "lucide-react";
+import { Newspaper, ChevronLeft, ChevronRight } from "lucide-react";
 import {
     getReadingArticlesPage,
     getReadingCategories,
@@ -14,9 +14,7 @@ import {
 import Loading from "@/componenets/Loading";
 import ArticleCard from "@/componenets/reading/ArticleCard";
 import {
-    CurrentLevelChip,
     LearningLevelOption,
-    LearningLevelSelector,
     LearningSearch,
     SavedItemsButton,
     SavedItemsLabels,
@@ -24,6 +22,7 @@ import {
 } from "@/componenets/learning";
 import { getLevelMeta, levelThemeVars } from "@/componenets/learning/levelMeta";
 import LearningPageHero from "@/componenets/learning/LearningPageHero";
+import HeroLevelFilter from "@/componenets/learning/HeroLevelFilter";
 import { useI18n } from "@/componenets/I18nProvider";
 import useAuthStore from "@/store/useAuthStore";
 import { cn } from "@/lib/utils";
@@ -167,18 +166,21 @@ export default function ReadingPage() {
                     title={t.reading.title}
                     subtitle={t.reading.subtitle}
                     accent={getLevelMeta(effectiveLevel).color}
-                    bubbles
-                    meta={
-                        <CurrentLevelChip
-                            onSelect={(level) => {
-                                setSelectedLevel(level);
-                                setPage(0);
-                            }}
-                        />
-                    }
-                    actionsBelow
-                    actions={
-                        pendingBookmarks.length > 0 && (
+                >
+                    <HeroLevelFilter
+                        levels={levelOptions}
+                        selectedLevel={effectiveLevel}
+                        onLevelChange={(level) => {
+                            setSelectedLevel(level);
+                            setPage(0);
+                        }}
+                        ariaLabel={t.reading.level}
+                        learned={currentSummary?.learned ?? 0}
+                        total={currentSummary?.total ?? 0}
+                        progressLabel={currentSummary && currentSummary.total > 0 ? `${effectiveLevel} · ${t.reading.levelProgress(currentSummary.learned, currentSummary.total)}` : undefined}
+                    />
+                    {pendingBookmarks.length > 0 && (
+                        <div className="mt-4">
                             <SavedItemsButton
                                 items={pendingBookmarks}
                                 labels={savedLabels}
@@ -186,9 +188,9 @@ export default function ReadingPage() {
                                 onToggle={() => setSavedOpen((v) => !v)}
                                 onOpen={openArticle}
                             />
-                        )
-                    }
-                />
+                        </div>
+                    )}
+                </LearningPageHero>
                 {savedOpen && pendingBookmarks.length > 0 && (
                     <SavedItemsPanel
                         items={pendingBookmarks}
@@ -200,44 +202,6 @@ export default function ReadingPage() {
                 )}
 
                 {(summaryLoading || listLoading) && <Loading />}
-
-                <LearningLevelSelector
-                    className="mt-6"
-                    levels={levelOptions}
-                    selectedLevel={effectiveLevel}
-                    onLevelChange={(level) => {
-                        setSelectedLevel(level);
-                        setPage(0);
-                    }}
-                    unitLabel={t.reading.textsUnit}
-                    activeLabel={t.reading.currentLevel}
-                    ariaLabel={t.reading.level}
-                />
-
-                {currentSummary && currentSummary.total > 0 && (
-                    <div className="mt-4 flex items-center gap-4 rounded-2xl bg-card px-4 py-3 shadow-card ring-1 ring-border/60">
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl text-white" style={{ backgroundColor: getLevelMeta(effectiveLevel).color }}>
-                            <Trophy className="size-5" aria-hidden="true" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-foreground">
-                                {effectiveLevel} · {t.reading.levelProgress(currentSummary.learned, currentSummary.total)}
-                            </p>
-                            <div
-                                className="mt-1.5 h-2 overflow-hidden rounded-full bg-foreground/10"
-                                role="progressbar"
-                                aria-valuemin={0}
-                                aria-valuemax={currentSummary.total}
-                                aria-valuenow={currentSummary.learned}
-                            >
-                                <div
-                                    className="h-full rounded-full transition-all duration-700"
-                                    style={{ width: `${(currentSummary.learned / currentSummary.total) * 100}%`, backgroundColor: getLevelMeta(effectiveLevel).color }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                )}
 
                 <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
                     <LearningSearch

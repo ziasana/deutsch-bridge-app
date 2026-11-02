@@ -10,24 +10,25 @@ import { getExamTimeManagement } from "@/services/examTimeService";
 import { formatClock, formatDifference } from "@/lib/examTime";
 import { EXAM_TYPE_META } from "@/componenets/exam";
 import LearningPageHero from "@/componenets/learning/LearningPageHero";
+import HeroCollectionFilter from "@/componenets/learning/HeroCollectionFilter";
 import Loading from "@/componenets/Loading";
 import { cn } from "@/lib/utils";
 import { ExamTimeManagementRow } from "@/types/examTime";
 
 function StatTile({ icon: Icon, value, label, tone }: Readonly<{ icon: typeof Timer; value: string; label: string; tone?: "good" | "warn" }>) {
     return (
-        <div className="flex items-center gap-3 rounded-2xl bg-card p-4 shadow-card ring-1 ring-border/50">
+        <div className="flex items-center gap-3 rounded-2xl bg-white/[0.07] p-4 ring-1 ring-white/10">
             <span
                 className={cn(
                     "flex size-11 shrink-0 items-center justify-center rounded-xl",
-                    tone === "good" ? "bg-green-500/15 text-green-600 dark:text-green-400" : tone === "warn" ? "bg-amber-500/15 text-amber-600 dark:text-amber-400" : "bg-primary/10 text-primary",
+                    tone === "good" ? "bg-[#527c91] text-white" : tone === "warn" ? "bg-[#f2b544]/20 text-[#f2b544]" : "bg-[#f2b544]/15 text-[#f2b544]",
                 )}
             >
                 <Icon className="size-5" aria-hidden="true" />
             </span>
             <div className="min-w-0">
-                <p className="text-2xl font-extrabold leading-tight tabular-nums text-foreground">{value}</p>
-                <p className="text-xs text-foreground/55">{label}</p>
+                <p className="text-2xl font-semibold leading-tight tabular-nums text-white">{value}</p>
+                <p className="text-xs text-[#b9c7d6]">{label}</p>
             </div>
         </div>
     );
@@ -43,7 +44,7 @@ function TimeBar({ average, target, within }: Readonly<{ average: number; target
             className="relative mt-3 h-3 rounded-full bg-foreground/10"
         >
             <div
-                className={cn("h-full rounded-full transition-all duration-700", within ? "bg-gradient-to-r from-green-500 to-emerald-400" : "bg-gradient-to-r from-amber-500 to-orange-400")}
+                className={cn("h-full rounded-full transition-all duration-700", within ? "bg-brand-slate" : "bg-brand-amber")}
                 style={{ width: `${(average / max) * 100}%` }}
             />
             <span aria-hidden="true" className="absolute -top-1.5 h-6 w-0.5 rounded-full bg-foreground/60" style={{ left: `${(target / max) * 100}%` }} />
@@ -63,7 +64,7 @@ function TeilTimeRow({ row }: Readonly<{ row: ExamTimeManagementRow }>) {
                     <Icon className="size-5" aria-hidden="true" />
                 </span>
                 <div className="min-w-0 flex-1">
-                    <p className="font-bold leading-tight text-foreground">
+                    <p className="text-base font-semibold leading-6 text-foreground">
                         {meta.label} · Teil {row.teil}
                     </p>
                     <p className="text-xs text-foreground/50">
@@ -73,8 +74,8 @@ function TeilTimeRow({ row }: Readonly<{ row: ExamTimeManagementRow }>) {
                 {hasTarget && (
                     <span
                         className={cn(
-                            "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold",
-                            within ? "bg-green-500/15 text-green-700 dark:text-green-400" : "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+                            "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold",
+                            within ? "bg-brand-slate/15 text-brand-slate" : "bg-brand-amber/20 text-amber-800 dark:text-brand-amber",
                         )}
                     >
                         {within ? <CheckCircle2 className="size-3.5" aria-hidden="true" /> : <TriangleAlert className="size-3.5" aria-hidden="true" />}
@@ -86,17 +87,17 @@ function TeilTimeRow({ row }: Readonly<{ row: ExamTimeManagementRow }>) {
             <div className="mt-4 grid grid-cols-3 gap-3 text-center sm:text-start">
                 <div>
                     <p className="text-xs text-foreground/50">Durchschnitt</p>
-                    <p className="text-xl font-extrabold tabular-nums text-foreground">{formatClock(row.averageSeconds)}</p>
+                    <p className="text-xl font-semibold tabular-nums text-foreground">{formatClock(row.averageSeconds)}</p>
                 </div>
                 {hasTarget && (
                     <>
                         <div>
                             <p className="text-xs text-foreground/50">Empfohlen</p>
-                            <p className="text-xl font-extrabold tabular-nums text-foreground">{formatClock(row.targetSeconds!)}</p>
+                            <p className="text-xl font-semibold tabular-nums text-foreground">{formatClock(row.targetSeconds!)}</p>
                         </div>
                         <div>
                             <p className="text-xs text-foreground/50">Unterschied</p>
-                            <p className={cn("text-xl font-extrabold tabular-nums", within ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400")}>
+                            <p className={cn("text-xl font-semibold tabular-nums", within ? "text-brand-slate" : "text-amber-700 dark:text-brand-amber")}>
                                 {formatDifference(row.differenceSeconds!)}
                             </p>
                         </div>
@@ -144,8 +145,31 @@ function TimeManagementContent() {
                     icon={Timer}
                     title="Mein Zeitmanagement"
                     subtitle={`Deine durchschnittliche Zeit pro Teil – im Vergleich zur Prüfungsvorgabe.`}
-                    meta={<span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">TELC {level}</span>}
-                />
+                    meta={<span className="inline-flex items-center rounded-full bg-[#f2b544] px-2.5 py-0.5 text-xs font-bold text-[#16324f]">TELC {level}</span>}
+                >
+                    {rows.length > 0 && (
+                        <>
+                            <div className="grid gap-3 sm:grid-cols-3">
+                                <StatTile icon={Layers} value={String(stats.sessions)} label="Übungen mit Zeitmessung" />
+                                <StatTile icon={Target} value={`${stats.within}/${stats.measured}`} label="Teile in der Vorgabe" tone={stats.measured > 0 && stats.within === stats.measured ? "good" : undefined} />
+                                <StatTile icon={Flag} value={String(rows.length)} label="Teile geübt" />
+                            </div>
+                            {sections.length > 1 && (
+                                <div className="mt-4">
+                                    <HeroCollectionFilter
+                                        ariaLabel="Bereich filtern"
+                                        options={[
+                                            { key: "ALL", label: "Alle", color: "#254969" },
+                                            ...sections.map((sec) => ({ key: sec as string, label: EXAM_TYPE_META[sec as keyof typeof EXAM_TYPE_META].label, icon: EXAM_TYPE_META[sec as keyof typeof EXAM_TYPE_META].icon, color: EXAM_TYPE_META[sec as keyof typeof EXAM_TYPE_META].color })),
+                                        ]}
+                                        selected={filter}
+                                        onSelect={setFilter}
+                                    />
+                                </div>
+                            )}
+                        </>
+                    )}
+                </LearningPageHero>
 
                 {rows.length === 0 ? (
                     <div className="rounded-3xl bg-card p-8 text-center shadow-card ring-1 ring-primary/15">
@@ -162,31 +186,6 @@ function TimeManagementContent() {
                     </div>
                 ) : (
                     <>
-                        <div className="grid gap-3 sm:grid-cols-3">
-                            <StatTile icon={Layers} value={String(stats.sessions)} label="Übungen mit Zeitmessung" />
-                            <StatTile icon={Target} value={`${stats.within}/${stats.measured}`} label="Teile in der Vorgabe" tone={stats.measured > 0 && stats.within === stats.measured ? "good" : undefined} />
-                            <StatTile icon={Flag} value={String(rows.length)} label="Teile geübt" />
-                        </div>
-
-                        {sections.length > 1 && (
-                            <div role="group" aria-label="Bereich filtern" className="flex flex-wrap gap-2">
-                                {["ALL", ...sections].map((s) => (
-                                    <button
-                                        key={s}
-                                        type="button"
-                                        aria-pressed={filter === s}
-                                        onClick={() => setFilter(s)}
-                                        className={cn(
-                                            "cursor-pointer rounded-full border px-4 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-                                            filter === s ? "border-primary bg-primary text-primary-foreground shadow-sm" : "border-border bg-card text-foreground/70 hover:bg-accent",
-                                        )}
-                                    >
-                                        {s === "ALL" ? "Alle" : EXAM_TYPE_META[s as keyof typeof EXAM_TYPE_META].label}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-
                         <ul className="space-y-3">
                             {shown.map((row) => (
                                 <TeilTimeRow key={`${row.section}-${row.teil}`} row={row} />

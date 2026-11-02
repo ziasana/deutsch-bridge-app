@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, ChevronsLeft, ChevronsRight, GraduationCap } from "lucide-react";
+import { ChevronDown, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { Logo } from "@/componenets/brand/Logo";
 import { cn } from "@/lib/utils";
 import type { NavItem } from "@/componenets/layout/navConfig";
 import { useI18n } from "@/componenets/I18nProvider";
@@ -48,10 +49,7 @@ export default function AppSidebar({ items, collapsed, onToggleCollapsed, onNavi
         >
             {showHeader && (
                 <div className="flex h-16 shrink-0 items-center gap-2 px-4 border-b border-sidebar-border">
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                        <GraduationCap className="size-5" />
-                    </div>
-                    <span className="truncate text-lg font-semibold text-foreground">DeutschBridge</span>
+                    <Logo textClassName="text-foreground" />
                 </div>
             )}
 

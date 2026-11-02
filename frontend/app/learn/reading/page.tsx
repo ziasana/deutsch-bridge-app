@@ -68,7 +68,7 @@ export default function PublicReadingPage() {
     };
 
     return (
-        <div className="min-h-[60vh] bg-background px-6 py-10" style={levelThemeVars(color)}>
+        <div className="min-h-[60vh] bg-gradient-to-b from-accent/60 to-background px-6 py-10" style={levelThemeVars(color)}>
             <div className="mx-auto max-w-4xl">
                 <Link href="/learn" className="mb-4 inline-block text-sm font-medium text-foreground/60 transition hover:text-foreground">
                     ← {l.backToHub}

@@ -26,7 +26,7 @@ export default function StartDialog({ totalMinutes, starting, onStart, onCancel 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="sim-start-title">
             <div className="anim-pop w-full max-w-md overflow-hidden rounded-3xl bg-card shadow-lg ring-1 ring-border/60">
-                <div className="relative overflow-hidden bg-gradient-to-br from-primary to-primary/70 px-6 py-5 text-primary-foreground">
+                <div className="relative overflow-hidden bg-primary px-6 py-5 text-primary-foreground">
                     <span aria-hidden className="absolute -end-6 -top-8 size-28 rounded-full bg-white/10" />
                     <h2 id="sim-start-title" className="relative text-lg font-bold">Bereit für die Prüfung?</h2>
                     <p className="relative mt-0.5 text-sm text-primary-foreground/85">Die Prüfung öffnet sich im Vollbild, damit du dich nur auf die Aufgaben konzentrierst.</p>

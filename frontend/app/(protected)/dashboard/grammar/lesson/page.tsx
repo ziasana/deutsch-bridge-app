@@ -236,7 +236,7 @@ function GrammarLessonDetailContent({ lessonId }: Readonly<{ lessonId: string }>
                                 <span className={`${chip} bg-white/25 text-white`}>{lesson.level}</span>
                                 {lesson.categoryTitle && <span className={`${chip} bg-white/15 text-white`}>{lesson.categoryTitle}</span>}
                                 {learned && (
-                                    <span className={`${chip} bg-green-500 text-white`}>
+                                    <span className={`${chip} bg-brand-slate text-white`}>
                                         <Check className="size-3" strokeWidth={3} aria-hidden="true" />
                                         {t.grammar.learned}
                                     </span>
@@ -307,9 +307,9 @@ function GrammarLessonDetailContent({ lessonId }: Readonly<{ lessonId: string }>
                         </div>
                     )}
 
-                    <div className={cn("flex flex-wrap items-center justify-between gap-4 rounded-3xl p-6 shadow-card transition sm:p-7", learned ? "bg-green-500/10 ring-1 ring-green-500/30" : "bg-card")}>
+                    <div className={cn("flex flex-wrap items-center justify-between gap-4 rounded-3xl p-6 shadow-card transition sm:p-7", learned ? "bg-brand-slate/10 ring-1 ring-brand-slate/30" : "bg-card")}>
                         <div className="flex min-w-0 items-center gap-3">
-                            <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-2xl", learned ? "bg-green-500 text-white" : "bg-primary/10 text-primary")}>
+                            <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-2xl", learned ? "bg-brand-slate text-white" : "bg-primary/10 text-primary")}>
                                 {learned ? <PartyPopper className="size-6" aria-hidden="true" /> : <Check className="size-6" strokeWidth={3} aria-hidden="true" />}
                             </span>
                             <div className="min-w-0">
@@ -323,7 +323,7 @@ function GrammarLessonDetailContent({ lessonId }: Readonly<{ lessonId: string }>
                             onClick={toggleLearned}
                             className={
                                 learned
-                                    ? "inline-flex cursor-pointer items-center gap-2 rounded-full border border-green-500/30 bg-card px-5 py-2.5 text-sm font-semibold text-green-700 transition hover:bg-green-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400 disabled:opacity-60 dark:text-green-400"
+                                    ? "inline-flex cursor-pointer items-center gap-2 rounded-full border border-brand-slate/30 bg-card px-5 py-2.5 text-sm font-semibold text-brand-slate transition hover:bg-brand-slate/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-slate disabled:opacity-60 "
                                     : "inline-flex cursor-pointer items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-60"
                             }
                         >

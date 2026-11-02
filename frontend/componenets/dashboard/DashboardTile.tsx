@@ -19,7 +19,7 @@ export default function DashboardTile({ href, icon: Icon, title, tone, cta, chil
         <Link
             href={href}
             className={cn(
-                "group flex h-full flex-col rounded-2xl p-5 transition duration-200",
+                "group flex h-full flex-col rounded-2xl bg-card p-5 shadow-card transition duration-200",
                 "hover:-translate-y-1 hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
                 tone.surface,
             )}

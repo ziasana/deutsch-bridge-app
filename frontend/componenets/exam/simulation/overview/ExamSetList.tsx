@@ -22,7 +22,7 @@ const HEAD = "flex items-center gap-3 sm:w-56 sm:shrink-0";
 
 /** The numbered tile every card starts with; its colour tells the state at a glance. */
 function NumberTile({ number, tone }: Readonly<{ number: number; tone: string }>) {
-    return <span className={cn("flex size-12 shrink-0 items-center justify-center rounded-2xl text-xl font-extrabold tabular-nums text-white shadow-sm", tone)}>{number}</span>;
+    return <span className={cn("flex size-12 shrink-0 items-center justify-center rounded-2xl text-xl font-semibold tabular-nums shadow-sm", tone)}>{number}</span>;
 }
 
 /** One dot per section of the exam, in the same colours as the journey below, so a new exam shows what it contains. */
@@ -43,7 +43,7 @@ function DoneCard({ set, profile }: Readonly<{ set: SetOverview; profile: Profil
     return (
         <Link href={resultHref(a.id)} className={cn(CARD, "group border-border/70 hover:border-primary/50 hover:shadow-md")}>
             <div className={HEAD}>
-                <NumberTile number={set.number} tone="bg-gradient-to-br from-green-500 to-teal-500" />
+                <NumberTile number={set.number} tone="bg-brand-slate text-white" />
                 <div className="min-w-0 flex-1">
                     <h3 className="truncate text-lg font-bold text-foreground">{set.title}</h3>
                     <p className="flex items-center gap-1.5 text-xs font-medium text-green-700 dark:text-green-400">
@@ -79,7 +79,7 @@ function RunningCard({ set, paused }: Readonly<{ set: SetOverview; paused: boole
     return (
         <article className={cn(CARD, "border-amber-500/50 bg-amber-500/5")}>
             <div className={HEAD}>
-                <NumberTile number={set.number} tone="bg-gradient-to-br from-amber-500 to-orange-500" />
+                <NumberTile number={set.number} tone="bg-brand-amber text-[#16324f]" />
                 <div className="min-w-0 flex-1">
                     <h3 className="truncate text-lg font-bold text-foreground">{set.title}</h3>
                     <p className="flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
@@ -103,7 +103,7 @@ function NewCard({ set, profile, disabled, starting, onStart }: Readonly<{ set: 
         <article className={cn(CARD, "border-primary/30 hover:border-primary/60 hover:shadow-md")}>
             <span aria-hidden className="absolute -end-8 -top-10 size-32 rounded-full bg-primary/10" />
             <div className={cn(HEAD, "relative")}>
-                <NumberTile number={set.number} tone="bg-gradient-to-br from-primary to-primary/60" />
+                <NumberTile number={set.number} tone="bg-primary text-primary-foreground" />
                 <div className="min-w-0 flex-1">
                     <h3 className="truncate text-lg font-bold text-foreground">{set.title}</h3>
                     <p className="flex items-center gap-1.5 text-xs font-medium text-primary">
@@ -189,7 +189,7 @@ export default function ExamSetList({ profile, starting, onStart }: Readonly<{ p
                             <span className="tabular-nums">{done} von {total}</span>
                         </p>
                         <div className="mt-1 h-2 overflow-hidden rounded-full bg-foreground/10" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done}>
-                            <div className="h-full rounded-full bg-gradient-to-r from-primary to-green-500 transition-all duration-500" style={{ width: `${pct}%` }} />
+                            <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${pct}%` }} />
                         </div>
                     </div>
                 )}

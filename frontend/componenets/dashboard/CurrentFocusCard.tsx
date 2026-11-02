@@ -39,9 +39,9 @@ export default function CurrentFocusCard({ data }: CurrentFocusCardProps) {
             title={f.title}
             cta={f.cta}
             tone={{
-                surface: "bg-gradient-to-br from-primary/15 to-primary/5",
-                icon: "text-primary",
-                iconBg: "bg-primary/15",
+                surface: "",
+                icon: "text-brand-teal",
+                iconBg: "bg-brand-teal/15",
             }}
         >
             {content ? (

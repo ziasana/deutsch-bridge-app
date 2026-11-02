@@ -19,8 +19,8 @@ export default function NewContentBanner({ data }: NewContentBannerProps) {
     ].filter(Boolean);
 
     return (
-        <div className="flex items-center gap-3 rounded-full bg-primary/8 px-5 py-2.5">
-            <Sparkles className="h-5 w-5 shrink-0 text-primary" />
+        <div className="flex items-center gap-3 rounded-full bg-brand-amber/15 px-5 py-2.5">
+            <Sparkles className="h-5 w-5 shrink-0 text-[#a16207] dark:text-brand-amber" />
             <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground">{n.summary(data.total)}</p>
                 {parts.length > 0 && <p className="text-xs text-foreground/60 mt-0.5">{parts.join(" · ")}</p>}

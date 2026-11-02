@@ -2,9 +2,9 @@ import { Check, SpellCheck } from "lucide-react";
 import { DailyWord } from "@/types/dailyWord";
 import { useI18n } from "@/componenets/I18nProvider";
 import CurrentLevelChip from "@/componenets/learning/CurrentLevelChip";
+import LearningPageHero from "@/componenets/learning/LearningPageHero";
 import { cn } from "@/lib/utils";
 import { DAILY_WORDS_ACCENT } from "./dailyWordsAccent";
-import { ACCENT_TITLE_COLOR } from "@/componenets/learning/levelMeta";
 
 interface DailyWordsHeaderProps {
     words: DailyWord[];
@@ -15,8 +15,8 @@ interface DailyWordsHeaderProps {
 }
 
 /**
- * A soft, tinted hero: title and a big "x / y" count, with today's words laid out as a journey underneath.
- * Light on purpose, so the word card right below stays the focus of the page.
+ * The shared navy learning header: title and a big "x / y" count, with today's words laid out as a journey underneath
+ * (learned = teal, current = bright blue ring).
  */
 export default function DailyWordsHeader({ words, currentIndex, onSelect }: Readonly<DailyWordsHeaderProps>) {
     const { t } = useI18n();
@@ -24,57 +24,43 @@ export default function DailyWordsHeader({ words, currentIndex, onSelect }: Read
     const learnedCount = words.filter((w) => w.learned).length;
 
     return (
-        <header
-            className="relative overflow-hidden rounded-3xl border border-primary/40 bg-card p-5 sm:p-6"
-            style={{ backgroundImage: `linear-gradient(135deg, ${DAILY_WORDS_ACCENT}52, ${DAILY_WORDS_ACCENT}1f 60%, ${DAILY_WORDS_ACCENT}0d)` }}
-        >
-            <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-12 size-44 rounded-full bg-primary/[0.06]" />
-            <div aria-hidden="true" className="pointer-events-none absolute -bottom-16 right-1/4 size-36 rounded-full bg-primary/[0.04]" />
-
-            <div className="relative flex items-center justify-between gap-4">
-                <div className="flex min-w-0 items-center gap-3.5">
-                    <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
-                        <SpellCheck className="size-6" aria-hidden="true" />
-                    </span>
-                    <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                            <h1 className="truncate text-xl font-bold sm:text-2xl" style={{ color: ACCENT_TITLE_COLOR }}>{t.dailyWords.title}</h1>
-                            <CurrentLevelChip />
-                        </div>
-                        <p className="truncate text-sm text-foreground/60">{t.dailyWords.subtitle(total)}</p>
-                    </div>
-                </div>
-
-                <div className="shrink-0 text-right" aria-label={t.dailyWords.header.learnedOf(learnedCount, total)}>
-                    <p className="rounded-2xl bg-card/80 px-4 py-2 text-3xl font-extrabold leading-none text-primary shadow-sm sm:text-4xl">
+        <LearningPageHero
+            icon={SpellCheck}
+            title={t.dailyWords.title}
+            subtitle={t.dailyWords.subtitle(total)}
+            meta={<CurrentLevelChip />}
+            accent={DAILY_WORDS_ACCENT}
+            actions={
+                <div className="text-right" aria-label={t.dailyWords.header.learnedOf(learnedCount, total)}>
+                    <p className="rounded-2xl bg-white/[0.08] px-4 py-2 text-3xl font-extrabold leading-none text-[#f2b544] ring-1 ring-white/10 sm:text-4xl">
                         {learnedCount}
-                        <span className="text-xl font-semibold text-foreground/35 sm:text-2xl"> / {total}</span>
+                        <span className="text-xl font-semibold text-[#b9c7d6] sm:text-2xl"> / {total}</span>
                     </p>
                 </div>
-            </div>
-
+            }
+        >
             <ol
                 role="progressbar"
                 aria-valuenow={learnedCount}
                 aria-valuemin={0}
                 aria-valuemax={total}
                 aria-label={t.dailyWords.header.progressAria(learnedCount, total)}
-                className="relative mt-6 grid"
+                className="grid"
                 style={{ gridTemplateColumns: `repeat(${total}, minmax(0, 1fr))` }}
             >
                 {words.map((word, i) => {
                     const isCurrent = i === currentIndex;
                     const stepClass = cn(
                         "relative z-10 flex size-9 items-center justify-center rounded-full text-sm font-bold transition",
-                        word.learned && "bg-primary text-primary-foreground shadow-sm",
-                        !word.learned && isCurrent && "border-2 border-primary bg-card text-primary shadow-sm ring-4 ring-primary/20",
-                        !word.learned && !isCurrent && "border border-border bg-card text-foreground/40",
+                        word.learned && "bg-[#527c91] text-white shadow-sm",
+                        !word.learned && isCurrent && "border-2 border-[#3d8bff] bg-[#16324f] text-white ring-4 ring-[#3d8bff]/25",
+                        !word.learned && !isCurrent && "border border-white/20 bg-white/[0.06] text-[#b9c7d6]",
                     );
                     const content = word.learned ? <Check className="size-4" strokeWidth={3} aria-hidden="true" /> : i + 1;
                     return (
                         <li key={word.id} className="relative flex flex-col items-center gap-2 px-0.5">
-                            {i > 0 && <span aria-hidden="true" className={cn("absolute left-0 right-1/2 top-[18px] h-0.5 -translate-y-1/2 transition-colors duration-500", words[i - 1].learned ? "bg-primary" : "bg-foreground/15")} />}
-                            {i < total - 1 && <span aria-hidden="true" className={cn("absolute left-1/2 right-0 top-[18px] h-0.5 -translate-y-1/2 transition-colors duration-500", word.learned ? "bg-primary" : "bg-foreground/15")} />}
+                            {i > 0 && <span aria-hidden="true" className={cn("absolute left-0 right-1/2 top-[18px] h-0.5 -translate-y-1/2 transition-colors duration-500", words[i - 1].learned ? "bg-[#527c91]" : "bg-white/15")} />}
+                            {i < total - 1 && <span aria-hidden="true" className={cn("absolute left-1/2 right-0 top-[18px] h-0.5 -translate-y-1/2 transition-colors duration-500", word.learned ? "bg-[#527c91]" : "bg-white/15")} />}
 
                             {onSelect ? (
                                 <button
@@ -82,20 +68,20 @@ export default function DailyWordsHeader({ words, currentIndex, onSelect }: Read
                                     onClick={() => onSelect(i)}
                                     aria-current={isCurrent ? "step" : undefined}
                                     aria-label={word.word}
-                                    className={cn(stepClass, "cursor-pointer hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50")}
+                                    className={cn(stepClass, "cursor-pointer hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white")}
                                 >
                                     {content}
                                 </button>
                             ) : (
                                 <span className={stepClass}>{content}</span>
                             )}
-                            <span className={cn("w-full truncate text-center text-xs", isCurrent ? "font-semibold text-primary" : word.learned ? "text-foreground/70" : "text-foreground/45")}>
+                            <span className={cn("w-full truncate text-center text-xs", isCurrent ? "font-semibold text-white" : word.learned ? "text-[#dbe6f0]" : "text-[#b9c7d6]")}>
                                 {word.word}
                             </span>
                         </li>
                     );
                 })}
             </ol>
-        </header>
+        </LearningPageHero>
     );
 }

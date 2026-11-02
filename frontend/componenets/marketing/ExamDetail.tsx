@@ -27,7 +27,7 @@ export default function ExamDetail({ slug }: Readonly<{ slug: ExamSlug }>) {
     const other: ExamSlug = slug === "telc" ? "dtz" : "telc";
     useEffect(() => {
         const previous = document.title;
-        document.title = `${exam.name} | DeutschBridge`;
+        document.title = `${exam.name} | DeutschCertify`;
         return () => {
             document.title = previous;
         };

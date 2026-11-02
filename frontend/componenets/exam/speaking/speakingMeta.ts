@@ -1,7 +1,7 @@
 import { SpeakingTaskType } from "@/types/exam";
 import { LearnSectionMeta } from "../writing/learn/types";
 
-export const SPEAKING_COLOR = "#ec4899";
+export const SPEAKING_COLOR = "#b5637f";
 
 /** The exams that have a Mündlicher Ausdruck learning area. */
 export type SpeakingExam = "TELC" | "DTZ";

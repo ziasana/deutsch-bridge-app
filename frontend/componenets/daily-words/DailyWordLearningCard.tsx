@@ -86,7 +86,7 @@ export default function DailyWordLearningCard({
                         aria-label={t.dailyWords.card.playAria(word.word)}
                         className={cn(
                             "flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary/10 text-primary transition hover:scale-110 hover:bg-primary/20",
-                            isPlaying && "bg-primary text-primary-foreground",
+                            isPlaying && "bg-brand-blue text-white",
                         )}
                     >
                         <Volume2 className={cn("size-5", isPlaying && "animate-pulse")} aria-hidden="true" />
@@ -127,7 +127,7 @@ export default function DailyWordLearningCard({
                         className={cn(
                             "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold shadow-sm transition focus-visible:outline-none focus-visible:ring-2 disabled:cursor-default",
                             word.learned
-                                ? "border border-green-500/30 bg-green-500/10 text-green-700 focus-visible:ring-green-400 dark:text-green-400"
+                                ? "border border-brand-slate/30 bg-brand-slate/10 text-brand-slate focus-visible:ring-brand-slate"
                                 : "bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-primary/50 disabled:opacity-60",
                         )}
                     >

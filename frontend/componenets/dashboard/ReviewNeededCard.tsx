@@ -16,9 +16,9 @@ export default function ReviewNeededCard({ data }: Readonly<ReviewNeededCardProp
 
     if (total === 0) {
         return (
-            <div className="flex h-full flex-col items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-motivation/12 to-motivation/4 p-5 text-center">
-                <span className="flex size-12 items-center justify-center rounded-full bg-motivation/15">
-                    <PartyPopper className="size-6 text-motivation" aria-hidden="true" />
+            <div className="flex h-full flex-col items-center justify-center gap-2 rounded-2xl bg-brand-slate/10 p-5 text-center">
+                <span className="flex size-12 items-center justify-center rounded-full bg-brand-slate/15">
+                    <PartyPopper className="size-6 text-brand-slate" aria-hidden="true" />
                 </span>
                 <h2 className="text-base font-semibold text-foreground">{r.allCaughtUpTitle}</h2>
                 <p className="text-sm text-foreground/60">{r.allCaughtUpSubtitle}</p>
@@ -33,7 +33,7 @@ export default function ReviewNeededCard({ data }: Readonly<ReviewNeededCardProp
             title={r.title}
             cta={r.cta}
             tone={{
-                surface: "bg-gradient-to-br from-learning-review/15 to-learning-review/5",
+                surface: "",
                 icon: "text-learning-review",
                 iconBg: "bg-learning-review/15",
             }}
