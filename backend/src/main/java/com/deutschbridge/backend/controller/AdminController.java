@@ -7,6 +7,7 @@ import com.deutschbridge.backend.model.dto.AdminBulkDeleteUsersResult;
 import com.deutschbridge.backend.model.dto.AdminChangeAccountTypeRequest;
 import com.deutschbridge.backend.model.dto.AdminChangePasswordRequest;
 import com.deutschbridge.backend.model.dto.AdminCreateUserRequest;
+import com.deutschbridge.backend.model.dto.AdminPermanentDeleteUserRequest;
 import com.deutschbridge.backend.model.dto.AdminSetEnabledRequest;
 import com.deutschbridge.backend.model.dto.AdminUpdateUserRequest;
 import com.deutschbridge.backend.model.dto.AdminUserResponse;
@@ -14,6 +15,7 @@ import com.deutschbridge.backend.model.dto.ApiResponse;
 import com.deutschbridge.backend.model.entity.User;
 import com.deutschbridge.backend.model.enums.AccountType;
 import com.deutschbridge.backend.service.AdminAuditLogService;
+import com.deutschbridge.backend.service.AdminUserHardDeleteService;
 import com.deutschbridge.backend.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -29,11 +31,14 @@ import java.util.List;
 public class AdminController {
 
     private final UserService userService;
+    private final AdminUserHardDeleteService hardDeleteService;
     private final AdminAuditLogService adminAuditLogService;
     private final RequestContext requestContext;
 
-    public AdminController(UserService userService, AdminAuditLogService adminAuditLogService, RequestContext requestContext) {
+    public AdminController(UserService userService, AdminUserHardDeleteService hardDeleteService,
+                           AdminAuditLogService adminAuditLogService, RequestContext requestContext) {
         this.userService = userService;
+        this.hardDeleteService = hardDeleteService;
         this.adminAuditLogService = adminAuditLogService;
         this.requestContext = requestContext;
     }
@@ -44,6 +49,23 @@ public class AdminController {
                 .map(AdminUserResponse::fromEntity)
                 .toList();
         return ResponseEntity.ok(users);
+    }
+
+    @GetMapping("/users/deleted")
+    public ResponseEntity<List<AdminUserResponse>> getDeletedUsers() {
+        return ResponseEntity.ok(userService.findDeletedForAdmin().stream()
+                .map(AdminUserResponse::fromEntity)
+                .toList());
+    }
+
+    @PostMapping("/users/{id}/restore")
+    public ResponseEntity<ApiResponse<AdminUserResponse>> restoreUser(@PathVariable String id) throws DataNotFoundException {
+        User restored = userService.adminRestore(id);
+
+        adminAuditLogService.record(requestContext.getUserId(), requestContext.getUserEmail(),
+                "USER_RESTORED", "Restored user " + restored.getEmail());
+
+        return ResponseEntity.ok(new ApiResponse<>("User restored", AdminUserResponse.fromEntity(restored)));
     }
 
     @PostMapping("/users")
@@ -131,6 +153,20 @@ public class AdminController {
                 "USER_DELETED", "User " + deleted.getEmail());
 
         return ResponseEntity.ok(new ApiResponse<>("User deleted", null));
+    }
+
+    /** Irreversible: removes the user row and all of their data. Requires the user's email as confirmation. */
+    @PostMapping("/users/{id}/permanent-delete")
+    public ResponseEntity<ApiResponse<Void>> permanentlyDeleteUser(
+            @PathVariable String id,
+            @RequestBody @Valid AdminPermanentDeleteUserRequest request
+    ) throws DataNotFoundException {
+        String email = hardDeleteService.hardDelete(requestContext.getUserId(), id, request.confirmEmail());
+
+        adminAuditLogService.record(requestContext.getUserId(), requestContext.getUserEmail(),
+                "USER_PERMANENTLY_DELETED", "Permanently deleted user " + email + " (" + id + ")");
+
+        return ResponseEntity.ok(new ApiResponse<>("User permanently deleted", null));
     }
 
     /** Best-effort bulk delete - see UserService.adminBulkSoftDelete for the per-row behavior. */

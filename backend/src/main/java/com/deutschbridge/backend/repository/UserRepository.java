@@ -22,6 +22,8 @@ public interface UserRepository extends JpaRepository<User,String> {
 
     List<User> findAllByDeletedFalse();
 
+    List<User> findAllByDeletedTrue();
+
     long countByDeletedFalse();
 
     long countByDeletedFalseAndCreatedAtAfter(Instant after);
