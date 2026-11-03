@@ -8,7 +8,7 @@ import { BookOpen, ChevronLeft, ChevronRight, ClipboardCheck } from "lucide-reac
 import { getLevelMeta, levelThemeVars } from "@/componenets/learning/levelMeta";
 import { getGrammarLevelSummary, getGrammarLevelView } from "@/services/grammarService";
 import { GrammarLessonSummary } from "@/types/grammar";
-import Loading from "@/componenets/Loading";
+import GrammarListSkeleton from "@/componenets/grammar/GrammarListSkeleton";
 import { Badge } from "@/componenets/ui/badge";
 import { LearningLevelOption, LearningSearch } from "@/componenets/learning";
 import GrammarHeader from "@/componenets/grammar/GrammarHeader";
@@ -49,7 +49,7 @@ export default function GrammarLessonsPage() {
 
     // Only the current level's categories + lessons as light rows, cached per level. With a known
     // profile level this runs in parallel with the summary instead of waiting on it.
-    const { data: levelView, isLoading: levelLoading, error: levelError } = useQuery({
+    const { data: levelView, error: levelError } = useQuery({
         queryKey: ["grammar", "level", effectiveLevel],
         queryFn: () => getGrammarLevelView(effectiveLevel).then((res) => res.data),
         enabled: profileLevel !== null || selectedLevel !== null || !summaryLoading,
@@ -176,7 +176,6 @@ export default function GrammarLessonsPage() {
                     />
                 )}
 
-                {(summaryLoading || levelLoading) && <Loading />}
 
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                     <LearningSearch
@@ -213,6 +212,8 @@ export default function GrammarLessonsPage() {
                         ))}
                     </div>
                 </div>
+
+                {!levelView && !queryError && <GrammarListSkeleton label={t.common.loading} />}
 
                 <div className="mt-6 space-y-4">
                     {visibleCategories.map((category) => {

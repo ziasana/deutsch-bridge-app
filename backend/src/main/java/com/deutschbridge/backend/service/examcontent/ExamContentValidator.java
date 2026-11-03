@@ -471,9 +471,16 @@ public class ExamContentValidator {
 
     // ------------------------------------------------------------------ DTZ Schreiben (two alternative tasks, four points each)
 
+    /** "DTZ Schreiben - Aufgabe A oder B" and similar section names say nothing about the exercise. */
+    private static final java.util.regex.Pattern GENERIC_WRITING_CHOICE_TITLE = java.util.regex.Pattern.compile(
+            "(?i)aufgabe\\s*a\\s*(oder|/|und)\\s*(aufgabe\\s*)?b|^\\s*(dtz\\s*)?schreiben\\s*$|schriftliche\\s+kommunikation");
+
     private ParsedExercise readWritingChoiceExercise(int index, ExamContentSpec spec, JsonNode node, String p, String externalId,
                                                      String title, String instructions, List<Issue> issues) {
         ExamWritingChoiceReader.Result result = new ExamWritingChoiceReader(p, issues).read(spec, node);
+        if (title != null && GENERIC_WRITING_CHOICE_TITLE.matcher(title).find()) {
+            issues.add(error("TITLE_GENERIC", p + "title", "The title must describe the two tasks (e.g. \"Schwimmkurs anfragen / Einweihungsfeier einladen\"), not \"" + title + "\"."));
+        }
         if (instructions != null && !instructions.replaceAll("\\s+", " ").equals(spec.defaultInstructions().replaceAll("\\s+", " "))) {
             issues.add(warning("INSTRUCTIONS_DIFFER", p + "instructions", "The instruction differs from the standard DTZ wording: \"" + spec.defaultInstructions() + "\""));
         }

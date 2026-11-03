@@ -11,7 +11,7 @@ import { formatClock, formatDifference } from "@/lib/examTime";
 import { EXAM_TYPE_META } from "@/componenets/exam";
 import LearningPageHero from "@/componenets/learning/LearningPageHero";
 import HeroCollectionFilter from "@/componenets/learning/HeroCollectionFilter";
-import Loading from "@/componenets/Loading";
+import PageSkeleton from "@/componenets/PageSkeleton";
 import { cn } from "@/lib/utils";
 import { ExamTimeManagementRow } from "@/types/examTime";
 
@@ -131,7 +131,7 @@ function TimeManagementContent() {
     const sections = useMemo(() => Array.from(new Set(rows.map((r) => r.section))), [rows]);
     const shown = filter === "ALL" ? rows : rows.filter((r) => r.section === filter);
 
-    if (isLoading) return <Loading />;
+    if (isLoading) return <PageSkeleton />;
 
     return (
         <div className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10" dir="ltr">
@@ -204,7 +204,7 @@ function TimeManagementContent() {
 
 export default function TimeManagementPage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<PageSkeleton />}>
             <TimeManagementContent />
         </Suspense>
     );

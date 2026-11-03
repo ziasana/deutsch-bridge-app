@@ -79,4 +79,44 @@ public interface GrammarLessonRepository extends JpaRepository<GrammarLesson, St
     @Modifying
     @Query("UPDATE grammarLessons g SET g.category = null WHERE g.category = :category")
     void unassignCategory(GrammarCategory category);
+
+    /** One lesson as a list row: list columns only, never the lesson text, examples or quiz (the quiz is counted in SQL). */
+    interface LessonCardRow {
+        String getId();
+        String getTitle();
+        String getTitleFa();
+        String getSummary();
+        String getSummaryFa();
+        LearningLevel getLevel();
+        Integer getSortOrder();
+        String getCategoryId();
+        Integer getQuizCount();
+    }
+
+    /** {@link #findForLevelView} as light rows - what the learner list and its cache need. */
+    @Query("""
+            SELECT g.id AS id, g.title AS title, g.titleFa AS titleFa, g.summary AS summary, g.summaryFa AS summaryFa,
+                   g.level AS level, g.sortOrder AS sortOrder, c.id AS categoryId,
+                   CASE WHEN function('jsonb_typeof', g.quiz) = 'array' THEN cast(function('jsonb_array_length', g.quiz) AS integer) ELSE 0 END AS quizCount
+            FROM grammarLessons g LEFT JOIN g.category c
+            WHERE g.status = :status
+              AND ((c IS NOT NULL AND c.level = :categoryLevel) OR (c IS NULL AND g.level = :lessonLevel))
+            """)
+    List<LessonCardRow> findCardsForLevelView(@Param("categoryLevel") LearningLevel categoryLevel,
+                                              @Param("lessonLevel") LearningLevel lessonLevel,
+                                              @Param("status") GrammarLessonStatus status);
+
+    default List<LessonCardRow> findCardsForLevelView(LearningLevel level, GrammarLessonStatus status) {
+        return findCardsForLevelView(level, level, status);
+    }
+
+    /** Light rows for the given lessons (published only), e.g. the learner's saved lessons. */
+    @Query("""
+            SELECT g.id AS id, g.title AS title, g.titleFa AS titleFa, g.summary AS summary, g.summaryFa AS summaryFa,
+                   g.level AS level, g.sortOrder AS sortOrder, c.id AS categoryId,
+                   CASE WHEN function('jsonb_typeof', g.quiz) = 'array' THEN cast(function('jsonb_array_length', g.quiz) AS integer) ELSE 0 END AS quizCount
+            FROM grammarLessons g LEFT JOIN g.category c
+            WHERE g.status = :status AND g.id IN :ids
+            """)
+    List<LessonCardRow> findCardsByIds(@Param("ids") java.util.Collection<String> ids, @Param("status") GrammarLessonStatus status);
 }

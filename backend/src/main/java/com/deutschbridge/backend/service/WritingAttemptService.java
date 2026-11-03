@@ -179,11 +179,14 @@ public class WritingAttemptService {
 
     /** Aggregates the caller's attempts; issue counts only look at the most recent attempts so they reflect current weaknesses. */
     public WritingProgressResponse progress() {
-        List<WritingAttempt> all = attemptRepository.findByUserIdOrderBySubmittedAtDesc(requestContext.getUserId());
+        String userId = requestContext.getUserId();
+        // Only the newest attempts are read in full (texts, feedback); the totals come from one aggregate query.
+        List<WritingAttempt> newest = attemptRepository.findByUserIdOrderBySubmittedAtDesc(userId, org.springframework.data.domain.PageRequest.of(0, RECENT_ATTEMPTS));
+        WritingAttemptRepository.WritingTotals totals = attemptRepository.totalsForUser(userId);
         java.util.Map<String, WritingProgressResponse.Issue> issues = new java.util.LinkedHashMap<>();
         List<WritingAiFeedback.GrammarFix> fixes = new java.util.ArrayList<>();
 
-        List<WritingAttemptResponse> recent = all.stream().limit(RECENT_ATTEMPTS).map(this::toResponse).toList();
+        List<WritingAttemptResponse> recent = newest.stream().map(this::toResponse).toList();
         for (WritingAttemptResponse a : recent) {
             if (a.feedback() != null) {
                 for (WritingFeedback.Dimension d : a.feedback().dimensions()) {
@@ -204,11 +207,11 @@ public class WritingAttemptService {
                 .limit(3).toList();
 
         return new WritingProgressResponse(
-                all.size(),
-                (int) all.stream().map(WritingAttempt::getExerciseId).distinct().count(),
-                (int) all.stream().filter(a -> a.getParentAttemptId() != null).count(),
-                all.stream().mapToInt(WritingAttempt::getWordCount).sum(),
-                all.isEmpty() ? null : all.get(0).getSubmittedAt(),
+                (int) totals.getAttempts(),
+                (int) totals.getExercises(),
+                (int) totals.getRevisions(),
+                (int) totals.getWords(),
+                totals.getAttempts() == 0 ? null : totals.getLastSubmittedAt(),
                 top, fixes);
     }
 

@@ -144,15 +144,20 @@ public class RedemittelService {
                 .map(RedemittelCollectionItem::getPhraseId).collect(Collectors.toSet());
         int userLevel = userLevelOrdinal();
 
-        List<WritingPhrase> picked = phraseRepository.findUnlearned(userId).stream()
+        // Rank the pool by its ordering columns only, then load just the few phrases that are shown.
+        List<String> pickedIds = phraseRepository.findUnlearnedRows(userId).stream()
                 .sorted(Comparator
-                        .comparing((WritingPhrase p) -> !savedIds.contains(p.getId()))
+                        .comparing((WritingPhraseRepository.UnlearnedRow p) -> !savedIds.contains(p.getId()))
                         .thenComparingInt(p -> Math.abs(p.getLevel().ordinal() - userLevel))
-                        .thenComparing(WritingPhrase::getLevel)
-                        .thenComparingInt(WritingPhrase::getSortOrder)
-                        .thenComparing(WritingPhrase::getId))
+                        .thenComparing(WritingPhraseRepository.UnlearnedRow::getLevel)
+                        .thenComparingInt(p -> p.getSortOrder() != null ? p.getSortOrder() : 0)
+                        .thenComparing(WritingPhraseRepository.UnlearnedRow::getId))
                 .limit(remaining)
+                .map(WritingPhraseRepository.UnlearnedRow::getId)
                 .toList();
+        Map<String, WritingPhrase> byId = phraseRepository.findAllById(pickedIds).stream()
+                .collect(Collectors.toMap(WritingPhrase::getId, Function.identity()));
+        List<WritingPhrase> picked = pickedIds.stream().map(byId::get).filter(java.util.Objects::nonNull).toList();
         return toDtos(userId, picked);
     }
 

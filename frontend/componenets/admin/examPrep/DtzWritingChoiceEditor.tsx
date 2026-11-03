@@ -124,6 +124,10 @@ export default function DtzWritingChoiceEditor({ exerciseId, onClose, onSaved }:
                                             <input className={fieldClass} value={point} maxLength={300} onChange={(e) => setPoint(i, j, e.target.value)} />
                                         </label>
                                     ))}
+                                    <label className="block">
+                                        <span className={labelClass}>Task {t.taskLabel} possible solution (shown after submitting, optional)</span>
+                                        <textarea className={`${fieldClass} min-h-[120px]`} value={t.modelSolution} maxLength={3000} onChange={(e) => setTask(i, { modelSolution: e.target.value })} />
+                                    </label>
                                 </fieldset>
                             ))}
                         </div>

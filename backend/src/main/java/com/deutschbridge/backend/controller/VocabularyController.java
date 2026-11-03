@@ -46,6 +46,12 @@ public class VocabularyController {
         return ResponseEntity.ok(vocabularyService.findAllForUser(source, level, bookmarked));
     }
 
+    /** Just the saved words (for the "already saved" marks), not the whole vocabulary. */
+    @GetMapping("/words")
+    public ResponseEntity<List<String>> savedWords() {
+        return ResponseEntity.ok(vocabularyService.savedWords());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<VocabularyItemResponse> getById(@PathVariable String id) throws DataNotFoundException {
         return ResponseEntity.ok(vocabularyService.findById(id));

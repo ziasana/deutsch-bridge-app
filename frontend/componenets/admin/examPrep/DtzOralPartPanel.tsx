@@ -33,7 +33,7 @@ export default function DtzOralPartPanel({
     const [busy, setBusy] = useState(false);
     const [editor, setEditor] = useState<{ id: string | null } | null>(initialEditId ? { id: initialEditId } : null);
 
-    const refresh = () => queryClient.invalidateQueries({ queryKey: ["admin", "exam"] });
+    const refresh = () => void queryClient.invalidateQueries({ queryKey: ["admin", "exam"] });
 
     const createTemplate = async () => {
         setBusy(true);

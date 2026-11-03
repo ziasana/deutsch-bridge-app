@@ -7,7 +7,7 @@ import Link from "next/link";
 import { toast } from "@/lib/toast";
 import { getGrammarLessonById } from "@/services/grammarService";
 import { grammarLessonQueryKey } from "@/lib/grammarQueryCache";
-import Loading from "@/componenets/Loading";
+import GrammarLessonSkeleton from "@/componenets/grammar/GrammarLessonSkeleton";
 import { Dumbbell } from "lucide-react";
 import LearningPageHero from "@/componenets/learning/LearningPageHero";
 import GrammarQuizSection from "@/componenets/GrammarQuizSection";
@@ -16,7 +16,7 @@ import { localizedLessonText } from "@/lib/grammarLocalization";
 
 export default function GrammarPracticePage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<GrammarLessonSkeleton />}>
             <GrammarPracticeContent />
         </Suspense>
     );
@@ -52,7 +52,7 @@ function GrammarPracticeContent() {
         </div>
     );
 
-    if (loading) return <Loading />;
+    if (loading) return <GrammarLessonSkeleton label={t.common.loading} />;
     if (!lessonId) return message(t.grammar.noLesson);
     if (!lesson || (lesson.quiz?.length ?? 0) === 0) return message(t.grammar.notFoundLesson);
 

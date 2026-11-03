@@ -33,11 +33,15 @@ class LearningProgressOverviewTest {
     private void learner(User user, long learned, long own, long sharedLearned) throws Exception {
         when(requestContext.getUserEmail()).thenReturn("a@b.c");
         when(userService.findByEmail("a@b.c")).thenReturn(user);
-        when(repository.countByUserAndDailyWordIsNotNullAndIsLearnedTrue(user)).thenReturn(learned);
+        when(repository.learnedCounts(any(), any(LocalDateTime.class), any(LocalDateTime.class))).thenReturn(new LearningProgressRepository.LearnedCounts() {
+            public Long getDailyWords() { return learned; }
+            public Long getGrammar() { return 0L; }
+            public Long getReading() { return 0L; }
+            public Long getTotal() { return learned; }
+            public Long getToday() { return 0L; }
+        });
         when(dailyWords.countByAssignedTo(user)).thenReturn(own);
         when(repository.countLearnedSharedDailyWords(user)).thenReturn(sharedLearned);
-        when(repository.countByUserAndIsLearnedTrueAndLearnedAtBetween(any(), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(0L);
     }
 
     @Test

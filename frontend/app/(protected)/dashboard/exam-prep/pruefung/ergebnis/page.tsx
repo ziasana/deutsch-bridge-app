@@ -5,9 +5,9 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, RotateCw } from "lucide-react";
-import Loading from "@/componenets/Loading";
+import PageSkeleton from "@/componenets/PageSkeleton";
 import SimResultView from "@/componenets/exam/simulation/SimResultView";
-import { getSimulationHistory, getSimulationResult } from "@/services/examSimulationService";
+import { getSimulationHistory, getSimulationProfiles, getSimulationResult } from "@/services/examSimulationService";
 import { simulationError, simulationErrorMessage } from "@/lib/examSimulation";
 
 function ResultContent() {
@@ -31,6 +31,10 @@ function ResultContent() {
               .sort((a, b) => b.endedAtMs - a.endedAtMs)[0]
         : undefined;
 
+    // A failed exam can be taken again: find it in the overview (shared with the overview page's cache).
+    const profiles = useQuery({ queryKey: ["exam-simulation", "profiles"], queryFn: () => getSimulationProfiles().then((r) => r.data), enabled: !!data });
+    const retrySet = profiles.data?.flatMap((p) => p.sets).find((s) => s.status === "RETRY" && s.attemptId === attemptId);
+
     // Still running: the result does not exist yet, continue the exam instead.
     const running = simulationError(error)?.code === "ATTEMPT_IN_PROGRESS";
     useEffect(() => {
@@ -38,7 +42,7 @@ function ResultContent() {
     }, [running, attemptId, router]);
 
     if (!attemptId) return <p className="p-10 text-center text-foreground/70">Keine Prüfung ausgewählt.</p>;
-    if (isLoading || running) return <Loading />;
+    if (isLoading || running) return <PageSkeleton />;
     if (error || !data) {
         return (
             <div className="mx-auto max-w-lg p-10 text-center">
@@ -61,7 +65,12 @@ function ResultContent() {
                 </div>
                 <SimResultView data={data} previousScore={previous?.writtenScore ?? null} />
                 <div className="flex flex-wrap gap-3 pb-10">
-                    <Link href="/dashboard/exam-prep/pruefung" className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90">
+                    {retrySet && (
+                        <Link href={`/dashboard/exam-prep/pruefung?repeat=${encodeURIComponent(retrySet.id)}`} className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90">
+                            <RotateCw className="size-4" aria-hidden /> Wiederholung
+                        </Link>
+                    )}
+                    <Link href="/dashboard/exam-prep/pruefung" className={retrySet ? "inline-flex items-center gap-2 rounded-full border border-border bg-card px-6 py-2.5 text-sm font-semibold text-foreground transition hover:bg-accent" : "inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"}>
                         <RotateCw className="size-4" aria-hidden /> Weitere Prüfung starten
                     </Link>
                     <Link href="/dashboard/exam-prep/pruefung" className="rounded-full border border-border bg-card px-6 py-2.5 text-sm font-semibold text-foreground transition hover:bg-accent">
@@ -75,7 +84,7 @@ function ResultContent() {
 
 export default function ExamResultPage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<PageSkeleton />}>
             <ResultContent />
         </Suspense>
     );

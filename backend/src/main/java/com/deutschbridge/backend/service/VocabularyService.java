@@ -86,6 +86,16 @@ public class VocabularyService {
         return mapWithCurrentUserProgress(user, items, bookmarkedIds);
     }
 
+    /** The learner's saved words, trimmed and lower-cased, without progress or bookmarks - one small query. */
+    public List<String> savedWords() {
+        User user = userService.findByEmail(requestContext.getUserEmail());
+        return vocabularyItemRepository.findWordsByUser(user).stream()
+                .filter(java.util.Objects::nonNull)
+                .map(this::normalize)
+                .distinct()
+                .toList();
+    }
+
     public VocabularyItemResponse findById(String id) throws DataNotFoundException {
         User user = userService.findByEmail(requestContext.getUserEmail());
         VocabularyItem item = ownedEntityById(user, id);

@@ -32,6 +32,36 @@ public interface ExamExerciseRepository extends JpaRepository<ExamExercise, Stri
                                      @Param("taskType") ExamTaskType taskType,
                                      @Param("examType") ExamType examType);
 
+    /** One published exercise as a list row: the list columns and the question count only - never the texts or the questions. */
+    interface SummaryRow {
+        String getId();
+        String getTitle();
+        ExamSection getSection();
+        ExamTaskType getTaskType();
+        LearningLevel getLevel();
+        Integer getPartNumber();
+        String getTeilDescription();
+        ExamType getExamType();
+        Integer getQuestionsCount();
+    }
+
+    /** {@link #findFiltered} for published exercises as light rows (the lists of the exam-prep pages). */
+    @Query("""
+            SELECT e.id AS id, e.title AS title, e.section AS section, e.taskType AS taskType, e.level AS level, e.partNumber AS partNumber,
+                   e.teilDescription AS teilDescription, e.examType AS examType,
+                   CASE WHEN function('jsonb_typeof', e.questions) = 'array' THEN cast(function('jsonb_array_length', e.questions) AS integer) ELSE 0 END AS questionsCount
+            FROM examExercises e
+            WHERE e.published = true
+              AND (:section IS NULL OR e.section = :section)
+              AND (:level IS NULL OR e.level = :level OR e.level IS NULL)
+              AND (:taskType IS NULL OR e.taskType = :taskType)
+              AND (:examType IS NULL OR e.examType = :examType)
+            """)
+    List<SummaryRow> findSummaryRows(@Param("section") ExamSection section,
+                                     @Param("level") LearningLevel level,
+                                     @Param("taskType") ExamTaskType taskType,
+                                     @Param("examType") ExamType examType);
+
     /** Published exercises of one exam / level / section: the candidate pool of the full exam simulation. */
     @Query("""
             SELECT e FROM examExercises e

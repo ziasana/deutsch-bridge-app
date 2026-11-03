@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Play } from "lucide-react";
 import { getExamExercisesSummary } from "@/services/examService";
 import { ExamSection, ExamTypeCode } from "@/types/exam";
-import Loading from "@/componenets/Loading";
+import PageSkeleton from "@/componenets/PageSkeleton";
 import LearningProgressBar from "@/componenets/learning/LearningProgressBar";
 import {
     EXAM_TYPE_META,
@@ -60,7 +60,7 @@ function TeilContent() {
     });
 
     if (!section || !level || !partKey || !VALID_SECTIONS.has(section)) return <NotFound />;
-    if (isLoading) return <Loading />;
+    if (isLoading) return <PageSkeleton />;
 
     const meta = EXAM_TYPE_META[typedSection];
     const group = findGroupByKey(exercises, typedSection, level, partKey);
@@ -175,7 +175,7 @@ function TeilContent() {
 
 export default function TeilPage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<PageSkeleton />}>
             <TeilContent />
         </Suspense>
     );

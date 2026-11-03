@@ -102,7 +102,7 @@ export default function ExamExerciseBrowser({ section, examType, teilNumbers, ta
         enabled: hasHydrated && userProfile?.role === "ADMIN" && applied !== null,
     });
 
-    const refresh = () => queryClient.invalidateQueries({ queryKey: ["admin", "exam"] });
+    const refresh = () => void queryClient.invalidateQueries({ queryKey: ["admin", "exam"] });
 
     const search = (e: React.FormEvent) => {
         e.preventDefault();

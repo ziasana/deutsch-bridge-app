@@ -11,7 +11,7 @@ import {
     getReadingLevelSummary,
     removeReadingArticleBookmark,
 } from "@/services/readingService";
-import Loading from "@/componenets/Loading";
+import { ReadingListSkeleton } from "@/componenets/reading/ReadingSkeletons";
 import ArticleCard from "@/componenets/reading/ArticleCard";
 import {
     LearningLevelOption,
@@ -90,7 +90,6 @@ export default function ReadingPage() {
     // with a known profile level this runs in parallel with the summary instead of waiting on it.
     const {
         data: articlePage,
-        isLoading: listLoading,
         isPlaceholderData,
         error: listError,
     } = useQuery({
@@ -201,7 +200,6 @@ export default function ReadingPage() {
                     />
                 )}
 
-                {(summaryLoading || listLoading) && <Loading />}
 
                 <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
                     <LearningSearch
@@ -262,6 +260,8 @@ export default function ReadingPage() {
                         ))}
                     </div>
                 )}
+
+                {!articlePage && !listError && <ReadingListSkeleton label={t.common.loading} />}
 
                 <div className={cn("mt-6 grid grid-flow-dense gap-5 transition-opacity sm:grid-cols-2", isPlaceholderData && "opacity-60")}>
                     {articles.map((article, idx) => (

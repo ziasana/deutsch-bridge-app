@@ -78,13 +78,26 @@ class RedemittelServiceTest {
 
     // ---- today ----
 
+    /** The pool is ranked from its light rows, and only the picked phrases are loaded by id. */
+    private void stubUnlearned(WritingPhrase... phrases) {
+        List<WritingPhraseRepository.UnlearnedRow> rows = java.util.Arrays.stream(phrases).map(p -> (WritingPhraseRepository.UnlearnedRow) new WritingPhraseRepository.UnlearnedRow() {
+            public String getId() { return p.getId(); }
+            public LearningLevel getLevel() { return p.getLevel(); }
+            public Integer getSortOrder() { return p.getSortOrder(); }
+        }).toList();
+        when(phraseRepository.findUnlearnedRows("u1")).thenReturn(rows);
+        when(phraseRepository.findAllById(any())).thenAnswer(inv -> {
+            java.util.Collection<String> ids = inv.getArgument(0);
+            return java.util.Arrays.stream(phrases).filter(p -> ids.contains(p.getId())).toList();
+        });
+    }
+
     @Test
     @DisplayName("today -> the daily target, nearest to the learner's level first")
     void todayPrefersLearnerLevel() {
         when(progressRepository.countByUserIdAndLearnedAtAfter(eq("u1"), any())).thenReturn(0L);
-        when(phraseRepository.findUnlearned("u1")).thenReturn(List.of(
-                phrase("c1", LearningLevel.C1, 0), phrase("a2", LearningLevel.A2, 0), phrase("b1a", LearningLevel.B1, 0),
-                phrase("b2", LearningLevel.B2, 0), phrase("b1b", LearningLevel.B1, 1)));
+        stubUnlearned(phrase("c1", LearningLevel.C1, 0), phrase("a2", LearningLevel.A2, 0), phrase("b1a", LearningLevel.B1, 0),
+                phrase("b2", LearningLevel.B2, 0), phrase("b1b", LearningLevel.B1, 1));
 
         List<String> ids = service.today().stream().map(RedemittelDto::id).toList();
 
@@ -95,9 +108,8 @@ class RedemittelServiceTest {
     @DisplayName("today -> expressions the learner saved come first, even from another level")
     void todaySavedFirst() {
         when(progressRepository.countByUserIdAndLearnedAtAfter(eq("u1"), any())).thenReturn(0L);
-        when(phraseRepository.findUnlearned("u1")).thenReturn(List.of(
-                phrase("b1a", LearningLevel.B1, 0), phrase("b1b", LearningLevel.B1, 1), phrase("b1c", LearningLevel.B1, 2),
-                phrase("c2", LearningLevel.C2, 0)));
+        stubUnlearned(phrase("b1a", LearningLevel.B1, 0), phrase("b1b", LearningLevel.B1, 1), phrase("b1c", LearningLevel.B1, 2),
+                phrase("c2", LearningLevel.C2, 0));
         RedemittelCollectionItem saved = new RedemittelCollectionItem();
         saved.setPhraseId("c2");
         when(collectionRepository.findByUserId("u1")).thenReturn(List.of(saved));
@@ -109,7 +121,7 @@ class RedemittelServiceTest {
     @DisplayName("today -> only what is left of the target once some were learned today")
     void todayRespectsAlreadyLearned() {
         when(progressRepository.countByUserIdAndLearnedAtAfter(eq("u1"), any())).thenReturn(2L);
-        when(phraseRepository.findUnlearned("u1")).thenReturn(List.of(phrase("a", LearningLevel.B1, 0), phrase("b", LearningLevel.B1, 1)));
+        stubUnlearned(phrase("a", LearningLevel.B1, 0), phrase("b", LearningLevel.B1, 1));
         assertEquals(1, service.today().size());
     }
 
@@ -126,7 +138,7 @@ class RedemittelServiceTest {
     void todayConfigurableTarget() {
         when(appSettingService.getInt(RedemittelService.DAILY_NEW_KEY, 3)).thenReturn(1);
         when(progressRepository.countByUserIdAndLearnedAtAfter(eq("u1"), any())).thenReturn(0L);
-        when(phraseRepository.findUnlearned("u1")).thenReturn(List.of(phrase("a", LearningLevel.B1, 0), phrase("b", LearningLevel.B1, 1)));
+        stubUnlearned(phrase("a", LearningLevel.B1, 0), phrase("b", LearningLevel.B1, 1));
         assertEquals(1, service.today().size());
     }
 

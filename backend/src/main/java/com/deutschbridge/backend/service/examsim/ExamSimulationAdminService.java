@@ -106,6 +106,7 @@ public class ExamSimulationAdminService {
      * Records the official (MANUAL) assessment of a part and recomputes the attempt result. Re-assessing is allowed and audited.
      * Criterion scores must lie within the rubric and be multiples of 0.5; the part score is their sum.
      */
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", allEntries = true)
     @Transactional
     public ExamResult assess(String assessorId, String attemptId, String partKey, AssessmentRequest request) throws DataNotFoundException {
         ExamSimulationAttempt attempt = attemptRepository.findByIdForUpdate(attemptId).orElseThrow(() -> new DataNotFoundException("Exam attempt not found!"));

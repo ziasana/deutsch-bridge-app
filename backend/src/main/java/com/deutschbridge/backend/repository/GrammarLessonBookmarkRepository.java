@@ -36,4 +36,19 @@ public interface GrammarLessonBookmarkRepository extends JpaRepository<GrammarLe
             "SELECT 1 FROM learning_progress p WHERE p.user = :user AND p.lesson = l AND p.isLearned = true) " +
             "ORDER BY b.createdAt ASC")
     List<GrammarLessonBookmark> findPending(@Param("user") User user, @Param("status") GrammarLessonStatus status);
+
+    /**
+     * Same list as {@link #findPending}, but only the lesson id and the bookmark time - never the lesson texts and quizzes
+     * (the "saved for later" card reads its titles from the cached lessons).
+     */
+    @Query("SELECT l.id AS lessonId, b.createdAt AS createdAt FROM grammar_lesson_bookmarks b JOIN b.lesson l " +
+            "WHERE b.user = :user AND l.status = :status AND NOT EXISTS (" +
+            "SELECT 1 FROM learning_progress p WHERE p.user = :user AND p.lesson = l AND p.isLearned = true) " +
+            "ORDER BY b.createdAt ASC")
+    List<PendingBookmarkRow> findPendingRows(@Param("user") User user, @Param("status") GrammarLessonStatus status);
+
+    interface PendingBookmarkRow {
+        String getLessonId();
+        java.time.LocalDateTime getCreatedAt();
+    }
 }

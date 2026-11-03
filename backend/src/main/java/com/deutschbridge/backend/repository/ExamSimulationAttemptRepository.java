@@ -28,6 +28,38 @@ public interface ExamSimulationAttemptRepository extends JpaRepository<ExamSimul
 
     List<ExamSimulationAttempt> findByUserIdOrderByStartedAtDesc(String userId);
 
+    /**
+     * One attempt as the overview and the history need it. The full row also carries the whole frozen profile (every part, timer and rubric)
+     * and the stage states; this reads the few scalars, the result and three values pulled out of the snapshot in SQL instead.
+     */
+    interface AttemptRow {
+        String getId();
+        String getSetId();
+        String getProfileCode();
+        int getProfileVersion();
+        SimulationAttemptStatus getStatus();
+        Instant getStartedAt();
+        Instant getEndedAt();
+        Instant getFinalDeadlineAt();
+        Instant getPausedAt();
+        com.deutschbridge.backend.model.examsim.ExamResult getResult();
+        String getTitle();
+        String getWrittenMaxText();
+        String getOralMaxText();
+    }
+
+    @Query("""
+            SELECT a.id AS id, a.setId AS setId, a.profileCode AS profileCode, a.profileVersion AS profileVersion, a.status AS status,
+                   a.startedAt AS startedAt, a.endedAt AS endedAt, a.finalDeadlineAt AS finalDeadlineAt, a.pausedAt AS pausedAt, a.result AS result,
+                   function('jsonb_extract_path_text', a.profileSnapshot, 'title') AS title,
+                   function('jsonb_extract_path_text', a.profileSnapshot, 'writtenMaxPoints') AS writtenMaxText,
+                   function('jsonb_extract_path_text', a.profileSnapshot, 'oralMaxPoints') AS oralMaxText
+            FROM ExamSimulationAttempt a
+            WHERE a.userId = :userId
+            ORDER BY a.startedAt DESC
+            """)
+    List<AttemptRow> findRowsByUser(@Param("userId") String userId);
+
     List<ExamSimulationAttempt> findByUserIdAndProfileCodeOrderByStartedAtDesc(String userId, String profileCode);
 
     @Query("SELECT a.id FROM ExamSimulationAttempt a WHERE a.status = com.deutschbridge.backend.model.enums.SimulationAttemptStatus.IN_PROGRESS AND a.finalDeadlineAt < :now")
@@ -41,4 +73,7 @@ public interface ExamSimulationAttemptRepository extends JpaRepository<ExamSimul
     List<ExamSimulationAttempt> findByUserIdAndSetIdIn(String userId, java.util.Collection<String> setIds);
 
     boolean existsByUserIdAndSetId(String userId, String setId);
+
+    /** The learner's latest attempt on one exam of a profile - decides whether it may be taken again. */
+    Optional<ExamSimulationAttempt> findFirstByUserIdAndSetIdOrderByStartedAtDesc(String userId, String setId);
 }

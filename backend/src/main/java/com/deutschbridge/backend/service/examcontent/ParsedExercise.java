@@ -220,7 +220,8 @@ public record ParsedExercise(
     }
 
     public record WritingChoiceTask(String label, String title, String topic, String communicationType, String situation,
-                                    String recipientName, String recipientRole, String writingInstruction, List<String> points) {
+                                    String recipientName, String recipientRole, String writingInstruction, List<String> points,
+                                    String modelSolution) {
     }
 
     /**

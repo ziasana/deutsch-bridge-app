@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { keepPreviousData, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Loading from "@/componenets/Loading";
+import PageSkeleton from "@/componenets/PageSkeleton";
 import { toast } from "@/lib/toast";
 import { ThumbsUp, MessageSquare, ArrowRight, ChevronLeft, ChevronRight, Flame, Layers } from "lucide-react";
 import {
@@ -65,7 +65,7 @@ const listQueryKey = (
 /** useSearchParams needs a Suspense boundary. */
 export default function ExpressionsPage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<PageSkeleton />}>
             <ExpressionsPageContent />
         </Suspense>
     );

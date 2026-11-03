@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Check, LogOut, Send } from "lucide-react";
-import Loading from "@/componenets/Loading";
+import SimRunSkeleton from "@/componenets/exam/simulation/SimRunSkeleton";
 import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
 import SimExerciseView from "@/componenets/exam/simulation/SimExerciseView";
 import SimExitDialog from "@/componenets/exam/simulation/SimExitDialog";
@@ -24,6 +24,7 @@ import {
     submitSimulationAttempt,
 } from "@/services/examSimulationService";
 import { enterFullscreen, exitFullscreen } from "@/lib/fullscreen";
+import { takeAttemptState } from "@/lib/simulationHandoff";
 import { simulationError, simulationErrorMessage } from "@/lib/examSimulation";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -84,6 +85,12 @@ function ExamRunContent() {
     useEffect(() => {
         if (!attemptId) return;
         let cancelled = false;
+        // A freshly started exam arrives with its state from the start request: no second download.
+        const handedOver = fresh ? takeAttemptState(attemptId) : null;
+        if (handedOver) {
+            applyState(handedOver);
+            return;
+        }
         const load = fresh ? getSimulationAttempt(attemptId) : resumeSimulationAttempt(attemptId);
         load.then((res) => !cancelled && applyState(res.data)).catch((error) => {
             if (cancelled) return;
@@ -254,7 +261,7 @@ function ExamRunContent() {
             </div>
         );
     }
-    if (!state || !stage) return <Loading />;
+    if (!state || !stage) return <SimRunSkeleton />;
 
     if (state.paused) {
         return (
@@ -377,7 +384,7 @@ function ExamRunContent() {
 
 export default function ExamRunPage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<SimRunSkeleton />}>
             <ExamRunContent />
         </Suspense>
     );

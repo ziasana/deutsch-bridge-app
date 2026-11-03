@@ -19,6 +19,10 @@ public interface VocabularyItemRepository extends JpaRepository<VocabularyItem, 
 
     List<VocabularyItem> findByUserOrderByCreatedAtDesc(User user);
 
+    /** Only the words of a learner's vocabulary - for "is this word already saved" checks that need nothing else. */
+    @org.springframework.data.jpa.repository.Query("SELECT v.word FROM vocabulary_items v WHERE v.user = :user")
+    List<String> findWordsByUser(@org.springframework.data.repository.query.Param("user") User user);
+
     List<VocabularyItem> findTop10ByUserOrderByCreatedAtDesc(User user);
 
     List<VocabularyItem> findByUserAndSource(User user, VocabularySource source);

@@ -123,8 +123,8 @@ class LexiconServiceTest {
     // getReviewQueue
     // ---------------------------------------------------------------
     @Test
-    @DisplayName("getReviewQueue -> should exclude KNOWN words and cards not yet due")
-    void getReviewQueue_shouldExcludeKnownAndNotYetDue() {
+    @DisplayName("getReviewQueue -> should return the due cards the database selects (filtering and order are tested against Postgres)")
+    void getReviewQueue_shouldReturnTheDueCards() {
         User user = createUser();
 
         UserWordProgress due = new UserWordProgress();
@@ -132,19 +132,9 @@ class LexiconServiceTest {
         due.setStatus(WordProgressStatus.NEW);
         due.setSrsDueAt(LocalDateTime.now().minusDays(1));
 
-        UserWordProgress notYetDue = new UserWordProgress();
-        notYetDue.setLemma("spaeter");
-        notYetDue.setStatus(WordProgressStatus.LEARNING);
-        notYetDue.setSrsDueAt(LocalDateTime.now().plusDays(3));
-
-        UserWordProgress known = new UserWordProgress();
-        known.setLemma("bekannt");
-        known.setStatus(WordProgressStatus.KNOWN);
-        known.setSrsDueAt(LocalDateTime.now().minusDays(1));
-
         when(requestContext.getUserEmail()).thenReturn(user.getEmail());
         when(userService.findByEmail(user.getEmail())).thenReturn(user);
-        when(repository.findByUser(user)).thenReturn(List.of(due, notYetDue, known));
+        when(repository.findDueForReview(org.mockito.ArgumentMatchers.eq(user), org.mockito.ArgumentMatchers.any(LocalDateTime.class))).thenReturn(List.of(due));
 
         List<UserWordProgressResponse> queue = service.getReviewQueue();
 

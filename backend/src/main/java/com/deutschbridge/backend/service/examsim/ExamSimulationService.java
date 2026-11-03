@@ -109,6 +109,7 @@ public class ExamSimulationService {
                 .getSingleResult();
     }
 
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", key = "#userId")
     @Transactional
     public AttemptState start(String userId, String profileId, String setId) throws DataNotFoundException {
         ExamProfile profile = profileRepository.findById(profileId).orElseThrow(() -> new DataNotFoundException("Exam profile not found!"));
@@ -133,7 +134,9 @@ public class ExamSimulationService {
         }
 
         ExamSimulationSet set = setService.requirePublished(profile, setId);
-        if (attemptRepository.existsByUserIdAndSetId(userId, set.getId())) {
+        // An exam can be taken once - unless the last attempt was finished and not passed: then it can be repeated.
+        Optional<ExamSimulationAttempt> previous = attemptRepository.findFirstByUserIdAndSetIdOrderByStartedAtDesc(userId, set.getId());
+        if (previous.isPresent() && !ExamRetryRule.canRepeat(previous.get().getStatus(), previous.get().getResult())) {
             throw ExamSimulationException.conflict("SET_ALREADY_STARTED", "You have already taken this exam.");
         }
         List<ExamSetService.StartPart> startParts = setService.resolveForStart(profile, set);
@@ -171,6 +174,7 @@ public class ExamSimulationService {
     }
 
     /** Re-enters a running attempt (browser refresh, new device). Counts against the profile's resume limit, if any. */
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", key = "#userId")
     @Transactional
     public AttemptState resume(String userId, String attemptId) throws DataNotFoundException {
         ExamSimulationAttempt attempt = loadLocked(userId, attemptId);
@@ -190,6 +194,7 @@ public class ExamSimulationService {
     }
 
     /** Current server-side state without counting as a resume (also advances overdue stages). */
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", key = "#userId")
     @Transactional
     public AttemptState getState(String userId, String attemptId) throws DataNotFoundException {
         ExamSimulationAttempt attempt = loadLocked(userId, attemptId);
@@ -204,6 +209,7 @@ public class ExamSimulationService {
      * section changes are refused. To keep the attempt from being swept as overdue meanwhile, the final deadline is pushed out
      * by the longest pause allowed.
      */
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", key = "#userId")
     @Transactional
     public AttemptState pause(String userId, String attemptId) throws DataNotFoundException {
         ExamSimulationAttempt attempt = loadLocked(userId, attemptId);
@@ -227,6 +233,7 @@ public class ExamSimulationService {
     }
 
     /** Ends a pause: the running section gets back exactly the time it had left when it was paused. */
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", key = "#userId")
     @Transactional
     public AttemptState continueAfterPause(String userId, String attemptId) throws DataNotFoundException {
         ExamSimulationAttempt attempt = loadLocked(userId, attemptId);
@@ -252,6 +259,7 @@ public class ExamSimulationService {
 
     // ================================================================ answers
 
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", key = "#userId")
     @Transactional
     public SaveAnswersResponse saveAnswers(String userId, String attemptId, SaveAnswersRequest request) throws DataNotFoundException {
         ExamSimulationAttempt attempt = loadLocked(userId, attemptId);
@@ -368,6 +376,7 @@ public class ExamSimulationService {
     // ================================================================ sections / submit / cancel
 
     /** Ends the running section early (irreversible); the next section starts now. Completing the last section submits the exam. */
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", key = "#userId")
     @Transactional
     public AttemptState completeCurrentStage(String userId, String attemptId) throws DataNotFoundException {
         ExamSimulationAttempt attempt = loadLocked(userId, attemptId);
@@ -391,6 +400,7 @@ public class ExamSimulationService {
     }
 
     /** Final submission. Idempotent: submitting a finished attempt again returns the stored result without re-scoring. */
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", key = "#userId")
     @Transactional
     public ResultResponse submit(String userId, String attemptId) throws DataNotFoundException {
         ExamSimulationAttempt attempt = loadLocked(userId, attemptId);
@@ -406,6 +416,7 @@ public class ExamSimulationService {
         return resultOf(attempt);
     }
 
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", key = "#userId")
     @Transactional
     public AttemptSummary cancel(String userId, String attemptId) throws DataNotFoundException {
         ExamSimulationAttempt attempt = loadLocked(userId, attemptId);
@@ -429,6 +440,7 @@ public class ExamSimulationService {
         return views.summary(attempt);
     }
 
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", key = "#userId")
     @Transactional
     public ResultResponse getResult(String userId, String attemptId) throws DataNotFoundException {
         ExamSimulationAttempt attempt = loadLocked(userId, attemptId);
@@ -444,8 +456,15 @@ public class ExamSimulationService {
 
     @Transactional(readOnly = true)
     public HistoryResponse history(String userId) {
-        List<ExamSimulationAttempt> attempts = attemptRepository.findByUserIdOrderByStartedAtDesc(userId);
-        return historyOf(attempts);
+        // Light rows: the history lists summaries and score points only, so the frozen profile and the stages stay unread.
+        List<ExamSimulationAttemptRepository.AttemptRow> rows = attemptRepository.findRowsByUser(userId);
+        List<AttemptSummary> summaries = rows.stream().map(views::summary).toList();
+        List<ProgressPoint> progress = rows.stream()
+                .filter(a -> a.getResult() != null && a.getEndedAt() != null && (a.getStatus() == SimulationAttemptStatus.COMPLETED || a.getStatus() == SimulationAttemptStatus.EXPIRED))
+                .sorted(java.util.Comparator.comparing(ExamSimulationAttemptRepository.AttemptRow::getEndedAt))
+                .map(a -> new ProgressPoint(a.getId(), a.getEndedAt().toEpochMilli(), a.getResult().writtenScore(), a.getResult().writtenPercentage(), a.getResult().writtenComplete()))
+                .toList();
+        return new HistoryResponse(summaries, progress);
     }
 
     HistoryResponse historyOf(List<ExamSimulationAttempt> attempts) {
@@ -461,6 +480,7 @@ public class ExamSimulationService {
     // ================================================================ scheduler hook
 
     /** Finalises one overdue attempt (called per attempt by the scheduler). @return true if it was expired */
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", allEntries = true)
     @Transactional
     public boolean expireIfOverdue(String attemptId) {
         Optional<ExamSimulationAttempt> found = attemptRepository.findByIdForUpdate(attemptId);
@@ -604,10 +624,13 @@ public class ExamSimulationService {
     }
 
     private AttemptState state(ExamSimulationAttempt attempt) {
-        List<ExamSimulationAttemptPart> parts = partRepository.findByAttemptIdOrderByPartKeyAscOrdinalAsc(attempt.getId());
+        // The frozen exercises are large: only the parts of the section on screen are read in full, the others are just counted.
+        java.util.Map<String, Integer> questionCounts = partRepository.questionCounts(attempt.getId()).stream()
+                .collect(java.util.stream.Collectors.toMap(ExamSimulationAttemptPartRepository.QuestionCount::getPartKey, q -> q.getTotal() == null ? 0 : q.getTotal().intValue()));
         List<ExamSimulationAnswer> answers = answerRepository.findByAttemptId(attempt.getId());
         boolean timeUp = attempt.getStatus() == SimulationAttemptStatus.IN_PROGRESS && !ExamStageClock.current(attempt.getStages()).isRunning();
-        return views.state(attempt, parts, answers, timeUp, audioPlayRepository.findByAttemptId(attempt.getId()));
+        return views.state(attempt, keys -> partRepository.findByAttemptIdAndPartKeyInOrderByPartKeyAscOrdinalAsc(attempt.getId(), keys), questionCounts,
+                answers, timeUp, audioPlayRepository.findByAttemptId(attempt.getId()));
     }
 
     ResultResponse resultOf(ExamSimulationAttempt attempt) {

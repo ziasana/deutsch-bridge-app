@@ -31,9 +31,20 @@ public class ReadingCategoryService {
 
     /** For the student-facing filter dropdown and the admin article form's category select. */
     public List<ReadingCategoryResponse> findAllPublic() {
-        return readingCategoryRepository.findAllByOrderByTitleAsc().stream()
+        List<ReadingCategoryResponse> cached = publicList;
+        if (cached != null) return cached;
+        List<ReadingCategoryResponse> loaded = readingCategoryRepository.findAllByOrderByTitleAsc().stream()
                 .map(c -> new ReadingCategoryResponse(c.getId(), c.getTitle()))
                 .toList();
+        publicList = loaded;
+        return loaded;
+    }
+
+    /** The category dropdown is the same for everyone and changes only when an admin edits a category, so it is kept in memory until then. */
+    private volatile List<ReadingCategoryResponse> publicList;
+
+    private void clearPublicList() {
+        publicList = null;
     }
 
     /** Admin category table: same list, plus how many articles currently reference each one. */
@@ -48,6 +59,7 @@ public class ReadingCategoryService {
         ReadingCategory category = new ReadingCategory();
         category.setTitle(title);
         category = readingCategoryRepository.save(category);
+        clearPublicList();
         return new ReadingCategoryAdminResponse(category.getId(), category.getTitle(), 0);
     }
 
@@ -59,6 +71,7 @@ public class ReadingCategoryService {
         category.setTitle(title);
         category = readingCategoryRepository.save(category);
         contentCacheService.evictAllReadingArticleListPages();
+        clearPublicList();
         return new ReadingCategoryAdminResponse(category.getId(), category.getTitle(), readingArticleRepository.countByCategory(category));
     }
 
@@ -72,6 +85,7 @@ public class ReadingCategoryService {
                     "This category is used by " + articleCount + " article(s). Reassign or remove them first.");
         }
         readingCategoryRepository.delete(category);
+        clearPublicList();
     }
 
     /** Bulk-import convenience: reuse an existing category by title (case-insensitive), or create one. */
@@ -83,6 +97,7 @@ public class ReadingCategoryService {
                 .orElseGet(() -> {
                     ReadingCategory category = new ReadingCategory();
                     category.setTitle(trimmed);
+                    clearPublicList();
                     return readingCategoryRepository.save(category);
                 });
     }

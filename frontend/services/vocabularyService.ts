@@ -15,6 +15,11 @@ export interface GetVocabularyParams {
     bookmarked?: boolean;
 }
 
+/** Only the learner's saved words (lower-cased), for the "already saved" marks - far smaller than the whole vocabulary. */
+export const getSavedVocabularyWords = async () => {
+    return await api.get<string[]>("/vocabulary/words");
+};
+
 export const getVocabulary = async (params: GetVocabularyParams = {}) => {
     return await api.get<VocabularyItem[]>("/vocabulary", { params });
 };

@@ -39,9 +39,11 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
@@ -100,7 +102,9 @@ public class LearningProgressService {
     @Transactional
     @Caching(evict = {
             @CacheEvict(cacheNames = "readingLevelSummary", key = "@requestContext.getUserId()", condition = "#request.readingId() != null"),
-            @CacheEvict(cacheNames = "grammarLevelSummary", key = "@requestContext.getUserId()", condition = "#request.lessonId() != null")
+            @CacheEvict(cacheNames = "grammarLevelSummary", key = "@requestContext.getUserId()", condition = "#request.lessonId() != null"),
+            @CacheEvict(cacheNames = "progressOverview", key = "@requestContext.getUserId()"),
+            @CacheEvict(cacheNames = "progressStats", key = "@requestContext.getUserId()")
     })
     public void save(LearningProgressRequest request) throws DataNotFoundException {
 
@@ -193,17 +197,22 @@ public class LearningProgressService {
                 }).toList();
     }
 
+    @org.springframework.cache.annotation.Cacheable(cacheNames = "progressOverview", key = "@requestContext.getUserId()")
     public OverviewResponse getOverview() {
         User user = userService.findByEmail(requestContext.getUserEmail());
 
-        int dailyWordsLearned = (int) repository.countByUserAndDailyWordIsNotNullAndIsLearnedTrue(user);
-        int grammarLearned = (int) repository.countByUserAndLessonIsNotNullAndIsLearnedTrue(user);
+        LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+        LocalDateTime startOfTomorrow = startOfToday.plusDays(1);
+        // The learned counts come from one query (they used to be five).
+        LearningProgressRepository.LearnedCounts learned = repository.learnedCounts(user, startOfToday, startOfTomorrow);
+        int dailyWordsLearned = count(learned.getDailyWords());
+        int grammarLearned = count(learned.getGrammar());
         // "Learned" for expressions means active knowledge (ACTIVE/MASTERED mastery), not just
         // recognition - a boolean checkbox can't capture that, see ExpressionPracticeService.
-        int expressionsActive = (int) expressionProgressRepository.countByUserAndMasteryLevelIn(
-                user, List.of(ExpressionMasteryLevel.ACTIVE, ExpressionMasteryLevel.MASTERED));
-        int readingLearned = (int) repository.countByUserAndReadingIsNotNullAndIsLearnedTrue(user);
-        int totalLearned = (int) repository.countByUserAndIsLearnedTrue(user) + expressionsActive;
+        Map<ExpressionMasteryLevel, Long> expressionLevels = expressionMasteryCounts(user);
+        int expressionsActive = (int) (expressionLevels.getOrDefault(ExpressionMasteryLevel.ACTIVE, 0L) + expressionLevels.getOrDefault(ExpressionMasteryLevel.MASTERED, 0L));
+        int readingLearned = count(learned.getReading());
+        int totalLearned = count(learned.getTotal()) + expressionsActive;
 
         // Daily words belong to the learner: each day the AI generates their own set (see
         // DailyWordService), and the shared seed pool is only a fallback for when that fails. The total
@@ -212,15 +221,12 @@ public class LearningProgressService {
         // exceed the total.
         int dailyWordsTotal = (int) (dailyWordRepository.countByAssignedTo(user)
                 + repository.countLearnedSharedDailyWords(user));
-        int grammarTotal = (int) grammarLessonRepository.count();
-        int expressionsTotal = (int) expressionRepository.countByStatus(ExpressionStatus.PUBLISHED);
-        int readingTotal = (int) readingArticleRepository.count();
+        ContentTotals totals = contentTotals();
+        int grammarTotal = (int) totals.grammarLessons();
+        int expressionsTotal = (int) totals.expressionsPublished();
+        int readingTotal = (int) totals.readingArticles();
 
-        LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
-        LocalDateTime startOfTomorrow = startOfToday.plusDays(1);
-        int itemsLearnedToday = (int) repository.countByUserAndIsLearnedTrueAndLearnedAtBetween(
-                user, startOfToday, startOfTomorrow
-        );
+        int itemsLearnedToday = count(learned.getToday());
 
         Integer dailyGoalWords = user.getProfile() != null ? user.getProfile().getDailyGoalWords() : null;
 
@@ -234,6 +240,32 @@ public class LearningProgressService {
                 totalLearned,
                 dailyWordsTotal + grammarTotal + expressionsTotal + readingTotal
         );
+    }
+
+    private static int count(Long value) {
+        return value == null ? 0 : value.intValue();
+    }
+
+    private Map<ExpressionMasteryLevel, Long> expressionMasteryCounts(User user) {
+        return expressionProgressRepository.countsByMastery(user).stream()
+                .collect(Collectors.toMap(ExpressionProgressRepository.MasteryCount::getLevel, ExpressionProgressRepository.MasteryCount::getTotal, Long::sum));
+    }
+
+    /** How much content exists - the same for every learner, so it is counted once a minute instead of on every progress request. */
+    private record ContentTotals(long grammarLessons, long readingArticles, long expressionsPublished, long grammarCategories, long loadedAtMs) {
+    }
+
+    private static final long CONTENT_TOTALS_TTL_MS = 60_000;
+    private volatile ContentTotals contentTotals;
+
+    private ContentTotals contentTotals() {
+        ContentTotals cached = contentTotals;
+        long now = System.currentTimeMillis();
+        if (cached != null && now - cached.loadedAtMs() < CONTENT_TOTALS_TTL_MS) return cached;
+        ContentTotals loaded = new ContentTotals(grammarLessonRepository.count(), readingArticleRepository.count(),
+                expressionRepository.countByStatus(ExpressionStatus.PUBLISHED), grammarCategoryRepository.count(), now);
+        contentTotals = loaded;
+        return loaded;
     }
 
     public StreakResponse getStreak() {
@@ -281,41 +313,43 @@ public class LearningProgressService {
     /** Deeper analytics for the progress page - mastery distributions and performance, as
      * opposed to getOverview()'s simple learned/total counts and the dashboard's "what to do
      * now" summary. */
+    @org.springframework.cache.annotation.Cacheable(cacheNames = "progressStats", key = "@requestContext.getUserId()")
     public ProgressStatsResponse getStats() {
         User user = userService.findByEmail(requestContext.getUserEmail());
 
-        int vocabTotal = vocabularyItemRepository.findByUser(user).size();
-        int vocabLearning = (int) vocabularyProgressRepository.countByUserAndMasteryLevel(user, VocabularyMasteryLevel.LEARNING);
-        int vocabFamiliar = (int) vocabularyProgressRepository.countByUserAndMasteryLevel(user, VocabularyMasteryLevel.FAMILIAR);
-        int vocabMastered = (int) vocabularyProgressRepository.countByUserAndMasteryLevel(user, VocabularyMasteryLevel.MASTERED);
+        int vocabTotal = (int) vocabularyItemRepository.countByUser(user);
+        Map<VocabularyMasteryLevel, Long> vocabularyLevels = vocabularyProgressRepository.countsByMastery(user).stream()
+                .collect(Collectors.toMap(VocabularyProgressRepository.MasteryCount::getLevel, VocabularyProgressRepository.MasteryCount::getTotal, Long::sum));
+        int vocabLearning = vocabularyLevels.getOrDefault(VocabularyMasteryLevel.LEARNING, 0L).intValue();
+        int vocabFamiliar = vocabularyLevels.getOrDefault(VocabularyMasteryLevel.FAMILIAR, 0L).intValue();
+        int vocabMastered = vocabularyLevels.getOrDefault(VocabularyMasteryLevel.MASTERED, 0L).intValue();
         int vocabNew = Math.max(0, vocabTotal - vocabLearning - vocabFamiliar - vocabMastered);
         MasteryBreakdownDto vocabulary = new MasteryBreakdownDto(vocabNew, vocabLearning, vocabFamiliar, vocabMastered, vocabTotal);
 
-        int exprTotal = (int) expressionRepository.countByStatus(ExpressionStatus.PUBLISHED);
-        int exprLearning = (int) expressionProgressRepository.countByUserAndMasteryLevelIn(user, List.of(ExpressionMasteryLevel.LEARNING));
-        int exprFamiliar = (int) expressionProgressRepository.countByUserAndMasteryLevelIn(user, List.of(ExpressionMasteryLevel.FAMILIAR));
-        int exprActive = (int) expressionProgressRepository.countByUserAndMasteryLevelIn(user, List.of(ExpressionMasteryLevel.ACTIVE));
-        int exprMastered = (int) expressionProgressRepository.countByUserAndMasteryLevelIn(user, List.of(ExpressionMasteryLevel.MASTERED));
+        ContentTotals totals = contentTotals();
+        Map<ExpressionMasteryLevel, Long> expressionLevels = expressionMasteryCounts(user);
+        int exprTotal = (int) totals.expressionsPublished();
+        int exprLearning = expressionLevels.getOrDefault(ExpressionMasteryLevel.LEARNING, 0L).intValue();
+        int exprFamiliar = expressionLevels.getOrDefault(ExpressionMasteryLevel.FAMILIAR, 0L).intValue();
+        int exprActive = expressionLevels.getOrDefault(ExpressionMasteryLevel.ACTIVE, 0L).intValue();
+        int exprMastered = expressionLevels.getOrDefault(ExpressionMasteryLevel.MASTERED, 0L).intValue();
         int exprNew = Math.max(0, exprTotal - exprLearning - exprFamiliar - exprActive - exprMastered);
         ExpressionMasteryBreakdownDto expressions = new ExpressionMasteryBreakdownDto(
                 exprNew, exprLearning, exprFamiliar, exprActive, exprMastered, exprTotal);
 
         int lessonsLearned = (int) repository.countByUserAndLessonIsNotNullAndIsLearnedTrue(user);
-        int lessonsTotal = (int) grammarLessonRepository.count();
+        int lessonsTotal = (int) totals.grammarLessons();
         List<GrammarCategoryTestAttempt> categoryAttempts = grammarCategoryTestAttemptRepository.findByUser(user);
         int categoriesPassed = (int) categoryAttempts.stream().filter(GrammarCategoryTestAttempt::isPassed).count();
-        int categoriesTotal = (int) grammarCategoryRepository.count();
+        int categoriesTotal = (int) totals.grammarCategories();
         GrammarMasteryDto grammar = new GrammarMasteryDto(
                 lessonsLearned, lessonsTotal, categoriesPassed, categoryAttempts.size(), categoriesTotal);
 
         int readingLearned = (int) repository.countByUserAndReadingIsNotNullAndIsLearnedTrue(user);
-        int readingTotal = (int) readingArticleRepository.count();
+        int readingTotal = (int) totals.readingArticles();
         CategoryProgress reading = new CategoryProgress(readingLearned, readingTotal);
 
-        List<Double> examScores = examAttemptRepository.findByUser(user).stream()
-                .map(ExamAttempt::getScore)
-                .filter(java.util.Objects::nonNull)
-                .toList();
+        List<Double> examScores = examAttemptRepository.findScoresByUser(user);
         Double averageExamScore = examScores.isEmpty() ? null
                 : examScores.stream().mapToDouble(Double::doubleValue).average().orElse(0);
         ExamPerformanceDto examPerformance = new ExamPerformanceDto(averageExamScore, examScores.size());

@@ -57,6 +57,7 @@ public class ExamProfileService {
         return repository.findById(id).orElseThrow(() -> new DataNotFoundException(NOT_FOUND));
     }
 
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", allEntries = true)
     @Transactional
     public ExamProfile create(ExamProfileRequest request, String actor) {
         if (request.code() == null || request.code().isBlank()) throw ExamSimulationException.badRequest("CODE_REQUIRED", "Profile code is required.");
@@ -75,6 +76,7 @@ public class ExamProfileService {
         return profile;
     }
 
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", allEntries = true)
     @Transactional
     public ExamProfile update(String id, ExamProfileRequest request, String actor) throws DataNotFoundException {
         ExamProfile profile = lock(id);
@@ -87,6 +89,7 @@ public class ExamProfileService {
         return profile;
     }
 
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", allEntries = true)
     @Transactional
     public ExamProfile duplicate(String id, String actor) throws DataNotFoundException {
         ExamProfile source = get(id);
@@ -144,6 +147,7 @@ public class ExamProfileService {
         return new ProfileValidationResult(errors, warnings);
     }
 
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", allEntries = true)
     @Transactional
     public ExamProfile publish(String id, String verificationNote, String actor) throws DataNotFoundException {
         return publish(id, verificationNote, false, actor);
@@ -153,6 +157,7 @@ public class ExamProfileService {
      * @param acceptContentGaps publish although some parts have too little eligible content (only that error may be waived);
      *                          learners then see why the exam cannot start until content exists. Structural errors can never be waived.
      */
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", allEntries = true)
     @Transactional
     public ExamProfile publish(String id, String verificationNote, boolean acceptContentGaps, String actor) throws DataNotFoundException {
         ExamProfile profile = lock(id);
@@ -189,6 +194,7 @@ public class ExamProfileService {
         return profile;
     }
 
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", allEntries = true)
     @Transactional
     public ExamProfile deactivate(String id, String actor) throws DataNotFoundException {
         ExamProfile profile = lock(id);
@@ -198,6 +204,7 @@ public class ExamProfileService {
         return transition(profile, ExamProfileStatus.DEACTIVATED, "DEACTIVATED", actor);
     }
 
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", allEntries = true)
     @Transactional
     public ExamProfile archive(String id, String actor) throws DataNotFoundException {
         ExamProfile profile = lock(id);

@@ -17,6 +17,10 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, String
 
     List<ExamAttempt> findByUser(User user);
 
+    /** The scores of a learner's attempts - no answers, which are large. */
+    @org.springframework.data.jpa.repository.Query("SELECT a.score FROM exam_attempt a WHERE a.user = :user AND a.score IS NOT NULL")
+    List<Double> findScoresByUser(@org.springframework.data.repository.query.Param("user") User user);
+
     /** Most recent exam exercise the learner opened but didn't finish, within a recency window. */
     Optional<ExamAttempt> findFirstByUserAndCompletedAtIsNullAndStartedAtAfterOrderByStartedAtDesc(
             User user, LocalDateTime startedAfter);

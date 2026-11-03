@@ -25,6 +25,8 @@ interface ExerciseTopHeaderProps {
     showTimer?: boolean;
     /** "steps" (default): one numbered line per sentence. "paragraph": the whole text as one paragraph. */
     descriptionAs?: "steps" | "paragraph";
+    /** False when the page shows the task text itself (DTZ Schreiben repeats it in its own card). */
+    showDescription?: boolean;
     bookmarked: boolean;
     bookmarkPending: boolean;
     onToggleBookmark: () => void;
@@ -34,10 +36,10 @@ interface ExerciseTopHeaderProps {
  * Top of an exercise as ONE card instead of three stacked boxes: title with Teil badge, the timer as a
  * progress ring, and the task description as a collapsible speech bubble with numbered steps.
  */
-export default function ExerciseTopHeader({ exercise, accent, icon: Icon, kicker, sectionLabel, title, showTimer: showTimerProp = true, descriptionAs = "steps", bookmarked, bookmarkPending, onToggleBookmark }: Readonly<ExerciseTopHeaderProps>) {
+export default function ExerciseTopHeader({ exercise, accent, icon: Icon, kicker, sectionLabel, title, showTimer: showTimerProp = true, descriptionAs = "steps", showDescription = true, bookmarked, bookmarkPending, onToggleBookmark }: Readonly<ExerciseTopHeaderProps>) {
     const showTimer = showTimerProp;
     const [open, setOpen] = useState(true);
-    const steps = exercise.teilDescription ? instructionSteps(exercise.teilDescription) : [];
+    const steps = showDescription && exercise.teilDescription ? instructionSteps(exercise.teilDescription) : [];
 
     return (
         <section className="relative overflow-hidden rounded-3xl border border-primary/15 bg-card shadow-card" style={lessonThemeVars(accent)}>

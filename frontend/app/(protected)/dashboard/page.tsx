@@ -16,6 +16,7 @@ import LearningMilestone from "@/componenets/dashboard/LearningMilestone";
 import ExamTimeInsightCard from "@/componenets/dashboard/ExamTimeInsightCard";
 import RedemittelDashboardCard from "@/componenets/dashboard/RedemittelDashboardCard";
 import Loading from "@/componenets/Loading";
+import DashboardSkeleton from "@/componenets/dashboard/DashboardSkeleton";
 import { Button } from "@/componenets/ui/button";
 
 // Cached for a minute so hopping between Dashboard and Your Progress (both read
@@ -55,7 +56,7 @@ const DashboardPage = () => {
 
     return (
         <div className="dashboard-atmosphere min-h-full px-4 py-8 sm:px-6 sm:py-10">
-            {loading && <Loading />}
+            {loading && <DashboardSkeleton label={t.common.loading} />}
 
             {!loading && isError && (
                 <div className="text-center py-16">

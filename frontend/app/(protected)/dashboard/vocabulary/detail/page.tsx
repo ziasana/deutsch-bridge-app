@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Volume2, ArrowLeft } from "lucide-react";
 import { getVocabularyById } from "@/services/vocabularyService";
 import { VocabularyItem } from "@/types/vocabulary";
-import Loading from "@/componenets/Loading";
+import PageSkeleton from "@/componenets/PageSkeleton";
 import Button from "@/componenets/Button";
 import { Badge } from "@/componenets/ui/badge";
 import LearningProgressBar from "@/componenets/learning/LearningProgressBar";
@@ -32,7 +32,7 @@ function VocabularyDetailContent() {
             .finally(() => setLoading(false));
     }, [id]);
 
-    if (loading) return <Loading />;
+    if (loading) return <PageSkeleton />;
 
     if (!item) {
         return (
@@ -151,7 +151,7 @@ function VocabularyDetailContent() {
 
 export default function VocabularyDetailPage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<PageSkeleton />}>
             <VocabularyDetailContent />
         </Suspense>
     );

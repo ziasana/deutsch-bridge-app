@@ -11,7 +11,7 @@ import PracticeChip from "@/componenets/practice/PracticeChip";
 import PracticeFlipCard from "@/componenets/practice/PracticeFlipCard";
 import PracticeGradeButtons from "@/componenets/practice/PracticeGradeButtons";
 import PracticeSummary, { practicePrimaryButton, practiceSecondaryButton } from "@/componenets/practice/PracticeSummary";
-import Loading from "@/componenets/Loading";
+import PracticeCardSkeleton from "@/componenets/practice/PracticeCardSkeleton";
 import { UserWordProgress } from "@/types/reading";
 import { useI18n } from "@/componenets/I18nProvider";
 
@@ -85,7 +85,7 @@ export default function ReadingReviewPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [current, showAnswer]);
 
-    if (loading) return <Loading />;
+    if (loading) return <PracticeCardSkeleton label={t.common.loading} />;
 
     if (queue.length === 0) {
         return (

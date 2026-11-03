@@ -63,8 +63,17 @@ class ExamSimulationApiTest {
     private String studentB;
     private String admin;
 
+    @Autowired private org.springframework.cache.CacheManager cacheManager;
+
+    /** The tests save exercises straight through the repository, which bypasses the cache clearing the real services do. */
+    private void clearExerciseCache() {
+        var cache = cacheManager.getCache("examExercises");
+        if (cache != null) cache.clear();
+    }
+
     @BeforeEach
     void setUp() throws Exception {
+        clearExerciseCache();
         exerciseIds.addAll(ExamSimulationFixtures.createPool(exerciseRepository, LEVEL, 2));
         ExamProfileRequest base = TelcB1ProfileFactory.request();
         ExamProfile draft = profileService.create(new ExamProfileRequest("API_" + UUID.randomUUID(), base.provider(), base.examName(), "API-Test", null, base.examType(), LEVEL,
@@ -91,6 +100,7 @@ class ExamSimulationApiTest {
         setRepository.deleteAll();
         profileRepository.deleteAll();
         exerciseRepository.deleteAllById(exerciseIds);
+        clearExerciseCache();
         userRepository.deleteAll(users);
     }
 
@@ -302,11 +312,18 @@ class ExamSimulationApiTest {
 
         MvcResult again = mvc.perform(as(studentA, post(api).content(start))).andExpect(status().isConflict()).andReturn();
         assertEquals("SET_ALREADY_STARTED", read(again).get("code").asText());
+        // the first exam was passed on the written part, so it is closed; the second was submitted blank (not passed), so it can be repeated
         JsonNode overview = read(mvc.perform(as(studentA, get("/api/exam-simulation/profiles/" + profile.getId()))).andExpect(status().isOk()).andReturn());
-        assertFalse(overview.get("canStart").asBoolean());
-        assertEquals("NO_NEW_EXAM", overview.get("blockedReason").asText());
+        assertTrue(overview.get("canStart").asBoolean());
+        assertTrue(overview.get("blockedReason").isNull());
         assertEquals(2, overview.get("sets").size());
         assertEquals("DONE", overview.get("sets").get(0).get("status").asText());
+        assertEquals("RETRY", overview.get("sets").get(1).get("status").asText());
+        assertEquals("NOT_PASSED", overview.get("sets").get(1).get("attempt").get("writtenResult").asText());
+        JsonNode repeated = read(mvc.perform(as(studentA, post(api).content(start2))).andExpect(status().isCreated()).andReturn());
+        assertNotEquals(second.get("attemptId").asText(), repeated.get("attemptId").asText(), "a repetition is a new attempt");
+        JsonNode running = read(mvc.perform(as(studentA, get("/api/exam-simulation/profiles/" + profile.getId()))).andExpect(status().isOk()).andReturn());
+        assertEquals("IN_PROGRESS", running.get("sets").get(1).get("status").asText());
 
         // another learner can take the same exam
         mvc.perform(as(studentB, post(api).content(start))).andExpect(status().isCreated());

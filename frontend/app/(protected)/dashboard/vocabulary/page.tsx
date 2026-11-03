@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Loading from "@/componenets/Loading";
+import PageSkeleton from "@/componenets/PageSkeleton";
 import { toast } from "@/lib/toast";
 import { PenLine, BookOpen, ArrowRight, ChevronLeft, ChevronRight, Flame, Layers, Sparkles } from "lucide-react";
 import { getVocabulary, addVocabularyBookmark, removeVocabularyBookmark, deleteVocabulary } from "@/services/vocabularyService";
@@ -36,7 +36,7 @@ const MASTERIES: VocabularyMasteryLevel[] = ["NEW", "LEARNING", "FAMILIAR", "MAS
 /** useSearchParams needs a Suspense boundary. */
 export default function VocabularyPage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<PageSkeleton />}>
             <VocabularyPageContent />
         </Suspense>
     );

@@ -37,19 +37,25 @@ public class ExamPoolService {
     private final ExamSimulationUsageRepository usageRepository;
     private final ExamExerciseCompletionRepository completionRepository;
     private final com.deutschbridge.backend.repository.ExamSimulationSetPartRepository setPartRepository;
+    private final com.deutschbridge.backend.service.cache.ContentCacheService contentCacheService;
 
     public ExamPoolService(ExamExerciseRepository exerciseRepository, ExamSimulationUsageRepository usageRepository,
                            ExamExerciseCompletionRepository completionRepository,
-                           com.deutschbridge.backend.repository.ExamSimulationSetPartRepository setPartRepository) {
+                           com.deutschbridge.backend.repository.ExamSimulationSetPartRepository setPartRepository,
+                           com.deutschbridge.backend.service.cache.ContentCacheService contentCacheService) {
+        this.contentCacheService = contentCacheService;
         this.setPartRepository = setPartRepository;
         this.exerciseRepository = exerciseRepository;
         this.usageRepository = usageRepository;
         this.completionRepository = completionRepository;
     }
 
-    /** All published exercises that satisfy the part's selection rules. */
+    /**
+     * All published exercises that satisfy the part's selection rules. Read from the shared exam content cache (cleared on every exam
+     * exercise write): the overview asks this once per part, and each ask used to read every exercise of the section from the database.
+     */
     public List<ExamExercise> eligibleExercises(ExamProfile profile, ExamPartConfig part) {
-        return exerciseRepository.findPublishedFor(profile.getExamType(), profile.getLevel(), part.section()).stream()
+        return contentCacheService.getPublishedExamExercises(part.section(), profile.getLevel(), null, profile.getExamType()).stream()
                 .filter(e -> ExamExerciseEligibility.isEligible(e, profile.getExamType(), profile.getLevel(), part))
                 .toList();
     }

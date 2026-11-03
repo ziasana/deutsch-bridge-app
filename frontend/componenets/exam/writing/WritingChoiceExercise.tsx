@@ -106,7 +106,7 @@ export default function WritingChoiceExercise({ exercise, onSubmitted }: Readonl
                         level={exercise.level}
                         requiresPlanning={exercise.requiresPlanning}
                         leitpunkte={task.points.map((p) => p.text)}
-                        modelSolution={null}
+                        modelSolution={task.modelSolution || exercise.modelSolution || null}
                         onSubmitted={onSubmitted}
                     />
                 </div>

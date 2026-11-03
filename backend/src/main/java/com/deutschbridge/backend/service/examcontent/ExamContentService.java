@@ -416,6 +416,7 @@ public class ExamContentService {
     @Transactional
     @Caching(evict = {
             @CacheEvict(cacheNames = "examExercises", allEntries = true),
+            @CacheEvict(cacheNames = "examSimOverview", allEntries = true),
             @CacheEvict(cacheNames = "examAdminList", allEntries = true),
             @CacheEvict(cacheNames = "examLevelSummary", allEntries = true)
     })
@@ -475,6 +476,7 @@ public class ExamContentService {
     @Transactional
     @Caching(evict = {
             @CacheEvict(cacheNames = "examExercises", allEntries = true),
+            @CacheEvict(cacheNames = "examSimOverview", allEntries = true),
             @CacheEvict(cacheNames = "examAdminList", allEntries = true),
             @CacheEvict(cacheNames = "examLevelSummary", allEntries = true)
     })
@@ -490,7 +492,8 @@ public class ExamContentService {
         String userId = requestContext.getUserId();
         int updated = 0;
         List<StatusChangeFailure> failures = new ArrayList<>();
-        for (ExamExercise e : repository.findAllById(request.ids())) {
+        List<ExamExercise> exercises = repository.findAllById(request.ids());
+        for (ExamExercise e : exercises) {
             ExamContentStatus current = e.getStatus() != null ? e.getStatus()
                     : (e.isPublished() ? ExamContentStatus.PUBLISHED : ExamContentStatus.DRAFT);
             if (current == target) continue;
@@ -512,7 +515,7 @@ public class ExamContentService {
             updated++;
         }
         Set<String> found = new LinkedHashSet<>();
-        repository.findAllById(request.ids()).forEach(e -> found.add(e.getId()));
+        exercises.forEach(e -> found.add(e.getId()));
         request.ids().stream().filter(id -> !found.contains(id))
                 .forEach(id -> failures.add(new StatusChangeFailure(id, null, "Exercise not found.")));
         return new StatusChangeResult(updated, failures);
@@ -644,6 +647,7 @@ public class ExamContentService {
     @Transactional
     @Caching(evict = {
             @CacheEvict(cacheNames = "examExercises", allEntries = true),
+            @CacheEvict(cacheNames = "examSimOverview", allEntries = true),
             @CacheEvict(cacheNames = "examAdminList", allEntries = true),
             @CacheEvict(cacheNames = "examLevelSummary", allEntries = true)
     })
@@ -736,6 +740,7 @@ public class ExamContentService {
     @Transactional
     @Caching(evict = {
             @CacheEvict(cacheNames = "examExercises", allEntries = true),
+            @CacheEvict(cacheNames = "examSimOverview", allEntries = true),
             @CacheEvict(cacheNames = "examAdminList", allEntries = true),
             @CacheEvict(cacheNames = "examLevelSummary", allEntries = true)
     })
@@ -823,6 +828,7 @@ public class ExamContentService {
     @Transactional
     @Caching(evict = {
             @CacheEvict(cacheNames = "examExercises", allEntries = true),
+            @CacheEvict(cacheNames = "examSimOverview", allEntries = true),
             @CacheEvict(cacheNames = "examAdminList", allEntries = true),
             @CacheEvict(cacheNames = "examLevelSummary", allEntries = true)
     })

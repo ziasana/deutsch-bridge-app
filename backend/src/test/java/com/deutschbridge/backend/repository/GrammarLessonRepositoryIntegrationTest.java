@@ -101,6 +101,54 @@ class GrammarLessonRepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("learnedCounts -> the five learned counts of the progress overview in one query, the same as the separate counts")
+    void learnedCounts_shouldMatchSeparateCounts() {
+        GrammarLesson one = lesson(LearningLevel.C2, null, GrammarLessonStatus.PUBLISHED);
+        GrammarLesson two = lesson(LearningLevel.C2, null, GrammarLessonStatus.PUBLISHED);
+        User learner = userRepository.save(new User("Learner", "counts-" + System.nanoTime() + "@test.local", "x"));
+        learned(learner, one);
+        learned(learner, two);
+        java.time.LocalDateTime start = java.time.LocalDate.now().atStartOfDay();
+
+        var counts = learningProgressRepository.learnedCounts(learner, start, start.plusDays(1));
+
+        assertEquals(learningProgressRepository.countByUserAndLessonIsNotNullAndIsLearnedTrue(learner), counts.getGrammar());
+        assertEquals(learningProgressRepository.countByUserAndIsLearnedTrue(learner), counts.getTotal());
+        assertEquals(learningProgressRepository.countByUserAndDailyWordIsNotNullAndIsLearnedTrue(learner), counts.getDailyWords());
+        assertEquals(learningProgressRepository.countByUserAndReadingIsNotNullAndIsLearnedTrue(learner), counts.getReading());
+        assertEquals(learningProgressRepository.countByUserAndIsLearnedTrueAndLearnedAtBetween(learner, start, start.plusDays(1)), counts.getToday());
+        assertEquals(2L, counts.getGrammar());
+    }
+
+    @Test
+    @DisplayName("light list rows -> same lessons as the full query, with the quiz counted in SQL and no lesson text read")
+    void lightRows_shouldMatchFullQueryAndCountQuiz() {
+        GrammarCategory category = category(LearningLevel.B2);
+        GrammarLesson withQuiz = lesson(LearningLevel.B2, category, GrammarLessonStatus.PUBLISHED);
+        com.deutschbridge.backend.model.entity.QuizQuestion q = new com.deutschbridge.backend.model.entity.QuizQuestion();
+        q.setType("fill");
+        q.setQuestion("Ich ___ gern.");
+        withQuiz.setQuiz(new java.util.ArrayList<>(List.of(q, q, q)));
+        withQuiz.setSummary("Kurz");
+        lessonRepository.save(withQuiz);
+        GrammarLesson noQuiz = lesson(LearningLevel.B2, null, GrammarLessonStatus.PUBLISHED);
+        lesson(LearningLevel.B2, category, GrammarLessonStatus.DRAFT);
+
+        var rows = lessonRepository.findCardsForLevelView(LearningLevel.B2, GrammarLessonStatus.PUBLISHED);
+        assertEquals(lessonRepository.findForLevelView(LearningLevel.B2, GrammarLessonStatus.PUBLISHED).stream().map(GrammarLesson::getId).collect(Collectors.toSet()),
+                rows.stream().map(GrammarLessonRepository.LessonCardRow::getId).collect(Collectors.toSet()));
+        var byId = rows.stream().collect(Collectors.toMap(GrammarLessonRepository.LessonCardRow::getId, r -> r));
+        assertEquals(3, byId.get(withQuiz.getId()).getQuizCount());
+        assertEquals("Kurz", byId.get(withQuiz.getId()).getSummary());
+        assertEquals(category.getId(), byId.get(withQuiz.getId()).getCategoryId());
+        assertEquals(0, byId.get(noQuiz.getId()).getQuizCount());
+        assertNull(byId.get(noQuiz.getId()).getCategoryId());
+
+        var byIds = lessonRepository.findCardsByIds(List.of(withQuiz.getId(), noQuiz.getId()), GrammarLessonStatus.PUBLISHED);
+        assertEquals(2, byIds.size());
+    }
+
+    @Test
     @DisplayName("findByIdAndStatus -> should hide DRAFT lessons from the learner lookup")
     void findByIdAndStatus_shouldHideDrafts() {
         GrammarLesson draft = lesson(LearningLevel.A1, null, GrammarLessonStatus.DRAFT);
@@ -165,6 +213,9 @@ class GrammarLessonRepositoryIntegrationTest {
                 .toList();
 
         assertEquals(List.of(first.getId(), second.getId()), pendingIds);
+        // The light variant (no lesson texts) returns exactly the same lessons in the same order.
+        assertEquals(pendingIds, bookmarkRepository.findPendingRows(learner, GrammarLessonStatus.PUBLISHED).stream()
+                .map(GrammarLessonBookmarkRepository.PendingBookmarkRow::getLessonId).toList());
     }
 
     private void bookmark(User user, GrammarLesson lesson) {

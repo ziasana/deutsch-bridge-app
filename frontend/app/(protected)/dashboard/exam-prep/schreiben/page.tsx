@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, PenLine } from "lucide-react";
-import Loading from "@/componenets/Loading";
+import PageSkeleton from "@/componenets/PageSkeleton";
 import useAuthStore from "@/store/useAuthStore";
 import { WritingOverview } from "@/componenets/exam/writing";
 import { WRITING_LEVELS } from "@/componenets/exam/writing/writingMeta";
@@ -67,7 +67,7 @@ function SchreibenContent() {
 
 export default function SchreibenPage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<PageSkeleton />}>
             <SchreibenContent />
         </Suspense>
     );

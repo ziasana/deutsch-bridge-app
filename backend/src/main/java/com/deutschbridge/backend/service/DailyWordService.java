@@ -78,7 +78,10 @@ public class DailyWordService {
         LocalDate today = LocalDate.now();
         List<DailyWord> words = dailyWordRepository.findByAssignedToAndAssignedDate(user, today);
         if (words.isEmpty()) {
-            words = generateForUser(user, level, includePersian, wordGoal, today);
+            // Never make the page wait for the AI: show the shared pool words now and let the AI set replace them
+            // in the background (see generateInBackground), so the next visit already has the tailored words.
+            words = fallbackWords(level, wordGoal);
+            generateInBackground(user, level, includePersian, wordGoal, today, words);
         } else if (words.size() > wordGoal) {
             // Defends against rows persisted under a previous/larger goal or a duplicate-generation race;
             // trims the response without touching the extra rows already stored for today.
@@ -93,6 +96,32 @@ public class DailyWordService {
         Integer goal = profile != null ? profile.getDailyGoalWords() : null;
         if (goal == null || goal <= 0) return DEFAULT_WORDS_PER_DAY;
         return Math.min(goal, MAX_WORDS_PER_DAY);
+    }
+
+    /** One generation per user and day at a time; a failed attempt may be retried on a later visit. */
+    private final Set<String> generating = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private final java.util.concurrent.ExecutorService generator = java.util.concurrent.Executors.newFixedThreadPool(2, runnable -> {
+        Thread thread = new Thread(runnable, "daily-words");
+        thread.setDaemon(true);
+        return thread;
+    });
+
+    private void generateInBackground(User user, LearningLevel level, boolean includePersian, int wordGoal, LocalDate today, List<DailyWord> shown) {
+        String key = user.getId() + "|" + today;
+        if (!generating.add(key)) return;
+        generator.execute(() -> {
+            try {
+                // The learner may have started on the shown pool words meanwhile; replacing them would lose that progress.
+                boolean startedOnShown = !shown.isEmpty()
+                        && learningProgressRepository.findByUserAndDailyWordIn(user, shown).stream().anyMatch(p -> Boolean.TRUE.equals(p.getIsLearned()));
+                if (startedOnShown || !dailyWordRepository.findByAssignedToAndAssignedDate(user, today).isEmpty()) return;
+                generateForUser(user, level, includePersian, wordGoal, today);
+            } catch (RuntimeException e) {
+                // Best effort: the pool words keep being shown.
+            } finally {
+                generating.remove(key);
+            }
+        });
     }
 
     private List<DailyWord> generateForUser(User user, LearningLevel level, boolean includePersian, int wordGoal, LocalDate today) {

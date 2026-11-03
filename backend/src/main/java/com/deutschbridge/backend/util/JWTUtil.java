@@ -68,7 +68,9 @@ public class JWTUtil {
 
         if (type.equals(ACCESS_TOKEN_NAME)) {
             builder.claim("type", ACCESS_TOKEN_NAME);
-            builder.claim("tokenVersion", userRepository.incrementAndGetAccessTokenFlag(email));
+            int flag = userRepository.incrementAndGetAccessTokenFlag(email);
+            tokenFlags.put(email, flag);
+            builder.claim("tokenVersion", flag);
         }
 
         return builder
@@ -101,13 +103,26 @@ public class JWTUtil {
                 && isTokenExpired(token);
     }
 
+    /**
+     * Every request checks the token's version against the user's current one. The value only changes when a new access token
+     * is issued (which refreshes this map on this node), so a short-lived copy saves a database round trip on each request.
+     */
+    private final com.github.benmanes.caffeine.cache.Cache<String, Integer> tokenFlags = com.github.benmanes.caffeine.cache.Caffeine.newBuilder()
+            .maximumSize(10_000)
+            .expireAfterWrite(java.time.Duration.ofSeconds(30))
+            .build();
+
+    private int currentTokenFlag(String email) {
+        return tokenFlags.get(email, userRepository::getAccessTokenFlag);
+    }
+
     public boolean isValidateTokenFlag(String email, String token) {
         Claims claims = extractClaims(token);
         String type= claims.get("type").toString();
         if(type==null)
             return true;
         if(type.equals(ACCESS_TOKEN_NAME)) {
-         return   claims.get("tokenVersion").equals(userRepository.getAccessTokenFlag(email));
+         return   claims.get("tokenVersion").equals(currentTokenFlag(email));
         }
         return  false;
     }

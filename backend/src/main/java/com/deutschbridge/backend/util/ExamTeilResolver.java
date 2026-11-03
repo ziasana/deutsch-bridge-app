@@ -15,21 +15,24 @@ public final class ExamTeilResolver {
     }
 
     public static Integer teilOf(ExamExercise exercise) {
-        ExamSection section = exercise.getSection();
+        return teilOf(exercise.getSection(), exercise.getTaskType(), exercise.getPartNumber());
+    }
+
+    /** The same rule from the three columns it depends on (for list rows that do not load the whole exercise). */
+    public static Integer teilOf(ExamSection section, ExamTaskType taskType, Integer partNumber) {
         if (section == null) return null;
         return switch (section) {
-            case LESEVERSTEHEN, HOERVERSTEHEN -> exercise.getPartNumber() != null ? exercise.getPartNumber() : 1;
-            case SPRACHBAUSTEINE -> sprachbausteineTeil(exercise);
+            case LESEVERSTEHEN, HOERVERSTEHEN -> partNumber != null ? partNumber : 1;
+            case SPRACHBAUSTEINE -> sprachbausteineTeil(taskType, partNumber);
             case SCHRIFTLICHER_AUSDRUCK -> 1;
-            case MUENDLICHER_AUSDRUCK -> exercise.getPartNumber() != null ? exercise.getPartNumber() : 1;
+            case MUENDLICHER_AUSDRUCK -> partNumber != null ? partNumber : 1;
             case TESTFORMAT_INFORMATION -> null;
         };
     }
 
-    private static Integer sprachbausteineTeil(ExamExercise exercise) {
-        ExamTaskType taskType = exercise.getTaskType();
+    private static Integer sprachbausteineTeil(ExamTaskType taskType, Integer partNumber) {
         if (taskType == ExamTaskType.MULTIPLE_CHOICE) return 1;
         if (taskType == ExamTaskType.WORD_BANK_CLOZE) return 2;
-        return exercise.getPartNumber();
+        return partNumber;
     }
 }

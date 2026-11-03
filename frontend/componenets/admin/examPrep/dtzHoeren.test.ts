@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ExamPassage, ExamQuestion } from "@/types/exam";
 import { updateChoiceOption, updateTextTask } from "./dtzTextQuestions";
-import { DTZ_HOEREN_PARTS, buildDtzHoerenQuestions, normalizeDtzHoerenQuestions, removeStatement, renameStatement, seedDtzHoeren, validateDtzHoeren } from "./dtzHoeren";
+import { DTZ_HOEREN_PARTS, buildDtzHoerenQuestions, normalizeDtzHoerenQuestions, removeStatement, renameStatement, seedDtzHoeren, taskNumberAt, updateTaskOption, validateDtzHoeren } from "./dtzHoeren";
 
 const makePassage = (index: number, label: string): ExamPassage => ({ id: `p${index}`, label, content: "", imageUrl: null, audioUrl: null, transcript: null });
 const withAudio = (passages: ExamPassage[]) => passages.map((p) => ({ ...p, audioUrl: `/uploads/exam-audio/${p.id}.mp3` }));
@@ -88,5 +88,22 @@ describe("dtzHoeren", () => {
         expect(normalizeDtzHoerenQuestions(4, "STATEMENT_MATCHING", [])).toHaveLength(3);
         const loose: ExamQuestion[] = [];
         expect(normalizeDtzHoerenQuestions(3, "TEXT_QUESTIONS", loose)).toBe(loose);
+    });
+});
+
+describe("task editor helpers", () => {
+    const task = (example = false): ExamQuestion => ({ ...seedDtzHoeren(1, makePassage).questions[0], example });
+
+    it("does not number an example and counts the other tasks from firstNumber", () => {
+        const questions = [task(true), task(), task()];
+        expect(taskNumberAt(questions, 0, 1)).toBeNull();
+        expect(taskNumberAt(questions, 1, 1)).toBe(1);
+        expect(taskNumberAt(questions, 2, 1)).toBe(2);
+    });
+
+    it("keeps the correct answer in step with the edited option", () => {
+        const q = { ...task(), options: ["A", "B", "C"], correctAnswer: "B" };
+        expect(updateTaskOption(q, 1, "B2")).toMatchObject({ options: ["A", "B2", "C"], correctAnswer: "B2" });
+        expect(updateTaskOption(q, 0, "A2")).toMatchObject({ options: ["A2", "B", "C"], correctAnswer: "B" });
     });
 });

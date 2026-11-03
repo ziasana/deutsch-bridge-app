@@ -46,6 +46,8 @@ import java.util.Set;
 @Service
 public class DashboardService {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DashboardService.class);
+
     static final int WRITING_FOCUS_MIN_REPEATS = 2;
     static final int WRITING_FOCUS_RECENT_DAYS = 14;
 
@@ -87,30 +89,52 @@ public class DashboardService {
         this.grammarLessonRepository = grammarLessonRepository;
     }
 
+    /**
+     * The dashboard costs about twenty small queries, so a learner reloading or hopping between pages gets the last result
+     * for a short time (the page itself already keeps it for a minute). Per learner; never shared between learners.
+     */
+    private final com.github.benmanes.caffeine.cache.Cache<String, DashboardResponse> recent = com.github.benmanes.caffeine.cache.Caffeine.newBuilder()
+            .maximumSize(1000)
+            .expireAfterWrite(java.time.Duration.ofSeconds(30))
+            .build();
+
     public DashboardResponse getDashboard() {
-        User user = userService.findByEmail(requestContext.getUserEmail());
+        return recent.get(requestContext.getUserId(), id -> loadDashboard());
+    }
+
+    private DashboardResponse loadDashboard() {
+        StepTimer timer = new StepTimer(log, "Dashboard", 1000);
+        try {
+            return buildDashboard(timer);
+        } finally {
+            timer.done();
+        }
+    }
+
+    private DashboardResponse buildDashboard(StepTimer timer) {
+        User user = timer.time("user", () -> userService.findByEmail(requestContext.getUserEmail()));
         UserProfile profile = user.getProfile();
         LearningLevel level = profile != null && profile.getLearningLevel() != null
                 ? profile.getLearningLevel() : LearningLevel.A1;
 
-        StreakResponse streak = learningProgressService.getStreak();
+        StreakResponse streak = timer.time("streak", learningProgressService::getStreak);
         // Loading the dashboard is what generates today's words, so pass them in rather than letting
         // the recommendation service report them as "not generated yet".
-        List<DailyWordResponse> todaysWords = dailyWordService.getTodaysWordsForCurrentUser();
+        List<DailyWordResponse> todaysWords = timer.time("dailyWords", dailyWordService::getTodaysWordsForCurrentUser);
         DailyWordsSnapshot dailyWords = new DailyWordsSnapshot(todaysWords.size(),
                 (int) todaysWords.stream().filter(DailyWordResponse::learned).count());
 
-        LearningState state = learningRecommendationService.buildState(user, dailyWords);
-        ContinueLearningDto continueLearning = toContinueLearning(learningRecommendationService.getNextRecommendation(state));
+        LearningState state = timer.time("buildState", () -> learningRecommendationService.buildState(user, dailyWords));
+        ContinueLearningDto continueLearning = toContinueLearning(timer.time("recommendation", () -> learningRecommendationService.getNextRecommendation(state)));
 
-        CurrentFocusDto focus = writingFocus(writingAttemptService.progress(), LocalDateTime.now())
-                .orElseGet(() -> resolveCurrentFocus(state, (int) vocabularyItemRepository.countByUser(user)));
+        CurrentFocusDto focus = writingFocus(timer.time("writingProgress", writingAttemptService::progress), LocalDateTime.now())
+                .orElseGet(() -> resolveCurrentFocus(state, (int) timer.time("vocabCount", () -> vocabularyItemRepository.countByUser(user)).longValue()));
 
-        WeekSummaryDto week = buildWeekSummary(user);
+        WeekSummaryDto week = timer.time("week", () -> buildWeekSummary(user));
 
         MilestoneDto milestone = resolveMilestone(state.wordsMastered());
 
-        NewContentDto newContent = resolveNewContent(streak.lastActiveDate());
+        NewContentDto newContent = timer.time("newContent", () -> resolveNewContent(streak.lastActiveDate()));
 
         return new DashboardResponse(
                 new DashboardUserDto(user.getDisplayName(), level.name()),

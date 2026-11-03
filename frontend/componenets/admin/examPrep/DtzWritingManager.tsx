@@ -20,7 +20,7 @@ export default function DtzWritingManager() {
         const id = typeof window === "undefined" ? null : new URL(window.location.href).searchParams.get("edit");
         return id ? { id } : null;
     });
-    const refresh = () => queryClient.invalidateQueries({ queryKey: ["admin", "exam"] });
+    const refresh = () => void queryClient.invalidateQueries({ queryKey: ["admin", "exam"] });
 
     // Drop "edit" from the address once it has been picked up, so a reload does not reopen the editor.
     useEffect(() => {

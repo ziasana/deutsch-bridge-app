@@ -3,7 +3,7 @@
 import {ReactNode, useEffect, useRef} from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import useAuthStore from '@/store/useAuthStore';
-import Loading from '@/componenets/Loading';
+import PageSkeleton from '@/componenets/PageSkeleton';
 import { getUserProfile } from '@/services/userService';
 interface ProtectedLayoutProps {
     children: ReactNode;
@@ -50,8 +50,8 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
     }, [hasHydrated, isLoggedIn, updateUserProfile]);
 
 
-    // Show the loader (not a blank page) while the session is restored and while redirecting to login.
-    if (!hasHydrated || !isLoggedIn) return <Loading />;
+    // A page-shaped placeholder (not a blank page, not a full-screen loader) while the session is restored and while redirecting to login.
+    if (!hasHydrated || !isLoggedIn) return <PageSkeleton />;
 
 
     return <>

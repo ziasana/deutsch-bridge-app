@@ -7,7 +7,7 @@ import Link from "next/link";
 import { toast } from "@/lib/toast";
 import { getGrammarCategoryById } from "@/services/grammarService";
 import { CategoryTestStatus, GrammarCategoryWithLessons } from "@/types/grammar";
-import Loading from "@/componenets/Loading";
+import GrammarLessonSkeleton from "@/componenets/grammar/GrammarLessonSkeleton";
 import { ClipboardCheck } from "lucide-react";
 import { getLevelMeta, levelThemeVars } from "@/componenets/learning/levelMeta";
 import { localizedLessonText } from "@/lib/grammarLocalization";
@@ -16,7 +16,7 @@ import { useI18n } from "@/componenets/I18nProvider";
 
 export default function CategoryTestPage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<GrammarLessonSkeleton />}>
             <CategoryTestContent />
         </Suspense>
     );
@@ -64,7 +64,7 @@ function CategoryTestContent() {
         );
     }
 
-    if (loading) return <Loading />;
+    if (loading) return <GrammarLessonSkeleton label={t.common.loading} />;
 
     if (!category) {
         return (

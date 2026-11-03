@@ -7,7 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { getWritingLearning } from "@/services/writingService";
-import Loading from "@/componenets/Loading";
+import { ContentBlockSkeleton } from "@/componenets/exam/ExamSkeletons";
+import PageSkeleton from "@/componenets/PageSkeleton";
 import useAuthStore from "@/store/useAuthStore";
 import ThemedLearnPath from "@/componenets/exam/writing/learn/ThemedLearnPath";
 import { lessonThemeVars } from "@/componenets/exam/lessonTheme";
@@ -131,7 +132,7 @@ function LernenContent() {
                 )}
 
                 <div className={inLesson ? "" : "mt-6"}>
-                    {isLoading ? <Loading /> : data ? <LearnView key={level} level={level} data={data} stationId={stationId} onNavigate={navigate} /> : null}
+                    {isLoading ? <ContentBlockSkeleton /> : data ? <LearnView key={level} level={level} data={data} stationId={stationId} onNavigate={navigate} /> : null}
                 </div>
             </div>
         </div>
@@ -140,7 +141,7 @@ function LernenContent() {
 
 export default function LernenPage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<PageSkeleton />}>
             <LernenContent />
         </Suspense>
     );

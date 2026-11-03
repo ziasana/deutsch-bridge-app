@@ -51,7 +51,7 @@ export default function TelcSpeakingManager() {
     const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
     const currentPage = Math.min(page, totalPages);
     const pageRows = rows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-    const refresh = () => queryClient.invalidateQueries({ queryKey: ["admin", "exam"] });
+    const refresh = () => void queryClient.invalidateQueries({ queryKey: ["admin", "exam"] });
 
     /** Moves one exercise through the given statuses in order; stops at the first one the backend refuses. */
     const moveThrough = async (row: ExamExerciseAdminRow, statuses: ExamContentStatus[]) => {

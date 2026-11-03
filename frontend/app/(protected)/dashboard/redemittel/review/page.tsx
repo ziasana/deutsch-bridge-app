@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getRedemittelReviewSession } from "@/services/redemittelService";
 import RedemittelSession from "@/componenets/redemittel/RedemittelSession";
-import Loading from "@/componenets/Loading";
+import PageSkeleton from "@/componenets/PageSkeleton";
 import { REDEMITTEL_ACCENT } from "@/componenets/redemittel/redemittelMeta";
 import { ACCENT_TITLE_COLOR, levelThemeVars } from "@/componenets/learning/levelMeta";
 
@@ -17,7 +17,7 @@ export default function RedemittelReviewPage() {
         gcTime: 0,
     });
 
-    if (isLoading || !data) return <Loading />;
+    if (isLoading || !data) return <PageSkeleton />;
 
     return (
         <div className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-10" dir="ltr" style={levelThemeVars(REDEMITTEL_ACCENT)}>

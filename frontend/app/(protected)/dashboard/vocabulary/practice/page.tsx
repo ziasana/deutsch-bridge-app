@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Volume2, Check, X as XIcon, ArrowRight } from "lucide-react";
 import { getPracticeSession, submitPracticeRound } from "@/services/vocabularyPracticeService";
 import { PracticeVocabularySession, PracticeVocabularyItem, VocabularyRoundResponse } from "@/types/vocabulary";
-import Loading from "@/componenets/Loading";
+import PageSkeleton from "@/componenets/PageSkeleton";
 import PracticeShell from "@/componenets/practice/PracticeShell";
 import PracticeHeader from "@/componenets/practice/PracticeHeader";
 import PracticeChip from "@/componenets/practice/PracticeChip";
@@ -54,7 +54,7 @@ function VocabularyPracticeContent() {
         ? `/dashboard/vocabulary/detail?id=${vocabularyItemId}`
         : "/dashboard/vocabulary";
 
-    if (loading) return <Loading />;
+    if (loading) return <PageSkeleton />;
 
     if (!session || session.items.length === 0) {
         return (
@@ -334,7 +334,7 @@ function VocabularyPracticeContent() {
 
 export default function VocabularyPracticePage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<PageSkeleton />}>
             <VocabularyPracticeContent />
         </Suspense>
     );

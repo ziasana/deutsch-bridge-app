@@ -43,7 +43,7 @@ export default function RedemittelExerciseEditor({ phraseId }: Readonly<{ phrase
         try {
             const saved = await saveAdminRedemittelExercises(phraseId, items.map((e, i) => ({ ...e, sortOrder: i }))).then((r) => r.data);
             queryClient.setQueryData(["admin", "writing", "exercises", phraseId], saved);
-            await queryClient.invalidateQueries({ queryKey: ["admin", "writing", "phrases"] });
+            void queryClient.invalidateQueries({ queryKey: ["admin", "writing", "phrases"] });
             setDraft(null);
             toast.success("Übungen gespeichert.");
         } catch (err) {

@@ -63,7 +63,7 @@ class ExamContentWritingChoiceTest {
         ex.put("section", "SCHREIBEN");
         ex.put("level", "A2_B1");
         ex.put("exerciseType", "WRITING_TASK_CHOICE");
-        ex.put("title", "Schriftliche Kommunikation im Alltag");
+        ex.put("title", "Schwimmkurs anfragen / Einweihungsfeier einladen");
         ex.put("durationMinutes", 30);
         ex.putObject("instructions").put("de", ExamContentSpecs.WRITING_CHOICE_INSTRUCTIONS);
         ex.putArray("tasks").add(taskA()).add(taskB());
@@ -98,6 +98,29 @@ class ExamContentWritingChoiceTest {
         assertEquals(4, parsed.writingChoice().tasks().get(0).points().size());
         assertEquals(4, parsed.writingChoice().tasks().get(1).points().size());
         assertEquals("Frau Becker", parsed.writingChoice().tasks().get(0).recipientName());
+    }
+
+    @Test
+    void modelAnswerIsOptionalAndStoredAsPossibleSolution() {
+        ObjectNode ex = exercise();
+        assertNull(validate(ex).exercises().get(0).writingChoice().tasks().get(0).modelSolution());
+
+        ((ObjectNode) tasks(ex).get(0)).putObject("modelAnswer").put("subject", "Frage zum Schwimmkurs").put("body", "Sehr geehrte Frau Becker,\n\nich habe eine Frage.\n\nMit freundlichen Grüßen\nAli");
+        assertEquals(List.of(), errors(ex));
+        String solution = validate(ex).exercises().get(0).writingChoice().tasks().get(0).modelSolution();
+        assertTrue(solution.startsWith("Betreff: Frage zum Schwimmkurs\n\nSehr geehrte Frau Becker,"));
+
+        ((ObjectNode) tasks(ex).get(1)).putObject("modelAnswer").put("subject", "Nur Betreff");
+        assertTrue(errors(ex).contains("MODEL_ANSWER_INVALID"));
+    }
+
+    @Test
+    void genericTitlesAreRejected() {
+        ObjectNode ex = exercise();
+        ex.put("title", "DTZ Schreiben – Aufgabe A oder B");
+        assertTrue(errors(ex).contains("TITLE_GENERIC"));
+        ex.put("title", "Schwimmkurs anfragen / Einweihungsfeier einladen");
+        assertFalse(errors(ex).contains("TITLE_GENERIC"));
     }
 
     @Test

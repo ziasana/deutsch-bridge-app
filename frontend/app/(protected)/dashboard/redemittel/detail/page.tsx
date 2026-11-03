@@ -8,7 +8,7 @@ import { ArrowLeft, Check, Plus } from "lucide-react";
 import { getRedemittel } from "@/services/redemittelService";
 import RedemittelDetailCard from "@/componenets/redemittel/RedemittelDetailCard";
 import { useRedemittelActions } from "@/componenets/redemittel/useRedemittelActions";
-import Loading from "@/componenets/Loading";
+import PageSkeleton from "@/componenets/PageSkeleton";
 
 function DetailContent() {
     const id = useSearchParams().get("id");
@@ -20,7 +20,7 @@ function DetailContent() {
         enabled: Boolean(id),
     });
 
-    if (isLoading) return <Loading />;
+    if (isLoading) return <PageSkeleton />;
 
     return (
         <div className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-10" dir="ltr">
@@ -67,7 +67,7 @@ function DetailContent() {
 
 export default function RedemittelDetailPage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<PageSkeleton />}>
             <DetailContent />
         </Suspense>
     );

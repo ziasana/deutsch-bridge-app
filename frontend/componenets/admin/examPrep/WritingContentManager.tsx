@@ -87,9 +87,10 @@ export default function WritingContentManager() {
     const [sortKey, setSortKey] = useState<SortKey>("kind");
     const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
-    const refresh = async () => {
-        await queryClient.invalidateQueries({ queryKey: ITEMS_KEY });
-        await queryClient.invalidateQueries({ queryKey: ["writing", "learn"] });
+    // Fire-and-forget: the saving overlay must not wait for the lists to download again.
+    const refresh = () => {
+        void queryClient.invalidateQueries({ queryKey: ITEMS_KEY });
+        void queryClient.invalidateQueries({ queryKey: ["writing", "learn"] });
     };
 
     const reset = () => {

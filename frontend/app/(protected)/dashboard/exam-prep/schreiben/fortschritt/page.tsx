@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
-import Loading from "@/componenets/Loading";
+import { ContentBlockSkeleton } from "@/componenets/exam/ExamSkeletons";
+import PageSkeleton from "@/componenets/PageSkeleton";
 import useAuthStore from "@/store/useAuthStore";
 import { getWritingProgress } from "@/services/writingAttemptService";
 import WritingProgress from "@/componenets/exam/writing/WritingProgress";
@@ -31,7 +32,7 @@ function FortschrittContent() {
                     <h1 className="relative text-2xl font-extrabold sm:text-3xl">Mein Schreibfortschritt</h1>
                     <p className="relative mt-1 text-sm text-white/90">Was du schon geschafft hast – und woran du als Nächstes arbeiten solltest.</p>
                 </header>
-                <div className="mt-6">{isLoading ? <Loading /> : data ? <WritingProgress progress={data} level={level} /> : null}</div>
+                <div className="mt-6">{isLoading ? <ContentBlockSkeleton /> : data ? <WritingProgress progress={data} level={level} /> : null}</div>
             </div>
         </div>
     );
@@ -39,7 +40,7 @@ function FortschrittContent() {
 
 export default function FortschrittPage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<PageSkeleton />}>
             <FortschrittContent />
         </Suspense>
     );

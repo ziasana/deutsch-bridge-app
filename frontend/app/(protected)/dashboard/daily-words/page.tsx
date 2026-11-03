@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/lib/toast";
 import { getDailyWords } from "@/services/dailyWordService";
 import { setLearningProgress } from "@/services/grammarService";
-import { createVocabulary, getVocabulary } from "@/services/vocabularyService";
+import { createVocabulary, getSavedVocabularyWords } from "@/services/vocabularyService";
 import { DailyWord } from "@/types/dailyWord";
-import Loading from "@/componenets/Loading";
+import DailyWordsSkeleton from "@/componenets/daily-words/DailyWordsSkeleton";
 import { useI18n } from "@/componenets/I18nProvider";
 import { DAILY_WORDS_ACCENT } from "@/componenets/daily-words/dailyWordsAccent";
 import { levelThemeVars } from "@/componenets/learning/levelMeta";
@@ -20,36 +21,45 @@ import {
 
 const normalize = (word: string) => word.trim().toLowerCase();
 
+const DAILY_WORDS_KEY = ["daily-words"];
+
 type Stage = "learning" | "practice" | "complete";
 
 export default function DailyWordsPage() {
     const { t } = useI18n();
-    const [words, setWords] = useState<DailyWord[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(false);
+    const queryClient = useQueryClient();
     const [currentIndex, setCurrentIndex] = useState(0);
     const [markingId, setMarkingId] = useState<string | null>(null);
-    const [savedWords, setSavedWords] = useState<Set<string>>(new Set());
+    const [localSaved, setLocalSaved] = useState<Set<string>>(new Set());
     const [savingId, setSavingId] = useState<string | null>(null);
-    const [stage, setStage] = useState<Stage>("learning");
-    const [reloadKey, setReloadKey] = useState(0);
+    const [stageOverride, setStageOverride] = useState<Stage | null>(null);
 
-    useEffect(() => {
-        Promise.all([getDailyWords(), getVocabulary()])
-            .then(([wordsRes, vocabRes]) => {
-                setWords(wordsRes.data);
-                setSavedWords(new Set(vocabRes.data.map((v) => normalize(v.word))));
-                const allLearned = wordsRes.data.length > 0 && wordsRes.data.every((w) => w.learned);
-                setStage(allLearned ? "practice" : "learning");
-            })
-            .catch(() => setError(true))
-            .finally(() => setLoading(false));
-    }, [reloadKey]);
+    // Today's words are what the page waits for. They are kept for a short while, so coming back to the page shows them at once.
+    const wordsQuery = useQuery({
+        queryKey: DAILY_WORDS_KEY,
+        queryFn: () => getDailyWords().then((res) => res.data),
+        staleTime: 30 * 1000,
+    });
+    const words = useMemo(() => wordsQuery.data ?? [], [wordsQuery.data]);
+
+    // Which words are already in the learner's vocabulary only marks the save buttons, so it loads in the background and never blocks the page.
+    const vocabularyQuery = useQuery({
+        queryKey: ["vocabulary", "saved-words"],
+        queryFn: () => getSavedVocabularyWords().then((res) => res.data.map(normalize)),
+        staleTime: 60 * 1000,
+    });
+    const savedWords = useMemo(() => new Set([...(vocabularyQuery.data ?? []), ...localSaved]), [vocabularyQuery.data, localSaved]);
+
+    // Without a choice yet, the page opens on the practice once every word is learned, otherwise on the learning card.
+    const allLearned = words.length > 0 && words.every((w) => w.learned);
+    const stage: Stage = stageOverride ?? (allLearned ? "practice" : "learning");
+    const setStage = setStageOverride;
+
+    const loading = wordsQuery.isLoading;
+    const error = wordsQuery.isError && !wordsQuery.data;
 
     const retry = () => {
-        setLoading(true);
-        setError(false);
-        setReloadKey((key) => key + 1);
+        void wordsQuery.refetch();
     };
 
     const frame = (children: React.ReactNode) => (
@@ -58,7 +68,7 @@ export default function DailyWordsPage() {
         </div>
     );
 
-    if (loading) return <Loading />;
+    if (loading) return frame(<DailyWordsSkeleton label={t.common.loading} />);
 
     if (error) {
         return frame(
@@ -94,7 +104,7 @@ export default function DailyWordsPage() {
         setLearningProgress({ dailyWordId: word.id, learned: true })
             .then(() => {
                 const updated = words.map((w) => (w.id === word.id ? { ...w, learned: true } : w));
-                setWords(updated);
+                queryClient.setQueryData(DAILY_WORDS_KEY, updated);
 
                 const allLearned = updated.every((w) => w.learned);
                 if (allLearned) {
@@ -121,13 +131,13 @@ export default function DailyWordsPage() {
             level: null,
         })
             .then(() => {
-                setSavedWords((prev) => new Set(prev).add(normalize(word.word)));
+                setLocalSaved((prev) => new Set(prev).add(normalize(word.word)));
                 toast.success(t.dailyWords.savedToast(word.word));
             })
             .catch((err) => {
                 const message: string | undefined = err?.response?.data?.message;
                 if (message?.toLowerCase().includes("already exists")) {
-                    setSavedWords((prev) => new Set(prev).add(normalize(word.word)));
+                    setLocalSaved((prev) => new Set(prev).add(normalize(word.word)));
                 } else {
                     toast.error(message ?? t.dailyWords.saveFailedToast);
                 }

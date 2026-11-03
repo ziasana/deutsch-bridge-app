@@ -52,6 +52,26 @@ public interface LearningProgressRepository extends JpaRepository<LearningProgre
 
     long countByUserAndIsLearnedTrueAndLearnedAtBetween(User user, LocalDateTime start, LocalDateTime end);
 
+    /** The learned counts of the progress overview in one query instead of five. */
+    interface LearnedCounts {
+        Long getDailyWords();
+        Long getGrammar();
+        Long getReading();
+        Long getTotal();
+        Long getToday();
+    }
+
+    @Query("""
+            SELECT COUNT(CASE WHEN p.dailyWord IS NOT NULL THEN 1 END) AS dailyWords,
+                   COUNT(CASE WHEN p.lesson IS NOT NULL THEN 1 END) AS grammar,
+                   COUNT(CASE WHEN p.reading IS NOT NULL THEN 1 END) AS reading,
+                   COUNT(p) AS total,
+                   COUNT(CASE WHEN p.learnedAt >= :start AND p.learnedAt <= :end THEN 1 END) AS today
+            FROM learning_progress p
+            WHERE p.user = :user AND p.isLearned = true
+            """)
+    LearnedCounts learnedCounts(@Param("user") User user, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
     @Query("SELECT DISTINCT CAST(lp.learnedAt AS localdate) FROM learning_progress lp " +
             "WHERE lp.user = :user AND lp.isLearned = true ORDER BY 1 DESC")
     List<LocalDate> findDistinctLearnedDatesByUser(@Param("user") User user);

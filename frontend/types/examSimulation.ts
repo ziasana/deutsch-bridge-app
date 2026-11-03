@@ -226,9 +226,10 @@ export interface SetOverview {
     id: string;
     number: number;
     title: string;
-    status: "NEW" | "IN_PROGRESS" | "DONE";
+    /** RETRY: taken and not passed - it can be taken again. */
+    status: "NEW" | "IN_PROGRESS" | "DONE" | "RETRY";
     attemptId: string | null;
-    /** Result of the learner's attempt; only for DONE. */
+    /** Result of the learner's last attempt; for DONE and RETRY. */
     attempt: AttemptSummary | null;
 }
 

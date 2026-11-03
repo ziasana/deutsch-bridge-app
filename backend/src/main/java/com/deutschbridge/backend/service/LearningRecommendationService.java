@@ -25,6 +25,7 @@ import com.deutschbridge.backend.repository.ExpressionProgressRepository;
 import com.deutschbridge.backend.repository.ExpressionRepository;
 import com.deutschbridge.backend.repository.GrammarLessonRepository;
 import com.deutschbridge.backend.repository.LearningProgressRepository;
+import com.deutschbridge.backend.repository.ReadingArticleNeighborProjection;
 import com.deutschbridge.backend.repository.ReadingArticleRepository;
 import com.deutschbridge.backend.repository.UserArticleAttemptRepository;
 import com.deutschbridge.backend.repository.VocabularyProgressRepository;
@@ -57,6 +58,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class LearningRecommendationService {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(LearningRecommendationService.class);
 
     /** Unfinished attempts older than this are treated as abandoned, not "continue where you left off". */
     private static final int UNFINISHED_ACTIVITY_WINDOW_DAYS = 7;
@@ -143,6 +146,15 @@ public class LearningRecommendationService {
     /** Builds state when the caller already has today's daily words (the Dashboard generates them on load). */
     @Transactional(readOnly = true)
     public LearningState buildState(User user, DailyWordsSnapshot dailyWords) {
+        StepTimer timer = new StepTimer(log, "buildState", 500);
+        try {
+            return buildState(user, dailyWords, timer);
+        } finally {
+            timer.done();
+        }
+    }
+
+    private LearningState buildState(User user, DailyWordsSnapshot dailyWords, StepTimer timer) {
         UserProfile profile = user.getProfile();
         LearningLevel level = profile != null && profile.getLearningLevel() != null
                 ? profile.getLearningLevel() : LearningLevel.A1;
@@ -151,15 +163,15 @@ public class LearningRecommendationService {
         LocalDate today = now.toLocalDate();
         LocalDateTime startOfToday = today.atStartOfDay();
 
-        int wordsDue = (int) vocabularyProgressRepository.countDueForReview(user, now);
-        int expressionsDue = (int) expressionProgressRepository.countDueForReview(user, now);
+        int wordsDue = (int) timer.time("wordsDue", () -> vocabularyProgressRepository.countDueForReview(user, now)).longValue();
+        int expressionsDue = (int) timer.time("expressionsDue", () -> expressionProgressRepository.countDueForReview(user, now)).longValue();
 
         int grammarLearned = (int) learningProgressRepository.countByUserAndLessonIsNotNullAndIsLearnedTrue(user);
         int readingLearned = (int) learningProgressRepository.countByUserAndReadingIsNotNullAndIsLearnedTrue(user);
         int expressionsLearned = (int) expressionProgressRepository.countByUserAndMasteryLevelIn(
                 user, List.of(ExpressionMasteryLevel.ACTIVE, ExpressionMasteryLevel.MASTERED));
-        int grammarTotal = (int) grammarLessonRepository.count();
-        int readingTotal = (int) readingArticleRepository.count();
+        int grammarTotal = (int) timer.time("grammarCount", grammarLessonRepository::count).longValue();
+        int readingTotal = (int) timer.time("readingCount", readingArticleRepository::count).longValue();
         int expressionsTotal = (int) expressionRepository.countByStatus(ExpressionStatus.PUBLISHED);
 
         int wordsMastered = (int) vocabularyProgressRepository.countByUserAndMasteryLevel(user, VocabularyMasteryLevel.MASTERED);
@@ -183,11 +195,11 @@ public class LearningRecommendationService {
                 expressionsLearned,
                 expressionsTotal,
                 wordsMastered,
-                currentStreak(user, today),
+                timer.time("streak", () -> currentStreak(user, today)),
                 itemsLearnedToday,
-                findUnfinishedActivity(user, now),
-                findNextGrammarLesson(user, level),
-                findNextReadingArticle(user, level),
+                timer.time("unfinished", () -> findUnfinishedActivity(user, now)),
+                timer.time("nextGrammar", () -> findNextGrammarLesson(user, level)),
+                timer.time("nextReading", () -> findNextReadingArticle(user, level)),
                 examPrepActive,
                 examPracticedToday
         );
@@ -316,25 +328,15 @@ public class LearningRecommendationService {
                 .orElse(null);
     }
 
+    /** The first reading article the learner has not finished, preferring their own level. Reads ids and titles only - never the article texts. */
     private ActivityRef findNextReadingArticle(User user, LearningLevel level) {
-        List<ReadingArticle> articles = readingArticleRepository.findByLevel(level);
-        if (articles.isEmpty()) {
-            articles = readingArticleRepository.findAll();
-        }
-        if (articles.isEmpty()) return null;
-
-        List<LearningProgress> progresses = learningProgressRepository.findByUserAndReadingIn(user, articles);
-        Set<String> learnedIds = progresses.stream()
-                .filter(p -> Boolean.TRUE.equals(p.getIsLearned()))
-                .map(p -> p.getReading().getId())
-                .collect(Collectors.toSet());
-
-        return articles.stream()
-                .filter(a -> !learnedIds.contains(a.getId()))
-                .findFirst()
-                .map(a -> new ActivityRef(ENTITY_READING_ARTICLE, a.getId(), a.getTitle(),
-                        "/dashboard/reading/article?id=" + a.getId(), null))
-                .orElse(null);
+        org.springframework.data.domain.Pageable one = org.springframework.data.domain.PageRequest.of(0, 1);
+        List<ReadingArticleNeighborProjection> next = readingArticleRepository.findUnlearnedForUser(level, user, one);
+        if (next.isEmpty()) next = readingArticleRepository.findUnlearnedForUserAnyLevel(user, one);
+        if (next.isEmpty()) return null;
+        ReadingArticleNeighborProjection article = next.get(0);
+        return new ActivityRef(ENTITY_READING_ARTICLE, article.getId(), article.getTitle(),
+                "/dashboard/reading/article?id=" + article.getId(), null);
     }
 
     /** Consecutive learning days ending today or yesterday - same rule as LearningProgressService#getStreak. */

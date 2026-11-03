@@ -137,6 +137,27 @@ public class ExamExerciseMapper {
         );
     }
 
+    /** The same summary from a light list row (see ExamExerciseRepository.SummaryRow). */
+    public static ExamExerciseSummaryResponse mapSummaryRow(com.deutschbridge.backend.repository.ExamExerciseRepository.SummaryRow row, Map<String, ExamExerciseCompletion> completionsByExerciseId,
+                                                            boolean bookmarked) {
+        ExamExerciseCompletion completion = completionsByExerciseId.get(row.getId());
+        return new ExamExerciseSummaryResponse(
+                row.getId(),
+                row.getTitle(),
+                row.getSection() != null ? row.getSection().name() : null,
+                row.getTaskType() != null ? row.getTaskType().name() : null,
+                row.getLevel() != null ? row.getLevel().getValue() : null,
+                row.getPartNumber(),
+                ExamTeilResolver.teilOf(row.getSection(), row.getTaskType(), row.getPartNumber()),
+                row.getTeilDescription(),
+                row.getQuestionsCount() != null ? row.getQuestionsCount() : 0,
+                completion != null,
+                completion != null ? completion.getLastScore() : null,
+                bookmarked,
+                row.getExamType() != null ? row.getExamType().name() : null
+        );
+    }
+
     /**
      * Answer-key-stripped question list, sorted ascending by the admin-assigned questionNumber
      * (questions without one sort after those with one, keeping their original relative order) -

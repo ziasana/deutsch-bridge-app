@@ -3,7 +3,8 @@
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import Loading from "@/componenets/Loading";
+import { ContentBlockSkeleton } from "@/componenets/exam/ExamSkeletons";
+import PageSkeleton from "@/componenets/PageSkeleton";
 import useAuthStore from "@/store/useAuthStore";
 import { getExamExercisesSummary } from "@/services/examService";
 import { DTZ_LEVEL, parseSpeakingExam, speakingHubHref, speakingPartsOf } from "@/componenets/exam/speaking";
@@ -49,7 +50,7 @@ function SprechenContent() {
         <div className="dashboard-atmosphere min-h-screen px-4 py-8 sm:px-6 sm:py-10" dir="ltr">
             <div className="mx-auto max-w-4xl">
                 {isLoading ? (
-                    <Loading />
+                    <ContentBlockSkeleton />
                 ) : (
                     <SpeakingHubView exam={exam} level={level} parts={parts} onLevelChange={(l) => router.replace(speakingHubHref(l, exam))} />
                 )}
@@ -60,7 +61,7 @@ function SprechenContent() {
 
 export default function SprechenPage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<PageSkeleton />}>
             <SprechenContent />
         </Suspense>
     );

@@ -124,6 +124,31 @@ public interface ReadingArticleRepository extends JpaRepository<ReadingArticle, 
     Optional<Long> findViewCountById(@Param("id") String id);
 
     /**
+     * The first article of the level (list order) this user has not finished - id and title only, never the article text.
+     * Pass a single-row Pageable; empty when the level has no articles or all are done.
+     */
+    @Query("""
+            SELECT r.id AS id, r.title AS title
+            FROM readingArticles r
+            WHERE r.level = :level
+              AND NOT EXISTS (SELECT 1 FROM learning_progress lp WHERE lp.reading = r AND lp.user = :user AND lp.isLearned = true)
+            ORDER BY r.createdAt DESC, r.id ASC
+            """)
+    List<ReadingArticleNeighborProjection> findUnlearnedForUser(@Param("level") LearningLevel level,
+                                                                 @Param("user") com.deutschbridge.backend.model.entity.User user,
+                                                                 Pageable pageable);
+
+    /** Same as {@link #findUnlearnedForUser}, across all levels (used when the learner's own level has no articles). */
+    @Query("""
+            SELECT r.id AS id, r.title AS title
+            FROM readingArticles r
+            WHERE NOT EXISTS (SELECT 1 FROM learning_progress lp WHERE lp.reading = r AND lp.user = :user AND lp.isLearned = true)
+            ORDER BY r.createdAt DESC, r.id ASC
+            """)
+    List<ReadingArticleNeighborProjection> findUnlearnedForUserAnyLevel(@Param("user") com.deutschbridge.backend.model.entity.User user,
+                                                                         Pageable pageable);
+
+    /**
      * The article right after this one in the level's list order (see {@link #findListPage}'s
      * ORDER BY createdAt DESC, id ASC) - i.e. the next older article, tie-broken by a larger id.
      * Pass a single-row Pageable; empty when this is the last article in the level.

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { getExpressionById, getExpressionNavigation, markExpressionViewed } from "@/services/expressionService";
 import { Expression, ExpressionNeighbor } from "@/types/expression";
-import Loading from "@/componenets/Loading";
+import PageSkeleton from "@/componenets/PageSkeleton";
 import { ArrowLeft, ChevronLeft, ChevronRight, Lightbulb, Play, TriangleAlert } from "lucide-react";
 import { getExpressionImageSrc } from "@/lib/expressionImages";
 import { getIllustrationFor } from "@/componenets/expressions/illustrations";
@@ -103,7 +103,7 @@ function ExpressionDetailContent({ id }: Readonly<{ id: string | null }>) {
         });
     }, [id]);
 
-    if (loading) return <Loading />;
+    if (loading) return <PageSkeleton />;
 
     if (!expression) {
         return (
@@ -324,7 +324,7 @@ function ExpressionDetailRouter() {
 
 export default function ExpressionDetailPage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<PageSkeleton />}>
             <ExpressionDetailRouter />
         </Suspense>
     );

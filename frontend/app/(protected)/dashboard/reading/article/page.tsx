@@ -29,7 +29,7 @@ import {
     ReadingArticle,
     ReadingArticleNeighbor,
 } from "@/types/reading";
-import Loading from "@/componenets/Loading";
+import { ReadingArticleSkeleton } from "@/componenets/reading/ReadingSkeletons";
 import DictionaryPanel from "@/componenets/DictionaryPanel";
 import { getArticleImageSrc } from "@/lib/readingImages";
 import { getLevelMeta, levelThemeVars } from "@/componenets/learning/levelMeta";
@@ -678,7 +678,7 @@ function ArticleNavRow({
 
 export default function ReadingArticleDetailPage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<ReadingArticleSkeleton />}>
             <ReadingArticleDetailRouter />
         </Suspense>
     );
@@ -783,7 +783,7 @@ function ReadingArticleDetailContent({ articleId }: Readonly<{ articleId: string
 
     if (!articleId) return message(t.readingArticle.noArticleSelected);
 
-    if (loading) return <Loading />;
+    if (loading) return <ReadingArticleSkeleton label={t.common.loading} />;
 
     if (!article) return message(t.readingArticle.articleNotFound);
 

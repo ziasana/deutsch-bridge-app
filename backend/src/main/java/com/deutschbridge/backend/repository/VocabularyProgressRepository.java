@@ -24,6 +24,15 @@ public interface VocabularyProgressRepository extends JpaRepository<VocabularyPr
 
     long countByUserAndMasteryLevel(User user, VocabularyMasteryLevel masteryLevel);
 
+    interface MasteryCount {
+        VocabularyMasteryLevel getLevel();
+        Long getTotal();
+    }
+
+    /** All mastery counts of a learner in one grouped query. */
+    @org.springframework.data.jpa.repository.Query("SELECT p.masteryLevel AS level, COUNT(p) AS total FROM vocabulary_progress p WHERE p.user = :user GROUP BY p.masteryLevel")
+    List<MasteryCount> countsByMastery(@org.springframework.data.repository.query.Param("user") User user);
+
     /** Same "due" rule as the dashboard: not yet mastered and never scheduled or scheduled for now/past. */
     @Query("SELECT COUNT(p) FROM vocabulary_progress p WHERE p.user = :user " +
             "AND p.masteryLevel <> com.deutschbridge.backend.model.enums.VocabularyMasteryLevel.MASTERED " +

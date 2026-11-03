@@ -26,6 +26,11 @@ Generate exactly (for each exercise):
 Do not generate additional tasks. Do not create a task with fewer or more than four content points. Do not combine the points of A and B into one task.
 
 ==================================================
+A2. EXERCISE TITLE
+
+The exercise "title" must be generated from the two tasks: a short German title (3-8 words) that names the situation of Aufgabe A and of Aufgabe B, e.g. "Schwimmkurs anfragen / Einweihungsfeier einladen". Never use generic titles such as "DTZ Schreiben", "Aufgabe A oder B" or "Schriftliche Kommunikation". Every exercise in a batch needs a different title.
+
+==================================================
 B. STANDARD INSTRUCTIONS
 
 Use this exact German instruction:
@@ -81,7 +86,17 @@ F. COMMUNICATION STYLE
 
 Use one of these values for "communicationType": {{COMMUNICATION_TYPE_NAMES}}.
 The writing instruction and the recipient must match the style: a message to a landlord or an institution is formal, a message to a friend is informal. Use the selected communication format where possible.
-Do NOT add a model answer.
+
+==================================================
+F2. MODEL ANSWER ("mögliche Lösung")
+
+For EACH task add "modelAnswer" with:
+- "subject": a fitting subject line for an email or letter (e.g. "Frage zum Deutschkurs")
+- "body": one complete, correct possible answer in German, written as the learner should write it: greeting (Anrede), text, closing (Gruß) and sender name; separate paragraphs with a blank line (\n\n)
+The model answer must:
+- address all four content points, in order, with natural connected sentences
+- use the register of the task (formal "Sie" / informal "du") consistently
+- be at the selected level, realistic for a learner (roughly 80-120 words), without markup or placeholders
 
 ==================================================
 G. LANGUAGE LEVEL
@@ -114,7 +129,8 @@ Before returning the JSON, verify:
 - both tasks are appropriate for the selected level and reasonably balanced
 - the communication styles are consistent with the recipients
 - the standard instructions are included
-- no model answer is included
+- the exercise title names the two tasks and is not generic
+- each task has a modelAnswer (subject, body) that covers all four points, with greeting and closing
 - the scenarios are original and no placeholders remain
 {{NOTES_BLOCK}}
 Return only the final JSON object.

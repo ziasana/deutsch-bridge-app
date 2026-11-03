@@ -44,7 +44,7 @@ export const SECTION_LABEL: Record<ExamSection, string> = {
 export const BLOCKED_REASON: Record<string, string> = {
     ACTIVE_ATTEMPT: "Du hast bereits eine Prüfung begonnen.",
     PROFILE_INVALID: "Dieses Prüfungsprofil ist derzeit nicht verfügbar.",
-    NO_NEW_EXAM: "Du hast alle verfügbaren Prüfungen gemacht. Sobald eine neue Prüfung erscheint, kannst du sie hier starten.",
+    NO_NEW_EXAM: "Du hast alle verfügbaren Prüfungen bestanden oder abgeschlossen. Sobald eine neue Prüfung erscheint, kannst du sie hier starten.",
     SET_ALREADY_STARTED: "Diese Prüfung hast du schon gemacht.",
     SET_NOT_AVAILABLE: "Diese Prüfung ist nicht mehr verfügbar.",
     SET_UNAVAILABLE: "Diese Prüfung ist gerade nicht verfügbar. Bitte wähle eine andere.",

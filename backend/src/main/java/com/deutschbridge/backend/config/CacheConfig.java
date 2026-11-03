@@ -33,6 +33,12 @@ public class CacheConfig {
         cacheManager.setCaffeine(Caffeine.newBuilder()
                 .maximumSize(500)
                 .expireAfterWrite(30, TimeUnit.MINUTES));
+        // The learners' mock exam overview is cleared by the learner's own exam actions and by every profile, set, exercise or assessment change.
+        // The one thing that changes it on its own is time (a running attempt runs out), and the expiry job sweeps those every minute and clears it.
+        cacheManager.registerCustomCache("examSimOverview", Caffeine.newBuilder().maximumSize(2000).expireAfterWrite(10, TimeUnit.MINUTES).build());
+        // A learner's progress numbers change with every practice result, so these only live for a short while.
+        cacheManager.registerCustomCache("progressOverview", Caffeine.newBuilder().maximumSize(2000).expireAfterWrite(30, TimeUnit.SECONDS).build());
+        cacheManager.registerCustomCache("progressStats", Caffeine.newBuilder().maximumSize(2000).expireAfterWrite(30, TimeUnit.SECONDS).build());
         return cacheManager;
     }
 }

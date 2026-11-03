@@ -3,6 +3,7 @@
 import { WritingExercise } from "@/componenets/exam/writing";
 import { SpeakingExercise } from "@/componenets/exam/speaking";
 import SpeakingTopHeader from "@/componenets/exam/speaking/SpeakingTopHeader";
+import ExerciseSiblingNav from "@/componenets/exam/ExerciseSiblingNav";
 import ExerciseTopHeader from "@/componenets/exam/ExerciseTopHeader";
 import { SECTION_THEME, lessonThemeVars } from "@/componenets/exam/lessonTheme";
 import { useSpeakingGuides } from "@/hooks/exam/useSpeakingGuides";
@@ -24,7 +25,7 @@ import {
     ExamPassagePublic,
     ExamQuestionPublic,
     ExamTranscript, ExamSection } from "@/types/exam";
-import Loading from "@/componenets/Loading";
+import PageSkeleton from "@/componenets/PageSkeleton";
 import AudioPlayer from "@/componenets/AudioPlayer";
 import LessonMarkdown from "@/componenets/LessonMarkdown";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
@@ -441,13 +442,16 @@ function SchriftlicherAusdruckView({ exercise }: Readonly<{ exercise: ExamExerci
 
     if (exercise.taskType === "WRITING_TASK_CHOICE") {
         return (
-            <WritingChoiceExercise
-                exercise={exercise}
-                onSubmitted={() => {
-                    if (!completed) markCompleted();
-                    stopExerciseTimer().then((result) => result && showZeitCheckToast(result));
-                }}
-            />
+            <div className="space-y-5">
+                <WritingChoiceExercise
+                    exercise={exercise}
+                    onSubmitted={() => {
+                        if (!completed) markCompleted();
+                        stopExerciseTimer().then((result) => result && showZeitCheckToast(result));
+                    }}
+                />
+                <ExerciseSiblingNav exercise={exercise} />
+            </div>
         );
     }
 
@@ -1443,7 +1447,7 @@ function ExamExerciseContent() {
 
     if (!exerciseId) return message("Keine Übung ausgewählt.");
 
-    if (loading) return <Loading />;
+    if (loading) return <PageSkeleton />;
 
     if (!exercise) return message("Übung nicht gefunden.");
 
@@ -1490,6 +1494,7 @@ function ExamExerciseContent() {
                         icon={PenLine}
                         kicker="Schreibaufgabe"
                         sectionLabel="Schriftlicher Ausdruck"
+                        showDescription={exercise.taskType !== "WRITING_TASK_CHOICE"}
                         title={exercise.title.replace(/^.*?Schriftlicher Ausdruck\s*[–-]\s*/i, "").trim() || exercise.title}
                         bookmarked={exercise.bookmarked}
                         bookmarkPending={bookmarkPendingId === exercise.id}
@@ -1576,7 +1581,7 @@ function ExamExerciseContent() {
 
 export default function ExamExercisePage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<PageSkeleton />}>
             <ExamExerciseContent />
         </Suspense>
     );

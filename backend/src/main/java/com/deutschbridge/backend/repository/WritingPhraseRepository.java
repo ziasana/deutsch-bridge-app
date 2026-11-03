@@ -85,6 +85,20 @@ public interface WritingPhraseRepository extends JpaRepository<WritingPhrase, St
             """)
     List<WritingPhrase> findUnlearned(@Param("userId") String userId);
 
+    /** The ordering columns of {@link #findUnlearned} - no texts - so a long pool can be ranked without loading every phrase. */
+    interface UnlearnedRow {
+        String getId();
+        LearningLevel getLevel();
+        Integer getSortOrder();
+    }
+
+    @Query("""
+            select p.id as id, p.level as level, p.sortOrder as sortOrder from writingPhrases p
+            where p.active = true
+              and not exists (select 1 from redemittelProgress pr where pr.phraseId = p.id and pr.userId = :userId)
+            """)
+    List<UnlearnedRow> findUnlearnedRows(@Param("userId") String userId);
+
     long countByCategoryId(String categoryId);
 
     @Query("select p.category.id, count(p) from writingPhrases p where p.active = true group by p.category.id")

@@ -47,9 +47,16 @@ public class ExamSimulationOverviewService {
         this.clock = clock;
     }
 
+    /** Cached per learner (see CacheConfig); cleared by the learner's own exam actions and by any change to profiles, sets, exercises or assessments. */
+    @org.springframework.cache.annotation.Cacheable(cacheNames = "examSimOverview", key = "#userId")
     @Transactional(readOnly = true)
     public List<ProfileOverview> list(String userId) {
-        return profileService.listPublished().stream().map(p -> overview(userId, p)).toList();
+        List<ExamProfile> profiles = profileService.listPublished();
+        if (profiles.isEmpty()) return List.of();
+        // One light read of the learner's attempts for all profiles, split here.
+        Map<String, List<ExamSimulationAttemptRepository.AttemptRow>> attemptsByProfile = attemptRepository.findRowsByUser(userId).stream()
+                .collect(Collectors.groupingBy(ExamSimulationAttemptRepository.AttemptRow::getProfileCode, java.util.LinkedHashMap::new, Collectors.toList()));
+        return profiles.stream().map(p -> overview(userId, p, attemptsByProfile.getOrDefault(p.getCode(), List.of()))).toList();
     }
 
     /** Published, valid mock exams for the public site: structure and rules only, no per-user availability or results. */
@@ -62,10 +69,10 @@ public class ExamSimulationOverviewService {
     public ProfileOverview get(String userId, String profileId) throws DataNotFoundException {
         ExamProfile profile = profileService.get(profileId);
         if (profile.getStatus() != ExamProfileStatus.PUBLISHED) throw new DataNotFoundException("Exam profile not found!");
-        return overview(userId, profile);
+        return overview(userId, profile, attemptRepository.findRowsByUser(userId).stream().filter(a -> profile.getCode().equals(a.getProfileCode())).toList());
     }
 
-    private ProfileOverview overview(String userId, ExamProfile p) {
+    private ProfileOverview overview(String userId, ExamProfile p, List<ExamSimulationAttemptRepository.AttemptRow> attempts) {
         List<ExamPoolService.PartAvailability> availability = poolService.availabilityForUser(userId, p);
         Map<String, ExamPoolService.PartAvailability> byKey = availability.stream().collect(Collectors.toMap(ExamPoolService.PartAvailability::partKey, a -> a));
 
@@ -82,16 +89,15 @@ public class ExamSimulationOverviewService {
         }
         int totalMinutes = p.getConfig().timersOrEmpty().stream().mapToInt(ExamTimerConfig::minutes).sum();
 
-        List<ExamSimulationAttempt> attempts = attemptRepository.findByUserIdAndProfileCodeOrderByStartedAtDesc(userId, p.getCode());
         long graceCutoff = clock.millis() - simulationService.graceMillis();
-        ExamSimulationAttempt activeAttempt = attempts.stream()
+        ExamSimulationAttemptRepository.AttemptRow activeAttempt = attempts.stream()
                 .filter(a -> a.getStatus() == SimulationAttemptStatus.IN_PROGRESS && a.getFinalDeadlineAt().toEpochMilli() > graceCutoff)
                 .findFirst().orElse(null);
         String active = activeAttempt != null ? activeAttempt.getId() : null;
-        List<ExamSimulationAttempt> finished = attempts.stream()
+        List<ExamSimulationAttemptRepository.AttemptRow> finished = attempts.stream()
                 .filter(a -> a.getStatus() == SimulationAttemptStatus.COMPLETED || a.getStatus() == SimulationAttemptStatus.EXPIRED).toList();
         AttemptSummary best = finished.stream().filter(a -> a.getResult() != null && a.getResult().writtenComplete())
-                .max(Comparator.comparing((ExamSimulationAttempt a) -> a.getResult().writtenScore())).map(views::summary).orElse(null);
+                .max(Comparator.comparing((ExamSimulationAttemptRepository.AttemptRow a) -> a.getResult().writtenScore())).map(views::summary).orElse(null);
         AttemptSummary latest = finished.stream().findFirst().map(views::summary).orElse(null);
 
         String blocked = null;
@@ -102,12 +108,14 @@ public class ExamSimulationOverviewService {
         }
         List<SetOverview> sets = new ArrayList<>();
         for (ExamSimulationSet set : setService.publishedSets(p)) {
-            ExamSimulationAttempt mine = attempts.stream().filter(a -> set.getId().equals(a.getSetId())).findFirst().orElse(null);
-            String status = mine == null ? "NEW" : mine == activeAttempt ? "IN_PROGRESS" : "DONE";
+            ExamSimulationAttemptRepository.AttemptRow mine = attempts.stream().filter(a -> set.getId().equals(a.getSetId())).findFirst().orElse(null);
+            // DONE: taken and final or waiting; RETRY: finished and not passed, so it can be taken again.
+            String status = mine == null ? "NEW" : mine == activeAttempt ? "IN_PROGRESS"
+                    : ExamRetryRule.canRepeat(mine.getStatus(), mine.getResult()) ? "RETRY" : "DONE";
             sets.add(new SetOverview(set.getId(), set.getNumber(), set.getTitle(), status, mine != null ? mine.getId() : null,
-                    mine != null && status.equals("DONE") ? views.summary(mine) : null));
+                    mine != null && (status.equals("DONE") || status.equals("RETRY")) ? views.summary(mine) : null));
         }
-        if (blocked == null && sets.stream().noneMatch(x -> x.status().equals("NEW"))) {
+        if (blocked == null && sets.stream().noneMatch(x -> x.status().equals("NEW") || x.status().equals("RETRY"))) {
             blocked = "NO_NEW_EXAM";
         }
         BigDecimal total = p.getWrittenMaxPoints().add(p.getOralMaxPoints());

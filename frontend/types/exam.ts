@@ -189,6 +189,8 @@ export interface ExamQuestion {
     questionNumber: number | null;
     explanation: string;
     commonMistake: string;
+    /** DTZ Hören: a worked example shown with its solution - not scored and not numbered. */
+    example?: boolean;
 }
 
 /** Admin list row - no passages/questions; fetch the exercise by id to edit it. */
@@ -283,6 +285,8 @@ export interface WritingChoiceTask {
     recipient: { name: string | null; role: string | null } | null;
     writingInstruction: string;
     points: { number: number; text: string }[];
+    /** The "mögliche Lösung" of this alternative, revealed after submitting. */
+    modelSolution?: string | null;
 }
 
 export interface WritingChoiceContent {

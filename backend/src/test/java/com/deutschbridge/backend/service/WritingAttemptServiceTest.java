@@ -30,6 +30,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -246,7 +248,13 @@ class WritingAttemptServiceTest {
         second.setWordCount(20);
         second.setParentAttemptId("a1");
         second.setFeedback(feedbackJson("STRUCTURE", "OK"));
-        when(attemptRepository.findByUserIdOrderBySubmittedAtDesc("u1")).thenReturn(List.of(second, first));
+        when(attemptRepository.findByUserIdOrderBySubmittedAtDesc(eq("u1"), any(org.springframework.data.domain.Pageable.class))).thenReturn(List.of(second, first));
+        var totals = mock(com.deutschbridge.backend.repository.WritingAttemptRepository.WritingTotals.class);
+        when(totals.getAttempts()).thenReturn(2L);
+        when(totals.getExercises()).thenReturn(1L);
+        when(totals.getRevisions()).thenReturn(1L);
+        when(totals.getWords()).thenReturn(30L);
+        when(attemptRepository.totalsForUser("u1")).thenReturn(totals);
 
         var progress = service.progress();
 

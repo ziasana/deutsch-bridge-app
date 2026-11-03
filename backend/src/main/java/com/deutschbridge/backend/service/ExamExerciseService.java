@@ -50,6 +50,7 @@ public class ExamExerciseService {
     private static final String NOT_FOUND_MSG = "Exam exercise not found!";
 
     private final ExamExerciseRepository examExerciseRepository;
+    private final ExamAdminRowCache examAdminRowCache;
     private final ExamExerciseCompletionRepository examExerciseCompletionRepository;
     private final ExamAttemptRepository examAttemptRepository;
     private final ExamExerciseBookmarkRepository examExerciseBookmarkRepository;
@@ -65,7 +66,8 @@ public class ExamExerciseService {
                                 RequestContext requestContext,
                                 ContentCacheService contentCacheService,
                                 ExamProgressCacheService examProgressCacheService,
-                                FileStorageService fileStorageService) {
+                                FileStorageService fileStorageService,
+                                ExamAdminRowCache examAdminRowCache) {
         this.examExerciseRepository = examExerciseRepository;
         this.examExerciseCompletionRepository = examExerciseCompletionRepository;
         this.examAttemptRepository = examAttemptRepository;
@@ -74,6 +76,7 @@ public class ExamExerciseService {
         this.contentCacheService = contentCacheService;
         this.examProgressCacheService = examProgressCacheService;
         this.fileStorageService = fileStorageService;
+        this.examAdminRowCache = examAdminRowCache;
     }
 
     public ExamExercise findById(String id) throws DataNotFoundException {
@@ -83,7 +86,8 @@ public class ExamExerciseService {
 
     /** Navigation/summary shape for lists (section tabs, level selector, Teil listings) - see ExamExerciseSummaryResponse. */
     public List<ExamExerciseSummaryResponse> findSummary(ExamSection section, LearningLevel level, ExamTaskType taskType, ExamType examType) {
-        List<ExamExercise> exercises = contentCacheService.getPublishedExamExercises(section, level, taskType, examType);
+        // Light rows (cached): the lists show titles, Teil and a question count, never the texts or the questions.
+        List<ExamExerciseRepository.SummaryRow> exercises = contentCacheService.getPublishedExamSummaries(section, level, taskType, examType);
 
         Map<String, ExamExerciseCompletion> completionsByExerciseId = examExerciseCompletionRepository.findByUserId(requestContext.getUserId()).stream()
                 .collect(Collectors.toMap(ExamExerciseCompletion::getExerciseId, completion -> completion));
@@ -91,7 +95,7 @@ public class ExamExerciseService {
         Set<String> bookmarkedIds = bookmarkedExerciseIds();
 
         return exercises.stream()
-                .map(exercise -> ExamExerciseMapper.mapToSummaryResponse(exercise, completionsByExerciseId, bookmarkedIds.contains(exercise.getId())))
+                .map(row -> ExamExerciseMapper.mapSummaryRow(row, completionsByExerciseId, bookmarkedIds.contains(row.getId())))
                 .toList();
     }
 
@@ -103,8 +107,8 @@ public class ExamExerciseService {
     }
 
     public ExamExercisePublicResponse findByIdPublic(String id) throws DataNotFoundException {
-        ExamExercise exercise = findById(id);
-        if (!exercise.isPublished()) throw new DataNotFoundException(NOT_FOUND_MSG);
+        ExamExercise exercise = contentCacheService.getPublishedExamExercise(id)
+                .orElseThrow(() -> new DataNotFoundException(NOT_FOUND_MSG));
         Map<String, ExamExerciseCompletion> completions = examExerciseCompletionRepository
                 .findByUserIdAndExerciseId(requestContext.getUserId(), id)
                 .map(completion -> Map.of(id, completion))
@@ -199,46 +203,49 @@ public class ExamExerciseService {
     /**
      * Admin list as light rows, narrowed by any of the optional filters (null/blank = no filter;
      * partNumber matches the effective Teil - Sprachbausteine's Teil follows its task type; search
-     * matches the title). Cached per filter combination, cleared by every exam exercise write.
+     * matches the title). The rows of ALL exercises are built once and cached ({@link ExamAdminRowCache}), so
+     * every filter combination is a cheap in-memory filter instead of its own full table read; any exam
+     * exercise write clears the cache.
      */
-    @Cacheable(cacheNames = "examAdminList", key = "{#section, #level, #taskType, #partNumber, #published, #search, #examType, #status}")
     public List<ExamExerciseAdminRow> findAdminRows(ExamSection section, String level, ExamTaskType taskType,
                                                     Integer partNumber, Boolean published, String search,
                                                     ExamType examType, ExamContentStatus status) {
         String query = search == null ? "" : search.trim().toLowerCase();
-        return examExerciseRepository.findAll().stream()
-                .filter(e -> section == null || e.getSection() == section)
-                .filter(e -> level == null || level.isBlank() || (e.getLevel() != null && e.getLevel().getValue().equalsIgnoreCase(level)))
-                .filter(e -> taskType == null || e.getTaskType() == taskType)
-                .filter(e -> partNumber == null || partNumber.equals(effectivePartNumber(e)))
-                .filter(e -> published == null || e.isPublished() == published)
-                .filter(e -> examType == null || e.getExamType() == examType)
-                .filter(e -> status == null || e.getStatus() == status)
-                .filter(e -> query.isEmpty() || (e.getTitle() != null && e.getTitle().toLowerCase().contains(query)))
-                .sorted(Comparator.comparing(ExamExercise::getTitle, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
-                .map(e -> new ExamExerciseAdminRow(
-                        e.getId(),
-                        e.getTitle(),
-                        e.getSection() != null ? e.getSection().name() : null,
-                        e.getTaskType() != null ? e.getTaskType().name() : null,
-                        e.getLevel() != null ? e.getLevel().getValue() : null,
-                        e.getPartNumber(),
-                        e.isPublished(),
-                        e.getQuestions() != null ? e.getQuestions().size() : 0,
-                        e.getExamType() != null ? e.getExamType().name() : null,
-                        e.getStatus() != null ? e.getStatus().name() : null,
-                        e.getExternalId(),
-                        e.getVersion(),
-                        e.getMetadata() != null && e.getMetadata().get("difficulty") != null
-                                ? String.valueOf(e.getMetadata().get("difficulty")) : metadataText(e, "languageLevel"),
-                        e.getUpdatedAt(),
-                        metadataText(e, "topic"),
-                        metadataText(e, "sourceType"),
-                        e.getCreatedAt(),
-                        e.getPassages() != null ? e.getPassages().size() : 0,
-                        wordCount(e),
-                        e.getPassages() != null && e.getPassages().stream().anyMatch(pg -> pg.getImageUrl() != null && !pg.getImageUrl().isBlank())))
+        return examAdminRowCache.allRows().stream()
+                .filter(r -> section == null || section.name().equals(r.section()))
+                .filter(r -> level == null || level.isBlank() || (r.level() != null && r.level().equalsIgnoreCase(level)))
+                .filter(r -> taskType == null || taskType.name().equals(r.taskType()))
+                .filter(r -> partNumber == null || partNumber.equals(effectivePartNumber(r)))
+                .filter(r -> published == null || r.published() == published)
+                .filter(r -> examType == null || examType.name().equals(r.examType()))
+                .filter(r -> status == null || status.name().equals(r.status()))
+                .filter(r -> query.isEmpty() || (r.title() != null && r.title().toLowerCase().contains(query)))
                 .toList();
+    }
+
+    static ExamExerciseAdminRow toAdminRow(ExamExercise e) {
+        return new ExamExerciseAdminRow(
+                e.getId(),
+                e.getTitle(),
+                e.getSection() != null ? e.getSection().name() : null,
+                e.getTaskType() != null ? e.getTaskType().name() : null,
+                e.getLevel() != null ? e.getLevel().getValue() : null,
+                e.getPartNumber(),
+                e.isPublished(),
+                e.getQuestions() != null ? e.getQuestions().size() : 0,
+                e.getExamType() != null ? e.getExamType().name() : null,
+                e.getStatus() != null ? e.getStatus().name() : null,
+                e.getExternalId(),
+                e.getVersion(),
+                e.getMetadata() != null && e.getMetadata().get("difficulty") != null
+                        ? String.valueOf(e.getMetadata().get("difficulty")) : metadataText(e, "languageLevel"),
+                e.getUpdatedAt(),
+                metadataText(e, "topic"),
+                metadataText(e, "sourceType"),
+                e.getCreatedAt(),
+                e.getPassages() != null ? e.getPassages().size() : 0,
+                wordCount(e),
+                e.getPassages() != null && e.getPassages().stream().anyMatch(pg -> pg.getImageUrl() != null && !pg.getImageUrl().isBlank()));
     }
 
     private static String metadataText(ExamExercise e, String key) {
@@ -246,11 +253,11 @@ public class ExamExerciseService {
         return value instanceof String text && !text.isBlank() ? text : null;
     }
 
-    private static Integer effectivePartNumber(ExamExercise e) {
-        if (e.getSection() == ExamSection.SPRACHBAUSTEINE && e.getTaskType() != null) {
-            return e.getTaskType() == ExamTaskType.WORD_BANK_CLOZE ? 2 : 1;
+    private static Integer effectivePartNumber(ExamExerciseAdminRow r) {
+        if ("SPRACHBAUSTEINE".equals(r.section()) && r.taskType() != null) {
+            return "WORD_BANK_CLOZE".equals(r.taskType()) ? 2 : 1;
         }
-        return e.getPartNumber();
+        return r.partNumber();
     }
 
     public ExamExerciseResponse getForAdmin(String id) throws DataNotFoundException {
@@ -259,6 +266,7 @@ public class ExamExerciseService {
 
     @Caching(evict = {
             @CacheEvict(cacheNames = "examExercises", allEntries = true),
+            @CacheEvict(cacheNames = "examSimOverview", allEntries = true),
             @CacheEvict(cacheNames = "examAdminList", allEntries = true),
             @CacheEvict(cacheNames = "examLevelSummary", allEntries = true)
     })
@@ -279,6 +287,7 @@ public class ExamExerciseService {
 
     @Caching(evict = {
             @CacheEvict(cacheNames = "examExercises", allEntries = true),
+            @CacheEvict(cacheNames = "examSimOverview", allEntries = true),
             @CacheEvict(cacheNames = "examAdminList", allEntries = true),
             @CacheEvict(cacheNames = "examLevelSummary", allEntries = true)
     })
@@ -347,6 +356,7 @@ public class ExamExerciseService {
     @Transactional
     @Caching(evict = {
             @CacheEvict(cacheNames = "examExercises", allEntries = true),
+            @CacheEvict(cacheNames = "examSimOverview", allEntries = true),
             @CacheEvict(cacheNames = "examAdminList", allEntries = true),
             @CacheEvict(cacheNames = "examLevelSummary", allEntries = true)
     })

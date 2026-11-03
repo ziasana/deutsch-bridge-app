@@ -2,10 +2,11 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ArrowLeft, ClipboardCheck, Flag, Mic, Pause, Play, RotateCw, Target, Timer, Trophy } from "lucide-react";
-import Loading from "@/componenets/Loading";
+import PageSkeleton from "@/componenets/PageSkeleton";
+import { ExamProfileSkeleton } from "@/componenets/exam/ExamSkeletons";
 import LearningPageHero from "@/componenets/learning/LearningPageHero";
 import ConfirmDialog from "@/componenets/ui/ConfirmDialog";
 import ExamSetList from "@/componenets/exam/simulation/overview/ExamSetList";
@@ -14,6 +15,7 @@ import StartDialog from "@/componenets/exam/simulation/overview/StartDialog";
 import { cancelSimulationAttempt, getSimulationProfiles, startSimulationAttempt } from "@/services/examSimulationService";
 import { BLOCKED_REASON, formatPoints, simulationError, simulationErrorMessage } from "@/lib/examSimulation";
 import { enterFullscreen, exitFullscreen } from "@/lib/fullscreen";
+import { stashAttemptState } from "@/lib/simulationHandoff";
 import { toast } from "@/lib/toast";
 import type { ProfileOverview } from "@/types/examSimulation";
 
@@ -21,11 +23,18 @@ function ProfileSection({ profile }: Readonly<{ profile: ProfileOverview }>) {
     const router = useRouter();
     const queryClient = useQueryClient();
     const [confirmCancel, setConfirmCancel] = useState(false);
-    const [startSetId, setStartSetId] = useState<string | null>(null);
+    // "Wiederholung" on the result page links here with ?repeat=<exam>: open the start dialog of that exam right away.
+    const repeatId = useSearchParams().get("repeat");
+    const [startSetId, setStartSetId] = useState<string | null>(() =>
+        repeatId && !profile.activeAttemptId && profile.sets.some((s) => s.id === repeatId && s.status === "RETRY") ? repeatId : null,
+    );
 
     const start = useMutation({
         mutationFn: (setId: string) => startSimulationAttempt(profile.id, setId),
-        onSuccess: (res) => router.push(`/dashboard/exam-prep/pruefung/durchfuehrung?attempt=${encodeURIComponent(res.data.attemptId)}&fresh=1`),
+        onSuccess: (res) => {
+            stashAttemptState(res.data);
+            router.push(`/dashboard/exam-prep/pruefung/durchfuehrung?attempt=${encodeURIComponent(res.data.attemptId)}&fresh=1`);
+        },
         onError: (error) => {
             setStartSetId(null);
             const body = simulationError(error);
@@ -49,7 +58,7 @@ function ProfileSection({ profile }: Readonly<{ profile: ProfileOverview }>) {
         onSettled: () => setConfirmCancel(false),
     });
 
-    const nextSet = profile.sets.find((x) => x.status === "NEW");
+    const nextSet = profile.sets.find((x) => x.status === "NEW") ?? profile.sets.find((x) => x.status === "RETRY");
     const running = Boolean(profile.activeAttemptId);
     const stats = [
         { icon: Timer, label: "Dauer", value: `${profile.totalMinutes} Min.` },
@@ -81,7 +90,7 @@ function ProfileSection({ profile }: Readonly<{ profile: ProfileOverview }>) {
                         </>
                     ) : (
                         <button type="button" disabled={!profile.canStart || !nextSet || start.isPending} onClick={() => nextSet && setStartSetId(nextSet.id)} className="inline-flex items-center gap-2 rounded-full bg-[#f2b544] px-5 py-2.5 text-sm font-semibold text-[#16324f] shadow-sm transition hover:bg-[#f5c26b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:cursor-not-allowed disabled:opacity-60">
-                            <Play className="size-4" aria-hidden /> {nextSet ? `${nextSet.title} starten` : "Prüfung starten"}
+                            <Play className="size-4" aria-hidden /> {nextSet ? (nextSet.status === "RETRY" ? `${nextSet.title} wiederholen` : `${nextSet.title} starten`) : "Prüfung starten"}
                         </button>
                     )
                 }
@@ -116,7 +125,7 @@ function ProfileSection({ profile }: Readonly<{ profile: ProfileOverview }>) {
                 {[
                     { icon: ClipboardCheck, tone: "bg-brand-slate/15 text-brand-slate", title: "Schriftlich", text: `${formatPoints(profile.writtenMaxPoints)} Punkte, bestanden ab ${formatPoints(profile.writtenPassThreshold)}. Der Schriftliche Ausdruck wird von Hand bewertet – bis dahin steht das Ergebnis aus.` },
                     { icon: Mic, tone: "bg-exam-muendlich/15 text-exam-muendlich", title: "Mündlich", text: profile.oralScoringEnabled ? `${formatPoints(profile.oralMaxPoints)} Punkte, bestanden ab ${formatPoints(profile.oralPassThreshold)}.` : "In dieser Simulation übst du nur – es gibt keine Punkte und kein Bestehen." },
-                    { icon: Trophy, tone: "bg-brand-amber/20 text-amber-800 dark:text-brand-amber", title: "Gesamtergebnis", text: "„Bestanden“ erscheint erst, wenn alle verlangten Teile bewertet sind. Jede Prüfung kannst du einmal machen." },
+                    { icon: Trophy, tone: "bg-brand-amber/20 text-amber-800 dark:text-brand-amber", title: "Gesamtergebnis", text: "„Bestanden“ erscheint erst, wenn alle verlangten Teile bewertet sind. Jede Prüfung kannst du einmal machen – eine nicht bestandene kannst du wiederholen." },
                 ].map(({ icon: Icon, tone, title, text }) => (
                     <div key={title} className="rounded-3xl border border-border/70 bg-card p-5 shadow-sm">
                         <span className={`flex size-10 items-center justify-center rounded-xl ${tone}`}><Icon className="size-5" aria-hidden /></span>
@@ -156,7 +165,6 @@ function ProfileSection({ profile }: Readonly<{ profile: ProfileOverview }>) {
 function OverviewContent() {
     const profiles = useQuery({ queryKey: ["exam-simulation", "profiles"], queryFn: () => getSimulationProfiles().then((r) => r.data) });
 
-    if (profiles.isLoading) return <Loading />;
     const list = profiles.data ?? [];
 
     return (
@@ -166,8 +174,9 @@ function OverviewContent() {
                     <ArrowLeft className="size-4" aria-hidden /> Zurück zur Prüfungsvorbereitung
                 </Link>
 
+                {profiles.isLoading && <ExamProfileSkeleton />}
                 {profiles.error && <p className="text-sm text-red-600">{simulationErrorMessage(profiles.error, "Die Prüfungsprofile konnten nicht geladen werden.")}</p>}
-                {list.length === 0 && !profiles.error && (
+                {!profiles.isLoading && list.length === 0 && !profiles.error && (
                     <p className="rounded-2xl border border-border/70 bg-card p-6 text-sm text-foreground/70">Derzeit ist keine Probeprüfung verfügbar.</p>
                 )}
                 {list.map((profile) => (
@@ -180,7 +189,7 @@ function OverviewContent() {
 
 export default function ExamSimulationOverviewPage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<PageSkeleton />}>
             <OverviewContent />
         </Suspense>
     );

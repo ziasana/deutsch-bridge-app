@@ -36,6 +36,7 @@ final class ExamWritingChoiceReader {
     static final int MAX_TITLE = 200;
     static final int MAX_SITUATION = 1_200;
     static final int MAX_INSTRUCTION = 500;
+    static final int MAX_MODEL_SOLUTION = 3000;
     static final int MAX_POINT = 300;
     static final int MAX_FIELD = 200;
 
@@ -43,7 +44,7 @@ final class ExamWritingChoiceReader {
     static final Set<String> HEADER_CODES = Set.of("EXERCISE_TYPE_INVALID", "WRITING_DURATION", "WRITING_LEVEL");
     static final Set<String> TASK_CODES = Set.of("TASKS_MISSING", "TASK_COUNT", "TASK_NOT_OBJECT", "TASK_LABEL_MISSING", "TASK_LABEL_INVALID", "TASK_LABEL_DUPLICATE");
     static final Set<String> FIELD_CODES = Set.of("TASK_TITLE_MISSING", "SITUATION_MISSING", "INSTRUCTION_MISSING", "FIELD_TYPE", "FIELD_TOO_LONG",
-            "COMMUNICATION_TYPE_INVALID", "RECIPIENT_NOT_OBJECT", "HTML_CONTENT", "PLACEHOLDER_CONTENT");
+            "COMMUNICATION_TYPE_INVALID", "RECIPIENT_NOT_OBJECT", "HTML_CONTENT", "PLACEHOLDER_CONTENT", "TITLE_GENERIC");
     static final Set<String> POINT_CODES = Set.of("POINTS_MISSING", "POINT_COUNT", "POINT_NOT_OBJECT", "POINT_NUMBER_INVALID", "POINT_NUMBER_DUPLICATE",
             "POINT_TEXT_MISSING", "POINT_TOO_LONG");
 
@@ -167,7 +168,25 @@ final class ExamWritingChoiceReader {
         String communicationType = readCommunicationType(t, path);
         String[] recipient = readRecipient(t, path);
         List<String> points = readPoints(t, path);
-        return new ParsedExercise.WritingChoiceTask(label, title, topic, communicationType, situation, recipient[0], recipient[1], instruction, points);
+        String modelSolution = readModelSolution(t, path);
+        return new ParsedExercise.WritingChoiceTask(label, title, topic, communicationType, situation, recipient[0], recipient[1], instruction, points, modelSolution);
+    }
+
+    /**
+     * The optional possible solution, in the Telc shape {@code modelAnswer: {subject, body}} (stored as "Betreff: ...", a blank line, then the
+     * body) or as a plain {@code modelSolution} text (what the editor sends back). Nothing is required.
+     */
+    private String readModelSolution(JsonNode t, String path) {
+        JsonNode model = t.get("modelAnswer");
+        if (model == null || model.isNull()) return field(t, "modelSolution", path, MAX_MODEL_SOLUTION, null, null);
+        if (!model.isObject()) {
+            issues.add(error("MODEL_ANSWER_INVALID", path + ".modelAnswer", "modelAnswer must be an object with subject and body."));
+            return null;
+        }
+        String subject = field(model, "subject", path + ".modelAnswer", MAX_FIELD, null, null);
+        String body = field(model, "body", path + ".modelAnswer", MAX_MODEL_SOLUTION, "MODEL_ANSWER_INVALID", "modelAnswer needs a body (or remove modelAnswer).");
+        if (body == null) return null;
+        return subject == null ? body : "Betreff: " + subject + "\n\n" + body;
     }
 
     /** A required (or optional) string; a wrong JSON type is reported as FIELD_TYPE rather than as a missing value. */

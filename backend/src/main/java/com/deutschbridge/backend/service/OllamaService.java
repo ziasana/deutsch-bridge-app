@@ -21,6 +21,8 @@ public class OllamaService {
 
     private final RestTemplate restTemplate;
     private final HttpHeaders headers;
+    private static final java.time.Duration CONNECT_TIMEOUT = java.time.Duration.ofSeconds(3);
+    private static final java.time.Duration READ_TIMEOUT = java.time.Duration.ofSeconds(90);
     private  static final String OLLAMA_COM_API_CHAT = "https://ollama.com/api/chat";
 
     private final ChatMessageService chatMessageService;
@@ -35,7 +37,12 @@ public class OllamaService {
             ChatSessionService chatSessionService,
             RequestContext requestContext, UserService userService,
             EntitlementService entitlementService) {
-        this.restTemplate = new RestTemplate();
+        // Fail fast when the AI host cannot be reached (offline, DNS, firewall) instead of hanging for the OS default;
+        // the long read timeout still leaves room for a slow model to finish its answer.
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout((int) CONNECT_TIMEOUT.toMillis());
+        factory.setReadTimeout((int) READ_TIMEOUT.toMillis());
+        this.restTemplate = new RestTemplate(factory);
         this.chatMessageService = chatMessageService;
         this.chatSessionService = chatSessionService;
         headers = new HttpHeaders();

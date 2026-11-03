@@ -9,7 +9,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { getExamExercisesSummary, getExamLevelSummary } from "@/services/examService";
 import { ExamSection, ExamTypeCode } from "@/types/exam";
-import Loading from "@/componenets/Loading";
+import { ExamPartListSkeleton } from "@/componenets/exam/ExamSkeletons";
+import PageSkeleton from "@/componenets/PageSkeleton";
 import {
     CurrentLevelChip,
     SavedItemsButton,
@@ -144,7 +145,8 @@ function ExamPrepContent() {
     const { data: exercises = [], isLoading: exercisesLoading, error } = useQuery({
         queryKey: ["exam", "exercises", examType, effectiveLevel],
         queryFn: () => getExamExercisesSummary(undefined, effectiveLevel, undefined, examType).then((res) => res.data),
-        enabled: !levelSummaryLoading,
+        // With a known level (exam, URL or profile) the exercises load in parallel with the level summary instead of after it.
+        enabled: !!examInfo.fixedLevel || selectedLevel !== null || profileLevel !== null || !levelSummaryLoading,
     });
 
     useEffect(() => {
@@ -155,7 +157,8 @@ function ExamPrepContent() {
         }
     }, [error, levelSummaryError]);
 
-    if (levelSummaryLoading || exercisesLoading) return <Loading />;
+    // Rendered with the data that is there: the page frame appears at once and only the exercise list shows a skeleton.
+    const loading = levelSummaryLoading || exercisesLoading;
 
     const examTypeOptions = examInfo.sections.map((section) => {
         const meta = EXAM_TYPE_META[section];
@@ -306,7 +309,7 @@ function ExamPrepContent() {
                                 <p className="text-sm text-foreground/55">{selectedMeta.description}</p>
                             </div>
                         </div>
-                        {!selectedMeta.informational && (
+                        {!selectedMeta.informational && !loading && (
                             <div className="flex items-center gap-3 sm:w-48 sm:shrink-0">
                                 <div className="flex-1 space-y-1">
                                     <div className="flex items-baseline justify-between text-xs">
@@ -327,7 +330,9 @@ function ExamPrepContent() {
                     </div>
 
                     <div className="p-4 sm:p-5 space-y-3">
-                        {selectedMeta.informational ? (
+                        {loading ? (
+                            <ExamPartListSkeleton />
+                        ) : selectedMeta.informational ? (
                             <>
                                 {infoItems.map((item) => (
                                     <ContentItemRow
@@ -398,7 +403,7 @@ function ExamPrepContent() {
 
 export default function ExamPrepPage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<PageSkeleton />}>
             <ExamPrepContent />
         </Suspense>
     );

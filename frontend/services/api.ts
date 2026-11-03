@@ -12,32 +12,42 @@ const api = axios.create({
     withCredentials: true,
 });
 
-type FailedRequest = {
-    resolve: (token: string | null) => void;
-    reject: (error: unknown) => void;
+// ---------------- Token refresh (single flight) ----------------
+// One refresh at a time, shared by everyone: requests sent while it runs wait for it (so they go out with the new
+// cookie), and a request that got its 401 from the old cookie is simply retried instead of starting another refresh.
+let refreshPromise: Promise<void> | null = null;
+let lastRefreshedAt = 0;
+
+const isRefreshCall = (url?: string) => !!url && url.includes("/auth/refresh");
+
+const refreshSession = (): Promise<void> => {
+    if (!refreshPromise) {
+        refreshPromise = api
+            .get("/auth/refresh", { withCredentials: true })
+            .then(() => {
+                lastRefreshedAt = Date.now();
+            })
+            .finally(() => {
+                refreshPromise = null;
+            });
+    }
+    return refreshPromise;
 };
 
-// ---------------- Queue logic ----------------
-let isRefreshing = false;
-let failedQueue: FailedRequest[] = [];
-
-
-const processQueue = (error:unknown, token = null) => {
-    failedQueue.forEach(prom => {
-        if (error) {
-            prom.reject(error);
-        } else {
-            prom.resolve(token);
-        }
-    });
-    failedQueue = [];
+const endSession = (err: unknown) => {
+    useAuthStore.getState().logout();
+    globalThis.location.href = "/login";
+    return Promise.reject(err);
 };
+
 //  Add language automatically
 api.interceptors.request.use((config) => {
     const state = useAuthStore.getState(); // ✅ correct
     const language = state.userProfile?.preferredLanguage || "EN";
     config.headers["Accept-Language"] = language.toUpperCase();
-    return config;
+    (config as { _sentAt?: number })._sentAt = Date.now();
+    // A refresh is running: wait for it so this request carries the renewed cookie.
+    return refreshPromise && !isRefreshCall(config.url) ? refreshPromise.then(() => config, () => config) : config;
 });
 
 // ---------------- Interceptor ----------------
@@ -53,36 +63,21 @@ api.interceptors.response.use(
             error.isFeatureLimitError = true;
         }
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
-            if (isRefreshing) {
-                // If refresh is already running, queue the request
-                return new Promise((resolve, reject) => {
-                    failedQueue.push({ resolve, reject });
-                })
-                    .then(() => api(originalRequest))
-                    .catch(err => {
-                        throw err;
-                    });
-            }
+        if (error.response?.status === 401 && originalRequest && isRefreshCall(originalRequest.url)) {
+            return endSession(error);
+        }
 
+        if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
             originalRequest._retry = true;
-            isRefreshing = true;
-
-            return new Promise(async (resolve, reject) => {
-                try {
-                    // Call refresh endpoint
-                    await api.get("/auth/refresh", { withCredentials: true });
-                    processQueue(null); // retry queued requests
-                    resolve(api(originalRequest)); // retry original request
-                } catch (err) {
-                    processQueue(err, null); // reject queued requests
-                    useAuthStore.getState().logout(); // logout
-                    globalThis.location.href = "/login"; // redirect to login
-                    reject(err);
-                } finally {
-                    isRefreshing = false;
-                }
-            });
+            try {
+                // Sent before the latest refresh finished: its cookie was the old one, so a retry is enough.
+                if (!refreshPromise && (originalRequest._sentAt ?? 0) > lastRefreshedAt) await refreshSession();
+                else if (refreshPromise) await refreshPromise;
+                return api(originalRequest);
+            } catch (err) {
+                if (axios.isAxiosError(err) && err.response?.status !== 401 && !isRefreshCall(err.config?.url)) throw err;
+                return endSession(err);
+            }
         }
 
         throw error;

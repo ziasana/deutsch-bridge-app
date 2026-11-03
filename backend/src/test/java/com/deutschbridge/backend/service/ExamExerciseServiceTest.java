@@ -90,6 +90,21 @@ class ExamExerciseServiceTest {
         );
     }
 
+    /** The light list row the service now reads, built from a full exercise. */
+    private static com.deutschbridge.backend.repository.ExamExerciseRepository.SummaryRow summaryRow(ExamExercise e) {
+        return new com.deutschbridge.backend.repository.ExamExerciseRepository.SummaryRow() {
+            public String getId() { return e.getId(); }
+            public String getTitle() { return e.getTitle(); }
+            public ExamSection getSection() { return e.getSection(); }
+            public com.deutschbridge.backend.model.enums.ExamTaskType getTaskType() { return e.getTaskType(); }
+            public com.deutschbridge.backend.model.enums.LearningLevel getLevel() { return e.getLevel(); }
+            public Integer getPartNumber() { return e.getPartNumber(); }
+            public String getTeilDescription() { return e.getTeilDescription(); }
+            public com.deutschbridge.backend.model.enums.ExamType getExamType() { return e.getExamType(); }
+            public Integer getQuestionsCount() { return e.getQuestions() != null ? e.getQuestions().size() : 0; }
+        };
+    }
+
     @Test
     @DisplayName("update -> should delete a passage's old audio file once it's replaced by a new one")
     void update_shouldDeleteReplacedPassageAudio() throws DataNotFoundException {
@@ -131,7 +146,7 @@ class ExamExerciseServiceTest {
     @DisplayName("findSummary -> should filter by section and never leak passages/questions content")
     void findSummary_shouldOmitContentFields() {
         ExamExercise exercise = hoerverstehenExercise();
-        when(contentCacheService.getPublishedExamExercises(ExamSection.HOERVERSTEHEN, null, null, null)).thenReturn(List.of(exercise));
+        when(contentCacheService.getPublishedExamSummaries(ExamSection.HOERVERSTEHEN, null, null, null)).thenReturn(List.of(summaryRow(exercise)));
         when(requestContext.getUserId()).thenReturn("u1");
         when(examExerciseCompletionRepository.findByUserId("u1")).thenReturn(List.of());
 
@@ -155,7 +170,7 @@ class ExamExerciseServiceTest {
         completion.setExerciseId("ex1");
         completion.setLastScore(75.0);
 
-        when(contentCacheService.getPublishedExamExercises(ExamSection.HOERVERSTEHEN, null, null, null)).thenReturn(List.of(exercise));
+        when(contentCacheService.getPublishedExamSummaries(ExamSection.HOERVERSTEHEN, null, null, null)).thenReturn(List.of(summaryRow(exercise)));
         when(requestContext.getUserId()).thenReturn("u1");
         when(examExerciseCompletionRepository.findByUserId("u1")).thenReturn(List.of(completion));
 
@@ -173,7 +188,7 @@ class ExamExerciseServiceTest {
         bookmark.setUserId("u1");
         bookmark.setExerciseId("ex1");
 
-        when(contentCacheService.getPublishedExamExercises(ExamSection.HOERVERSTEHEN, null, null, null)).thenReturn(List.of(exercise));
+        when(contentCacheService.getPublishedExamSummaries(ExamSection.HOERVERSTEHEN, null, null, null)).thenReturn(List.of(summaryRow(exercise)));
         when(requestContext.getUserId()).thenReturn("u1");
         when(examExerciseCompletionRepository.findByUserId("u1")).thenReturn(List.of());
         when(examExerciseBookmarkRepository.findByUserId("u1")).thenReturn(List.of(bookmark));
@@ -203,7 +218,7 @@ class ExamExerciseServiceTest {
         // Filtering out unpublished exercises is ContentCacheService's job (see
         // ContentCacheService.getPublishedExamExercises) - this just verifies findSummary
         // passes its result straight through without re-adding anything unpublished.
-        when(contentCacheService.getPublishedExamExercises(ExamSection.HOERVERSTEHEN, null, null, null)).thenReturn(List.of());
+        when(contentCacheService.getPublishedExamSummaries(ExamSection.HOERVERSTEHEN, null, null, null)).thenReturn(List.of());
         when(requestContext.getUserId()).thenReturn("u1");
         when(examExerciseCompletionRepository.findByUserId("u1")).thenReturn(List.of());
 
@@ -228,7 +243,7 @@ class ExamExerciseServiceTest {
     @Test
     @DisplayName("findByIdPublic -> should throw DataNotFoundException for an unknown id")
     void findByIdPublic_shouldThrowWhenNotFound() {
-        when(examExerciseRepository.findById("missing")).thenReturn(java.util.Optional.empty());
+        when(contentCacheService.getPublishedExamExercise("missing")).thenReturn(java.util.Optional.empty());
 
         assertThrows(DataNotFoundException.class, () -> service.findByIdPublic("missing"));
     }
@@ -242,7 +257,7 @@ class ExamExerciseServiceTest {
         completion.setExerciseId("ex1");
         completion.setLastScore(60.0);
 
-        when(examExerciseRepository.findById("ex1")).thenReturn(java.util.Optional.of(exercise));
+        when(contentCacheService.getPublishedExamExercise("ex1")).thenReturn(java.util.Optional.of(exercise));
         when(requestContext.getUserId()).thenReturn("u1");
         when(examExerciseCompletionRepository.findByUserIdAndExerciseId("u1", "ex1")).thenReturn(java.util.Optional.of(completion));
 

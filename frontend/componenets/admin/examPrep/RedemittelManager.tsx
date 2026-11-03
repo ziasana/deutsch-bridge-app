@@ -87,10 +87,11 @@ export default function RedemittelManager() {
     const [sortKey, setSortKey] = useState<SortKey>("phrase");
     const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
-    const refresh = async () => {
-        await queryClient.invalidateQueries({ queryKey: PHRASES_KEY });
-        await queryClient.invalidateQueries({ queryKey: ["writing", "learn"] });
-        await queryClient.invalidateQueries({ queryKey: ["redemittel"] });
+    // Fire-and-forget: the saving overlay must not wait for the lists to download again.
+    const refresh = () => {
+        void queryClient.invalidateQueries({ queryKey: PHRASES_KEY });
+        void queryClient.invalidateQueries({ queryKey: ["writing", "learn"] });
+        void queryClient.invalidateQueries({ queryKey: ["redemittel"] });
     };
 
     const applyFilters = (e: React.FormEvent) => {

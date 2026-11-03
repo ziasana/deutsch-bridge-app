@@ -1049,6 +1049,7 @@ public final class ExamContentMapper {
                 points.add(point);
             }
             task.put("points", points);
+            if (t.modelSolution() != null) task.put("modelSolution", t.modelSolution());
             tasks.add(task);
         }
         tree.put("tasks", tasks);
@@ -1097,7 +1098,7 @@ public final class ExamContentMapper {
                 }
             }
             tasks.add(new ParsedExercise.WritingChoiceTask(str(t.get("taskLabel")), str(t.get("title")), str(t.get("topic")),
-                    str(t.get("communicationType")), str(t.get("situation")), recipientName, recipientRole, str(t.get("writingInstruction")), points));
+                    str(t.get("communicationType")), str(t.get("situation")), recipientName, recipientRole, str(t.get("writingInstruction")), points, str(t.get("modelSolution"))));
         }
         int minutes = tree.get("durationMinutes") instanceof Number n ? n.intValue() : ExamContentSpecs.WRITING_CHOICE_MINUTES;
         return new ParsedExercise.WritingChoice(minutes, str(tree.get("languageLevel")), tasks);

@@ -4,7 +4,8 @@ import { Suspense, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, BookOpen } from "lucide-react";
-import Loading from "@/componenets/Loading";
+import { ContentBlockSkeleton } from "@/componenets/exam/ExamSkeletons";
+import PageSkeleton from "@/componenets/PageSkeleton";
 import useAuthStore from "@/store/useAuthStore";
 import { useSpeakingGuides } from "@/hooks/exam/useSpeakingGuides";
 import { DTZ_LEVEL, GuideLearnView, SPEAKING_SECTIONS, SpeakingExam, learnHref, parseSpeakingExam, speakingHubHref, speakingPartsOf, speakingPathTexts, speakingTitleOf } from "@/componenets/exam/speaking";
@@ -159,7 +160,7 @@ function LernenContent() {
 
                 <div className="mt-6">
                     {isLoading ? (
-                        <Loading />
+                        <ContentBlockSkeleton />
                     ) : isError ? (
                         <div className="rounded-[10px] bg-card p-8 text-center text-sm text-foreground/55 shadow-card">Der Lernbereich konnte nicht geladen werden.</div>
                     ) : !guide ? (
@@ -190,7 +191,7 @@ function LernenContent() {
 
 export default function LernenPage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<PageSkeleton />}>
             <LernenContent />
         </Suspense>
     );

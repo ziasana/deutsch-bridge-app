@@ -5,8 +5,11 @@ import com.deutschbridge.backend.exception.ExamSimulationException;
 import com.deutschbridge.backend.model.dto.examsim.ExamProfileRequest;
 import com.deutschbridge.backend.model.dto.examsim.ExamSimulationDtos.*;
 import com.deutschbridge.backend.model.entity.ExamExercise;
+import com.deutschbridge.backend.repository.ExamExerciseRepository;
+import com.deutschbridge.backend.repository.ExamSimulationAttemptPartRepository;
 import com.deutschbridge.backend.model.entity.ExamExerciseCompletion;
 import com.deutschbridge.backend.model.entity.ExamProfile;
+import com.deutschbridge.backend.model.entity.ExamSimulationAttempt;
 import com.deutschbridge.backend.model.entity.ExamSimulationSet;
 import com.deutschbridge.backend.model.entity.ExamSimulationAttemptPart;
 import com.deutschbridge.backend.model.enums.ExamResultStatus;
@@ -91,8 +94,19 @@ class ExamSimulationIntegrationTest {
     private ExamProfile profile;
     private int partCount;
 
+    @Autowired private org.springframework.cache.CacheManager cacheManager;
+
+    /** The tests save exercises straight through the repository, which bypasses the cache clearing the real services do. */
+    private void clearExerciseCache() {
+        var cache = cacheManager.getCache("examExercises");
+        if (cache != null) cache.clear();
+        var overviews = cacheManager.getCache("examSimOverview");
+        if (overviews != null) overviews.clear();
+    }
+
     @BeforeEach
     void setUp() {
+        clearExerciseCache();
         clock.set(T0);
         profile = createPublishedProfile(POOL);
         partCount = profile.getConfig().partsOrEmpty().size();
@@ -111,6 +125,7 @@ class ExamSimulationIntegrationTest {
         completionRepository.deleteAll();
         exerciseRepository.deleteAllById(createdExerciseIds);
         createdExerciseIds.clear();
+        clearExerciseCache();
     }
 
     // ------------------------------------------------------------------ helpers
@@ -145,6 +160,16 @@ class ExamSimulationIntegrationTest {
             if (!attemptRepository.existsByUserIdAndSetId(user, set.getId())) return service.start(user, profile.getId(), set.getId());
         }
         throw ExamSimulationException.conflict("SET_ALREADY_STARTED", "No new exam left.");
+    }
+
+    /** Finishes an exam with every objective answer right and a written text, so it waits for an assessor (it cannot be repeated). */
+    private void submitAwaitingAssessment(String user, String attemptId) throws Exception {
+        service.saveAnswers(user, attemptId, new SaveAnswersRequest(allCorrect(attemptId, List.of("LESEN_1", "LESEN_2", "LESEN_3", "SPRACHBAUSTEINE_1", "SPRACHBAUSTEINE_2"))));
+        service.completeCurrentStage(user, attemptId);
+        service.saveAnswers(user, attemptId, new SaveAnswersRequest(allCorrect(attemptId, List.of("HOEREN_1", "HOEREN_2", "HOEREN_3"))));
+        service.completeCurrentStage(user, attemptId);
+        service.saveAnswers(user, attemptId, new SaveAnswersRequest(List.of(new AnswerItem("SCHRIFTLICHER_AUSDRUCK", "__text", "Liebe Anna, vielen Dank für deine Einladung. Ich komme gern.", false, null))));
+        service.submit(user, attemptId);
     }
 
     private List<ExamSimulationAttemptPart> parts(String attemptId) {
@@ -225,6 +250,52 @@ class ExamSimulationIntegrationTest {
     // ------------------------------------------------------------------ no-repeat / exhaustion
 
     @Test
+    @DisplayName("An exam that was not passed can be repeated; a cancelled one, a passed one and one waiting for an assessor cannot")
+    void failedExamCanBeRepeated() throws Exception {
+        String user = user();
+        ExamSimulationSet first = setService.publishedSets(profile).get(0);
+        ExamSimulationSet second = setService.publishedSets(profile).get(1);
+
+        // submitted blank: written part scored 0, not passed -> repeatable
+        AttemptState failed = service.start(user, profile.getId(), first.getId());
+        ResultResponse result = service.submit(user, failed.attemptId());
+        assertEquals(ExamResultStatus.NOT_PASSED, result.result().writtenResult());
+        ProfileOverview afterFail = overviewService.get(user, profile.getId());
+        assertEquals("RETRY", afterFail.sets().get(0).status());
+        assertNotNull(afterFail.sets().get(0).attempt());
+        assertTrue(afterFail.canStart());
+
+        AttemptState repeated = service.start(user, profile.getId(), first.getId());
+        assertNotEquals(failed.attemptId(), repeated.attemptId());
+        assertEquals(reservedExercises(failed.attemptId()), reservedExercises(repeated.attemptId()), "the repetition is the same exam");
+        assertEquals("IN_PROGRESS", overviewService.get(user, profile.getId()).sets().get(0).status());
+        assertEquals(2, attemptRepository.findByUserIdOrderByStartedAtDesc(user).size(), "the first result stays in the history");
+
+        // waiting for an assessor is not a failure -> closed
+        submitAwaitingAssessment(user, repeated.attemptId());
+        assertCode("SET_ALREADY_STARTED", () -> service.start(user, profile.getId(), first.getId()));
+        assertEquals("DONE", overviewService.get(user, profile.getId()).sets().get(0).status());
+
+        // a cancelled exam is not repeatable
+        AttemptState cancelled = service.start(user, profile.getId(), second.getId());
+        service.cancel(user, cancelled.attemptId());
+        assertCode("SET_ALREADY_STARTED", () -> service.start(user, profile.getId(), second.getId()));
+        assertEquals("DONE", overviewService.get(user, profile.getId()).sets().get(1).status());
+    }
+
+    @Test
+    @DisplayName("ExamRetryRule -> only a finished attempt with a failed written or overall result may be repeated")
+    void retryRule() {
+        var failed = new ExamResult(BigDecimal.ZERO, new BigDecimal("225"), BigDecimal.ZERO, true, new BigDecimal("135"), ExamResultStatus.NOT_PASSED, false,
+                null, null, null, ExamResultStatus.NOT_ASSESSED, BigDecimal.ZERO, new BigDecimal("225"), ExamResultStatus.NOT_PASSED, null, List.of(), List.of(), 0L);
+        assertTrue(ExamRetryRule.canRepeat(SimulationAttemptStatus.COMPLETED, failed));
+        assertTrue(ExamRetryRule.canRepeat(SimulationAttemptStatus.EXPIRED, failed));
+        assertFalse(ExamRetryRule.canRepeat(SimulationAttemptStatus.CANCELLED, failed));
+        assertFalse(ExamRetryRule.canRepeat(SimulationAttemptStatus.IN_PROGRESS, failed));
+        assertFalse(ExamRetryRule.canRepeat(SimulationAttemptStatus.COMPLETED, null));
+    }
+
+    @Test
     @DisplayName("Another exam never reuses reserved exercises, and an exhausted pool blocks new attempts")
     void noRepeatAndExhaustion() throws Exception {
         String user = user();
@@ -235,7 +306,7 @@ class ExamSimulationIntegrationTest {
             assertEquals(partCount, reserved.size());
             assertTrue(Collections.disjoint(seen, reserved), "exercise reused in attempt " + i);
             seen.addAll(reserved);
-            service.submit(user, state.attemptId());
+            submitAwaitingAssessment(user, state.attemptId());
         }
         long attemptsBefore = attemptRepository.count();
 
@@ -281,7 +352,7 @@ class ExamSimulationIntegrationTest {
         String b = user();
         ExamSimulationSet first = setService.publishedSets(profile).get(0);
         AttemptState sa = service.start(a, profile.getId(), first.getId());
-        service.submit(a, sa.attemptId());
+        submitAwaitingAssessment(a, sa.attemptId());
         assertCode("SET_ALREADY_STARTED", () -> service.start(a, profile.getId(), first.getId()));
         AttemptState sb = service.start(b, profile.getId(), first.getId());
         assertEquals(reservedExercises(sa.attemptId()), reservedExercises(sb.attemptId()));
@@ -518,6 +589,87 @@ class ExamSimulationIntegrationTest {
         assertNull(result.result().oralScore());
     }
 
+    @Test
+    @DisplayName("The overview is cached per learner and cleared by that learner's own exam actions, not by another learner's")
+    void overviewCacheIsPerLearner() throws Exception {
+        String user = user();
+        String other = user();
+        var first = overviewService.list(user);
+        assertSame(first, overviewService.list(user), "second read comes from the cache");
+        var othersFirst = overviewService.list(other);
+
+        start(user);
+        var after = overviewService.list(user);
+        assertNotSame(first, after, "starting an exam clears the learner's cached overview");
+        var mine = after.stream().filter(p -> p.code().equals(profile.getCode())).findFirst().orElseThrow();
+        assertNotNull(mine.activeAttemptId());
+        assertSame(othersFirst, overviewService.list(other), "another learner's entry is untouched");
+    }
+
+    @Test
+    @DisplayName("The light exercise list has the same published exercises as the full list, with the question counts and Teil from the columns")
+    void lightExerciseListMatchesFullList() {
+        var full = exerciseRepository.findFiltered(ExamSection.LESEVERSTEHEN, LEVEL, null, profile.getExamType()).stream()
+                .filter(ExamExercise::isPublished).toList();
+        var rows = exerciseRepository.findSummaryRows(ExamSection.LESEVERSTEHEN, LEVEL, null, profile.getExamType());
+        assertFalse(full.isEmpty());
+        assertEquals(full.stream().map(ExamExercise::getId).collect(java.util.stream.Collectors.toSet()),
+                rows.stream().map(ExamExerciseRepository.SummaryRow::getId).collect(java.util.stream.Collectors.toSet()));
+        var byId = rows.stream().collect(java.util.stream.Collectors.toMap(ExamExerciseRepository.SummaryRow::getId, r -> r));
+        for (ExamExercise e : full) {
+            var row = byId.get(e.getId());
+            assertEquals(e.getQuestions().size(), row.getQuestionsCount(), "questions of " + e.getId());
+            assertEquals(com.deutschbridge.backend.util.ExamTeilResolver.teilOf(e),
+                    com.deutschbridge.backend.util.ExamTeilResolver.teilOf(row.getSection(), row.getTaskType(), row.getPartNumber()));
+            assertEquals(e.getTitle(), row.getTitle());
+        }
+    }
+
+    @Test
+    @DisplayName("The exam state counts questions in SQL and reads full exercises only for the section on screen, with the same progress as before")
+    void stateCountsQuestionsWithoutLoadingEveryPart() throws Exception {
+        String user = user();
+        AttemptState started = start(user);
+
+        var sqlCounts = partRepository.questionCounts(started.attemptId()).stream()
+                .collect(Collectors.toMap(ExamSimulationAttemptPartRepository.QuestionCount::getPartKey, q -> q.getTotal().intValue()));
+        var fromSnapshots = new HashMap<String, Integer>();
+        for (ExamSimulationAttemptPart part : parts(started.attemptId())) {
+            fromSnapshots.merge(part.getPartKey(), part.getSnapshot().questionsOrEmpty().size(), Integer::sum);
+        }
+        assertEquals(fromSnapshots, sqlCounts);
+
+        AttemptState state = service.getState(user, started.attemptId());
+        // the progress per part uses the counted totals (writing and oral parts count as one item)
+        for (var progress : state.progress()) {
+            int counted = sqlCounts.getOrDefault(progress.partKey(), 0);
+            assertEquals(counted == 0 ? 1 : counted, progress.total(), "total of " + progress.partKey());
+        }
+        // only the parts of the running section carry their exercises
+        assertEquals(partKeysOf(state).size(), state.parts().size());
+        assertTrue(state.parts().stream().allMatch(p -> !p.exercises().isEmpty()));
+    }
+
+    @Test
+    @DisplayName("The light attempt rows give the same summaries as the full attempts (running and cancelled), and the history uses them")
+    void lightRowsMatchFullAttempts() throws Exception {
+        String user = user();
+        AttemptState first = start(user);
+        service.cancel(user, first.attemptId());
+        clock.set(T0.plusSeconds(60)); // the test clock is fixed: give the second attempt a later start so "newest first" is decided
+        AttemptState second = start(user);
+
+        var rows = attemptRepository.findRowsByUser(user);
+        assertEquals(2, rows.size());
+        var views = new ExamSimulationViewBuilder(clock);
+        for (var row : rows) {
+            ExamSimulationAttempt full = attemptRepository.findById(row.getId()).orElseThrow();
+            assertEquals(views.summary(full), views.summary(row), "summary of " + row.getId());
+        }
+        assertEquals(second.attemptId(), rows.get(0).getId(), "newest first");
+        assertEquals(2, service.history(user).attempts().size());
+    }
+
     // ------------------------------------------------------------------ finalisation, scoring, assessment
 
     @Test
@@ -749,6 +901,7 @@ class ExamSimulationIntegrationTest {
         live.getQuestions().forEach(q -> q.setCorrectAnswer("C")); // admin edits the live exercise afterwards
         live.setVersion(live.getVersion() + 1);
         exerciseRepository.save(live);
+        clearExerciseCache();
 
         service.saveAnswers(user, state.attemptId(), new SaveAnswersRequest(allCorrect(state.attemptId(), List.of("LESEN_2"))));
         ResultResponse result = service.submit(user, state.attemptId());
@@ -948,6 +1101,7 @@ class ExamSimulationIntegrationTest {
     void availabilityDiagnostics() throws Exception {
         ExamExercise wrong = ExamSimulationFixtures.pooledExercise("zu-kurz", ExamSection.LESEVERSTEHEN, 3, ExamTaskType.MULTIPLE_CHOICE, 8, LEVEL);
         createdExerciseIds.add(exerciseRepository.save(wrong).getId());
+        clearExerciseCache();
         var lesen3 = adminService.availability(profile.getId()).parts().stream().filter(p -> p.partKey().equals("LESEN_3")).findFirst().orElseThrow();
         assertEquals(POOL, lesen3.eligible());
         assertEquals(10, lesen3.expectedQuestions());

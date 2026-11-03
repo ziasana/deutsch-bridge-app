@@ -53,8 +53,8 @@ export default function SpeakingGuideEditor() {
             setIssues(res.data.issues);
             if (res.data.saved) {
                 toast.success("Lernbereich saved.");
-                await queryClient.invalidateQueries({ queryKey: ["admin", "speaking", "guides", exam, level] });
-                await queryClient.invalidateQueries({ queryKey: ["speaking", "guides", exam, level] });
+                void queryClient.invalidateQueries({ queryKey: ["admin", "speaking", "guides", exam, level] });
+                void queryClient.invalidateQueries({ queryKey: ["speaking", "guides", exam, level] });
             } else if (dryRun && !res.data.issues.some((i) => i.severity === "ERROR")) {
                 toast.success("Valid - nothing was saved yet.");
             }

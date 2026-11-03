@@ -644,7 +644,7 @@ public class ExamContentPromptBuilder {
         ex.put("part", 1);
         ex.put("level", level);
         ex.put("exerciseType", ExamWritingChoiceReader.EXERCISE_TYPE);
-        ex.put("title", "...");
+        ex.put("title", "... (short title naming both tasks)");
         ex.put("durationMinutes", ExamContentSpecs.WRITING_CHOICE_MINUTES);
         ex.putObject("instructions").put("de", spec.defaultInstructions());
         ArrayNode tasks = ex.putArray("tasks");
@@ -659,6 +659,7 @@ public class ExamContentPromptBuilder {
             task.put("writingInstruction", "...");
             ArrayNode points = task.putArray("points");
             for (int n = 1; n <= ExamWritingChoiceReader.POINT_COUNT; n++) points.addObject().put("number", n).put("text", "...");
+            task.putObject("modelAnswer").put("subject", "...").put("body", "...");
         }
         ObjectNode meta = ex.putObject("metadata");
         meta.put("schemaVersion", 1);

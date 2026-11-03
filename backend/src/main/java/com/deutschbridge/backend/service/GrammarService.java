@@ -193,14 +193,21 @@ public class GrammarService {
     @Transactional
     public List<GrammarPendingBookmarkResponse> getPendingBookmarks() {
         User user = userService.findByEmail(requestContext.getUserEmail());
-        return bookmarkRepository.findPending(user, GrammarLessonStatus.PUBLISHED).stream()
-                .map(b -> {
-                    GrammarLesson l = b.getLesson();
+        var rows = bookmarkRepository.findPendingRows(user, GrammarLessonStatus.PUBLISHED);
+        if (rows.isEmpty()) return List.of();
+        // Titles, summaries and quiz sizes only: the lesson texts and quizzes are never read for this card.
+        Map<String, GrammarLessonRepository.LessonCardRow> lessonsById = grammarRepository
+                .findCardsByIds(rows.stream().map(GrammarLessonBookmarkRepository.PendingBookmarkRow::getLessonId).toList(), GrammarLessonStatus.PUBLISHED).stream()
+                .collect(Collectors.toMap(GrammarLessonRepository.LessonCardRow::getId, l -> l, (first, second) -> first));
+        return rows.stream()
+                .filter(row -> lessonsById.containsKey(row.getLessonId()))
+                .map(row -> {
+                    GrammarLessonRepository.LessonCardRow l = lessonsById.get(row.getLessonId());
                     return new GrammarPendingBookmarkResponse(
                             l.getId(), l.getTitle(), l.getTitleFa(), l.getSummary(), l.getSummaryFa(),
                             l.getLevel() != null ? l.getLevel().getValue() : null,
-                            l.getQuiz() != null ? l.getQuiz().size() : 0,
-                            b.getCreatedAt());
+                            l.getQuizCount() != null ? l.getQuizCount() : 0,
+                            row.getCreatedAt());
                 })
                 .toList();
     }

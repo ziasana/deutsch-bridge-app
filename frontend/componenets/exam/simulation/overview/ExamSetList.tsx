@@ -75,6 +75,40 @@ function DoneCard({ set, profile }: Readonly<{ set: SetOverview; profile: Profil
     );
 }
 
+/** An exam that was taken and not passed: the result of the last attempt, and the chance to take it again. */
+function RetryCard({ set, profile, disabled, starting, onStart }: Readonly<{ set: SetOverview; profile: ProfileOverview; disabled: boolean; starting: boolean; onStart: (setId: string) => void }>) {
+    const a = set.attempt;
+    if (!a) return null;
+    return (
+        <article className={cn(CARD, "border-red-500/30 bg-red-500/5")}>
+            <div className={HEAD}>
+                <NumberTile number={set.number} tone="bg-red-600 text-white" />
+                <div className="min-w-0 flex-1">
+                    <h3 className="truncate text-lg font-bold text-foreground">{set.title}</h3>
+                    <p className="flex items-center gap-1.5 text-xs font-medium text-red-700 dark:text-red-400">
+                        <RotateCw className="size-3.5" aria-hidden /> Nicht bestanden – du kannst es noch einmal versuchen
+                    </p>
+                </div>
+            </div>
+            <div className="flex min-w-0 flex-1 items-center gap-4">
+                <ScoreRing score={a.writtenScore} max={a.writtenMax} threshold={profile.writtenPassThreshold} complete={a.writtenComplete} />
+                <div className="min-w-0 space-y-1.5">
+                    <SimResultBadge status={a.overallResult ?? a.writtenResult} />
+                    <p className="flex flex-wrap items-center gap-x-3 text-xs text-foreground/60">
+                        <span>{formatDateTime(a.endedAtMs ?? a.startedAtMs)}</span>
+                    </p>
+                    <Link href={resultHref(a.id)} className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                        Ergebnis ansehen <ArrowRight className="size-3.5" aria-hidden />
+                    </Link>
+                </div>
+            </div>
+            <button type="button" disabled={disabled || starting} onClick={() => onStart(set.id)} className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 sm:shrink-0">
+                <RotateCw className="size-4" aria-hidden /> Wiederholung
+            </button>
+        </article>
+    );
+}
+
 function RunningCard({ set, paused }: Readonly<{ set: SetOverview; paused: boolean }>) {
     return (
         <article className={cn(CARD, "border-amber-500/50 bg-amber-500/5")}>
@@ -174,13 +208,14 @@ export default function ExamSetList({ profile, starting, onStart }: Readonly<{ p
     const sets = [...profile.sets].sort((a, b) => a.number - b.number);
     const total = sets.length;
     const done = profile.sets.filter((s) => s.status === "DONE").length;
+    const retry = profile.sets.filter((s) => s.status === "RETRY").length;
     const pct = total > 0 ? (done / total) * 100 : 0;
     return (
         <section aria-label="Prüfungen" className="rounded-3xl border border-border/70 bg-card/50 p-5 shadow-sm sm:p-6">
             <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                     <h2 className="text-lg font-bold text-foreground">Deine Prüfungen</h2>
-                    <p className="text-sm text-foreground/60">Jede Prüfung kannst du einmal machen – in beliebiger Reihenfolge.</p>
+                    <p className="text-sm text-foreground/60">Jede Prüfung kannst du einmal machen – in beliebiger Reihenfolge. Eine nicht bestandene Prüfung kannst du wiederholen.</p>
                 </div>
                 {total > 0 && (
                     <div className="w-full min-w-40 sm:w-56">
@@ -195,7 +230,7 @@ export default function ExamSetList({ profile, starting, onStart }: Readonly<{ p
                 )}
             </div>
 
-            {done > 0 && <Analytics profile={profile} done={sets.filter((s) => s.status === "DONE")} />}
+            {(done > 0 || retry > 0) && <Analytics profile={profile} done={sets.filter((s) => s.status === "DONE" || s.status === "RETRY")} />}
 
             {total === 0 ? (
                 <p className="mt-4 rounded-2xl border border-dashed border-border bg-card p-6 text-center text-sm text-foreground/70">Für dieses Niveau sind noch keine Prüfungen veröffentlicht.</p>
@@ -207,6 +242,8 @@ export default function ExamSetList({ profile, starting, onStart }: Readonly<{ p
                                 <DoneCard set={set} profile={profile} />
                             ) : set.status === "IN_PROGRESS" ? (
                                 <RunningCard set={set} paused={profile.activeAttemptPaused} />
+                            ) : set.status === "RETRY" ? (
+                                <RetryCard set={set} profile={profile} disabled={running} starting={starting} onStart={onStart} />
                             ) : (
                                 <NewCard set={set} profile={profile} disabled={running} starting={starting} onStart={onStart} />
                             )}

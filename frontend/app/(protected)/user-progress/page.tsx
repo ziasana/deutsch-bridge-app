@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { Award, BookOpen, GraduationCap, Link2, Newspaper, SpellCheck } from "lucide-react"
 import { useI18n } from "@/componenets/I18nProvider"
-import Loading from "@/componenets/Loading"
+import { ProgressStatsSkeleton, ProgressTilesSkeleton } from "@/componenets/progress/ProgressSkeletons"
 import ProgressHero from "@/componenets/progress/ProgressHero"
 import { ProgressStatTile } from "@/componenets/progress/ProgressStatTile"
 import { MasteryBreakdownCard } from "@/componenets/progress/MasteryBreakdownCard"
@@ -28,7 +28,7 @@ export default function ProgressPage() {
         staleTime: PROGRESS_STALE_TIME_MS,
     })
 
-    const { data: dashboard, isLoading: dashboardLoading } = useQuery({
+    const { data: dashboard } = useQuery({
         queryKey: ["dashboard"],
         queryFn: () => getDashboard().then((res) => res.data),
         staleTime: PROGRESS_STALE_TIME_MS,
@@ -40,12 +40,12 @@ export default function ProgressPage() {
         staleTime: PROGRESS_STALE_TIME_MS,
     })
 
-    if (overviewLoading || dashboardLoading || statsLoading) return <Loading />
+    // The page frame and the hero show at once; each block below shows its own skeleton until its data is there.
 
     const s = t.progress.stats
-    const tiles = overview
+    const tiles = overview && stats
         ? [
-              { title: s.wordsMastered, learned: stats?.vocabulary.mastered ?? 0, total: stats?.vocabulary.total ?? 0, icon: <Award className="size-4" />, tone: { surface: "", icon: "text-brand-slate", iconBg: "bg-brand-slate/15", bar: "bg-brand-slate" } },
+              { title: s.wordsMastered, learned: stats.vocabulary.mastered, total: stats.vocabulary.total, icon: <Award className="size-4" />, tone: { surface: "", icon: "text-brand-slate", iconBg: "bg-brand-slate/15", bar: "bg-brand-slate" } },
               { title: s.dailyWordsLearned, learned: overview.dailyWords.learned, total: overview.dailyWords.total, icon: <SpellCheck className="size-4" />, tone: { surface: "", icon: "text-learning-vocabulary", iconBg: "bg-learning-vocabulary/15", bar: "bg-learning-vocabulary" } },
               { title: s.lessonsCompleted, learned: overview.grammar.learned, total: overview.grammar.total, icon: <GraduationCap className="size-4" />, tone: { surface: "", icon: "text-learning-grammar", iconBg: "bg-learning-grammar/15", bar: "bg-learning-grammar" } },
               { title: s.activeExpressions, learned: overview.expressions.learned, total: overview.expressions.total, icon: <Link2 className="size-4" />, tone: { surface: "", icon: "text-learning-expression", iconBg: "bg-learning-expression/15", bar: "bg-learning-expression" } },
@@ -58,13 +58,17 @@ export default function ProgressPage() {
             <main className="mx-auto max-w-5xl space-y-8">
                 <ProgressHero dashboard={dashboard} overview={overview} />
 
-                {tiles.length > 0 && (
+                {tiles.length > 0 ? (
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                         {tiles.map((tile) => (
                             <ProgressStatTile key={tile.title} {...tile} subtitle={s.outOfTotal(tile.total)} />
                         ))}
                     </div>
+                ) : (
+                    (overviewLoading || statsLoading) && <ProgressTilesSkeleton label={t.common.loading} />
                 )}
+
+                {!stats && statsLoading && <ProgressStatsSkeleton label={t.common.loading} />}
 
                 {stats && (
                     <>

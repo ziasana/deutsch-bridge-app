@@ -12,7 +12,7 @@ import { REDEMITTEL_ACCENT } from "@/componenets/redemittel/redemittelMeta";
 import { levelThemeVars } from "@/componenets/learning/levelMeta";
 import RedemittelDetailCard from "@/componenets/redemittel/RedemittelDetailCard";
 import { useRedemittelActions } from "@/componenets/redemittel/useRedemittelActions";
-import Loading from "@/componenets/Loading";
+import PageSkeleton from "@/componenets/PageSkeleton";
 
 const primaryButton =
     "inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-50 cursor-pointer";
@@ -33,7 +33,7 @@ export default function RedemittelLearnPage() {
     const { toggleSave, learn } = useRedemittelActions();
     const [saved, setSaved] = useState<Record<string, boolean>>({});
 
-    if (isLoading || !today) return <Loading />;
+    if (isLoading || !today) return <PageSkeleton />;
 
     const shell = (children: React.ReactNode) => (
         <div className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-10" dir="ltr" style={levelThemeVars(REDEMITTEL_ACCENT)}>

@@ -5,7 +5,7 @@ import { Label } from "@/componenets/Label";
 import useAuthStore from "@/store/useAuthStore";
 import {updateProfile, uploadAvatar} from "@/services/userService";
 import { toast } from "@/lib/toast";
-import Loading from "@/componenets/Loading";
+import PageSkeleton from "@/componenets/PageSkeleton";
 import {UserProfileType} from "@/types/user";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
 import { useI18n } from "@/componenets/I18nProvider";
@@ -205,7 +205,7 @@ export default function UserProfile() {
 
     return (
         <div className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-10">
-            {isLoading && <Loading />}
+            {isLoading && <PageSkeleton />}
             {avatarCropSrc && (
                 <ImageCropDialog
                     imageSrc={avatarCropSrc}

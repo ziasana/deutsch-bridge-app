@@ -21,6 +21,7 @@ import com.deutschbridge.backend.model.examsim.ProfileSnapshot;
 import com.deutschbridge.backend.model.examsim.RubricCriterion;
 import com.deutschbridge.backend.model.examsim.StageState;
 import com.deutschbridge.backend.util.ExamExerciseMapper;
+import com.deutschbridge.backend.repository.ExamSimulationAttemptRepository;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -54,7 +55,12 @@ public class ExamSimulationViewBuilder {
 
     // ---------------------------------------------------------------- active state
 
-    public AttemptState state(ExamSimulationAttempt a, List<ExamSimulationAttemptPart> parts, List<ExamSimulationAnswer> answers, boolean timeUp,
+    /**
+     * The state of a running exam. Only the parts shown in the current section need their frozen exercise ({@code partsLoader} reads just those),
+     * the progress of all parts needs only their question counts ({@code questionCounts}).
+     */
+    public AttemptState state(ExamSimulationAttempt a, java.util.function.Function<List<String>, List<ExamSimulationAttemptPart>> partsLoader,
+                              Map<String, Integer> questionCounts, List<ExamSimulationAnswer> answers, boolean timeUp,
                               List<com.deutschbridge.backend.model.entity.ExamSimulationAudioPlay> plays) {
         ProfileSnapshot profile = a.getProfileSnapshot();
         ExamProfileConfig config = profile.config();
@@ -80,8 +86,10 @@ public class ExamSimulationViewBuilder {
         // While paused the tasks are not sent at all, so a pause cannot be used to read ahead.
         if (running && !paused) {
             ExamTimerConfig timer = timers.get(currentIndex);
+            List<String> shownKeys = partKeysShownIn(config, timer);
+            List<ExamSimulationAttemptPart> parts = shownKeys.isEmpty() ? List.of() : partsLoader.apply(shownKeys);
             for (ExamPartConfig part : config.partsOrEmpty()) {
-                if (!partKeysShownIn(config, timer).contains(part.key())) continue;
+                if (!shownKeys.contains(part.key())) continue;
                 boolean preview = timer.isPreparation();
                 partStates.add(new PartState(part.key(), part.label(), part.module(), part.section(), part.teil(), part.maxPoints(),
                         ExamScoringService.effectiveMethod(profile, part), preview, part.maxAudioPlays(),
@@ -99,7 +107,7 @@ public class ExamSimulationViewBuilder {
         long remaining = running ? Math.max(0, (long) Math.ceil((current.deadlineAtMs() - clockMs) / 1000.0)) : 0;
         return new AttemptState(a.getId(), a.getStatus(), profile.title(), profile.version(), now, a.getStartedAt().toEpochMilli(),
                 a.getFinalDeadlineAt().toEpochMilli(), timeUp, currentIndex, remaining, stageStatuses, partStates, savedAnswers,
-                progress(config, parts, answers), a.getResumeCount(), profile.maxResumes(),
+                progress(config, questionCounts, answers), a.getResumeCount(), profile.maxResumes(),
                 paused, paused ? a.getPausedAt().toEpochMilli() : null, a.getPauseCount());
     }
 
@@ -146,10 +154,10 @@ public class ExamSimulationViewBuilder {
         return copy;
     }
 
-    private List<PartProgress> progress(ExamProfileConfig config, List<ExamSimulationAttemptPart> parts, List<ExamSimulationAnswer> answers) {
+    private List<PartProgress> progress(ExamProfileConfig config, Map<String, Integer> questionCounts, List<ExamSimulationAnswer> answers) {
         List<PartProgress> result = new ArrayList<>();
         for (ExamPartConfig part : config.partsOrEmpty()) {
-            int total = parts.stream().filter(p -> p.getPartKey().equals(part.key())).mapToInt(p -> p.getSnapshot().questionsOrEmpty().size()).sum();
+            int total = questionCounts.getOrDefault(part.key(), 0);
             if (total == 0) total = 1; // writing / oral parts count as one item
             int answered = 0;
             int flagged = 0;
@@ -225,6 +233,29 @@ public class ExamSimulationViewBuilder {
                 r != null ? r.writtenPercentage() : null, r != null && r.writtenComplete(), r != null ? r.writtenResult() : null,
                 r != null ? r.oralResult() : null, r != null ? r.overallResult() : null, r != null ? r.totalScore() : null,
                 a.getProfileSnapshot().totalMaxPoints(), r != null && !r.pendingAssessmentParts().isEmpty());
+    }
+
+    /** The same summary from the light attempt row (see {@link ExamSimulationAttemptRepository.AttemptRow}) - no snapshot or stages loaded. */
+    public AttemptSummary summary(ExamSimulationAttemptRepository.AttemptRow a) {
+        ExamResult r = a.getResult();
+        long started = a.getStartedAt().toEpochMilli();
+        Long ended = a.getEndedAt() != null ? a.getEndedAt().toEpochMilli() : null;
+        java.math.BigDecimal writtenMax = decimal(a.getWrittenMaxText());
+        java.math.BigDecimal totalMax = writtenMax.add(decimal(a.getOralMaxText()));
+        return new AttemptSummary(a.getId(), a.getStatus(), a.getProfileVersion(), a.getTitle(), started, ended,
+                ended != null ? (ended - started) / 1000 : null,
+                r != null ? r.writtenScore() : null, r != null ? r.writtenMax() : writtenMax,
+                r != null ? r.writtenPercentage() : null, r != null && r.writtenComplete(), r != null ? r.writtenResult() : null,
+                r != null ? r.oralResult() : null, r != null ? r.overallResult() : null, r != null ? r.totalScore() : null,
+                totalMax, r != null && !r.pendingAssessmentParts().isEmpty());
+    }
+
+    private static java.math.BigDecimal decimal(String text) {
+        try {
+            return text == null || text.isBlank() ? java.math.BigDecimal.ZERO : new java.math.BigDecimal(text.trim());
+        } catch (NumberFormatException e) {
+            return java.math.BigDecimal.ZERO;
+        }
     }
 
     public static boolean isOralOrUnscored(ExamPartConfig part, ProfileSnapshot profile) {

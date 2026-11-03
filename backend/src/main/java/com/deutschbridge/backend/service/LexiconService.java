@@ -74,10 +74,8 @@ public class LexiconService {
         User user = userService.findByEmail(requestContext.getUserEmail());
         LocalDateTime now = LocalDateTime.now();
 
-        return repository.findByUser(user).stream()
-                .filter(p -> p.getStatus() != WordProgressStatus.KNOWN)
-                .filter(p -> p.getSrsDueAt() == null || !p.getSrsDueAt().isAfter(now))
-                .sorted(Comparator.comparing(UserWordProgress::getSrsDueAt, Comparator.nullsFirst(Comparator.naturalOrder())))
+        // Filtered and ordered by the database: only the due cards are read, not the learner's whole lexicon.
+        return repository.findDueForReview(user, now).stream()
                 .map(this::toResponse)
                 .toList();
     }

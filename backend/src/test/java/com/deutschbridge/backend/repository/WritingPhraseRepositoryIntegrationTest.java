@@ -154,6 +154,8 @@ class WritingPhraseRepositoryIntegrationTest {
         assertTrue(unlearnedIds.contains(unlearned.getId()));
         assertFalse(unlearnedIds.contains(learned.getId()));
         assertTrue(phraseRepository.findUnlearned("u2").stream().anyMatch(p -> p.getId().equals(learned.getId())));
+        // The light rows used to rank the daily pool cover exactly the same phrases.
+        assertEquals(unlearnedIds, phraseRepository.findUnlearnedRows("u1").stream().map(WritingPhraseRepository.UnlearnedRow::getId).collect(Collectors.toSet()));
 
         assertEquals(1, progressRepository.countDue("u1", LocalDateTime.now()));
         assertEquals(0, progressRepository.countDue("u2", LocalDateTime.now()));

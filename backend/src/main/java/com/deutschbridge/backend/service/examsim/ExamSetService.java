@@ -72,6 +72,7 @@ public class ExamSetService {
 
     // ---------------------------------------------------------------- admin
 
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", allEntries = true)
     @Transactional
     public SetDetail generate(ExamProfile profile, String adminId) {
         Map<String, Long> uses = setPartRepository.countUses(profile.getCode()).stream()
@@ -132,6 +133,7 @@ public class ExamSetService {
         return setRepository.findByProfileCodeOrderByNumberAsc(profile.getCode()).stream().map(s -> detail(profile, s, List.of())).toList();
     }
 
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", allEntries = true)
     @Transactional
     public SetDetail publish(ExamProfile profile, String setId) throws DataNotFoundException {
         ExamSimulationSet set = load(profile, setId);
@@ -148,6 +150,7 @@ public class ExamSetService {
     }
 
     /** Published sets are archived (hidden from learners, results stay); drafts are deleted. */
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "examSimOverview", allEntries = true)
     @Transactional
     public void discard(ExamProfile profile, String setId) throws DataNotFoundException {
         ExamSimulationSet set = load(profile, setId);

@@ -103,19 +103,25 @@ public class ContentCacheService {
     @Cacheable("grammarLevelContent")
     @Transactional
     public GrammarLevelContent getGrammarLevelContent(LearningLevel level) {
-        List<GrammarLesson> lessons = grammarLessonRepository.findForLevelView(level, GrammarLessonStatus.PUBLISHED);
-        Map<String, List<GrammarLessonEntry>> lessonsByCategoryId = lessons.stream()
-                .filter(l -> l.getCategory() != null)
-                .sorted(LESSON_ORDER)
-                .collect(Collectors.groupingBy(l -> l.getCategory().getId(), Collectors.mapping(GrammarLessonEntry::of, Collectors.toList())));
+        // Light rows straight from the database: loading the full lessons here (texts, examples, quizzes) made the first
+        // request after a restart or an admin edit take several seconds for a list that shows titles and summaries.
+        List<GrammarLessonRepository.LessonCardRow> rows = grammarLessonRepository.findCardsForLevelView(level, GrammarLessonStatus.PUBLISHED);
+        Comparator<GrammarLessonRepository.LessonCardRow> order = Comparator
+                .comparing((GrammarLessonRepository.LessonCardRow r) -> r.getSortOrder() != null ? r.getSortOrder() : 0)
+                .thenComparing(GrammarLessonRepository.LessonCardRow::getTitle, Comparator.nullsLast(Comparator.naturalOrder()));
+        Map<String, List<GrammarLessonEntry>> lessonsByCategoryId = rows.stream()
+                .filter(r -> r.getCategoryId() != null)
+                .sorted(order)
+                .collect(Collectors.groupingBy(GrammarLessonRepository.LessonCardRow::getCategoryId,
+                        Collectors.mapping(GrammarLessonEntry::of, Collectors.toList())));
 
         List<GrammarCategoryEntry> categories = grammarCategoryRepository.findByLevelOrderBySortOrderAscTitleAsc(level).stream()
                 .map(c -> new GrammarCategoryEntry(c.getId(), c.getTitle(), c.getTitleFa(), c.getLevel(), c.getSortOrder(),
                         c.getPassThreshold(), lessonsByCategoryId.getOrDefault(c.getId(), List.of())))
                 .toList();
-        List<GrammarLessonEntry> uncategorized = lessons.stream()
-                .filter(l -> l.getCategory() == null)
-                .sorted(LESSON_ORDER)
+        List<GrammarLessonEntry> uncategorized = rows.stream()
+                .filter(r -> r.getCategoryId() == null)
+                .sorted(order)
                 .map(GrammarLessonEntry::of)
                 .toList();
         return new GrammarLevelContent(categories, uncategorized);
@@ -163,6 +169,32 @@ public class ContentCacheService {
             Hibernate.initialize(exercise.getAnswerOptionLabels());
         });
         return published;
+    }
+
+    /**
+     * The exam-prep lists (level page, Teil pages): published exercises as light rows. Sharing the exam cache means every exam exercise
+     * write clears them too. The key is explicit so it cannot collide with the full-exercise lists above.
+     */
+    @Cacheable(cacheNames = "examExercises", key = "'summary:' + #section + ':' + #level + ':' + #taskType + ':' + #examType")
+    @Transactional
+    public List<ExamExerciseRepository.SummaryRow> getPublishedExamSummaries(ExamSection section, LearningLevel level, ExamTaskType taskType, ExamType examType) {
+        return List.copyOf(examExerciseRepository.findSummaryRows(section, level, taskType, examType));
+    }
+
+    /**
+     * One published exercise with its texts and questions, for the exercise page. Shares the exam cache (and so its eviction on every
+     * exam exercise write) with the lists above; an unpublished or unknown id is not cached.
+     */
+    @Cacheable(cacheNames = "examExercises", key = "'detail:' + #id", unless = "#result == null")
+    @Transactional
+    public Optional<ExamExercise> getPublishedExamExercise(String id) {
+        return examExerciseRepository.findById(id).filter(ExamExercise::isPublished).map(exercise -> {
+            Hibernate.initialize(exercise.getPassages());
+            Hibernate.initialize(exercise.getQuestions());
+            Hibernate.initialize(exercise.getAnswerOptions());
+            Hibernate.initialize(exercise.getAnswerOptionLabels());
+            return exercise;
+        });
     }
 
     /** Published count per type, for the collection-summary cards - no expression rows loaded. */
@@ -344,6 +376,11 @@ public class ContentCacheService {
 
     public record GrammarLessonEntry(String id, String title, String titleFa, String summary, String summaryFa,
                                      LearningLevel level, int quizCount) {
+        static GrammarLessonEntry of(GrammarLessonRepository.LessonCardRow row) {
+            return new GrammarLessonEntry(row.getId(), row.getTitle(), row.getTitleFa(), row.getSummary(), row.getSummaryFa(),
+                    row.getLevel(), row.getQuizCount() != null ? row.getQuizCount() : 0);
+        }
+
         static GrammarLessonEntry of(GrammarLesson lesson) {
             return new GrammarLessonEntry(lesson.getId(), lesson.getTitle(), lesson.getTitleFa(), lesson.getSummary(),
                     lesson.getSummaryFa(), lesson.getLevel(), lesson.getQuiz() != null ? lesson.getQuiz().size() : 0);

@@ -7,7 +7,7 @@ import Link from "next/link";
 import { toast } from "@/lib/toast";
 import { getGrammarLessonById, getGrammarLessonNavigation, setLearningProgress } from "@/services/grammarService";
 import { grammarLessonQueryKey, markLessonLearnedInCache } from "@/lib/grammarQueryCache";
-import Loading from "@/componenets/Loading";
+import GrammarLessonSkeleton from "@/componenets/grammar/GrammarLessonSkeleton";
 import { BookOpen, Bookmark, BookmarkCheck, Check, ChevronLeft, ChevronRight, Clock, Lightbulb, MessageSquareQuote, PartyPopper, PlayCircle } from "lucide-react";
 import LessonStepper, { StepInfo } from "@/componenets/learning/LessonStepper";
 import { TEXT_SIZES, TextSizeControl, useTextSize } from "@/componenets/learning/TextSize";
@@ -71,7 +71,7 @@ function LessonNavRow({
 
 export default function GrammarLessonDetailPage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<GrammarLessonSkeleton />}>
             <GrammarLessonDetailRouter />
         </Suspense>
     );
@@ -165,7 +165,7 @@ function GrammarLessonDetailContent({ lessonId }: Readonly<{ lessonId: string }>
 
     if (!lessonId) return message(t.grammar.noLesson);
 
-    if (loading) return <Loading />;
+    if (loading) return <GrammarLessonSkeleton label={t.common.loading} />;
 
     if (!lesson) return message(t.grammar.notFoundLesson);
 

@@ -24,6 +24,7 @@ export interface WritingTaskForm {
     recipientRole: string;
     writingInstruction: string;
     points: string[];
+    modelSolution: string;
 }
 
 export interface WritingChoiceForm {
@@ -41,6 +42,7 @@ export const emptyTask = (taskLabel: "A" | "B"): WritingTaskForm => ({
     recipientRole: "",
     writingInstruction: "",
     points: Array.from({ length: WRITING_POINT_COUNT }, () => ""),
+    modelSolution: "",
 });
 
 export const emptyForm = (): WritingChoiceForm => ({ title: "", tasks: WRITING_TASK_LABELS.map(emptyTask) });
@@ -54,6 +56,7 @@ interface StoredTask {
     recipient?: { name?: string | null; role?: string | null } | null;
     writingInstruction?: string;
     points?: { number: number; text: string }[];
+    modelSolution?: string | null;
 }
 
 /** The form for a stored exercise (`metadata.writingChoice`): always two alternatives with four point slots, whatever was saved. */
@@ -76,6 +79,7 @@ export function formFromStored(title: string, metadata: Record<string, unknown> 
                 recipientRole: t.recipient?.role ?? "",
                 writingInstruction: t.writingInstruction ?? "",
                 points: Array.from({ length: WRITING_POINT_COUNT }, (_, i) => points[i] ?? ""),
+                modelSolution: t.modelSolution ?? "",
             };
         }),
     };
@@ -110,6 +114,7 @@ export function toBody(form: WritingChoiceForm): WritingChoiceBody {
             recipient: t.recipientName.trim() || t.recipientRole.trim() ? { name: t.recipientName.trim() || null, role: t.recipientRole.trim() || null } : null,
             writingInstruction: t.writingInstruction.trim(),
             points: t.points.map((text, i) => ({ number: i + 1, text: text.trim() })),
+            modelSolution: t.modelSolution.trim() || null,
         })),
     };
 }

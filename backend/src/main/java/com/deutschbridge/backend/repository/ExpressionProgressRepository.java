@@ -27,6 +27,15 @@ public interface ExpressionProgressRepository extends JpaRepository<ExpressionPr
 
     long countByUserAndMasteryLevelIn(User user, List<ExpressionMasteryLevel> masteryLevels);
 
+    interface MasteryCount {
+        ExpressionMasteryLevel getLevel();
+        Long getTotal();
+    }
+
+    /** All mastery counts of a learner in one grouped query. */
+    @org.springframework.data.jpa.repository.Query("SELECT p.masteryLevel AS level, COUNT(p) AS total FROM expression_progress p WHERE p.user = :user GROUP BY p.masteryLevel")
+    List<MasteryCount> countsByMastery(@org.springframework.data.repository.query.Param("user") User user);
+
     @Query("SELECT COUNT(p) FROM expression_progress p WHERE p.user = :user " +
             "AND p.masteryLevel <> com.deutschbridge.backend.model.enums.ExpressionMasteryLevel.MASTERED " +
             "AND (p.nextReviewAt IS NULL OR p.nextReviewAt <= :now)")

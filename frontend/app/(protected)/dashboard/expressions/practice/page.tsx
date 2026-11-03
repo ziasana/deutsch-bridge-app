@@ -18,7 +18,7 @@ import {
     TransformationAnswerResponse,
     ProductionAnswerResponse,
 } from "@/types/expression";
-import Loading from "@/componenets/Loading";
+import PageSkeleton from "@/componenets/PageSkeleton";
 import { ArrowLeft, Check, X } from "lucide-react";
 import { ReactNode } from "react";
 import CircularProgress from "@/componenets/CircularProgress";
@@ -187,7 +187,7 @@ function ExpressionPracticeContent() {
         else router.push(exitTarget);
     };
 
-    if (loading) return <Loading />;
+    if (loading) return <PageSkeleton />;
 
     if (!session || session.items.length === 0) {
         return (
@@ -631,7 +631,7 @@ function ExpressionPracticeContent() {
 
 export default function ExpressionPracticePage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<PageSkeleton />}>
             <ExpressionPracticeContent />
         </Suspense>
     );

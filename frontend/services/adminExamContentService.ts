@@ -59,6 +59,7 @@ export interface WritingChoiceBody {
         recipient: { name: string | null; role: string | null } | null;
         writingInstruction: string;
         points: { number: number; text: string }[];
+        modelSolution?: string | null;
     }[];
 }
 

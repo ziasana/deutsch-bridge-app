@@ -45,11 +45,12 @@ export default function RedemittelFunctionManager() {
     const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
     // Function labels are shown on Redemittel, in the learner views and in the hub, so refresh them all.
-    const refresh = async () => {
-        await queryClient.invalidateQueries({ queryKey: FUNCTIONS_KEY });
-        await queryClient.invalidateQueries({ queryKey: ["admin", "writing"] });
-        await queryClient.invalidateQueries({ queryKey: ["writing", "learn"] });
-        await queryClient.invalidateQueries({ queryKey: ["redemittel"] });
+    // Fire-and-forget: the saving overlay must not wait for the lists to download again.
+    const refresh = () => {
+        void queryClient.invalidateQueries({ queryKey: FUNCTIONS_KEY });
+        void queryClient.invalidateQueries({ queryKey: ["admin", "writing"] });
+        void queryClient.invalidateQueries({ queryKey: ["writing", "learn"] });
+        void queryClient.invalidateQueries({ queryKey: ["redemittel"] });
     };
 
     const save = async (e: React.FormEvent) => {

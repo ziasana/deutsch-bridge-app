@@ -181,3 +181,17 @@ export function removeStatement(answerOptions: string[], questions: ExamQuestion
         questions: questions.map((q) => (removed !== "" && q.correctAnswer === removed ? { ...q, correctAnswer: "" } : q)),
     };
 }
+
+/** The number shown for task {@code index}: examples are not numbered, the other tasks count up from {@code firstNumber}. Null for an example. */
+export function taskNumberAt(questions: ExamQuestion[], index: number, firstNumber: number): number | null {
+    if (questions[index]?.example) return null;
+    return firstNumber + questions.slice(0, index).filter((q) => !q.example).length;
+}
+
+/** Edits option {@code optionIndex} of a multiple-choice task; if it was the correct option, the correct answer follows its new wording. */
+export function updateTaskOption(question: ExamQuestion, optionIndex: number, value: string): ExamQuestion {
+    const options = Array.from({ length: Math.max(CHOICE_COUNT, question.options?.length ?? 0) }, (_, i) => question.options?.[i] ?? "");
+    const previous = options[optionIndex];
+    options[optionIndex] = value;
+    return { ...question, options, correctAnswer: previous !== "" && question.correctAnswer === previous ? value : question.correctAnswer };
+}

@@ -453,7 +453,10 @@ export default function ContentLibrary() {
         return n;
     });
 
-    const refresh = () => queryClient.invalidateQueries({ queryKey: ["admin", "exam"] });
+    // Reloads in the background: the overlay must not wait for the list to come back, the rows are patched locally first.
+    const refresh = () => void queryClient.invalidateQueries({ queryKey: ["admin", "exam"] });
+    const patchRows = (update: (rows: ExamExerciseAdminRow[]) => ExamExerciseAdminRow[]) =>
+        queryClient.setQueriesData<ExamExerciseAdminRow[]>({ queryKey: ["admin", "exam", "exercises", "library"] }, (old) => (old ? update(old) : old));
 
     const askDelete = (ids: string[]) => {
         const targets = rows.filter((r) => ids.includes(r.id));
@@ -475,11 +478,14 @@ export default function ContentLibrary() {
             }
         }
         const done = targets.length - failed.length;
+        const failedTitles = new Set(failed);
+        const removed = new Set(targets.filter((r) => !failedTitles.has(r.title)).map((r) => r.id));
+        patchRows((rows) => rows.filter((r) => !removed.has(r.id)));
         if (done > 0) toast.success(`${done} exercise${done === 1 ? "" : "s"} deleted.`);
         if (failed.length > 0) toast.error(`Could not delete ${failed.slice(0, 3).join(", ")}: ${reason}`);
         setSelected(new Set());
         setBusy(false);
-        await refresh();
+        refresh();
     };
 
     const moveTo = async (status: ExamContentStatus, ids: string[]) => {
@@ -491,8 +497,11 @@ export default function ContentLibrary() {
             if (res.data.failures.length > 0) {
                 toast.error(`${res.data.failures.length} could not be moved: ${res.data.failures.slice(0, 3).map((f) => `${f.title ?? f.id} (${f.reason})`).join("; ")}`);
             }
+            const failedIds = new Set(res.data.failures.map((f) => f.id));
+            const moved = new Set(ids.filter((id) => !failedIds.has(id)));
+            patchRows((rows) => rows.map((r) => (moved.has(r.id) ? { ...r, status: status, published: status === "PUBLISHED" } : r)));
             setSelected(new Set());
-            await refresh();
+            refresh();
         } catch (err) {
             toast.error(errorMessage(err, "Failed to change the status."));
         } finally {
