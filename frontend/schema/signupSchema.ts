@@ -5,10 +5,6 @@ export const signupSchema = z.object({
         .min(1, "Please enter your full name")
         .min(3, "Full Name must be at least 3 characters long")
         .max(30, "Full Name can not be more then 30 characters long"),
-    username: z
-        .string()
-        .min(1, "Please choose a username")
-        .min(3, 'Username must be at least 3 characters long'),
     email: z
         .string()
         .min(1, 'Please enter your email address')

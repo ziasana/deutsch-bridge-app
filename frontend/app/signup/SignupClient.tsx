@@ -93,24 +93,13 @@ export default function SignupPage() {
                 </div>
 
                 <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                        <div>
-                            <label className="block text-foreground font-semibold mb-2 text-sm">
-                                Full Name
-                            </label>
-                            <Input type="text" {...register("displayName")} placeholder="Full name"
+                    <div>
+                        <label className="block text-foreground font-semibold mb-2 text-sm">
+                            Full Name
+                        </label>
+                        <Input type="text" {...register("displayName")} placeholder="Full name"
  aria-invalid={!!errors.displayName} aria-describedby="su-name-msg" />
 <FieldMessage id="su-name-msg" error={errors.displayName?.message} hint="3 to 30 characters." />
-                        </div>
-
-                        <div>
-                            <label className="block text-foreground font-semibold mb-2 text-sm">
-                                Username
-                            </label>
-                            <Input type="text" {...register("username")} placeholder="Username"
- aria-invalid={!!errors.username} aria-describedby="su-username-msg" />
-<FieldMessage id="su-username-msg" error={errors.username?.message} hint="At least 3 characters." />
-                        </div>
                     </div>
 
                     <div>
