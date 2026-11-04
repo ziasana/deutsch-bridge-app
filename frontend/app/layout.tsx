@@ -10,7 +10,7 @@ import AppChrome from "@/componenets/layout/AppChrome";
 import PremiumUpsellModal from "@/componenets/PremiumUpsellModal";
 import Providers from "./providers";
 import JsonLd from "@/componenets/seo/JsonLd";
-import { OG_IMAGE, SITE_NAME, SITE_URL } from "@/lib/seo";
+import { DEFAULT_DESCRIPTION, DEFAULT_TITLE, OG_IMAGE, SITE_NAME, SITE_URL } from "@/lib/seo";
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
@@ -23,14 +23,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://deutschcertify.com"),
-  title: { default: "DeutschCertify", template: "%s | DeutschCertify" },
-  description: "Learn German the smart way and pass your exam with DeutschCertify.",
+  metadataBase: new URL(SITE_URL),
+  title: { default: DEFAULT_TITLE, template: "%s | DeutschCertify" },
+  description: DEFAULT_DESCRIPTION,
+  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
-    siteName: "DeutschCertify",
-    title: "DeutschCertify",
-    description: "Learn German the smart way and pass your exam with DeutschCertify.",
+    siteName: SITE_NAME,
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
     url: "/",
     images: [OG_IMAGE],
   },

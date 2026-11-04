@@ -1,8 +1,10 @@
 import type { MetadataRoute } from "next";
 import { fetchAllBlogPosts, fetchFreeArticleIds, fetchFreeLessonIds } from "@/lib/serverApi";
+import { LANDING_PAGES } from "@/lib/landingPages";
 import { SITE_URL } from "@/lib/seo";
 
 // Static export: generated at build time, so redeploy after publishing new content.
+// lastModified is only emitted where a real content date exists (blog posts); never "now".
 export const dynamic = "force-static";
 
 const STATIC_PATHS: { path: string; priority: number }[] = [
@@ -24,16 +26,16 @@ const STATIC_PATHS: { path: string; priority: number }[] = [
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [posts, articles, lessons] = await Promise.all([fetchAllBlogPosts(), fetchFreeArticleIds(), fetchFreeLessonIds()]);
-  const now = new Date();
 
   return [
-    ...STATIC_PATHS.map(({ path, priority }) => ({ url: `${SITE_URL}${path}`, lastModified: now, priority })),
+    ...STATIC_PATHS.map(({ path, priority }) => ({ url: `${SITE_URL}${path}`, priority })),
+    ...LANDING_PAGES.map((p) => ({ url: `${SITE_URL}/${p.slug}`, priority: 0.8 })),
     ...posts.map((p) => ({
       url: `${SITE_URL}/blog/${encodeURIComponent(p.slug)}`,
-      lastModified: p.publishedAt ? new Date(p.publishedAt) : now,
+      ...(p.publishedAt ? { lastModified: new Date(p.publishedAt) } : {}),
       priority: 0.6,
     })),
-    ...articles.map((a) => ({ url: `${SITE_URL}/learn/reading/${encodeURIComponent(a.id)}`, lastModified: now, priority: 0.5 })),
-    ...[...new Set(lessons)].map((id) => ({ url: `${SITE_URL}/learn/grammar/${encodeURIComponent(id)}`, lastModified: now, priority: 0.5 })),
+    ...articles.map((a) => ({ url: `${SITE_URL}/learn/reading/${encodeURIComponent(a.id)}`, priority: 0.5 })),
+    ...[...new Set(lessons)].map((id) => ({ url: `${SITE_URL}/learn/grammar/${encodeURIComponent(id)}`, priority: 0.5 })),
   ];
 }

@@ -5,6 +5,7 @@ import { Logo } from "@/componenets/brand/Logo";
 import { Facebook, Instagram, Linkedin, Mail, Twitter, Youtube } from "lucide-react";
 import { useI18n } from "./I18nProvider";
 import { getExamLinks, getLearnLinks } from "@/componenets/marketing/siteLinks";
+import { LANDING_PAGES } from "@/lib/landingPages";
 import { useMarketing } from "@/componenets/marketing/useMarketing";
 
 const SOCIALS = [
@@ -83,6 +84,16 @@ export default function Footer() {
           </a>
         </div>
       </div>
+
+      <nav aria-label="Deutsch lernen" className="border-t border-white/10">
+        <ul lang="de" className="container mx-auto flex flex-wrap gap-x-6 gap-y-2 px-6 py-5 text-sm">
+          {LANDING_PAGES.map((p) => (
+            <li key={p.slug}>
+              <Link href={`/${p.slug}`} className="text-slate-400 hover:text-primary transition">{p.keyword}</Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
 
       <div className="border-t border-white/10">
         <div className="container mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">

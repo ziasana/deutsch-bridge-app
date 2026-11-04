@@ -11,6 +11,7 @@ import ExamCard from "@/componenets/marketing/ExamCard";
 import { FEATURE_ICONS } from "@/componenets/marketing/FeatureIcons";
 import FaqList from "@/componenets/marketing/FaqList";
 import PreviewTeaser from "@/componenets/marketing/learn/PreviewTeaser";
+import TopicLinks from "@/componenets/seo/TopicLinks";
 import PricingCards from "@/componenets/marketing/PricingCards";
 import SampleQuestion from "@/componenets/marketing/SampleQuestion";
 import SectionHeading from "@/componenets/marketing/SectionHeading";
@@ -28,7 +29,7 @@ const PILL_STYLES = [
 const HERO_IMAGE = "/images/hero-image.jpg";
 
 export default function HomeClient() {
-    const { m } = useMarketing();
+    const { m, language } = useMarketing();
     const home = m.home;
     const { data: blogPosts, isPending: blogPending } = useQuery({
         queryKey: ["blog", "latest"],
@@ -112,6 +113,8 @@ export default function HomeClient() {
                     </div>
                 </div>
             </section>
+
+            <TopicLinks language={language} />
 
             {/* Choose your exam */}
             <section id="exams" className="container mx-auto scroll-mt-24 px-6 py-20">

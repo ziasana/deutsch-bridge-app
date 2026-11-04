@@ -2,6 +2,23 @@ import type { Metadata } from "next";
 
 export const SITE_URL = "https://deutschcertify.com";
 export const SITE_NAME = "DeutschCertify";
+export const SITE_TAGLINE = "Your Path to German Proficiency";
+export const DEFAULT_TITLE = "DeutschCertify – Learn German Online from A1 to C1";
+export const DEFAULT_DESCRIPTION =
+  "Learn German online with interactive vocabulary, grammar, reading, listening and exam preparation exercises. Prepare for TELC and DTZ with DeutschCertify.";
+export const SUPPORTED_LANGUAGES = ["de", "en", "fa"] as const;
+
+/** Target keywords per public route (one distinct search intent each). Documentation/planning only: the meta keywords tag is not used. */
+export const ROUTE_KEYWORDS: Record<string, { primary: string; secondary: string[] }> = {
+  "/": { primary: "Deutsch lernen online", secondary: ["German learning app", "German language learning", "Deutsch lernen kostenlos"] },
+  "/exams/telc": { primary: "TELC B1 Vorbereitung", secondary: ["TELC B1 Übungen", "B1 Sprachbausteine Übungen", "B1 Modelltest"] },
+  "/exams/dtz": { primary: "DTZ B1 Prüfung Vorbereitung", secondary: ["Deutsch Prüfung online üben"] },
+  "/exams": { primary: "Deutsch Prüfung online üben", secondary: ["telc oder DTZ"] },
+  "/learn/reading": { primary: "B1 Leseverstehen Übungen", secondary: ["Deutsch B1 Übungen"] },
+  "/learn/grammar": { primary: "Deutsche Grammatik Übungen", secondary: ["Deutsche Verben mit Präpositionen", "Nomen-Verb-Verbindungen"] },
+  "/learn/redemittel": { primary: "Deutsche Redemittel", secondary: ["Redemittel B1 Schreiben"] },
+  "/learn/expressions": { primary: "Deutsch Wortschatz lernen", secondary: ["Deutsch C1 Übungen"] },
+};
 
 export const OG_IMAGE = { url: "/og-image.png", width: 1200, height: 630, alt: "DeutschCertify - Your Path to German Proficiency. Learn. Practice. Certify." };
 
@@ -57,5 +74,20 @@ export function faqJsonLd(items: { question: string; answer: string }[]) {
     "@context": "https://schema.org",
     "@type": "FAQPage",
     mainEntity: items.map((i) => ({ "@type": "Question", name: i.question, acceptedAnswer: { "@type": "Answer", text: i.answer } })),
+  };
+}
+
+export function softwareApplicationJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: SITE_NAME,
+    url: SITE_URL,
+    applicationCategory: "EducationalApplication",
+    operatingSystem: "Web",
+    description: "German learning and examination preparation platform.",
+    inLanguage: ["en", "de", "fa"],
+    // The free plan is the only publicly priced offer; Premium has no published price.
+    offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", description: "Free plan" },
   };
 }
