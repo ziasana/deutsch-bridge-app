@@ -87,6 +87,7 @@ export default function Footer() {
 
       <nav aria-label="Deutsch lernen" className="border-t border-white/10">
         <ul lang="de" className="container mx-auto flex flex-wrap gap-x-6 gap-y-2 px-6 py-5 text-sm">
+          <li><Link href="/uebungen" className="text-slate-400 hover:text-primary transition">Kostenlose Übungen</Link></li>
           {LANDING_PAGES.map((p) => (
             <li key={p.slug}>
               <Link href={`/${p.slug}`} className="text-slate-400 hover:text-primary transition">{p.keyword}</Link>
@@ -105,7 +106,7 @@ export default function Footer() {
             <Link href="/" className="hover:text-primary transition">
               {t.footer.termsLabel}
             </Link>
-            <Link href="/" className="hover:text-primary transition">
+            <Link href="/privacy" className="hover:text-primary transition">
               {t.footer.privacyLabel}
             </Link>
           </div>

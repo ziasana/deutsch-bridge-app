@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { fetchAllBlogPosts, fetchFreeArticleIds, fetchFreeLessonIds } from "@/lib/serverApi";
 import { LANDING_PAGES } from "@/lib/landingPages";
+import { LANDING_PAGES_EN } from "@/lib/landingPagesEn";
+import { SAMPLE_EXERCISES } from "@/lib/sampleExercises";
 import { SITE_URL } from "@/lib/seo";
 
 // Static export: generated at build time, so redeploy after publishing new content.
@@ -22,6 +24,7 @@ const STATIC_PATHS: { path: string; priority: number }[] = [
   { path: "/learn/redemittel", priority: 0.7 },
   { path: "/blog", priority: 0.7 },
   { path: "/contact", priority: 0.4 },
+  { path: "/privacy", priority: 0.2 },
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -30,6 +33,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...STATIC_PATHS.map(({ path, priority }) => ({ url: `${SITE_URL}${path}`, priority })),
     ...LANDING_PAGES.map((p) => ({ url: `${SITE_URL}/${p.slug}`, priority: 0.8 })),
+    ...LANDING_PAGES_EN.map((p) => ({ url: `${SITE_URL}/en/${p.slug}`, priority: 0.7 })),
+    { url: `${SITE_URL}/uebungen`, priority: 0.8 },
+    ...SAMPLE_EXERCISES.map((e) => ({ url: `${SITE_URL}/uebungen/${e.slug}`, priority: 0.7 })),
     ...posts.map((p) => ({
       url: `${SITE_URL}/blog/${encodeURIComponent(p.slug)}`,
       ...(p.publishedAt ? { lastModified: new Date(p.publishedAt) } : {}),

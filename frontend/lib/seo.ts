@@ -27,14 +27,16 @@ interface PageSeo {
   description: string;
   /** Path starting with "/", used for the canonical URL and og:url. */
   path: string;
+  /** hreflang alternates: language code (or "x-default") to path. Only pass for pages with genuinely translated versions. */
+  languages?: Record<string, string>;
 }
 
 /** Metadata for an indexable public page: title, description, canonical and social cards. */
-export function publicPageMetadata({ title, description, path }: PageSeo): Metadata {
+export function publicPageMetadata({ title, description, path, languages }: PageSeo): Metadata {
   return {
     title,
     description,
-    alternates: { canonical: path },
+    alternates: { canonical: path, ...(languages ? { languages } : {}) },
     openGraph: { type: "website", siteName: SITE_NAME, title, description, url: path, images: [OG_IMAGE] },
     twitter: { card: "summary_large_image", title, description, images: [OG_IMAGE.url] },
   };

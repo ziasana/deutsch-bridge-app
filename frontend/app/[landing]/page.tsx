@@ -12,7 +12,12 @@ export const generateStaticParams = () => LANDING_PAGES.map((p) => ({ landing: p
 export async function generateMetadata({ params }: { params: Promise<{ landing: string }> }): Promise<Metadata> {
   const page = getLandingPage((await params).landing);
   if (!page) return {};
-  return publicPageMetadata({ title: page.title, description: page.description, path: `/${page.slug}` });
+  return publicPageMetadata({
+    title: page.title,
+    description: page.description,
+    path: `/${page.slug}`,
+    languages: page.enSlug ? { de: `/${page.slug}`, en: `/en/${page.enSlug}`, "x-default": `/${page.slug}` } : undefined,
+  });
 }
 
 export default async function LandingPage({ params }: { params: Promise<{ landing: string }> }) {

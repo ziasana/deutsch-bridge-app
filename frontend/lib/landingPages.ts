@@ -19,6 +19,8 @@ export interface LandingPage {
   faq: { question: string; answer: string }[];
   /** Slugs of related landing pages, shown as internal links. */
   related: string[];
+  /** Slug of the English counterpart under /en, when a genuine translation exists (drives hreflang). */
+  enSlug?: string;
   /** Existing app pages that give a hands-on sample without registration. */
   practice: { href: string; label: string }[];
 }
@@ -26,6 +28,7 @@ export interface LandingPage {
 export const LANDING_PAGES: LandingPage[] = [
   {
     slug: "deutsch-lernen",
+    enSlug: "learn-german",
     title: "Deutsch lernen online: von A1 bis C1",
     description: "Deutsch lernen online mit Wortschatz, Grammatik, Redemitteln und Prüfungsübungen. Kostenlos starten und in deinem Tempo Fortschritte machen.",
     h1: "Deutsch lernen online – von A1 bis C1",
@@ -67,6 +70,7 @@ export const LANDING_PAGES: LandingPage[] = [
   },
   {
     slug: "deutsch-lernen-app",
+    enSlug: "german-learning-app",
     title: "Deutsch lernen App: im Browser lernen und üben",
     description: "Die Deutsch-lernen-App im Browser: Übungen, Prüfungsvorbereitung und KI-Tutor. Ohne Download, auf Smartphone, Tablet und Computer.",
     h1: "Deutsch lernen mit der App im Browser",
@@ -131,6 +135,7 @@ export const LANDING_PAGES: LandingPage[] = [
   },
   {
     slug: "telc-b1-vorbereitung",
+    enSlug: "telc-b1-preparation",
     title: "telc B1 Vorbereitung: Übungen und Probeprüfung",
     description: "telc B1 Vorbereitung mit Übungen zu Lesen, Sprachbausteinen, Hören, Schreiben und Sprechen. Mit Probeprüfungen und detaillierten Ergebnissen.",
     h1: "telc B1 Vorbereitung online",
@@ -164,6 +169,7 @@ export const LANDING_PAGES: LandingPage[] = [
   },
   {
     slug: "dtz-b1-vorbereitung",
+    enSlug: "dtz-b1-preparation",
     title: "DTZ B1 Prüfung Vorbereitung: Übungen online",
     description: "DTZ-Vorbereitung für A2–B1: Aufbau des Deutsch-Test für Zuwanderer, Übungen zu allen Fertigkeiten und Probeprüfungen online.",
     h1: "DTZ Prüfung Vorbereitung online",
@@ -304,5 +310,7 @@ export const LANDING_PAGES: LandingPage[] = [
     practice: [{ href: "/learn/grammar", label: "Grammatik-Beispiele" }],
   },
 ];
+
+export const getGermanSlugForEn = (enSlug: string) => LANDING_PAGES.find((p) => p.enSlug === enSlug)?.slug;
 
 export const getLandingPage = (slug: string) => LANDING_PAGES.find((p) => p.slug === slug);
