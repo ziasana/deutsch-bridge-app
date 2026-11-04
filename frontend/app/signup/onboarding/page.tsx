@@ -17,7 +17,9 @@ import DailyWordsStep from "@/componenets/onboarding/DailyWordsStep";
 import FocusAreasStep from "@/componenets/onboarding/FocusAreasStep";
 import ExamDetailsStep from "@/componenets/onboarding/ExamDetailsStep";
 import { OnboardingRequest } from "@/types/onboarding";
-import Loading from "@/componenets/Loading";
+import AuthFormSkeleton from "@/componenets/AuthFormSkeleton";
+import { useQueryClient } from "@tanstack/react-query";
+import { getDashboard } from "@/services/dashboardService";
 
 const STEP_COMPONENTS: Record<OnboardingStepId, React.ComponentType> = {
     language: ExplanationLanguageStep,
@@ -31,6 +33,7 @@ const STEP_COMPONENTS: Record<OnboardingStepId, React.ComponentType> = {
 
 export default function SignupOnboardingPage() {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const { isLoggedIn, hasHydrated, userProfile, updateUserProfile } = useAuthStore();
     const state = useOnboardingStore();
     const [submitting, setSubmitting] = useState(false);
@@ -144,6 +147,14 @@ export default function SignupOnboardingPage() {
             // instead of silently treating a half-finished setup as done.
             updateUserProfile(res.data.data);
             setCompleted(true);
+            // Warm up the dashboard (code and data) while the learner reads the "plan is ready" screen,
+            // so "Start learning" opens it with content instead of a skeleton.
+            router.prefetch("/dashboard");
+            void queryClient.prefetchQuery({
+                queryKey: ["dashboard"],
+                queryFn: () => getDashboard().then((r) => r.data),
+                staleTime: 60 * 1000,
+            });
         } catch (err) {
             const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
             toast.error(message ?? "Couldn't save your learning plan. Please try again.");
@@ -152,7 +163,7 @@ export default function SignupOnboardingPage() {
         }
     };
 
-    if (!hasHydrated || (!preview && !isLoggedIn) || !isOwnerConfirmed) return <Loading />;
+    if (!hasHydrated || (!preview && !isLoggedIn) || !isOwnerConfirmed) return <AuthFormSkeleton fields={3} />;
 
     if (completed) {
         return (

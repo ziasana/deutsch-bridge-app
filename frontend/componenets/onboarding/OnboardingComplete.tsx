@@ -16,7 +16,7 @@ export default function OnboardingComplete({ targetLevel, focusAreas, dailyGoalW
     const selectedFocus = FOCUS_AREA_OPTIONS.filter((opt) => focusAreas.includes(opt.value));
 
     return (
-        <div className="min-h-[calc(100vh-4rem)] bg-background px-4 py-10 flex items-center justify-center">
+        <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-b from-accent/60 to-background px-4 py-10 flex items-center justify-center">
             <div className="relative w-full max-w-xl overflow-hidden [&>*:not([aria-hidden])]:relative text-center rounded-3xl border border-primary/10 bg-gradient-to-br from-primary/[0.03] via-card to-card p-8 sm:p-10 shadow-card">
                 <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-12 size-44 rounded-full bg-primary/[0.06]" />
                 <div aria-hidden="true" className="pointer-events-none absolute -bottom-16 left-1/4 size-36 rounded-full bg-primary/[0.04]" />

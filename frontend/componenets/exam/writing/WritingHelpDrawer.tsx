@@ -51,7 +51,7 @@ export default function WritingHelpDrawer({ open, onClose, tabs, data, loading }
                 role="dialog"
                 aria-label="Schreibhilfe"
                 style={lessonThemeVars("writing")}
-                className="anim-slide-in fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col overflow-hidden rounded-t-3xl bg-background shadow-2xl lg:inset-y-0 lg:left-auto lg:right-0 lg:max-h-none lg:w-[28rem] lg:rounded-none lg:rounded-s-3xl"
+                className="anim-slide-in fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] flex-col overflow-hidden rounded-t-3xl bg-background shadow-2xl lg:inset-y-0 lg:left-auto lg:right-0 lg:max-h-none lg:w-[28rem] lg:rounded-none lg:rounded-s-3xl"
             >
                 <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-(--lesson-from) to-(--lesson-to) px-5 pb-4 pt-5 text-white">
                     <span aria-hidden="true" className="absolute -end-8 -top-10 size-36 rounded-full bg-white/10" />

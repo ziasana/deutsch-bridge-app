@@ -90,7 +90,7 @@ export default function DictionaryPanel({
             />
             <aside
                 className="fixed z-50 bg-white dark:bg-gray-800 shadow-2xl flex flex-col
-                    inset-x-0 bottom-0 max-h-[85vh] rounded-t-2xl
+                    inset-x-0 bottom-0 max-h-[85dvh] rounded-t-2xl
                     md:inset-x-auto md:right-0 md:top-0 md:bottom-0 md:h-full md:max-h-full
                     md:w-[400px] md:rounded-none md:border-l md:border-gray-200 md:dark:border-gray-700"
             >

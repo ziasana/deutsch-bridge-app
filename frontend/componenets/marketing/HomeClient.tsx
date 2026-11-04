@@ -1,5 +1,6 @@
 "use client";
 
+import AuthAwareLink from "@/componenets/AuthAwareLink";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
@@ -75,9 +76,9 @@ export default function HomeClient() {
                         </ul>
 
                         <div className="flex flex-wrap items-center gap-4 pt-2">
-                            <Link href="/signup" className="btn-primary rounded-xl px-6 py-3 text-base">
+                            <AuthAwareLink href="/signup" className="btn-primary rounded-xl px-6 py-3 text-base">
                                 {m.common.startFree}
-                            </Link>
+                            </AuthAwareLink>
                             <Link href="/exams" className="btn-outline rounded-xl bg-card px-6 py-3 text-base">
                                 {m.common.exploreExams}
                             </Link>

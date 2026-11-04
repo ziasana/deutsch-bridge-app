@@ -1,5 +1,6 @@
 "use client";
 
+import AuthAwareLink from "@/componenets/AuthAwareLink";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -169,12 +170,12 @@ export default function BlogPostClient({ slug }: Readonly<{ slug: string }>) {
                     <div className="mt-12 flex flex-col items-center gap-4 rounded-3xl bg-gradient-to-br from-primary to-primary/80 p-8 text-center text-primary-foreground shadow-lg md:p-10">
                         <h2 className="text-2xl font-bold md:text-3xl">{t.blogPage.ctaTitle}</h2>
                         <p className="max-w-xl text-primary-foreground/85">{t.blogPage.ctaText}</p>
-                        <Link
+                        <AuthAwareLink
                             href="/signup"
                             className="rounded-xl bg-card px-6 py-3 font-semibold text-primary transition hover:scale-105"
                         >
                             {t.blogPage.ctaButton}
-                        </Link>
+                        </AuthAwareLink>
                     </div>
                 )}
             </div>

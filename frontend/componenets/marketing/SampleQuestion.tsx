@@ -1,7 +1,7 @@
 "use client";
 
+import AuthAwareLink from "@/componenets/AuthAwareLink";
 import { useState } from "react";
-import Link from "next/link";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { useMarketing } from "./useMarketing";
 
@@ -83,9 +83,9 @@ export default function SampleQuestion() {
                         {s.check}
                     </button>
                 )}
-                <Link href="/signup" className="text-sm font-semibold text-primary hover:underline">
+                <AuthAwareLink href="/signup" className="text-sm font-semibold text-primary hover:underline">
                     {s.cta}
-                </Link>
+                </AuthAwareLink>
             </div>
         </div>
     );

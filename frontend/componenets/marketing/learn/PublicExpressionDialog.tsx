@@ -1,7 +1,7 @@
 "use client";
 
+import AuthAwareLink from "@/componenets/AuthAwareLink";
 import { readableOn } from "@/componenets/learning/levelMeta";
-import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getExpressionImageSrc } from "@/lib/expressionImages";
 import { getIllustrationFor } from "@/componenets/expressions/illustrations";
@@ -126,9 +126,9 @@ export default function PublicExpressionDialog({ id, title, onClose }: Readonly<
                     <PublicExpressionPractice id={id} />
 
                     <footer className="flex flex-wrap items-center gap-3 border-t border-border/60 bg-foreground/[0.02] px-5 py-4 sm:px-8">
-                        <Link href="/signup" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90">
+                        <AuthAwareLink href="/signup" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90">
                             {l.unlock.cta}
-                        </Link>
+                        </AuthAwareLink>
                     </footer>
                 </article>
             )}

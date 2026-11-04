@@ -1,7 +1,7 @@
 "use client";
 
+import AuthAwareLink from "@/componenets/AuthAwareLink";
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { Lock, X } from "lucide-react";
 import { useMarketing } from "../useMarketing";
 
@@ -52,12 +52,12 @@ function UnlockDialog({ open, onClose }: Readonly<{ open: boolean; onClose: () =
                     {u.title}
                 </h2>
                 <p className="mt-2 text-sm text-foreground/70">{u.text}</p>
-                <Link href="/signup" className="btn-primary mt-6 block rounded-xl py-3 text-base">
+                <AuthAwareLink href="/signup" className="btn-primary mt-6 block rounded-xl py-3 text-base">
                     {u.cta}
-                </Link>
-                <Link href="/login" className="mt-3 block text-sm font-semibold text-primary hover:underline">
+                </AuthAwareLink>
+                <AuthAwareLink href="/login" className="mt-3 block text-sm font-semibold text-primary hover:underline">
                     {u.login}
-                </Link>
+                </AuthAwareLink>
                 <p className="mt-3 text-xs text-foreground/50">{u.noCard}</p>
             </div>
         </div>

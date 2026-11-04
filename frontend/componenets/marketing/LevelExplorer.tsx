@@ -1,7 +1,7 @@
 "use client";
 
+import AuthAwareLink from "@/componenets/AuthAwareLink";
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react";
@@ -90,10 +90,10 @@ function LevelPanel({ level, examName }: Readonly<{ level: LevelData; examName: 
                 <p className="text-foreground/80">{info.canDo}</p>
                 <p className="rounded-xl bg-muted/60 p-4 text-sm text-foreground/70">{info.goal}</p>
                 {level.total > 0 && (
-                    <Link href="/signup" className="btn-primary mt-auto flex w-fit items-center gap-2 rounded-xl px-5 py-3">
+                    <AuthAwareLink href="/signup" className="btn-primary mt-auto flex w-fit items-center gap-2 rounded-xl px-5 py-3">
                         {p.practiceCta(examName, level.label)}
                         <ArrowRight className="size-4 rtl:rotate-180" />
-                    </Link>
+                    </AuthAwareLink>
                 )}
             </div>
 

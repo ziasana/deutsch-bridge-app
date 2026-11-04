@@ -1,3 +1,4 @@
+import AuthAwareLink from "@/componenets/AuthAwareLink";
 import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
 import CtaBand from "@/componenets/marketing/CtaBand";
@@ -41,7 +42,7 @@ export default function LandingPageView({ page, locale = "de" }: Readonly<{ page
             </p>
           )}
           <div className="mt-8 flex flex-wrap gap-4">
-            <Link href="/signup" className="btn-primary rounded-xl px-6 py-3 text-base">{L.start}</Link>
+            <AuthAwareLink href="/signup" className="btn-primary rounded-xl px-6 py-3 text-base">{L.start}</AuthAwareLink>
             {page.practice.map((p) => (
               <Link key={p.href} href={p.href} className="btn-outline rounded-xl bg-card px-6 py-3 text-base">{p.label}</Link>
             ))}

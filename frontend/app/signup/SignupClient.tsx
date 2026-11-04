@@ -1,14 +1,14 @@
 "use client";
 
 import Button from "@/componenets/Button";
+import PasswordInput from "@/componenets/PasswordInput";
 import Input from "@/componenets/Input";
 import FieldMessage from "@/componenets/FieldMessage";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import {useEffect, useState} from "react";
+import { useEffect, useRef, useState } from "react";
 import {registerUser} from "@/services/userService";
 import { toast } from "@/lib/toast";
-import Loading from "@/componenets/Loading";
 import {useRouter, useSearchParams} from "next/navigation";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
@@ -17,8 +17,24 @@ import useAuthStore from "@/store/useAuthStore";
 
 export default function SignupPage() {
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const searchParams = useSearchParams();
     const router = useRouter();
+    const { isLoggedIn, hasHydrated } = useAuthStore();
+
+    // Already signed in when the page opened: skip the form and go to the dashboard.
+    // Checked once, so signing in from this form keeps its own post-login redirect.
+    // Warm up the page the learner lands on so the redirect after signing in is instant.
+    useEffect(() => {
+        router.prefetch("/signup/onboarding");
+    }, [router]);
+
+    const checkedExistingSession = useRef(false);
+    useEffect(() => {
+        if (!hasHydrated || checkedExistingSession.current) return;
+        checkedExistingSession.current = true;
+        if (isLoggedIn) router.replace("/dashboard");
+    }, [hasHydrated, isLoggedIn, router]);
     const { login } = useAuthStore();
 
     useEffect(() => {
@@ -75,7 +91,6 @@ export default function SignupPage() {
                     Join thousands of learners mastering German with DeutschCertify. It only takes a minute to get started.
                 </p>
 
-                {isLoading && <Loading message="Please wait..." />}
 
                 <button
                     type="button"
@@ -116,7 +131,7 @@ export default function SignupPage() {
                             <label className="block text-foreground font-semibold mb-2 text-sm">
                                 Password
                             </label>
-                            <Input type="password" {...register("password")} placeholder="Password"
+                            <PasswordInput visible={showPassword} onVisibleChange={setShowPassword} autoComplete="new-password" {...register("password")} placeholder="Password"
  aria-invalid={!!errors.password} aria-describedby="su-password-msg" />
 <FieldMessage id="su-password-msg" error={errors.password?.message} hint="At least 6 characters." />
                         </div>
@@ -125,8 +140,10 @@ export default function SignupPage() {
                             <label className="block text-foreground font-semibold mb-2 text-sm">
                                 Confirm Password
                             </label>
-                            <Input
-                                type="password"
+                            <PasswordInput
+                                visible={showPassword}
+                                onVisibleChange={setShowPassword}
+                                autoComplete="new-password"
                                 required={false}
                                 {...register("password_confirmation")}
                                 placeholder="Confirm password"
@@ -140,7 +157,8 @@ export default function SignupPage() {
                     <Button
                         variant="primary"
                         type="submit"
-                        className="w-full rounded-full py-3.5 flex items-center justify-center gap-2"
+                        disabled={isLoading}
+                        className="w-full rounded-full py-3.5 flex items-center justify-center gap-2 disabled:opacity-70"
                     >
                         {isLoading ? "Saving..." : "Sign Up"}
                         {!isLoading && <ArrowRight className="size-4" />}

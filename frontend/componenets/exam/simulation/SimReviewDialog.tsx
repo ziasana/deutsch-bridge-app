@@ -17,7 +17,7 @@ export default function SimReviewDialog({ state, submitting, onConfirm, onCancel
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="sim-review-title">
-            <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto anim-pop rounded-3xl border border-border/60 bg-card p-6 shadow-lg">
+            <div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto anim-pop rounded-3xl border border-border/60 bg-card p-6 shadow-lg">
                 <h2 id="sim-review-title" className="text-lg font-bold text-foreground">
                     Prüfung abgeben?
                 </h2>

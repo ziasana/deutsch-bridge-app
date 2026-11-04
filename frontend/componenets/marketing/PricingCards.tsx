@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import AuthAwareLink from "@/componenets/AuthAwareLink";
 import { Check } from "lucide-react";
 import { useMarketing } from "./useMarketing";
 
@@ -22,9 +22,9 @@ export default function PricingCards() {
                         </li>
                     ))}
                 </ul>
-                <Link href="/signup" className="btn-primary mt-8 rounded-xl py-3 text-center text-base">
+                <AuthAwareLink href="/signup" className="btn-primary mt-8 rounded-xl py-3 text-center text-base">
                     {free.cta}
-                </Link>
+                </AuthAwareLink>
             </article>
 
             <article className="relative flex flex-col rounded-3xl border-2 border-primary bg-card p-8 shadow-card">
@@ -42,9 +42,9 @@ export default function PricingCards() {
                         </li>
                     ))}
                 </ul>
-                <Link href="/signup" className="btn-outline mt-8 rounded-xl py-3 text-center text-base">
+                <AuthAwareLink href="/signup" className="btn-outline mt-8 rounded-xl py-3 text-center text-base">
                     {premium.cta}
-                </Link>
+                </AuthAwareLink>
             </article>
         </div>
     );

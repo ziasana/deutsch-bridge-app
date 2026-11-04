@@ -1,5 +1,6 @@
 "use client";
 
+import AuthAwareLink from "@/componenets/AuthAwareLink";
 import { useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, Briefcase, Check, FileText, GraduationCap, Home, Info, LucideIcon, Users } from "lucide-react";
@@ -62,9 +63,9 @@ export default function ExamDetail({ slug }: Readonly<{ slug: ExamSlug }>) {
                                 })}
                             </ul>
                             <div className="mt-8 flex flex-wrap gap-4">
-                                <Link href="/signup" className="btn-primary rounded-xl px-6 py-3 text-base">
+                                <AuthAwareLink href="/signup" className="btn-primary rounded-xl px-6 py-3 text-base">
                                     {m.common.startFree}
-                                </Link>
+                                </AuthAwareLink>
                                 <a href="#level" className="btn-outline rounded-xl bg-card px-6 py-3 text-base">
                                     {p.levelBadge}
                                 </a>

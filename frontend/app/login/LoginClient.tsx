@@ -1,13 +1,13 @@
 "use client";
 
 import Button from "@/componenets/Button";
+import PasswordInput from "@/componenets/PasswordInput";
 import Input from "@/componenets/Input";
 import FieldMessage from "@/componenets/FieldMessage";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
-import Loading from "@/componenets/Loading";
 import { useRouter, useSearchParams } from "next/navigation";
 import useAuthStore from "@/store/useAuthStore";
 import { loginUser } from "@/services/userService";
@@ -20,6 +20,21 @@ export default function LoginClient() {
     const [isLoading, setIsLoading] = useState(false);
     const { login } = useAuthStore();
     const router = useRouter();
+    const { isLoggedIn, hasHydrated } = useAuthStore();
+
+    // Already signed in when the page opened: skip the form and go to the dashboard.
+    // Checked once, so signing in from this form keeps its own post-login redirect.
+    // Warm up the page the learner lands on so the redirect after signing in is instant.
+    useEffect(() => {
+        router.prefetch("/dashboard");
+    }, [router]);
+
+    const checkedExistingSession = useRef(false);
+    useEffect(() => {
+        if (!hasHydrated || checkedExistingSession.current) return;
+        checkedExistingSession.current = true;
+        if (isLoggedIn) router.replace("/dashboard");
+    }, [hasHydrated, isLoggedIn, router]);
 
     useEffect(() => {
         if (searchParams.get("success")) {
@@ -80,7 +95,6 @@ export default function LoginClient() {
                     Hey there! Ready to continue learning? Enter your email and password below and you&#39;ll be back to studying in no time.
                 </p>
 
-                {isLoading && <Loading />}
 
                 <button
                     type="button"
@@ -117,8 +131,7 @@ export default function LoginClient() {
                         <label className="block text-foreground font-semibold mb-2 text-sm">
                             Password
                         </label>
-                        <Input
-                            type="password"
+                        <PasswordInput
                             {...register("password")}
                             placeholder="Password"
                             autoComplete="current-password"
@@ -140,7 +153,8 @@ export default function LoginClient() {
                     <Button
                         variant="primary"
                         type="submit"
-                        className="w-full rounded-full py-3.5 flex items-center justify-center gap-2"
+                        disabled={isLoading}
+                        className="w-full rounded-full py-3.5 flex items-center justify-center gap-2 disabled:opacity-70"
                     >
                         {isLoading ? "Signing in..." : "Sign In"}
                         {!isLoading && <ArrowRight className="size-4" />}

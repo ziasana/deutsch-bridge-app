@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import AuthAwareLink from "@/componenets/AuthAwareLink";
 import { Lock } from "lucide-react";
 import { useMarketing } from "../useMarketing";
 
@@ -15,9 +15,9 @@ export default function UnlockBanner({ title }: Readonly<{ title: string }>) {
                 </span>
                 <p className="min-w-0 font-bold text-foreground">{title}</p>
             </div>
-            <Link href="/signup" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90">
+            <AuthAwareLink href="/signup" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90">
                 {m.learnPage.unlock.cta}
-            </Link>
+            </AuthAwareLink>
         </div>
     );
 }

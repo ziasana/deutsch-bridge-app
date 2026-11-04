@@ -1,5 +1,6 @@
 "use client";
 
+import AuthAwareLink from "@/componenets/AuthAwareLink";
 import { useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, XCircle } from "lucide-react";
@@ -67,7 +68,7 @@ export default function ExerciseQuiz({ questions, more }: Readonly<{ questions: 
           <p className="font-semibold text-foreground">Weiterüben mit DeutschCertify</p>
           <div className="mt-3 flex flex-wrap gap-4">
             <Link href={more.href} className="font-semibold text-primary hover:underline">{more.label}</Link>
-            <Link href="/signup" className="font-semibold text-primary hover:underline">Kostenloses Konto erstellen</Link>
+            <AuthAwareLink href="/signup" className="font-semibold text-primary hover:underline">Kostenloses Konto erstellen</AuthAwareLink>
           </div>
         </div>
       )}

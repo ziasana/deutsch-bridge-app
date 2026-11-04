@@ -19,18 +19,21 @@ export default function DetailModal({ label, onClose, children }: Readonly<{ lab
                 role="dialog"
                 aria-modal="true"
                 aria-label={label}
-                className="anim-pop relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-[10px] bg-card shadow-2xl sm:rounded-[10px]"
+                className="anim-pop relative max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-[10px] bg-card shadow-2xl sm:rounded-[10px]"
                 onClick={(e) => e.stopPropagation()}
             >
-                <button
-                    ref={closeRef}
-                    type="button"
-                    onClick={onClose}
-                    aria-label="Close"
-                    className="absolute end-3 top-3 z-10 flex size-9 items-center justify-center rounded-full bg-card/90 text-foreground/60 shadow-card backdrop-blur-sm transition hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-                >
-                    <X className="size-4" />
-                </button>
+                {/* Sticky (zero height) so the close button stays visible while the content scrolls */}
+                <div className="pointer-events-none sticky top-0 z-10 flex h-0 justify-end pe-3 pt-3">
+                    <button
+                        ref={closeRef}
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Close"
+                        className="pointer-events-auto flex size-9 items-center justify-center rounded-full bg-card/90 text-foreground/60 shadow-card backdrop-blur-sm transition hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                    >
+                        <X className="size-4" />
+                    </button>
+                </div>
                 {children}
             </div>
         </div>

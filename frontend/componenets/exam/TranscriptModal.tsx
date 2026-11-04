@@ -38,7 +38,7 @@ export default function TranscriptModal({ open, onClose, transcripts, accent = "
                 <DialogPanel
                     transition
                     style={lessonThemeVars(accent)}
-                    className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-card text-card-foreground shadow-2xl ring-1 ring-border transition duration-200 data-closed:translate-y-4 data-closed:scale-95 data-closed:opacity-0"
+                    className="flex max-h-[90dvh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-card text-card-foreground shadow-2xl ring-1 ring-border transition duration-200 data-closed:translate-y-4 data-closed:scale-95 data-closed:opacity-0"
                 >
                     <header className="relative shrink-0 overflow-hidden bg-gradient-to-br from-(--lesson-from) to-(--lesson-to) px-5 py-4 text-white sm:px-8 sm:py-5">
                         <span aria-hidden="true" className="absolute -end-8 -top-10 size-36 rounded-full bg-white/10" />

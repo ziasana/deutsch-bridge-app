@@ -1,5 +1,6 @@
 "use client";
 
+import AuthAwareLink from "@/componenets/AuthAwareLink";
 import Link from "next/link";
 import { Lightbulb } from "lucide-react";
 import CtaBand from "@/componenets/marketing/CtaBand";
@@ -25,9 +26,9 @@ export default function MockTestPage() {
                 <div className="container mx-auto px-6">
                     <SectionHeading title={t.title} subtitle={t.subtitle} />
                     <div className="mt-8 flex flex-wrap justify-center gap-4">
-                        <Link href="/signup" className="btn-primary rounded-xl px-6 py-3 text-base">
+                        <AuthAwareLink href="/signup" className="btn-primary rounded-xl px-6 py-3 text-base">
                             {m.common.startFree}
-                        </Link>
+                        </AuthAwareLink>
                         <Link href="/exams" className="btn-outline rounded-xl bg-card px-6 py-3 text-base">
                             {t.browseExams}
                         </Link>

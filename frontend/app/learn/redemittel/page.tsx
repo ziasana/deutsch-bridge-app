@@ -1,5 +1,6 @@
 "use client";
 
+import AuthAwareLink from "@/componenets/AuthAwareLink";
 import { useState } from "react";
 import Link from "next/link";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
@@ -146,9 +147,9 @@ export default function PublicRedemittelPage() {
             {opened && (
                 <DetailModal label={opened.phrase} onClose={() => setOpenId(null)}>
                     <RedemittelDetailCard embedded redemittel={asRedemittel(opened)}>
-                        <Link href="/signup" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90">
+                        <AuthAwareLink href="/signup" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90">
                             {l.unlock.cta}
-                        </Link>
+                        </AuthAwareLink>
                     </RedemittelDetailCard>
                     <PublicRedemittelPractice id={opened.id} />
                 </DetailModal>

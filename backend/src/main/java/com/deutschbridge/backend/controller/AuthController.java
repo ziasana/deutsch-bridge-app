@@ -40,9 +40,9 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<UserProfileResponse>> login(@RequestBody @Valid LoginRequest request, HttpServletResponse response) throws DataNotFoundException {
-        String email = request.getEmail();
         String password = request.getPassword();
-        authService.login(email, password);
+        // the stored casing is used so tokens and later lookups match the account exactly
+        String email = authService.login(request.getEmail().trim(), password);
         // generate access token JWT
         String token = jwtUtil.generateAccessToken(email);
         // generate refresh token JWT
@@ -114,8 +114,7 @@ public class AuthController {
 
     @PostMapping("/mobile/login")
     public ResponseEntity<ApiResponse<MobileAuthResponse>> mobileLogin(@RequestBody @Valid LoginRequest request) throws DataNotFoundException {
-        String email = request.getEmail();
-        authService.login(email, request.getPassword());
+        String email = authService.login(request.getEmail().trim(), request.getPassword());
         return ResponseEntity.ok(new ApiResponse<>("Login successful!", issueMobileTokens(userService.findByEmail(email))));
     }
 

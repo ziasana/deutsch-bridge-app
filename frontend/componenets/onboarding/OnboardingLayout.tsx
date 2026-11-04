@@ -32,7 +32,7 @@ export default function OnboardingLayout({
     children,
 }: OnboardingLayoutProps) {
     return (
-        <div className="min-h-[calc(100vh-4rem)] bg-background px-4 py-10 sm:px-6">
+        <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-b from-accent/60 to-background px-4 py-10 sm:px-6">
             <div className="mx-auto w-full max-w-2xl">
                 {banner && <div className="mb-4">{banner}</div>}
 
