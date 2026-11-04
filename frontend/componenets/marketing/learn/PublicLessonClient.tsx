@@ -1,8 +1,7 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Clock, Lightbulb, MessageSquareQuote } from "lucide-react";
 import Loading from "@/componenets/Loading";
@@ -35,16 +34,7 @@ const asLesson = (l: PublicGrammarFull): GrammarLesson => ({
     bookmarked: false,
 });
 
-export default function PublicLessonPage() {
-    return (
-        <Suspense fallback={<Loading />}>
-            <PublicLesson />
-        </Suspense>
-    );
-}
-
-function PublicLesson() {
-    const id = useSearchParams().get("id") ?? "";
+export default function PublicLessonClient({ id }: Readonly<{ id: string }>) {
     const { m } = useMarketing();
     const { t } = useI18n();
     const g = m.learnPage.grammar;

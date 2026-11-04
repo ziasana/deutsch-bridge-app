@@ -1,60 +1,12 @@
-'use client';
+import type { Metadata } from "next";
+import type { ReactNode } from "react";
+import ProtectedShell from "./ProtectedShell";
 
-import {ReactNode, useEffect, useRef} from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import useAuthStore from '@/store/useAuthStore';
-import PageSkeleton from '@/componenets/PageSkeleton';
-import { getUserProfile } from '@/services/userService';
-interface ProtectedLayoutProps {
-    children: ReactNode;
-}
+// Everything behind the login (dashboard, admin, profile...) must stay out of search results.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
-export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
-    const {
-        isLoggedIn,
-        hasHydrated,
-        userProfile,
-        updateUserProfile,
-    } = useAuthStore();
-    const router = useRouter();
-    const pathname = usePathname();
-    const hasRefreshedProfile = useRef(false);
-
-    useEffect(() => {
-        if (!hasHydrated) return;
-
-        // Anyone who is not signed in (with or without a leftover profile) goes to the login page.
-        if (!isLoggedIn) {
-            router.replace('/login')
-        }
-    }, [hasHydrated, isLoggedIn, router]);
-
-    useEffect(() => {
-        if (!hasHydrated || !isLoggedIn || !userProfile) return;
-        if (userProfile.role === 'ADMIN') return;
-        if (!userProfile.onboardingCompleted) {
-            router.push('/signup/onboarding');
-        }
-    }, [hasHydrated, isLoggedIn, userProfile, pathname, router]);
-
-    useEffect(() => {
-        if (!hasHydrated || !isLoggedIn || hasRefreshedProfile.current) return;
-        hasRefreshedProfile.current = true;
-        // The persisted profile can be stale (e.g. saved before the user set their learning level
-        // in a later session), so refresh it once from the server whenever the protected area mounts.
-        getUserProfile()
-            .then((res) => updateUserProfile(res.data.data))
-            .catch(() => {
-                // Non-fatal: fall back to the persisted profile already in the store.
-            });
-    }, [hasHydrated, isLoggedIn, updateUserProfile]);
-
-
-    // A page-shaped placeholder (not a blank page, not a full-screen loader) while the session is restored and while redirecting to login.
-    if (!hasHydrated || !isLoggedIn) return <PageSkeleton />;
-
-
-    return <>
-        {children}
-    </>;
+export default function ProtectedLayout({ children }: { children: ReactNode }) {
+  return <ProtectedShell>{children}</ProtectedShell>;
 }

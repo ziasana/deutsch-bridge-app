@@ -130,7 +130,7 @@ export default function PublicReadingPage() {
                                     {...labels}
                                     locked={!a.free}
                                     previewLabel={a.free ? r.openCta : l.locked}
-                                    onOpen={() => (a.free ? router.push(`/learn/reading/article?id=${a.id}`) : show())}
+                                    onOpen={() => (a.free ? router.push(`/learn/reading/${a.id}`) : show())}
                                 />
                             ))}
                         </div>

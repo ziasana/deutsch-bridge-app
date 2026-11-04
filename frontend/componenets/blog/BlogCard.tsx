@@ -10,7 +10,7 @@ import { authorInitial, formatBlogDate, getBlogImageSrc } from "./blogUtils";
 export default function BlogCard({ post, featured = false }: Readonly<{ post: BlogPostSummary; featured?: boolean }>) {
     const { t, language, dir } = useI18n();
     const image = getBlogImageSrc(post.imageUrl);
-    const href = `/blog/post?slug=${encodeURIComponent(post.slug)}`;
+    const href = `/blog/${encodeURIComponent(post.slug)}`;
 
     return (
         <article

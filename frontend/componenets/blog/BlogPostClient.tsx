@@ -1,8 +1,7 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, Check, Clock, Link2, Newspaper } from "lucide-react";
 import { useI18n } from "@/componenets/I18nProvider";
@@ -38,10 +37,9 @@ function ReadingProgress() {
     );
 }
 
-function BlogPostContent() {
+export default function BlogPostClient({ slug }: Readonly<{ slug: string }>) {
     const { t, language, dir } = useI18n();
     const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-    const slug = useSearchParams().get("slug");
     const [copied, setCopied] = useState(false);
 
     const { data: post, isPending, isError } = useQuery({
@@ -50,10 +48,6 @@ function BlogPostContent() {
         enabled: Boolean(slug),
         retry: false,
     });
-
-    useEffect(() => {
-        if (post) document.title = `${post.title} | DeutschCertify`;
-    }, [post]);
 
     const BackIcon = dir === "rtl" ? ArrowRight : ArrowLeft;
 
@@ -201,10 +195,3 @@ function BlogPostContent() {
     );
 }
 
-export default function BlogPostPage() {
-    return (
-        <Suspense fallback={null}>
-            <BlogPostContent />
-        </Suspense>
-    );
-}

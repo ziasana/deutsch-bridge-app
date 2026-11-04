@@ -1,8 +1,7 @@
 "use client";
 
-import { Fragment, Suspense, useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import Loading from "@/componenets/Loading";
 import { getLevelMeta, levelThemeVars } from "@/componenets/learning/levelMeta";
@@ -26,16 +25,7 @@ const asQuiz = (a: PublicArticleFull): QuizQuestion[] =>
         .filter((q) => q.options && q.options.length > 1 && q.correctAnswer)
         .map((q) => ({ type: "mcq", title: "", question: q.prompt, options: q.options ?? [], answer: q.correctAnswer }));
 
-export default function PublicArticlePage() {
-    return (
-        <Suspense fallback={<Loading />}>
-            <PublicArticle />
-        </Suspense>
-    );
-}
-
-function PublicArticle() {
-    const id = useSearchParams().get("id") ?? "";
+export default function PublicArticleClient({ id }: Readonly<{ id: string }>) {
     const { m } = useMarketing();
     const r = m.learnPage.reading;
     const { data, isPending, isError } = useQuery({

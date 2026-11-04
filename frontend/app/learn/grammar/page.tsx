@@ -40,7 +40,7 @@ export default function PublicGrammarPage() {
         enabled: Boolean(overview),
     });
 
-    const open = (lesson: PublicGrammarLesson) => (lesson.free ? router.push(`/learn/grammar/lesson?id=${lesson.id}`) : show());
+    const open = (lesson: PublicGrammarLesson) => (lesson.free ? router.push(`/learn/grammar/${lesson.id}`) : show());
     const title = (x: { title: string; titleFa: string | null }) => (language === "fa" && x.titleFa) || x.title;
     const summary = (x: PublicGrammarLesson) => (language === "fa" && x.summaryFa) || x.summary || "";
 
