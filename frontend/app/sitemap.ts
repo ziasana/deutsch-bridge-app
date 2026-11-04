@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 import { fetchAllBlogPosts, fetchFreeArticleIds, fetchFreeLessonIds } from "@/lib/serverApi";
 import { SITE_URL } from "@/lib/seo";
 
-// Regenerated at most every 10 minutes, so new posts show up without a redeploy.
-export const revalidate = 600;
+// Static export: generated at build time, so redeploy after publishing new content.
+export const dynamic = "force-static";
 
 const STATIC_PATHS: { path: string; priority: number }[] = [
   { path: "/", priority: 1 },

@@ -2,10 +2,14 @@ import type { Metadata } from "next";
 import BlogPostClient from "@/componenets/blog/BlogPostClient";
 import { getBlogImageSrc } from "@/componenets/blog/blogUtils";
 import JsonLd from "@/componenets/seo/JsonLd";
-import { fetchBlogPost } from "@/lib/serverApi";
+import { fetchAllBlogPosts, fetchBlogPost } from "@/lib/serverApi";
 import { absoluteUrl, breadcrumbJsonLd, noIndexMetadata, OG_IMAGE, publicPageMetadata, SITE_NAME, toDescription } from "@/lib/seo";
 
 type Props = { params: Promise<{ slug: string }> };
+
+export async function generateStaticParams() {
+  return (await fetchAllBlogPosts()).map((p) => ({ slug: p.slug }));
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;

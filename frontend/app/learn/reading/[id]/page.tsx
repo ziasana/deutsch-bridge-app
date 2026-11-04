@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
 import JsonLd from "@/componenets/seo/JsonLd";
 import PublicArticleClient from "@/componenets/marketing/learn/PublicArticleClient";
-import { fetchArticle } from "@/lib/serverApi";
+import { fetchArticle, fetchFreeArticleIds } from "@/lib/serverApi";
 import { absoluteUrl, breadcrumbJsonLd, noIndexMetadata, OG_IMAGE, publicPageMetadata, SITE_NAME, toDescription } from "@/lib/seo";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
 
 type Props = { params: Promise<{ id: string }> };
+
+// Only free articles are prerendered; locked ones are not indexable pages.
+export async function generateStaticParams() {
+  return (await fetchFreeArticleIds()).map(({ id }) => ({ id }));
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;

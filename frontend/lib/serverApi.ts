@@ -2,12 +2,11 @@ import { BACKEND_ORIGIN } from "@/lib/backendOrigin";
 import type { BlogPostDetail, BlogPostPage } from "@/types/blog";
 import type { PublicArticleFull, PublicArticlePage, PublicGrammarFull, PublicGrammarLevelView } from "@/types/publicLearn";
 
-/** Build/server-side reads of the public API, used for metadata, JSON-LD and the sitemap. Any failure (404, 403 for a locked item, backend down) yields null. */
-const REVALIDATE_SECONDS = 600;
+/** Build-time reads of the public API (the site is a static export), used for the prerendered detail pages, metadata, JSON-LD and the sitemap. Any failure (404, 403 for a locked item, backend down) yields null. */
 
 async function fetchPublic<T>(path: string): Promise<T | null> {
     try {
-        const res = await fetch(`${BACKEND_ORIGIN}/api${path}`, { next: { revalidate: REVALIDATE_SECONDS } });
+        const res = await fetch(`${BACKEND_ORIGIN}/api${path}`, { cache: "force-cache" });
         return res.ok ? ((await res.json()) as T) : null;
     } catch {
         return null;

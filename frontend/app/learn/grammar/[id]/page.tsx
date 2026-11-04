@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
 import JsonLd from "@/componenets/seo/JsonLd";
 import PublicLessonClient from "@/componenets/marketing/learn/PublicLessonClient";
-import { fetchLesson } from "@/lib/serverApi";
+import { fetchFreeLessonIds, fetchLesson } from "@/lib/serverApi";
 import { absoluteUrl, breadcrumbJsonLd, noIndexMetadata, publicPageMetadata, SITE_NAME, toDescription } from "@/lib/seo";
 
 type Props = { params: Promise<{ id: string }> };
+
+// Only free lessons are prerendered; locked ones are not indexable pages.
+export async function generateStaticParams() {
+  return [...new Set(await fetchFreeLessonIds())].map((id) => ({ id }));
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
