@@ -19,6 +19,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -131,10 +132,11 @@ class WritingPhraseRepositoryIntegrationTest {
         WritingPhrase saved = phrase(LearningLevel.B1, "OPINION", "S", true);
         WritingPhrase notSaved = phrase(LearningLevel.B1, "OPINION", "N", true);
         WritingPhrase savedByOther = phrase(LearningLevel.B1, "OPINION", "O", true);
-        for (var entry : List.of(Set.of("u1", saved.getId()), Set.of("u2", savedByOther.getId()))) {
+        // Explicit pairs: the phrase ids are random strings and may well start with "u".
+        for (var entry : List.of(Map.entry("u1", saved.getId()), Map.entry("u2", savedByOther.getId()))) {
             RedemittelCollectionItem item = new RedemittelCollectionItem();
-            item.setUserId(entry.contains("u1") ? "u1" : "u2");
-            item.setPhraseId(entry.stream().filter(s -> !s.startsWith("u")).findFirst().orElseThrow());
+            item.setUserId(entry.getKey());
+            item.setPhraseId(entry.getValue());
             collectionRepository.save(item);
         }
 
