@@ -16,7 +16,7 @@ export default function BlogIndexPage() {
     const [page, setPage] = useState(0);
 
     useEffect(() => {
-        document.title = `${t.blogPage.indexBadge} | DeutschCertify`;
+        document.title = `${t.blogPage.indexBadge} | Deutsch Certify`;
     }, [t.blogPage.indexBadge]);
 
     const { data: categories = [] } = useQuery({

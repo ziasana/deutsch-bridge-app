@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
 
 export const SITE_URL = "https://deutschcertify.com";
-export const SITE_NAME = "DeutschCertify";
+/** The name Google should show for the site (WebSite structured data, og:site_name, title suffix). */
+export const SITE_NAME = "Deutsch Certify";
+/** The written-together spelling of the brand, declared as an alternate name so both spellings resolve to this site. */
+export const SITE_ALTERNATE_NAME = "DeutschCertify";
 export const SITE_TAGLINE = "Your Path to German Proficiency";
-export const DEFAULT_TITLE = "DeutschCertify – Learn German Online from A1 to C1";
+export const DEFAULT_TITLE = "Deutsch Certify – Learn German from A1-C1";
 export const DEFAULT_DESCRIPTION =
-  "Learn German online with interactive vocabulary, grammar, reading, listening and exam preparation exercises. Prepare for TELC and DTZ with DeutschCertify.";
+  "Learn German online with interactive vocabulary, grammar, reading, listening from A1–C1. Prepare and pass your German exam with timed TELC and DTZ exercises and mock tests with Deutsch Certify. Start free.";
 export const SUPPORTED_LANGUAGES = ["de", "en", "fa"] as const;
 
 /** Target keywords per public route (one distinct search intent each). Documentation/planning only: the meta keywords tag is not used. */
 export const ROUTE_KEYWORDS: Record<string, { primary: string; secondary: string[] }> = {
-  "/": { primary: "Deutsch lernen online", secondary: ["German learning app", "German language learning", "Deutsch lernen kostenlos"] },
+  "/": { primary: "Deutsch lernen online", secondary: ["German learning app", "German language learning", "Deutsch lernen kostenlos", "Deutsch certification", "Deutsch certify", "German certification" , "Learn german language", "German with AI", "Deutsch AI lernen"] },
   "/exams/telc": { primary: "TELC B1 Vorbereitung", secondary: ["TELC B1 Übungen", "B1 Sprachbausteine Übungen", "B1 Modelltest"] },
   "/exams/dtz": { primary: "DTZ B1 Prüfung Vorbereitung", secondary: ["Deutsch Prüfung online üben"] },
   "/exams": { primary: "Deutsch Prüfung online üben", secondary: ["telc oder DTZ"] },
@@ -20,7 +23,7 @@ export const ROUTE_KEYWORDS: Record<string, { primary: string; secondary: string
   "/learn/expressions": { primary: "Deutsch Wortschatz lernen", secondary: ["Deutsch C1 Übungen"] },
 };
 
-export const OG_IMAGE = { url: "/og-image.png", width: 1200, height: 630, alt: "DeutschCertify - Your Path to German Proficiency. Learn. Practice. Certify." };
+export const OG_IMAGE = { url: "/og-image.png", width: 1200, height: 630, alt: "Deutsch Certify - Your Path to German Proficiency. Learn. Practice. Certify." };
 
 interface PageSeo {
   title: string;
@@ -84,6 +87,7 @@ export function softwareApplicationJsonLd() {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     name: SITE_NAME,
+    alternateName: SITE_ALTERNATE_NAME,
     url: SITE_URL,
     applicationCategory: "EducationalApplication",
     operatingSystem: "Web",

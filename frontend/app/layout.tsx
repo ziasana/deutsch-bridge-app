@@ -10,7 +10,7 @@ import AppChrome from "@/componenets/layout/AppChrome";
 import PremiumUpsellModal from "@/componenets/PremiumUpsellModal";
 import Providers from "./providers";
 import JsonLd from "@/componenets/seo/JsonLd";
-import { DEFAULT_DESCRIPTION, DEFAULT_TITLE, OG_IMAGE, SITE_NAME, SITE_URL } from "@/lib/seo";
+import { DEFAULT_DESCRIPTION, DEFAULT_TITLE, OG_IMAGE, SITE_ALTERNATE_NAME, SITE_NAME, SITE_URL } from "@/lib/seo";
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
@@ -24,7 +24,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: DEFAULT_TITLE, template: "%s | DeutschCertify" },
+  title: { default: DEFAULT_TITLE, template: `%s | ${SITE_NAME}` },
   description: DEFAULT_DESCRIPTION,
   alternates: { canonical: "/" },
   openGraph: {
@@ -65,8 +65,8 @@ export default function RootLayout({
         data={{
           "@context": "https://schema.org",
           "@graph": [
-            { "@type": "Organization", "@id": `${SITE_URL}/#organization`, name: SITE_NAME, url: SITE_URL, logo: `${SITE_URL}/favicon-512.png` },
-            { "@type": "WebSite", "@id": `${SITE_URL}/#website`, name: SITE_NAME, url: SITE_URL, publisher: { "@id": `${SITE_URL}/#organization` }, inLanguage: "en" },
+            { "@type": "Organization", "@id": `${SITE_URL}/#organization`, name: SITE_NAME, alternateName: SITE_ALTERNATE_NAME, url: SITE_URL, logo: `${SITE_URL}/favicon-512.png` },
+            { "@type": "WebSite", "@id": `${SITE_URL}/#website`, name: SITE_NAME, alternateName: [SITE_ALTERNATE_NAME, "deutschcertify.com"], url: SITE_URL, publisher: { "@id": `${SITE_URL}/#organization` }, inLanguage: "en" },
           ],
         }}
       />

@@ -21,3 +21,7 @@
 
 ## 4. Content workflow
 Blog posts are managed in `/admin/blog`; the sitemap is generated at build time, so **redeploy after publishing** new posts, articles or lessons.
+
+## Search-result name, title and snippet
+- Site name comes from the `WebSite` JSON-LD in `frontend/app/layout.tsx` (`name: "Deutsch Certify"`, `alternateName: "DeutschCertify"`), kept consistent with `og:site_name` and the title suffix (`SITE_NAME` in `frontend/lib/seo.ts`).
+- After deploying: Search Console → URL Inspection → `https://deutschcertify.com/` → "Request indexing". Google needs days to weeks to refresh the displayed name, title and snippet, and may still choose its own wording.

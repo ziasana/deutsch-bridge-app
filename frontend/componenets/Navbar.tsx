@@ -4,7 +4,7 @@ import Link from "next/link";
 import useAuthStore from "@/store/useAuthStore";
 import { useI18n } from "./I18nProvider";
 import {  Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
-import { Menu as MenuIcon, X } from "lucide-react";
+import { LayoutDashboard, Menu as MenuIcon, X } from "lucide-react";
 import { Logo } from "@/componenets/brand/Logo";
 import { resolveUploadUrl } from "@/lib/backendOrigin";
 import ChangePasswordDialog from "@/componenets/profile/ChangePasswordDialog";
@@ -28,6 +28,12 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const { t } = useI18n();
+  // Signed-in learners get a one-tap way back to their dashboard on phones (admins to the admin area).
+  const homeTarget = isLoggedIn && userProfile != null
+      ? (userProfile.role === "ADMIN"
+          ? { href: "/admin", label: t.nav.adminDashboard }
+          : { href: "/dashboard", label: t.nav.dashboard })
+      : null;
   const { m } = useMarketing();
   const examLinks = getExamLinks(m);
   const learnLinks = getLearnLinks(m);
@@ -174,15 +180,27 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          className="md:hidden text-foreground"
-          aria-label="Menu"
-          aria-expanded={isOpen}
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          {isOpen ? <X className="size-6" /> : <MenuIcon className="size-6" />}
-        </button>
+        {/* Mobile: dashboard shortcut (always visible when signed in) and menu button */}
+        <div className="flex items-center gap-3 md:hidden">
+          {homeTarget && (
+              <Link
+                  href={homeTarget.href}
+                  onClick={() => setIsOpen(false)}
+                  className="btn-primary inline-flex items-center gap-1.5 rounded-full !px-3.5 !py-1.5 text-sm"
+              >
+                <LayoutDashboard className="size-4" aria-hidden="true" />
+                {homeTarget.label}
+              </Link>
+          )}
+          <button
+            className="text-foreground"
+            aria-label="Menu"
+            aria-expanded={isOpen}
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            {isOpen ? <X className="size-6" /> : <MenuIcon className="size-6" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu */}
@@ -193,9 +211,16 @@ export default function Navbar() {
             if ((event.target as HTMLElement).closest("a")) setIsOpen(false);
           }}
         >
-          <Link href="/" className="mobile-link">
-            {t.nav.home}
-          </Link>
+          {homeTarget ? (
+              <Link href={homeTarget.href} className="mobile-link flex items-center gap-2 font-semibold !text-primary">
+                <LayoutDashboard className="size-5" aria-hidden="true" />
+                {homeTarget.label}
+              </Link>
+          ) : (
+              <Link href="/" className="mobile-link">
+                {t.nav.home}
+              </Link>
+          )}
           <p className="px-6 pt-3 text-xs font-semibold uppercase tracking-wide text-foreground/50">{m.nav.exams}</p>
           {examLinks.map((link) => (
             <Link key={link.href} href={link.href} className="mobile-link ps-10 !py-2">
@@ -221,16 +246,8 @@ export default function Navbar() {
             {t.nav.contact}
           </Link>
 
-          {isLoggedIn && userProfile != null && (
-              userProfile.role === "ADMIN" ? (
-                  <Link href="/admin" className="mobile-link">
-                    {t.nav.adminDashboard}
-                  </Link>
-              ) : (
+          {isLoggedIn && userProfile != null && userProfile.role !== "ADMIN" && (
                   <>
-                    <Link href="/dashboard" className="mobile-link">
-                      {t.nav.dashboard}
-                    </Link>
                     <Link href="/profile" className="mobile-link">
                       {t.nav.profile}
                     </Link>
@@ -238,7 +255,6 @@ export default function Navbar() {
                       {t.nav.yourProgress}
                     </Link>
                   </>
-              )
           )}
 
           <div className="border-t border-border mt-2 pt-2 flex flex-col gap-2 px-6 pb-4">
