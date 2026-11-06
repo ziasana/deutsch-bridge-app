@@ -13,7 +13,7 @@ export const SUPPORTED_LANGUAGES = ["de", "en", "fa"] as const;
 
 /** Target keywords per public route (one distinct search intent each). Documentation/planning only: the meta keywords tag is not used. */
 export const ROUTE_KEYWORDS: Record<string, { primary: string; secondary: string[] }> = {
-  "/": { primary: "Deutsch lernen online", secondary: ["German learning app", "German language learning", "Deutsch lernen kostenlos", "Deutsch certification", "Deutsch certify", "German certification" , "Learn german language", "German with AI", "Deutsch AI lernen"] },
+  "/": { primary: "Deutsch lernen online", secondary: ["German learning app", "German language learning", "Deutsch lernen kostenlos", "Deutsch certification", "Deutsch certify", "German certification" , "Learn german language", "German with AI", "Deutsch AI lernen", "Deutsch prüfung", "TELC B1", "DTZ B1", "German B1 exam"] },
   "/exams/telc": { primary: "TELC B1 Vorbereitung", secondary: ["TELC B1 Übungen", "B1 Sprachbausteine Übungen", "B1 Modelltest"] },
   "/exams/dtz": { primary: "DTZ B1 Prüfung Vorbereitung", secondary: ["Deutsch Prüfung online üben"] },
   "/exams": { primary: "Deutsch Prüfung online üben", secondary: ["telc oder DTZ"] },

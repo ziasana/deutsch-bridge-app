@@ -10,6 +10,10 @@ export const loginUser = async (user: UserType) => {
     return await api.post("/auth/login", user);
 }
 
+export const googleLogin = async (idToken: string) => {
+    return await api.post("/auth/google", { idToken });
+}
+
 export const logOutUser = async () => {
     return await api.post( "/auth/logout", null );
 }

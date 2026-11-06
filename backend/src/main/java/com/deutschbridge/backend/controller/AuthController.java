@@ -110,6 +110,20 @@ public class AuthController {
         return new ResponseEntity<>(new ApiResponse<>("Account created", userResponse), HttpStatus.CREATED);
     }
 
+    /** Web Google sign-in (login and signup in one): the page sends the Google ID token, the session goes out as cookies. */
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> google(@RequestBody @Valid GoogleLoginRequest request, HttpServletResponse response) throws UserVerificationException {
+        GoogleTokenVerifier.GoogleIdentity identity = googleTokenVerifier.verify(request.idToken());
+        User user = userService.findOrCreateGoogleUser(identity.email(), identity.name(), identity.picture());
+        String email = user.getEmail();
+        String refreshToken = jwtUtil.generateRefreshToken(email);
+        userService.saveRefreshToken(email, refreshToken);
+
+        response.addCookie(cookieService.createAccessToken(jwtUtil.generateAccessToken(email)));
+        response.addCookie(cookieService.createRefreshToken(refreshToken));
+        return ResponseEntity.ok(new ApiResponse<>("Login successful!", userProfileService.getUserProfileResponse(user)));
+    }
+
     // ---- Mobile (token-in-body) variants. The web cookie endpoints above are unchanged. ----
 
     @PostMapping("/mobile/login")

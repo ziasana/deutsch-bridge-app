@@ -47,6 +47,7 @@ public class JWTAuthFilter extends OncePerRequestFilter {
                 || path.startsWith("/req/reset-password")
                 || path.startsWith("/api/auth/register")
                 || path.startsWith("/api/auth/mobile/")
+                || path.startsWith("/api/auth/google")
                 || path.startsWith("/api/public/")
                 || path.startsWith("/uploads/")
                 || path.startsWith("/api/test/")) {
